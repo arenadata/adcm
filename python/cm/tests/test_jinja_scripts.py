@@ -13,10 +13,12 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
+from api.tests.test_job import RunTaskMock
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from cm.errors import AdcmEx
-from cm.models import Component, ConfigLog, JobLog, MaintenanceMode, TaskLog
+from cm.models import Action, Component, ConcernItem, ConfigLog, JobLog, MaintenanceMode, TaskLog
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.jinja_scripts import get_env
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
 
@@ -168,3 +170,20 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
         self.assertEqual(err.exception.msg, "Can't render jinja template")
         self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertEqual(JobLog.objects.count(), initial_jobs_count)
+
+    def test_adcm_6012_task_config_processing(self) -> None:
+        action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_activatable_group_jinja")
+
+        for active, expected_jobs in ((False, ["default", "inactive"]), (True, ["default", "active"])):
+            with RunTaskMock():
+                task = run_action(
+                    action=action,
+                    obj=self.cluster,
+                    payload=ActionRunPayload(conf={"group": {"x": 2}}, attr={"group": {"active": active}}),
+                )
+
+            self.assertListEqual(list(JobLog.objects.filter(task=task).values_list("name", flat=True)), expected_jobs)
+
+            task.status = "succeed"
+            task.save(update_fields=["status"])
+            ConcernItem.objects.all().delete()

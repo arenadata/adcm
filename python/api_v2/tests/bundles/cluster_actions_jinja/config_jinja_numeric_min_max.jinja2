@@ -1,0 +1,17 @@
+- name: group_name
+  type: group
+  activatable: true
+  ui_options:
+    advanced: True
+  active: true
+  subs:
+    - name: boolean_param
+      type: boolean
+      default: true
+{% if cluster.state == "ready_for_numeric_min_max" %}
+    - name: some_numeric_param
+      type: integer
+      default: 5
+      min: 0
+      max: 65535
+{% endif %}

@@ -12,6 +12,7 @@ import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/Cluster
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -76,7 +77,7 @@ const ClustersTable = () => {
               <IconButton
                 icon="g1-upgrade"
                 size={32}
-                disabled={!cluster.isUpgradable}
+                disabled={!cluster.isUpgradable || isBlockingConcernPresent(cluster.concerns)}
                 onClick={() => handleUpgradeClick(cluster)}
                 title={cluster.isUpgradable ? 'Upgrade' : 'No upgrades'}
               />

@@ -10,368 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 from pathlib import Path
 import sys
-import json
 import base64
 import getpass
 
-from ansible.parsing.vault import VaultAES256, VaultSecret
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.db.transaction import atomic
-from django.db.utils import IntegrityError
 
-from cm.adcm_config.config import save_file_type
-from cm.errors import AdcmEx
-from cm.models import (
-    Bundle,
-    Cluster,
-    Component,
-    ConfigHostGroup,
-    ConfigLog,
-    Host,
-    HostComponent,
-    ObjectConfig,
-    Prototype,
-    PrototypeConfig,
-    Provider,
-    Service,
-)
-
-OLD_ADCM_PASSWORD = None
+from cm.services.transition.load import load
+from cm.services.transition.types import TransitionPayload
 
 
-def deserializer_datetime_fields(obj, fields=None):
-    """
-    Modifies fields of type ISO string to datetime type
-
-    :param obj: Object in dictionary format
-    :type obj: dict
-    :param fields: List of fields in ISO string format
-    :type fields: list
-    """
-    if obj is not None and fields is not None:
-        for field in fields:
-            obj[field] = datetime.fromisoformat(obj[field])
-
-
-def get_prototype(**kwargs):
-    """
-    Returns prototype object
-
-    :param kwargs: Parameters for finding a prototype
-    :return: Prototype object
-    :rtype: models.Prototype
-    """
-    bundle = Bundle.objects.get(hash=kwargs.pop("bundle_hash"))
-    return Prototype.objects.get(bundle=bundle, **kwargs)
-
-
-def create_config(config, prototype=None):
-    """
-    Creating current ConfigLog, previous ConfigLog and ObjectConfig objects
-
-    :param config: ConfigLog object in dictionary format
-    :type config: dict
-    :return: ObjectConfig object
-    :rtype: models.ObjectConfig
-    """
-    if config is not None:
-        current_config = process_config(prototype, config["current"])
-        deserializer_datetime_fields(current_config, ["date"])
-        previous_config = process_config(prototype, config["previous"])
-        deserializer_datetime_fields(previous_config, ["date"])
-
-        conf = ObjectConfig.objects.create(current=0, previous=0)
-
-        current = ConfigLog.objects.create(obj_ref=conf, **current_config)
-        current_id = current.id
-        if previous_config is not None:
-            previous = ConfigLog.objects.create(obj_ref=conf, **previous_config)
-            previous_id = previous.id
-        else:
-            previous_id = 0
-
-        conf.current = current_id
-        conf.previous = previous_id
-        conf.save()
-        return conf
-    return None
-
-
-def create_group(group, ex_hosts_list, obj):
-    """
-    Creating ConfigHostGroup object
-
-    :param group: ConfigHostGroup object in dictionary format
-    :type group: dict
-    :param ex_hosts_list: Map of ex_host_ids and new hosts
-    :type ex_hosts_list: dict
-    :return: GroupConfig object
-    :rtype: models.GroupConfig
-    """
-    model_name = group.pop("model_name")
-    ex_object_id = group.pop("object_id")
-    group.pop("object_type")
-    config = create_config(group.pop("config"))
-    hosts = []
-
-    for host in group.pop("hosts"):
-        hosts.append(ex_hosts_list[host])
-
-    host_group = ConfigHostGroup.objects.create(
-        object_id=obj.id,
-        config=config,
-        object_type=ContentType.objects.get(model=model_name),
-        **group,
-    )
-    host_group.hosts.set(hosts)
-
-    return ex_object_id, host_group
-
-
-def switch_encoding(msg):
-    ciphertext = msg
-    if settings.ANSIBLE_VAULT_HEADER in msg:
-        _, ciphertext = msg.split("\n")
-    vault = VaultAES256()
-    secret_old = VaultSecret(bytes(OLD_ADCM_PASSWORD, settings.ENCODING_UTF_8))
-    data = str(vault.decrypt(ciphertext, secret_old), settings.ENCODING_UTF_8)
-    secret_new = VaultSecret(bytes(settings.ANSIBLE_SECRET, settings.ENCODING_UTF_8))
-    ciphertext = vault.encrypt(bytes(data, settings.ENCODING_UTF_8), secret_new)
-    return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
-
-
-def process_config(proto, config):
-    if config is not None and proto is not None:
-        conf = config["config"]
-        for pconf in PrototypeConfig.objects.filter(prototype=proto, type__in=("secrettext", "password")):
-            if pconf.subname and conf[pconf.name][pconf.subname]:
-                conf[pconf.name][pconf.subname] = switch_encoding(conf[pconf.name][pconf.subname])
-            elif conf.get(pconf.name) and not pconf.subname:
-                conf[pconf.name] = switch_encoding(conf[pconf.name])
-        config["config"] = conf
-    return config
-
-
-def create_file_from_config(obj, config):
-    if config is None:
-        return
-
-    conf = config["current"]["config"]
-
-    for pconf in PrototypeConfig.objects.filter(prototype=obj.prototype, type="file"):
-        if pconf.subname:
-            if pconf.subname in conf.get(pconf.name, {}):
-                save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
-        elif pconf.name in conf:
-            save_file_type(obj, pconf.name, "", conf[pconf.name])
-
-
-def create_cluster(cluster):
-    """
-    Creating Cluster object
-
-    :param cluster: Cluster object in dictionary format
-    :type cluster: dict
-    :return: Cluster object
-    :rtype: models.Cluster
-    """
-    try:
-        Cluster.objects.get(name=cluster["name"])
-        raise AdcmEx("CLUSTER_CONFLICT", "Cluster with the same name already exist")
-    except Cluster.DoesNotExist:
-        prototype = get_prototype(bundle_hash=cluster.pop("bundle_hash"), type="cluster")
-        ex_id = cluster.pop("id")
-        config = cluster.pop("config")
-        cluster = Cluster.objects.create(prototype=prototype, config=create_config(config, prototype), **cluster)
-        create_file_from_config(cluster, config)
-        return ex_id, cluster
-
-
-def create_provider(provider):
-    """
-    Creating Provider object
-
-    :param provider: Provider object in dictionary format
-    :type provider: dict
-    :return: Provider object
-    :rtype: models.Provider
-    """
-    bundle_hash = provider.pop("bundle_hash")
-    ex_id = provider.pop("id")
-    try:
-        same_name_provider = Provider.objects.get(name=provider["name"])
-        if same_name_provider.prototype.bundle.hash != bundle_hash:
-            raise IntegrityError("Name of provider already in use in another bundle")
-        create_file_from_config(same_name_provider, provider["config"])  # noqa: TRY300
-        return ex_id, same_name_provider
-    except Provider.DoesNotExist:
-        prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
-        config = provider.pop("config")
-        provider = Provider.objects.create(
-            prototype=prototype,
-            config=create_config(config, prototype),
-            **provider,
-        )
-        create_file_from_config(provider, config)
-        return ex_id, provider
-
-
-def create_host(host, cluster):
-    """
-    Creating Host object
-
-    :param host: Host object in dictionary format
-    :type host: dict
-    :param cluster: Cluster object
-    :type cluster: models.Cluster
-    :return: Host object
-    :rtype: models.Host
-    """
-    host.pop("provider")
-    provider = Provider.objects.get(name=host.pop("provider__name"))
-    try:
-        Host.objects.get(fqdn=host["fqdn"])
-        provider.delete()
-        cluster.delete()
-        raise AdcmEx("HOST_CONFLICT", "Host fqdn already in use")
-    except Host.DoesNotExist:
-        prototype = get_prototype(bundle_hash=host.pop("bundle_hash"), type="host")
-        ex_id = host.pop("id")
-        config = host.pop("config")
-        new_host = Host.objects.create(
-            prototype=prototype,
-            provider=provider,
-            config=create_config(config, prototype),
-            cluster=cluster,
-            **host,
-        )
-        create_file_from_config(new_host, config)
-        return ex_id, new_host
-
-
-def create_service(service, cluster):
-    """
-    Creating Service object
-
-    :param service: Service object in dictionary format
-    :type service: dict
-    :param cluster: Cluster object
-    :type cluster: models.Cluster
-    :return: Service object
-    :rtype: models.Service
-    """
-    prototype = get_prototype(
-        bundle_hash=service.pop("bundle_hash"),
-        type="service",
-        name=service.pop("prototype__name"),
-    )
-    ex_id = service.pop("id")
-    config = service.pop("config")
-    service = Service.objects.create(
-        prototype=prototype,
-        cluster=cluster,
-        config=create_config(config, prototype),
-        **service,
-    )
-    create_file_from_config(service, config)
-    return ex_id, service
-
-
-def create_component(component, cluster, service):
-    """
-    Creating Component object
-
-    :param component: Component object in dictionary format
-    :type component: dict
-    :param cluster: Cluster object
-    :type cluster: models.Cluster
-    :param service: Service object
-    :type service: models.Service
-    :return: Component object
-    :rtype: models.Component
-    """
-    prototype = get_prototype(
-        bundle_hash=component.pop("bundle_hash"),
-        type="component",
-        name=component.pop("prototype__name"),
-        parent=service.prototype,
-    )
-    ex_id = component.pop("id")
-    config = component.pop("config")
-    component = Component.objects.create(
-        prototype=prototype,
-        cluster=cluster,
-        service=service,
-        config=create_config(config, prototype),
-        **component,
-    )
-    create_file_from_config(component, config)
-    return ex_id, component
-
-
-def create_host_component(host_component, cluster, host, service, component):
-    """
-    Creating HostComponent object
-
-    :param host_component: HostComponent object in dictionary format
-    :type host_component: dict
-    :param cluster: Cluster object
-    :type cluster: models.Cluster
-    :param host: Host object
-    :type host: models.Host
-    :param service: Service object
-    :type service: models.Service
-    :param component: Component object
-    :type component: models.Component
-    :return: HostComponent object
-    :rtype: models.HostComponent
-    """
-    host_component.pop("cluster")
-    return HostComponent.objects.create(
-        cluster=cluster,
-        host=host,
-        service=service,
-        component=component,
-        **host_component,
-    )
-
-
-def check(data):
-    """
-    Checking cluster load
-
-    :param data: Data from file
-    :type data: dict
-    """
-    if data["ADCM_VERSION"] != settings.ADCM_VERSION:
-        raise AdcmEx(
-            "DUMP_LOAD_ADCM_VERSION_ERROR",
-            msg=(
-                f"ADCM versions do not match, dump version: {data['ADCM_VERSION']},"
-                f" load version: {settings.ADCM_VERSION}"
-            ),
-        )
-
-    for bundle_hash, bundle in data["bundles"].items():
-        try:
-            Bundle.objects.get(hash=bundle_hash)
-        except Bundle.DoesNotExist as err:
-            raise AdcmEx(
-                "DUMP_LOAD_BUNDLE_ERROR",
-                msg=f"Bundle '{bundle['name']} {bundle['version']}' not found",
-            ) from err
-
-
-def decrypt_file(pass_from_user, file):
+def decrypt_file(pass_from_user: str, file: str) -> bytes:
     password = pass_from_user.encode()
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
@@ -382,79 +38,6 @@ def decrypt_file(pass_from_user, file):
     )
     key = base64.urlsafe_b64encode(kdf.derive(password))
     return Fernet(key).decrypt(file.encode())
-
-
-def set_old_password(password):
-    global OLD_ADCM_PASSWORD
-    OLD_ADCM_PASSWORD = password
-
-
-@atomic
-def load(file_path):
-    """
-    Loading and creating objects from JSON file
-
-    :param file_path: Path to JSON file
-    :type file_path: str
-    """
-    try:
-        password = getpass.getpass()
-        with Path(file_path).open(encoding=settings.ENCODING_UTF_8) as f:
-            encrypted = f.read()
-            decrypted = decrypt_file(password, encrypted)
-            data = json.loads(decrypted.decode(settings.ENCODING_UTF_8))
-    except FileNotFoundError as err:
-        raise AdcmEx("DUMP_LOAD_CLUSTER_ERROR", msg="Loaded file not found") from err
-    except InvalidToken as err:
-        raise AdcmEx("WRONG_PASSWORD") from err
-
-    check(data)
-    set_old_password(data["adcm_password"])
-    _, cluster = create_cluster(data["cluster"])
-
-    ex_provider_ids = {}
-    for provider_data in data["providers"]:
-        ex_provider_id, provider = create_provider(provider_data)
-        ex_provider_ids[ex_provider_id] = provider
-
-    ex_host_ids = {}
-    for host_data in data["hosts"]:
-        ex_host_id, host = create_host(host_data, cluster)
-        ex_host_ids[ex_host_id] = host
-
-    ex_service_ids = {}
-    for service_data in data["services"]:
-        ex_service_id, service = create_service(service_data, cluster)
-        ex_service_ids[ex_service_id] = service
-
-    ex_component_ids = {}
-    for component_data in data["components"]:
-        ex_component_id, component = create_component(
-            component_data,
-            cluster,
-            ex_service_ids[component_data.pop("service")],
-        )
-        ex_component_ids[ex_component_id] = component
-
-    for host_component_data in data["host_components"]:
-        create_host_component(
-            host_component_data,
-            cluster,
-            ex_host_ids[host_component_data.pop("host")],
-            ex_service_ids[host_component_data.pop("service")],
-            ex_component_ids[host_component_data.pop("component")],
-        )
-    for group_data in data["groups"]:
-        if group_data["model_name"] == "cluster":
-            obj = cluster
-        elif group_data["model_name"] == "service":
-            obj = ex_service_ids[group_data["object_id"]]
-        elif group_data["model_name"] == "component":
-            obj = ex_component_ids[group_data["object_id"]]
-        elif group_data["model_name"] == "provider":
-            obj = ex_provider_ids[group_data["object_id"]]
-        create_group(group_data, ex_host_ids, obj)
-    sys.stdout.write(f"Load successfully ended, cluster {cluster.display_name} created\n")
 
 
 class Command(BaseCommand):
@@ -471,7 +54,35 @@ class Command(BaseCommand):
         """Parsing command line arguments"""
         parser.add_argument("file_path", nargs="?")
 
-    def handle(self, *args, **options):  # noqa: ARG002
-        """Handler method"""
-        file_path = options.get("file_path")
-        load(file_path)
+    def handle(self, *_, file_path: str, **_kw):  # noqa: ARG002
+        encrypted_dump = Path(file_path)
+
+        if not encrypted_dump.is_file():
+            message = f"Dump file doesn't exist or isn't a file at {encrypted_dump}"
+            raise ValueError(message)
+
+        password = getpass.getpass()
+
+        self._write("Decrypting dump file...")
+        decrypted_string = decrypt_file(password, encrypted_dump.read_text()).decode("utf-8")
+
+        self._write("Validating data...")
+        payload = TransitionPayload.model_validate_json(decrypted_string)
+
+        if payload.adcm_version != settings.ADCM_VERSION:
+            message = (
+                f"ADCM versions do not match, dump version: {payload.adcm_version}, "
+                f"load version: {settings.ADCM_VERSION}"
+            )
+            raise ValueError(message)
+
+        with atomic():
+            cluster_id = load(data=payload, report=self._write)
+
+        sys.stdout.write(f"Load successfully ended, cluster {payload.cluster.name} created with id {cluster_id}\n")
+
+    def _write(self, line: str) -> None:
+        if not line.endswith("\n"):
+            line += "\n"
+
+        sys.stdout.write(line)

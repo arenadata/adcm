@@ -1,35 +1,31 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
-import { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
+import type { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import { SortParams } from '@models/table';
 
-interface AdcmUsersActionState {
-  deleteDialog: {
-    id: number | null;
-  };
-  createDialog: {
-    isOpen: boolean;
-    isCreating: boolean;
-  };
+interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {
   updateDialog: {
     user: AdcmUser | null;
-    isUpdating: boolean;
+  };
+  deleteDialog: {
+    user: AdcmUser | null;
   };
   unblockDialog: {
-    ids: number[];
+    user: AdcmUser | null;
   };
   blockDialog: {
-    ids: number[];
+    user: AdcmUser | null;
   };
   relatedData: {
     groups: AdcmGroup[];
   };
-  selectedItemsIds: number[];
+  selectedUsersIds: number[];
 }
 
 const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: number[], thunkAPI) => {
@@ -66,11 +62,11 @@ const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (i
   }
 });
 
-const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (ids: number[], thunkAPI) => {
+const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (users: number[], thunkAPI) => {
   try {
-    if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.deleteUser(id))))) {
+    if (arePromisesResolved(await Promise.allSettled(users.map((id) => AdcmUsersApi.deleteUser(id))))) {
       thunkAPI.dispatch(
-        showSuccess({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
+        showSuccess({ message: users.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
       );
     }
   } catch (error) {
@@ -80,27 +76,6 @@ const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', 
     thunkAPI.dispatch(refreshUsers());
   }
 });
-
-const openUserCreateDialog = createAsyncThunk('adcm/usersActions/openUserCreateDialog', async (arg, thunkAPI) => {
-  try {
-    thunkAPI.dispatch(loadGroups());
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue(error);
-  }
-});
-
-const openUserUpdateDialog = createAsyncThunk(
-  'adcm/usersActions/openUserUpdateDialog',
-  async (user: AdcmUser, thunkAPI) => {
-    try {
-      thunkAPI.dispatch(loadGroups());
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
 
 const createUser = createAsyncThunk('adcm/usersActions/createUser', async (arg: AdcmCreateUserPayload, thunkAPI) => {
   try {
@@ -132,108 +107,84 @@ const updateUser = createAsyncThunk(
   },
 );
 
-const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (arg, thunkAPI) => {
+const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (_, thunkAPI) => {
+  const sortParams: SortParams = {
+    sortBy: 'displayName',
+    sortDirection: 'asc',
+  };
   try {
-    const sortParams: SortParams = {
-      sortBy: '',
-      sortDirection: 'asc',
-    };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
-    sortParams.sortBy = 'displayName';
-    paginationParams.perPage = batch.count;
-    return await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    const { count } = await AdcmGroupsApi.getGroups({}, sortParams);
+    return await AdcmGroupsApi.getGroups({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
 const createInitialState = (): AdcmUsersActionState => ({
-  deleteDialog: {
-    id: null,
-  },
   createDialog: {
     isOpen: false,
-    isCreating: false,
+  },
+  deleteDialog: {
+    user: null,
   },
   updateDialog: {
     user: null,
-    isUpdating: false,
   },
   unblockDialog: {
-    ids: [],
+    user: null,
   },
   blockDialog: {
-    ids: [],
+    user: null,
   },
   relatedData: {
     groups: [],
   },
-  selectedItemsIds: [],
+  selectedUsersIds: [],
 });
 
-const usersActionsSlice = createSlice({
+const usersActionsSlice = createCrudSlice({
   name: 'adcm/usersActions',
-  initialState: createInitialState(),
+  entityName: 'user',
+  createInitialState,
   reducers: {
     cleanupActions() {
       return createInitialState();
     },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
-    },
-    setSelectedItemsIds(state, action) {
-      state.selectedItemsIds = action.payload;
-    },
-    closeUserCreateDialog(state) {
-      state.createDialog = createInitialState().createDialog;
-    },
-    closeUserUpdateDialog(state) {
-      state.updateDialog = createInitialState().updateDialog;
+    setSelectedUsersIds(state, action) {
+      state.selectedUsersIds = action.payload;
     },
     openUnblockDialog(state, action) {
-      state.unblockDialog.ids = action.payload;
+      state.unblockDialog.user = action.payload;
     },
     closeUnblockDialog(state) {
-      state.unblockDialog.ids = [];
+      state.unblockDialog.user = null;
     },
     openBlockDialog(state, action) {
-      state.blockDialog.ids = action.payload;
+      state.blockDialog.user = action.payload;
     },
     closeBlockDialog(state) {
-      state.blockDialog.ids = [];
+      state.blockDialog.user = null;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(deleteUsersWithUpdate.pending, (state) => {
+        state.selectedUsersIds = [];
         usersActionsSlice.caseReducers.closeDeleteDialog(state);
       })
       .addCase(blockUsers.fulfilled, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedUsersIds = [];
         usersActionsSlice.caseReducers.closeBlockDialog(state);
       })
       .addCase(blockUsers.rejected, (state) => {
         usersActionsSlice.caseReducers.closeBlockDialog(state);
       })
       .addCase(unblockUsers.fulfilled, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedUsersIds = [];
         usersActionsSlice.caseReducers.closeUnblockDialog(state);
       })
       .addCase(unblockUsers.rejected, (state) => {
         usersActionsSlice.caseReducers.closeUnblockDialog(state);
-      })
-      .addCase(openUserCreateDialog.pending, (state) => {
-        state.createDialog.isOpen = true;
-      })
-      .addCase(openUserUpdateDialog.pending, (state, action) => {
-        state.updateDialog.user = action.meta.arg;
       })
       .addCase(loadGroups.fulfilled, (state, action) => {
         state.relatedData.groups = action.payload.results;
@@ -242,45 +193,41 @@ const usersActionsSlice = createSlice({
         state.relatedData.groups = [];
       })
       .addCase(createUser.pending, (state) => {
-        state.createDialog.isCreating = true;
+        state.isActionInProgress = true;
       })
       .addCase(createUser.fulfilled, (state) => {
-        usersActionsSlice.caseReducers.closeUserCreateDialog(state);
+        usersActionsSlice.caseReducers.closeCreateDialog(state);
+        state.isActionInProgress = false;
       })
       .addCase(createUser.rejected, (state) => {
-        state.createDialog.isCreating = false;
+        state.isActionInProgress = false;
       })
       .addCase(updateUser.pending, (state) => {
-        state.updateDialog.isUpdating = true;
+        state.isActionInProgress = true;
       })
       .addCase(updateUser.fulfilled, (state) => {
-        usersActionsSlice.caseReducers.closeUserUpdateDialog(state);
+        usersActionsSlice.caseReducers.closeUpdateDialog(state);
+        state.isActionInProgress = false;
       })
       .addCase(updateUser.rejected, (state) => {
-        state.updateDialog.isUpdating = false;
+        state.isActionInProgress = false;
       });
   },
 });
 
 export const {
-  setSelectedItemsIds,
+  setSelectedUsersIds,
   openDeleteDialog,
   closeDeleteDialog,
-  closeUserCreateDialog,
-  closeUserUpdateDialog,
+  openUpdateDialog: openUserUpdateDialog,
+  openCreateDialog: openUserCreateDialog,
+  closeUpdateDialog: closeUserUpdateDialog,
+  closeCreateDialog: closeUserCreateDialog,
   openUnblockDialog,
   closeUnblockDialog,
   openBlockDialog,
   closeBlockDialog,
 } = usersActionsSlice.actions;
 
-export {
-  deleteUsersWithUpdate,
-  blockUsers,
-  unblockUsers,
-  createUser,
-  updateUser,
-  openUserCreateDialog,
-  openUserUpdateDialog,
-};
+export { deleteUsersWithUpdate, blockUsers, unblockUsers, createUser, updateUser, loadGroups };
 export default usersActionsSlice.reducer;

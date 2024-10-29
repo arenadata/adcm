@@ -31,8 +31,6 @@ from cm.services.job.inventory import get_cluster_vars
 from cm.services.job.jinja_scripts import get_action_info
 from cm.services.template import TemplateBuilder
 
-_TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
-
 
 def get_jinja_config(
     action: Action, cluster_relative_object: Cluster | Service | Component | Host
@@ -52,126 +50,136 @@ def get_jinja_config(
 
     configs = []
     attr = {}
-    for config in template_builder.data:
-        for normalized_config in _normalize_config(
-            config=config, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
+    for field in template_builder.data:
+        for normalized_field in _normalize_field(
+            field=field, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
         ):
-            configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
+            configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_field))
 
             if (
-                normalized_config["type"] == "group"
-                and "activatable" in normalized_config["limits"]
-                and "active" in normalized_config["limits"]
-                and normalized_config.get("name")
+                normalized_field["type"] == "group"
+                and "activatable" in normalized_field["limits"]
+                and "active" in normalized_field["limits"]
+                and normalized_field.get("name")
             ):
-                attr[normalized_config["name"]] = normalized_config["limits"]
+                attr[normalized_field["name"]] = normalized_field["limits"]
 
     return configs, attr
 
 
-def _normalize_config(
-    config: dict, dir_with_config: Path, resolver: BundlePathResolver, name: str = "", subname: str = ""
+def _normalize_field(
+    field: dict, dir_with_config: Path, resolver: BundlePathResolver, name: str = "", subname: str = ""
 ) -> list[dict]:
     """`dir_with_config` should be relative to bundle root"""
-    config_list = [config]
+    normalized_field = {}
+    normalized_fields = [normalized_field]
 
-    name = name or config["name"]
-    config["name"] = name
+    name = name or field["name"]
+    normalized_field["name"] = name
+
     if subname:
-        config["subname"] = subname
+        normalized_field["subname"] = subname
+    else:
+        normalized_field["subname"] = ""
 
-    if config.get("display_name") is None:
-        config["display_name"] = subname or name
+    if field.get("display_name") is None:
+        normalized_field["display_name"] = subname or name
+    else:
+        normalized_field["display_name"] = field["display_name"]
 
-    config["limits"] = _get_limits(config=config, dir_with_config=dir_with_config, resolver=resolver)
+    normalized_field["limits"] = _get_limits(field=field, dir_with_config=dir_with_config, resolver=resolver)
 
-    if config["type"] in settings.STACK_FILE_FIELD_TYPES and config.get("default"):
-        config["default"] = detect_relative_path_to_bundle_root(
-            source_file_dir=dir_with_config, raw_path=config["default"]
+    if field["type"] in settings.STACK_FILE_FIELD_TYPES and field.get("default"):
+        normalized_field["default"] = str(
+            detect_relative_path_to_bundle_root(source_file_dir=dir_with_config, raw_path=field["default"])
         )
+    else:
+        normalized_field["default"] = field.get("default", "")
 
-    if "subs" in config:
-        for subconf in config["subs"]:
-            config_list.extend(
-                _normalize_config(
-                    config=subconf,
+    normalized_field["type"] = field["type"]
+    normalized_field["description"] = field.get("description", "")
+    normalized_field["group_customization"] = field.get("group_customization", None)
+    normalized_field["required"] = field.get("required", True)
+    normalized_field["ui_options"] = field.get("ui_options", {})
+
+    if "subs" in field:
+        for sub in field["subs"]:
+            normalized_fields.extend(
+                _normalize_field(
+                    field=sub,
                     dir_with_config=dir_with_config,
                     resolver=resolver,
                     name=name,
-                    subname=subconf["name"],
+                    subname=sub["name"],
                 ),
             )
 
-    for field in _TEMPLATE_CONFIG_DELETE_FIELDS:
-        if field in config:
-            del config[field]
-
-    return config_list
+    return normalized_fields
 
 
-def _get_limits(config: dict, dir_with_config: Path, resolver: BundlePathResolver) -> dict:
+def _get_limits(field: dict, dir_with_config: Path, resolver: BundlePathResolver) -> dict:
     limits = {}
 
-    if "pattern" in config:
-        if config["type"] not in ("string", "text", "password", "secrettext"):
-            message = f"Incorrectly rendered `config_jinja` file. `pattern` is not allowed in {config['type']}"
+    if "pattern" in field:
+        if field["type"] not in ("string", "text", "password", "secrettext"):
+            message = f"Incorrectly rendered `config_jinja` file. `pattern` is not allowed in {field['type']}"
             raise RuntimeError(message)
 
-        pattern = Pattern(regex_pattern=config.pop("pattern"))
+        pattern = Pattern(regex_pattern=field.pop("pattern"))
         if not pattern.is_valid:
-            display_name = config.get("display_name", config["name"])
+            display_name = field.get("display_name", field["name"])
             message = f"The pattern attribute value of {display_name} config parameter is not valid regular expression"
             raise RuntimeError(message)
 
-        default = config.get("default")
+        default = field.get("default")
         if default is not None and not pattern.matches(str(default)):
-            display_name = config.get("display_name", config["name"])
+            display_name = field.get("display_name", field["name"])
             message = f"Default attribute value of {display_name} config parameter does not match pattern"
             raise RuntimeError(message)
 
         limits["pattern"] = pattern.raw
 
-    if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        spec_path = detect_relative_path_to_bundle_root(source_file_dir=dir_with_config, raw_path=config["yspec"])
+    if "yspec" in field and field["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
+        spec_path = detect_relative_path_to_bundle_root(source_file_dir=dir_with_config, raw_path=field["yspec"])
         limits["yspec"] = safe_load(stream=resolver.resolve(spec_path).read_text(encoding="utf-8"))
 
-    if "option" in config and config["type"] == "option":
-        limits["option"] = config["option"]
+    if "option" in field and field["type"] == "option":
+        limits["option"] = field["option"]
 
-    if "source" in config and config["type"] == "variant":
-        variant_type = config["source"]["type"]
+    if "source" in field and field["type"] == "variant":
+        variant_type = field["source"]["type"]
         source = {"type": variant_type, "args": None}
 
-        source["strict"] = config["source"].get("strict", True)
+        source["strict"] = field["source"].get("strict", True)
 
         if variant_type == "inline":
-            source["value"] = config["source"]["value"]
+            source["value"] = field["source"]["value"]
         elif variant_type in ("config", "builtin"):
-            source["name"] = config["source"]["name"]
+            source["name"] = field["source"]["name"]
 
-        if variant_type == "builtin" and "args" in config["source"]:
-            source["args"] = config["source"]["args"]
+        if variant_type == "builtin" and "args" in field["source"]:
+            source["args"] = field["source"]["args"]
 
         limits["source"] = source
 
-    if "activatable" in config and config["type"] == "group":
+    if "activatable" in field and field["type"] == "group":
         limits.update(
-            activatable=config["activatable"],
+            activatable=field["activatable"],
             active=False,
         )
 
-        if "active" in config:
-            limits.update(active=config["active"])
+        if "active" in field:
+            limits.update(active=field["active"])
 
-    if config["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
-        if "min" in config:
-            limits["min"] = config["min"]
+    if field["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
+        if "min" in field:
+            limits["min"] = field["min"]
 
-        if "max" in config:
-            limits["max"] = config["max"]
+        if "max" in field:
+            limits["max"] = field["max"]
 
     for label in ("read_only", "writable"):
-        if label in config:
-            limits[label] = config[label]
+        if label in field:
+            limits[label] = field[label]
 
     return limits

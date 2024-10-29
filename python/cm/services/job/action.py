@@ -15,15 +15,17 @@ from typing import Iterable, TypeAlias
 
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import ClusterTopology, HostComponentEntry
-from core.job.dto import TaskPayloadDTO
-from core.types import ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
+from core.job.dto import LogCreateDTO, TaskPayloadDTO
+from core.job.errors import TaskCreateError
+from core.job.types import Task
+from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.checks import check_attr
-from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
+from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -47,8 +49,9 @@ from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
-from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.jinja_scripts import get_job_specs_from_template
 from cm.services.job.run import run_task
+from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.services.job.types import ActionHCRule, TaskMappingDelta
 from cm.services.mapping import change_host_component_mapping, check_no_host_in_mm, check_nothing
 from cm.status_api import send_task_status_update_event
@@ -58,7 +61,7 @@ ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | 
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
-@dataclass
+@dataclass(slots=True)
 class ActionRunPayload:
     conf: dict = field(default_factory=dict)
     attr: dict = field(default_factory=dict)
@@ -89,10 +92,6 @@ def run_action(
     _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
     _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
-    spec, flat_spec = _process_run_config(
-        action=action, owner=action_objects.owner, conf=payload.conf, attr=payload.attr
-    )
-
     delta = TaskMappingDelta()
     if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
         topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
@@ -113,11 +112,12 @@ def run_action(
             }
 
     with atomic():
-        owner = CoreObjectDescriptor(id=action_objects.owner.id, type=orm_object_to_core_type(action_objects.owner))
         target = ActionTargetDescriptor(
             id=action_objects.target.id, type=orm_object_to_action_target_type(action_objects.target)
         )
-        task = prepare_task_for_action(target=target, owner=owner, action=action.id, payload=task_payload, delta=delta)
+        task = prepare_task_for_action(
+            target=target, orm_owner=action_objects.owner, action=action.id, payload=task_payload, delta=delta
+        )
 
         orm_task = TaskLog.objects.get(id=task.id)
 
@@ -131,17 +131,6 @@ def run_action(
                 checks_func=check_nothing,
             )
 
-        if payload.conf:
-            new_conf = update_configuration_for_inventory_inplace(
-                configuration=payload.conf,
-                attributes=payload.attr,
-                specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
-                config_owner=owner,
-            )
-            process_file_type(obj=orm_task, spec=spec, conf=payload.conf)
-            orm_task.config = new_conf
-            orm_task.save(update_fields=["config"])
-
         re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
     run_task(orm_task)
@@ -149,6 +138,95 @@ def run_action(
     send_task_status_update_event(task_id=task.id, status=JobStatus.CREATED.value)
 
     return orm_task
+
+
+def prepare_task_for_action(
+    target: ActionTargetDescriptor,
+    orm_owner: ObjectWithAction,
+    action: ActionID,
+    payload: TaskPayloadDTO,
+    delta: TaskMappingDelta | None = None,
+) -> Task:
+    """
+    Prepare task based on action, target object and task payload.
+
+    Target object is an object on which action is going to be launched, not the on it's described on.
+
+    `Task` is launched action, "task for ADCM to perform action" in other words.
+    `Job` is an actual piece of work required by task to be performed.
+
+    ! WARNING !
+    Currently, stdout/stderr logs are created alongside the jobs
+    for policies to be re-applied correctly after this method is called.
+
+    It may be changed if favor of creating logs when job is actually prepared/started.
+
+    ! ADCM-6012 !
+    Code moved from `core.job.task` here, because it's unclear for now
+    how required level of unity can be implemented with enough isolation and readability.
+    """
+    job_repo = JobRepoImpl
+    action_repo = ActionRepoImpl
+    owner = CoreObjectDescriptor(id=orm_owner.id, type=orm_object_to_core_type(orm_owner))
+    orm_action = Action.objects.select_related("prototype").get(id=action)
+
+    spec, flat_spec, _, _ = get_prototype_config(prototype=orm_action.prototype, action=orm_action, obj=orm_owner)
+
+    if not spec:
+        if payload.conf:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
+
+    elif not payload.conf:
+        raise AdcmEx("TASK_ERROR", "action config is required")
+
+    action_info = action_repo.get_action(id=action)
+    task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
+
+    if payload.conf:
+        orm_task = TaskLog.objects.get(id=task.id)
+
+        _process_run_config(
+            action=orm_action,
+            owner=orm_owner,
+            task=orm_task,
+            conf=payload.conf,
+            attr=payload.attr,
+            spec=spec,
+            flat_spec=flat_spec,
+        )
+
+        orm_task.config = update_configuration_for_inventory_inplace(
+            configuration=payload.conf,
+            attributes=payload.attr,
+            specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
+            config_owner=GeneralEntityDescriptor(id=task.id, type="task"),
+        )
+
+        orm_task.save(update_fields=["config"])
+        # reread to update config
+        # ! this should be reworked when "layering" will be performed
+        task = job_repo.get_task(id=task.id)
+
+    if action_info.scripts_jinja:
+        job_specifications = tuple(get_job_specs_from_template(task_id=task.id, delta=delta))
+    else:
+        job_specifications = tuple(action_repo.get_job_specs(id=action))
+
+    if not job_specifications:
+        message = f"Can't compose task for action #{action}, because no associated jobs found"
+        raise TaskCreateError(message)
+
+    job_repo.create_jobs(task_id=task.id, jobs=job_specifications)
+
+    logs = []
+    for job in job_repo.get_task_jobs(task_id=task.id):
+        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
+        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
+
+    if logs:
+        job_repo.create_logs(logs)
+
+    return task
 
 
 class _ActionLaunchObjects:
@@ -231,30 +309,20 @@ def _check_action_is_available_for_object(owner: ObjectWithAction, action: Actio
         raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
 
 
-def _process_run_config(action: Action, owner: ObjectWithAction, conf: dict, attr: dict) -> tuple[dict, dict]:
-    proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=owner)
-    if not spec:
-        if conf:
-            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
-
-        return {}, {}
-
-    if not conf:
-        raise AdcmEx("TASK_ERROR", "action config is required")
-
-    check_attr(proto, action, attr, flat_spec)
+def _process_run_config(
+    action: Action, owner: ObjectWithAction, task: TaskLog, conf: dict, attr: dict, spec: dict, flat_spec: dict
+) -> None:
+    check_attr(action.prototype, action, attr, flat_spec)
 
     object_config = {}
+
     if owner.config is not None:
         object_config = ConfigLog.objects.get(id=owner.config.current).config
 
     process_variant(obj=owner, spec=spec, conf=object_config)
-    check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
+    check_config_spec(proto=action.prototype, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    process_config_spec(obj=owner, spec=spec, new_config=conf)
-
-    return spec, flat_spec
+    process_config_spec(obj=task, spec=spec, new_config=conf)
 
 
 def _check_hostcomponent_and_get_delta(

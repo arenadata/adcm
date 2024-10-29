@@ -20,12 +20,12 @@ from django.conf import settings
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
 from cm.models import Action, Component
-from cm.services.job.action import ActionRunPayload, run_action
+from cm.services.job.action import ActionRunPayload, prepare_task_for_action, run_action
 from cm.services.job.prepare import prepare_task_for_action
 from cm.services.job.run._target_factories import prepare_ansible_job_config
 from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -45,7 +45,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         "file": None,
         "secretfile": None,
         "variant_builtin": None,
-        "activatable_group": None,
+        "activatable_group": {"simple": "inactive", "list": ["one", "two"]},
+        "source_list": ["ok", "fail"],
     }
 
     FULL_CONFIG = {
@@ -61,7 +62,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         "secretfile": "somesecrethere",
         "variant_builtin": "host-1",
         "plain_group": {**CONFIG_WITH_NONES["plain_group"], "simple": "ingroup"},
-        "activatable_group": {"simple": "inactive", "list": ["one", "two"]},
     }
 
     def setUp(self) -> None:
@@ -70,8 +70,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(
+            bundle=self.provider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
+        )
+        self.host_2 = self.add_host(
+            bundle=self.provider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
+        )
+        self.host_3 = self.add_host(provider=self.hostprovider, fqdn="host-3")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
@@ -90,6 +95,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "cluster_bundle": self.cluster.prototype.bundle,
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],
+            "filedir": self.directories["FILE_DIR"],
             "token": settings.STATUS_SECRET_KEY,
             "component_type_id": self.component.prototype_id,
         }
@@ -101,10 +107,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     def test_action_config(self) -> None:
-        # Thou action has a defined config
-        # `prepare_job_config` itself doesn't check input config sanity,
-        # but `None` is a valid config,
-        # so I find it easier to check it in pairs here rather than use a separate action
         for object_, config, type_name in (
             (self.cluster, None, "cluster"),
             (self.service, self.FULL_CONFIG, "service"),
@@ -112,53 +114,64 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.provider, self.FULL_CONFIG, "provider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
-            action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()
+            # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
+            action_name = "with_config" if type_name != "cluster" else "dummy"
+            active = type_name in ("service", "hostprovider")
+            config_diff = {} if type_name != "hostprovider" else {"variant_builtin": "host-3"}
+
+            action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
             obj_ = CoreObjectDescriptor(
                 id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
             )
             task = prepare_task_for_action(
                 target=obj_,
-                owner=obj_,
+                orm_owner=object_,
                 action=action.pk,
-                payload=TaskPayloadDTO(conf=config),
+                payload=TaskPayloadDTO(
+                    conf=(deepcopy(config) or {}) | config_diff, attr={"activatable_group": {"active": active}}
+                ),
             )
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
                     file=self.templates_dir / "action_configs" / f"{type_name}.json.j2",
-                    context={**self.context, "job_id": job.id},
+                    context={**self.context, "job_id": job.id, "task_id": task.id},
                 )
                 job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
 
-                self.assertDictEqual(job_config, expected_data)
+                self.assertDictEqual(decrypt_secrets(job_config), expected_data)
 
         for object_, config, type_name in (
             (self.cluster, self.FULL_CONFIG, "cluster"),
             (self.service, self.CONFIG_WITH_NONES, "service"),
             (self.component, None, "component"),
         ):
-            action = Action.objects.filter(prototype=object_.prototype, name="with_config_on_host").first()
+            # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
+            action_name = "with_config_on_host" if type_name != "component" else "without_config_on_host"
+            active = type_name == "cluster"
+
+            action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
             target = CoreObjectDescriptor(id=self.host_1.pk, type=ADCMCoreType.HOST)
 
             task = prepare_task_for_action(
                 target=target,
-                owner=CoreObjectDescriptor(
-                    id=object_.pk, type=model_name_to_core_type(object_.__class__.__name__.lower())
-                ),
+                orm_owner=object_,
                 action=action.pk,
-                payload=TaskPayloadDTO(verbose=True, conf=config),
+                payload=TaskPayloadDTO(
+                    verbose=True, conf=deepcopy(config), attr={"activatable_group": {"active": active}}
+                ),
             )
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
                     file=self.templates_dir / "action_configs" / f"{type_name}_on_host.json.j2",
-                    context={**self.context, "job_id": job.id},
+                    context={**self.context, "job_id": job.id, "task_id": task.id},
                 )
                 job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
 
-                self.assertDictEqual(job_config, expected_data)
+                self.assertDictEqual(decrypt_secrets(job_config), expected_data)
 
     def test_adcm_5305_action_config_with_secrets_bug(self):
         """
@@ -275,7 +288,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                 )
                 task = prepare_task_for_action(
                     target=target,
-                    owner=target,
+                    orm_owner=object_,
                     action=action.pk,
                     payload=TaskPayloadDTO(),
                 )

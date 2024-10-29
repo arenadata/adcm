@@ -484,6 +484,35 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
+    def test_adcm_6013_jinja_config_with_min_max(self):
+        action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
+
+        response = self.client.v2[self.cluster, "actions", action].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        expected_response = json.loads(
+            (
+                self.test_files_dir / "responses" / "config_schemas" / "for_action_with_numeric_min_max_param.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_response["id"] = action.id
+        self.assertDictEqual(response.json(), expected_response)
+
+        self.cluster.set_state(state="ready_for_numeric_min_max")
+        response = self.client.v2[self.cluster, "actions", action].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        expected_response = json.loads(
+            (
+                self.test_files_dir
+                / "responses"
+                / "config_schemas"
+                / "for_action_with_numeric_min_max_param_target_state.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_response["id"] = action.id
+        self.assertDictEqual(response.json(), expected_response)
+
     def test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):

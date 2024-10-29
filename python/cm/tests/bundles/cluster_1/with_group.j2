@@ -1,0 +1,12 @@
+- name: default
+  script_type: ansible
+  script: nono.yaml
+{% if not task.config.group %}
+- name: inactive
+  script_type: ansible
+  script: haha.yaml
+{% else %}
+- name: active
+  script_type: ansible
+  script: haha.yaml
+{% endif %}

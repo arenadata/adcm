@@ -31,7 +31,7 @@ from cm.models import (
     SubAction,
     TaskLog,
 )
-from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.action import prepare_task_for_action
 from cm.tests.utils import (
     gen_adcm,
     gen_cluster,
@@ -108,7 +108,7 @@ class TaskLogLockTest(BaseTestCase):
         task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=object_,
-                owner=object_,
+                orm_owner=cluster,
                 action=action.pk,
                 payload=TaskPayloadDTO(),
             ).id

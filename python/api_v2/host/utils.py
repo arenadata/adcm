@@ -19,12 +19,12 @@ from cm.issue import (
     recheck_issues,
 )
 from cm.logger import logger
-from cm.models import Cluster, Host, ObjectType, Prototype, Provider
+from cm.models import Cluster, Host, ObjectType, Prototype
 from cm.services.concern import retrieve_issue
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor, HostProviderID
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -33,11 +33,15 @@ from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
-def create_host(provider: Provider, fqdn: str, cluster: Cluster | None) -> Host:
-    host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle=provider.prototype.bundle)
+def create_host(bundle_id: BundleID, provider_id: HostProviderID, fqdn: str, cluster: Cluster | None) -> Host:
+    host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle_id=bundle_id)
     check_license(prototype=host_prototype)
 
-    return Host.objects.create(prototype=host_prototype, provider=provider, fqdn=fqdn, cluster=cluster)
+    host = Host.objects.create(prototype=host_prototype, provider_id=provider_id, fqdn=fqdn, cluster=cluster)
+
+    process_config_issues_policies_hc(host)
+
+    return host
 
 
 def _recheck_new_host_issues(host: Host):

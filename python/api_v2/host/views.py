@@ -23,7 +23,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, Provider
+from cm.models import Cluster, ConcernType, Host, Provider, Prototype
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -60,7 +60,7 @@ from api_v2.host.serializers import (
     HostSerializer,
     HostUpdateSerializer,
 )
-from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
+from api_v2.host.utils import create_host, maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
@@ -217,10 +217,13 @@ class HostViewSet(
             )
 
         with atomic():
+            bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_provider.prototype_id)
             host = create_host(
-                provider=request_provider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
+                bundle_id=bundle_id,
+                provider_id=request_provider.id,
+                fqdn=serializer.validated_data["fqdn"],
+                cluster=request_cluster,
             )
-            process_config_issues_policies_hc(host=host)
 
         return Response(
             data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
