@@ -5,7 +5,7 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
-import { openClusterDeleteDialog, openClusterRenameDialog } from '@store/adcm/clusters/clustersActionsSlice';
+import { openDeleteDialog, openClusterRenameDialog } from '@store/adcm/clusters/clustersActionsSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
@@ -24,8 +24,8 @@ const ClustersTable = () => {
     dispatch(openClusterUpgradeDialog(cluster));
   };
 
-  const getHandleDeleteClick = (clusterId: number) => () => {
-    dispatch(openClusterDeleteDialog(clusterId));
+  const getHandleDeleteClick = (cluster: AdcmCluster) => () => {
+    dispatch(openDeleteDialog(cluster));
   };
 
   const handleRenameClick = (cluster: AdcmCluster) => {
@@ -81,7 +81,7 @@ const ClustersTable = () => {
                 onClick={() => handleUpgradeClick(cluster)}
                 title={cluster.isUpgradable ? 'Upgrade' : 'No upgrades'}
               />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(cluster.id)} title="Delete" />
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(cluster)} title="Delete" />
             </TableCell>
           </TableRow>
         );
