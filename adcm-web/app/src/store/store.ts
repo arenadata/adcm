@@ -29,7 +29,6 @@ import clusterMappingSlice from '@store/adcm/cluster/mapping/mappingSlice';
 import breadcrumbsSlice from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
-import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
 import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice';
 import hostsSlice from '@store/adcm/hosts/hostsSlice';
 import hostsActionsSlice from '@store/adcm/hosts/hostsActionsSlice';
@@ -147,7 +146,6 @@ const rootReducer = combineReducers({
     hostProvidersDynamicActions: hostProvidersDynamicActionsSlice,
     hostProviderUpgrades: hostProviderUpgradesSlice,
     hostsDynamicActions: hostsDynamicActionsSlice,
-    createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     host: hostSlice,
     hostsTable: hostsTableSlice,
