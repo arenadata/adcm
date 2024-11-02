@@ -114,17 +114,18 @@ class TestAuthorizationAudit(BaseAPITestCase):
                     self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_ordering_success(self):
-        ordering_fields = {
-            "id": "id",
-            "user__username": "login",
-            "login_result": "loginResult",
-            "login_time": "loginTime",
-        }
+        ordering_fields = (
+            ("id", "id"),
+            ("user__username", "login"),
+            ("login_result", "loginResult"),
+            ("login_time", "loginTime"),
+            ("login_time", "time"),
+        )
 
         def get_response_results(response, ordering_field):
             if ordering_field == "login":
                 return [item["user"]["name"] for item in response.json()["results"]]
-            elif ordering_field == "loginTime":
+            elif ordering_field in ("time", "loginTime"):
                 return [
                     datetime.fromisoformat(item["time"][:-1]).replace(tzinfo=pytz.UTC)
                     for item in response.json()["results"]
@@ -133,7 +134,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
                 return [item["result"] for item in response.json()["results"]]
             return [item[ordering_field] for item in response.json()["results"]]
 
-        for model_field, ordering_field in ordering_fields.items():
+        for model_field, ordering_field in ordering_fields:
             with self.subTest(ordering_field=ordering_field):
                 response = self.client.v2["audit-login"].get(query={"ordering": ordering_field})
                 ordered_result = get_response_results(response, ordering_field)
