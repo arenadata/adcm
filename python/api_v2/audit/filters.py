@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -19,6 +18,7 @@ from audit.models import (
     AuditSession,
     AuditSessionLoginResult,
 )
+from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
@@ -85,6 +85,27 @@ class AuditLogFilter(FilterSet):
         ]
 
 
+class AuditSessionOrderingFilter(OrderingFilter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.extra["choices"] += [
+            ("time", "Login time"),
+            ("-time", "Login time (descending)"),
+        ]
+
+    def filter(self, qs, value):
+        if value in EMPTY_VALUES:
+            return qs
+
+        for i in range(len(value)):
+            if value[i] == "time":
+                value[i] = "loginTime"
+            if value[i] == "-time":
+                value[i] = "-loginTime"
+
+        return super().filter(qs, value)
+
+
 class AuditSessionFilter(FilterSet):
     login = CharFilter(field_name="user__username", label="Login", lookup_expr="icontains")
     login_result = ChoiceFilter(
@@ -92,7 +113,7 @@ class AuditSessionFilter(FilterSet):
     )
     time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
     time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
-    ordering = OrderingFilter(
+    ordering = AuditSessionOrderingFilter(
         fields={"login_time": "loginTime", "user__username": "login", "login_result": "loginResult", "id": "id"},
         field_labels={
             "login_time": "Login time",
