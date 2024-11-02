@@ -1,15 +1,10 @@
 import React, { useMemo } from 'react';
 import { FormField, FormFieldsContainer, Select } from '@uikit';
-import { useAccessManagerPolicyAddDialogStepTwo } from './useAccessManagerPolicyAddDialogStepTwo';
+import { useAccessManagerPolicyFormDialogWizardStepTwo } from './useAccessManagerPolicyFormDialogWizardStepTwo';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
-import { AccessManagerPolicyAddDialogFormData, ChangeFormDataPayload } from '../AccessManagerPolicyAddDialog.types';
+import { AccessManagerPolicyDialogsStepsProps } from '../../../AccessManagerPolicyFormDialog.types';
 
-interface AccessManagerPolicyAddDialogStepTwoProps {
-  formData: AccessManagerPolicyAddDialogFormData;
-  changeFormData: (value: ChangeFormDataPayload) => void;
-}
-
-const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialogStepTwoProps> = ({
+const AccessManagerPolicyFormDialogWizardStepTwo: React.FC<AccessManagerPolicyDialogsStepsProps> = ({
   formData,
   changeFormData,
 }) => {
@@ -23,7 +18,7 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
       hostOptions,
       serviceClusters,
     },
-  } = useAccessManagerPolicyAddDialogStepTwo();
+  } = useAccessManagerPolicyFormDialogWizardStepTwo();
 
   const serviceClustersOptions = useMemo(() => {
     const clusters = serviceClusters
@@ -37,7 +32,7 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
   }, [formData.serviceName, serviceClusters]);
 
   const handleServiceChange = (value: string | null) => {
-    changeFormData({ serviceName: value, serviceClusterIds: [] });
+    changeFormData({ serviceName: value ?? undefined, serviceClusterIds: [] });
   };
 
   const handleServiceClusterChange = (value: number[]) => {
@@ -77,7 +72,7 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                 <FormField label="Service">
                   <Select
                     placeholder="Select service"
-                    value={formData.serviceName}
+                    value={formData.serviceName ?? null}
                     onChange={handleServiceChange}
                     options={serviceOptions}
                     maxHeight={200}
@@ -126,4 +121,4 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
     </>
   );
 };
-export default AccessManagerPolicyAddDialogStepTwo;
+export default AccessManagerPolicyFormDialogWizardStepTwo;

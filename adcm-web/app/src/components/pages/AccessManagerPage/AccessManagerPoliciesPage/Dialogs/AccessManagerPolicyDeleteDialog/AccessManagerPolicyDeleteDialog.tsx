@@ -6,35 +6,31 @@ import React from 'react';
 const AccessManagerPolicyDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableId = useStore(({ adcm }) => adcm.policiesActions.deleteDialog.id);
-  const policies = useStore(({ adcm }) => adcm.policies.policies);
+  const policy = useStore(({ adcm }) => adcm.policiesActions.deleteDialog?.policy);
 
-  const isOpen = deletableId !== null;
-  const policyName = policies.find(({ id }) => id === deletableId)?.name;
+  const isOpen = policy !== null;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (deletableId === null) return;
+    if (policy === null) return;
 
-    dispatch(deletePolicyWithUpdate(deletableId));
+    dispatch(deletePolicyWithUpdate(policy.id));
   };
 
   return (
-    <>
-      <Dialog
-        //
-        isOpen={isOpen}
-        onOpenChange={handleCloseConfirm}
-        title={`Delete "${policyName}" policy`}
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        The policy will be deleted.
-      </Dialog>
-    </>
+    <Dialog
+      //
+      isOpen={isOpen}
+      onOpenChange={handleCloseConfirm}
+      title={`Delete "${policy?.name}" policy`}
+      onAction={handleConfirmDialog}
+      actionButtonLabel="Delete"
+    >
+      The policy will be deleted.
+    </Dialog>
   );
 };
 

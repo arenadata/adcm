@@ -1,7 +1,7 @@
-import { AccessManagerPolicyAddDialogFormData } from '@pages/AccessManagerPage/AccessManagerPoliciesPage/Dialogs/AccessManagerPolicyAddDialog/AccessManagerPolicyAddDialog.types';
 import { AdcmPolicy } from '@models/adcm';
+import { AccessManagerPolicyDialogsFormData } from './AccessManagerPolicyFormDialog.types';
 
-export const isValidStepItem = (step: string, formData: AccessManagerPolicyAddDialogFormData) => {
+export const isValidStepItem = (step: string, formData: AccessManagerPolicyDialogsFormData) => {
   switch (step) {
     case 'cluster':
       return formData.clusterIds.length > 0;
@@ -22,7 +22,7 @@ const getPreparedObjectsArray = (entityIds: number[], type: string) => {
   return entityIds.map((id) => ({ id, type }));
 };
 
-export const getObjectsForSubmit = (formData: AccessManagerPolicyAddDialogFormData) => {
+export const getObjectsForSubmit = (formData: AccessManagerPolicyDialogsFormData) => {
   const objectsForSubmit = [];
 
   if (formData.clusterIds.length > 0) {
@@ -43,7 +43,7 @@ export const getObjectsForSubmit = (formData: AccessManagerPolicyAddDialogFormDa
 
 export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) => {
   const objectTypesForUpdateAction = new Set(objectTypes);
-  const dialogData: AccessManagerPolicyAddDialogFormData = {
+  const dialogData: AccessManagerPolicyDialogsFormData = {
     policyName: policy.name,
     description: policy.description,
     roleId: policy.role.id,
@@ -86,7 +86,7 @@ export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) =>
   return dialogData;
 };
 
-export const isValidSecondStep = (formData: AccessManagerPolicyAddDialogFormData) => {
+export const isValidSecondStep = (formData: AccessManagerPolicyDialogsFormData) => {
   if (formData.objectTypes.length > 0) {
     return formData.objectTypes.some((object) => isValidStepItem(object, formData));
   }
