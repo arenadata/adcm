@@ -14,34 +14,28 @@
   }
 }
 
-.policyAddDialog {
-
-  &__stepsPanel {
+.policyFormDialogWizard {
+  .stepsPanel {
     padding: 12px;
     border-radius: 12px;
     background: var(--steps-panel-background);
     margin-bottom: 16px;
 
     &__stepButton {
-
       &_valid {
         color: var(--step-text-valid) !important;
       }
-    }
-  }
-
-  &__stepNumber {
-    display: inline-flex;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--step-number-background);
-    margin-right: 6px;
-    line-height: 20px;
-
-    &_valid {
-      color: var(--step-text-valid);
+  
+      span {
+        display: inline-flex;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--step-number-background);
+        margin-right: 6px;
+        line-height: 20px;
+      }
     }
   }
 }

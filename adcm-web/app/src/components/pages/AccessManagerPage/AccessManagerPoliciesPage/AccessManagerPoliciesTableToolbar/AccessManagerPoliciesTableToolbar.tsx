@@ -3,14 +3,14 @@ import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import { Button } from '@uikit';
 import AccessManagerPoliciesTableFilters from './AccessManagerPoliciesTableFilters';
 import { useDispatch, useStore } from '@hooks';
-import { openPoliciesAddDialog } from '@store/adcm/policies/policiesActionsSlice';
+import { openCreateDialog } from '@store/adcm/policies/policiesActionsSlice';
 
 const AccessManagerPoliciesTableToolbar: React.FC = () => {
   const dispatch = useDispatch();
-  const isCreating = useStore(({ adcm }) => adcm.policiesActions.isCreating);
+  const isCreating = useStore(({ adcm }) => adcm.policiesActions.isActionInProgress);
 
   const handleAddPolicyClick = () => {
-    dispatch(openPoliciesAddDialog());
+    dispatch(openCreateDialog());
   };
 
   return (

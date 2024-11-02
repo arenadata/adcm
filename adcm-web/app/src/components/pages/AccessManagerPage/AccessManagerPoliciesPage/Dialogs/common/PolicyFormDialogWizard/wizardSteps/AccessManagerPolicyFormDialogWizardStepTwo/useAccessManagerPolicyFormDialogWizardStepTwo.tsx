@@ -2,7 +2,7 @@ import { useStore } from '@hooks';
 import { useMemo } from 'react';
 import { getStatusLabel } from '@utils/humanizationUtils';
 
-export const useAccessManagerPolicyAddDialogStepTwo = () => {
+export const useAccessManagerPolicyFormDialogWizardStepTwo = () => {
   const objectCandidates = useStore(({ adcm }) => adcm.policies.relatedData.objectCandidates);
   const services = objectCandidates.service;
   const serviceClusters = services;
