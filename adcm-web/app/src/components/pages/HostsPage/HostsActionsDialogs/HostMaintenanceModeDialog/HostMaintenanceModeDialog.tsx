@@ -7,9 +7,7 @@ import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceM
 const HostsMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const host = useStore(({ adcm }) => {
-    return adcm.hosts.hosts.find(({ id }) => id === adcm.hostsActions.maintenanceModeDialog.id) ?? null;
-  });
+  const host = useStore(({ adcm }) => adcm.hostsActions.maintenanceModeDialog.host);
 
   const hostId = host?.id;
 
