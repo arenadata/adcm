@@ -67,7 +67,9 @@ const ConfigurationEditor = ({
   const handleValueChange = useCallback(
     (node: ConfigurationNodeView, value: JSONPrimitive) => {
       const newConfiguration = editField(configuration, node.data.path, value);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
@@ -75,7 +77,9 @@ const ConfigurationEditor = ({
   const handleAddEmptyObject = useCallback(
     (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, node.data.fieldSchema.default as JSONValue);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
@@ -92,7 +96,9 @@ const ConfigurationEditor = ({
   const handleClearField = useCallback(
     (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, null);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
