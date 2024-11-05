@@ -46,6 +46,7 @@ from api_v2.hostprovider.permissions import HostProviderPermissions
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
+    ProviderSchemaSerializer,
 )
 from api_v2.utils.audit import hostprovider_from_lookup, hostprovider_from_response, parent_hostprovider_from_lookup
 from api_v2.views import ADCMGenericViewSet
@@ -111,13 +112,16 @@ from api_v2.views import ADCMGenericViewSet
                 default="name",
             ),
         ],
+        responses={
+            200: ProviderSchemaSerializer(many=True),
+        },
     ),
     create=extend_schema(
         operation_id="postHostproviders",
         summary="POST hostproviders",
         description="Creation of a new ADCM hostprovider.",
         responses={
-            201: HostProviderSerializer,
+            201: ProviderSchemaSerializer,
             403: ErrorSerializer,
             409: ErrorSerializer,
         },

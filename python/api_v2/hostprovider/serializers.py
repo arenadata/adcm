@@ -57,6 +57,11 @@ class HostProviderSerializer(ModelSerializer):
         return get_main_info(obj=host_provider)
 
 
+class ProviderSchemaSerializer(HostProviderSerializer):
+    # for use in schema generation
+    pass
+
+
 class HostProviderCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
     name = CharField()
@@ -68,9 +73,3 @@ class HostProviderCreateSerializer(EmptySerializer):
             raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR", msg=f"Can't find hostprovider prototype with id `{value}`")
 
         return value
-
-
-class HostProviderSerializerForHosts(ModelSerializer):
-    class Meta:
-        model = HostProvider
-        fields = ["id", "name", "display_name"]

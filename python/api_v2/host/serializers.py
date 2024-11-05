@@ -87,7 +87,7 @@ class HostSerializer(WithStatusSerializer):
         ]
 
     @staticmethod
-    @extend_schema_field(field=HCComponentNameSerializer)
+    @extend_schema_field(field=HCComponentNameSerializer(many=True))
     def get_components(instance: Host) -> list[dict]:
         return HCComponentNameSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True

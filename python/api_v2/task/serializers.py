@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cm.models import JobLog, JobStatus, TaskLog
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -38,7 +39,7 @@ class JobListSerializer(ModelSerializer):
         )
 
     @staticmethod
-    def get_is_terminatable(obj: JobLog):
+    def get_is_terminatable(obj: JobLog) -> bool:
         return obj.allow_to_terminate
 
 
@@ -68,7 +69,7 @@ class TaskSerializer(ModelSerializer):
         )
 
     @staticmethod
-    def get_is_terminatable(obj: TaskLog):
+    def get_is_terminatable(obj: TaskLog) -> bool:
         allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
 
         if allow_to_terminate and obj.status in {JobStatus.CREATED, JobStatus.RUNNING}:
@@ -92,6 +93,7 @@ class TaskListSerializer(TaskSerializer):
         )
 
     @staticmethod
+    @extend_schema_field(field=JobListSerializer(many=True))
     def get_child_jobs(obj: TaskLog) -> list:
         return JobListSerializer(instance=obj.joblog_set.order_by("pk"), many=True, read_only=True).data
 
