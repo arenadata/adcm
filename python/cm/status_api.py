@@ -125,11 +125,17 @@ def send_config_creation_event(object_: ADCMEntity) -> None:
 
 
 def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
-    post_event(event=EventTypes.UPDATE.format(object_.type.value), object_id=object_.id, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.type.value)), object_id=object_.id, changes=changes
+    )
 
 
 def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
-    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        changes=changes,
+    )
 
 
 def send_task_status_update_event(task_id: int, status: str) -> None:
@@ -154,7 +160,11 @@ def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
         },
     }
 
-    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        changes=changes,
+    )
 
 
 def get_raw_status(url: str) -> int:
@@ -324,12 +334,18 @@ def notify_about_redistributed_concerns(
     }
 
     for core_type, object_id, concern_id in removed:
-        post_event(event=f"delete_{core_type.value}_concern", object_id=object_id, changes={"id": concern_id})
+        post_event(
+            event=f"delete_{fix_object_type(type_=core_type.value)}_concern",
+            object_id=object_id,
+            changes={"id": concern_id},
+        )
 
     for core_type, object_id, concern_id in added_concerns:
         concern = serialized_concerns.get(concern_id)
         if concern:
-            post_event(event=f"create_{core_type.value}_concern", object_id=object_id, changes=concern)
+            post_event(
+                event=f"create_{fix_object_type(type_=core_type.value)}_concern", object_id=object_id, changes=concern
+            )
 
 
 def notify_about_new_concern(concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
