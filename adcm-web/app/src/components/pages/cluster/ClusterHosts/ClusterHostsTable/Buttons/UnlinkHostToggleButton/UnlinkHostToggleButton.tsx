@@ -12,8 +12,8 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
   const dispatch = useDispatch();
 
   const handleLinkClick = () => {
-    if (host.cluster?.id) {
-      dispatch(openUnlinkDialog(host.id));
+    if (host) {
+      dispatch(openUnlinkDialog(host));
     }
   };
 

@@ -6,28 +6,16 @@ import { deleteHostWithUpdate, closeDeleteDialog } from '@store/adcm/hosts/hosts
 const HostDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableHost = useStore(
-    ({
-      adcm: {
-        hosts: { hosts },
-        hostsActions: {
-          deleteDialog: { id: deletableId },
-        },
-      },
-    }) => {
-      if (!deletableId) return null;
-      return hosts.find(({ id }) => id === deletableId) ?? null;
-    },
-  );
+  const host = useStore(({ adcm }) => adcm.hostsActions.deleteDialog.host);
 
-  const isOpenDeleteDialog = !!deletableHost;
+  const isOpenDeleteDialog = !!host;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    const { id } = deletableHost ?? {};
+    const { id } = host ?? {};
     if (id) {
       dispatch(deleteHostWithUpdate(id));
     }
@@ -37,7 +25,7 @@ const HostDeleteDialog: React.FC = () => {
     <Dialog
       isOpen={isOpenDeleteDialog}
       onOpenChange={handleCloseDialog}
-      title={`Delete "${deletableHost?.name}" host`}
+      title={`Delete "${host?.name}" host`}
       onAction={handleConfirmDialog}
       actionButtonLabel="Delete"
     >

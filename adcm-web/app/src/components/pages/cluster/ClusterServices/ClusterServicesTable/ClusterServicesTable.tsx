@@ -21,10 +21,10 @@ const ClusterServicesTable = () => {
   const isLoading = useStore((s) => isShowSpinner(s.adcm.services.loadState));
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);
+  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isActionInProgress);
 
-  const getHandleDeleteClick = (serviceId: number) => () => {
-    dispatch(openDeleteDialog(serviceId));
+  const getHandleDeleteClick = (service: AdcmService) => () => {
+    dispatch(openDeleteDialog(service));
   };
 
   const handleClickMaintenanceMode = (service: AdcmService) => () => {
@@ -65,7 +65,7 @@ const ClusterServicesTable = () => {
                 maintenanceModeStatus={service.maintenanceMode}
                 onClick={handleClickMaintenanceMode(service)}
               />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service.id)} title="Delete" />
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service)} title="Delete" />
             </TableCell>
           </TableRow>
         );

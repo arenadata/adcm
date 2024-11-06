@@ -1,25 +1,23 @@
 import { useDispatch, useStore } from '@hooks';
-import { deleteClusterWithUpdate, openClusterDeleteDialog } from '@store/adcm/clusters/clustersActionsSlice';
+import { deleteClusterWithUpdate, closeDeleteDialog } from '@store/adcm/clusters/clustersActionsSlice';
 import { Dialog } from '@uikit';
 import React from 'react';
 
 const DeleteClusterDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableId = useStore(({ adcm }) => adcm.clustersActions.deletableId.id);
-  const clusters = useStore(({ adcm }) => adcm.clusters.clusters);
+  const cluster = useStore(({ adcm }) => adcm.clustersActions.deleteDialog.cluster);
 
-  const isOpen = deletableId !== null;
-  const clusterName = clusters.find(({ id }) => id === deletableId)?.name;
+  const isOpen = cluster !== null;
 
   const handleCloseConfirm = () => {
-    dispatch(openClusterDeleteDialog(null));
+    dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (deletableId === null) return;
+    if (cluster === null) return;
 
-    dispatch(deleteClusterWithUpdate(deletableId));
+    dispatch(deleteClusterWithUpdate(cluster.id));
   };
 
   return (
@@ -28,7 +26,7 @@ const DeleteClusterDialog: React.FC = () => {
         //
         isOpen={isOpen}
         onOpenChange={handleCloseConfirm}
-        title={`Delete "${clusterName}" cluster`}
+        title={`Delete "${cluster?.name}" cluster`}
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
