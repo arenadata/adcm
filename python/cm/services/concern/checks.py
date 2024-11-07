@@ -16,7 +16,11 @@ from typing import Iterable, Literal, NamedTuple, TypeAlias
 
 from core.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.cluster.types import ClusterTopology
-from core.concern.checks import find_cluster_mapping_issues, find_unsatisfied_service_requirements
+from core.concern.checks import (
+    cluster_has_required_services_issue,
+    find_cluster_mapping_issues,
+    find_unsatisfied_service_requirements,
+)
 from core.converters import named_mapping_from_topology
 from core.types import ClusterID, ConfigID, ObjectID
 from django.db.models import Q
@@ -29,7 +33,6 @@ from cm.models import (
     Host,
     HostProvider,
     ObjectConfig,
-    Prototype,
     PrototypeImport,
     ServiceComponent,
 )
@@ -78,16 +81,15 @@ def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
     return required_import_names != set()
 
 
-def object_has_required_services_issue(cluster: Cluster) -> HasIssue:
-    bundle_id = cluster.prototype.bundle_id
+def object_has_required_services_issue_orm_version(cluster: Cluster) -> HasIssue:
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
+    existing_services = set(
+        ClusterObject.objects.filter(cluster_id=cluster.pk).values_list("prototype__name", flat=True)
+    )
 
-    required_protos = Prototype.objects.filter(bundle_id=bundle_id, type="service", required=True)
-
-    if (required_count := required_protos.count()) == 0:
-        return False
-
-    existing_required_objects = ClusterObject.objects.filter(cluster=cluster, prototype__in=required_protos)
-    return existing_required_objects.count() != required_count
+    return cluster_has_required_services_issue(
+        bundle_restrictions=bundle_restrictions, existing_services=existing_services
+    )
 
 
 def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: ObjectWithConfig) -> Iterable[ObjectID]:
