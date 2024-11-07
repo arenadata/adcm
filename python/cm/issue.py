@@ -41,7 +41,7 @@ from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.checks import (
     cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
-    object_has_required_services_issue,
+    object_has_required_services_issue_orm_version,
     object_imports_has_issue,
     service_requirements_has_issue,
 )
@@ -75,7 +75,7 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
 _issue_check_map = {
     ConcernCause.CONFIG: object_configuration_has_issue,
     ConcernCause.IMPORT: object_imports_has_issue,
-    ConcernCause.SERVICE: object_has_required_services_issue,
+    ConcernCause.SERVICE: object_has_required_services_issue_orm_version,
     ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue_orm_version,
     ConcernCause.REQUIREMENT: service_requirements_has_issue,
 }

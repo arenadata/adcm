@@ -11,14 +11,19 @@
 # limitations under the License.
 
 from collections import deque
+from typing import Iterable, TypeAlias
 
 from core.bundle.types import (
+    BundleRestrictions,
     ComponentRestrictionOwner,
     MissingServiceRequiresViolation,
     ServiceDependencies,
     ServiceRestrictionOwner,
 )
 from core.cluster.types import NamedMapping
+from core.types import ServiceName
+
+HasIssue: TypeAlias = bool
 
 
 def find_unsatisfied_service_requirements(
@@ -48,3 +53,12 @@ def find_unsatisfied_service_requirements(
             )
 
     return tuple(violations)
+
+
+def cluster_has_required_services_issue(
+    bundle_restrictions: BundleRestrictions, existing_services: Iterable[ServiceName]
+) -> HasIssue:
+    if not bundle_restrictions.required_services:
+        return False
+
+    return not bundle_restrictions.required_services.issubset(existing_services)
