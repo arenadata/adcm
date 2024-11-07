@@ -42,7 +42,6 @@ export default [
       'react-hooks': fixupPluginRules(reactHooks),
       'react-refresh': reactRefresh,
       spellcheck,
-      // plugins: { '@cspell': cspellPlugin },
       import: fixupPluginRules(_import),
     },
 
@@ -79,8 +78,8 @@ export default [
           ignoreExternal: true,
         },
       ],
-
-      'no-restricted-imports': 'off',
+      'no-restricted-imports': 'off', // delete after fixing all cycle deps and adding all alias mappings into import/resolver settings above
+      '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-restricted-imports': [
         'error',
         {
