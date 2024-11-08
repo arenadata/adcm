@@ -132,3 +132,9 @@ class ComponentNameKey(NamedTuple):
 
     def __str__(self) -> str:
         return f'component "{self.component}" of service "{self.service}"'
+
+
+class Concern(NamedTuple):
+    id: ObjectID
+    type: str
+    cause: str
