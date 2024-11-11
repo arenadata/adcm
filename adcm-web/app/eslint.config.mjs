@@ -5,12 +5,12 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import spellcheck from 'eslint-plugin-spellcheck';
-import _import from 'eslint-plugin-import';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
+import eslintPluginImportX from 'eslint-plugin-import-x';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +21,9 @@ const compat = new FlatCompat({
 });
 
 export default [
+  {
+    ignores: ['.yarn', 'dist', '.storybook', '*.js', '*.mjs', '*.cjs'],
+  },
   ...fixupConfigRules(
     compat.extends(
       'eslint:recommended',
@@ -28,9 +31,9 @@ export default [
       'plugin:react-hooks/recommended',
       'plugin:storybook/recommended',
       'plugin:prettier/recommended',
-      'plugin:import/errors',
-      'plugin:import/warnings',
-      'plugin:import/typescript',
+      'plugin:import-x/errors',
+      'plugin:import-x/warnings',
+      'plugin:import-x/typescript',
       'prettier',
     ),
   ),
@@ -41,8 +44,8 @@ export default [
       '@typescript-eslint': fixupPluginRules(typescriptEslint),
       'react-hooks': fixupPluginRules(reactHooks),
       'react-refresh': reactRefresh,
+      'import-x': fixupPluginRules(eslintPluginImportX),
       spellcheck,
-      import: fixupPluginRules(_import),
     },
 
     languageOptions: {
@@ -52,7 +55,7 @@ export default [
     },
 
     settings: {
-      'import/resolver': {
+      'import-x/resolver': {
         alias: {
           map: [
             ['@uikit', './src/components/uikit/'],
@@ -67,18 +70,18 @@ export default [
         },
       },
     },
-    files: ['**/*.ts', '**/*.tsx'],
     rules: {
-      'import/no-unresolved': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
-      'import/no-cycle': [
+      'import-x/no-rename-default': 'off',
+      'import-x/no-named-as-default-member': 'off',
+      'import-x/no-named-as-default': 'off',
+      'import-x/no-cycle': [
         'error',
         {
           maxDepth: 10,
           ignoreExternal: true,
         },
       ],
-      'no-restricted-imports': 'off', // delete after fixing all cycle deps and adding all alias mappings into import/resolver settings above
+      '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-restricted-imports': [
         'error',
