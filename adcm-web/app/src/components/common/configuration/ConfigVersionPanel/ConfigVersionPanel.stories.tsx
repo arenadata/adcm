@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import ConfigVersionPanel from '@commonComponents/configuration/ConfigVersionPanel/ConfigVersionPanel';
-import { PaginationParams } from '@models/table';
-import { ConfigVersion, SelectVersionAction } from './ConfigVersionPanel.types';
+import type { PaginationParams } from '@models/table';
+import type { ConfigVersion, SelectVersionAction } from './ConfigVersionPanel.types';
 
 type Story = StoryObj<typeof ConfigVersionPanel>;
 export default {
-  // eslint-disable-next-line spellcheck/spell-checker
   title: 'uikit/Common Components/ConfigVersionPanel',
   component: ConfigVersionPanel,
 } as Meta<typeof ConfigVersionPanel>;

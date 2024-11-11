@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmHostProvider } from '@models/adcm/hostProvider';
+import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';

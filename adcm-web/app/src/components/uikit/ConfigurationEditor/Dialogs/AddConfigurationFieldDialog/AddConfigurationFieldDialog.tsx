@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { FormField, Input } from '@uikit';
 import ConfigurationEditorDialog from '../ConfigurationEditorDialog/ConfigurationEditorDialog';
-import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
-import { JSONPrimitive } from '@models/json';
-import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import type { Node } from '@uikit/CollapseTree2/CollapseNode.types';
+import type { JSONPrimitive } from '@models/json';
+import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import StringControl from '../FieldControls/StringControls/StringControl';
 import SecretControl from '../FieldControls/StringControls/SecretControl';
 import s from './AddConfigurationFieldDialog.module.scss';
+import FormField from '@uikit/FormField/FormField';
+import Input from '@uikit/Input/Input';
 
 export interface AddConfigurationFieldDialogProps {
   node: ConfigurationNodeView;

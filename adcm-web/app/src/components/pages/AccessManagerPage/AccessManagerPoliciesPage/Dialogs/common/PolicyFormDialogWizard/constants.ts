@@ -1,4 +1,4 @@
-import { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
+import type { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
 
 export enum Steps {
   MainInfo = 'mainInfo',

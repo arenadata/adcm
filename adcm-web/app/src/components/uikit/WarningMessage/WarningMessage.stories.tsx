@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import WarningMessage from '@uikit/WarningMessage/WarningMessage';
 
 type Story = StoryObj<typeof WarningMessage>;

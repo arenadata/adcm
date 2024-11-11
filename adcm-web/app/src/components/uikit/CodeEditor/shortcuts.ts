@@ -1,5 +1,5 @@
 /* eslint-disable spellcheck/spell-checker */
-import React from 'react';
+import type React from 'react';
 import { SelectionText } from './CodeEditor.types';
 
 function stopPropagation(e: React.KeyboardEvent<HTMLTextAreaElement>) {

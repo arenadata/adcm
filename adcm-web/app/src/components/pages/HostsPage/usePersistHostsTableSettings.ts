@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
+import type { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
 import { findBy } from '@utils/arrayUtils';
 import { setFilter, setPaginationParams, setRequestFrequency, setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';

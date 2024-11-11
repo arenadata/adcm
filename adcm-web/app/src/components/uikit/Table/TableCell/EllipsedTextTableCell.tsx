@@ -1,4 +1,5 @@
-import TableCell, { TableCellProps } from '@uikit/Table/TableCell/TableCell';
+import type { TableCellProps } from '@uikit/Table/TableCell/TableCell';
+import TableCell from '@uikit/Table/TableCell/TableCell';
 import s from './TableCell.module.scss';
 import { orElseGet } from '@utils/checkUtils';
 

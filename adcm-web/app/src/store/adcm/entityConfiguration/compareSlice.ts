@@ -1,10 +1,10 @@
-import { AdcmFullConfigurationInfo } from '@models/adcm';
+import type { AdcmFullConfigurationInfo } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { createSlice } from '@reduxjs/toolkit';
-import { LoadEntityConfigurationArgs } from './entityConfiguration.types';
+import type { LoadEntityConfigurationArgs } from './entityConfiguration.types';
 import { ApiRequests } from './entityConfiguration.constants';
 
 type AdcmEntityCompareConfigurationsState = {

@@ -1,6 +1,7 @@
-import { AdcmHostProviderFilter, AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmHostProviderFilter, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeType } from '@models/adcm';
 import { createAsyncThunk, createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { AdcmPrototypesApi } from '@api';
 
 type AdcmHostProviderTableState = ListState<AdcmHostProviderFilter> & {

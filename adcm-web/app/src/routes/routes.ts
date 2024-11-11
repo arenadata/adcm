@@ -1,4 +1,4 @@
-import { RoutesConfigs } from './routes.types';
+import type { RoutesConfigs } from './routes.types';
 
 const routes: RoutesConfigs = {
   // Clusters

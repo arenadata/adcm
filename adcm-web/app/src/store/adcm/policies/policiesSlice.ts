@@ -4,10 +4,11 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmObjectCandidates, AdcmPolicy } from '@models/adcm/policy';
-import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, AdcmPoliciesApi, RequestError } from '@api';
-import { SortParams } from '@models/table';
-import { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
+import type { AdcmObjectCandidates, AdcmPolicy } from '@models/adcm/policy';
+import type { RequestError } from '@api';
+import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, AdcmPoliciesApi } from '@api';
+import type { SortParams } from '@models/table';
+import type { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
 import { LoadState } from '@models/loadState';
 
 interface AdcmPoliciesState {

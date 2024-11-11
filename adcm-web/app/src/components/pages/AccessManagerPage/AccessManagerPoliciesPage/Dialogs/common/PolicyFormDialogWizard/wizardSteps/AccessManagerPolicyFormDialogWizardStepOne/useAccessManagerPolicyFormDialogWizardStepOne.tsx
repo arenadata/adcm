@@ -1,5 +1,5 @@
 import { useStore } from '@hooks';
-import { SelectOption } from '@uikit';
+import type { SelectOption } from '@uikit';
 import { useMemo } from 'react';
 
 export const useAccessManagerPolicyFormDialogWizardStepOne = () => {

@@ -1,5 +1,5 @@
-import { SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import type { SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive } from '@models/json';
 import FormField from '@uikit/FormField/FormField';
 import Button from '@uikit/Button/Button';
 import s from './ConfigurationField.module.scss';

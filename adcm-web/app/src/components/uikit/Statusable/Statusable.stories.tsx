@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import Statusable from '@uikit/Statusable/Statusable';
 
 type Story = StoryObj<typeof Statusable>;

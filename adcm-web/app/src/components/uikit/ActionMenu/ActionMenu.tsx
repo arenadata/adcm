@@ -1,8 +1,8 @@
 import React, { cloneElement, useRef, useState } from 'react';
 import { useForwardRef } from '@hooks';
-import { SingleSelectOptions } from '@uikit/Select/Select.types';
-import { PopoverOptions } from '@uikit/Popover/Popover.types';
-import { ChildWithRef } from '@uikit/types/element.types';
+import type { SingleSelectOptions } from '@uikit/Select/Select.types';
+import type { PopoverOptions } from '@uikit/Popover/Popover.types';
+import type { ChildWithRef } from '@uikit/types/element.types';
 import Popover from '@uikit/Popover/Popover';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
 import SingleSelectPanel from '@uikit/Select/SingleSelect/SingleSelectPanel/SingleSelectPanel';

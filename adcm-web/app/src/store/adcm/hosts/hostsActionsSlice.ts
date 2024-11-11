@@ -2,17 +2,12 @@ import { createAsyncThunk } from '@store/redux';
 import { getHosts, setHostMaintenanceMode } from '@store/adcm/hosts/hostsSlice';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
-import {
-  AdcmCluster,
-  AdcmHost,
-  AdcmHostProvider,
-  AdcmMaintenanceMode,
-  AdcmRenameArgs,
-  CreateAdcmHostPayload,
-} from '@models/adcm';
-import { SortParams } from '@models/table';
-import { ModalState } from '@models/modal';
+import type { RequestError } from '@api';
+import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi } from '@api';
+import type { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmRenameArgs, CreateAdcmHostPayload } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
+import type { SortParams } from '@models/table';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (arg, thunkAPI) => {

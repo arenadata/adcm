@@ -2,12 +2,12 @@ import { Table, TableCell, IconButton, Button, ExpandableRowComponent, EllipsedT
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerRolesTable.constants';
 import { setSortParams } from '@store/adcm/roles/rolesTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog, openUpdateDialog } from '@store/adcm/roles/rolesActionsSlice';
 import { useState } from 'react';
 import AccessManagerRolesTableExpandedContent from './AccessManagerRolesTableExpandedContent/AccessManagerRolesTableExpandedContent';
 import s from './AccessManagerRolesTable.module.scss';
-import { AdcmRole } from '@models/adcm';
+import type { AdcmRole } from '@models/adcm';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { orElseGet } from '@utils/checkUtils';
 

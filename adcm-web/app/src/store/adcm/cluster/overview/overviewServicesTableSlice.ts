@@ -1,6 +1,6 @@
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { createListSlice } from '@store/redux';
-import { AdcmClusterOverviewServicesFilter } from '@models/adcm';
+import type { AdcmClusterOverviewServicesFilter } from '@models/adcm';
 
 type AdcmClusterOverviewServicesTableState = ListState<AdcmClusterOverviewServicesFilter>;
 

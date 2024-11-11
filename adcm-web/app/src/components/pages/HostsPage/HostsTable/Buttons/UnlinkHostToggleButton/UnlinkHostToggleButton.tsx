@@ -2,7 +2,7 @@ import React from 'react';
 import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
 import { firstUpperCase } from '@utils/stringUtils';
-import { AdcmHost } from '@models/adcm';
+import type { AdcmHost } from '@models/adcm';
 import { openLinkDialog, openUnlinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 enum linkIcons {

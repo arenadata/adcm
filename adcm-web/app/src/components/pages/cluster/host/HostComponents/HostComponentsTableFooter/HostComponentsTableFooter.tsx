@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const HostComponentsTableFooter: React.FC = () => {
   const dispatch = useDispatch();

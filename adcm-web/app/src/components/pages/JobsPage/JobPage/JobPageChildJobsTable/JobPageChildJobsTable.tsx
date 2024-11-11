@@ -3,7 +3,7 @@ import { Table, ExpandableRowComponent } from '@uikit';
 import { useDispatch, useExpandableTable, useStore } from '@hooks';
 import { columns } from './JobPageChildJobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import type { AdcmJob } from '@models/adcm';
 import { AdcmJobStatus } from '@models/adcm';

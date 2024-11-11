@@ -1,5 +1,5 @@
 import { useStore } from '@hooks';
-import { AdcmUpdateRolePayload } from '@models/adcm';
+import type { AdcmUpdateRolePayload } from '@models/adcm';
 
 export interface AdcmRoleFormData extends Omit<AdcmUpdateRolePayload, 'children'> {
   children: Set<number>;

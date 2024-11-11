@@ -1,5 +1,6 @@
 import React from 'react';
-import Switch, { SwitchProps } from './Switch';
+import type { SwitchProps } from './Switch';
+import Switch from './Switch';
 import s from './ExpandableSwitch.module.scss';
 
 export interface ExpandableSwitchProps extends SwitchProps {

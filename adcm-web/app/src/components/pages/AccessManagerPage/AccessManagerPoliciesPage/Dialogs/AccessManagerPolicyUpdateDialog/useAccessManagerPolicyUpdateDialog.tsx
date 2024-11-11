@@ -2,7 +2,7 @@ import { useDispatch, useForm, useStore } from '@hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Steps, steps } from '../common/PolicyFormDialogWizard/constants';
 import { closeUpdateDialog, loadRelatedData, updatePolicy } from '@store/adcm/policies/policiesActionsSlice';
-import { AccessManagerPolicyDialogsFormData } from '../common/AccessManagerPolicyFormDialog.types';
+import type { AccessManagerPolicyDialogsFormData } from '../common/AccessManagerPolicyFormDialog.types';
 import {
   generateDialogData,
   getObjectsForSubmit,

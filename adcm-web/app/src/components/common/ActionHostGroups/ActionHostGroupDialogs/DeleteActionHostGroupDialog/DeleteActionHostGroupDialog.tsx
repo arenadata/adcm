@@ -1,5 +1,5 @@
 import { Dialog } from '@uikit';
-import { AdcmActionHostGroup } from '@models/adcm';
+import type { AdcmActionHostGroup } from '@models/adcm';
 
 export interface DeleteActionHostGroupDialogProps {
   isOpen: boolean;

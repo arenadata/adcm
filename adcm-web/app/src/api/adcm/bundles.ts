@@ -1,8 +1,8 @@
 import qs from 'qs';
 import type { Batch } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
-import { AdcmBundle, AdcmBundlesFilter } from '@models/adcm/bundle';
+import type { AdcmBundle, AdcmBundlesFilter } from '@models/adcm/bundle';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmBundlesApi {

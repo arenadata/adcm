@@ -4,7 +4,7 @@ import cn from 'classnames';
 import s from './LicenseAcceptanceDialog.module.scss';
 import TabButton from '@uikit/Tabs/TabButton';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { LicenseAcceptanceDialogProps } from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptanceDialog.types';
+import type { LicenseAcceptanceDialogProps } from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptanceDialog.types';
 import LicenseAcceptPanel from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptPanel/LicenseAcceptPanel';
 
 const LicenseAcceptanceDialog: React.FC<LicenseAcceptanceDialogProps> = ({

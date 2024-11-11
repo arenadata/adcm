@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RequestError, AuthApi, AdcmProfileApi } from '@api';
+import type { RequestError } from '@api';
+import { AuthApi, AdcmProfileApi } from '@api';
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { showError } from './notificationsSlice';
-import { AdcmProfileUser } from '@models/adcm';
+import type { AdcmProfileUser } from '@models/adcm';
 
 type LoginActionPayload = {
   username: string;

@@ -1,10 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmJob } from '@models/adcm';
+import type { AdcmJob } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
-import { PaginationParams, SortParams } from '@models/table';
+import type { PaginationParams, SortParams } from '@models/table';
 
 interface AdcmBellState {
   jobs: AdcmJob[];

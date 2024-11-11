@@ -1,10 +1,20 @@
-import type { AdcmService, Batch, AdcmServicesFilter, AdcmServicePrototype } from '@models/adcm';
+import type {
+  AdcmService,
+  Batch,
+  AdcmServicesFilter,
+  AdcmServicePrototype,
+  AdcmMaintenanceMode,
+  AdcmSetMaintenanceModeResponse,
+} from '@models/adcm';
 import { httpClient } from '@api/httpClient';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
-import { PaginationParams, SortParams } from '@models/table';
-import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import { AdcmMaintenanceMode, AdcmSetMaintenanceModeResponse } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
+import type {
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm/dynamicAction';
 
 export class AdcmClusterServicesApi {
   public static async getClusterServices(

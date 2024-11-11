@@ -100,11 +100,13 @@ export default [
           ],
         },
       ],
-
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           ignoreRestSiblings: true,
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
 

@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/bundles/bundlesTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const BundlesTableFooter = () => {
   const dispatch = useDispatch();

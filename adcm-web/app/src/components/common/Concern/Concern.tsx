@@ -1,9 +1,10 @@
 import React from 'react';
 import ConcernMessages from './ConcernMessages/ConcernMessages';
 import Tooltip from '@uikit/Tooltip/Tooltip';
-import Icon, { IconProps } from '@uikit/Icon/Icon';
+import type { IconProps } from '@uikit/Icon/Icon';
+import Icon from '@uikit/Icon/Icon';
 import s from './Concern.module.scss';
-import { AdcmConcerns } from '@models/adcm';
+import type { AdcmConcerns } from '@models/adcm';
 import { getConcernLinkObjectPathsDataArray } from '@utils/concernUtils';
 import cn from 'classnames';
 

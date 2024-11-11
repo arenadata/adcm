@@ -6,7 +6,7 @@ import s from './Pagination.module.scss';
 import cn from 'classnames';
 import Select from '@uikit/Select/SingleSelect/Select/Select';
 import { usePagination } from './usePagination';
-import { PaginationDataItem, PaginationProps } from '@uikit/Pagination/Pagination.types';
+import type { PaginationDataItem, PaginationProps } from '@uikit/Pagination/Pagination.types';
 import { defaultPerPagesList } from '@constants';
 
 const MAX_VISIBLE_ITEMS = 9;

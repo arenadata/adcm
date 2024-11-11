@@ -1,4 +1,4 @@
-import {
+import type {
   ConfigurationData,
   ConfigurationSchema,
   SchemaDefinition,
@@ -9,8 +9,8 @@ import {
   FieldAttributes,
   FieldErrors,
 } from '@models/adcm';
-import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
-import {
+import type { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
+import type {
   ConfigurationObject,
   ConfigurationNode,
   ConfigurationTreeFilter,

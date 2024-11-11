@@ -1,9 +1,10 @@
 import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmClusterConfigGroupsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterConfigGroupsApi } from '@api';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
 

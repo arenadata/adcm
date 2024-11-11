@@ -1,4 +1,5 @@
-import { Dispatch, SetStateAction, useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback } from 'react';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
@@ -10,8 +11,9 @@ import {
   setSelectedUsersIds as setSelectedUsersIdsFromSlice,
 } from '@store/adcm/users/usersActionsSlice';
 import { setSortParams } from '@store/adcm/users/usersTableSlice';
-import { SortParams } from '@uikit/types/list.types';
-import { AdcmUser, AdcmUserStatus } from '@models/adcm';
+import type { SortParams } from '@uikit/types/list.types';
+import type { AdcmUser } from '@models/adcm';
+import { AdcmUserStatus } from '@models/adcm';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import UserStatusCell from '@commonComponents/Table/Cells/LabelIconCell/UserStatusCell';
 

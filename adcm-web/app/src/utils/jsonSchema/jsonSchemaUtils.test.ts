@@ -1,4 +1,4 @@
-import { Schema } from 'ajv/dist/2020';
+import type { Schema } from 'ajv/dist/2020';
 import { validate, generateFromSchema } from './jsonSchemaUtils';
 
 describe('validate', () => {

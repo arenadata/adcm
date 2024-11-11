@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmAuditLoginFilter } from '@models/adcm';
+import type { AdcmAuditLoginFilter } from '@models/adcm';
 import {
   setFilter,
   setPaginationParams,

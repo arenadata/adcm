@@ -1,6 +1,6 @@
-import { AdcmClusterStatus } from './cluster';
-import { AdcmHostStatus } from './host';
-import { AdcmServiceStatus } from './service';
+import type { AdcmClusterStatus } from './cluster';
+import type { AdcmHostStatus } from './host';
+import type { AdcmServiceStatus } from './service';
 
 export interface AdcmClusterOverviewStatusService {
   id: number;

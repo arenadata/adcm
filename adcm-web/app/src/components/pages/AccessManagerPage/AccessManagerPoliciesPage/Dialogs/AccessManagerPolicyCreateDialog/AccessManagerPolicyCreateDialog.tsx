@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog } from '@uikit';
 import { useAccessManagerPolicyCreateDialog } from './useAccessManagerPolicyCreateDialog';
-import { ChangeFormDataPayload } from '../common/AccessManagerPolicyFormDialog.types';
+import type { ChangeFormDataPayload } from '../common/AccessManagerPolicyFormDialog.types';
 import { isValidSecondStep } from '../common/AccessManagerPolicyFormDialog.utils';
 import PolicyFormDialogWizard from '../common/PolicyFormDialogWizard/PolicyFormDialogWizard/PolicyFormDialogWizard';
 import { Steps } from '../common/PolicyFormDialogWizard/constants';

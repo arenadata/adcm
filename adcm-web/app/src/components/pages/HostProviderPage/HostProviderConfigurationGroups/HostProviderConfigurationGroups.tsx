@@ -2,8 +2,8 @@ import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { useParams } from 'react-router-dom';
 import { useRequestHostProviderConfigurationGroups } from '@pages/HostProviderPage/HostProviderConfigurationGroups/useRequestHostProviderConfigurationGroups';
-import { SortParams } from '@models/table';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { SortParams } from '@models/table';
+import type { AdcmConfigGroup } from '@models/adcm';
 import ConfigGroupsHeader from '@commonComponents/configGroups/ConfigGroupsHeader/ConfigGroupsHeader';
 import ConfigGroupsTable from '@commonComponents/configGroups/ConfigGroupsTable/ConfigGroupsTable';
 import {

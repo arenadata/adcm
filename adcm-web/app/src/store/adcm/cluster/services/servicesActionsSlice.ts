@@ -2,14 +2,15 @@ import { createAsyncThunk } from '@store/redux';
 import { getServices, setServiceMaintenanceMode } from '@store/adcm/cluster/services/servicesSlice';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
-import { AdcmMaintenanceMode, AdcmService, AdcmServicePrototype } from '@models/adcm';
+import type { AdcmService, AdcmServicePrototype } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { clearSolvedDependencies } from '@utils/dependsOnUtils';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
-import { ModalState } from '@models/modal';
+import type { ModalState } from '@models/modal';
 
 interface AddClusterServicePayload {
   clusterId: number;

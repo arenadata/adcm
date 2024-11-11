@@ -3,7 +3,7 @@ import { useDispatch, useStore } from '@hooks';
 import { columns, loginsAuditInactiveResults } from './AuditLoginsTable.constants';
 import { Table, TableCell, TableRow } from '@uikit';
 import { setSortParams } from '@store/adcm/audit/auditLogins/auditLoginsTableSlice';
-import { SortParams } from '@models/table';
+import type { SortParams } from '@models/table';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { orElseGet } from '@utils/checkUtils';
 import { isShowSpinner } from '@uikit/Table/Table.utils';

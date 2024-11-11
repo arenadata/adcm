@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, NotAddedServicesDictionary } from '@models/adcm';
+import type { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, NotAddedServicesDictionary } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
   getComponentsMapping,
@@ -17,7 +17,7 @@ import type {
   HostsDictionary,
   ComponentsDictionary,
 } from './ClusterMapping.types';
-import { SortDirection } from '@models/table';
+import type { SortDirection } from '@models/table';
 
 export const useClusterMapping = (
   mapping: AdcmMapping[],

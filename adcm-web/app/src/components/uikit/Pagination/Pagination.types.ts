@@ -1,6 +1,6 @@
-import React from 'react';
-import { SelectOption } from '@uikit/Select/Select.types';
-import { PaginationParams } from '@uikit/types/list.types';
+import type React from 'react';
+import type { SelectOption } from '@uikit/Select/Select.types';
+import type { PaginationParams } from '@uikit/types/list.types';
 
 export interface PaginationData {
   pageNumber: number;

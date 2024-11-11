@@ -1,5 +1,5 @@
 import EntityHeader from './EntityHeader';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import Statusable from '@uikit/Statusable/Statusable';
 import { Button, ButtonGroup } from '@uikit';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
@@ -7,7 +7,6 @@ import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 type Story = StoryObj<typeof EntityHeader>;
 
 export default {
-  // eslint-disable-next-line spellcheck/spell-checker
   title: 'uikit/Common Components/EntityHeader',
   component: EntityHeader,
 } as Meta<typeof EntityHeader>;

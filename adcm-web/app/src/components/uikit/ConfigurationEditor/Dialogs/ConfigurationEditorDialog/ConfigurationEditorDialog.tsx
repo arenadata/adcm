@@ -1,6 +1,6 @@
 import Modal from '@uikit/Modal/Modal';
-import { Button } from '@uikit';
 import s from './ConfigurationEditorDialog.module.scss';
+import Button from '@uikit/Button/Button';
 
 export interface ConfigurationEditorDialogProps extends React.PropsWithChildren {
   triggerRef: React.RefObject<HTMLElement>;

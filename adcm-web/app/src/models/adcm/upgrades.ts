@@ -1,6 +1,6 @@
-import { AdcmPrototype } from './prototype';
-import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from './dynamicAction';
-import { AdcmLicenseStatus } from './license';
+import type { AdcmPrototype } from './prototype';
+import type { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from './dynamicAction';
+import type { AdcmLicenseStatus } from './license';
 
 export interface AdcmUpgradeShort {
   id: number;

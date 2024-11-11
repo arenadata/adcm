@@ -1,10 +1,10 @@
-import { AdcmConcerns } from './concern';
-import { AdcmCluster } from './cluster';
-import { AdcmHostProvider } from './hostProvider';
-import { AdcmHost } from './host';
-import { AdcmServiceComponent } from './clusterServiceComponent';
-import { AdcmTask } from './jobs';
-import { AdcmService } from './service';
+import type { AdcmConcerns } from './concern';
+import type { AdcmCluster } from './cluster';
+import type { AdcmHostProvider } from './hostProvider';
+import type { AdcmHost } from './host';
+import type { AdcmServiceComponent } from './clusterServiceComponent';
+import type { AdcmTask } from './jobs';
+import type { AdcmService } from './service';
 
 // Config events
 

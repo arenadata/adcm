@@ -1,5 +1,7 @@
-import React, { ChangeEvent } from 'react';
-import TableCell, { TableCellProps } from '@uikit/Table/TableCell/TableCell';
+import type { ChangeEvent } from 'react';
+import React from 'react';
+import type { TableCellProps } from '@uikit/Table/TableCell/TableCell';
+import TableCell from '@uikit/Table/TableCell/TableCell';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import s from './TableCell.module.scss';
 import Icon from '@uikit/Icon/Icon';

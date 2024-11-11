@@ -1,5 +1,5 @@
 import CalendarCell from '../CalendarCell/CalendarCell';
-import { CalendarMap, ChangeMonthHandler, ChangeDateHandler } from '@uikit/DatePicker/DatePicker.types';
+import type { CalendarMap, ChangeMonthHandler, ChangeDateHandler } from '@uikit/DatePicker/DatePicker.types';
 import s from './CalendarGrid.module.scss';
 
 interface CalendarGridProps {

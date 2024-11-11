@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { ErrorNotification } from '@models/notification';
+import type { ErrorNotification } from '@models/notification';
 import Alert from './Alert';
-import { AlertOptions } from './Alert.types';
+import type { AlertOptions } from './Alert.types';
 
 import s from './Alert.module.scss';
-import parse, { HTMLReactParserOptions, Element } from 'html-react-parser';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import parse, { Element } from 'html-react-parser';
 
 const ErrorAlert: React.FC<ErrorNotification & AlertOptions> = ({ model: { message }, onClose }) => {
   const parsedMessage = useMemo(() => {

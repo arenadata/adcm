@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { AdcmUpdateRolePayload } from '@models/adcm';
+import type { AdcmUpdateRolePayload } from '@models/adcm';
 import { updateRole, closeUpdateDialog, loadRelatedData } from '@store/adcm/roles/rolesActionsSlice';
 import { isNameUniq, required } from '@utils/validationsUtils';
 

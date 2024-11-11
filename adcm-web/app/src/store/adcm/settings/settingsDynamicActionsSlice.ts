@@ -1,8 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmSettingsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmSettingsApi } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import type {
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
 

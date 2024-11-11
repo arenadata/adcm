@@ -1,11 +1,11 @@
-import { AnyAction, Middleware } from 'redux';
+import type { AnyAction, Middleware } from 'redux';
 import { isRejectedWithValue } from '@reduxjs/toolkit';
 import { logout } from '../authSlice';
 import type { RootState } from '../store';
-import { RequestError } from '@api/httpClient';
+import type { RequestError } from '@api/httpClient';
 
 export const apiMiddleware: Middleware<
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   {},
   RootState
 > = (storeApi) => (next) => (action) => {

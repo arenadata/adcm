@@ -3,7 +3,8 @@ import { FormField, FormFieldsContainer, Input } from '@uikit';
 import s from './AccessManagerRoleDialogForm.module.scss';
 import AccessManagerRolesTableProducts from '../../AccessManagerRolesTable/AccessManagerRolesTableProducts/AccessManagerRolesTableProducts';
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
-import { AdcmRoleFormData, useAccessManagerRoleDialogForm } from './useAccessManagerRoleDialogForm';
+import type { AdcmRoleFormData } from './useAccessManagerRoleDialogForm';
+import { useAccessManagerRoleDialogForm } from './useAccessManagerRoleDialogForm';
 
 const availablePermissionsPanel = {
   title: 'All available permissions',

@@ -3,9 +3,11 @@ import cn from 'classnames';
 import s from './IconButton.module.scss';
 import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
 import { textToDataTestValue } from '@utils/dataTestUtils';
-import { IconsNames } from '@uikit/Icon/sprite';
-import Icon, { IconProps } from '@uikit/Icon/Icon';
-import Tooltip, { TooltipProps } from '@uikit/Tooltip/Tooltip';
+import type { IconsNames } from '@uikit/Icon/sprite';
+import type { IconProps } from '@uikit/Icon/Icon';
+import Icon from '@uikit/Icon/Icon';
+import type { TooltipProps } from '@uikit/Tooltip/Tooltip';
+import Tooltip from '@uikit/Tooltip/Tooltip';
 
 type IconButtonVariant = 'primary' | 'secondary';
 export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'title'> {

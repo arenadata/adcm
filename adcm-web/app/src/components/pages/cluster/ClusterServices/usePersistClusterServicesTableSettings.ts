@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmServicesFilter } from '@models/adcm';
+import type { AdcmServicesFilter } from '@models/adcm';
 import {
   setFilter,
   setPaginationParams,
