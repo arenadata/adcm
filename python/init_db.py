@@ -21,7 +21,7 @@ from django.utils import timezone
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
-from cm.issue import unlock_affected_objects, update_hierarchy_issues
+from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
     CheckLog,
@@ -34,6 +34,7 @@ from cm.models import (
     JobStatus,
     TaskLog,
 )
+from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from django.conf import settings
 from rbac.models import User
 
@@ -125,7 +126,10 @@ def abort_all():
         task.finish_date = timezone.now()
         task.save(update_fields=["status", "finish_date"])
 
-        unlock_affected_objects(task=task)
+        if task.is_blocking:
+            delete_task_lock_concern(task_id=task.pk)
+        else:
+            delete_task_flag_concern(task_id=task.pk)
 
     JobLog.objects.filter(status=JobStatus.RUNNING).update(status=JobStatus.ABORTED, finish_date=timezone.now())
 

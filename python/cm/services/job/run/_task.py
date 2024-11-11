@@ -17,9 +17,11 @@ import subprocess
 
 from django.conf import settings
 
-from cm.hierarchy import Tree
-from cm.issue import lock_affected_objects
+from cm.converters import orm_object_to_core_descriptor
 from cm.models import ActionHostGroup, TaskLog
+from cm.services.concern.distribution import distribute_concern_on_related_objects
+from cm.services.concern.locks import create_task_flag_concern, create_task_lock_concern
+from cm.status_api import notify_about_new_concern
 from cm.utils import get_env_with_venv_path
 
 logger = logging.getLogger("adcm")
@@ -37,14 +39,20 @@ def _run_task(task: TaskLog, command: Literal["start", "restart"]):
     owner = task.task_object
     if isinstance(owner, ActionHostGroup):
         owner = owner.object
-    tree = Tree(obj=owner)
-    affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    lock_affected_objects(task=task, objects=affected_objs, lock_target=owner)
+
+    create_concern = create_task_lock_concern if task.is_blocking else create_task_flag_concern
+    concern_id = create_concern(task=task)
+    objects_to_notify = distribute_concern_on_related_objects(
+        owner=orm_object_to_core_descriptor(owner), concern_id=concern_id
+    )
+    notify_about_new_concern(concern_id=concern_id, related_objects=objects_to_notify)
+
+    if task.is_blocking:
+        task.lock_id = concern_id
+        task.save(update_fields=["lock_id"])
 
     err_file = open(  # noqa: SIM115
-        Path(settings.LOG_DIR, "task_runner.err"),
-        "a+",
-        encoding=settings.ENCODING_UTF_8,
+        Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding="utf-8"
     )
 
     cmd = [

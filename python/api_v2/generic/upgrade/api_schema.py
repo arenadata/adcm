@@ -21,7 +21,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import responses
-from api_v2.generic.action.serializers import ActionRunSerializer
+from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 
 
@@ -35,7 +35,7 @@ def document_upgrade_viewset(object_type: str):
             description=f"Run {object_type}'s upgrade.",
             responses={HTTP_204_NO_CONTENT: None}
             | responses(
-                success=ActionRunSerializer,
+                success=UpgradeRunSerializer,
                 errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
             ),
         ),

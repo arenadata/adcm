@@ -21,7 +21,6 @@ from cm.hierarchy import Tree
 from cm.issue import (
     add_concern_to_object,
     add_issue_on_linked_objects,
-    create_lock,
     recheck_issues,
     remove_issue,
     update_hierarchy_issues,
@@ -32,12 +31,14 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     ConcernCause,
+    ConcernItem,
     ObjectType,
     Prototype,
     PrototypeImport,
 )
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.concern.checks import object_has_required_services_issue, object_imports_has_issue
+from cm.services.concern.locks import create_task_lock_concern
 from cm.services.status import notify
 from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
@@ -376,11 +377,12 @@ class TestConcernsRedistribution(BaseTestCase):
 
     def add_lock(self, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
         """Check out lock_affected_objects"""
+        job = gen_job_log(gen_task_log(obj=owner))
 
-        lock = create_lock(owner=owner, job=gen_job_log(gen_task_log(obj=owner)))
+        lock = create_task_lock_concern(task=job.task)
 
         for obj in affected_objects:
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=ConcernItem.objects.get(id=lock))
 
     def test_map_host_to_cluster(self) -> None:
         concerns_before = self.host.concerns.all()

@@ -13,7 +13,7 @@
 from typing import TypeAlias
 
 from audit.models import AuditObjectType
-from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
+from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, ExtraActionTargetType
 from django.db.models import Model
 
 from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
@@ -96,8 +96,12 @@ def model_to_core_type(model: type[Model]) -> ADCMCoreType:
     return model_name_to_core_type(model_name=model.__name__)
 
 
-def orm_object_to_core_type(object_: CoreObject) -> ADCMCoreType:
+def orm_object_to_core_type(object_: ADCM | CoreObject) -> ADCMCoreType:
     return model_to_core_type(model=object_.__class__)
+
+
+def orm_object_to_core_descriptor(object_: ADCM | CoreObject) -> CoreObjectDescriptor:
+    return CoreObjectDescriptor(id=object_.pk, type=orm_object_to_core_type(object_))
 
 
 def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActionTargetType:
@@ -107,7 +111,9 @@ def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActio
     return model_to_core_type(model=model)
 
 
-def orm_object_to_action_target_type(object_: CoreObject | ActionHostGroup) -> ADCMCoreType | ExtraActionTargetType:
+def orm_object_to_action_target_type(
+    object_: ADCM | CoreObject | ActionHostGroup,
+) -> ADCMCoreType | ExtraActionTargetType:
     return model_to_action_target_type(model=object_.__class__)
 
 
