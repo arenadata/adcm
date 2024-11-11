@@ -25,13 +25,13 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConfigLog,
     Host,
-    HostProvider,
     JobLog,
     JobStatus,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -43,17 +43,7 @@ from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
-    Bundle
-    | Cluster
-    | ClusterObject
-    | ServiceComponent
-    | ActionHostGroup
-    | HostProvider
-    | Host
-    | User
-    | Group
-    | Role
-    | Policy
+    Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
 )
 
 
@@ -160,12 +150,12 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             ]
             name = f"{owner_name}/{expected_object.name}"
             type_ = AuditObjectType.ACTION_HOST_GROUP
-        elif isinstance(expected_object, ServiceComponent):
+        elif isinstance(expected_object, Component):
             name = (
                 f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
             )
             type_ = "component"
-        elif isinstance(expected_object, ClusterObject):
+        elif isinstance(expected_object, Service):
             name = f"{expected_object.cluster.name}/{expected_object.display_name}"
             type_ = "service"
         elif isinstance(expected_object, Host):
@@ -179,8 +169,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             type_ = "role"
         else:
             name = getattr(expected_object, "display_name", expected_object.name)
-            # replace for hostprovider
-            type_ = expected_object.__class__.__name__.lower().replace("hostp", "p")
+            type_ = expected_object.__class__.__name__.lower()
 
         return {
             "audit_object__object_id": expected_object.pk,
@@ -215,9 +204,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         logout(request)
         self.cookies = SimpleCookie()
 
-    def simulate_finished_task(
-        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
-    ) -> (TaskLog, JobLog):
+    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
                 data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
@@ -228,9 +215,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
 
         return run_task.target_task, run_task.target_task.joblog_set.last()
 
-    def simulate_running_task(
-        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
-    ) -> (TaskLog, JobLog):
+    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
                 data={"configuration": None, "isVerbose": True, "hostComponentMap": []}

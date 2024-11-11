@@ -20,13 +20,13 @@ from cm.issue import lock_affected_objects
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
     ObjectConfig,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.mapping import change_host_component_mapping
 from cm.tests.utils import (
@@ -889,9 +889,7 @@ class TestAPI2(BaseTestCase):
             state="installed",
         )
 
-    def save_hc(
-        self, cluster: Cluster, hc_list: Iterable[tuple[ClusterObject, Host, ServiceComponent]]
-    ) -> list[HostComponent]:
+    def save_hc(self, cluster: Cluster, hc_list: Iterable[tuple[Service, Host, Component]]) -> list[HostComponent]:
         change_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.bundle_id,
@@ -903,7 +901,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.services.mapping.reset_hc_map")
     def test_save_hc(self, mock_reset_hc_map):
-        cluster_object = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        cluster_object = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)
         component = Prototype.objects.create(
             parent=self.component_prototype,
@@ -911,7 +909,7 @@ class TestAPI2(BaseTestCase):
             bundle_id=self.bundle.id,
             name="node",
         )
-        service_component = ServiceComponent.objects.create(
+        service_component = Component.objects.create(
             cluster=self.cluster,
             service=cluster_object,
             prototype=component,

@@ -26,12 +26,12 @@ from cm.models import (
     ADCMCoreType,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
-    HostProvider,
     JobLog,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.utils import get_obj_type
@@ -64,11 +64,11 @@ class ExtractID:
 
 @dataclass(slots=True)
 class ServiceAuditObjectCreator(IDBasedAuditObjectCreator):
-    model = ClusterObject
+    model = Service
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
-        names = ClusterObject.objects.values_list("cluster__name", "prototype__display_name").filter(id=id_).first()
+        names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=id_).first()
         if not names:
             return None
 
@@ -77,12 +77,12 @@ class ServiceAuditObjectCreator(IDBasedAuditObjectCreator):
 
 @dataclass(slots=True)
 class ComponentAuditObjectCreator(IDBasedAuditObjectCreator):
-    model = ServiceComponent
+    model = Component
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
         names = (
-            ServiceComponent.objects.values_list(
+            Component.objects.values_list(
                 "cluster__name", "service__prototype__display_name", "prototype__display_name"
             )
             .filter(id=id_)
@@ -117,7 +117,7 @@ parent_cluster_from_lookup = _extract_cluster_from(extract_id=ExtractID(field="c
 _extract_service_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.SERVICE,
-    create_new=ServiceAuditObjectCreator(model=ClusterObject),
+    create_new=ServiceAuditObjectCreator(model=Service),
 )
 parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
 service_from_lookup = _extract_service_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
@@ -125,21 +125,19 @@ service_from_lookup = _extract_service_from(extract_id=ExtractID(field="pk").fro
 _extract_component_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.COMPONENT,
-    create_new=ComponentAuditObjectCreator(model=ServiceComponent),
+    create_new=ComponentAuditObjectCreator(model=Component),
 )
 parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
 component_from_lookup = _extract_component_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
-_extract_hostprovider_from = partial(
+_extract_provider_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.PROVIDER,
-    create_new=IDBasedAuditObjectCreator(model=HostProvider),
+    create_new=IDBasedAuditObjectCreator(model=Provider),
 )
-parent_hostprovider_from_lookup = _extract_hostprovider_from(
-    extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
-)
-hostprovider_from_lookup = _extract_hostprovider_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
-hostprovider_from_response = _extract_hostprovider_from(extract_id=ExtractID(field="id").from_response)
+parent_provider_from_lookup = _extract_provider_from(extract_id=ExtractID(field="provider_pk").from_lookup_kwargs)
+provider_from_lookup = _extract_provider_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+provider_from_response = _extract_provider_from(extract_id=ExtractID(field="id").from_response)
 
 _extract_host_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.HOST, create_new=create_audit_host_object
@@ -370,16 +368,16 @@ def nested_host_does_exist(hook: AuditHook) -> bool:
 
 
 def service_does_exist(hook: AuditHook) -> bool:
-    return object_does_exist(hook=hook, model=ClusterObject)
+    return object_does_exist(hook=hook, model=Service)
 
 
 service_with_parents_specified_in_path_exists = partial(
-    object_does_exist, model=ClusterObject, arg_model_field_map={"cluster_pk": "cluster_id"}
+    object_does_exist, model=Service, arg_model_field_map={"cluster_pk": "cluster_id"}
 )
 
 component_with_parents_specified_in_path_exists = partial(
     object_does_exist,
-    model=ServiceComponent,
+    model=Component,
     arg_model_field_map={"cluster_pk": "cluster_id", "service_pk": "service_id"},
 )
 
@@ -518,7 +516,7 @@ def set_service_name_from_object(
     exception: Exception | None,  # noqa: ARG001
 ) -> None:
     service_name = (
-        ClusterObject.objects.filter(pk=call_arguments.get("pk"))
+        Service.objects.filter(pk=call_arguments.get("pk"))
         .select_related("prototype__display_name")
         .only("prototype__display_name")
         .values_list("prototype__display_name", flat=True)
@@ -630,21 +628,17 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
         case ADCMCoreType.CLUSTER:
             names = Cluster.objects.values_list("name").filter(id=object_id).first()
         case ADCMCoreType.SERVICE:
-            names = (
-                ClusterObject.objects.values_list("cluster__name", "prototype__display_name")
-                .filter(id=object_id)
-                .first()
-            )
+            names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=object_id).first()
         case ADCMCoreType.COMPONENT:
             names = (
-                ServiceComponent.objects.values_list(
+                Component.objects.values_list(
                     "cluster__name", "service__prototype__display_name", "prototype__display_name"
                 )
                 .filter(id=object_id)
                 .first()
             )
-        case ADCMCoreType.HOSTPROVIDER:
-            names = HostProvider.objects.values_list("name").filter(id=object_id).first()
+        case ADCMCoreType.PROVIDER:
+            names = Provider.objects.values_list("name").filter(id=object_id).first()
         case ADCMCoreType.HOST:
             names = Host.objects.values_list("fqdn").filter(id=object_id).first()
         case _:

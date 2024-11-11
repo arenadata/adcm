@@ -30,8 +30,8 @@ from rbac.roles import re_apply_policy_for_jobs
 from cm.models import (
     AnsibleConfig,
     Cluster,
+    Component,
     LogStorage,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.cluster import retrieve_cluster_topology, retrieve_host_component_entries
@@ -48,10 +48,10 @@ from cm.services.job.types import (
     ClusterActionType,
     ComponentActionType,
     HostActionType,
-    HostProviderActionType,
     JobConfig,
     JobData,
     JobEnv,
+    ProviderActionType,
     ServiceActionType,
 )
 from cm.services.mapping import change_host_component_mapping, check_only_mapping
@@ -164,7 +164,7 @@ def internal_script_hc_apply(task: Task) -> int:
 def _switch_hc_if_required(task: TaskLog):
     """
     Should be performed during upgrade of cluster, if not cluster, no need in HC update.
-    Because it's upgrade, it will be called either on cluster or hostprovider,
+    Because it's upgrade, it will be called either on cluster or provider,
     so task object will be one of those too.
     """
     if task.task_object.prototype.type != "cluster":
@@ -177,7 +177,7 @@ def _switch_hc_if_required(task: TaskLog):
     for new_entry in task.post_upgrade_hc_map or ():
         if "component_prototype_id" in new_entry:
             # if optimized to 1 request, it's probably good to filter by prototype__type="component"
-            component_id = ServiceComponent.objects.values_list("id", flat=True).get(
+            component_id = Component.objects.values_list("id", flat=True).get(
                 cluster=cluster, prototype_id=new_entry["component_prototype_id"]
             )
             newly_added_entries.add(HostComponentEntry(component_id=component_id, host_id=new_entry["host_id"]))
@@ -334,7 +334,7 @@ def prepare_ansible_cfg(task: Task) -> ConfigParser:
 
 def _get_owner_specific_data(
     task: Task,
-) -> ClusterActionType | ServiceActionType | ComponentActionType | HostProviderActionType | HostActionType:
+) -> ClusterActionType | ServiceActionType | ComponentActionType | ProviderActionType | HostActionType:
     owner = task.owner
     if not owner:
         message = "Can't get owner task data for task without owner"
@@ -343,8 +343,8 @@ def _get_owner_specific_data(
     match owner.type:
         case ADCMCoreType.CLUSTER:
             return ClusterActionType(action_proto_type="cluster", hostgroup="CLUSTER")
-        case ADCMCoreType.HOSTPROVIDER:
-            return HostProviderActionType(
+        case ADCMCoreType.PROVIDER:
+            return ProviderActionType(
                 action_proto_type="provider",
                 hostgroup="PROVIDER",
                 provider_id=task.owner.id,
@@ -356,7 +356,7 @@ def _get_owner_specific_data(
                 hostname=task.owner.name,
                 host_id=task.owner.id,
                 host_type_id=task.owner.prototype_id,
-                provider_id=task.owner.related_objects.hostprovider.id,
+                provider_id=task.owner.related_objects.provider.id,
             )
         case ADCMCoreType.SERVICE:
             return ServiceActionType(

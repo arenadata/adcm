@@ -16,10 +16,10 @@ from audit.models import AuditObjectType
 from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, Provider, Service
 
-CoreObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
-GroupObject: TypeAlias = GroupConfig | ActionHostGroup
+CoreObject: TypeAlias = Cluster | Service | Component | Provider | Host
+GroupObject: TypeAlias = ConfigHostGroup | ActionHostGroup
 
 
 def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
@@ -27,11 +27,11 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
         case ADCMCoreType.CLUSTER:
             return Cluster
         case ADCMCoreType.SERVICE:
-            return ClusterObject
+            return Service
         case ADCMCoreType.COMPONENT:
-            return ServiceComponent
-        case ADCMCoreType.HOSTPROVIDER:
-            return HostProvider
+            return Component
+        case ADCMCoreType.PROVIDER:
+            return Provider
         case ADCMCoreType.HOST:
             return Host
         case ADCMCoreType.ADCM:
@@ -42,7 +42,7 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
 
 def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupObject]:
     if host_group_type == ADCMHostGroupType.CONFIG:
-        return GroupConfig
+        return ConfigHostGroup
 
     if host_group_type == ADCMHostGroupType.ACTION:
         return ActionHostGroup
@@ -58,7 +58,7 @@ def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
             return "service"
         case ADCMCoreType.COMPONENT:
             return "component"
-        case ADCMCoreType.HOSTPROVIDER:
+        case ADCMCoreType.PROVIDER:
             return "provider"
         case ADCMCoreType.HOST:
             return "host"
@@ -73,23 +73,13 @@ def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
         return ADCMCoreType(db_record_type)
     except ValueError:
         if db_record_type == "provider":
-            return ADCMCoreType.HOSTPROVIDER
+            return ADCMCoreType.PROVIDER
 
         raise
 
 
 def model_name_to_core_type(model_name: str) -> ADCMCoreType:
-    name_ = model_name.lower()
-    try:
-        return ADCMCoreType(name_)
-    except ValueError:
-        if name_ == "clusterobject":
-            return ADCMCoreType.SERVICE
-
-        if name_ == "servicecomponent":
-            return ADCMCoreType.COMPONENT
-
-        raise
+    return ADCMCoreType(model_name.lower())
 
 
 def model_to_core_type(model: type[Model]) -> ADCMCoreType:
@@ -123,10 +113,10 @@ def model_name_to_audit_object_type(model_name: str) -> AuditObjectType:
 
 _model_name_to_audit_object_type_map = {
     "cluster": AuditObjectType.CLUSTER,
-    "clusterobject": AuditObjectType.SERVICE,
-    "servicecomponent": AuditObjectType.COMPONENT,
+    "service": AuditObjectType.SERVICE,
+    "component": AuditObjectType.COMPONENT,
     "host": AuditObjectType.HOST,
-    "hostprovider": AuditObjectType.PROVIDER,
+    "provider": AuditObjectType.PROVIDER,
     "bundle": AuditObjectType.BUNDLE,
     "prototype": AuditObjectType.PROTOTYPE,
     "adcm": AuditObjectType.ADCM,

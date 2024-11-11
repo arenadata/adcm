@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.adcm_config.config import get_main_info
-from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
+from cm.models import Component, Host, HostComponent, MaintenanceMode
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,
@@ -38,7 +38,7 @@ class ComponentSerializer(WithStatusSerializer):
     main_info = SerializerMethodField()
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = [
             "id",
             "name",
@@ -57,14 +57,14 @@ class ComponentSerializer(WithStatusSerializer):
         ]
 
     @extend_schema_field(field=HostShortSerializer(many=True))
-    def get_hosts(self, instance: ServiceComponent) -> HostShortSerializer:
+    def get_hosts(self, instance: Component) -> HostShortSerializer:
         host_pks = set()
         for host_component in HostComponent.objects.filter(component=instance).select_related("host"):
             host_pks.add(host_component.host_id)
 
         return HostShortSerializer(instance=Host.objects.filter(pk__in=host_pks), many=True).data
 
-    def get_main_info(self, instance: ServiceComponent) -> str | None:
+    def get_main_info(self, instance: Component) -> str | None:
         return get_main_info(obj=instance)
 
 
@@ -72,7 +72,7 @@ class ComponentMaintenanceModeSerializer(ModelSerializer):
     maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["maintenance_mode"]
 
 
@@ -89,7 +89,7 @@ class ComponentStatusSerializer(ModelSerializer):
     host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["host_components"]
 
 
@@ -100,7 +100,7 @@ class HostComponentSerializer(WithStatusSerializer):
     prototype = PrototypeRelatedSerializer(read_only=True)
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = [
             "id",
             "name",
@@ -117,5 +117,5 @@ class HostComponentSerializer(WithStatusSerializer):
 
 class ComponentAuditSerializer(ModelSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["maintenance_mode"]

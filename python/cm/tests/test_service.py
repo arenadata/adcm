@@ -18,12 +18,12 @@ from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 
 
@@ -35,7 +35,7 @@ class TestService(BaseTestCase):
         self.prototype = Prototype.objects.create(name="test_prototype_name", type="cluster", bundle=self.bundle)
         self.prototype_service = Prototype.objects.create(type="service", bundle=self.bundle)
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
-        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.prototype_service)
+        self.service = Service.objects.create(cluster=self.cluster, prototype=self.prototype_service)
 
     def test_delete(self):
         self.service.state = "updated"
@@ -67,7 +67,7 @@ class TestService(BaseTestCase):
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
             maintenance_mode=MaintenanceMode.ON,
         )
-        component = ServiceComponent.objects.create(
+        component = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",
@@ -97,7 +97,7 @@ class TestService(BaseTestCase):
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.OFF)
 
     def test_maintenance_mode_by_components(self):
-        component_1 = ServiceComponent.objects.create(
+        component_1 = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",
@@ -107,7 +107,7 @@ class TestService(BaseTestCase):
             service=self.service,
             _maintenance_mode=MaintenanceMode.ON,
         )
-        component_2 = ServiceComponent.objects.create(
+        component_2 = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",

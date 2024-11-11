@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ServiceComponent
+from cm.models import Component
 from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
@@ -24,5 +24,5 @@ class ComponentFilter(FilterSet):
     )
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id"]

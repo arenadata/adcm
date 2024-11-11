@@ -1,6 +1,6 @@
 ---
 
-version: 13
+version: 14
 
 roles:
   - name: Add host
@@ -38,11 +38,11 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - add_host_to
@@ -69,7 +69,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - add
@@ -144,7 +144,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -179,7 +179,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -193,7 +193,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     child:
       - Get service object
       - View service config
@@ -214,7 +214,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -229,7 +229,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     child:
       - Get service object
       - Get component object
@@ -251,7 +251,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -265,7 +265,7 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     child:
       - Get provider object
       - View provider config
@@ -286,7 +286,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -317,16 +317,16 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
           - name: host
             codenames:
               - view
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
           - name: objectconfig
@@ -335,7 +335,7 @@ roles:
           - name: configlog
             codenames:
               - view
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - view
 
@@ -367,7 +367,7 @@ roles:
             codenames:
               - add
               - change
-          - name: groupconfig
+          - name: confighostgroup
             codenames:
               - add
               - change
@@ -416,11 +416,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - change_config_of
 
@@ -434,7 +434,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     child:
       - Get service object
       - View service config
@@ -450,11 +450,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - change_config_of
 
@@ -469,7 +469,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     child:
       - Get component object
       - View component config
@@ -485,11 +485,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - change_config_of
 
@@ -503,7 +503,7 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     child:
       - Get provider object
       - View provider config
@@ -570,11 +570,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view_import_of
 
@@ -608,7 +608,7 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -625,7 +625,7 @@ roles:
             codenames:
               - view
               - view_upgrade_of
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - view_upgrade_of
@@ -657,11 +657,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view_import_of
               - change_import_of
@@ -689,7 +689,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - add
 
@@ -733,12 +733,12 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     any_category: true
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
               - delete
@@ -879,10 +879,10 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
           - name: host
@@ -961,11 +961,11 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - view_upgrade_of
@@ -1009,12 +1009,12 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     any_category: false
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - delete
@@ -1281,7 +1281,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
 
@@ -1294,11 +1294,11 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
 
@@ -1371,7 +1371,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -1384,11 +1384,11 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -1401,7 +1401,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
 
@@ -1414,11 +1414,11 @@ roles:
       - component
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
 
@@ -1465,7 +1465,7 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: Service
     module_name: rbac.roles
     class_name: ParentRole
     child:
@@ -1560,7 +1560,7 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     module_name: rbac.roles
     class_name: ParentRole
     child:
@@ -1635,7 +1635,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
               - change_maintenance_mode
@@ -1650,7 +1650,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
               - change_maintenance_mode
@@ -1772,7 +1772,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames: *ahg_view_hostnames
 
   - <<: *view_action_host_group_hidden
@@ -1782,7 +1782,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_view_hostnames
 
   - name: View any object action host groups
@@ -1795,9 +1795,9 @@ roles:
         models:
           - name: cluster
             codenames: *ahg_view_hostnames
-          - name: clusterobject
+          - name: service
             codenames: *ahg_view_hostnames
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_view_hostnames
 
   - &edit_action_host_group_hidden
@@ -1822,7 +1822,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames: *ahg_edit_hostnames
 
   - <<: *edit_action_host_group_hidden
@@ -1832,7 +1832,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_edit_hostnames
 
   - &action_host_group_business

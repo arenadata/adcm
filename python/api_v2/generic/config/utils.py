@@ -24,14 +24,14 @@ from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
-    HostProvider,
     Prototype,
     PrototypeConfig,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.variant import get_variant
@@ -45,18 +45,18 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_
 
 from api_v2.api_schema import ErrorSerializer
 
-ParentObject: TypeAlias = Cluster, ClusterObject, ServiceComponent, HostProvider, Host, GroupConfig
+ParentObject: TypeAlias = Cluster, Service, Component, Provider, Host, ConfigHostGroup
 
 
 class Field(ABC):
     def __init__(
-        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | ConfigHostGroup, path_resolver: PathResolver
     ):
         self.object_ = object_
-        self.is_group_config = False
+        self.is_host_group = False
 
-        if isinstance(object_, GroupConfig):
-            self.is_group_config = True
+        if isinstance(object_, ConfigHostGroup):
+            self.is_host_group = True
             self.object_ = object_.object
 
         self.prototype_config = prototype_config
@@ -110,7 +110,7 @@ class Field(ABC):
 
     @property
     def synchronization(self) -> dict | None:
-        if not self.is_group_config:
+        if not self.is_host_group:
             return None
 
         is_allow_change = self.prototype_config.group_customization
@@ -309,7 +309,7 @@ class SecretMap(Map):
 
 class Structure(Field):
     def __init__(
-        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | ConfigHostGroup, path_resolver: PathResolver
     ):
         super().__init__(prototype_config=prototype_config, object_=object_, path_resolver=path_resolver)
 
@@ -437,7 +437,7 @@ class Group(Field):
     def __init__(
         self,
         prototype_config: PrototypeConfig,
-        object_: ADCMEntity | GroupConfig,
+        object_: ADCMEntity | ConfigHostGroup,
         path_resolver: PathResolver,
         group_fields: QuerySet[PrototypeConfig],
     ):
@@ -635,7 +635,7 @@ def get_field(
 
 
 def get_config_schema(
-    object_: ADCMEntity | GroupConfig, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
+    object_: ADCMEntity | ConfigHostGroup, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
 ) -> dict:
     """
     Prepare config schema based on provided `prototype_configs`

@@ -27,14 +27,14 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
     JobLog,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
     TaskLog,
 )
 from cm.services.concern import create_issue, retrieve_issue
@@ -54,13 +54,11 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
         return
 
     for require in proto.requires:
-        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
+        req_service = Service.objects.filter(prototype__name=require["service"], cluster=cluster)
         obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
 
         if comp_name := require.get("component"):
-            req_obj = ServiceComponent.objects.filter(
-                prototype__name=comp_name, service=req_service.first(), cluster=cluster
-            )
+            req_obj = Component.objects.filter(prototype__name=comp_name, service=req_service.first(), cluster=cluster)
             obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
         else:
             req_obj = req_service

@@ -13,7 +13,7 @@
 from typing import Collection, TypedDict
 
 from cm.api import add_host
-from cm.models import HostProvider, Prototype
+from cm.models import Prototype, Provider
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic
@@ -43,7 +43,7 @@ class AddHostReturnValue(TypedDict):
 class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddHostReturnValue]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=AddHostArguments),
-        context=ContextConfig(allow_only=frozenset({ADCMCoreType.HOSTPROVIDER})),
+        context=ContextConfig(allow_only=frozenset({ADCMCoreType.PROVIDER})),
     )
 
     def __call__(
@@ -53,26 +53,26 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
 
         with atomic():
             try:
-                hostprovider = HostProvider.objects.select_related("prototype__bundle").get(id=runtime.context_owner.id)
-                host_prototype = Prototype.objects.get(type="host", bundle=hostprovider.prototype.bundle)
+                provider = Provider.objects.select_related("prototype__bundle").get(id=runtime.context_owner.id)
+                host_prototype = Prototype.objects.get(type="host", bundle=provider.prototype.bundle)
                 host = add_host(
-                    provider=hostprovider,
+                    provider=provider,
                     prototype=host_prototype,
                     fqdn=arguments.fqdn,
                     description=arguments.description,
                 )
-            except HostProvider.DoesNotExist:
+            except Provider.DoesNotExist:
                 return CallResult(
                     value=None,
                     changed=False,
-                    error=PluginRuntimeError(message=f"Failed to find HostProvider with id {runtime.context_owner.id}"),
+                    error=PluginRuntimeError(message=f"Failed to find Provider with id {runtime.context_owner.id}"),
                 )
             except Prototype.DoesNotExist:
                 return CallResult(
                     value=None,
                     changed=False,
                     error=PluginRuntimeError(
-                        message="Failed to locate host's prototype based on HostProvider "
+                        message="Failed to locate host's prototype based on Provider "
                         f"with id {runtime.context_owner.id}"
                     ),
                 )

@@ -1,6 +1,6 @@
 ---
 - type: cluster
-  name: cluster_group_config
+  name: cluster_config_host_group
   version: &version '1.0'
   edition: community
   config_group_customization: true

@@ -14,23 +14,21 @@ from cm.models import Action
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestInventoryHostproviderHost(BaseInventoryTestCase):
+class TestInventoryProviderHost(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
 
-        self.hostprovider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.hostprovider, fqdn="host_1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.hostprovider, fqdn="host_2")
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_2")
 
-        self.action_on_hostprovider = Action.objects.get(
-            name="action_on_provider", prototype=self.hostprovider.prototype
-        )
+        self.action_on_provider = Action.objects.get(name="action_on_provider", prototype=self.provider.prototype)
         self.action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
         self.action_on_host_2 = Action.objects.get(name="action_on_host", prototype=self.host_2.prototype)
 
-    def test_action_on_hostprovider(self):
+    def test_action_on_provider(self):
         expected_topology = {
             "PROVIDER": [self.host_1.fqdn, self.host_2.fqdn],
         }
@@ -50,15 +48,15 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
-                    "id": self.hostprovider.pk,
+                    "id": self.provider.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
         }
 
         self.assert_inventory(
-            obj=self.hostprovider,
-            action=self.action_on_hostprovider,
+            obj=self.provider,
+            action=self.action_on_provider,
             expected_topology=expected_topology,
             expected_data=expected_data,
         )
@@ -90,10 +88,10 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             expected_data=expected_data,
         )
 
-    def test_action_on_hostprovider_with_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_provider_with_config_host_group(self):
+        provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=provider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
@@ -103,12 +101,12 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
         }
         expected_data = {
             ("PROVIDER", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_hostprovider_vars.json.j2",
+                self.templates_dir / "host_with_provider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
                     "provider_config_integer": 101,
-                    "provider_id": self.hostprovider.pk,
+                    "provider_id": self.provider.pk,
                 },
             ),
             ("PROVIDER", "hosts", f"{self.host_2.fqdn}"): (
@@ -120,23 +118,23 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
-                    "id": self.hostprovider.pk,
+                    "id": self.provider.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
         }
 
         self.assert_inventory(
-            obj=self.hostprovider,
-            action=self.action_on_hostprovider,
+            obj=self.provider,
+            action=self.action_on_provider,
             expected_topology=expected_topology,
             expected_data=expected_data,
         )
 
-    def test_action_on_host_with_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_host_with_config_host_group(self):
+        provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=provider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
@@ -146,18 +144,18 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
         }
         expected_data = {
             ("HOST", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_hostprovider_vars.json.j2",
+                self.templates_dir / "host_with_provider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
-                    "provider_id": self.hostprovider.pk,
+                    "provider_id": self.provider.pk,
                     "provider_config_integer": 101,
                 },
             ),
             ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
-                    "id": self.hostprovider.pk,
+                    "id": self.provider.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
@@ -170,10 +168,10 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             expected_topology=expected_topology,
         )
 
-    def test_action_on_host_without_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_host_without_config_host_group(self):
+        provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=provider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
@@ -191,7 +189,7 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
-                    "id": self.hostprovider.pk,
+                    "id": self.provider.pk,
                     "host_prototype_id": self.host_2.prototype.pk,
                 },
             ),

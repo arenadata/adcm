@@ -17,14 +17,14 @@ from cm.models import (
     Action,
     ADCMEntityStatus,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernType,
     HostComponent,
     JobLog,
     MaintenanceMode,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
     TaskLog,
 )
 from cm.services.job.action import ActionRunPayload, run_action
@@ -87,7 +87,7 @@ class TestServiceAPI(BaseAPITestCase):
         response = self.client.v2[self.service_2].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertFalse(Service.objects.filter(pk=self.service_2.pk).exists())
 
     def test_delete_failed(self):
         self.service_2.state = "non_created"
@@ -96,10 +96,10 @@ class TestServiceAPI(BaseAPITestCase):
         response = self.client.v2[self.service_2].delete()
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_2.pk).exists())
 
     def test_create_success(self):
-        initial_service_count = ClusterObject.objects.count()
+        initial_service_count = Service.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
 
         response = self.client.v2[self.cluster_1, "services"].post(data=[{"prototypeId": manual_add_service_proto.pk}])
@@ -110,10 +110,10 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["prototype"]["id"], manual_add_service_proto.pk)
 
-        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
+        self.assertEqual(Service.objects.count(), initial_service_count + 1)
 
     def test_add_one_success(self):
-        initial_service_count = ClusterObject.objects.count()
+        initial_service_count = Service.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
 
         response = self.client.v2[self.cluster_1, "services"].post(data={"prototypeId": manual_add_service_proto.pk})
@@ -123,16 +123,16 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertIsInstance(data, dict)
         self.assertEqual(data["prototype"]["id"], manual_add_service_proto.pk)
 
-        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
+        self.assertEqual(Service.objects.count(), initial_service_count + 1)
 
     def test_create_wrong_data_fail(self):
-        initial_service_count = ClusterObject.objects.count()
+        initial_service_count = Service.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
 
         response = self.client.v2[self.cluster_1, "services"].post(data={"somekey": manual_add_service_proto.pk})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(ClusterObject.objects.count(), initial_service_count)
+        self.assertEqual(Service.objects.count(), initial_service_count)
 
     def test_filter_by_name_success(self):
         response = self.client.v2[self.cluster_1, "services"].get(query={"name": "service_1"})
@@ -221,7 +221,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
         HostComponent.objects.create(
             cluster=self.cluster_1,
             service=self.service_to_delete,
-            component=ServiceComponent.objects.get(service=self.service_to_delete, prototype__name="component"),
+            component=Component.objects.get(service=self.service_to_delete, prototype__name="component"),
             host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter"),
         )
 
@@ -252,7 +252,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
             self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
 
     @staticmethod
-    def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
+    def imitate_task_running(action: Action, object_: Cluster | Service) -> TaskLog:
         with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
             task = run_action(action=action, obj=object_, payload=ActionRunPayload())
 
@@ -272,7 +272,7 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         super().setUp()
 
         self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1_s_1_cl1 = ServiceComponent.objects.filter(
+        self.component_1_s_1_cl1 = Component.objects.filter(
             cluster_id=self.cluster_1.pk, service_id=self.service_1_cl_1.pk
         ).last()
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
@@ -336,7 +336,7 @@ class TestServicePermissions(BaseAPITestCase):
         self.host_with_component = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
         )
-        component = ServiceComponent.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
+        component = Component.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
 
     def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):

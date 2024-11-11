@@ -19,7 +19,7 @@ from core.converters import named_mapping_from_topology
 from core.types import ADCMCoreType, Concern, ConcernID, CoreObjectDescriptor, ServiceID, ServiceName
 from django.contrib.contenttypes.models import ContentType
 
-from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
+from cm.models import Cluster, Component, ConcernCause, ConcernItem, ConcernType, Host, Service
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern import create_issue, retrieve_issue, retrieve_related_concerns
@@ -64,12 +64,9 @@ def _filter_concerns_by_cause(concerns: Iterable[Concern], cause: str) -> Genera
     return (concern for concern in concerns if concern.cause == cause)
 
 
-def recalculate_own_concerns_on_add_services(
-    cluster: Cluster, services: Iterable[ClusterObject]
-) -> OwnObjectConcernMap:
+def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterable[Service]) -> OwnObjectConcernMap:
     named_mapping = named_mapping_from_topology(topology=retrieve_cluster_topology(cluster_id=cluster.pk))
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
-
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
 
@@ -102,7 +99,7 @@ def recalculate_own_concerns_on_add_services(
                 create_issue(owner=service_cod, cause=ConcernCause.REQUIREMENT).pk
             )
 
-    for component in ServiceComponent.objects.filter(service__in=services):
+    for component in Component.objects.filter(service__in=services):
         if object_configuration_has_issue(component):
             issue = create_issue(
                 owner=CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT), cause=ConcernCause.CONFIG
@@ -113,9 +110,7 @@ def recalculate_own_concerns_on_add_services(
     #   1) ConcernCause.SERVICE of cluster
     #   2) ConcernCause.REQUIREMENT of already existing services (not added just now)
     existing_services_except_new: dict[ServiceName, ServiceID] = dict(
-        cluster.clusterobject_set.exclude(pk__in=(service.pk for service in services)).values_list(
-            "prototype__name", "pk"
-        )
+        cluster.services.exclude(pk__in=(service.pk for service in services)).values_list("prototype__name", "pk")
     )
     cluster_cod = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
     service_cods = [
@@ -211,11 +206,11 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         (ConcernCause.IMPORT, object_imports_has_issue),
     )
 
-    services = tuple(ClusterObject.objects.select_related("prototype").filter(cluster=cluster))
+    services = tuple(Service.objects.select_related("prototype").filter(cluster=cluster))
     existing_service_concern_causes = set(
         ConcernItem.objects.values_list("owner_id", "cause").filter(
             owner_id__in=map(attrgetter("id"), services),
-            owner_type=ContentType.objects.get_for_model(ClusterObject),
+            owner_type=ContentType.objects.get_for_model(Service),
             type=ConcernType.ISSUE,
             cause__in=map(itemgetter(0), service_checks),
         )
@@ -243,14 +238,14 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
 
     components_with_config_concerns = set(
         ConcernItem.objects.values_list("owner_id", flat=True).filter(
-            owner_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(service__in=services),
-            owner_type=ContentType.objects.get_for_model(ServiceComponent),
+            owner_id__in=Component.objects.values_list("id", flat=True).filter(service__in=services),
+            owner_type=ContentType.objects.get_for_model(Component),
             type=ConcernType.ISSUE,
             cause=ConcernCause.CONFIG,
         )
     )
     for component in (
-        ServiceComponent.objects.select_related("prototype")
+        Component.objects.select_related("prototype")
         .filter(service__in=services)
         .exclude(id__in=components_with_config_concerns)
     ):

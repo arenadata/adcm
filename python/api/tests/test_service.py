@@ -19,13 +19,13 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
-    HostProvider,
     MaintenanceMode,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.job.action import ActionRunPayload
 from django.conf import settings
@@ -51,8 +51,8 @@ class TestServiceAPI(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
-        self.component = ServiceComponent.objects.create(
+        self.service = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        self.component = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",
@@ -71,7 +71,7 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
         )
-        provider = HostProvider.objects.get(pk=provider_response.data["id"])
+        provider = Provider.objects.get(pk=provider_response.data["id"])
 
         host_response: Response = self.client.post(
             path=reverse(viewname="v1:host", kwargs={"provider_id": provider.pk}),
@@ -243,12 +243,12 @@ class TestServiceAPI(BaseTestCase):
         host = Host.objects.create(
             fqdn="test-fqdn",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
-            provider=HostProvider.objects.create(
+            provider=Provider.objects.create(
                 name="test_provider",
                 prototype=Prototype.objects.create(bundle=self.bundle, type="provider"),
             ),
         )
-        service_component = ServiceComponent.objects.create(
+        service_component = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",
@@ -300,7 +300,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_export_bind_fail(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
-        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        service_2 = Service.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
             cluster=cluster_2,
             service=service_2,
@@ -317,7 +317,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_import_bind_success(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
-        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        service_2 = Service.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
             cluster=self.cluster,
             service=self.service,
@@ -345,7 +345,7 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_component_prototype.pk},
         )
-        service_with_component = ClusterObject.objects.get(pk=service_with_component_response.data["id"])
+        service_with_component = Service.objects.get(pk=service_with_component_response.data["id"])
 
         service_with_dependent_component_prototype = Prototype.objects.get(
             name="with_dependent_component",
@@ -355,12 +355,12 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_dependent_component_prototype.pk},
         )
-        service_with_dependent_component = ClusterObject.objects.get(
+        service_with_dependent_component = Service.objects.get(
             pk=service_with_dependent_component_response.data["id"],
         )
 
-        component = ServiceComponent.objects.get(service=service_with_component)
-        component_with_dependent_component = ServiceComponent.objects.get(service=service_with_dependent_component)
+        component = Component.objects.get(service=service_with_component)
+        component_with_dependent_component = Component.objects.get(service=service_with_dependent_component)
 
         self.client.post(
             path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster.pk}),

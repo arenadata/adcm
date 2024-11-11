@@ -13,7 +13,7 @@
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 
-from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent
+from cm.models import Action, Component, ObjectType, Prototype, Service
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -33,14 +33,14 @@ class TestHostAction(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster
         )
 
-        self.service: ClusterObject = bulk_add_services_to_cluster(
+        self.service: Service = bulk_add_services_to_cluster(
             cluster=self.cluster,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster.prototype.bundle
             ),
         ).first()
 
-        self.component = ServiceComponent.objects.get(service=self.service, prototype__name="component_1")
+        self.component = Component.objects.get(service=self.service, prototype__name="component_1")
 
         self.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_1, self.component), (self.host_2, self.component)]
@@ -52,21 +52,21 @@ class TestHostAction(BaseInventoryTestCase):
             name="host_action_on_component", prototype=self.component.prototype
         )
 
-        self.cluster_group_config = self.add_group_config(parent=self.cluster, hosts=[self.host_1])
+        self.cluster_host_group = self.add_config_host_group(parent=self.cluster, hosts=[self.host_1])
         self.change_configuration(
-            target=self.cluster_group_config,
+            target=self.cluster_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.service_group_config = self.add_group_config(parent=self.service, hosts=[self.host_1])
+        self.service_host_group = self.add_config_host_group(parent=self.service, hosts=[self.host_1])
         self.change_configuration(
-            target=self.service_group_config,
+            target=self.service_host_group,
             config_diff={"integer": 102},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.component_group_config = self.add_group_config(parent=self.component, hosts=[self.host_1])
+        self.component_host_group = self.add_config_host_group(parent=self.component, hosts=[self.host_1])
         self.change_configuration(
-            target=self.component_group_config,
+            target=self.component_host_group,
             config_diff={"integer": 103},
             meta_diff={"/integer": {"isSynchronized": False}},
         )

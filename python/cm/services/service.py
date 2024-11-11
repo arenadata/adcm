@@ -16,11 +16,11 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 
 from cm.api import cancel_locking_tasks, delete_service
 from cm.errors import AdcmEx
-from cm.models import Action, ClusterBind, ClusterObject, HostComponent, JobStatus, ServiceComponent, TaskLog
+from cm.models import Action, ClusterBind, Component, HostComponent, JobStatus, Service, TaskLog
 from cm.services.job.action import ActionRunPayload, run_action
 
 
-def delete_service_from_api(service: ClusterObject) -> Response:
+def delete_service_from_api(service: Service) -> Response:
     delete_action = Action.objects.filter(
         prototype=service.prototype,
         name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,
@@ -48,7 +48,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:
     if TaskLog.objects.filter(action=delete_action, status__in={JobStatus.CREATED, JobStatus.RUNNING}).exists():
         raise AdcmEx(code="SERVICE_DELETE_ERROR", msg="Service is deleting now")
 
-    for component in ServiceComponent.objects.filter(cluster=service.cluster).exclude(service=service):
+    for component in Component.objects.filter(cluster=service.cluster).exclude(service=service):
         if component.requires_service_name(service_name=service.name):
             raise AdcmEx(
                 code="SERVICE_CONFLICT",
@@ -56,7 +56,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:
                 f" requires this service or its component",
             )
 
-    for another_service in ClusterObject.objects.filter(cluster=service.cluster):
+    for another_service in Service.objects.filter(cluster=service.cluster):
         if another_service.requires_service_name(service_name=service.name):
             raise AdcmEx(
                 code="SERVICE_CONFLICT",

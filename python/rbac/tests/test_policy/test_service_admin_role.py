@@ -13,12 +13,12 @@
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.models import (
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     ObjectConfig,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from django.urls import reverse
 from rest_framework.response import Response
@@ -50,7 +50,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
         self.create_policy(role_name="Service Administrator", obj=self.service, group_pk=self.new_user_group.pk)
         self.another_user_log_in(username=new_user.username, password=self.new_user_password)
 
-        self.group_config_pk = self.get_group_config_pk()
+        self.host_group_pk = self.get_config_host_group_pk()
 
     def get_provider_pk(self):
         provider_bundle = self.upload_and_load_bundle(
@@ -98,7 +98,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
             data={"prototype_id": Prototype.objects.get(bundle=self.cluster_bundle, type=ObjectType.SERVICE).pk},
             content_type=APPLICATION_JSON,
         )
-        return ClusterObject.objects.get(pk=response.json()["id"])
+        return Service.objects.get(pk=response.json()["id"])
 
     def create_host_component(self):
         response: Response = self.client.post(
@@ -107,7 +107,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
                 "cluster_id": self.cluster_pk,
                 "hc": [
                     {
-                        "component_id": ServiceComponent.objects.first().pk,
+                        "component_id": Component.objects.first().pk,
                         "host_id": self.host_pk,
                         "service_id": self.service.pk,
                     }
@@ -118,11 +118,11 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def get_group_config_pk(self) -> int:
+    def get_config_host_group_pk(self) -> int:
         response: Response = self.client.post(
             path=reverse(viewname="v1:group-config-list"),
             data={
-                "name": "service_group_config",
+                "name": "service_config_host_group",
                 "object_id": self.service.pk,
                 "object_type": ObjectType.SERVICE,
                 "config_id": ObjectConfig.objects.create(current=0, previous=0).pk,
@@ -135,7 +135,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
 
     def test_retrieve_config_group_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config_pk}),
+            path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.host_group_pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

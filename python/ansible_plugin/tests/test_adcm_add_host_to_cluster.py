@@ -12,7 +12,7 @@
 
 
 from cm.converters import orm_object_to_core_type
-from cm.models import ServiceComponent
+from cm.models import Component
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginValidationError
@@ -27,7 +27,7 @@ class TestAddHostToClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.host_3 = self.add_host(provider=self.host_1.provider, fqdn="host-3")
 

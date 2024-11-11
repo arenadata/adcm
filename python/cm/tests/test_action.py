@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_service_to_cluster
-from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
+from cm.models import Action, Component, MaintenanceMode, Prototype
 from cm.services.job.run._target_factories import prepare_ansible_environment
 from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.utils import (
@@ -162,10 +162,10 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
         self.host_2 = gen_host(provider=provider, cluster=self.cluster, fqdn="test-host-2")
         self.host_3 = gen_host(provider=provider, cluster=self.cluster, fqdn="test-host-3")
 
-        component_1 = ServiceComponent.objects.get(
+        component_1 = Component.objects.get(
             cluster=self.cluster, prototype__name="component_1", prototype__display_name="Component 1 from Service 1"
         )
-        component_2 = ServiceComponent.objects.get(
+        component_2 = Component.objects.get(
             cluster=self.cluster, prototype__name="component_2", prototype__display_name="Component 2 from Service 1"
         )
 
@@ -199,7 +199,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
             cluster=self.cluster_2,
             proto=Prototype.objects.get(name="robot", type="service"),
         )
-        self.component_wheel_of_robot = ServiceComponent.objects.get(cluster=self.cluster_2, prototype__name="wheel")
+        self.component_wheel_of_robot = Component.objects.get(cluster=self.cluster_2, prototype__name="wheel")
 
     def test_variants(self):
         bundle = gen_bundle()
@@ -424,7 +424,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
 
         self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="test_cluster_with_action_params")
         self.service = self.add_services_to_cluster(["same_actioned_service"], cluster=self.cluster).get()
-        self.component = self.service.servicecomponent_set.get()
+        self.component = self.service.components.get()
 
         self.action_full = Action.objects.get(prototype=self.cluster.prototype, name="action_full")
         self.action_jinja_2_native_false = Action.objects.get(

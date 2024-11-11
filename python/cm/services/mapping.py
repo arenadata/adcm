@@ -22,7 +22,7 @@ from rbac.models import Policy
 from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, ConcernCause, Host, HostComponent, MaintenanceMode
+from cm.models import Cluster, ConcernCause, Host, HostComponent, MaintenanceMode, Service
 from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
@@ -39,7 +39,7 @@ from cm.services.concern.distribution import (
     unlock_objects,
 )
 from cm.services.concern.locks import retrieve_lock_on_object
-from cm.services.group_config import ConfigHostGroupRepo
+from cm.services.config_host_group import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 
@@ -221,7 +221,7 @@ def _update_concerns(
 
 
 def _update_policies(topology: ClusterTopology) -> None:
-    service_content_type = ContentType.objects.get_for_model(model=ClusterObject)
+    service_content_type = ContentType.objects.get_for_model(model=Service)
     for policy in Policy.objects.filter(
         object__object_id__in=topology.services.keys(), object__content_type=service_content_type
     ):

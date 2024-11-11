@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
+from cm.models import Cluster, ConfigHostGroup, PrototypeConfig, Provider, Upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -25,10 +25,12 @@ from rest_framework.serializers import (
     ListField,
     SerializerMethodField,
 )
-from rest_framework_extensions.settings import extensions_api_settings
 
 from api.config.serializers import ConfigSerializerUI
 from api.utils import UrlField, check_obj, hlink
+
+# TODO: remove `drf-extensions` package after merge to develop
+PARENT_LOOKUP_KWARG_NAME_PREFIX = "parent_lookup_"
 
 
 class UpgradeSerializer(EmptySerializer):
@@ -63,7 +65,7 @@ class UpgradeSerializer(EmptySerializer):
         if "cluster_id" in self.context:
             obj = check_obj(Cluster, self.context["cluster_id"])
         elif "provider_id" in self.context:
-            obj = check_obj(HostProvider, self.context["provider_id"])
+            obj = check_obj(Provider, self.context["provider_id"])
         else:
             obj = None
 
@@ -124,7 +126,7 @@ class UIConfigField(JSONField):
         obj = value.obj_ref.object
         if obj is None:
             raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{value.obj_ref}"')
-        if isinstance(obj, GroupConfig):
+        if isinstance(obj, ConfigHostGroup):
             obj = obj.object
         return ui_config(obj, value)
 
@@ -144,8 +146,8 @@ class MultiHyperlinkedIdentityField(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, _format):
         kwargs = {}
         for url_arg in self.url_args:
-            if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
+            if url_arg.startswith(PARENT_LOOKUP_KWARG_NAME_PREFIX):
+                parent_name = url_arg.replace(PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
                 parent = self.context.get(parent_name)
                 kwargs.update({url_arg: parent.id})
             else:
@@ -166,8 +168,8 @@ class MultiHyperlinkedRelatedField(HyperlinkedRelatedField):
     def get_url(self, obj, view_name, request, _format):
         kwargs = {}
         for url_arg in self.url_args:
-            if url_arg.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
-                parent_name = url_arg.replace(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
+            if url_arg.startswith(PARENT_LOOKUP_KWARG_NAME_PREFIX):
+                parent_name = url_arg.replace(PARENT_LOOKUP_KWARG_NAME_PREFIX, "", 1)
                 parent = self.context.get(parent_name)
                 if parent is None:
                     parent = obj

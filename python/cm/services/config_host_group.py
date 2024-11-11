@@ -16,13 +16,13 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, Sho
 from django.db.models import F
 
 from cm.converters import core_type_to_model, model_name_to_core_type
-from cm.models import GroupConfig
+from cm.models import ConfigHostGroup
 from cm.services.host_group_common import HostGroupRepoMixin
 
-GroupConfigName: TypeAlias = str
+ConfigHostGroupName: TypeAlias = str
 
 
-class GroupConfigInfo(NamedTuple):
+class ConfigHostGroupInfo(NamedTuple):
     id: ObjectID
     name: str
 
@@ -32,10 +32,10 @@ class GroupConfigInfo(NamedTuple):
     owner: CoreObjectDescriptor
 
 
-def retrieve_group_configs_for_hosts(
+def retrieve_config_host_groups_for_hosts(
     hosts: Iterable[HostID], restrict_by_owner_type: Collection[ADCMCoreType] = ()
-) -> dict[ObjectID, GroupConfigInfo]:
-    query = GroupConfig.objects.filter(hosts__in=hosts).values(
+) -> dict[ObjectID, ConfigHostGroupInfo]:
+    query = ConfigHostGroup.objects.filter(hosts__in=hosts).values(
         "id",
         "name",
         current_config_id=F("config__current"),
@@ -51,12 +51,12 @@ def retrieve_group_configs_for_hosts(
             )
         )
 
-    result: dict[ObjectID, GroupConfigInfo] = {}
+    result: dict[ObjectID, ConfigHostGroupInfo] = {}
 
     for record in query:
         group = result.setdefault(
             record["id"],
-            GroupConfigInfo(
+            ConfigHostGroupInfo(
                 id=record["id"],
                 name=record["name"],
                 current_config_id=record["current_config_id"],
@@ -72,5 +72,5 @@ def retrieve_group_configs_for_hosts(
 
 
 class ConfigHostGroupRepo(HostGroupRepoMixin):
-    group_hosts_model = GroupConfig.hosts.through
-    group_hosts_field_name = "groupconfig"
+    group_hosts_model = ConfigHostGroup.hosts.through
+    group_hosts_field_name = "confighostgroup"

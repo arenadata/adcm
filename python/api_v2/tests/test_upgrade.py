@@ -14,11 +14,11 @@ from pathlib import Path
 
 from cm.models import (
     ADCM,
+    Component,
     ConfigLog,
     HostComponent,
     ObjectType,
     Prototype,
-    ServiceComponent,
     Upgrade,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -200,8 +200,8 @@ class TestUpgrade(BaseAPITestCase):
 
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
-        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
+        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
 
         with RunTaskMock() as run_task:
@@ -243,8 +243,8 @@ class TestUpgrade(BaseAPITestCase):
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
-        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
+        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host_1)
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_1)
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_2)
@@ -298,7 +298,7 @@ class TestUpgrade(BaseAPITestCase):
         self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_cluster_upgrade_run_complex_no_host_fail(self):
-        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         with RunTaskMock() as run_task:
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
@@ -330,7 +330,7 @@ class TestUpgrade(BaseAPITestCase):
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         with RunTaskMock() as run_task:
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
@@ -373,7 +373,7 @@ class TestUpgrade(BaseAPITestCase):
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
 
-        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         with RunTaskMock() as run_task:
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
@@ -478,7 +478,7 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_upgrade_retrieve_not_found_fail(self):
+    def test_provider_upgrade_retrieve_not_found_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.get_non_existent_pk(Upgrade)].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -501,12 +501,12 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_list_unauthorized_fail(self) -> None:
+    def test_provider_list_unauthorized_fail(self) -> None:
         response = self.unauthorized_client.v2[self.provider, "upgrades"].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_retrieve_unauthorized_fail(self):
+    def test_provider_retrieve_unauthorized_fail(self):
         response = self.unauthorized_client.v2[self.provider, "upgrades", self.provider_upgrade].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -590,7 +590,7 @@ class TestUpgrade(BaseAPITestCase):
 
         cluster = self.add_cluster(bundle=bundle, name="Cluster For Upgrade")
         service = self.add_services_to_cluster(["service_with_constraints"], cluster=cluster).get()
-        component = ServiceComponent.objects.get(prototype__name="dummy", service=service)
+        component = Component.objects.get(prototype__name="dummy", service=service)
 
         host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
 

@@ -15,11 +15,11 @@ from cm.errors import raise_adcm_ex
 from cm.models import (
     Cluster,
     ClusterBind,
-    ClusterObject,
     ObjectType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    Service,
 )
 from cm.services.status.client import retrieve_status_map
 from cm.services.status.convert import convert_to_entity_status
@@ -75,7 +75,7 @@ def _format_import_services(service_candidates: list[ServiceImportCandidate]) ->
 
     out = []
     for service_data in sorted(service_candidates, key=lambda service_dandidate: service_dandidate["obj"].display_name):
-        service: ClusterObject = service_data["obj"]
+        service: Service = service_data["obj"]
         prototype_import: PrototypeImport = service_data["prototype_import"]
 
         out.append(
@@ -101,7 +101,7 @@ def _format_import_services(service_candidates: list[ServiceImportCandidate]) ->
 def _get_import_candidates_of_single_prototype_export(
     prototype_export: PrototypeExport,
     prototype_import: PrototypeImport,
-    queryset: QuerySet[Cluster] | QuerySet[ClusterObject],
+    queryset: QuerySet[Cluster] | QuerySet[Service],
 ) -> list[CommonImportCandidate] | None:
     if not is_version_suitable(version=prototype_export.prototype.version, prototype_import=prototype_import):
         return None
@@ -152,7 +152,7 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
             service_import_candidates = _get_import_candidates_of_single_prototype_export(
                 prototype_export=service_export,
                 prototype_import=prototype_import,
-                queryset=ClusterObject.objects.filter(prototype=service_export.prototype).select_related("cluster"),
+                queryset=Service.objects.filter(prototype=service_export.prototype).select_related("cluster"),
             )
             if service_import_candidates is not None:
                 service_candidates.extend(service_import_candidates)
@@ -173,8 +173,8 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
     return list(cluster_candidates.values())
 
 
-def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
-    if isinstance(obj, ClusterObject):
+def get_imports(obj: Cluster | Service) -> list[UIObjectImport]:
+    if isinstance(obj, Service):
         cluster = obj.cluster
         service = obj
     elif isinstance(obj, Cluster):
@@ -216,7 +216,7 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
     return out_data
 
 
-def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) -> list:
+def cook_data_for_multibind(validated_data: list, obj: Cluster | Service) -> list:
     bind_data = []
 
     for item in validated_data:
@@ -226,7 +226,7 @@ def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) 
             service_id = None
 
         elif item["source"]["type"] == ObjectType.SERVICE:
-            export_obj = ClusterObject.objects.get(pk=item["source"]["id"])
+            export_obj = Service.objects.get(pk=item["source"]["id"])
             cluster_id = export_obj.cluster.pk
             service_id = export_obj.pk
 
