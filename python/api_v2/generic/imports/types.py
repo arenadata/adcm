@@ -12,16 +12,16 @@
 
 from typing import TypedDict
 
-from cm.models import Cluster, ClusterObject, PrototypeImport
+from cm.models import Cluster, PrototypeImport, Service
 
 
 class CommonImportCandidate(TypedDict):
-    obj: Cluster | ClusterObject
+    obj: Cluster | Service
     prototype_import: PrototypeImport
 
 
 class ServiceImportCandidate(TypedDict):
-    obj: ClusterObject
+    obj: Service
     prototype_import: PrototypeImport
 
 

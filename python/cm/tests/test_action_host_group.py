@@ -18,7 +18,7 @@ from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescripto
 from django.conf import settings
 
 from cm.errors import AdcmEx
-from cm.models import Action, ActionHostGroup, ServiceComponent
+from cm.models import Action, ActionHostGroup, Component
 from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.inventory import get_inventory_data
@@ -34,21 +34,17 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
 
         self.bundles_dir = Path(__file__).parent / "bundles"
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
         self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = ServiceComponent.objects.get(service=self.service)
+        self.component = Component.objects.get(service=self.service)
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
@@ -57,7 +53,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         )
 
         self.context = {
-            "hostprovider_bundle": self.hostprovider.prototype.bundle,
+            "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],

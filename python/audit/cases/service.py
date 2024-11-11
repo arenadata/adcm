@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, ClusterBind, ClusterObject
+from cm.models import Cluster, ClusterBind, Service
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
@@ -62,7 +62,7 @@ def service_case(
                 audit_object = None
 
         case ["service", service_pk] | ["service", service_pk, "maintenance-mode"]:
-            deleted_obj: ClusterObject
+            deleted_obj: Service
             if view.request.method == "DELETE":
                 audit_operation = AuditOperation(
                     name="service removed",
@@ -82,7 +82,7 @@ def service_case(
                     object_type=AuditObjectType.CLUSTER,
                 )
             else:
-                obj = ClusterObject.objects.filter(pk=service_pk).first()
+                obj = Service.objects.filter(pk=service_pk).first()
                 if obj:
                     audit_object = get_or_create_audit_obj(
                         object_id=service_pk,
@@ -93,7 +93,7 @@ def service_case(
                     audit_object = None
 
         case ["service", service_pk, "bind"]:
-            obj = ClusterObject.objects.get(pk=service_pk)
+            obj = Service.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.SERVICE.capitalize()} "
@@ -108,7 +108,7 @@ def service_case(
             )
 
         case ["service", service_pk, "bind", _]:
-            obj = ClusterObject.objects.get(pk=service_pk)
+            obj = Service.objects.get(pk=service_pk)
 
             cluster_name, service_name = "", ""
             if deleted_obj and isinstance(deleted_obj, ClusterBind):

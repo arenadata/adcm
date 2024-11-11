@@ -17,13 +17,13 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     ObjectConfig,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -45,7 +45,7 @@ from audit.models import (
 )
 
 
-class TestGroupConfigAudit(BaseTestCase):
+class TestCHGAudit(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -61,9 +61,9 @@ class TestGroupConfigAudit(BaseTestCase):
             config=self.config,
             name="test_cluster",
         )
-        self.name = "test_group_config"
-        self.group_config = GroupConfig.objects.create(
-            name="test_group_config_2",
+        self.name = "test_config_host_group"
+        self.host_group = ConfigHostGroup.objects.create(
+            name="test_config_host_group_2",
             object_id=self.cluster.pk,
             object_type=ContentType.objects.get(app_label="cm", model="cluster"),
             config_id=self.config.pk,
@@ -72,7 +72,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.conf_group_created_str = "configuration group created"
         self.created_operation_name = f"{self.name} {self.conf_group_created_str}"
 
-    def create_group_config(
+    def create_config_host_group(
         self,
         name: str,
         object_id: int,
@@ -90,7 +90,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def get_service(self):
-        return ClusterObject.objects.create(
+        return Service.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="service",
@@ -101,14 +101,14 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def get_component(self):
-        return ServiceComponent.objects.create(
+        return Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",
                 display_name="test_component",
             ),
             cluster=self.cluster,
-            service=ClusterObject.objects.create(
+            service=Service.objects.create(
                 prototype=Prototype.objects.create(bundle=self.bundle, type="service"),
                 cluster=self.cluster,
                 config=self.config,
@@ -160,14 +160,14 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.group_config.name} configuration group updated",
+            operation_name=f"{self.host_group.name} configuration group updated",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=operation_result,
             user=user,
         )
 
     def test_create_for_cluster(self):
-        self.create_group_config(
+        self.create_config_host_group(
             name=self.name,
             object_id=self.cluster.pk,
             object_type=AuditObjectType.CLUSTER,
@@ -210,7 +210,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_create_for_cluster_denied(self):
         with self.no_rights_user_logged_in:
-            response = self.create_group_config(
+            response = self.create_config_host_group(
                 name=self.name,
                 object_id=self.cluster.pk,
                 object_type=AuditObjectType.CLUSTER,
@@ -230,7 +230,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_create_for_service(self):
         service = self.get_service()
-        self.create_group_config(
+        self.create_config_host_group(
             name=self.name,
             object_id=service.pk,
             object_type=AuditObjectType.SERVICE,
@@ -253,7 +253,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_create_for_service_denied(self):
         service = self.get_service()
         with self.no_rights_user_logged_in:
-            response = self.create_group_config(
+            response = self.create_config_host_group(
                 name=self.name,
                 object_id=service.pk,
                 object_type=AuditObjectType.SERVICE,
@@ -273,7 +273,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_create_for_component(self):
         component = self.get_component()
-        self.create_group_config(
+        self.create_config_host_group(
             name=self.name,
             object_id=component.pk,
             object_type=AuditObjectType.COMPONENT,
@@ -296,7 +296,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_create_for_component_denied(self):
         component = self.get_component()
         with self.no_rights_user_logged_in:
-            response = self.create_group_config(
+            response = self.create_config_host_group(
                 name=self.name,
                 object_id=component.pk,
                 object_type=AuditObjectType.COMPONENT,
@@ -315,7 +315,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def test_delete(self):
-        self.client.delete(path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config.pk}))
+        self.client.delete(path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.host_group.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -324,7 +324,7 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.group_config.name} configuration group deleted",
+            operation_name=f"{self.host_group.name} configuration group deleted",
             operation_type=AuditLogOperationType.DELETE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
@@ -333,7 +333,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             response = self.client.delete(
-                path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config.pk}),
+                path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.host_group.pk}),
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -344,7 +344,7 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.group_config.name} configuration group deleted",
+            operation_name=f"{self.host_group.name} configuration group deleted",
             operation_type=AuditLogOperationType.DELETE,
             operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
@@ -352,9 +352,9 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_update_put(self):
         self.client.put(
-            path=f"/api/v1/group-config/{self.group_config.pk}/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/",
             data={
-                "name": self.group_config.name,
+                "name": self.host_group.name,
                 "object_id": self.cluster.pk,
                 "object_type": "cluster",
                 "config_id": self.config.id,
@@ -373,9 +373,9 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
             response = self.client.put(
-                path=f"/api/v1/group-config/{self.group_config.pk}/",
+                path=f"/api/v1/group-config/{self.host_group.pk}/",
                 data={
-                    "name": self.group_config.name,
+                    "name": self.host_group.name,
                     "object_id": self.cluster.pk,
                     "object_type": "cluster",
                     "config_id": self.config.id,
@@ -394,9 +394,9 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=f"/api/v1/group-config/{self.group_config.pk}/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/",
             data={
-                "name": self.group_config.name,
+                "name": self.host_group.name,
                 "object_id": self.cluster.pk,
                 "object_type": "cluster",
                 "config_id": self.config.id,
@@ -415,9 +415,9 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
             response = self.client.patch(
-                path=f"/api/v1/group-config/{self.group_config.pk}/",
+                path=f"/api/v1/group-config/{self.host_group.pk}/",
                 data={
-                    "name": self.group_config.name,
+                    "name": self.host_group.name,
                     "object_id": self.cluster.pk,
                     "object_type": "cluster",
                     "config_id": self.config.id,
@@ -436,7 +436,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_add_remove_host(self):
         self.client.post(
-            path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/host/",
             data={"id": self.host.id},
         )
 
@@ -447,14 +447,14 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host added to " f"{self.host_group.name} configuration group",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
         )
 
         self.client.delete(
-            path=f"/api/v1/group-config/{self.group_config.pk}/host/{self.host.id}/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/host/{self.host.id}/",
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -464,7 +464,7 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host removed from " f"{self.host_group.name} configuration group",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
@@ -473,7 +473,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_add_host_failed(self):
         host_pks = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
         response = self.client.post(
-            path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/host/",
             data={"id": host_pks[0] + 1},
         )
 
@@ -485,7 +485,7 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"host added to {self.group_config.name} configuration group",
+            operation_name=f"host added to {self.host_group.name} configuration group",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
@@ -494,7 +494,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_add_remove_host_denied(self):
         with self.no_rights_user_logged_in:
             response = self.client.post(
-                path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+                path=f"/api/v1/group-config/{self.host_group.pk}/host/",
                 data={"id": self.host.id},
             )
 
@@ -506,14 +506,14 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host added to " f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host added to " f"{self.host_group.name} configuration group",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
         response = self.client.post(
-            path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/host/",
             data={"id": self.host.id},
         )
 
@@ -521,7 +521,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
         with self.no_rights_user_logged_in:
             response = self.client.delete(
-                path=f"/api/v1/group-config/{self.group_config.pk}/host/{self.host.id}/",
+                path=f"/api/v1/group-config/{self.host_group.pk}/host/{self.host.id}/",
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -532,21 +532,21 @@ class TestGroupConfigAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host removed from " f"{self.group_config.name} configuration group",
+            operation_name=f"{self.host.fqdn} host removed from " f"{self.host_group.name} configuration group",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
         )
 
 
-class TestGroupConfigOperationName(BaseTestCase):
+class TestCHGOperationName(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.cluster = None
         self.config_id = None
-        self.group_config_id = None
-        self.group_config = None
+        self.host_group_id = None
+        self.host_group = None
 
     def check_log(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
@@ -555,7 +555,7 @@ class TestGroupConfigOperationName(BaseTestCase):
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(
             log.operation_name,
-            f"{self.group_config.name} configuration group {AuditLogOperationType.UPDATE}d",
+            f"{self.host_group.name} configuration group {AuditLogOperationType.UPDATE}d",
         )
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
@@ -605,16 +605,16 @@ class TestGroupConfigOperationName(BaseTestCase):
             path=reverse(viewname="v1:group-config-list"),
             data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
         )
-        self.group_config_id = response.data["id"]
+        self.host_group_id = response.data["id"]
         self.config_id = response.data["config_id"]
-        self.group_config = GroupConfig.objects.get(pk=self.group_config_id)
+        self.host_group = ConfigHostGroup.objects.get(pk=self.host_group_id)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_group_config_operation_name(self):
+    def test_config_host_group_operation_name(self):
         self.create_cluster_from_bundle()
         response = self.client.post(
-            path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
+            path=f"/api/v1/group-config/{self.host_group_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "aaa", "param_2": None, "param_3": None},
                 "attr": {
@@ -630,11 +630,11 @@ class TestGroupConfigOperationName(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_log(log=log, operation_result=AuditLogOperationResult.SUCCESS, user=self.test_user)
 
-    def test_group_config_operation_name_denied(self):
+    def test_config_host_group_operation_name_denied(self):
         self.create_cluster_from_bundle()
         with self.no_rights_user_logged_in:
             response = self.client.post(
-                path=f"/api/v1/group-config/{self.group_config_id}" f"/config/{self.config_id}/config-log/",
+                path=f"/api/v1/group-config/{self.host_group_id}" f"/config/{self.config_id}/config-log/",
                 data={
                     "config": {"param_1": "aaa", "param_2": None, "param_3": None},
                     "attr": {
@@ -650,10 +650,10 @@ class TestGroupConfigOperationName(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(log=log, operation_result=AuditLogOperationResult.DENIED, user=self.no_rights_user)
 
-    def test_group_config_operation_name_failed(self):
+    def test_config_host_group_operation_name_failed(self):
         self.create_cluster_from_bundle()
         response = self.client.post(
-            path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
+            path=f"/api/v1/group-config/{self.host_group_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "wrong", "param_2": None, "param_3": 5.0},
                 "attr": {

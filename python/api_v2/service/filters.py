@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCMEntityStatus, ClusterObject, ObjectType
+from cm.models import ADCMEntityStatus, ObjectType, Service
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
@@ -32,7 +32,7 @@ class ServiceFilter(FilterSet):
     )
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["name", "display_name", "status"]
 
     @staticmethod

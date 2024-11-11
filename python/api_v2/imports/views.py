@@ -25,7 +25,7 @@ from api_v2.generic.imports.utils import cook_data_for_multibind, get_imports
 from api_v2.views import ADCMGenericViewSet
 from audit.utils import audit
 from cm.api import multi_bind
-from cm.models import Cluster, ClusterObject, PrototypeImport
+from cm.models import Cluster, PrototypeImport, Service
 from django.db.transaction import atomic
 from drf_spectacular.utils import (
     extend_schema,
@@ -52,12 +52,12 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, ADCMGenericViewSet):
     filter_backends = []
     serializer_class = ImportPostSerializer
 
-    def get_object_and_check_perm(self, request) -> Cluster | ClusterObject:
+    def get_object_and_check_perm(self, request) -> Cluster | Service:
         if "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-            kwargs_get = {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]}
+            kwargs_get = {"perms": VIEW_SERVICE_PERM, "klass": Service, "id": self.kwargs["service_pk"]}
             kwargs_check = {
                 "action_type": VIEW_IMPORT_PERM,
-                "model": ClusterObject.__name__.lower(),
+                "model": Service.__name__.lower(),
             }
         else:
             kwargs_get = {"perms": VIEW_CLUSTER_PERM, "klass": Cluster, "id": self.kwargs["cluster_pk"]}
@@ -93,7 +93,7 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, ADCMGenericViewSet):
 
         bind_data = cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj)
 
-        if isinstance(obj, ClusterObject):
+        if isinstance(obj, Service):
             multi_bind(cluster=obj.cluster, service=obj, bind_list=bind_data)
             return Response(get_imports(obj=obj), status=HTTP_201_CREATED)
 

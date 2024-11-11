@@ -199,7 +199,7 @@ class TestClusterHosts(BaseInventoryTestCase):
     def test_adcm_5747_delete_service(self) -> None:
         service = self.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1).get()
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.servicecomponent_set.first())])
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.components.first())])
 
         action = Action.objects.get(prototype=service.prototype, name="action_on_service")
         target = CoreObjectDescriptor(id=service.id, type=ADCMCoreType.SERVICE)
@@ -212,7 +212,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         with self.assertRaises(ObjectDoesNotExist) as err_context:
             get_inventory_data(target=task.target, is_host_action=False)
 
-        self.assertIn("ClusterObject matching query does not exist.", str(err_context.exception))
+        self.assertIn("Service matching query does not exist.", str(err_context.exception))
 
         # with those inventory is generated
         data = get_inventory_data(target=task.target, is_host_action=False, related_objects=task.owner.related_objects)

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Literal, TypeAlias, TypedDict
 
-from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID, ShortObjectInfo
+from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
 
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
@@ -48,12 +48,12 @@ class HostActionType(ObjectWithHostGroup):
     hostname: str
     host_id: HostID
     host_type_id: PrototypeID
-    provider_id: HostProviderID
+    provider_id: ProviderID
 
 
-class HostProviderActionType(ObjectWithHostGroup):
+class ProviderActionType(ObjectWithHostGroup):
     action_proto_type: Literal["provider"]
-    provider_id: HostProviderID
+    provider_id: ProviderID
 
 
 class ADCMActionType(ObjectWithHostGroup):
@@ -83,7 +83,7 @@ class JobData(BaseModel):
         ClusterActionType
         | ServiceActionType
         | ComponentActionType
-        | HostProviderActionType
+        | ProviderActionType
         | HostActionType
         | ADCMActionType
     ) = Field(..., discriminator="action_proto_type")

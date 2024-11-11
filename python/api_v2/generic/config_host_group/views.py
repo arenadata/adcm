@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
-from adcm.permissions import VIEW_GROUP_CONFIG_PERM, VIEW_HOST_PERM, check_config_perm
+from adcm.permissions import VIEW_CONFIG_HOST_GROUP_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -31,14 +31,14 @@ from rest_framework.status import (
 )
 
 from api_v2.generic.config.utils import ConfigSchemaMixin
-from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
-from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
+from api_v2.generic.config_host_group.permissions import CHGHostsPermissions, CHGPermissions
+from api_v2.generic.config_host_group.serializers import CHGSerializer, HostCHGSerializer
 from api_v2.host.filters import HostMemberFilter
 from api_v2.host.serializers import HostAddSerializer, HostShortSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
-class GroupConfigViewSet(
+class CHGViewSet(
     PermissionListMixin,
     GetParentObjectMixin,
     ConfigSchemaMixin,
@@ -46,17 +46,17 @@ class GroupConfigViewSet(
     ListModelMixin,
     ADCMGenericViewSet,
 ):
-    queryset = GroupConfig.objects.order_by("name")
-    serializer_class = GroupConfigSerializer
-    permission_classes = [GroupConfigPermissions]
-    permission_required = [VIEW_GROUP_CONFIG_PERM]
+    queryset = ConfigHostGroup.objects.order_by("name")
+    serializer_class = CHGSerializer
+    permission_classes = [CHGPermissions]
+    permission_required = [VIEW_CONFIG_HOST_GROUP_PERM]
     filter_backends = []
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
 
         if parent_object is None:
-            return GroupConfig.objects.none()
+            return ConfigHostGroup.objects.none()
 
         return (
             super()
@@ -81,7 +81,7 @@ class GroupConfigViewSet(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        group_config = GroupConfig.objects.create(
+        host_group = ConfigHostGroup.objects.create(
             object_type=ContentType.objects.get_for_model(model=parent_object),
             object_id=parent_object.pk,
             **serializer.validated_data,
@@ -89,7 +89,7 @@ class GroupConfigViewSet(
 
         re_apply_object_policy(apply_object=parent_object)
 
-        return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
+        return Response(data=self.get_serializer(host_group).data, status=HTTP_201_CREATED)
 
     @action(
         methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
@@ -99,14 +99,14 @@ class GroupConfigViewSet(
 
         self._check_parent_permissions(parent_object=parent_object)
 
-        # taken from GroupConfig.host_candidate
-        if isinstance(parent_object, (Cluster, HostProvider)):
+        # taken from ConfigHostGroup.host_candidate
+        if isinstance(parent_object, (Cluster, Provider)):
             hosts_qs = parent_object.host_set
-        elif isinstance(parent_object, ClusterObject):
+        elif isinstance(parent_object, Service):
             hosts_qs = Host.objects.filter(
                 cluster_id=parent_object.cluster_id, hostcomponent__service=parent_object
             ).distinct()
-        elif isinstance(parent_object, ServiceComponent):
+        elif isinstance(parent_object, Component):
             hosts_qs = Host.objects.filter(
                 cluster_id=parent_object.cluster_id, hostcomponent__component=parent_object
             ).distinct()
@@ -114,10 +114,10 @@ class GroupConfigViewSet(
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
 
         taken_host_id_qs = (
-            GroupConfig.hosts.through.objects.values_list("host_id", flat=True)
+            ConfigHostGroup.hosts.through.objects.values_list("host_id", flat=True)
             .filter(
-                groupconfig_id__in=(
-                    GroupConfig.objects.values_list("id", flat=True).filter(
+                confighostgroup_id__in=(
+                    ConfigHostGroup.objects.values_list("id", flat=True).filter(
                         object_id=parent_object.id,
                         object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
                     )
@@ -135,9 +135,9 @@ class GroupConfigViewSet(
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
     def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
-        group_config: GroupConfig = self.get_object()
-        hosts = group_config.host_candidate()
-        serializer = HostGroupConfigSerializer(instance=hosts, many=True)
+        host_group: ConfigHostGroup = self.get_object()
+        hosts = host_group.host_candidate()
+        serializer = HostCHGSerializer(instance=hosts, many=True)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
 
@@ -202,32 +202,30 @@ class GroupConfigViewSet(
             raise PermissionDenied()
 
 
-class HostGroupConfigViewSet(
-    PermissionListMixin, GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet
-):
+class HostCHGViewSet(PermissionListMixin, GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
-    permission_classes = [GroupConfigHostsPermissions]
+    permission_classes = [CHGHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostMemberFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
 
-    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostAddSerializer]:
+    def get_serializer_class(self) -> type[HostCHGSerializer | HostAddSerializer]:
         if self.action == "create":
             return HostAddSerializer
 
-        return HostGroupConfigSerializer
+        return HostCHGSerializer
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
-        return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
+        return self.queryset.filter(config_host_group__id=self.kwargs["config_host_group_pk"])
 
-    def get_group_for_change(self) -> GroupConfig:
+    def get_group_for_change(self) -> ConfigHostGroup:
         config_group = super().get_parent_object()
-        if config_group is None or not isinstance(config_group, GroupConfig):
+        if config_group is None or not isinstance(config_group, ConfigHostGroup):
             raise NotFound
 
         parent_view_perm = f"cm.view_{config_group.object.__class__.__name__.lower()}"
@@ -247,23 +245,23 @@ class HostGroupConfigViewSet(
         return config_group
 
     def create(self, request, *_, **__):
-        group_config = self.get_group_for_change()
+        host_group = self.get_group_for_change()
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         host_id = serializer.validated_data["host_id"]
-        group_config.check_host_candidate(host_ids=[host_id])
+        host_group.check_host_candidate(host_ids=[host_id])
         host = Host.objects.get(pk=host_id)
-        group_config.hosts.add(host)
+        host_group.hosts.add(host)
 
-        return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
+        return Response(status=HTTP_201_CREATED, data=HostCHGSerializer(instance=host).data)
 
     def destroy(self, request, *_, **kwargs):  # noqa: ARG002
-        group_config = self.get_group_for_change()
+        host_group = self.get_group_for_change()
 
-        host = group_config.hosts.filter(pk=kwargs["pk"]).first()
+        host = host_group.hosts.filter(pk=kwargs["pk"]).first()
         if not host:
             raise NotFound
 
-        group_config.hosts.remove(host)
+        host_group.hosts.remove(host)
         return Response(status=HTTP_204_NO_CONTENT)

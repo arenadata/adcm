@@ -24,12 +24,10 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_RE
 OBJECT_TYPES_DICT = {
     "adcm": "adcm",
     "cluster": "cluster",
-    "service": "clusterobject",
-    "cluster object": "service",
-    "component": "servicecomponent",
-    "service component": "servicecomponent",
-    "provider": "hostprovider",
-    "host provider": "hostprovider",
+    "service": "service",
+    "component": "component",
+    "provider": "provider",
+    "host provider": "provider",
     "host": "host",
 }
 

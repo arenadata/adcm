@@ -19,17 +19,17 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
     Host,
-    HostProvider,
     JobLog,
     ObjectType,
     Prototype,
     PrototypeImport,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.concern.messages import ConcernMessage
@@ -254,7 +254,7 @@ class TestConcernsLogic(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "provider_no_config"
         self.provider_no_config_bundle = self.add_bundle(source_dir=bundle_dir)
 
-    def _check_concerns(self, object_: Cluster | ClusterObject | ServiceComponent, expected_concerns: list[dict]):
+    def _check_concerns(self, object_: Cluster | Service | Component, expected_concerns: list[dict]):
         object_concerns = object_.concerns.all()
         self.assertEqual(object_concerns.count(), len(expected_concerns))
 
@@ -322,7 +322,7 @@ class TestConcernsLogic(BaseAPITestCase):
         service = self.add_services_to_cluster(
             service_names=["service_with_plus_component_constraint"], cluster=cluster
         ).get()
-        component = ServiceComponent.objects.get(prototype__name="plus", service=service, cluster=cluster)
+        component = Component.objects.get(prototype__name="plus", service=service, cluster=cluster)
 
         expected_concern_part = {
             "type": "issue",
@@ -435,7 +435,7 @@ class TestConcernsLogic(BaseAPITestCase):
         service_2 = self.add_services_to_cluster(
             service_names=["service_with_many_issues_on_add"], cluster=cluster
         ).get()
-        component = service_2.servicecomponent_set.get()
+        component = service_2.components.get()
         hc_concern = {
             "owner_id": cluster.pk,
             "owner_type": ContentType.objects.get_for_model(cluster),
@@ -478,7 +478,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.control_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="Control HP")
         self.control_host = self.add_host(provider=self.control_provider, fqdn="control_host")
         self.control_service = self.add_services_to_cluster(["main"], cluster=self.control_cluster).get()
-        self.control_component = self.control_service.servicecomponent_set.get(prototype__name="single")
+        self.control_component = self.control_service.components.get(prototype__name="single")
 
         self.control_concerns = {
             object_: tuple(object_.concerns.all())
@@ -546,13 +546,13 @@ class TestConcernRedistribution(BaseAPITestCase):
         for object_, expected_concerns in self.control_concerns.items():
             self.check_concerns(object_, expected_concerns)
 
-    def change_mapping_via_api(self, entries: Iterable[tuple[Host, ServiceComponent]]) -> None:
+    def change_mapping_via_api(self, entries: Iterable[tuple[Host, Component]]) -> None:
         response = self.client.v2[self.cluster, "mapping"].post(
             data=[{"hostId": host.id, "componentId": component.id} for host, component in entries]
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def change_mm_via_api(self, mm_value: MM, *objects: ClusterObject | ServiceComponent | Host) -> None:
+    def change_mm_via_api(self, mm_value: MM, *objects: Service | Component | Host) -> None:
         for object_ in objects:
             object_endpoint = (
                 self.client.v2[object_]
@@ -570,7 +570,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             HTTP_201_CREATED,
         )
 
-    def change_imports_via_api(self, target: Cluster | ClusterObject, imports: list[dict]) -> None:
+    def change_imports_via_api(self, target: Cluster | Service, imports: list[dict]) -> None:
         self.assertEqual(
             self.client.v2[target, "imports"].post(data=imports).status_code,
             HTTP_201_CREATED,
@@ -589,16 +589,16 @@ class TestConcernRedistribution(BaseAPITestCase):
         )
 
         main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
-        single_c = main_s.servicecomponent_set.get(prototype__name="single")
-        free_c = main_s.servicecomponent_set.get(prototype__name="free")
+        single_c = main_s.components.get(prototype__name="single")
+        free_c = main_s.components.get(prototype__name="free")
 
         require_dummy_s = self.add_services_to_cluster(["require_dummy_service"], cluster=self.cluster).get()
-        silent_c = require_dummy_s.servicecomponent_set.get(prototype__name="silent")
-        sir_c = require_dummy_s.servicecomponent_set.get(prototype__name="sir")
+        silent_c = require_dummy_s.components.get(prototype__name="silent")
+        sir_c = require_dummy_s.components.get(prototype__name="sir")
 
         # have to add it to proceed to hc set
         dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
-        dummy_c = dummy_s.servicecomponent_set.get()
+        dummy_c = dummy_s.components.get()
 
         # component-less service
         no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
@@ -751,8 +751,8 @@ class TestConcernRedistribution(BaseAPITestCase):
             .order_by("prototype__name")
             .all()
         )
-        single_c = main_s.servicecomponent_set.get(prototype__name="single")
-        free_c = main_s.servicecomponent_set.get(prototype__name="free")
+        single_c = main_s.components.get(prototype__name="single")
+        free_c = main_s.components.get(prototype__name="free")
 
         # find own concerns
         provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
@@ -869,8 +869,8 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
         no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
-        single_c = main_s.servicecomponent_set.get(prototype__name="single")
-        free_c = main_s.servicecomponent_set.get(prototype__name="free")
+        single_c = main_s.components.get(prototype__name="single")
+        free_c = main_s.components.get(prototype__name="free")
 
         self.set_hostcomponent(
             cluster=self.cluster,
@@ -893,10 +893,10 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         # update states, so flag autogeneration will work as expected
         Host.objects.all().update(state="something")
-        HostProvider.objects.all().update(state="something")
+        Provider.objects.all().update(state="something")
         Cluster.objects.all().update(state="something")
-        ClusterObject.objects.all().update(state="something")
-        ServiceComponent.objects.all().update(state="something")
+        Service.objects.all().update(state="something")
+        Component.objects.all().update(state="something")
 
         expected_concerns = {}
 
@@ -970,7 +970,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             _update_expected_concerns()
             check_concerns()
 
-        with self.subTest("Change HostProvider Config"):
+        with self.subTest("Change Provider Config"):
             self.change_config_via_api(another_provider)
 
             another_provider_concern = self.get_config_flags_of(another_provider)[0]
@@ -1018,7 +1018,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         host_2 = self.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
 
         import_s = self.add_services_to_cluster(["with_multiple_imports"], cluster=self.cluster).get()
-        component_1, component_2 = import_s.servicecomponent_set.order_by("prototype__name")
+        component_1, component_2 = import_s.components.order_by("prototype__name")
 
         self.set_hostcomponent(
             cluster=self.cluster,
@@ -1080,7 +1080,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         mapped_host = self.add_host(self.provider, fqdn="mapped-host", cluster=self.cluster)
 
         greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
-        on_all_c = greedy_s.servicecomponent_set.get(prototype__name="on_all")
+        on_all_c = greedy_s.components.get(prototype__name="on_all")
 
         # find concerns
         provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
@@ -1134,7 +1134,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
 
         dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
-        dummy_c = dummy_s.servicecomponent_set.get(prototype__name="same_dummy")
+        dummy_c = dummy_s.components.get(prototype__name="same_dummy")
 
         # test
         self.assertIsNotNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
@@ -1167,11 +1167,9 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         self.assertFalse(ConcernItem.objects.filter(owner_id=host_1_pk, owner_type=Host.class_content_type))
         self.assertFalse(ConcernItem.objects.filter(owner_id=host_2_pk, owner_type=Host.class_content_type))
-        self.assertFalse(ConcernItem.objects.filter(owner_id=provider_pk, owner_type=HostProvider.class_content_type))
+        self.assertFalse(ConcernItem.objects.filter(owner_id=provider_pk, owner_type=Provider.class_content_type))
         self.assertEqual(
-            ConcernItem.objects.filter(
-                owner_id=another_provider.pk, owner_type=HostProvider.class_content_type
-            ).count(),
+            ConcernItem.objects.filter(owner_id=another_provider.pk, owner_type=Provider.class_content_type).count(),
             1,
         )
 
@@ -1193,7 +1191,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertEqual(self.provider.concerns.count(), 1)
         self.assertEqual(another_provider.concerns.count(), 1)
 
-    def add_host_via_api(self, provider: HostProvider, fqdn: str) -> Host:
+    def add_host_via_api(self, provider: Provider, fqdn: str) -> Host:
         response = (self.client.v2 / "hosts").post(data={"hostprovider_id": provider.pk, "name": fqdn})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         return Host.objects.get(fqdn=fqdn)
@@ -1256,7 +1254,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.check_concerns(host_1, concerns=(provider_config_issue, host_1_flag))
         self.check_concerns(host_2, concerns=(provider_config_issue, host_2.get_own_issue(ConcernCause.CONFIG)))
 
-    def test_host_config_issue_from_hostprovider(self):
+    def test_host_config_issue_from_provider(self):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
 
         host_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
@@ -1265,7 +1263,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertIsNotNone(host_config_issue)
         self.assertIsNotNone(provider_config_issue)
 
-        #  hostprovider config issue resolved
+        #  provider config issue resolved
         self.change_config_via_api(self.provider)
 
         host_2 = self.add_host(self.provider, fqdn="host2")
@@ -1293,7 +1291,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             concerns=(host_2.get_own_issue(ConcernCause.CONFIG),),
         )
 
-    def test_two_hosts_config_issue_from_hostprovider_resolved(self):
+    def test_two_hosts_config_issue_from_provider_resolved(self):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
         host_2 = self.add_host_via_api(self.provider, fqdn="host2")
 
@@ -1305,7 +1303,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertIsNotNone(host_2_config_issue)
         self.assertIsNotNone(provider_config_issue)
 
-        #  hostprovider config issue resolved
+        #  provider config issue resolved
         self.change_config_via_api(self.provider)
 
         self.assertIsNone(self.provider.get_own_issue(ConcernCause.CONFIG))
@@ -1330,9 +1328,9 @@ class TestConcernRedistribution(BaseAPITestCase):
         response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": require_dummy_proto_id})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        require_dummy_s = ClusterObject.objects.get(id=response.json()["id"])
-        sir_c = require_dummy_s.servicecomponent_set.get(prototype__name="sir")
-        silent_c = require_dummy_s.servicecomponent_set.get(prototype__name="silent")
+        require_dummy_s = Service.objects.get(id=response.json()["id"])
+        sir_c = require_dummy_s.components.get(prototype__name="sir")
+        silent_c = require_dummy_s.components.get(prototype__name="silent")
 
         requirement_con = require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT)
         component_config_con = sir_c.get_own_issue(ConcernCause.CONFIG)
@@ -1375,7 +1373,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": dummy_proto_id})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        dummy_s = ClusterObject.objects.get(id=response.json()["id"])
+        dummy_s = Service.objects.get(id=response.json()["id"])
 
         with self.subTest("Disappeared On Required Service Add"):
             self.assertIsNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))

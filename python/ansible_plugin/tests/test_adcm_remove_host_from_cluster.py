@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.converters import orm_object_to_core_type
-from cm.models import ServiceComponent
+from cm.models import Component
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import (
@@ -31,7 +31,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(self.cluster, self.host_1)
 
@@ -248,9 +248,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
     def test_remove_host_from_cluster_with_component_on_host_constraint_error(self) -> None:
         self.set_hostcomponent(
             cluster=self.cluster,
-            entries=(
-                (self.host_1, ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")),
-            ),
+            entries=((self.host_1, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -272,9 +270,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         self.add_host_to_cluster(self.cluster, self.host_2)
         self.set_hostcomponent(
             cluster=self.cluster,
-            entries=(
-                (self.host_2, ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")),
-            ),
+            entries=((self.host_2, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
         task = self.prepare_task(owner=self.component_1, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

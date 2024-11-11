@@ -19,7 +19,7 @@ from cm.services.job.inventory._types import (
     ClusterVars,
     ComponentNode,
     HostNode,
-    HostProviderNode,
+    ProviderNode,
     ServiceNode,
 )
 
@@ -28,7 +28,7 @@ __all__ = [
     "ClusterVars",
     "ComponentNode",
     "HostNode",
-    "HostProviderNode",
+    "ProviderNode",
     "ServiceNode",
     "detect_host_groups_for_cluster_bundle_action",
     "get_adcm_configuration",

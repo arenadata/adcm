@@ -33,13 +33,13 @@ from cm.models import (
     Action,
     ActionHostGroup,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernType,
     ConfigLog,
     Host,
-    HostProvider,
     JobStatus,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.services.bundle import retrieve_bundle_restrictions
@@ -57,7 +57,7 @@ from cm.services.mapping import change_host_component_mapping, check_no_host_in_
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
-ObjectWithAction: TypeAlias = ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
@@ -246,22 +246,22 @@ class _ActionLaunchObjects:
     """Object owner of locks/issues and which will be locked on action launch"""
 
     cluster: Cluster | None
-    """Related cluster, is None for own HostProvider/Host actions"""
+    """Related cluster, is None for own Provider/Host actions"""
 
     def __init__(self, target: ActionTarget, action: Action) -> None:
         self.target = target
         self.object_to_lock = self.target
 
-        if isinstance(target, (Cluster, ClusterObject, ServiceComponent)):
+        if isinstance(target, (Cluster, Service, Component)):
             self.owner = target
             self.cluster = target if isinstance(target, Cluster) else target.cluster
         elif action.host_action and isinstance(target, Host):
             self.cluster = target.cluster
             match action.prototype.type:
                 case "component":
-                    self.owner = ServiceComponent.objects.get(cluster=self.cluster, prototype=action.prototype)
+                    self.owner = Component.objects.get(cluster=self.cluster, prototype=action.prototype)
                 case "service":
-                    self.owner = ClusterObject.objects.get(cluster=self.cluster, prototype=action.prototype)
+                    self.owner = Service.objects.get(cluster=self.cluster, prototype=action.prototype)
                 case "cluster":
                     self.owner = self.cluster
                 case _:

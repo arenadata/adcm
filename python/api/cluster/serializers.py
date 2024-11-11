@@ -15,7 +15,7 @@ from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
-from cm.models import Action, Cluster, Host, HostComponent, Prototype, ServiceComponent
+from cm.models import Action, Cluster, Component, Host, HostComponent, Prototype
 from cm.schemas import RequiresUISchema
 from cm.services.mapping import change_host_component_mapping
 from cm.status_api import get_cluster_status, get_hc_status
@@ -39,15 +39,15 @@ from rest_framework.serializers import (
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentShortSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.config_host_group.serializers import CHGsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actions, get_requires
 
 
 def get_cluster_id(obj):
-    if hasattr(obj.obj_ref, "clusterobject"):
-        return obj.obj_ref.clusterobject.cluster.id
+    if hasattr(obj.obj_ref, "service"):
+        return obj.obj_ref.service.cluster.id
     else:
         return obj.obj_ref.cluster.id
 
@@ -125,7 +125,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
+    group_config = CHGsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
     def get_status(obj: Cluster) -> int:
@@ -296,7 +296,7 @@ class HostComponentUISerializer(EmptySerializer):
         return HostSerializer(hosts, many=True, context=self.context).data
 
     def get_component(self, obj):  # noqa: ARG001, ARG002
-        comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
+        comps = Component.objects.filter(cluster=self.context.get("cluster"))
 
         return HCComponentSerializer(comps, many=True, context=self.context).data
 
@@ -355,19 +355,19 @@ class HCComponentSerializer(ComponentShortSerializer):
     requires = SerializerMethodField()
 
     @staticmethod
-    def get_service_state(obj: ServiceComponent) -> str:
+    def get_service_state(obj: Component) -> str:
         return obj.service.state
 
     @staticmethod
-    def get_service_name(obj: ServiceComponent) -> str:
+    def get_service_name(obj: Component) -> str:
         return obj.service.prototype.name
 
     @staticmethod
-    def get_service_display_name(obj: ServiceComponent) -> str:
+    def get_service_display_name(obj: Component) -> str:
         return obj.service.prototype.display_name
 
     @staticmethod
-    def get_requires(obj: ServiceComponent) -> list[RequiresUISchema] | None:
+    def get_requires(obj: Component) -> list[RequiresUISchema] | None:
         return get_requires(prototype=obj.prototype)
 
 

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ClusterObject, ObjectType
+from cm.models import ObjectType, Service
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -25,7 +25,7 @@ class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service = ClusterObject.objects.first()
+        self.service = Service.objects.first()
 
         self.new_user_2_group = Group.objects.create(name="new_user_2_group_name")
         self.new_user_2 = self.get_new_user(

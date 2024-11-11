@@ -40,7 +40,6 @@ from cm.models import (
     Bundle,
     Cluster,
     ConfigLog,
-    HostProvider,
     JobStatus,
     ObjectType,
     ProductCategory,
@@ -48,6 +47,7 @@ from cm.models import (
     PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
+    Provider,
     SignatureStatus,
     StageAction,
     StagePrototype,
@@ -1286,7 +1286,7 @@ def clear_stage():
 
 
 def delete_bundle(bundle):
-    providers = HostProvider.objects.filter(prototype__bundle=bundle)
+    providers = Provider.objects.filter(prototype__bundle=bundle)
     if providers:
         provider = providers[0]
         raise_adcm_ex(

@@ -71,7 +71,7 @@ def validate_objects(
     raw_arguments: dict,
 ) -> PluginValidationError | None:
     match context_owner.type:
-        case ADCMCoreType.HOSTPROVIDER | ADCMCoreType.HOST:
+        case ADCMCoreType.PROVIDER | ADCMCoreType.HOST:
             if "objects" in raw_arguments:
                 return PluginValidationError(message=f"`objects` shouldn't be specified for {context_owner.type}")
         case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT:

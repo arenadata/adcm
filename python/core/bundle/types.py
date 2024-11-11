@@ -74,4 +74,5 @@ class MappingRestrictions:
 @dataclass(slots=True, frozen=True)
 class BundleRestrictions:
     service_requires: ServiceDependencies
+    required_services: set[ServiceName]
     mapping: MappingRestrictions

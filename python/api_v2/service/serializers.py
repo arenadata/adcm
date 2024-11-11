@@ -12,7 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import ClusterObject, MaintenanceMode, ServiceComponent
+from cm.models import Component, MaintenanceMode, Service
 from rest_framework.serializers import (
     ChoiceField,
     IntegerField,
@@ -33,7 +33,7 @@ class ServiceRetrieveSerializer(WithStatusSerializer):
     main_info = SerializerMethodField()
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = [
             "id",
             "name",
@@ -51,13 +51,13 @@ class ServiceRetrieveSerializer(WithStatusSerializer):
             "multi_state",
         ]
 
-    def get_main_info(self, instance: ClusterObject) -> str | None:
+    def get_main_info(self, instance: Service) -> str | None:
         return get_main_info(obj=instance)
 
 
 class ServiceRelatedSerializer(ModelSerializer):
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["id", "name", "display_name"]
 
 
@@ -69,25 +69,25 @@ class ServiceMaintenanceModeSerializer(ModelSerializer):
     maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["maintenance_mode"]
 
 
 class RelatedComponentsStatusesSerializer(WithStatusSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name", "status"]
 
 
 class ServiceStatusSerializer(ModelSerializer):
-    components = RelatedComponentsStatusesSerializer(many=True, source="servicecomponent_set")
+    components = RelatedComponentsStatusesSerializer(many=True)
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["components"]
 
 
 class ServiceAuditSerializer(ModelSerializer):
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["maintenance_mode"]

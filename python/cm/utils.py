@@ -103,9 +103,9 @@ def get_obj_type(obj_type: str) -> str:
     object_names_to_object_types = {
         "adcm": "adcm",
         "cluster": "cluster",
-        "cluster object": "service",
-        "service component": "component",
-        "host provider": "provider",
+        "service": "service",
+        "component": "component",
+        "provider": "provider",
         "host": "host",
     }
     return object_names_to_object_types[obj_type]

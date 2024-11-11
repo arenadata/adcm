@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.models import ADCMEntity, ConcernItem, ConfigLog, ServiceComponent
+from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog
 from cm.services.config import ConfigAttrPair
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
@@ -37,7 +37,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             ["service_1", "service_2"], cluster=self.cluster
         ).order_by("prototype__name")
         self.component_1, self.component_2 = (
-            ServiceComponent.objects.filter(service=self.service_1).order_by("prototype__name").all()
+            Component.objects.filter(service=self.service_1).order_by("prototype__name").all()
         )
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)

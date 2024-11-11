@@ -20,11 +20,11 @@ from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, GeneralEnti
 from django.conf import settings
 from django.db.models import F, QuerySet, Value
 
-from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.services.config.types import AttrDict, ConfigDict
-from cm.services.group_config import GroupConfigInfo, GroupConfigName
+from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
 from cm.services.job.inventory._types import ObjectsInInventoryMap
 
 
@@ -33,13 +33,13 @@ class _ObjectRequiredConfigInfo(NamedTuple):
     config_id: ConfigID
 
 
-def get_group_config_alternatives_for_hosts_in_cluster_groups(
-    group_configs: Iterable[GroupConfigInfo],
+def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
+    config_host_groups: Iterable[ConfigHostGroupInfo],
     cluster_vars: dict,
-    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict],
+    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
     topology: ClusterTopology,
 ) -> dict[str, dict]:
-    groups_with_hosts = tuple(group for group in group_configs if group.hosts)
+    groups_with_hosts = tuple(group for group in config_host_groups if group.hosts)
 
     if not groups_with_hosts:
         return {}
@@ -66,7 +66,7 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
             attributes=attributes,
             specification=specification,
             config_owner=group.owner,
-            group_config_id=group.id,
+            config_host_group_id=group.id,
         )
 
         group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
@@ -99,24 +99,24 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
     return result
 
 
-def get_group_config_alternatives_for_hosts_in_hostprovider_groups(
-    group_configs: Iterable[GroupConfigInfo],
-    hostprovider_vars: dict,
-    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict],
+def get_config_host_group_alternatives_for_hosts_in_provider_groups(
+    config_host_groups: Iterable[ConfigHostGroupInfo],
+    provider_vars: dict,
+    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
 ) -> dict[str, dict]:
-    groups_of_hostprovider_with_hosts = tuple(
-        group for group in group_configs if group.hosts and group.owner.type == ADCMCoreType.HOSTPROVIDER
+    groups_of_provider_with_hosts = tuple(
+        group for group in config_host_groups if group.hosts and group.owner.type == ADCMCoreType.PROVIDER
     )
 
-    if not groups_of_hostprovider_with_hosts:
+    if not groups_of_provider_with_hosts:
         return {}
 
     configurations = retrieve_config_attr_pairs(
-        configurations=(group.current_config_id for group in groups_of_hostprovider_with_hosts)
+        configurations=(group.current_config_id for group in groups_of_provider_with_hosts)
     )
 
     objects_with_groups = defaultdict(set)
-    for group in groups_of_hostprovider_with_hosts:
+    for group in groups_of_provider_with_hosts:
         objects_with_groups[group.owner.type].add(group.owner.id)
 
     objects_config_info = _get_config_info(objects=objects_with_groups)
@@ -125,9 +125,9 @@ def get_group_config_alternatives_for_hosts_in_hostprovider_groups(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
     )
 
-    result = defaultdict(lambda: deepcopy(hostprovider_vars))
+    result = defaultdict(lambda: deepcopy(provider_vars))
 
-    for group in groups_of_hostprovider_with_hosts:
+    for group in groups_of_provider_with_hosts:
         configuration, attributes = configurations[group.current_config_id]
         specification = specifications_for_prototypes[objects_config_info[group.owner].prototype_id]
         updated_config = update_configuration_for_inventory_inplace(
@@ -135,7 +135,7 @@ def get_group_config_alternatives_for_hosts_in_hostprovider_groups(
             attributes=attributes,
             specification=specification,
             config_owner=group.owner,
-            group_config_id=group.id,
+            config_host_group_id=group.id,
         )
 
         group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
@@ -209,9 +209,9 @@ def _get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescripto
             )
             for orm_type, core_type in (
                 (Cluster, ADCMCoreType.CLUSTER),
-                (ClusterObject, ADCMCoreType.SERVICE),
-                (ServiceComponent, ADCMCoreType.COMPONENT),
-                (HostProvider, ADCMCoreType.HOSTPROVIDER),
+                (Service, ADCMCoreType.SERVICE),
+                (Component, ADCMCoreType.COMPONENT),
+                (Provider, ADCMCoreType.PROVIDER),
                 (Host, ADCMCoreType.HOST),
             )
         ),
@@ -231,7 +231,7 @@ def update_configuration_for_inventory_inplace(
     attributes: AttrDict,
     specification: FlatSpec,
     config_owner: CoreObjectDescriptor | GeneralEntityDescriptor,
-    group_config_id: int | None = None,
+    config_host_group_id: int | None = None,
 ) -> AttrDict:
     skip_deactivated_groups: set[str] = set()
 
@@ -253,7 +253,7 @@ def update_configuration_for_inventory_inplace(
             case ["file" | "secretfile", ""]:
                 if configuration[key]:
                     configuration[key] = _build_string_path_for_file(
-                        object_itself=config_owner, config_key=key, group_config_id=group_config_id
+                        object_itself=config_owner, config_key=key, config_host_group_id=config_host_group_id
                     )
             case ["file" | "secretfile", _]:
                 if subkey in configuration[key] and configuration[key][subkey]:
@@ -261,7 +261,7 @@ def update_configuration_for_inventory_inplace(
                         object_itself=config_owner,
                         config_key=key,
                         config_subkey=subkey,
-                        group_config_id=group_config_id,
+                        config_host_group_id=config_host_group_id,
                     )
             case ["password" | "secrettext", ""]:
                 # check for None
@@ -295,7 +295,7 @@ def _build_string_path_for_file(
     object_itself: CoreObjectDescriptor | GeneralEntityDescriptor,
     config_key: str,
     config_subkey: str = "",
-    group_config_id: int | None = None,
+    config_host_group_id: int | None = None,
 ) -> str:
     """
     In most cases you want to pass CoreObjectDescriptor.
@@ -304,17 +304,17 @@ def _build_string_path_for_file(
     """
     if not isinstance(object_itself, CoreObjectDescriptor):
         type_as_string = object_itself.type
-    elif object_itself.type == ADCMCoreType.HOSTPROVIDER:
+    elif object_itself.type == ADCMCoreType.PROVIDER:
         type_as_string = "provider"
     else:
         type_as_string = object_itself.type.value
 
-    if group_config_id is not None:
+    if config_host_group_id is not None:
         filename = [
             type_as_string,
             str(object_itself.id),
             "group",
-            str(group_config_id),
+            str(config_host_group_id),
             config_key,
             config_subkey,
         ]

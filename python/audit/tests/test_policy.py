@@ -14,7 +14,7 @@ from datetime import datetime
 import contextlib
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Bundle, Cluster, HostProvider, ObjectType, Prototype
+from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider
 from django.urls import reverse
 from rbac.models import Policy, Role, RoleTypes, User
 from rest_framework.response import Response
@@ -50,7 +50,7 @@ class TestPolicyAudit(BaseTestCase):
         self.list_name = "v1:rbac:policy-list"
         self.detail_name = "v1:rbac:policy-detail"
         self.policy_updated_str = "Policy updated"
-        self.provider = HostProvider.objects.create(
+        self.provider = Provider.objects.create(
             name="test_provider",
             prototype=Prototype.objects.create(bundle=bundle, type="provider"),
         )

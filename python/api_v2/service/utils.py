@@ -17,12 +17,12 @@ from cm.errors import AdcmEx
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
     ConfigLog,
     ObjectConfig,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.cases import recalculate_own_concerns_on_add_services
@@ -34,33 +34,27 @@ from django.db.models import QuerySet
 from rbac.models import re_apply_object_policy
 
 
-def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[ClusterObject]:
+def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[Service]:
     with transaction.atomic():
-        ClusterObject.objects.bulk_create(
-            objs=[ClusterObject(cluster=cluster, prototype=proto) for proto in prototypes]
-        )
-        services = ClusterObject.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
+        Service.objects.bulk_create(objs=[Service(cluster=cluster, prototype=proto) for proto in prototypes])
+        services = Service.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
         bulk_init_config(objects=services)
 
         service_proto_service_map = {service.prototype.pk: service for service in services}
-        ServiceComponent.objects.bulk_create(
+        Component.objects.bulk_create(
             objs=[
-                ServiceComponent(
-                    cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype
-                )
+                Component(cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype)
                 for prototype in Prototype.objects.filter(
                     type=ObjectType.COMPONENT, parent__in=prototypes
                 ).select_related("parent")
             ]
         )
-        components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
+        components = Component.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
         bulk_init_config(objects=components)
 
         recalculate_own_concerns_on_add_services(
             cluster=cluster,
-            services=services.prefetch_related(
-                "servicecomponent_set"
-            ).all(),  # refresh values from db to update `config` field
+            services=services.prefetch_related("components").all(),  # refresh values from db to update `config` field
         )
         added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
@@ -131,7 +125,7 @@ def validate_service_prototypes(
     if "unaccepted" in {proto.license for proto in prototypes}:
         return None, AdcmEx(code="LICENSE_ERROR", msg="All licenses must be accepted")
 
-    if ClusterObject.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
+    if Service.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
         return None, AdcmEx(code="SERVICE_CONFLICT")
 
     if {proto.bundle.pk for proto in prototypes if not proto.shared}.difference({cluster.prototype.bundle.pk}):

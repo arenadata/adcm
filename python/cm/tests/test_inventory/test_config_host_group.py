@@ -16,20 +16,20 @@ from core.types import CoreObjectDescriptor
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
+    Component,
     ObjectType,
     Prototype,
-    ServiceComponent,
 )
 from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
-class TestGroupConfigsInInventory(BaseInventoryTestCase):
+class TestCHGsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.cluster = self.add_cluster(
-            bundle=self.add_bundle(source_dir=self.bundles_dir / "cluster_group_config"), name="Target Cluster"
+            bundle=self.add_bundle(source_dir=self.bundles_dir / "cluster_config_host_group"), name="Target Cluster"
         )
 
         self.provider = self.add_provider(
@@ -49,20 +49,20 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
             cluster=self.cluster,
             prototypes=Prototype.objects.filter(type=ObjectType.SERVICE, name__in=["not_simple", "thesame"]),
         )
-        self.component_not_simple = ServiceComponent.objects.get(
+        self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"
         )
-        self.component_another_not_simple = ServiceComponent.objects.get(
+        self.component_another_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="another_not_simple_component"
         )
-        self.component_thesame = ServiceComponent.objects.get(
+        self.component_thesame = Component.objects.get(
             service=self.service_thesame, prototype__name="thesame_component"
         )
-        self.component_another_thesame = ServiceComponent.objects.get(
+        self.component_another_thesame = Component.objects.get(
             service=self.service_thesame, prototype__name="another_thesame_component"
         )
 
-    def test_group_config_in_inventory(self) -> None:
+    def test_config_host_group_in_inventory(self) -> None:
         self.set_hostcomponent(
             cluster=self.cluster,
             entries=(
@@ -104,13 +104,13 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
         }
         expected_parts = {
             file.stem.replace(".json", ""): self.render_json_template(file=file, context=context)
-            for file in (self.templates_dir / "group_config").iterdir()
+            for file in (self.templates_dir / "config_host_group").iterdir()
         }
 
-        cluster_group = self.add_group_config(parent=self.cluster, hosts=(self.host_1, self.host_3))
-        service_group = self.add_group_config(parent=self.service_thesame, hosts=(self.host_1,))
-        component_group_1 = self.add_group_config(parent=self.component_another_thesame, hosts=(self.host_2,))
-        self.add_group_config(parent=self.component_thesame, hosts=(self.host_1, self.host_3))
+        cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
+        service_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
+        component_group_1 = self.add_config_host_group(parent=self.component_another_thesame, hosts=(self.host_2,))
+        self.add_config_host_group(parent=self.component_thesame, hosts=(self.host_1, self.host_3))
 
         self.change_configuration(
             target=cluster_group,
