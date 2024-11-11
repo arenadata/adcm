@@ -21,12 +21,10 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 
-from cm.issue import lock_affected_objects, unlock_affected_objects
 from cm.models import (
     Action,
     Bundle,
     Cluster,
-    ConcernType,
     Prototype,
     SubAction,
     TaskLog,
@@ -34,10 +32,6 @@ from cm.models import (
 from cm.services.job.action import prepare_task_for_action
 from cm.tests.utils import (
     gen_adcm,
-    gen_cluster,
-    gen_concern_item,
-    gen_job_log,
-    gen_task_log,
 )
 
 
@@ -46,38 +40,6 @@ class TaskLogLockTest(BaseTestCase):
         super().setUp()
 
         gen_adcm()
-
-    def test_lock_affected__lock_is_single(self):
-        cluster = gen_cluster()
-        task = gen_task_log(cluster)
-        gen_job_log(task)
-        task.lock = gen_concern_item(ConcernType.LOCK, owner=cluster)
-        task.save()
-        lock_affected_objects(task=task, objects=[cluster])
-
-        self.assertFalse(cluster.locked)
-
-    def test_lock_affected(self):
-        cluster = gen_cluster()
-        task = gen_task_log(cluster)
-        gen_job_log(task)
-        lock_affected_objects(task=task, objects=[cluster])
-
-        self.assertTrue(cluster.locked)
-
-        task.refresh_from_db()
-
-        self.assertIsNotNone(task.lock)
-
-    def test_unlock_affected(self):
-        cluster = gen_cluster()
-        task = gen_task_log(cluster)
-        gen_job_log(task)
-        lock_affected_objects(task=task, objects=[cluster])
-        unlock_affected_objects(task=task)
-
-        self.assertFalse(cluster.locked)
-        self.assertIsNone(task.lock)
 
     @override_settings(RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download")
     def test_download_negative(self):

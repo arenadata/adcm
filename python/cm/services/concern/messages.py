@@ -127,6 +127,12 @@ class ConcernMessage(Enum):
             retrieve_target=_retrieve_placeholder_from_adcm_entity,
         ),
     )
+    FLAGGED_BY_JOB = ConcernMessageTemplate(
+        message="${source} has a flag: running job ${job}",
+        placeholders=Placeholders(
+            retrieve_job=_retrieve_placeholder_from_job, retrieve_source=_retrieve_placeholder_from_adcm_entity
+        ),
+    )
     # Note that flag's message in template is just "left part"
     # and should be combined with actual flag's message
     FLAG = ConcernMessageTemplate(message="${source} has a flag: ", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS)

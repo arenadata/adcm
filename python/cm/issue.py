@@ -11,11 +11,9 @@
 # limitations under the License.
 
 from functools import partial
-from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
 from core.types import CoreObjectDescriptor
-from django.conf import settings
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
 
@@ -31,11 +29,9 @@ from cm.models import (
     ConcernCause,
     ConcernItem,
     ConcernType,
-    JobLog,
     ObjectType,
     Prototype,
     ServiceComponent,
-    TaskLog,
 )
 from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.checks import (
@@ -45,7 +41,6 @@ from cm.services.concern.checks import (
     object_imports_has_issue,
     service_requirements_has_issue,
 )
-from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 
 
@@ -176,46 +171,3 @@ def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None)
             send_concern_delete_event, object_id=object_.pk, object_type=object_.prototype.type, concern_id=concern_id
         )
     )
-
-
-def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity], lock_target: ADCMEntity | None = None) -> None:
-    if task.lock:
-        return
-
-    owner: ADCMEntity = lock_target or task.task_object
-    first_job = JobLog.obj.filter(task=task).order_by("id").first()
-    delete_service_action = settings.ADCM_DELETE_SERVICE_ACTION_NAME
-    custom_name = delete_service_action if task.action.name == delete_service_action else ""
-
-    task.lock = create_lock(owner=owner, job=first_job, custom_name=custom_name)
-    task.save(update_fields=["lock"])
-
-    for obj in objects:
-        add_concern_to_object(object_=obj, concern=task.lock)
-
-
-def create_lock(owner: ADCMEntity, job: JobLog, custom_name: str = ""):
-    type_: str = ConcernType.LOCK.value
-    cause: str = ConcernCause.JOB.value
-    return ConcernItem.objects.create(
-        type=type_,
-        name=custom_name or f"{cause or ''}_{type_}".strip("_"),
-        reason=build_concern_reason(
-            ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
-        ),
-        blocking=True,
-        owner=owner,
-        cause=cause,
-    )
-
-
-def unlock_affected_objects(task: TaskLog) -> None:
-    task.refresh_from_db()
-
-    if not task.lock:
-        return
-
-    lock = task.lock
-    task.lock = None
-    task.save(update_fields=["lock"])
-    lock.delete()

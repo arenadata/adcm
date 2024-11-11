@@ -30,6 +30,7 @@ from cm.converters import orm_object_to_action_target_type, orm_object_to_core_t
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
+    UNFINISHED_STATUS,
     Action,
     ActionHostGroup,
     Cluster,
@@ -67,6 +68,7 @@ class ActionRunPayload:
     attr: dict = field(default_factory=dict)
     hostcomponent: set[HostComponentEntry] = field(default_factory=set)
     verbose: bool = False
+    is_blocking: bool = True
 
 
 def run_action(
@@ -78,6 +80,7 @@ def run_action(
         verbose=payload.verbose,
         hostcomponent=None,
         post_upgrade_hostcomponent=post_upgrade_hc,
+        is_blocking=payload.is_blocking,
     )
 
     action_objects = _ActionLaunchObjects(target=obj, action=action)
@@ -90,6 +93,7 @@ def run_action(
 
     _check_no_target_conflict(target=action_objects.target, action=action)
     _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
+    _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action.pk)
     _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
     delta = TaskMappingDelta()
@@ -104,19 +108,19 @@ def run_action(
         )
         if action_has_hc_acl:
             # current topology should be saved
-            task_payload.hostcomponent = {
+            task_payload.hostcomponent = [
                 HostComponentEntry(host_id=host_id, component_id=component_id)
                 for service in topology.services.values()
                 for component_id, component in service.components.items()
                 for host_id in component.hosts
-            }
+            ]
 
     with atomic():
         target = ActionTargetDescriptor(
-            id=action_objects.target.id, type=orm_object_to_action_target_type(action_objects.target)
+            id=action_objects.target.pk, type=orm_object_to_action_target_type(action_objects.target)
         )
         task = prepare_task_for_action(
-            target=target, orm_owner=action_objects.owner, action=action.id, payload=task_payload, delta=delta
+            target=target, orm_owner=action_objects.owner, action=action.pk, payload=task_payload, delta=delta
         )
 
         orm_task = TaskLog.objects.get(id=task.id)
@@ -125,7 +129,7 @@ def run_action(
         # I believe second condition is the same as "is cluster action with hc"
         if action_objects.cluster and (payload.hostcomponent or (is_upgrade_action and action_has_hc_acl)):
             change_host_component_mapping(
-                cluster_id=action_objects.cluster.id,
+                cluster_id=action_objects.cluster.pk,
                 bundle_id=int(action_objects.cluster.prototype.bundle_id),
                 flat_mapping=payload.hostcomponent,
                 checks_func=check_nothing,
@@ -167,7 +171,7 @@ def prepare_task_for_action(
     """
     job_repo = JobRepoImpl
     action_repo = ActionRepoImpl
-    owner = CoreObjectDescriptor(id=orm_owner.id, type=orm_object_to_core_type(orm_owner))
+    owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
     orm_action = Action.objects.select_related("prototype").get(id=action)
 
     spec, flat_spec, _, _ = get_prototype_config(prototype=orm_action.prototype, action=orm_action, obj=orm_owner)
@@ -190,14 +194,14 @@ def prepare_task_for_action(
             owner=orm_owner,
             task=orm_task,
             conf=payload.conf,
-            attr=payload.attr,
+            attr=payload.attr or {},
             spec=spec,
             flat_spec=flat_spec,
         )
 
         orm_task.config = update_configuration_for_inventory_inplace(
             configuration=payload.conf,
-            attributes=payload.attr,
+            attributes=payload.attr or {},
             specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
             config_owner=GeneralEntityDescriptor(id=task.id, type="task"),
         )
@@ -302,6 +306,21 @@ def _check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) 
         and lock_owner.concerns.filter(type=ConcernType.ISSUE).exists()
     ):
         raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {lock_owner} has issues")
+
+
+def _check_action_is_not_already_launched(owner: ObjectWithAction, action_id: ActionID) -> None:
+    """
+    Since ADCM-6081 it's possible to launch action that won't "lock" objects with concern.
+    So it was decided to introduce a general rule that the same action shouldn't be "running" (not finished).
+    """
+
+    if TaskLog.objects.filter(
+        action_id=action_id,
+        status__in=UNFINISHED_STATUS,
+        owner_id=owner.pk,
+        owner_type=orm_object_to_core_type(owner).value,
+    ).exists():
+        raise AdcmEx(code="TASK_ERROR", msg=f"object {owner} already have this action (id={action_id}) running")
 
 
 def _check_action_is_available_for_object(owner: ObjectWithAction, action: Action) -> None:
