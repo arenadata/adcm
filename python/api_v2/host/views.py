@@ -75,12 +75,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
             DefaultParams.OFFSET,
             DefaultParams.ordering_by("name"),
             OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="Host id.",
-            ),
-            OpenApiParameter(
                 name="name",
                 location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by host name.",
@@ -97,28 +91,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by description.",
                 type=str,
-            ),
-            OpenApiParameter(
-                name="hostproviderName",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by hostproviderName.",
-                type=str,
-            ),
-            OpenApiParameter(
-                name="isInCluster",
-                type=bool,
-                location=OpenApiParameter.PATH,
-                description="Is host assigned to any cluster.",
-            ),
-            OpenApiParameter(
-                name="maintenanceMode",
-                description="Maintenance mode filter.",
-                type=str,
-                enum=(
-                    "on",
-                    "off",
-                    "changing",
-                ),
             ),
             OpenApiParameter(
                 name="ordering",

@@ -98,8 +98,6 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
                         "-name",
                         "id",
                         "-id",
-                        "description",
-                        "-description",
                     ),
                     default="id",
                 ),

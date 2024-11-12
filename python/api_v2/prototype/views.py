@@ -134,9 +134,38 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     @extend_schema(
         operation_id="getPrototypeVersions",
         description="Get a list of ADCM bundles when creating an object (cluster or provider).",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="type",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Prototype type.",
+                enum=(
+                    ObjectType.CLUSTER.value,
+                    ObjectType.PROVIDER.value,
+                    ObjectType.HOST.value,
+                    ObjectType.SERVICE.value,
+                    ObjectType.COMPONENT.value,
+                ),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "name",
+                    "-name",
+                    "displayName",
+                    "-displayName",
+                ),
+                default="name",
+            ),
+        ],
         responses={200: PrototypeVersionsSerializer(many=True)},
     )
-    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter)
+    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter, pagination_class=None)
     def versions(self, request):  # noqa: ARG001, ARG002
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
@@ -154,9 +183,9 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
         return Response(status=HTTP_200_OK)
 
     def get_filtered_prototypes_unique_by_display_name(self) -> QuerySet:
-        filtered_queryset = self.filter_queryset(
-            Prototype.objects.filter(type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}).all()
-        )
+        filtered_queryset = Prototype.objects.filter(
+            type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}
+        ).all()
 
         prototype_pks = set()
         processed_pairs = set()
@@ -167,4 +196,4 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
             prototype_pks.add(pk)
             processed_pairs.add((type_, display_name))
 
-        return Prototype.objects.filter(pk__in=prototype_pks)
+        return self.filter_queryset(Prototype.objects.filter(pk__in=prototype_pks))

@@ -93,6 +93,17 @@ from api_v2.views import (
         summary="GET host-component statuses of component on hoosts",
         description="Get information about component on hosts statuses.",
         responses={HTTP_200_OK: ComponentStatusSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getServiceComponent",
+        description="Get information about a specific service component.",
+        summary="GET service components",
+        responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    list=extend_schema(
+        operation_id="getServiceComponents",
+        description="Get a list of all components of a particular service with information on them.",
+        summary="GET service components",
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
@@ -110,47 +121,10 @@ from api_v2.views import (
                 type=str,
             ),
             OpenApiParameter(
-                name="displayName",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by displayName.",
-                type=str,
-            ),
-            OpenApiParameter(
                 name="name",
                 location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by name.",
                 type=str,
-            ),
-            OpenApiParameter(
-                name="maintenanceMode",
-                description="Maintenance mode filter.",
-                type=str,
-                enum=(
-                    "on",
-                    "off",
-                    "changing",
-                ),
-            ),
-            OpenApiParameter(
-                name="clusterId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Cluster id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="serviceId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Service id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="componentId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Component id.",
-                type=int,
             ),
             OpenApiParameter(
                 name="ordering",
@@ -168,22 +142,6 @@ from api_v2.views import (
                 ),
                 default="id",
             ),
-        ],
-    ),
-    retrieve=extend_schema(
-        operation_id="getServiceComponent",
-        description="Get information about a specific service component.",
-        summary="GET service components",
-        responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    list=extend_schema(
-        operation_id="getServiceComponents",
-        description="Get a list of all components of a particular service with information on them.",
-        summary="GET service components",
-        parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.ordering_by("Name", "Display Name"),
         ],
         responses={HTTP_200_OK: ComponentSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
@@ -268,7 +226,27 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
 @extend_schema_view(
     list=extend_schema(
-        operation_id="getHostComponents", summary="GET host components", description="Get a list of host components."
+        operation_id="getHostComponents",
+        summary="GET host components",
+        description="Get a list of host components.",
+        parameters=[
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "displayName",
+                    "-displayName",
+                ),
+                default="id",
+            ),
+        ],
     )
 )
 class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet):

@@ -32,12 +32,6 @@ def document_config_viewset(object_type: str, operation_id_variant: str | None =
                 DefaultParams.OFFSET,
                 DefaultParams.ordering_by("id"),
                 OpenApiParameter(
-                    name="id",
-                    type=int,
-                    location=OpenApiParameter.PATH,
-                    description="Config id.",
-                ),
-                OpenApiParameter(
                     name="description",
                     type=str,
                     location=OpenApiParameter.QUERY,

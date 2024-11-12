@@ -12,10 +12,10 @@
 
 from cm.models import Host, MaintenanceMode
 from django.db.models import QuerySet
-from django_filters import ChoiceFilter
 from django_filters.rest_framework import (
     BooleanFilter,
     CharFilter,
+    ChoiceFilter,
     FilterSet,
     NumberFilter,
     OrderingFilter,
@@ -116,3 +116,62 @@ class HostMemberFilter(FilterSet):
     @staticmethod
     def filter_by_maintenance_mode(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG004
         return queryset.filter(maintenance_mode=value)
+
+
+class HostMemberConfigFilter(FilterSet):
+    name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="icontains")
+    state = CharFilter(field_name="state", label="Host state", lookup_expr="icontains")
+    description = CharFilter(field_name="description", label="Host description", lookup_expr="icontains")
+    maintenance_mode = ChoiceFilter(
+        label="Maintenance mode", choices=MaintenanceMode.choices, method="filter_by_maintenance_mode"
+    )
+    ordering = OrderingFilter(
+        fields={
+            "description": "description",
+            "fqdn": "name",
+            "state": "state",
+            "id": "id",
+            "provider__name": "hostproviderName",
+        },
+        field_labels={
+            "description": "Description",
+            "name": "Name",
+            "id": "Id",
+            "state": "State",
+            "hostproviderName": "Hostprovider name",
+        },
+        label="ordering",
+    )
+
+    class Meta:
+        model = Host
+        fields = [
+            "id",
+            "name",
+            "hostprovider_name",
+            "maintenance_mode",
+            "state",
+            "description",
+        ]
+
+    @staticmethod
+    def filter_by_maintenance_mode(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG004
+        return queryset.filter(maintenance_mode=value)
+
+
+class ShortHostFilter(FilterSet):
+    id = NumberFilter(field_name="id", label="Host ID")
+    name = CharFilter(field_name="fqdn", label="Host Name", lookup_expr="icontains")
+
+    ordering = OrderingFilter(
+        fields={
+            "id": "id",
+            "fqdn": "name",
+        },
+        field_labels={
+            "id": "ID",
+            "fqdn": "Host Name",
+        },
+        label="ordering",
+    )

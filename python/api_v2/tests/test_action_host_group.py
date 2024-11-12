@@ -556,6 +556,20 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), group_ids)
 
+        with self.subTest("Filter hosts by Id"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS, group_1.pk, "hosts"].get(query={"id": 1})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(response.json(), [{"id": 1, "name": "host-0"}])
+
+        with self.subTest("Filter hosts by Name"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS, group_1.pk, "hosts"].get(
+                query={"name": "host-0"}
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(response.json(), [{"id": 1, "name": "host-0"}])
+
     def test_ordering_success(self):
         host_1, host_2, host_3, *_ = self.hosts
 
@@ -575,35 +589,60 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_2.id, host_3.id])
         self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_1.id])
 
-        endpoint = self.client.v2[self.service, ACTION_HOST_GROUPS]
+        with self.subTest("Ordering for action host groups"):
+            endpoint = self.client.v2[self.service, ACTION_HOST_GROUPS]
 
-        ordering_fields = {
-            "id": "id",
-            "name": "name",
-            "description": "description",
-        }
+            ordering_fields = {
+                "id": "id",
+                "name": "name",
+                "description": "description",
+            }
 
-        for model_field, ordering_field in ordering_fields.items():
-            with self.subTest(ordering_field=ordering_field):
-                response = endpoint.get(query={"ordering": ordering_field})
-                self.assertListEqual(
-                    [item[ordering_field] for item in response.json()["results"]],
-                    list(
-                        ActionHostGroup.objects.order_by(model_field)
-                        .filter(object_id=self.service.id, object_type=ContentType.objects.get_for_model(self.service))
-                        .values_list(model_field, flat=True)
-                    ),
-                )
+            for model_field, ordering_field in ordering_fields.items():
+                with self.subTest(ordering_field=ordering_field):
+                    response = endpoint.get(query={"ordering": ordering_field})
+                    self.assertListEqual(
+                        [item[ordering_field] for item in response.json()["results"]],
+                        list(
+                            ActionHostGroup.objects.order_by(model_field)
+                            .filter(
+                                object_id=self.service.id, object_type=ContentType.objects.get_for_model(self.service)
+                            )
+                            .values_list(model_field, flat=True)
+                        ),
+                    )
 
-                response = endpoint.get(query={"ordering": f"-{ordering_field}"})
-                self.assertListEqual(
-                    [item[ordering_field] for item in response.json()["results"]],
-                    list(
-                        ActionHostGroup.objects.order_by(f"-{model_field}")
-                        .filter(object_id=self.service.id, object_type=ContentType.objects.get_for_model(self.service))
-                        .values_list(model_field, flat=True)
-                    ),
-                )
+                    response = endpoint.get(query={"ordering": f"-{ordering_field}"})
+                    self.assertListEqual(
+                        [item[ordering_field] for item in response.json()["results"]],
+                        list(
+                            ActionHostGroup.objects.order_by(f"-{model_field}")
+                            .filter(
+                                object_id=self.service.id, object_type=ContentType.objects.get_for_model(self.service)
+                            )
+                            .values_list(model_field, flat=True)
+                        ),
+                    )
+
+        with self.subTest("Ordering for hosts within action host groups"):
+            endpoint = self.client.v2[self.cluster, ACTION_HOST_GROUPS, cluster_group.pk, "hosts"]
+            ordering_fields = {
+                "id": "id",
+                "fqdn": "name",
+            }
+            for model_field, ordering_field in ordering_fields.items():
+                with self.subTest(ordering_field=ordering_field):
+                    response = endpoint.get(query={"ordering": ordering_field})
+                    self.assertListEqual(
+                        [item[ordering_field] for item in response.json()],
+                        list(Host.objects.order_by(model_field).values_list(model_field, flat=True)),
+                    )
+
+                    response = endpoint.get(query={"ordering": f"-{ordering_field}"})
+                    self.assertListEqual(
+                        [item[ordering_field] for item in response.json()],
+                        list(Host.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                    )
 
     def test_adcm_5931_duplicates_when_filtering_by_has_host(self) -> None:
         host_1, host_2, *_ = self.hosts

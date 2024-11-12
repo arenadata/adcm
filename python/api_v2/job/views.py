@@ -60,7 +60,7 @@ from api_v2.views import ADCMGenericViewSet
                 location=OpenApiParameter.QUERY,
                 description="Job status.",
                 type=str,
-                enum=["created", "running", "success", "failed", "terminated", "cancelled"],
+                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
             ),
         ],
     ),
