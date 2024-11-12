@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useDispatch, useStore, usePrevious } from '@hooks';
+import { useDispatch, useStore, usePrevious, useLocalStorage } from '@hooks';
 import { Switch } from '@uikit';
 import ClusterMappingToolbar from './ClusterMappingToolbar/ClusterMappingToolbar';
 import ComponentsMapping from './ComponentsMapping/ComponentsMapping';
@@ -30,7 +30,11 @@ const ClusterMapping: React.FC = () => {
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
 
-  const [isHostsPreviewMode, setIsHostsPreviewMode] = useState<boolean>(false);
+  const [isHostsPreviewMode, saveIsHostsPreviewModeToStorage] = useLocalStorage<boolean>({
+    key: 'clusters_mapping_hostsPreviewMode',
+    initData: false,
+    isUserDependencies: true,
+  });
   const [hasSaveError, setHasSaveError] = useState(false);
 
   useEffect(() => {
@@ -94,7 +98,7 @@ const ClusterMapping: React.FC = () => {
   };
 
   const handleHostsPreviewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsHostsPreviewMode(event.target.checked);
+    saveIsHostsPreviewModeToStorage(event.target.checked);
   };
 
   const isValid = Object.keys(mappingErrors).length === 0;
@@ -117,7 +121,7 @@ const ClusterMapping: React.FC = () => {
         <Switch
           className={s.hostsModeSwitch}
           size="small"
-          isToggled={isHostsPreviewMode}
+          isToggled={isHostsPreviewMode ?? false}
           onChange={handleHostsPreviewModeChange}
           label="Hosts mode"
         />

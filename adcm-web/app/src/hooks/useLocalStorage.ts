@@ -1,13 +1,25 @@
 import { useState, useCallback } from 'react';
+import { useStore } from '@hooks/useStore';
 
 type StorageProps<T> = {
   key: string;
   initData?: T;
+  isUserDependencies?: boolean;
 };
 
 type StorageReturnProps<T> = [storageData: T | null, setItem: (itemData: T) => void, removeItem: () => void];
 
-export const useLocalStorage = <T>({ key, initData }: StorageProps<T>): StorageReturnProps<T> => {
+export const useLocalStorage = <T>({
+  key,
+  initData,
+  isUserDependencies = false,
+}: StorageProps<T>): StorageReturnProps<T> => {
+  const username = useStore(({ auth }) => auth.username);
+
+  if (isUserDependencies) {
+    key = `${username}/${key}`;
+  }
+
   const [storageData, setStorageData] = useState<T | null>(() => {
     const storageData = localStorage.getItem(key) as string;
     try {
