@@ -34,7 +34,7 @@ from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.group_config.filters import GroupConfigLogFilter
 from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
 from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
-from api_v2.host.filters import HostMemberFilter
+from api_v2.host.filters import HostMemberConfigFilter, ShortHostFilter
 from api_v2.host.serializers import HostAddSerializer, HostShortSerializer
 from api_v2.views import ADCMGenericViewSet
 
@@ -55,6 +55,9 @@ class GroupConfigViewSet(
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
+
+        if self.action == "host_candidates":
+            return Host.objects.none()
 
         if parent_object is None:
             return GroupConfig.objects.none()
@@ -93,7 +96,12 @@ class GroupConfigViewSet(
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
 
     @action(
-        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+        methods=["get"],
+        detail=False,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
     )
     def owner_host_candidates(self, request: Request, *_, **__):  # noqa: ARG002
         parent_object = self.get_parent_object()
@@ -127,17 +135,26 @@ class GroupConfigViewSet(
             .distinct()
         )
 
+        queryset = self.filter_queryset(hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs))
+
         return Response(
-            data=HostShortSerializer(
-                instance=hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs), many=True
-            ).data,
+            data=HostShortSerializer(instance=queryset, many=True).data,
             status=HTTP_200_OK,
         )
 
-    @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
+    )
     def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
-        group_config: GroupConfig = self.get_object()
-        hosts = group_config.host_candidate()
+        group_config: GroupConfig = GroupConfig.objects.get(pk=kwargs["pk"])
+
+        hosts = self.filter_queryset(group_config.host_candidate())
+
         serializer = HostGroupConfigSerializer(instance=hosts, many=True)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
@@ -213,7 +230,7 @@ class HostGroupConfigViewSet(
     )
     permission_classes = [GroupConfigHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
-    filterset_class = HostMemberFilter
+    filterset_class = HostMemberConfigFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
 

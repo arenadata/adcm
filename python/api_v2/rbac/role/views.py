@@ -59,32 +59,11 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.OFFSET,
             OpenApiParameter(name="name", description="Case insensitive and partial filter by role name."),
             OpenApiParameter(
-                name="displayName",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by role display name.",
-            ),
-            OpenApiParameter(
                 name="description",
                 type=str,
                 required=False,
                 location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by role description.",
-            ),
-            OpenApiParameter(
-                name="builtIn",
-                type=bool,
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Builtin status of the role.",
-            ),
-            OpenApiParameter(
-                name="anyCategory",
-                type=bool,
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Existence of any category in the role.",
             ),
             OpenApiParameter(
                 name="categories",

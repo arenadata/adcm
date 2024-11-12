@@ -88,12 +88,40 @@ def document_group_config_viewset(object_type: str):
             operation_id=f"get{capitalized_type}ConfigGroupHostCandidates",
             summary=f"GET {object_type}'s config-group host candidates",
             description=f"Get a list of hosts available for adding to {object_type}'s config group.",
+            parameters=[
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    type=str,
+                    enum=(
+                        "name",
+                        "-name",
+                        "id",
+                        "-id",
+                    ),
+                    default="id",
+                )
+            ],
             responses={HTTP_200_OK: HostGroupConfigSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
         ),
         owner_host_candidates=extend_schema(
             operation_id=f"get{capitalized_type}ConfigGroupHostOwnCandidates",
             summary=f"GET {object_type}'s host candidates for new config group",
             description=f"Get a list of hosts available for adding to {object_type}'s new config group.",
+            parameters=[
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    type=str,
+                    enum=(
+                        "name",
+                        "-name",
+                        "id",
+                        "-id",
+                    ),
+                    default="id",
+                )
+            ],
             responses={HTTP_200_OK: HostShortSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
         ),
     )

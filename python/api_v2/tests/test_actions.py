@@ -263,6 +263,7 @@ class TestActionsFiltering(BaseAPITestCase):
 
     def test_filtering_success(self):
         action_to_filter = Action.objects.create(
+            description="TEST DESCRIPTION 2",
             display_name="Test service action name",
             prototype=self.cluster.prototype,
             type="task",
@@ -275,6 +276,7 @@ class TestActionsFiltering(BaseAPITestCase):
             "id": (action_to_filter.pk, None, 0),
             "name": (action_to_filter.name, action_to_filter.name[1:-3].upper(), "wrong"),
             "displayName": (action_to_filter.display_name, action_to_filter.display_name[1:-3].upper(), "wrong"),
+            "description": (action_to_filter.description, action_to_filter.description[1:-3].upper(), "wrong"),
         }
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
             exact_items_found = 1
@@ -298,7 +300,11 @@ class TestActionsFiltering(BaseAPITestCase):
             "id": "id",
             "display_name": "displayName",
             "name": "name",
+            "description": "description",
         }
+        for i, action in enumerate(Action.objects.filter(prototype=self.cluster.prototype)):
+            action.description = f"description {i}"
+            action.save()
 
         for model_field, ordering_field in ordering_fields.items():
             with self.subTest(ordering_field=ordering_field):

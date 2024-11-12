@@ -22,12 +22,25 @@ from rbac.models import Group, OriginType
 class GroupFilter(FilterSet):
     description = CharFilter(lookup_expr="icontains")
     display_name = CharFilter(lookup_expr="icontains")
+    name = CharFilter(lookup_expr="icontains")
     type = ChoiceFilter(choices=OriginType.choices)
     ordering = OrderingFilter(
-        fields={"display_name": "displayName", "id": "id", "type": "type", "description": "description"},
-        field_labels={"display_name": "Display name", "id": "ID", "type": "Type", "description": "Description"},
+        fields={
+            "display_name": "displayName",
+            "id": "id",
+            "type": "type",
+            "description": "description",
+            "name": "name",
+        },
+        field_labels={
+            "display_name": "Display name",
+            "id": "ID",
+            "type": "Type",
+            "description": "Description",
+            "name": "Name",
+        },
     )
 
     class Meta:
         model = Group
-        fields = ["id", "description", "type", "display_name", "ordering"]
+        fields = ["id", "description", "type", "display_name", "ordering", "name"]
