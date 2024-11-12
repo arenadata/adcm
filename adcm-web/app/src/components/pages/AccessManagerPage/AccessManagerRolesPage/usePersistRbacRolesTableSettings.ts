@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmRolesFilter } from '@models/adcm';
+import type { AdcmRolesFilter } from '@models/adcm';
 import { setFilter, setPaginationParams, setRequestFrequency, setSortParams } from '@store/adcm/roles/rolesTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 

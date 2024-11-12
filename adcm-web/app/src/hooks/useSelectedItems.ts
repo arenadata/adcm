@@ -1,4 +1,5 @@
-import { ChangeEvent, Dispatch, SetStateAction, useCallback, useMemo } from 'react';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export const useSelectedItems = <Entity, Key = string>(
   entitiesList: Entity[],

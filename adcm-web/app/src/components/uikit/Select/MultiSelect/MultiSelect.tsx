@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
 import MultiSelectPanel from './MultiSelectPanel/MultiSelectPanel';
 import Popover from '@uikit/Popover/Popover';
-import { MultiSelectOptions } from '@uikit/Select/Select.types';
+import type { MultiSelectOptions } from '@uikit/Select/Select.types';
 import { useForwardRef } from '@hooks';
 import CommonSelectField from '@uikit/Select/CommonSelect/CommonSelectField/CommonSelectField';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
-import { PopoverOptions } from '@uikit/Popover/Popover.types';
+import type { PopoverOptions } from '@uikit/Popover/Popover.types';
 import MultiSelectResults from '@uikit/Select/MultiSelect/MultiSelectResults/MultiSelectResults';
 
 export type MultiSelectProps<T> = MultiSelectOptions<T> &

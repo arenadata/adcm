@@ -1,4 +1,4 @@
-import { SelectOption } from '@uikit/Select/Select.types';
+import type { SelectOption } from '@uikit/Select/Select.types';
 
 const defaultCompare = (label: string, search: string) => label.toLowerCase().includes(search.toLowerCase());
 

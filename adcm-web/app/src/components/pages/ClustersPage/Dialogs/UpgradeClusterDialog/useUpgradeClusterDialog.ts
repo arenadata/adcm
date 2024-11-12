@@ -7,8 +7,10 @@ import {
   runClusterUpgrade,
 } from '@store/adcm/clusters/clusterUpgradesSlice';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { UpgradeClusterFormData, UpgradeStepKey } from './UpgradeClusterDialog.types';
-import { AdcmUpgradeRunConfig, AdcmLicenseStatus } from '@models/adcm';
+import type { UpgradeClusterFormData } from './UpgradeClusterDialog.types';
+import { UpgradeStepKey } from './UpgradeClusterDialog.types';
+import type { AdcmUpgradeRunConfig } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 
 const getInitialFormData = (): UpgradeClusterFormData => ({
   upgradeId: null,

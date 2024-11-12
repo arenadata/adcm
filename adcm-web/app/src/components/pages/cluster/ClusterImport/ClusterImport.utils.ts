@@ -1,16 +1,12 @@
-import {
+import type {
   ClusterImportsSetGroup,
   PrepServicesList,
   SelectedImportHandlerData,
   SelectedImportItem,
   SelectedImportsGroup,
 } from '@pages/cluster/ClusterImport/ClusterImport.types';
-import {
-  AdcmClusterImport,
-  AdcmClusterImportPayloadType,
-  AdcmClusterImportPostPayload,
-  AdcmClusterImportService,
-} from '@models/adcm';
+import type { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmClusterImportService } from '@models/adcm';
+import { AdcmClusterImportPayloadType } from '@models/adcm';
 
 export const getCheckServiceList = ({ services, selectedImports, selectedSingleBind }: PrepServicesList) =>
   formatForSelectedToggleHandlerData(

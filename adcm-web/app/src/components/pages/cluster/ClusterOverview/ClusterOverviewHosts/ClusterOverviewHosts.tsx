@@ -5,9 +5,9 @@ import ClusterOverviewDiagram from '@pages/cluster/ClusterOverview/ClusterOvervi
 import { Pagination, Spinner } from '@uikit';
 import ClusterOverviewFilter from '@pages/cluster/ClusterOverview/ClusterOverviewFilter/ClusterOverviewFilter';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
+import type { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
 import { setFilter, setPaginationParams } from '@store/adcm/cluster/overview/overviewHostsTableSlice';
-import { PaginationParams } from '@uikit/types/list.types';
+import type { PaginationParams } from '@uikit/types/list.types';
 import ClusterOverviewHostsTable from '@pages/cluster/ClusterOverview/ClusterOverviewHosts/ClusterOverviewHostsTable';
 import { resetCount } from '@store/adcm/cluster/overview/overviewHostsSlice';
 

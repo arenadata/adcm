@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { OffsetOptions } from '@floating-ui/react';
 import {
   autoUpdate,
   flip,
@@ -11,12 +12,11 @@ import {
   useClick,
   useInteractions,
   useRole,
-  OffsetOptions,
   FloatingPortal,
 } from '@floating-ui/react';
-import { Placement } from '@floating-ui/dom';
+import type { Placement } from '@floating-ui/dom';
 import { useForwardRef } from '@hooks';
-import { ChildWithRef } from '@uikit/types/element.types';
+import type { ChildWithRef } from '@uikit/types/element.types';
 import cn from 'classnames';
 import s from './Tooltip.module.scss';
 import { textToDataTestValue } from '@utils/dataTestUtils';

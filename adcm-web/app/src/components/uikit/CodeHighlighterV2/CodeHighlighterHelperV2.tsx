@@ -1,5 +1,6 @@
-import { createElement, ReactElement } from 'react';
-import { RefractorRoot, RefractorElement, Text } from 'refractor';
+import type { ReactElement } from 'react';
+import { createElement } from 'react';
+import type { RefractorRoot, RefractorElement, Text } from 'refractor';
 
 export const getParsedCode = (root: RefractorRoot) => {
   return root.children.map((item, id) => createHighlightedElement(item, id.toString()));

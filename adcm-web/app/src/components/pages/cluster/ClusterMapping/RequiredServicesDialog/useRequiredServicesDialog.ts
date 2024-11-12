@@ -6,7 +6,8 @@ import {
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useDispatch, useForm, useStore } from '@hooks';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { RequiredServicesFormData, RequiredServicesStepKey } from './RequiredServicesDialog.types';
+import type { RequiredServicesFormData } from './RequiredServicesDialog.types';
+import { RequiredServicesStepKey } from './RequiredServicesDialog.types';
 import { addServices } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const getInitRequiredServicesFormData = () => ({

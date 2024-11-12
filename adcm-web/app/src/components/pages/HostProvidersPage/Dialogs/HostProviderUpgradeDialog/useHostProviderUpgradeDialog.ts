@@ -7,8 +7,9 @@ import {
   runHostProviderUpgrade,
 } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { UpgradeHostProviderFormData } from './HostProviderUpgradeDialog.types';
-import { AdcmUpgradeRunConfig, AdcmLicenseStatus } from '@models/adcm';
+import type { UpgradeHostProviderFormData } from './HostProviderUpgradeDialog.types';
+import type { AdcmUpgradeRunConfig } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 
 const getInitialFormData = (): UpgradeHostProviderFormData => ({

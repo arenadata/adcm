@@ -1,5 +1,5 @@
 import { generatePath } from 'react-router-dom';
-import { BreadcrumbsItemConfig, DynamicParameters, Route } from '@routes/routes.types';
+import type { BreadcrumbsItemConfig, DynamicParameters, Route } from '@routes/routes.types';
 import routes from '@routes/routes';
 
 const buildPathBreadcrumbs = (path: string, dynamicParams: DynamicParameters): BreadcrumbsItemConfig[] => {

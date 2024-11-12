@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 import { setPaginationParams } from '@store/adcm/entityActionHostGroups/actionHostGroupsTableSlice';
 
 const ActionHostGroupTableFooter: React.FC = () => {

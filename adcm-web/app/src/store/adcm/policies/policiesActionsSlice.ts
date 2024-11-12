@@ -1,19 +1,14 @@
-import { AdcmGroupsApi, AdcmPoliciesApi, AdcmRolesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmGroupsApi, AdcmPoliciesApi, AdcmRolesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { getPolicies } from './policiesSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import {
-  AdcmGroup,
-  AdcmPolicy,
-  AdcmPolicyPayload,
-  AdcmPolicyUpdatePayload,
-  AdcmRole,
-  AdcmRoleType,
-} from '@models/adcm';
-import { ModalState } from '@models/modal';
+import type { AdcmGroup, AdcmPolicy, AdcmPolicyPayload, AdcmPolicyUpdatePayload, AdcmRole } from '@models/adcm';
+import { AdcmRoleType } from '@models/adcm';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
-import { SortParams } from '@models/table';
+import type { SortParams } from '@models/table';
 
 interface AdcmPoliciesActionState extends ModalState<AdcmPolicy, 'policy'> {
   createDialog: {

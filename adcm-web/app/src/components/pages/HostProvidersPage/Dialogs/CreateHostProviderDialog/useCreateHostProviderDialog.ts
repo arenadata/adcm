@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import {
   createHostProvider,
   closeCreateDialog,

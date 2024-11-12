@@ -5,7 +5,8 @@ import {
   closeCreateDialog,
   getServiceCandidates,
 } from '@store/adcm/cluster/services/servicesActionsSlice';
-import { AddClusterServicesFormData, AddServiceStepKey } from './AddClusterServiceDialog.types';
+import type { AddClusterServicesFormData } from './AddClusterServiceDialog.types';
+import { AddServiceStepKey } from './AddClusterServiceDialog.types';
 import { AdcmLicenseStatus } from '@models/adcm';
 
 const getInitialFormData = (): AddClusterServicesFormData => ({

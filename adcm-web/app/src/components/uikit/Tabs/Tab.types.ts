@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 
 export interface TabButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isActive?: boolean;

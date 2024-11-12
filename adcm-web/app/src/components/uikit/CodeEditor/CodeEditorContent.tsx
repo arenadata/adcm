@@ -1,7 +1,7 @@
 import highlighterStyles from '../CodeHighlighter/CodeHighlighter.module.scss';
 import { LineNumbers, LinesWrapper } from '../CodeHighlighter/CodeHighlighter';
 import CodeEditorTextArea from './CodeEditorTextArea';
-import { HighlighterChildType } from './CodeEditor.types';
+import type { HighlighterChildType } from './CodeEditor.types';
 
 export interface CodeEditorContentProps {
   code: string;

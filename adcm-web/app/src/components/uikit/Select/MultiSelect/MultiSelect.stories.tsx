@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 
 type Story = StoryObj<typeof MultiSelect>;

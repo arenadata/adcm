@@ -3,7 +3,7 @@ import s from '@pages/JobsPage/JobPage/JobPageChildJobsTable/JobPageChildJobsTab
 import ExpandableSwitch from '@uikit/Switch/ExpandableSwitch';
 import JobPageLog from '@pages/JobsPage/JobPage/JobPageLog/JobPageLog';
 import { useJobLogAutoScroll } from '@pages/JobsPage/JobPage/useJobLogAutoScroll';
-import { AdcmTask } from '@models/adcm';
+import type { AdcmTask } from '@models/adcm';
 
 interface SingleJobProps {
   task: AdcmTask;

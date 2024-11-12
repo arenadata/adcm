@@ -1,13 +1,13 @@
 import { httpClient } from '@api/httpClient';
 import qs from 'qs';
-import {
+import type {
   AdcmPrototype,
   AdcmPrototypesFilter,
   AdcmPrototypeVersions,
   AdcmPrototypeVersionsFilter,
   Batch,
 } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { PaginationParams, SortParams } from '@models/table';
 
 export class AdcmPrototypesApi {
   public static async getPrototypeVersions(filter: AdcmPrototypeVersionsFilter) {

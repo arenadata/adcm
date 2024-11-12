@@ -1,5 +1,5 @@
 import { AdcmJobStatus } from '@models/adcm';
-import { BaseStatus, TableColumn } from '@uikit';
+import type { BaseStatus, TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {

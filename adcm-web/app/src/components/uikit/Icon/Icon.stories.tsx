@@ -1,5 +1,5 @@
 import Icon from './Icon';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import s from './IconStory.module.scss';
 import { allowIconsNames } from './sprite';
 

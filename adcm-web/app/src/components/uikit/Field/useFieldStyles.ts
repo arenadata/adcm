@@ -1,4 +1,4 @@
-import { FieldProps } from './Field.types';
+import type { FieldProps } from './Field.types';
 import s from './Field.module.scss';
 import cn from 'classnames';
 

@@ -6,7 +6,7 @@ import {
   saveClusterImports,
   cleanupClusterImports,
 } from '@store/adcm/cluster/imports/cluster/clusterImportsSlice';
-import {
+import type {
   ClusterImportsSetGroup,
   SelectedImportHandlerData,
   SelectedImportsGroup,
@@ -20,7 +20,7 @@ import {
   prepToggleSelectedSingleBindData,
 } from '@pages/cluster/ClusterImport/ClusterImport.utils';
 import { setPaginationParams } from '@store/adcm/cluster/imports/cluster/clusterImportsFilterSlice';
-import { PaginationParams } from '@models/table';
+import type { PaginationParams } from '@models/table';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 export const useClusterImports = () => {

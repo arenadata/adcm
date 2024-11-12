@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdcmJob } from '@models/adcm';
+import type { AdcmJob } from '@models/adcm';
 import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';

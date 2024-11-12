@@ -1,4 +1,4 @@
-import { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
+import type { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
 import {
   editField,
   addField,

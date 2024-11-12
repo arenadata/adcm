@@ -1,4 +1,4 @@
-import { TableColumn, BaseStatus } from '@uikit';
+import type { TableColumn, BaseStatus } from '@uikit';
 import { AdcmBundleSignatureStatus } from '@models/adcm/bundle';
 
 export const columns: TableColumn[] = [

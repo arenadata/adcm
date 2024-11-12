@@ -1,6 +1,7 @@
-import React, { ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
+import React from 'react';
 import { Checkbox, IconButton, Tag } from '@uikit';
-import { ListTransferItemOptions } from '@uikit/ListTransfer/ListTransfer.types';
+import type { ListTransferItemOptions } from '@uikit/ListTransfer/ListTransfer.types';
 
 const ListTransferItemDest: React.FC<ListTransferItemOptions> = ({
   item: { key, label },

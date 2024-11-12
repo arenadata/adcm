@@ -5,7 +5,7 @@ import { serviceComponentsStatusMap } from '@pages/cluster/service/ServiceCompon
 import { Table, TableCell, TableRow } from '@uikit';
 import { Link, generatePath, useParams } from 'react-router-dom';
 import { columns } from './HostComponentsTable.constants';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { useDispatch, useStore } from '@hooks';
 import HostComponentsDynamicActionsIcon from './HostComponentsDynamicActionsIcon/HostComponentsDynamicActionsIcon';
 import { setSortParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';

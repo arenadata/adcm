@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmHostComponentsFilter } from '@models/adcm';
+import type { AdcmHostComponentsFilter } from '@models/adcm';
 import { setSortParams, setFilter, setPaginationParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 

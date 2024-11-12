@@ -1,7 +1,7 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import Icon from '@uikit/Icon/Icon';
 import CollapseNode from './CollapseNode';
-import { Node } from './CollapseNode.types';
+import type { Node } from './CollapseNode.types';
 import cn from 'classnames';
 import s from './CollapseTree.stories.module.scss';
 

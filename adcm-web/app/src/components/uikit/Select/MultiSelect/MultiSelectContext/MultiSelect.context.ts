@@ -1,4 +1,4 @@
-import { MultiSelectOptions, SelectOption } from '@uikit/Select/Select.types';
+import type { MultiSelectOptions, SelectOption } from '@uikit/Select/Select.types';
 import React, { useContext } from 'react';
 
 export type MultiSelectContextOptions<T> = MultiSelectOptions<T> & {

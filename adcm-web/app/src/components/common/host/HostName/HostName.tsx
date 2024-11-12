@@ -1,6 +1,6 @@
 import React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
-import { AdcmHost } from '@models/adcm';
+import type { AdcmHost } from '@models/adcm';
 import { hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
 
 interface HostNameProps {

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, RefObject, useRef, MutableRefObject, useCallback } from 'react';
+import type { RefObject, MutableRefObject } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useStore, useResizeObserver } from '@hooks';
 import { useRequestJobLogPage } from './useRequestJobLogPage';
 import JobLog from '@commonComponents/job/JobLog/JobLog';
 import JobLogsTabs from '@commonComponents/job/JobLogsTabs/JobLogsTabs';
-import { AdcmJobLogItem } from '@models/adcm';
+import type { AdcmJobLogItem } from '@models/adcm';
 import s from './JobPageLog.module.scss';
 import { Spinner } from '@uikit';
 import { defaultSpinnerDelay } from '@constants';

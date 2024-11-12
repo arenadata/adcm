@@ -1,7 +1,8 @@
 import { TabsBlock } from '@uikit';
 import TabButton from '@uikit/Tabs/TabButton';
 import s from './ClusterOverviewFilter.module.scss';
-import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
+import type { AdcmHostStatus } from '@models/adcm';
+import { AdcmServiceStatus } from '@models/adcm';
 
 interface ClusterOverviewFilter {
   status?: AdcmServiceStatus | AdcmHostStatus;

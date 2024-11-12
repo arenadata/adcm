@@ -1,4 +1,5 @@
-import { Popover, PopoverPanelDefault, MultiSelectPanel, SelectOption } from '@uikit';
+import type { SelectOption } from '@uikit';
+import { Popover, PopoverPanelDefault, MultiSelectPanel } from '@uikit';
 
 export interface MappingItemSelectProps<T> {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import cn from 'classnames';
-import { JobLogNode } from '@commonComponents/job/JobLog/JobLogCheck/JobLogCheck.types';
+import type { JobLogNode } from '@commonComponents/job/JobLog/JobLogCheck/JobLogCheck.types';
 import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
 import { AdcmJobStatus } from '@models/adcm';
 import s from './JobLogCheckNode.module.scss';

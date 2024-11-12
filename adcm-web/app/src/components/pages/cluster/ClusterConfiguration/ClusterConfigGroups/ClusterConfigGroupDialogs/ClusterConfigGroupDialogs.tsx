@@ -7,7 +7,7 @@ import {
   createClusterConfigGroup,
   deleteClusterConfigGroupWithUpdate,
 } from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
-import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
+import type { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import ConfigGroupDeleteDialog from '@commonComponents/configGroups/ConfigGroupDeleteDialog/ConfigGroupDeleteDialog';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
 import ClusterConfigGroupMappingDialog from './ClusterConfigGroupMappingDialog/ClusterConfigGroupMappingDialog';

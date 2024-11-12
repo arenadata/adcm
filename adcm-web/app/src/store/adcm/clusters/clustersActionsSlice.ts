@@ -1,4 +1,5 @@
-import { AdcmClustersApi, AdcmPrototypesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { refreshClusters } from './clustersSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';

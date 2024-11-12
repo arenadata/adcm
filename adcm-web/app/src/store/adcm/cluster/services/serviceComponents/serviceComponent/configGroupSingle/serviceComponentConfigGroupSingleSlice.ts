@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import { AdcmClusterServiceComponentConfigGroupsApi } from '@api';
 
 interface GetServiceComponentConfigGroupPayload {

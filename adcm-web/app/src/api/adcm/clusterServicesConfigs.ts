@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import {
+import type {
   Batch,
   AdcmConfigShortView,
   AdcmConfig,

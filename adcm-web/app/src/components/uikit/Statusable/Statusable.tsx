@@ -1,7 +1,7 @@
 import React from 'react';
 import cn from 'classnames';
-import { BaseStatus } from './Statusable.types';
-import { Size } from '@uikit/types/size.types';
+import type { BaseStatus } from './Statusable.types';
+import type { Size } from '@uikit/types/size.types';
 import s from './Statusable.module.scss';
 
 type StatusableIconPosition = 'left' | 'right';

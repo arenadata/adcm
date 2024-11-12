@@ -1,4 +1,5 @@
-import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterServiceComponentsApi } from '@api';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';

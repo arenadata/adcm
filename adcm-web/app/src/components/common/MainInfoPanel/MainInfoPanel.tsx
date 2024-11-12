@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import parse, { HTMLReactParserOptions, Element } from 'html-react-parser';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import parse, { Element } from 'html-react-parser';
 import cn from 'classnames';
 import s from './MainInfoPanel.module.scss';
 

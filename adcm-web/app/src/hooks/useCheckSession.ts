@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from './useDispatch';
 import { checkSession } from '@store/authSlice';
-import { useStore } from '@hooks';
+import { useStore } from '@hooks/useStore';
 
 export const useCheckSession = () => {
   const dispatch = useDispatch();

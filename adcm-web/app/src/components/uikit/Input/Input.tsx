@@ -1,6 +1,6 @@
 import React from 'react';
 import cn from 'classnames';
-import { FieldProps } from '@uikit/Field/Field.types';
+import type { FieldProps } from '@uikit/Field/Field.types';
 import { useFieldStyles } from '@uikit/Field/useFieldStyles';
 
 export interface InputProps extends FieldProps, React.InputHTMLAttributes<HTMLInputElement> {

@@ -1,4 +1,4 @@
-import { MouseEventHandler } from 'react';
+import type { MouseEventHandler } from 'react';
 
 export type MonthSwitchDirections = 'prev' | 'next';
 export type CalendarMap = Date[][];

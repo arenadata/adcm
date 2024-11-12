@@ -1,10 +1,11 @@
-import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { getActionHostGroups } from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { RequestError } from '@api';
-import { ActionState } from '@models/loadState';
+import type { RequestError } from '@api';
+import type { ActionState } from '@models/loadState';
 import { services } from './actionHostGroupsSlice.constants';
 import type {
   OpenCreateDialogActionPayload,

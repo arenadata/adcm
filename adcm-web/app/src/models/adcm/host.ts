@@ -1,6 +1,6 @@
-import { AdcmConcerns } from './concern';
-import { AdcmEntityState } from './common';
-import { AdcmHostProvider } from './hostProvider';
+import type { AdcmConcerns } from './concern';
+import type { AdcmEntityState } from './common';
+import type { AdcmHostProvider } from './hostProvider';
 
 export enum AdcmHostStatus {
   Up = 'up',

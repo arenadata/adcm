@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmUsersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmUser } from '@models/adcm';
+import type { AdcmUser } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { LoadState } from '@models/loadState';

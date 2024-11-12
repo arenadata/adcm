@@ -1,6 +1,6 @@
-import React from 'react';
-import { OffsetOptions } from '@floating-ui/react';
-import { Placement } from '@floating-ui/dom';
+import type React from 'react';
+import type { OffsetOptions } from '@floating-ui/react';
+import type { Placement } from '@floating-ui/dom';
 
 export type PopoverPanelProps = React.HTMLAttributes<HTMLDivElement>;
 

@@ -1,6 +1,7 @@
-import { AdcmSettingsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmSettingsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmSettings } from '@models/adcm';
+import type { AdcmSettings } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';

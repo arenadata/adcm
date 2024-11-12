@@ -1,6 +1,6 @@
 // Audit Operations
 
-import { JSONObject } from '@models/json';
+import type { JSONObject } from '@models/json';
 
 export enum AdcmAuditOperationType {
   Create = 'create',

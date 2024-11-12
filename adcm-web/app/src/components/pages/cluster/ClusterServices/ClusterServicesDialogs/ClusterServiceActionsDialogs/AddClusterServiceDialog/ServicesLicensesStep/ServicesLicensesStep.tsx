@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import LicenseAcceptanceList from '@commonComponents/license/LicenseAcceptanceList/LicenseAcceptanceList';
 import { useDispatch } from '@hooks';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
+import type { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
 import { acceptServiceLicense } from '@store/adcm/cluster/services/servicesSlice';
 
 const ServicesLicensesStep: React.FC<AddClusterServicesStepProps> = ({

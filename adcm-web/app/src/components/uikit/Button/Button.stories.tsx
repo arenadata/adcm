@@ -1,5 +1,5 @@
 import Button from './Button';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof Button>;
 export default {

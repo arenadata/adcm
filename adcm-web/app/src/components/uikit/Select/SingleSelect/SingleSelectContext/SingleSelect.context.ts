@@ -1,4 +1,4 @@
-import { SelectOption, SingleSelectOptions } from '@uikit/Select/Select.types';
+import type { SelectOption, SingleSelectOptions } from '@uikit/Select/Select.types';
 import React, { useContext } from 'react';
 
 export type SingleSelectContextOptions<T> = SingleSelectOptions<T> & {

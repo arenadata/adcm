@@ -1,5 +1,6 @@
 import React from 'react';
-import { AdcmJob, AdcmJobStatus } from '@models/adcm';
+import type { AdcmJob } from '@models/adcm';
+import { AdcmJobStatus } from '@models/adcm';
 import JobsStatusCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusCell';
 import s from '@pages/JobsPage/JobPage/JobPageChildJobsTable/JobPageChildJobsTable.module.scss';
 import { Button, IconButton, TableCell } from '@uikit';

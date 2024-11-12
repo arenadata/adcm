@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@hooks/useLocalStorage';
-import { PaginationParams } from '@models/table';
+import type { PaginationParams } from '@models/table';
 import { useStore } from '@hooks/useStore';
 
 type UsePersistSettingsProps<T> = {

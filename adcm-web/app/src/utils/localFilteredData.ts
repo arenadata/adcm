@@ -1,4 +1,4 @@
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 
 export const getSortingData = <T>(data: T[], sortParams: SortParams) => {
   const sortField = sortParams.sortBy as keyof T;

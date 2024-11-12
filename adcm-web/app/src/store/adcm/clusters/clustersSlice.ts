@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmCluster } from '@models/adcm';
+import type { AdcmCluster } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';

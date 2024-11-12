@@ -1,12 +1,7 @@
 /* eslint-disable spellcheck/spell-checker */
-import {
-  AdcmMappingComponent,
-  AdcmMaintenanceMode,
-  AdcmMapping,
-  AdcmLicenseStatus,
-  AdcmPrototypeType,
-} from '@models/adcm';
-import { HostMapping, ComponentsMappingErrors, ServiceMapping, ValidateRelatedData } from './ClusterMapping.types';
+import type { AdcmMappingComponent, AdcmMapping, AdcmLicenseStatus, AdcmPrototypeType } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
+import type { HostMapping, ComponentsMappingErrors, ServiceMapping, ValidateRelatedData } from './ClusterMapping.types';
 import {
   getComponentsMapping,
   getHostsMapping,

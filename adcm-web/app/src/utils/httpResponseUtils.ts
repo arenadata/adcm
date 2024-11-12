@@ -1,4 +1,4 @@
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 
 export interface ResponseErrorData {
   code: string;

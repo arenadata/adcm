@@ -1,7 +1,8 @@
-import React, { ChangeEvent, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import React, { useMemo, useState } from 'react';
 import s from './ListTransferPanel.module.scss';
 import { Button, Checkbox, SearchInput, Tooltip } from '@uikit';
-import { ListTransferItem, ListTransferItemOptions, ListTransferPanelOptions } from '../ListTransfer.types';
+import type { ListTransferItem, ListTransferItemOptions, ListTransferPanelOptions } from '../ListTransfer.types';
 import cn from 'classnames';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 

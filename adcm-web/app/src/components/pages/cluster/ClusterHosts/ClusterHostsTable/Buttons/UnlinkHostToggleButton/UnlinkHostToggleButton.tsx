@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
-import { AdcmHost } from '@models/adcm';
+import type { AdcmHost } from '@models/adcm';
 import { openUnlinkDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 interface LinkHostProps {

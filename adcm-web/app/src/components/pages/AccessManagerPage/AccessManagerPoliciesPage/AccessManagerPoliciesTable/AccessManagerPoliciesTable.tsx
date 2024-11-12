@@ -5,8 +5,8 @@ import { columns } from './AccessManagerPoliciesTable.constants';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openUpdateDialog } from '@store/adcm/policies/policiesActionsSlice';
 import { setSortParams } from '@store/adcm/policies/policiesTableSlice';
-import { SortParams } from '@uikit/types/list.types';
-import { AdcmPolicy } from '@models/adcm';
+import type { SortParams } from '@uikit/types/list.types';
+import type { AdcmPolicy } from '@models/adcm';
 import AccessManagerPoliciesTableExpandedContent from './AccessManagerPoliciesTableExpandedContent/AccessManagerPoliciesTableExpandedContent';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 

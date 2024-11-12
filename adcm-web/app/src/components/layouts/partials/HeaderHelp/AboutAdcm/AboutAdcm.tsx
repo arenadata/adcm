@@ -1,4 +1,4 @@
-import { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
+import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 
 const AboutAdcm = <T,>({ className, onSelect, option: { title, label } }: DefaultSelectListItemProps<T>) => {

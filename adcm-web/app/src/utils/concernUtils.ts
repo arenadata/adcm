@@ -1,4 +1,5 @@
-import { AdcmConcerns, AdcmConcernServicePlaceholder, AdcmConcernType } from '@models/adcm/concern';
+import type { AdcmConcerns, AdcmConcernServicePlaceholder } from '@models/adcm/concern';
+import { AdcmConcernType } from '@models/adcm/concern';
 import { generatePath } from 'react-router-dom';
 
 export interface ConcernObjectPathsData {

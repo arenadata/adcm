@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConcernObjectPathsData } from '@utils/concernUtils';
+import type { ConcernObjectPathsData } from '@utils/concernUtils';
 import { Link } from 'react-router-dom';
 import s from './ConcernMeassages.module.scss';
 

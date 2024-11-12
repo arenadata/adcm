@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmClustersFilter, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmClustersFilter, AdcmPrototypeVersions } from '@models/adcm';
 import { findBy } from '@utils/arrayUtils';
 import {
   setFilter,

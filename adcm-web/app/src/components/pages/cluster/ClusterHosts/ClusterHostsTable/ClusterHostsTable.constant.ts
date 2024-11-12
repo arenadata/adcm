@@ -1,4 +1,4 @@
-import { TableColumn } from '@uikit';
+import type { TableColumn } from '@uikit';
 export { hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
 
 export const columns: TableColumn[] = [

@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmHostProvider } from '@models/adcm/hostProvider';
+import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';

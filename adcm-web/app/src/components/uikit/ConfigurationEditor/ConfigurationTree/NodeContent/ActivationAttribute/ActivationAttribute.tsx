@@ -1,4 +1,4 @@
-import { Switch } from '@uikit';
+import Switch from '@uikit/Switch/Switch';
 
 export interface ActivationAttributeProps {
   isAllowChange: boolean;

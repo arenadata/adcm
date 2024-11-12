@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Tag, Tags } from '@uikit';
 import s from './AccessManagerPoliciesTableExpandedContent.module.scss';
-import { AdcmPolicyObject } from '@models/adcm';
+import type { AdcmPolicyObject } from '@models/adcm';
 
 export interface AccessManagerPoliciesTableExpandedContentProps {
   objects: AdcmPolicyObject[];

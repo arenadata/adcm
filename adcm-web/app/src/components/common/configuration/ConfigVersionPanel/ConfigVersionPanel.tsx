@@ -2,8 +2,8 @@ import React from 'react';
 import ConfigVersionCell from './ConfigVersionCell/ConfigVersionCell';
 import s from './ConfigVersionPanel.module.scss';
 import { Pagination } from '@uikit';
-import { PaginationParams } from '@models/table';
-import { ConfigVersion, SelectVersionAction } from './ConfigVersionPanel.types';
+import type { PaginationParams } from '@models/table';
+import type { ConfigVersion, SelectVersionAction } from './ConfigVersionPanel.types';
 
 interface ConfigVersionPanelProps {
   paginationParams: PaginationParams;

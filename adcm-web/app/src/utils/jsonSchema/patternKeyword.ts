@@ -4,8 +4,9 @@
    Based on https://github.com/ajv-validator/ajv/blob/master/lib/vocabularies/validation/pattern.ts
 */
 
-import { CodeKeywordDefinition, KeywordCxt, KeywordErrorDefinition, _ } from 'ajv/dist/2020';
-import { KeywordErrorCxt } from 'ajv/dist/types';
+import type { CodeKeywordDefinition, KeywordCxt, KeywordErrorDefinition } from 'ajv/dist/2020';
+import { _ } from 'ajv/dist/2020';
+import type { KeywordErrorCxt } from 'ajv/dist/types';
 import { usePattern as generatePattern } from 'ajv/dist/vocabularies/code';
 
 const error: KeywordErrorDefinition = {
@@ -35,7 +36,7 @@ export const safePattern: CodeKeywordDefinition = {
       const regExp = $data ? _`(new RegExp(${schemaCode}, ${u}))` : generatePattern(cxt, schema);
       (cxt as SafePatternKeywordCtx).isPatternValid = true;
       cxt.fail$data(_`!${regExp}.test(${data})`);
-    } catch (e) {
+    } catch (_e) {
       (cxt as SafePatternKeywordCtx).isPatternValid = false;
       cxt.fail();
     }

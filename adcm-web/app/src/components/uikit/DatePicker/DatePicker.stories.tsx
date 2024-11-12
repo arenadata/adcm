@@ -1,5 +1,5 @@
 import DatePicker from '@uikit/DatePicker/DatePicker';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useState } from 'react';
 
 type Story = StoryObj<typeof DatePicker>;

@@ -1,4 +1,4 @@
-import { AdcmHostCandidate } from './host';
+import type { AdcmHostCandidate } from './host';
 
 export interface AdcmConfigGroup {
   id: number;

@@ -1,7 +1,9 @@
-import React, { HTMLAttributes } from 'react';
-import Icon, { IconProps } from '@uikit/Icon/Icon';
+import type { HTMLAttributes } from 'react';
+import React from 'react';
+import type { IconProps } from '@uikit/Icon/Icon';
+import Icon from '@uikit/Icon/Icon';
 import s from './MarkerIcon.module.scss';
-import { MarkerIconType, MarkerSettings, MarkerVariantType } from './MarkerIcon.types';
+import type { MarkerIconType, MarkerSettings, MarkerVariantType } from './MarkerIcon.types';
 import cn from 'classnames';
 
 interface MarkerIconProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'type'> {

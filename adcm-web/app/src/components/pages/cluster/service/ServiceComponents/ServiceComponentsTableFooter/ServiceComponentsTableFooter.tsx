@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const ServiceComponentsTableFooter = () => {
   const dispatch = useDispatch();

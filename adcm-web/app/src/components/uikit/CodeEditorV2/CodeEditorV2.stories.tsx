@@ -1,7 +1,7 @@
 /* eslint-disable spellcheck/spell-checker */
 import { useState } from 'react';
 import CodeEditorV2 from './CodeEditorV2';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof CodeEditorV2>;
 

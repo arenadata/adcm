@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { SearchInput, Tag, Tags } from '@uikit';
 import s from './AccessManagerRolesTableExpandedContent.module.scss';
-import { AdcmRole, AdcmRoleType } from '@models/adcm';
+import type { AdcmRole } from '@models/adcm';
+import { AdcmRoleType } from '@models/adcm';
 import { useStore } from '@hooks';
 import AccessManagerRolesTableProducts from '../AccessManagerRolesTableProducts/AccessManagerRolesTableProducts';
 

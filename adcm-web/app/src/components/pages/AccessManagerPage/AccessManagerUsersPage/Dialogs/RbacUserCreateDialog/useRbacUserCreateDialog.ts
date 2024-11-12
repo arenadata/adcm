@@ -1,6 +1,6 @@
 import { useDispatch, useStore, useForm } from '@hooks';
 import { closeUserCreateDialog, createUser, loadGroups } from '@store/adcm/users/usersActionsSlice';
-import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
+import type { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
 import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
 

@@ -1,5 +1,5 @@
-import { SuccessNotification } from '@models/notification';
-import { AlertOptions } from '@layouts/partials/NotificationsSideBar/Alert/Alert.types';
+import type { SuccessNotification } from '@models/notification';
+import type { AlertOptions } from '@layouts/partials/NotificationsSideBar/Alert/Alert.types';
 import Alert from '@layouts/partials/NotificationsSideBar/Alert/Alert';
 import s from './Alert.module.scss';
 

@@ -4,8 +4,8 @@ import cn from 'classnames';
 import TableHead from './TableHead/TableHead';
 import Spinner from '@uikit/Spinner/Spinner';
 import EmptyRow from './TableRow/EmptyRow';
-import { SortingProps } from '@uikit/types/list.types';
-import { TableColumn, TableSelectedAllOptions } from '@uikit/Table/Table.types';
+import type { SortingProps } from '@uikit/types/list.types';
+import type { TableColumn, TableSelectedAllOptions } from '@uikit/Table/Table.types';
 
 import s from './Table.module.scss';
 import { TableContext } from '@uikit/Table/TableContext';

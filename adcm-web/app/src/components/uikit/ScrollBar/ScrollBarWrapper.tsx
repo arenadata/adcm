@@ -1,5 +1,5 @@
-import { PropsWithChildren } from 'react';
-import { ScrollPosition } from '@uikit/ScrollBar/ScrollBarTypes';
+import type { PropsWithChildren } from 'react';
+import type { ScrollPosition } from '@uikit/ScrollBar/ScrollBarTypes';
 import s from './Scrollbar.module.scss';
 import cn from 'classnames';
 

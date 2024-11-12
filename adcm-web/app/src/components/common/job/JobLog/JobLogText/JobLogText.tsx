@@ -1,4 +1,5 @@
-import React, { RefObject, useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
+import React, { useEffect, useRef } from 'react';
 import CodeHighlighterV2 from '@uikit/CodeHighlighterV2/CodeHighlighterV2';
 import type { AdcmJobLogItemCustom, AdcmJobLogItemStd } from '@models/adcm';
 import s from './JobLogText.module.scss';

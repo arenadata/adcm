@@ -1,6 +1,6 @@
 /* eslint-disable spellcheck/spell-checker */
 import CodeHighlighterV2 from './CodeHighlighterV2';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof CodeHighlighterV2>;
 
