@@ -66,7 +66,7 @@ export default [
             ['@api', './src/api/'],
           ],
 
-          extensions: ['.ts', '.js', '.jsx', '.json'],
+          extensions: ['.ts', '.js', '.jsx', '.json', '.tsx'],
         },
       },
     },
