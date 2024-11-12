@@ -22,8 +22,8 @@ from core.types import (
     ComponentName,
     HostID,
     HostName,
-    HostProviderID,
-    HostProviderName,
+    ProviderID,
+    ProviderName,
     ServiceName,
 )
 from django.contrib.contenttypes.models import ContentType
@@ -34,14 +34,14 @@ from cm.models import (
     AnsibleConfig,
     Bundle,
     Cluster,
-    ClusterObject,
-    GroupConfig,
+    Component,
+    ConfigHostGroup,
     Host,
-    HostProvider,
     MaintenanceMode,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.mapping import change_host_component_mapping
@@ -51,13 +51,13 @@ from cm.services.transition.types import (
     ClusterInfo,
     ConfigHostGroupInfo,
     HostInfo,
-    HostProviderInfo,
+    ProviderInfo,
     RestorableCondition,
     TransitionPayload,
 )
 
 BundleHashIDMap: TypeAlias = dict[BundleHash, BundleID]
-HostProviderNameIDsMap: TypeAlias = dict[HostProviderName, tuple[HostProviderID, BundleID]]
+ProviderNameIDsMap: TypeAlias = dict[ProviderName, tuple[ProviderID, BundleID]]
 HostNameIDMap: TypeAlias = dict[HostName, HostID]
 
 
@@ -75,18 +75,18 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
         raise RuntimeError(message)
 
     report("Host Providers discovery/creation")
-    hostproviders = discover_hostproviders(hostproviders={entry.name: entry.bundle for entry in data.hostproviders})
-    if hostproviders:
-        report(f"Some Host Providers exist, they will be used to create hosts from them: {', '.join(hostproviders)}")
+    providers = discover_providers(providers={entry.name: entry.bundle for entry in data.providers})
+    if providers:
+        report(f"Some Host Providers exist, they will be used to create hosts from them: {', '.join(providers)}")
 
-    if len(hostproviders) != len(data.hostproviders):
-        missing_hostproviders = tuple(entry for entry in data.hostproviders if entry.name not in hostproviders)
-        report(f"Host Providers will be created: {', '.join(hp.name for hp in missing_hostproviders)}")
+    if len(providers) != len(data.providers):
+        missing_providers = tuple(entry for entry in data.providers if entry.name not in providers)
+        report(f"Host Providers will be created: {', '.join(hp.name for hp in missing_providers)}")
 
-        hostproviders |= create_new_hostproviders(hostproviders=missing_hostproviders, bundles=bundles)
+        providers |= create_new_providers(providers=missing_providers, bundles=bundles)
 
     report("Hosts creation")
-    hosts = create_new_hosts(hosts=data.hosts, hostproviders=hostproviders)
+    hosts = create_new_hosts(hosts=data.hosts, providers=providers)
 
     report("Cluster creation")
     return create_cluster(cluster=data.cluster, bundles=bundles, hosts=hosts)
@@ -96,21 +96,19 @@ def discover_bundles(required_bundles: Iterable[BundleHash]) -> BundleHashIDMap:
     return dict(Bundle.objects.values_list("hash", "id").filter(hash__in=required_bundles))
 
 
-def discover_hostproviders(hostproviders: dict[HostProviderName, BundleHash]) -> HostProviderNameIDsMap:
+def discover_providers(providers: dict[ProviderName, BundleHash]) -> ProviderNameIDsMap:
     result = {}
 
-    for id_, name, bundle_id, bundle_hash in HostProvider.objects.values_list(
+    for id_, name, bundle_id, bundle_hash in Provider.objects.values_list(
         "id", "name", "prototype__bundle_id", "prototype__bundle__hash"
-    ).filter(name__in=hostproviders):
-        if bundle_hash == hostproviders[name]:
+    ).filter(name__in=providers):
+        if bundle_hash == providers[name]:
             result[name] = (id_, bundle_id)
 
     return result
 
 
-def create_new_hostproviders(
-    hostproviders: Iterable[HostProviderInfo], bundles: BundleHashIDMap
-) -> HostProviderNameIDsMap:
+def create_new_providers(providers: Iterable[ProviderInfo], bundles: BundleHashIDMap) -> ProviderNameIDsMap:
     provider_protos: dict[BundleHash, Prototype] = {}
     bundle_id_hash: dict[BundleID, BundleHash] = {v: k for k, v in bundles.items()}
 
@@ -119,7 +117,7 @@ def create_new_hostproviders(
 
     result = {}
 
-    for provider_info in hostproviders:
+    for provider_info in providers:
         bundle_id = bundles[provider_info.bundle]
         new_provider = add_host_provider(
             prototype=provider_protos[provider_info.bundle],
@@ -132,13 +130,13 @@ def create_new_hostproviders(
     return result
 
 
-def create_new_hosts(hosts: Iterable[HostInfo], hostproviders: HostProviderNameIDsMap) -> HostNameIDMap:
+def create_new_hosts(hosts: Iterable[HostInfo], providers: ProviderNameIDsMap) -> HostNameIDMap:
     result = {}
 
     hosts_in_mm = deque()
 
     for host_info in hosts:
-        provider_id, bundle_id = hostproviders[host_info.hostprovider]
+        provider_id, bundle_id = providers[host_info.provider]
         host = create_host(bundle_id=bundle_id, provider_id=provider_id, fqdn=host_info.name, cluster=None)
         result[host_info.name] = host.id
         _restore_state(target=host, condition=host_info.condition)
@@ -167,14 +165,14 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
 
     _restore_state(target=cluster_object, condition=cluster.condition)
 
-    config_host_groups: deque[tuple[Cluster | ClusterObject | ServiceComponent, ConfigHostGroupInfo]] = deque(
+    config_host_groups: deque[tuple[Cluster | Service | Component, ConfigHostGroupInfo]] = deque(
         (cluster_object, group) for group in cluster.host_groups
     )
 
-    orm_objects: dict[ServiceName, tuple[ClusterObject, dict[ComponentName, ServiceComponent]]] = {}
+    orm_objects: dict[ServiceName, tuple[Service, dict[ComponentName, Component]]] = {}
 
     for component in (
-        ServiceComponent.objects.filter(cluster_id=cluster_object.id)
+        Component.objects.filter(cluster_id=cluster_object.id)
         .select_related("service")
         .annotate(own_name=F("prototype__name"), parent_name=F("prototype__parent__name"))
     ):
@@ -201,10 +199,10 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
                 components_in_mm.append(component_object.id)
 
     if services_in_mm:
-        ClusterObject.objects.filter(id__in=services_in_mm).update(_maintenance_mode=MaintenanceMode.ON)
+        Service.objects.filter(id__in=services_in_mm).update(_maintenance_mode=MaintenanceMode.ON)
 
     if components_in_mm:
-        ServiceComponent.objects.filter(id__in=components_in_mm).update(_maintenance_mode=MaintenanceMode.ON)
+        Component.objects.filter(id__in=components_in_mm).update(_maintenance_mode=MaintenanceMode.ON)
 
     if cluster.mapping:
         mapping = deque()
@@ -226,9 +224,7 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
     return cluster_object.id
 
 
-def _restore_state(
-    target: HostProvider | Host | Cluster | ClusterObject | ServiceComponent, condition: RestorableCondition
-) -> None:
+def _restore_state(target: Provider | Host | Cluster | Service | Component, condition: RestorableCondition) -> None:
     if condition.config:
         update_obj_config(
             obj_conf=target.config, config=condition.config, attr=condition.attr, description="Restored configuration"
@@ -240,10 +236,10 @@ def _restore_state(
 
 
 def _create_group_config(
-    owner: Cluster | ClusterObject | ServiceComponent, group: ConfigHostGroupInfo, hosts: HostNameIDMap
+    owner: Cluster | Service | Component, group: ConfigHostGroupInfo, hosts: HostNameIDMap
 ) -> None:
     # there's no business rule for that, but probably should be
-    host_group = GroupConfig.objects.create(
+    host_group = ConfigHostGroup.objects.create(
         object_type=ContentType.objects.get_for_model(model=owner),
         object_id=owner.pk,
         name=group.name,
@@ -251,8 +247,10 @@ def _create_group_config(
     )
 
     if group.hosts:
-        m2m = GroupConfig.hosts.through
-        m2m.objects.bulk_create(objs=(m2m(groupconfig_id=host_group.id, host_id=hosts[host]) for host in group.hosts))
+        m2m = ConfigHostGroup.hosts.through
+        m2m.objects.bulk_create(
+            objs=(m2m(confighostgroup_id=host_group.id, host_id=hosts[host]) for host in group.hosts)
+        )
 
     # groups without configs shouldn't be created (according to API v2 rules)
     update_obj_config(

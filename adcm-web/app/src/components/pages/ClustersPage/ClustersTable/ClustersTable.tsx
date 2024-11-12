@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { AdcmCluster, AdcmEntitySystemState } from '@models/adcm';
+import type { AdcmCluster } from '@models/adcm';
+import { AdcmEntitySystemState } from '@models/adcm';
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
@@ -7,7 +8,7 @@ import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
 import { openDeleteDialog, openClusterRenameDialog } from '@store/adcm/clusters/clustersActionsSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';

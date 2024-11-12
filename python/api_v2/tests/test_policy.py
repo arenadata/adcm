@@ -27,7 +27,7 @@ class TestPolicy(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.remove_hostprovider_role = role_create(
+        self.remove_provider_role = role_create(
             name="Remove Host-Provider",
             display_name="Remove Host-Provider",
             child=[Role.objects.get(name="Remove provider", built_in=True)],
@@ -41,8 +41,8 @@ class TestPolicy(BaseAPITestCase):
         self.group_1 = Group.objects.create(name="test_local_group_1")
         self.group_2 = Group.objects.create(name="test_local_group_2")
 
-        self.remove_hostprovider_policy = policy_create(
-            name="Awesome Policy", role=self.remove_hostprovider_role, group=[self.group_1], object=[self.provider]
+        self.remove_provider_policy = policy_create(
+            name="Awesome Policy", role=self.remove_provider_role, group=[self.group_1], object=[self.provider]
         )
         self.create_user_policy = policy_create(
             name="Create User Policy", role=self.create_user_role, group=[self.group_1, self.group_2], object=[]
@@ -88,7 +88,7 @@ class TestPolicy(BaseAPITestCase):
         response = (self.client.v2 / "rbac" / "policies").post(
             data={
                 "name": "New Policy",
-                "role": {"id": self.remove_hostprovider_role.pk},
+                "role": {"id": self.remove_provider_role.pk},
                 "objects": [{"id": self.provider.pk, "type": "provider"}],
                 "groups": [self.group_1.pk],
             }
@@ -121,12 +121,12 @@ class TestPolicy(BaseAPITestCase):
             "objects": [],
             "groups": [self.group_2.pk],
         }
-        response = self.client.v2[self.remove_hostprovider_policy].patch(data=new_data)
+        response = self.client.v2[self.remove_provider_policy].patch(data=new_data)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data).issuperset({"id", "objects", "groups"}))
-        self.assertEqual(data["id"], self.remove_hostprovider_policy.pk)
+        self.assertEqual(data["id"], self.remove_provider_policy.pk)
         self.assertListEqual(data["objects"], [])
         self.assertEqual(
             data["groups"],

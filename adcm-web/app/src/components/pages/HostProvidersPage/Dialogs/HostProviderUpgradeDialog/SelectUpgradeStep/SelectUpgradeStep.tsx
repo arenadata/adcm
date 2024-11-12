@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { FormField, FormFieldsContainer, Select } from '@uikit';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 import { useStore } from '@hooks';
-import { UpgradeStepFormProps } from '../HostProviderUpgradeDialog.types';
+import type { UpgradeStepFormProps } from '../HostProviderUpgradeDialog.types';
 
 const SelectUpgradeStep: React.FC<UpgradeStepFormProps> = ({ formData, onChange }) => {
   const hostProvider = useStore(({ adcm }) => adcm.hostProviderUpgrades.dialog.hostProvider);

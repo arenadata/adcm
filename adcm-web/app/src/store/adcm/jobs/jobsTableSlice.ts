@@ -1,6 +1,6 @@
 import { createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
-import { AdcmJobsFilter } from '@models/adcm';
+import type { ListState } from '@models/table';
+import type { AdcmJobsFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmJobsFilter> => ({
   filter: {

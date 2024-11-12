@@ -5,7 +5,7 @@ import {
   useActionHostGroupDialogForm,
 } from '../ActionHostGroupDialogForm/useActionHostGroupDialogForm';
 import s from '../ActionHostGroupDialogForm/ActionHostGroupDialogForm.module.scss';
-import { AdcmActionHostGroupHost } from '@models/adcm';
+import type { AdcmActionHostGroupHost } from '@models/adcm';
 import { useEffect } from 'react';
 
 export interface CreateActionHostGroupDialogProps {

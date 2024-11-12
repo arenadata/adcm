@@ -1,7 +1,8 @@
 import FrequencySelect from '@commonComponents/Table/FrequencySelect/FrequencySelect';
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams, setRequestFrequency } from '@store/adcm/jobs/jobsTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const JobsTableFooter = () => {
   const dispatch = useDispatch();

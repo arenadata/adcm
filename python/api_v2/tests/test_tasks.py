@@ -20,12 +20,12 @@ from cm.models import (
     ADCM,
     Action,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
-    HostProvider,
     JobStatus,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.services.job.action import prepare_task_for_action
@@ -48,7 +48,7 @@ class TestTask(BaseAPITestCase):
 
         self.adcm = ADCM.objects.first()
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = ServiceComponent.objects.filter(service=self.service_1, prototype__name="component_1").first()
+        component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
         component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
@@ -231,7 +231,7 @@ class TestTaskObjects(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
 
-        self.component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="just-host")
 
@@ -313,7 +313,7 @@ class TestTaskObjects(BaseAPITestCase):
 
     @staticmethod
     def create_task(
-        object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
+        object_: Cluster | Service | Component | Provider | Host | ADCM,
         action_name: str,
         *,
         host: Host | None = None,

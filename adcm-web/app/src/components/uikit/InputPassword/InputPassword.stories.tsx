@@ -1,5 +1,5 @@
 import InputPasswordComponent from './InputPassword';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof InputPasswordComponent>;
 export default {

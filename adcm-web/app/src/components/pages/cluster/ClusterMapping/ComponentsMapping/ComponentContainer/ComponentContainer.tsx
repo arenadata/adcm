@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { SelectOption, Tags } from '@uikit';
+import type { SelectOption } from '@uikit';
+import { Tags } from '@uikit';
 import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import MappedHost from './MappedHost/MappedHost';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';

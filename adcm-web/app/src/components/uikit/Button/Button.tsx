@@ -1,10 +1,12 @@
 import React from 'react';
 import cn from 'classnames';
 import s from './Button.module.scss';
-import { IconsNames } from '@uikit/Icon/sprite';
-import Icon, { IconProps } from '@uikit/Icon/Icon';
-import { ConditionalWrapper, Tooltip } from '@uikit';
-import { TooltipProps } from '@uikit/Tooltip/Tooltip';
+import type { IconsNames } from '@uikit/Icon/sprite';
+import type { IconProps } from '@uikit/Icon/Icon';
+import Icon from '@uikit/Icon/Icon';
+import type { TooltipProps } from '@uikit/Tooltip/Tooltip';
+import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
+import Tooltip from '@uikit/Tooltip/Tooltip';
 
 type ButtonVariant = 'primary' | 'secondary' | 'clear' | 'tertiary';
 

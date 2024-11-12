@@ -1,4 +1,4 @@
-import { AdcmConcerns } from './concern';
+import type { AdcmConcerns } from './concern';
 
 export interface AdcmHostProvider {
   id: number;

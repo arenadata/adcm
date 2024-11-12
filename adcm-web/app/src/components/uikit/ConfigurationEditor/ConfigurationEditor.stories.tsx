@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import ConfigurationEditor from './ConfigurationEditor';
 import {
   clusterConfigurationSchema,
@@ -10,8 +10,8 @@ import {
   nullableConfig,
   nullableSchema,
 } from './ConfigurationEditor.stories.constants';
-import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { ConfigurationTreeFilter } from './ConfigurationEditor.types';
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
+import type { ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/policies/policiesTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const AccessManagerPoliciesTableFooter: React.FC = () => {
   const dispatch = useDispatch();

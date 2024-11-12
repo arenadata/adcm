@@ -1,4 +1,4 @@
-import { AdcmServicePrototype } from '@models/adcm';
+import type { AdcmServicePrototype } from '@models/adcm';
 
 export enum AddServiceStepKey {
   SelectServices = 'select_services',

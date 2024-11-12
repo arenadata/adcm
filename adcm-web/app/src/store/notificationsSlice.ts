@@ -1,11 +1,7 @@
-import { createSlice, PayloadAction, nanoid } from '@reduxjs/toolkit';
-import {
-  ErrorNotification,
-  InfoNotification,
-  Notification,
-  NotificationVariant,
-  SuccessNotification,
-} from '@models/notification';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, nanoid } from '@reduxjs/toolkit';
+import type { ErrorNotification, InfoNotification, Notification, SuccessNotification } from '@models/notification';
+import { NotificationVariant } from '@models/notification';
 
 interface AlertOptions {
   id?: string;

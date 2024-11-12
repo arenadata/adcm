@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ScrollBarProps } from '@uikit/ScrollBar/ScrollBarTypes';
+import type { ScrollBarProps } from '@uikit/ScrollBar/ScrollBarTypes';
 import { useScrollBar } from '@uikit/ScrollBar/useScrollBar';
 import s from '@uikit/ScrollBar/Scrollbar.module.scss';
 import cn from 'classnames';

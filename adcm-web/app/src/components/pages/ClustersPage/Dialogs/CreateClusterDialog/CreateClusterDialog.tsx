@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Checkbox, Dialog, FormField, FormFieldsContainer, Input, Select } from '@uikit';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
-import { AdcmPrototypeVersion, AdcmPrototypeVersions, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmPrototypeVersion, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 

@@ -17,7 +17,7 @@ from api.tests.test_job import RunTaskMock
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from cm.errors import AdcmEx
-from cm.models import Action, ConcernItem, ConfigLog, JobLog, MaintenanceMode, ServiceComponent, TaskLog
+from cm.models import Action, Component, ConcernItem, ConfigLog, JobLog, MaintenanceMode, TaskLog
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.jinja_scripts import get_env
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
@@ -38,10 +38,10 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=cluster).get()
         self.service_task_id = self.prepare_task(owner=service, name="action_on_service").id
 
-        component = service.servicecomponent_set.get(prototype__name="component_1")
+        component = service.components.get(prototype__name="component_1")
         self.component_task_id = self.prepare_task(owner=component, name="action_on_component").id
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_hostprovider")
+        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
         host = self.add_host(provider=provider, fqdn="test_host", cluster=cluster)
         self.set_hostcomponent(cluster=cluster, entries=((host, component),))
 
@@ -129,9 +129,9 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
-        self.component = ServiceComponent.objects.get(service=service)
+        self.component = Component.objects.get(service=service)
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_hostprovider")
+        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
         self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
 
     def test_jobs_generation(self):

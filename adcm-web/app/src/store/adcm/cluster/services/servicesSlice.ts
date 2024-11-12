@@ -1,13 +1,15 @@
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmService, AdcmPrototype, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmService, AdcmPrototype } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
-import { AdcmPrototypesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmPrototypesApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
 

@@ -1,4 +1,4 @@
-import { SingleSchemaDefinition } from '@models/adcm';
+import type { SingleSchemaDefinition } from '@models/adcm';
 import { nullStub } from '../../ConfigurationTree/ConfigurationTree.constants';
 
 export const getEnumOptions = (fieldSchema: SingleSchemaDefinition) => {

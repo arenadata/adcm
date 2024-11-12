@@ -1,5 +1,5 @@
-import { JSONObject } from '@models/json';
-import { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
+import type { JSONObject } from '@models/json';
+import type { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 
 export interface AdcmFieldMetaData {
   isAdvanced?: boolean;

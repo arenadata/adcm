@@ -22,12 +22,12 @@ from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
-    ClusterObject,
-    GroupConfig,
+    Component,
+    ConfigHostGroup,
     Host,
     HostComponent,
-    HostProvider,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import (
@@ -74,25 +74,25 @@ class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name="cluster_id", lookup_expr="isnull")
     provider_is_null = drf_filters.BooleanFilter(field_name="provider_id", lookup_expr="isnull")
     group_config = drf_filters.ModelChoiceFilter(
-        queryset=GroupConfig.objects.order_by("id"),
-        field_name="group_config",
+        queryset=ConfigHostGroup.objects.order_by("id"),
+        field_name="config_host_group",
         label="GroupConfig",
     )
     hostcomponent__service_id = drf_filters.ModelChoiceFilter(
-        queryset=ClusterObject.objects.order_by("id"),
+        queryset=Service.objects.order_by("id"),
         field_name="hostcomponent__service_id",
         label="HostComponentService",
         distinct=True,
     )
     hostcomponent__component_id = drf_filters.ModelChoiceFilter(
-        queryset=ServiceComponent.objects.order_by("id"),
+        queryset=Component.objects.order_by("id"),
         field_name="hostcomponent__component_id",
         label="HostComponentComponent",
         distinct=True,
     )
 
     exclude_group_config__in = NumberInFilter(
-        field_name="group_config",
+        field_name="config_host_group",
         lookup_expr="in",
         label="ExcludeGroupConfigIn",
         exclude=True,
@@ -119,7 +119,7 @@ def get_host_queryset(queryset, user, kwargs):
         cluster = get_object_for_user(user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         queryset = queryset.filter(cluster=cluster)
     if "provider_id" in kwargs:
-        provider = get_object_for_user(user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+        provider = get_object_for_user(user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
         queryset = queryset.filter(provider=provider)
 
     return queryset
@@ -172,12 +172,12 @@ class HostList(PermissionListMixin, PaginatedView):
         )
         if serializer.is_valid():
             if "provider_id" in kwargs:  # List provider hosts
-                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
             else:
                 provider = serializer.validated_data.get("provider_id")
-                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=provider.id)
+                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=provider.id)
 
-            check_custom_perm(request.user, "add_host_to", "hostprovider", provider)
+            check_custom_perm(request.user, "add_host_to", "provider", provider)
 
             return create(serializer)
 
@@ -330,7 +330,7 @@ class StatusList(GenericUIView):
             cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
 
         if "provider_id" in kwargs:
-            provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+            provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
             host = get_object_for_user(
                 request.user,
                 VIEW_HOST_PERM,

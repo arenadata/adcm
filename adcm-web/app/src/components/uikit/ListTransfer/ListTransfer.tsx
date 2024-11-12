@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import s from './ListTransfer.module.scss';
 import ListTransferPanel from './ListTransferPanel/ListTransferPanel';
-import { ListTransferItem, ListTransferPanelOptions } from './ListTransfer.types';
+import type { ListTransferItem, ListTransferPanelOptions } from './ListTransfer.types';
 import ListTransferItemSrc from './ListTransferItem/ListTransferItemSrc';
 import ListTransferItemDest from './ListTransferItem/ListTransferItemDest';
 import cn from 'classnames';

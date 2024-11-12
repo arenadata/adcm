@@ -13,7 +13,7 @@
 from typing import Any, Collection, Literal
 
 from cm.api import get_hc
-from cm.models import Cluster, Host, JobLog, ServiceComponent
+from cm.models import Cluster, Component, Host, JobLog
 from cm.services.mapping import change_host_component_mapping
 from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -90,7 +90,7 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
 
         hostcomponent = get_hc(cluster)
         for operation in arguments.operations:
-            component_id, service_id = ServiceComponent.objects.values_list("id", "service_id").get(
+            component_id, service_id = Component.objects.values_list("id", "service_id").get(
                 cluster=cluster, service__prototype__name=operation.service, prototype__name=operation.component
             )
             host_id = Host.objects.values_list("id", flat=True).get(cluster=cluster, fqdn=operation.host)

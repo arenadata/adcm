@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { buildBreadcrumbs } from '@utils/breadcrumbsUtils';
-import { Route } from '@routes/routes.types';
+import type { Route } from '@routes/routes.types';
 
 export const useBreadcrumbs = (currentRoute?: Route) => {
   const breadcrumbs = useMemo(() => {

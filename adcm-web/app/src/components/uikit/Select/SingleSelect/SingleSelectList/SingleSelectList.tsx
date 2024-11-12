@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { SelectOption, DefaultSelectListItemProps } from '@uikit/Select/Select.types';
+import type { SelectOption, DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import s from './SingleSelectList.module.scss';
 import cn from 'classnames';
 import { useSingleSelectContext } from '../SingleSelectContext/SingleSelect.context';
-import { ConditionalWrapper, Tooltip } from '@uikit';
+import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
+import Tooltip from '@uikit/Tooltip/Tooltip';
 
 const SingleSelectList = <T,>() => {
   const {

@@ -1,8 +1,9 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
-import { RequestOptions, Response, RequestError } from './HttpClient';
+import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import { RequestError } from './HttpClient';
 import { apiHost } from '@constants';
 import '@utils/objectUtils';
-import type { HttpClient } from './HttpClient';
+import type { HttpClient, RequestOptions, Response } from './HttpClient';
 
 export class AxiosBasedHttpClient implements HttpClient {
   protected axiosInstance: AxiosInstance;

@@ -7,7 +7,7 @@ import type {
   Batch,
 } from '@models/adcm';
 import { httpClient } from '@api/httpClient';
-import { PaginationParams, SortParams } from '@models/table';
+import type { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmAuditApi {

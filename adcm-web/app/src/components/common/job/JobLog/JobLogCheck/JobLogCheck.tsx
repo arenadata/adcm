@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import cn from 'classnames';
-import { AdcmJobLogCheckContentItem, AdcmJobLogItemCheck } from '@models/adcm';
+import type { AdcmJobLogCheckContentItem, AdcmJobLogItemCheck } from '@models/adcm';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
-import { JobLogNode } from './JobLogCheck.types';
+import type { JobLogNode } from './JobLogCheck.types';
 import JobLogCheckNode from './JobLogCheckNode/JobLogCheckNode';
 import s from './JobLogCheck.module.scss';
 

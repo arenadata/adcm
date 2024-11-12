@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
-import Input, { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
+import Input from '@uikit/Input/Input';
 import Popover from '@uikit/Popover/Popover';
 import { createChangeEvent } from '@utils/handlerUtils';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';

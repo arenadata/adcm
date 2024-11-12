@@ -1,5 +1,6 @@
-import { ModalState } from '@models/modal';
-import { ActionReducerMapBuilder, SliceCaseReducers, ValidateSliceCaseReducers, createSlice } from '@reduxjs/toolkit';
+import type { ModalState } from '@models/modal';
+import type { ActionReducerMapBuilder, SliceCaseReducers, ValidateSliceCaseReducers } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 type ExtractEntity<S> = S extends ModalState<infer E, string> ? E : never;
 

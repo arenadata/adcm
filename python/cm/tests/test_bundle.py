@@ -35,11 +35,11 @@ from cm.models import (
     Action,
     ADCMEntity,
     Bundle,
-    ClusterObject,
+    Component,
     ConfigLog,
     Prototype,
     PrototypeConfig,
-    ServiceComponent,
+    Service,
     SubAction,
 )
 from cm.tests.test_upgrade import (
@@ -57,8 +57,8 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
         self.bundles_dir = Path(__file__).parent / "bundles"
 
-    def get_component(self, service: ClusterObject, component_name: str) -> ServiceComponent:
-        return ServiceComponent.objects.get(service=service, prototype__name=component_name)
+    def get_component(self, service: Service, component_name: str) -> Component:
+        return Component.objects.get(service=service, prototype__name=component_name)
 
     def enable_outdated_config_is(self, entity: ADCMEntity, expected_value: bool):
         self.assertEqual(entity.prototype.flag_autogeneration["enable_outdated_config"], expected_value)

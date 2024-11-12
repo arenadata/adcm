@@ -16,7 +16,7 @@ import {
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useClusterMapping } from './useClusterMapping';
 import s from './ClusterMapping.module.scss';
-import { AdcmMappingComponent } from '@models/adcm';
+import type { AdcmMappingComponent } from '@models/adcm';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterMapping: React.FC = () => {

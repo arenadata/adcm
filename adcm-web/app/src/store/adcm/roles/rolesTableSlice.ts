@@ -1,6 +1,7 @@
 import { createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
-import { AdcmRoleType, AdcmRolesFilter } from '@models/adcm';
+import type { ListState } from '@models/table';
+import type { AdcmRolesFilter } from '@models/adcm';
+import { AdcmRoleType } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmRolesFilter> => ({
   filter: {

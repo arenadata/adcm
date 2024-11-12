@@ -1,10 +1,12 @@
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi, AdcmPrototypesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmHostProvidersApi, AdcmPrototypesApi } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getHostProviders } from './hostProvidersSlice';
-import { AdcmHostProvider, AdcmHostProviderPayload, AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
-import { ModalState } from '@models/modal';
+import type { AdcmHostProvider, AdcmHostProviderPayload, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeType } from '@models/adcm';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 interface AdcmHostProvidersActionsState extends ModalState<AdcmHostProvider, 'hostprovider'> {

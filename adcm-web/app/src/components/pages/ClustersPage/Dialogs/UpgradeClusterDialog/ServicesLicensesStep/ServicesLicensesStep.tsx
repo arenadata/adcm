@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import LicenseAcceptanceList from '@commonComponents/license/LicenseAcceptanceList/LicenseAcceptanceList';
 import { useDispatch, useStore } from '@hooks';
-import { UpgradeStepFormProps } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
+import type { UpgradeStepFormProps } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 import { AdcmLicenseStatus } from '@models/adcm';
 import { acceptPrototypeLicense } from '@store/adcm/clusters/clusterUpgradesSlice';
 

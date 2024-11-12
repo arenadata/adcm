@@ -30,7 +30,7 @@ urlpatterns = [
     path("bundles/", include("api_v2.bundle.urls")),
     path("prototypes/", include("api_v2.prototype.urls")),
     path("hosts/", include("api_v2.host.urls")),
-    path("hostproviders/", include("api_v2.hostprovider.urls")),
+    path("hostproviders/", include("api_v2.provider.urls")),
     path("audit/", include(("api_v2.audit.urls", "audit"))),
     path("jobs/", include("api_v2.job.urls")),
     path("tasks/", include("api_v2.task.urls")),

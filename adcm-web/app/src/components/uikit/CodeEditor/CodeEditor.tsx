@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import CodeHighlighter from '../CodeHighlighter/CodeHighlighter';
 import CodeEditorContent from './CodeEditorContent';
-import { HighlighterChildType } from './CodeEditor.types';
+import type { HighlighterChildType } from './CodeEditor.types';
 import s from './CodeEditor.module.scss';
 import cn from 'classnames';
 

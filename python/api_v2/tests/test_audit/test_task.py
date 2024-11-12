@@ -14,10 +14,10 @@ from unittest.mock import patch
 
 from cm.models import (
     Action,
+    Component,
     JobLog,
     ObjectType,
     Prototype,
-    ServiceComponent,
     TaskLog,
 )
 from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
@@ -39,7 +39,7 @@ class TestTaskAudit(BaseAPITestCase):
         component_prototype = Prototype.objects.get(
             bundle=self.bundle_1, type=ObjectType.COMPONENT, name="component_1", parent=self.service.prototype
         )
-        self.component = ServiceComponent.objects.get(
+        self.component = Component.objects.get(
             cluster=self.cluster_1, service=self.service, prototype=component_prototype
         )
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, self.component)])

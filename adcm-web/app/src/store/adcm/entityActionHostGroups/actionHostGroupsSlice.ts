@@ -4,7 +4,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { LoadState } from '@models/loadState';
 import type { AdcmActionHostGroup } from '@models/adcm/actionHostGroup';
-import { GetActionHostGroupsActionPayload } from './actionHostGroups.types';
+import type { GetActionHostGroupsActionPayload } from './actionHostGroups.types';
 import { services } from './actionHostGroupsSlice.constants';
 
 type AdcmActionHostGroupsState = {

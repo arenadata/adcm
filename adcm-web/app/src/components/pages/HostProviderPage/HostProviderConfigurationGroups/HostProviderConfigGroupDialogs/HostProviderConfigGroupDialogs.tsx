@@ -9,7 +9,7 @@ import {
   createHostProviderConfigGroup,
   deleteHostProviderConfigGroupWithUpdate,
 } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
-import { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
+import type { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
 import HostProviderConfigGroupMappingDialog from './HostProviderConfigGroupMappingDialog/HostProviderConfigGroupMappingDialog';
 
 const HostProviderConfigGroupDialogs: React.FC = () => {

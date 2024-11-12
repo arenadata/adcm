@@ -3,9 +3,9 @@ import { useState } from 'react';
 import Table from '@uikit/Table/Table';
 import TableCell from '@uikit/Table/TableCell/TableCell';
 import IconButton from '@uikit/IconButton/IconButton';
-import { TableColumn } from '@uikit/Table/Table.types';
+import type { TableColumn } from '@uikit/Table/Table.types';
 import ExpandableRowComponent from './ExpandableRow';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof ExpandableRowComponent>;
 export default {

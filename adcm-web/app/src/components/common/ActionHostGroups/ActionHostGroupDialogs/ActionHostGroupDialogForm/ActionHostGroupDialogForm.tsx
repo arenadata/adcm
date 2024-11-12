@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { FormErrors } from '@hooks/useForm';
 import { FormField, FormFieldsContainer, Input } from '@uikit';
-import { AdcmActionHostGroupHost } from '@models/adcm';
+import type { AdcmActionHostGroupHost } from '@models/adcm';
 import type { AdcmActionHostGroupFormData } from './useActionHostGroupDialogForm';
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { availableHostsPanel, selectedHostsPanel } from './ActionHostGroupDialogForm.constants';

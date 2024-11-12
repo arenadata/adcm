@@ -1,4 +1,5 @@
-import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmGroupsApi, AdcmUsersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';

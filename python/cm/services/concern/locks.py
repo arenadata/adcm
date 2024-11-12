@@ -20,20 +20,20 @@ from cm.models import (
     ADCM,
     ActionHostGroup,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
     Host,
-    HostProvider,
     JobLog,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 
 
-def get_lock_on_object(object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host) -> ConcernItem | None:
+def get_lock_on_object(object_: Cluster | Service | Component | Provider | Host) -> ConcernItem | None:
     return object_.concerns.filter(type=ConcernType.LOCK).first()
 
 

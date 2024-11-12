@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { PaginationDataItem } from '@uikit/Pagination/Pagination.types';
+import type { PaginationDataItem } from '@uikit/Pagination/Pagination.types';
 
 const DECORATION_STEP = 5;
 

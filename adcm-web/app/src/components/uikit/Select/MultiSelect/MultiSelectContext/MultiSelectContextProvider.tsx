@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { MultiSelectOptions } from '@uikit/Select/Select.types';
-import { MultiSelectContext, MultiSelectContextOptions } from './MultiSelect.context';
+import type { MultiSelectOptions } from '@uikit/Select/Select.types';
+import type { MultiSelectContextOptions } from './MultiSelect.context';
+import { MultiSelectContext } from './MultiSelect.context';
 
 export const MultiSelectContextProvider = <T,>({
   children,

@@ -1,4 +1,4 @@
-import { FieldProps } from '@uikit';
+import type { FieldProps } from '@uikit';
 import s from './TextFormField.module.scss';
 
 export interface TextFormField extends FieldProps, React.PropsWithChildren {}

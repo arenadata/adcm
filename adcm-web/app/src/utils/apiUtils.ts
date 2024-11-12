@@ -1,4 +1,4 @@
-import { EmptyTableFilter, PaginationParams, SortParams } from '@models/table';
+import type { EmptyTableFilter, PaginationParams, SortParams } from '@models/table';
 import { queryParamSortBy } from '@constants';
 
 const clearFilter = <F extends EmptyTableFilter>(filter: F) => {

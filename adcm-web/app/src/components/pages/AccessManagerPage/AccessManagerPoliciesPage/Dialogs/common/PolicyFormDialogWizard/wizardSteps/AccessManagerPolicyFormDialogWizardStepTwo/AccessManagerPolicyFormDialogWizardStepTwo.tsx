@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { FormField, FormFieldsContainer, Select } from '@uikit';
 import { useAccessManagerPolicyFormDialogWizardStepTwo } from './useAccessManagerPolicyFormDialogWizardStepTwo';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
-import { AccessManagerPolicyDialogsStepsProps } from '../../../AccessManagerPolicyFormDialog.types';
+import type { AccessManagerPolicyDialogsStepsProps } from '../../../AccessManagerPolicyFormDialog.types';
 
 const AccessManagerPolicyFormDialogWizardStepTwo: React.FC<AccessManagerPolicyDialogsStepsProps> = ({
   formData,

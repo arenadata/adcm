@@ -25,19 +25,19 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.checks import (
     cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
-    object_has_required_services_issue,
+    object_has_required_services_issue_orm_version,
     object_imports_has_issue,
     service_requirements_has_issue,
 )
@@ -49,13 +49,11 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
         return
 
     for require in proto.requires:
-        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
+        req_service = Service.objects.filter(prototype__name=require["service"], cluster=cluster)
         obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
 
         if comp_name := require.get("component"):
-            req_obj = ServiceComponent.objects.filter(
-                prototype__name=comp_name, service=req_service.first(), cluster=cluster
-            )
+            req_obj = Component.objects.filter(prototype__name=comp_name, service=req_service.first(), cluster=cluster)
             obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
         else:
             req_obj = req_service
@@ -70,7 +68,7 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
 _issue_check_map = {
     ConcernCause.CONFIG: object_configuration_has_issue,
     ConcernCause.IMPORT: object_imports_has_issue,
-    ConcernCause.SERVICE: object_has_required_services_issue,
+    ConcernCause.SERVICE: object_has_required_services_issue_orm_version,
     ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue_orm_version,
     ConcernCause.REQUIREMENT: service_requirements_has_issue,
 }

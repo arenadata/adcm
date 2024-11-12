@@ -1,0 +1,85 @@
+---
+- type: cluster
+  name: cluster_config_host_group
+  version: &version '2.0'
+  edition: community
+  config_group_customization: true
+  upgrade:
+    - name: upgrade
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
+  config:
+    - name: boolean
+      type: boolean
+      default: false
+    - name: json
+      type: json
+      required: false
+      default:
+        key: value
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: integer
+          type: integer
+          required: false
+          default: 10
+
+- name: service
+  type: service
+  version: *version
+  config:
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: map
+          type: map
+          required: false
+          default:
+            integer_key: '10'
+            string_key: string
+    - name: structure
+      type: structure
+      required: false
+      yspec: ./schema.yaml
+      default:
+        - integer: 1
+          string: string1
+        - integer: 2
+          string: string2
+
+  components:
+    component:
+      constraint: [ 0, + ]
+      config:
+        - name: secrettext
+          type: secrettext
+          default: new secrettext
+        - name: group
+          type: group
+          subs:
+            - name: file
+              type: file
+              required: false
+              default: ./file.txt
+        - name: activatable_group
+          type: group
+          activatable: True
+          active: True
+          subs:
+            - name: option
+              type: option
+              required: false
+              option:
+                string1: string1
+                string2: string2
+              default: string1

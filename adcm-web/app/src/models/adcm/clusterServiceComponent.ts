@@ -1,6 +1,6 @@
-import { AdcmPrototypeShortView } from './prototype';
-import { AdcmConcerns } from './concern';
-import { AdcmMaintenanceMode } from './maintenanceMode';
+import type { AdcmPrototypeShortView } from './prototype';
+import type { AdcmConcerns } from './concern';
+import type { AdcmMaintenanceMode } from './maintenanceMode';
 
 export enum AdcmServiceComponentStatus {
   Up = 'up',

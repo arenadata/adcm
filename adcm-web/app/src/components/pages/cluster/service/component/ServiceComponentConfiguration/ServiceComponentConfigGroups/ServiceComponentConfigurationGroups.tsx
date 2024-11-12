@@ -4,14 +4,14 @@ import ConfigGroupsHeader from '@commonComponents/configGroups/ConfigGroupsHeade
 import ConfigGroupsTable from '@commonComponents/configGroups/ConfigGroupsTable/ConfigGroupsTable';
 import { useRequestServiceComponentConfigGroups } from './useRequestServiceComponentConfigGroups';
 import ServiceComponentConfigGroupTableFooter from './ServiceComponentConfigGroupTableFooter/ServiceComponentConfigGroupTableFooter';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsTableSlice';
 import {
   openCreateDialog,
   openDeleteDialog,
   openMappingDialog,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsActionsSlice';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import ServiceComponentConfigGroupDialogs from './ServiceComponentConfigGroupDialogs/ServiceComponentConfigGroupDialogs';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';

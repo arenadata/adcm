@@ -1,12 +1,12 @@
 import { httpClient } from '@api/httpClient';
-import {
+import type {
   AdcmClusterOverviewStatusHost,
   AdcmClusterOverviewStatusService,
   AdcmHostStatus,
   AdcmServiceStatus,
   Batch,
 } from '@models/adcm';
-import { PaginationParams } from '@models/table';
+import type { PaginationParams } from '@models/table';
 import { prepareLimitOffset } from '@utils/apiUtils';
 import qs from 'qs';
 

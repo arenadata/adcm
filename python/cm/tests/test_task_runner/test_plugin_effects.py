@@ -17,7 +17,7 @@ from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Component
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
 
@@ -31,17 +31,17 @@ class TestEffectsOfADCMAnsiblePlugins(
         self.bundles_dir = Path(__file__).parent / "bundles"
 
         self.cluster_bundle = self.add_bundle(self.bundles_dir / "cluster")
-        self.hostprovider_bundle = self.add_bundle(self.bundles_dir / "hostprovider")
+        self.provider_bundle = self.add_bundle(self.bundles_dir / "provider")
 
         self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Just Cluster")
 
-        self.hostprovider = self.add_provider(bundle=self.hostprovider_bundle, name="Just HP")
-        self.host_1 = self.add_host(bundle=self.hostprovider_bundle, provider=self.hostprovider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.hostprovider_bundle, provider=self.hostprovider, fqdn="host-2")
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="Just HP")
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()
-        component_1, component_2 = ServiceComponent.objects.filter(service=service).all()
+        component_1, component_2 = Component.objects.filter(service=service).all()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)

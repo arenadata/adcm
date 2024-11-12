@@ -19,9 +19,9 @@ from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
     ClusterBind,
-    ClusterObject,
     HostComponent,
     Prototype,
+    Service,
     Upgrade,
 )
 from cm.status_api import make_ui_cluster_status
@@ -66,7 +66,7 @@ from api.utils import AdcmOrderingFilter, check_obj, create, update
 def get_obj_conf(cluster_id, service_id):
     cluster = check_obj(Cluster, cluster_id)
     if service_id:
-        service = check_obj(ClusterObject, {"cluster": cluster, "id": service_id})
+        service = check_obj(Service, {"cluster": cluster, "id": service_id})
         obj = service
     else:
         obj = cluster

@@ -1,5 +1,6 @@
 import React from 'react';
-import { AdcmJob, AdcmJobLogItem, AdcmJobLogType } from '@models/adcm';
+import type { AdcmJob, AdcmJobLogItem } from '@models/adcm';
+import { AdcmJobLogType } from '@models/adcm';
 import DownloadJobLog from './DownloadJobLog/DownloadJobLog';
 import JobLogCheck from './JobLogCheck/JobLogCheck';
 import JobLogText from './JobLogText/JobLogText';

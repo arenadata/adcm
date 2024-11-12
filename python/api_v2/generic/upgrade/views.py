@@ -20,7 +20,7 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
+from cm.models import Cluster, PrototypeConfig, Provider, TaskLog, Upgrade
 from cm.stack import check_hostcomponents_objects_exist
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
@@ -58,7 +58,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         return UpgradeListSerializer
 
     def get_object(self):
-        parent_object: Cluster | HostProvider | None = self.get_parent_object()
+        parent_object: Cluster | Provider | None = self.get_parent_object()
         if parent_object is None:
             raise NotFound("Can't get parent object for upgrade")
 
@@ -83,9 +83,9 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         return get_object_or_404(queryset, **filter_kwargs)
 
-    def get_parent_object_for_user(self, user: User) -> Cluster | HostProvider:
-        parent: Cluster | HostProvider | None = self.get_parent_object()
-        if parent is None or not isinstance(parent, (Cluster, HostProvider)):
+    def get_parent_object_for_user(self, user: User) -> Cluster | Provider:
+        parent: Cluster | Provider | None = self.get_parent_object()
+        if parent is None or not isinstance(parent, (Cluster, Provider)):
             message = "Can't find upgrade's parent object"
             raise NotFound(message)
 
@@ -97,17 +97,17 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
                 raise PermissionDenied(f"You can't view upgrades of {cluster}")
             return cluster
 
-        if isinstance(parent, HostProvider):
-            hostprovider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=HostProvider, id=parent.pk)
-            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider) and not user.has_perm(
+        if isinstance(parent, Provider):
+            provider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=Provider, id=parent.pk)
+            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=provider) and not user.has_perm(
                 perm=VIEW_PROVIDER_UPGRADE_PERM
             ):
-                raise PermissionDenied(f"You can't view upgrades of {hostprovider}")
-            return hostprovider
+                raise PermissionDenied(f"You can't view upgrades of {provider}")
+            return provider
 
         raise ValueError("Wrong object")
 
-    def get_upgrade(self, parent: Cluster | HostProvider):
+    def get_upgrade(self, parent: Cluster | Provider):
         upgrade = self.get_object()
         if upgrade.bundle.name != parent.prototype.bundle.name:
             raise AdcmEx(code="UPGRADE_NOT_FOUND")
@@ -119,13 +119,13 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         return upgrade
 
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
+        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
         upgrades = get_upgrade(obj=parent)
         serializer = self.get_serializer_class()(instance=upgrades, many=True)
         return Response(data=serializer.data)
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
+        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
 
         upgrade = self.get_upgrade(parent=parent)
 
@@ -148,7 +148,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
+        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
         upgrade = self.get_upgrade(parent=parent)
 
         configuration = serializer.validated_data["configuration"]

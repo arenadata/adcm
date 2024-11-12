@@ -1,6 +1,7 @@
-import { AdcmBundlesApi, AdcmPrototypesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmBundlesApi, AdcmPrototypesApi } from '@api';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmBundle } from '@models/adcm/bundle';
+import type { AdcmBundle } from '@models/adcm/bundle';
 import { LoadState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
@@ -22,7 +23,7 @@ const loadBundleFromBackend = createAsyncThunk('adcm/bundle/loadBundle', async (
   try {
     const bundle = await AdcmBundlesApi.getBundle(bundleId);
     return bundle;
-  } catch (error) {
+  } catch (_error) {
     thunkAPI.dispatch(showError({ message: 'Bundle not found' }));
   }
 });

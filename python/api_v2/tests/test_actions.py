@@ -18,15 +18,15 @@ import json
 from cm.models import (
     Action,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernType,
     Host,
     HostComponent,
-    HostProvider,
     JobLog,
     MaintenanceMode,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -43,7 +43,7 @@ from rest_framework.status import (
 
 from api_v2.tests.base import BaseAPITestCase
 
-ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -53,18 +53,14 @@ class TestActionsFiltering(BaseAPITestCase):
         self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
         self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_2"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        self.component_2: Component = Component.objects.get(service=self.service_1, prototype__name="component_2")
         self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider=self.hostprovider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.hostprovider, fqdn="host-2")
+        self.provider = self.add_provider(provider_bundle, "Provider with Actions")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.available_at_any = ["state_any"]
         common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
@@ -137,7 +133,7 @@ class TestActionsFiltering(BaseAPITestCase):
         service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
         self.cluster_1.save()
 
@@ -164,7 +160,7 @@ class TestActionsFiltering(BaseAPITestCase):
     def test_upgrading_status_foreign_service_remove_fail(self) -> None:
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
 
         response = self.client.v2[self.cluster_1, "services", self.service_1].delete()
@@ -172,7 +168,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_filter_object_own_actions_success(self) -> None:
-        for object_ in (self.cluster, self.service_1, self.component_1, self.hostprovider, self.host_1):
+        for object_ in (self.cluster, self.service_1, self.component_1, self.provider, self.host_1):
             with self.subTest(msg=f"{object_.__class__.__name__} at different states"):
                 self.check_object_action_list(object_=object_, expected_actions=self.available_at_created_no_multi)
 
@@ -453,7 +449,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(
-        self, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, expected_actions: list[str]
+        self, object_: Cluster | Service | Component | Provider | Host, expected_actions: list[str]
     ) -> None:
         response = self.client.v2[object_, "actions"].get()
 
@@ -473,9 +469,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="first_component"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
     def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()

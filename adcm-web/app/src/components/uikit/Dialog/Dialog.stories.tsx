@@ -1,7 +1,8 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import Button from '@uikit/Button/Button';
 import React, { useEffect, useRef, useState } from 'react';
-import Dialog, { DialogProps } from './Dialog';
+import type { DialogProps } from './Dialog';
+import Dialog from './Dialog';
 import s from '@uikit/Dialog/Dialog.module.scss';
 import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
 import Checkbox from '@uikit/Checkbox/Checkbox';

@@ -2,7 +2,7 @@ import { useDispatch, useForm, useStore } from '@hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Steps, steps } from '../common/PolicyFormDialogWizard/constants';
 import { closeCreateDialog, createPolicy, loadRelatedData } from '@store/adcm/policies/policiesActionsSlice';
-import { AccessManagerPolicyDialogsFormData } from '../common/AccessManagerPolicyFormDialog.types';
+import type { AccessManagerPolicyDialogsFormData } from '../common/AccessManagerPolicyFormDialog.types';
 import { getObjectsForSubmit, isValidSecondStep } from '../common/AccessManagerPolicyFormDialog.utils';
 import { isNameUniq, required } from '@utils/validationsUtils';
 

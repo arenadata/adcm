@@ -1,5 +1,5 @@
 import React from 'react';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import Alert from '@layouts/partials/NotificationsSideBar/Alert/Alert';
 import { store } from '@store';
 import { Provider } from 'react-redux';

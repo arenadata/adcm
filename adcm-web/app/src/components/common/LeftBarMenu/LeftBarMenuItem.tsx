@@ -1,14 +1,17 @@
-import React, { HTMLAttributes } from 'react';
+import type { HTMLAttributes } from 'react';
+import React from 'react';
 import cn from 'classnames';
-import { To, useLocation } from 'react-router-dom';
-import { IconsNames } from '@uikit/Icon/sprite';
+import type { To } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import type { IconsNames } from '@uikit/Icon/sprite';
 import Icon from '@uikit/Icon/Icon';
 import LinkOrEmpty from '@uikit/LinkOrEmpty/LinkOrEmpty';
 import { isCurrentParentPage } from '@utils/urlUtils';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import s from './LeftBarMenuItem.module.scss';
-import { ConditionalWrapper, MarkerIcon, MarkerIconType } from '@uikit';
-import { MarkerVariantType } from '@uikit/MarkerIcon/MarkerIcon.types';
+import type { MarkerIconType } from '@uikit';
+import { ConditionalWrapper, MarkerIcon } from '@uikit';
+import type { MarkerVariantType } from '@uikit/MarkerIcon/MarkerIcon.types';
 
 type VariantType = 'default' | 'alert' | 'warning';
 

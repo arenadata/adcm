@@ -1,4 +1,5 @@
-import { matchPath, To } from 'react-router-dom';
+import type { To } from 'react-router-dom';
+import { matchPath } from 'react-router-dom';
 
 export const isCurrentPathname = (pathname: string, to: To | string, subPattern?: string): boolean => {
   if (matchPath(subPattern || '', pathname)) return true;

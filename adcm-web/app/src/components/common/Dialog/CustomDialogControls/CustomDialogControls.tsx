@@ -1,4 +1,5 @@
-import { DialogDefaultControls, DialogDefaultControlsProps } from '@uikit';
+import type { DialogDefaultControlsProps } from '@uikit';
+import { DialogDefaultControls } from '@uikit';
 import s from './CustomDialogControls.module.scss';
 
 interface CustomDialogControlsProps extends DialogDefaultControlsProps, React.PropsWithChildren {}

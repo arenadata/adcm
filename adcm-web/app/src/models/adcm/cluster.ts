@@ -1,5 +1,5 @@
-import { AdcmConcerns } from './concern';
-import { AdcmEntityState } from './common';
+import type { AdcmConcerns } from './concern';
+import type { AdcmEntityState } from './common';
 
 export enum AdcmClusterStatus {
   Up = 'up',

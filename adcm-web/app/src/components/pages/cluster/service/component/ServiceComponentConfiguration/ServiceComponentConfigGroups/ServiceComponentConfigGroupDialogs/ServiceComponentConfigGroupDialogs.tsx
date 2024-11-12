@@ -10,7 +10,7 @@ import {
 import ConfigGroupDeleteDialog from '@commonComponents/configGroups/ConfigGroupDeleteDialog/ConfigGroupDeleteDialog';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
 import ServiceComponentConfigGroupMappingDialog from './ServiceComponentConfigGroupMappingDialog/ServiceComponentConfigGroupMappingDialog';
-import { AdcmServiceComponentConfigGroupCreateData } from '@api/adcm/serviceComponentGroupConfigs';
+import type { AdcmServiceComponentConfigGroupCreateData } from '@api/adcm/serviceComponentGroupConfigs';
 
 const ServiceComponentConfigGroupDialogs: React.FC = () => {
   const navigate = useNavigate();

@@ -1,9 +1,11 @@
-import React, { ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
+import React from 'react';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import s from './MultiSelectList.module.scss';
 import cn from 'classnames';
-import { ConditionalWrapper, Tooltip } from '@uikit';
+import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
+import Tooltip from '@uikit/Tooltip/Tooltip';
 
 const MultiSelectList = <T,>() => {
   const {

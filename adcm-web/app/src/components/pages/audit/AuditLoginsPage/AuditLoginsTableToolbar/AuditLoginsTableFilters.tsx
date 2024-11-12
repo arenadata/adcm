@@ -4,7 +4,7 @@ import { setFilter, resetFilter } from '@store/adcm/audit/auditLogins/auditLogin
 import { Button, LabeledField, Select, DatePicker, SearchInput, ButtonGroup } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { loginsResultOptions } from '@pages/audit/AuditLoginsPage/AuditLoginsTable/AuditLoginsTable.constants';
-import { AdcmAuditLoginResultType } from '@models/adcm';
+import type { AdcmAuditLoginResultType } from '@models/adcm';
 
 const AuditLoginsTableFilters = () => {
   const dispatch = useDispatch();

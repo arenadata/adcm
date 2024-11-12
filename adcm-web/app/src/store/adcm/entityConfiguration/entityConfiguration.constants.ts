@@ -11,7 +11,7 @@ import {
   AdcmClusterServiceComponentGroupConfigConfigsApi,
   AdcmClusterAnsibleSettingsApi,
 } from '@api';
-import {
+import type {
   ApiRequestsDictionary,
   LoadConfigurationArgs,
   LoadConfigurationVersionsArgs,

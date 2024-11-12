@@ -1,5 +1,5 @@
 import type { PaginationParams, SortParams } from '@models/table';
-import { AdcmDynamicActionRunConfig } from './dynamicAction';
+import type { AdcmDynamicActionRunConfig } from './dynamicAction';
 
 export interface AdcmActionHostGroup {
   id: number;

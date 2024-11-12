@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.issue import add_concern_to_object
-from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
+from cm.models import Action, Component, ConcernType, MaintenanceMode
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_concern_item
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
@@ -24,10 +24,10 @@ class TestComponentAPI(BaseAPITestCase):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             prototype__name="component_1", service=self.service_1, cluster=self.cluster_1
         )
-        self.component_2_to_delete = ServiceComponent.objects.get(
+        self.component_2_to_delete = Component.objects.get(
             prototype__name="component_2", service=self.service_1, cluster=self.cluster_1
         )
         self.action_1 = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
@@ -94,12 +94,12 @@ class TestComponentMaintenanceMode(BaseAPITestCase):
         super().setUp()
 
         self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1_cl_1 = ServiceComponent.objects.get(
+        self.component_1_cl_1 = Component.objects.get(
             prototype__name="component_1", service=self.service_1_cl_1, cluster=self.cluster_1
         )
 
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
-        self.component_cl_1 = ServiceComponent.objects.get(
+        self.component_cl_1 = Component.objects.get(
             prototype__name="component", service=self.service_cl_2, cluster=self.cluster_2
         )
 

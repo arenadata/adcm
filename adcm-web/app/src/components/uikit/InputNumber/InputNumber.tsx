@@ -1,6 +1,8 @@
-import React, { ChangeEventHandler, RefObject, useRef } from 'react';
+import type { ChangeEventHandler, RefObject } from 'react';
+import React, { useRef } from 'react';
 import cn from 'classnames';
-import Input, { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
+import Input from '@uikit/Input/Input';
 import { useForwardRef } from '@hooks';
 import InputNumberArrows from '@uikit/InputNumber/InputNumberArrows/InputNumberArrows';
 import { createChangeEvent } from '@utils/handlerUtils';

@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmCluster, AdcmUpgradeDetails, AdcmUpgradeRunConfig, AdcmUpgradeShort } from '@models/adcm';
+import type { AdcmCluster, AdcmUpgradeDetails, AdcmUpgradeRunConfig, AdcmUpgradeShort } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmClustersApi, AdcmPrototypesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 

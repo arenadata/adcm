@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { GetScrollDataResponse, ScrollDataProps, ScrollOrientation } from '@uikit/ScrollBar/ScrollBarTypes';
+import type { GetScrollDataResponse, ScrollDataProps, ScrollOrientation } from '@uikit/ScrollBar/ScrollBarTypes';
 
 export const defaultScrollData: GetScrollDataResponse = {
   scrollFactor: 1,

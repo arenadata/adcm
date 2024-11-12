@@ -5,7 +5,7 @@ import {
   closeClusterDynamicActionDialog,
   runClusterDynamicAction,
 } from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import { AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import type { AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
 const ClusterDynamicActionDialog: React.FC = () => {
   const dispatch = useDispatch();

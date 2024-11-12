@@ -28,7 +28,7 @@ from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
 from ansible.plugins.action import ActionBase
 from cm.converters import core_type_to_model
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, Component, Host, Provider, Service
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
@@ -55,7 +55,7 @@ class BaseStrictModel(BaseModel):
 
 
 TargetTypeLiteral = Literal["cluster", "service", "component", "provider", "host"]
-ProductORMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ProductORMObject: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
 class VarsContextSection(BaseModel):
@@ -239,7 +239,7 @@ def _from_target_description(
                     raise PluginRuntimeError(message=message)
 
                 return CoreObjectDescriptor(
-                    id=ClusterObject.objects.values_list("id", flat=True).get(
+                    id=Service.objects.values_list("id", flat=True).get(
                         cluster_id=context.cluster_id, prototype__name=target_description.service_name
                     ),
                     type=ADCMCoreType.SERVICE,
@@ -257,7 +257,7 @@ def _from_target_description(
                     message = "Can't identify component by name without `cluster_id` in context"
                     raise PluginRuntimeError(message=message)
 
-                component_id_qs = ServiceComponent.objects.values_list("id", flat=True)
+                component_id_qs = Component.objects.values_list("id", flat=True)
                 kwargs = {"cluster_id": context.cluster_id, "prototype__name": target_description.component_name}
                 if target_description.service_name:
                     return CoreObjectDescriptor(
@@ -282,9 +282,9 @@ def _from_target_description(
 
         case "provider":
             if context.provider_id:
-                return CoreObjectDescriptor(id=context.provider_id, type=ADCMCoreType.HOSTPROVIDER)
+                return CoreObjectDescriptor(id=context.provider_id, type=ADCMCoreType.PROVIDER)
 
-            message = "Can't identify hostprovider from context"
+            message = "Can't identify provider from context"
             raise PluginRuntimeError(message=message)
 
         case "host":
@@ -452,7 +452,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             call_context = ansible_vars.context
             owner_from_context = CoreObjectDescriptor(
                 id=getattr(call_context, f"{call_context.type}_id"),
-                type=ADCMCoreType(call_context.type) if call_context.type != "provider" else ADCMCoreType.HOSTPROVIDER,
+                type=ADCMCoreType(call_context.type) if call_context.type != "provider" else ADCMCoreType.PROVIDER,
             )
             self._validate_context(context_owner=owner_from_context, context=call_context)
             self._validate_targets(context_owner=owner_from_context, context=call_context)

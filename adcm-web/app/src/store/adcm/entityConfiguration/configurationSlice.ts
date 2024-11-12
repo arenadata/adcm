@@ -1,13 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm/configuration';
+import type { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm/configuration';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { ApiRequests } from './entityConfiguration.constants';
-import {
+import type {
   CreateEntityConfigurationArgs,
   LoadEntityConfigurationArgs,
   LoadEntityConfigurationVersionsArgs,

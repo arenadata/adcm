@@ -22,13 +22,13 @@ from cm.api import add_service_to_cluster, update_obj_config
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
     JobLog,
     MaintenanceMode,
     Prototype,
-    ServiceComponent,
+    Service,
     TaskLog,
 )
 from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_action
@@ -175,12 +175,8 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
             proto=Prototype.objects.get(name="service_1", type="service"),
         )
 
-        self.component_hc_acl_1 = ServiceComponent.objects.get(
-            cluster=self.cluster_hc_acl, prototype__name="component_1"
-        )
-        self.component_hc_acl_2 = ServiceComponent.objects.get(
-            cluster=self.cluster_hc_acl, prototype__name="component_2"
-        )
+        self.component_hc_acl_1 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_1")
+        self.component_hc_acl_2 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_2")
 
         self.hc_c1_h1 = {
             "host_id": self.host_hc_acl_1.pk,
@@ -211,7 +207,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.set_hostcomponent(
             cluster=self.cluster_hc_acl,
             entries=(
-                (Host.objects.get(id=entry["host_id"]), ServiceComponent.objects.get(id=entry["component_id"]))
+                (Host.objects.get(id=entry["host_id"]), Component.objects.get(id=entry["component_id"]))
                 for entry in (self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
             ),
         )
@@ -240,7 +236,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
             cluster=self.cluster_target_group,
             proto=Prototype.objects.get(name="service_1_target_group", type="service"),
         )
-        self.component_target_group = ServiceComponent.objects.get(
+        self.component_target_group = Component.objects.get(
             cluster=self.cluster_target_group, prototype__name="component_1_target_group"
         )
 
@@ -298,17 +294,16 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         )
 
         target_key_remove = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
         )
         target_key_mm_service = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}."
-            f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}." f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
         target_key_mm_service_component = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
 
@@ -347,8 +342,8 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         )
 
         target_key_remove = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
             f".maintenance_mode"
         )
@@ -372,7 +367,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
 
         groups = [
             gen_group(name="cluster", object_id=self.cluster_target_group.id, model_name="cluster"),
-            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="clusterobject"),
+            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="service"),
         ]
 
         for group in groups:

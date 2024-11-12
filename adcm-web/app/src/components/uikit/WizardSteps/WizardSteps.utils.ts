@@ -1,4 +1,4 @@
-import { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
+import type { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
 
 export const isLastStep = (stepKey: WizardStep['key'], steps: WizardStep[]) => {
   return steps.at(-1)?.key === stepKey;

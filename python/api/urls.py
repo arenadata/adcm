@@ -42,7 +42,7 @@ urlpatterns = [
     path("provider/", include("api.provider.urls")),
     path("host/", include("api.host.urls")),
     path("adcm/", include("api.adcm.urls")),
-    path("group-config/", include("api.group_config.urls")),
+    path("group-config/", include("api.config_host_group.urls")),
     path("config/", include("api.object_config.urls")),
     path("config-log/", include("api.config_log.urls")),
     path("task/", include("api.job.task_urls")),

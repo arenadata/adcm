@@ -13,10 +13,10 @@
 
 from cm.models import (
     ADCMEntity,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
-    ServiceComponent,
+    Service,
 )
 
 
@@ -131,11 +131,9 @@ class Tree:
             children_values = [n.value for n in node.children]
 
         if node.type == "cluster":
-            children_values = ClusterObject.objects.filter(cluster=node.value).order_by("id")
+            children_values = Service.objects.filter(cluster=node.value).order_by("id")
         elif node.type == "service":
-            children_values = ServiceComponent.objects.filter(cluster=node.value.cluster, service=node.value).order_by(
-                "id"
-            )
+            children_values = Component.objects.filter(cluster=node.value.cluster, service=node.value).order_by("id")
         elif node.type == "component":
             children_values = [
                 c.host

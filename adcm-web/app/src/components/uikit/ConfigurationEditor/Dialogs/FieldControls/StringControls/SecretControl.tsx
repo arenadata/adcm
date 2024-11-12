@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import ConfigurationField from '../ConfigurationField';
-import { SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import type { SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
 const mismatchErrorText = 'Please, make sure your secrets match';

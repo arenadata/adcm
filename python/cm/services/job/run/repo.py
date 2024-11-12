@@ -61,12 +61,12 @@ from cm.models import (
     Action,
     ActionHostGroup,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
-    HostProvider,
     JobLog,
     LogStorage,
-    ServiceComponent,
+    Provider,
+    Service,
     SubAction,
     TaskLog,
     Upgrade,
@@ -79,18 +79,18 @@ class JobRepoImpl(JobRepoInterface):
     _supported_script_types = tuple(entry.value for entry in ScriptType)
     _selector_fields_map = {
         Cluster: {"object_id": F("id"), "object_name": F("name"), "type_name": Value(ADCMCoreType.CLUSTER.value)},
-        ClusterObject: {
+        Service: {
             "object_id": F("id"),
             "object_name": F("prototype__display_name"),
             "type_name": Value(ADCMCoreType.SERVICE.value),
         },
-        ServiceComponent: {
+        Component: {
             "object_id": F("id"),
             "object_name": F("prototype__display_name"),
             "type_name": Value(ADCMCoreType.COMPONENT.value),
         },
         Host: {"object_id": F("id"), "object_name": F("fqdn"), "type_name": Value(ADCMCoreType.HOST.value)},
-        HostProvider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
+        Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
     }
 
     @classmethod
@@ -320,23 +320,19 @@ class JobRepoImpl(JobRepoInterface):
 
         match target.type, owner.type:
             case (ADCMCoreType.HOST, ADCMCoreType.HOST):
-                hostprovider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
+                provider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
                 query = query.union(
-                    HostProvider.objects.values(**cls._selector_fields_map[HostProvider]).filter(id=hostprovider_id)
+                    Provider.objects.values(**cls._selector_fields_map[Provider]).filter(id=provider_id)
                 )
             case (ADCMCoreType.HOST, ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT):
                 query = query.union(cls._get_host_related_selector(host_id=target.id, action_owner=owner))
             case (ADCMCoreType.SERVICE, _):
-                cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(id=target.id)
+                cluster_id = Service.objects.values_list("cluster_id", flat=True).get(id=target.id)
                 query = query.union(Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id))
             case (ADCMCoreType.COMPONENT, _):
-                cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(
-                    id=target.id
-                )
+                cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=target.id)
                 cluster_qs = Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id)
-                service_qs = ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(
-                    id=service_id
-                )
+                service_qs = Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id)
                 query = query.union(cluster_qs).union(service_qs)
 
         return {entry["type_name"]: {"id": entry["object_id"], "name": entry["object_name"]} for entry in query.all()}
@@ -354,20 +350,16 @@ class JobRepoImpl(JobRepoInterface):
 
         if action_owner.type == ADCMCoreType.SERVICE:
             query = query.union(
-                ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(
+                Service.objects.values(**cls._selector_fields_map[Service]).filter(
                     prototype_id=action_owner.id, cluster_id=cluster_id
                 )
             )
         elif action_owner.type == ADCMCoreType.COMPONENT:
-            service_id, component_id = ServiceComponent.objects.values_list("service_id", "id").get(
+            service_id, component_id = Component.objects.values_list("service_id", "id").get(
                 cluster_id=cluster_id, prototype_id=action_owner.id
             )
-            query = query.union(
-                ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(id=service_id)
-            )
-            query = query.union(
-                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=component_id)
-            )
+            query = query.union(Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id))
+            query = query.union(Component.objects.values(**cls._selector_fields_map[Component]).filter(id=component_id))
 
         return query
 
@@ -386,10 +378,10 @@ class JobRepoImpl(JobRepoInterface):
 
         related_cluster_values = ("cluster_id", "cluster__prototype_id", "cluster__name")
         related_service_values = ("service_id", "service__prototype_id", "service__prototype__name")
-        related_hostprovider_values = ("provider_id", "provider__prototype_id", "provider__name")
+        related_provider_values = ("provider_id", "provider__prototype_id", "provider__name")
 
         match owner_type:
-            case ADCMCoreType.ADCM | ADCMCoreType.CLUSTER | ADCMCoreType.HOSTPROVIDER:
+            case ADCMCoreType.ADCM | ADCMCoreType.CLUSTER | ADCMCoreType.PROVIDER:
                 return TaskOwner(
                     id=owner_id,
                     type=owner_type,
@@ -440,7 +432,7 @@ class JobRepoImpl(JobRepoInterface):
                 data = owner_model.objects.values(
                     "prototype_id",
                     *related_cluster_values,
-                    *related_hostprovider_values,
+                    *related_provider_values,
                     name=F("fqdn"),
                 ).get(id=owner_id)
                 cluster = (
@@ -453,10 +445,10 @@ class JobRepoImpl(JobRepoInterface):
                     if data["cluster_id"]
                     else None
                 )
-                hostprovider = NamedCoreObjectWithPrototype(
+                provider = NamedCoreObjectWithPrototype(
                     id=data["provider_id"],
                     prototype_id=data["provider__prototype_id"],
-                    type=ADCMCoreType.HOSTPROVIDER,
+                    type=ADCMCoreType.PROVIDER,
                     name=data["provider__name"],
                 )
                 return TaskOwner(
@@ -464,7 +456,7 @@ class JobRepoImpl(JobRepoInterface):
                     type=ADCMCoreType.HOST,
                     prototype_id=data["prototype_id"],
                     name=data["name"],
-                    related_objects=RelatedObjects(cluster=cluster, hostprovider=hostprovider),
+                    related_objects=RelatedObjects(cluster=cluster, provider=provider),
                 )
             case _:
                 message = f"Can't detect owner of type {owner_type}"

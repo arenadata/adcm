@@ -10,6 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._operations import create_issue, delete_concerns_of_removed_objects, delete_issue, retrieve_issue
+from ._operations import (
+    create_issue,
+    delete_concerns_of_removed_objects,
+    delete_issue,
+    retrieve_issue,
+    retrieve_related_concerns,
+)
 
-__all__ = ["delete_issue", "retrieve_issue", "create_issue", "delete_concerns_of_removed_objects"]
+__all__ = [
+    "delete_issue",
+    "retrieve_issue",
+    "create_issue",
+    "delete_concerns_of_removed_objects",
+    "retrieve_related_concerns",
+]

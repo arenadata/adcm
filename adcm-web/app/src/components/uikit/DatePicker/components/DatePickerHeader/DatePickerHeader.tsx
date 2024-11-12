@@ -1,5 +1,5 @@
 import IconButton from '@uikit/IconButton/IconButton';
-import { ChangeMonthHandler } from '@uikit/DatePicker/DatePicker.types';
+import type { ChangeMonthHandler } from '@uikit/DatePicker/DatePicker.types';
 import { monthsDictionary } from '@uikit/DatePicker/DatePicker.constants';
 import { getMonth, getYear } from '@utils/date/calendarUtils';
 import s from './DatePickerHeader.module.scss';

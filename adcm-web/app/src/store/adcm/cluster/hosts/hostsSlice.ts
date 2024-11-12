@@ -3,7 +3,7 @@ import { AdcmClusterHostsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmClusterHost } from '@models/adcm/clusterHosts';
+import type { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
 import { LoadState } from '@models/loadState';

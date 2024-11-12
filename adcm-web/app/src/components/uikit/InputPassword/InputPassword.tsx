@@ -1,5 +1,7 @@
-import React, { useState, FocusEvent } from 'react';
-import Input, { InputProps } from '@uikit/Input/Input';
+import type { FocusEvent } from 'react';
+import React, { useState } from 'react';
+import type { InputProps } from '@uikit/Input/Input';
+import Input from '@uikit/Input/Input';
 import IconButton from '@uikit/IconButton/IconButton';
 
 interface InputPasswordProps extends Omit<InputProps, 'type' | 'endAdornment' | 'startAdornment'> {

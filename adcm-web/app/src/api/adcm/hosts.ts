@@ -1,11 +1,14 @@
 import qs from 'qs';
-import type { AdcmMaintenanceMode, Batch, CreateAdcmHostPayload } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmMaintenanceMode, Batch, CreateAdcmHostPayload, AdcmSetMaintenanceModeResponse } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
-import { AdcmHost, AdcmHostsFilter, AdcmUpdatePayload } from '@models/adcm/host';
+import type { AdcmHost, AdcmHostsFilter, AdcmUpdatePayload } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
-import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import { AdcmSetMaintenanceModeResponse } from '@models/adcm';
+import type {
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm/dynamicAction';
 
 export class AdcmHostsApi {
   public static async getHosts(filter?: AdcmHostsFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {

@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmUsersFilter } from '@models/adcm';
+import type { AdcmUsersFilter } from '@models/adcm';
 import { setFilter, setPaginationParams, setRequestFrequency, setSortParams } from '@store/adcm/users/usersTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 

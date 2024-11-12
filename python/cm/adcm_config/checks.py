@@ -18,7 +18,7 @@ from rest_framework.status import HTTP_409_CONFLICT
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Prototype, StagePrototype
+from cm.models import ConfigHostGroup, Prototype, StagePrototype
 from cm.services.bundle import is_path_correct
 from cm.services.config.patterns import Pattern
 
@@ -31,12 +31,12 @@ def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: 
             raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"the `{key}` field cannot be included in the group")
 
 
-def check_group_keys_attr(attr: dict, spec: dict, group_config: GroupConfig) -> None:
+def check_group_keys_attr(attr: dict, spec: dict, config_host_group: ConfigHostGroup) -> None:
     if "group_keys" not in attr:
         raise AdcmEx(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
 
     group_keys = attr.get("group_keys")
-    _, custom_group_keys = group_config.create_group_keys(config_spec=group_config.get_config_spec())
+    _, custom_group_keys = config_host_group.create_group_keys(config_spec=config_host_group.get_config_spec())
     check_structure_for_group_attr(group_keys=group_keys, spec=spec, key_name="group_keys")
     check_agreement_group_attr(group_keys=group_keys, custom_group_keys=custom_group_keys, spec=spec)
 
@@ -48,9 +48,9 @@ def check_attr(
     spec: dict,
     current_attr: dict | None = None,
 ) -> None:
-    is_group_config = False
-    if isinstance(obj, GroupConfig):
-        is_group_config = True
+    is_host_group = False
+    if isinstance(obj, ConfigHostGroup):
+        is_host_group = True
 
     ref = proto_ref(prototype=proto)
     allowed_key = ("active",)
@@ -59,7 +59,7 @@ def check_attr(
 
     for key in attr:
         if key in ["group_keys", "custom_group_keys"]:
-            if not is_group_config:
+            if not is_host_group:
                 raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
             continue
 
@@ -101,8 +101,8 @@ def check_attr(
                 ):
                     raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=f"config key {key} of {ref} is read only")
 
-    if is_group_config:
-        check_group_keys_attr(attr=attr, spec=spec, group_config=obj)
+    if is_host_group:
+        check_group_keys_attr(attr=attr, spec=spec, config_host_group=obj)
 
 
 def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) -> None:

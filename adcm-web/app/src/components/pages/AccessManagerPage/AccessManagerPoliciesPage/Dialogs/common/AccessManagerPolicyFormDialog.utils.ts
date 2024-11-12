@@ -1,5 +1,5 @@
-import { AdcmPolicy } from '@models/adcm';
-import { AccessManagerPolicyDialogsFormData } from './AccessManagerPolicyFormDialog.types';
+import type { AdcmPolicy } from '@models/adcm';
+import type { AccessManagerPolicyDialogsFormData } from './AccessManagerPolicyFormDialog.types';
 
 export const isValidStepItem = (step: string, formData: AccessManagerPolicyDialogsFormData) => {
   switch (step) {

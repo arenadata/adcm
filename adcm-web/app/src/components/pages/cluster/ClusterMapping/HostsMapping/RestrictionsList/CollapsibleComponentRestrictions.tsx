@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AdcmMappingComponent } from '@models/adcm';
+import type { AdcmMappingComponent } from '@models/adcm';
 import { Collapse, Icon } from '@uikit';
 import ComponentRestrictions from './ComponentRestrictions';
 import type { ComponentMappingErrors } from '../../ClusterMapping.types';

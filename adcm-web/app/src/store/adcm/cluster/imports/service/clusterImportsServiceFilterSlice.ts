@@ -1,6 +1,6 @@
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
-import { AdcmClusterImportServiceFilter, AdcmService } from '@models/adcm';
+import type { AdcmClusterImportServiceFilter, AdcmService } from '@models/adcm';
 import { AdcmServicesApi } from '@api';
 
 type GetClusterServiceImportsArg = {

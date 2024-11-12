@@ -280,7 +280,7 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
     def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         instance = self.get_object()
         instance.actions = Action.objects.filter(prototype__type="service", prototype__pk=instance.pk)
-        instance.components = Prototype.objects.filter(parent=instance, type="component")
+        instance.component_prototypes = Prototype.objects.filter(parent=instance, type="component")
         instance.config = PrototypeConfig.objects.filter(prototype=instance, action=None).order_by("id")
         instance.exports = PrototypeExport.objects.filter(prototype=instance)
         instance.imports = PrototypeImport.objects.filter(prototype=instance)

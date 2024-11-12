@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { addClusterHostsWithUpdate, loadHosts } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { useParams } from 'react-router-dom';
-import { AddClusterHostsPayload } from '@models/adcm';
+import type { AddClusterHostsPayload } from '@models/adcm';
 
 interface CreateClusterHostsPayload extends Omit<AddClusterHostsPayload, 'clusterId'> {
   selectedHostIds: number[];

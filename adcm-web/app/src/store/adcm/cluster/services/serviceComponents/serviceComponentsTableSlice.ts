@@ -1,5 +1,5 @@
 import { createListSlice } from '@store/redux';
-import { EmptyTableFilter, ListState } from '@models/table';
+import type { EmptyTableFilter, ListState } from '@models/table';
 
 type AdcmServiceComponentsFilterState = ListState<EmptyTableFilter>;
 

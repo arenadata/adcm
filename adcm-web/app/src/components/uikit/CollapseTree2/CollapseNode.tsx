@@ -1,9 +1,10 @@
-import React, { ReactNode, useEffect, useState, useMemo, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
-import { Node } from './CollapseNode.types';
+import type { Node } from './CollapseNode.types';
 import s from './CollapseNode.module.scss';
 import cn from 'classnames';
-import { ConfigurationNode } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationNode } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 import {
   rootNodeKey,
   toggleAllNodesEventName,

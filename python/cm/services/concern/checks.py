@@ -16,7 +16,11 @@ from typing import Iterable, Literal, NamedTuple, TypeAlias
 
 from core.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.cluster.types import ClusterTopology
-from core.concern.checks import find_cluster_mapping_issues, find_unsatisfied_service_requirements
+from core.concern.checks import (
+    cluster_has_required_services_issue,
+    find_cluster_mapping_issues,
+    find_unsatisfied_service_requirements,
+)
 from core.converters import named_mapping_from_topology
 from core.types import ClusterID, ConfigID, ObjectID
 from django.db.models import Q
@@ -25,20 +29,19 @@ from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
     ClusterBind,
-    ClusterObject,
+    Component,
     Host,
-    HostProvider,
     ObjectConfig,
-    Prototype,
     PrototypeImport,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
-ObjectWithConfig: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithConfig: TypeAlias = Cluster | Service | Component | Provider | Host
 HasIssue: TypeAlias = bool
 RequiresEntry: TypeAlias = dict[Literal["service", "component"], str]
 
@@ -56,7 +59,7 @@ def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
     return target.id in filter_objects_with_configuration_issues(config_spec, target)
 
 
-def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
+def object_imports_has_issue(target: Cluster | Service) -> HasIssue:
     prototype_id = target.prototype_id
     prototype_imports = PrototypeImport.objects.filter(prototype_id=prototype_id)
     required_import_names = set(prototype_imports.values_list("name", flat=True).filter(required=True))
@@ -78,16 +81,13 @@ def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
     return required_import_names != set()
 
 
-def object_has_required_services_issue(cluster: Cluster) -> HasIssue:
-    bundle_id = cluster.prototype.bundle_id
+def object_has_required_services_issue_orm_version(cluster: Cluster) -> HasIssue:
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
+    existing_services = set(Service.objects.filter(cluster_id=cluster.pk).values_list("prototype__name", flat=True))
 
-    required_protos = Prototype.objects.filter(bundle_id=bundle_id, type="service", required=True)
-
-    if (required_count := required_protos.count()) == 0:
-        return False
-
-    existing_required_objects = ClusterObject.objects.filter(cluster=cluster, prototype__in=required_protos)
-    return existing_required_objects.count() != required_count
+    return cluster_has_required_services_issue(
+        bundle_restrictions=bundle_restrictions, existing_services=existing_services
+    )
 
 
 def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: ObjectWithConfig) -> Iterable[ObjectID]:
@@ -125,7 +125,7 @@ def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: Ob
     return objects_with_issues
 
 
-def service_requirements_has_issue(service: ClusterObject) -> HasIssue:
+def service_requirements_has_issue(service: Service) -> HasIssue:
     bundle_restrictions = retrieve_bundle_restrictions(service.prototype.bundle_id)
     service_name = service.prototype.name
     service_related_restrictions = {}

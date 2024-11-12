@@ -3,7 +3,7 @@ import DatePickerHeader from '../DatePickerHeader/DatePickerHeader';
 import CalendarGrid from '../CalendarGrid/CalendarGrid';
 import InputTime from '../InputTime/InputTime';
 import DatePickerFooter from '../DatePickerFooter/DatePickerFooter';
-import { MonthSwitchDirections } from '@uikit/DatePicker/DatePicker.types';
+import type { MonthSwitchDirections } from '@uikit/DatePicker/DatePicker.types';
 import { getCalendarMap } from '@uikit/DatePicker/DatePicker.utils';
 import { getToday, addMonths, isDateBiggerThan } from '@utils/date/calendarUtils';
 import s from './CalendarPicker.module.scss';

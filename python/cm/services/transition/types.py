@@ -13,7 +13,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeAlias
 
-from core.types import ComponentName, HostName, HostProviderName, ServiceName
+from core.types import ComponentName, HostName, ProviderName, ServiceName
 from pydantic import BaseModel
 
 BundleHash: TypeAlias = str
@@ -41,16 +41,16 @@ class RestorableCondition:
 
 
 @dataclass(slots=True)
-class HostProviderInfo:
+class ProviderInfo:
     bundle: BundleHash
-    name: HostProviderName
+    name: ProviderName
     description: str
     condition: RestorableCondition
 
 
 @dataclass(slots=True)
 class HostInfo:
-    hostprovider: HostProviderName
+    provider: ProviderName
     name: HostName
     condition: RestorableCondition
     maintenance_mode: LiteralMM
@@ -105,5 +105,5 @@ class TransitionPayload(BaseModel):
     adcm_version: str
     bundles: dict[BundleHash, BundleExtraInfo]
     cluster: ClusterInfo
-    hostproviders: list[HostProviderInfo]
+    providers: list[ProviderInfo]
     hosts: list[HostInfo]

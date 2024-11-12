@@ -1,8 +1,8 @@
 import React from 'react';
 import TabButton from '@uikit/Tabs/TabButton';
 import { TabsBlock } from '@uikit';
-import { TabsBlockProps } from '@uikit/Tabs/TabsBlock';
-import { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
+import type { TabsBlockProps } from '@uikit/Tabs/TabsBlock';
+import type { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
 import { getStepIndex } from '@uikit/WizardSteps/WizardSteps.utils';
 import s from './WizardSteps.module.scss';
 import cn from 'classnames';

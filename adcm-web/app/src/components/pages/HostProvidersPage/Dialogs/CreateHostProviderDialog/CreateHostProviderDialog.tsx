@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input, Select, Checkbox } from '@uikit';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { useCreateHostProviderDialog } from './useCreateHostProviderDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';

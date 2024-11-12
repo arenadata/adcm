@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { useStore } from '@hooks';
 import { FormFieldsContainer, MultiSelectPanel, Spinner } from '@uikit';
-import { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
+import type { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
 import ServicesDependenciesWarning from '../ServicesDependenciesWarning/ServicesDependenciesWarning';
 import WarningMessage from '@uikit/WarningMessage/WarningMessage';
 import s from './SelectServicesStep.module.scss';
-import { AdcmServicePrototype } from '@models/adcm';
+import type { AdcmServicePrototype } from '@models/adcm';
 
 const SelectServicesStep: React.FC<AddClusterServicesStepProps> = ({
   formData,

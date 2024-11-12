@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.models import LICENSE_STATE, Bundle, HostProvider, ObjectType, Prototype
+from cm.models import LICENSE_STATE, Bundle, ObjectType, Prototype, Provider
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import (
     CharField,
@@ -124,10 +124,10 @@ class UpgradeBundleSerializer(ModelSerializer):
         return bundle.prototype_set.filter(type__in=(ObjectType.CLUSTER, ObjectType.PROVIDER)).first().license
 
     def get_unaccepted_services_prototypes(self, bundle: Bundle) -> list:
-        if isinstance(self.context["parent"], HostProvider):
+        if isinstance(self.context["parent"], Provider):
             return []
 
-        added_services = self.context["parent"].clusterobject_set.all().values_list("prototype__name", flat=True)
+        added_services = self.context["parent"].services.all().values_list("prototype__name", flat=True)
         prototypes = bundle.prototype_set.filter(
             type=ObjectType.SERVICE, license="unaccepted", name__in=added_services
         ).order_by("pk")

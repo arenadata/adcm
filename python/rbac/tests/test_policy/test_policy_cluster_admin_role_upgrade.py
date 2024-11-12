@@ -13,7 +13,7 @@
 from unittest.mock import patch
 
 from adcm.tests.base import APPLICATION_JSON
-from cm.models import ServiceComponent, Upgrade
+from cm.models import Component, Upgrade
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -28,7 +28,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
         self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
         self.upgrade_cluster()
-        self.component_upgrade = ServiceComponent.objects.get(prototype__name="component_upgrade")
+        self.component_upgrade = Component.objects.get(prototype__name="component_upgrade")
 
     def upgrade_cluster(self):
         self.upload_and_load_bundle(

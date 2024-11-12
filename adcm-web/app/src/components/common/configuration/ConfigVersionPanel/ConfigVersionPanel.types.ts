@@ -1,4 +1,4 @@
-import { AdcmConfigShortView } from '@models/adcm';
+import type { AdcmConfigShortView } from '@models/adcm';
 
 export enum ConfigVersionAction {
   Compare = 'compare',

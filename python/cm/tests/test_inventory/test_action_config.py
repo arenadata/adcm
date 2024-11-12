@@ -19,7 +19,7 @@ from django.conf import settings
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Component
 from cm.services.job.action import ActionRunPayload, prepare_task_for_action, run_action
 from cm.services.job.run._target_factories import prepare_ansible_job_config
 from cm.services.job.run.repo import JobRepoImpl
@@ -66,22 +66,18 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
-        self.host_3 = self.add_host(provider=self.hostprovider, fqdn="host-3")
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
         self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = ServiceComponent.objects.get(service=self.service)
+        self.component = Component.objects.get(service=self.service)
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
@@ -90,7 +86,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
         self.context = {
-            "hostprovider_bundle": self.hostprovider.prototype.bundle,
+            "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],
@@ -110,13 +106,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.cluster, None, "cluster"),
             (self.service, self.FULL_CONFIG, "service"),
             (self.component, self.CONFIG_WITH_NONES, "component"),
-            (self.hostprovider, self.FULL_CONFIG, "hostprovider"),
+            (self.provider, self.FULL_CONFIG, "provider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
             # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
             action_name = "with_config" if type_name != "cluster" else "dummy"
-            active = type_name in ("service", "hostprovider")
-            config_diff = {} if type_name != "hostprovider" else {"variant_builtin": "host-3"}
+            active = type_name in ("service", "provider")
+            config_diff = {} if type_name != "provider" else {"variant_builtin": "host-3"}
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
             obj_ = CoreObjectDescriptor(

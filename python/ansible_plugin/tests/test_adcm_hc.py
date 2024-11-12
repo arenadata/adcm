@@ -13,7 +13,7 @@
 from operator import itemgetter
 
 from cm.converters import orm_object_to_core_type
-from cm.models import ActionHostGroup, HostComponent, ServiceComponent
+from cm.models import ActionHostGroup, Component, HostComponent
 from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.services.job.run.repo import JobRepoImpl
 from core.types import CoreObjectDescriptor
@@ -28,7 +28,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
@@ -116,9 +116,9 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
     def test_complex_call_success(self) -> None:
         service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).get()
-        component_2 = self.service_1.servicecomponent_set.get(prototype__name="component_2")
-        component_3 = service_2.servicecomponent_set.get(prototype__name="component_1")
-        component_4 = service_2.servicecomponent_set.get(prototype__name="component_2")
+        component_2 = self.service_1.components.get(prototype__name="component_2")
+        component_3 = service_2.components.get(prototype__name="component_1")
+        component_4 = service_2.components.get(prototype__name="component_2")
 
         object_ = self.service_1
 
@@ -254,7 +254,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
     def test_remove_host_with_action_group_called_success(self) -> None:
         service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
-        component_2 = ServiceComponent.objects.filter(service=service_2).first()
+        component_2 = Component.objects.filter(service=service_2).first()
         self.set_hostcomponent(
             cluster=self.cluster,
             entries=(
@@ -325,7 +325,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertEqual(self.get_current_hc_dicts(), expected_hc)
 
     def create_action_host_group(
-        self, action_host_group_service: ActionHostGroupService, name: str, component: ServiceComponent
+        self, action_host_group_service: ActionHostGroupService, name: str, component: Component
     ) -> ActionHostGroup:
         return ActionHostGroup.objects.get(
             id=action_host_group_service.create(

@@ -3,8 +3,8 @@ import CalendarPicker from '@uikit/DatePicker/components/CalendarPicker/Calendar
 import Popover from '@uikit/Popover/Popover';
 import Input from '@uikit/Input/Input';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
-import { FieldProps } from '@uikit/Field/Field.types';
-import { SubmitDatePickerHandler } from '@uikit/DatePicker/DatePicker.types';
+import type { FieldProps } from '@uikit/Field/Field.types';
+import type { SubmitDatePickerHandler } from '@uikit/DatePicker/DatePicker.types';
 import { formatDate } from '@uikit/DatePicker/DatePicker.utils';
 import s from '@uikit/DatePicker/DatePicker.module.scss';
 import cn from 'classnames';

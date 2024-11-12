@@ -1,5 +1,5 @@
 import MarkerIcon from './MarkerIcon';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof MarkerIcon>;
 export default {

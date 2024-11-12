@@ -4,7 +4,7 @@ import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 import { useAccessManagerPolicyFormDialogWizardStepOne } from './useAccessManagerPolicyFormDialogWizardStepOne';
 import { useDispatch } from '@hooks';
 import { getObjectCandidates } from '@store/adcm/policies/policiesSlice';
-import { AccessManagerPolicyDialogsStepsProps } from '../../../AccessManagerPolicyFormDialog.types';
+import type { AccessManagerPolicyDialogsStepsProps } from '../../../AccessManagerPolicyFormDialog.types';
 
 const AccessManagerPolicyFormDialogWizardStepOne: React.FC<AccessManagerPolicyDialogsStepsProps> = ({
   formData,

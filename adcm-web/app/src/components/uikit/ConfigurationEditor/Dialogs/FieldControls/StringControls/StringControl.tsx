@@ -2,8 +2,8 @@ import { useState } from 'react';
 import Input from '@uikit/Input/Input';
 import InputWithAutocomplete from '@uikit/InputWithAutocomplete/InputWithAutocomplete';
 import ConfigurationField from '../ConfigurationField';
-import { SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import type { SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
 export interface StringControlProps {

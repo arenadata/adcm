@@ -1,6 +1,6 @@
 import React from 'react';
 import cn from 'classnames';
-import { PopoverPanelProps } from '@uikit/Popover/Popover.types';
+import type { PopoverPanelProps } from '@uikit/Popover/Popover.types';
 import s from './FormFieldErrorPanel.module.scss';
 
 const FormFieldErrorPanel = React.forwardRef<HTMLDivElement, PopoverPanelProps>(
