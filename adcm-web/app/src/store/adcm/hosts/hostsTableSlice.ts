@@ -1,7 +1,7 @@
-import { ListState, SortParams } from '@models/table';
+import type { ListState, SortParams } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import { AdcmClustersApi, AdcmHostProvidersApi } from '@api';
-import { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
+import type { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
 
 type AdcmHostsTableState = ListState<AdcmHostsFilter> & {
   relatedData: {

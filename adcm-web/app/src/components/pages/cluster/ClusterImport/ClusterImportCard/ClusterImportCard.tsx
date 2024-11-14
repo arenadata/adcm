@@ -2,9 +2,10 @@ import React from 'react';
 import { Checkbox, Statusable, Spinner } from '@uikit';
 import s from './ClusterImportCard.module.scss';
 import cn from 'classnames';
-import { AdcmClusterImport, AdcmClusterImportPayloadType } from '@models/adcm';
+import type { AdcmClusterImport } from '@models/adcm';
+import { AdcmClusterImportPayloadType } from '@models/adcm';
 import ClusterImportCardServiceItem from './ClusterImportCardServiceItem';
-import {
+import type {
   ClusterImportsSetGroup,
   SelectedImportHandlerData,
   SelectedImportsGroup,

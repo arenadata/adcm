@@ -29,9 +29,9 @@ from cm.models import (
     ConcernItem,
     ConcernType,
     GroupCheckLog,
-    HostProvider,
     JobLog,
     JobStatus,
+    Provider,
     TaskLog,
 )
 from django.conf import settings
@@ -114,7 +114,7 @@ def recheck_issues():
     Could slow down startup process
     """
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
-    for model in [ADCM, Cluster, HostProvider]:
+    for model in [ADCM, Cluster, Provider]:
         for obj in model.objects.order_by("id"):
             update_hierarchy_issues(obj)
 

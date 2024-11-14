@@ -13,7 +13,7 @@
 from pathlib import Path
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import HostComponent, ObjectType, Prototype, ServiceComponent
+from cm.models import Component, HostComponent, ObjectType, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -102,9 +102,9 @@ class TestHostComponentOrdering(BaseTestCase):
         )
 
         host_pks = self.create_hosts(count=25)
-        self.assertEqual(len(host_pks), ServiceComponent.objects.count())
+        self.assertEqual(len(host_pks), Component.objects.count())
 
-        component_pks = ServiceComponent.objects.order_by("pk").values_list("pk", flat=True)
+        component_pks = Component.objects.order_by("pk").values_list("pk", flat=True)
         hc_data = [
             {"host_id": host_pk, "service_id": service_pk, "component_id": component_pk}
             for host_pk, component_pk in zip(host_pks, component_pks)

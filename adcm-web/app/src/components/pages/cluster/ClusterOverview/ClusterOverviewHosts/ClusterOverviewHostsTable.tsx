@@ -1,5 +1,6 @@
 import { Statusable, Table, TableCell, TableRow, Tooltip } from '@uikit';
-import { AdcmClusterOverviewStatusHost, AdcmClusterStatus } from '@models/adcm';
+import type { AdcmClusterOverviewStatusHost } from '@models/adcm';
+import { AdcmClusterStatus } from '@models/adcm';
 import s from './ClusterOverviewHosts.module.scss';
 import { Link, useParams } from 'react-router-dom';
 

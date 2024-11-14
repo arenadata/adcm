@@ -22,18 +22,18 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernItem,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
-    HostProvider,
     JobLog,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 
@@ -95,12 +95,12 @@ def gen_service(
     bundle: Bundle = None,
     prototype: Prototype = None,
     config: ObjectConfig = None,
-) -> ClusterObject:
+) -> Service:
     """Generate service of specified cluster and prototype"""
     if not prototype:
         bundle = bundle or cluster.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
-    return ClusterObject.objects.create(
+    return Service.objects.create(
         cluster=cluster,
         prototype=prototype,
         config=config,
@@ -108,16 +108,16 @@ def gen_service(
 
 
 def gen_component(
-    service: ClusterObject,
+    service: Service,
     bundle: Bundle = None,
     prototype: Prototype = None,
     config: ObjectConfig = None,
-) -> ServiceComponent:
-    """Generate service component for specified service and prototype"""
+) -> Component:
+    """Generate component for specified service and prototype"""
     if not prototype:
         bundle = bundle or service.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "component")
-    return ServiceComponent.objects.create(
+    return Component.objects.create(
         cluster=service.cluster,
         service=service,
         prototype=prototype,
@@ -125,12 +125,12 @@ def gen_component(
     )
 
 
-def gen_provider(name: str | None = None, bundle=None, prototype=None) -> HostProvider:
+def gen_provider(name: str | None = None, bundle=None, prototype=None) -> Provider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "provider")
-    return HostProvider.objects.create(
+    return Provider.objects.create(
         name=name or gen_name("provider_"),
         prototype=prototype,
     )
@@ -149,7 +149,7 @@ def gen_host(provider, cluster=None, fqdn: str | None = None, bundle=None, proto
     )
 
 
-def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent:
+def gen_host_component(component: Component, host: Host) -> HostComponent:
     """Generate host-component for specified host and component"""
     cluster = component.service.cluster
     if not host.cluster:
@@ -268,7 +268,7 @@ def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
 
 
 def gen_group(name, object_id, model_name):
-    return GroupConfig.objects.create(
+    return ConfigHostGroup.objects.create(
         object_id=object_id,
         object_type=ContentType.objects.get(model=model_name),
         name=name,

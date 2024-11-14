@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
-import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
+import type { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { useForm } from '@hooks';
 import { required } from '@utils/validationsUtils';
 import s from './ConfigGroupCreateDialog.module.scss';

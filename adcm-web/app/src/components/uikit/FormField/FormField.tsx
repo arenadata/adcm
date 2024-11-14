@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import cn from 'classnames';
-import LabeledField, { LabeledFieldProps } from '@uikit/LabeledField/LabeledField';
+import type { LabeledFieldProps } from '@uikit/LabeledField/LabeledField';
+import LabeledField from '@uikit/LabeledField/LabeledField';
 import Popover from '@uikit/Popover/Popover';
 import FormFieldErrorPanel from './FormFieldErrorPanel/FormFieldErrorPanel';
 import FormFieldHint from './FormFieldHint/FormFieldHint';

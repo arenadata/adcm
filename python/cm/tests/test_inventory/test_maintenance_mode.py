@@ -13,8 +13,8 @@
 
 from cm.models import (
     Action,
+    Component,
     MaintenanceMode,
-    ServiceComponent,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -68,7 +68,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
 
     def test_host_in_maintenance_mode_service_one_component(self):
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster_1).first()
-        component = ServiceComponent.objects.get(prototype__name="component_1", service=service)
+        component = Component.objects.get(prototype__name="component_1", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
 
@@ -131,7 +131,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
 
     def test_service_in_maintenance_mode_service_one_component(self):
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster_1).first()
-        component = ServiceComponent.objects.get(prototype__name="component_1", service=service)
+        component = Component.objects.get(prototype__name="component_1", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
 
@@ -235,7 +235,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
 
     def test_component_in_maintenance_mode_service_one_component(self):
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster_1).first()
-        component = ServiceComponent.objects.get(prototype__name="component_1", service=service)
+        component = Component.objects.get(prototype__name="component_1", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
 
@@ -342,8 +342,8 @@ class TestMaintenanceMode(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
-        component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=service)
-        component_2 = ServiceComponent.objects.get(prototype__name="component_2", service=service)
+        component_1 = Component.objects.get(prototype__name="component_1", service=service)
+        component_2 = Component.objects.get(prototype__name="component_2", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component_1), (host_2, component_2)])
 
@@ -505,8 +505,8 @@ class TestMaintenanceMode(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
-        component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=service)
-        component_2 = ServiceComponent.objects.get(prototype__name="component_2", service=service)
+        component_1 = Component.objects.get(prototype__name="component_1", service=service)
+        component_2 = Component.objects.get(prototype__name="component_2", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component_1), (host_2, component_2)])
 
@@ -668,8 +668,8 @@ class TestMaintenanceMode(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
-        component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=service)
-        component_2 = ServiceComponent.objects.get(prototype__name="component_2", service=service)
+        component_1 = Component.objects.get(prototype__name="component_1", service=service)
+        component_2 = Component.objects.get(prototype__name="component_2", service=service)
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component_1), (host_2, component_2)])
 

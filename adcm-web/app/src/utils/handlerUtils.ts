@@ -1,4 +1,4 @@
-import { ChangeEvent, SyntheticEvent } from 'react';
+import type { ChangeEvent, SyntheticEvent } from 'react';
 
 export const createSyntheticEvent = <T extends Element, E extends Event>(event: E): SyntheticEvent<T> => {
   let isDefaultPrevented = false;

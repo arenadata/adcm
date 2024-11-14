@@ -1,4 +1,4 @@
-import { AdcmActionHostGroupHost } from '@models/adcm';
+import type { AdcmActionHostGroupHost } from '@models/adcm';
 
 export const splitHosts = (currentHosts: AdcmActionHostGroupHost[], newHostsIds: Set<number>) => {
   const toDelete = new Set<number>();

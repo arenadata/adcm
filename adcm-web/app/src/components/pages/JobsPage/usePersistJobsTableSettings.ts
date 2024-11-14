@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmJobsFilter } from '@models/adcm';
+import type { AdcmJobsFilter } from '@models/adcm';
 import { setFilter, setPaginationParams, setRequestFrequency, setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 

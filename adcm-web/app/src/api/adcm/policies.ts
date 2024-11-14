@@ -1,7 +1,7 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmObjectCandidates, Batch } from '@models/adcm';
-import { AdcmPoliciesFilter, AdcmPolicyPayload, AdcmPolicy } from '@models/adcm/policy';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmObjectCandidates, Batch } from '@models/adcm';
+import type { AdcmPoliciesFilter, AdcmPolicyPayload, AdcmPolicy } from '@models/adcm/policy';
+import type { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
 

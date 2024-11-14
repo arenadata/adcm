@@ -1,4 +1,5 @@
-import { AdcmJobObject, AdcmJobObjectAdvanced, AdcmJobObjectType } from '@models/adcm';
+import type { AdcmJobObject, AdcmJobObjectAdvanced } from '@models/adcm';
+import { AdcmJobObjectType } from '@models/adcm';
 import { linkByObjectTypeMap } from '@pages/JobsPage/JobsTable/JobsTable.constants';
 
 const buildBaseLink = (type: AdcmJobObject['type'], id: number) => {

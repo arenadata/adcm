@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/groups/groupsTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const AccessManagerGroupsTableFooter = () => {
   const dispatch = useDispatch();

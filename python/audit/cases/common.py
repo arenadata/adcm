@@ -15,9 +15,9 @@ from cm.models import (
     Action,
     ActionHostGroup,
     ADCMEntity,
-    ClusterObject,
+    Component,
     JobLog,
-    ServiceComponent,
+    Service,
     TaskLog,
     Upgrade,
     get_cm_model_by_type,
@@ -110,7 +110,7 @@ def _job_case(job_pk: str, version=1) -> tuple[AuditOperation, AuditObject | Non
     return audit_operation, audit_object
 
 
-def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity | ActionHostGroup, obj_type: str) -> str:
+def get_obj_name(obj: Service | Component | ADCMEntity | ActionHostGroup, obj_type: str) -> str:
     if obj_type == "service":
         obj_name = obj.display_name
         cluster = obj.cluster
@@ -172,7 +172,7 @@ def get_audit_object_from_resp(response: Response, obj_type: str) -> AuditObject
     )
 
 
-def get_service_name(service: ClusterObject) -> str:
+def get_service_name(service: Service) -> str:
     if service.display_name:
         return service.display_name
 

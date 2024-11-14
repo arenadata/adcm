@@ -8,7 +8,7 @@ const CreateHostDialog = () => {
   const dispatch = useDispatch();
 
   const isOpenDialog = useStore(({ adcm }) => adcm.hostsActions.createDialog.isOpen);
-  const isCreating = useStore(({ adcm }) => adcm.hostsActions.createDialog.isCreating);
+  const isCreating = useStore(({ adcm }) => adcm.hostsActions.isActionInProgress);
 
   const {
     formData,

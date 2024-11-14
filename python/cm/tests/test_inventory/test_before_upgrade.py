@@ -16,7 +16,7 @@ from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
-from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
+from cm.models import Action, Component, ObjectType, Prototype, Service, Upgrade
 from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 from cm.upgrade import _update_before_upgrade, bundle_switch
@@ -142,18 +142,14 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: ClusterObject = bulk_add_services_to_cluster(
+        self.service_two_components: Service = bulk_add_services_to_cluster(
             cluster=self.cluster_1,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
             ),
         ).first()
-        self.component_1 = ServiceComponent.objects.get(
-            service=self.service_two_components, prototype__name="component_1"
-        )
-        self.component_2 = ServiceComponent.objects.get(
-            service=self.service_two_components, prototype__name="component_2"
-        )
+        self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
+        self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
         self.set_hostcomponent(
             cluster=self.cluster_1,
@@ -264,22 +260,18 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         ]:
             self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
-    def test_group_config_effect_on_before_upgrade(self) -> None:
+    def test_config_host_group_effect_on_before_upgrade(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: ClusterObject = bulk_add_services_to_cluster(
+        self.service_two_components: Service = bulk_add_services_to_cluster(
             cluster=self.cluster_1,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
             ),
         ).first()
-        self.component_1 = ServiceComponent.objects.get(
-            service=self.service_two_components, prototype__name="component_1"
-        )
-        self.component_2 = ServiceComponent.objects.get(
-            service=self.service_two_components, prototype__name="component_2"
-        )
+        self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
+        self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
         self.set_hostcomponent(
             cluster=self.cluster_1,
@@ -291,9 +283,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             ],
         )
 
-        cluster_group = self.add_group_config(parent=self.cluster_1, hosts=[self.host_1, self.host_2])
-        service_group = self.add_group_config(parent=self.service_two_components, hosts=[self.host_2])
-        component_1_group = self.add_group_config(parent=self.component_1, hosts=[self.host_1])
+        cluster_group = self.add_config_host_group(parent=self.cluster_1, hosts=[self.host_1, self.host_2])
+        service_group = self.add_config_host_group(parent=self.service_two_components, hosts=[self.host_2])
+        component_1_group = self.add_config_host_group(parent=self.component_1, hosts=[self.host_1])
 
         changed_integer = 40
         changed_string = "woohoo"
@@ -325,8 +317,8 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         service_group.object.refresh_from_db()
         component_1_group.object.refresh_from_db()
 
-        cluster_file = self.templates_dir / "group_config_before_upgrade" / "cluster_section.json.j2"
-        services_file = self.templates_dir / "group_config_before_upgrade" / "services_section.json.j2"
+        cluster_file = self.templates_dir / "config_host_group_before_upgrade" / "cluster_section.json.j2"
+        services_file = self.templates_dir / "config_host_group_before_upgrade" / "services_section.json.j2"
 
         expected_hosts_cluster = (
             cluster_file,
@@ -426,7 +418,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         service = self.add_services_to_cluster(
             service_names=["another_service_two_components_2"], cluster=self.cluster_1
         ).first()
-        problem_component = ServiceComponent.objects.get(service=service, prototype__name="component_1")
+        problem_component = Component.objects.get(service=service, prototype__name="component_1")
         another_2 = self.add_services_to_cluster(
             service_names=["another_service_two_components_3"], cluster=self.cluster_1
         ).first()
@@ -439,12 +431,12 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             entries=[
                 (self.host_1, problem_component),
                 (self.host_2, problem_component),
-                (self.host_1, ServiceComponent.objects.filter(service=another_1).first()),
-                (self.host_2, ServiceComponent.objects.filter(service=another_2).first()),
+                (self.host_1, Component.objects.filter(service=another_1).first()),
+                (self.host_2, Component.objects.filter(service=another_2).first()),
             ],
         )
 
-        component_group = self.add_group_config(parent=problem_component, hosts=[self.host_1])
+        component_group = self.add_config_host_group(parent=problem_component, hosts=[self.host_1])
 
         self.change_configuration(
             target=component_group,

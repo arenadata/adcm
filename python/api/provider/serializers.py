@@ -14,7 +14,7 @@ from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
-from cm.models import Action, HostProvider, Prototype, Upgrade
+from cm.models import Action, Prototype, Provider, Upgrade
 from cm.upgrade import do_upgrade, get_upgrade
 from django.db import IntegrityError
 from rest_framework.serializers import (
@@ -28,7 +28,7 @@ from rest_framework.serializers import (
 
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.config_host_group.serializers import CHGsHyperlinkedIdentityField
 from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 
@@ -75,7 +75,7 @@ class ProviderDetailSerializer(ProviderSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
+    group_config = CHGsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
 
 class ProviderUISerializer(ProviderSerializer):
@@ -92,19 +92,19 @@ class ProviderUISerializer(ProviderSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     @staticmethod
-    def get_upgradable(obj: HostProvider) -> bool:
+    def get_upgradable(obj: Provider) -> bool:
         return bool(get_upgrade(obj))
 
     @staticmethod
-    def get_prototype_version(obj: HostProvider) -> str:
+    def get_prototype_version(obj: Provider) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj: HostProvider) -> str:
+    def get_prototype_name(obj: Provider) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: HostProvider) -> str | None:
+    def get_prototype_display_name(obj: Provider) -> str | None:
         return obj.prototype.display_name
 
 
@@ -125,23 +125,23 @@ class ProviderDetailUISerializer(ProviderDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_upgradable(obj: HostProvider) -> bool:
+    def get_upgradable(obj: Provider) -> bool:
         return bool(get_upgrade(obj))
 
     @staticmethod
-    def get_prototype_version(obj: HostProvider) -> str:
+    def get_prototype_version(obj: Provider) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj: HostProvider) -> str:
+    def get_prototype_name(obj: Provider) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: HostProvider) -> str | None:
+    def get_prototype_display_name(obj: Provider) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj: HostProvider) -> str | None:
+    def get_main_info(obj: Provider) -> str | None:
         return get_main_info(obj)
 
 

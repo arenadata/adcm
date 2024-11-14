@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdcmComponentDependency, AdcmPrototypeShortView } from '@models/adcm';
+import type { AdcmComponentDependency, AdcmPrototypeShortView } from '@models/adcm';
 import { useStore } from '@hooks';
 import MarkedList from '@uikit/MarkedList/MarkedList';
 import s from './ShowServices.module.scss';

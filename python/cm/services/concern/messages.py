@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Generic, NamedTuple, TypeVar
 
-from cm.models import ADCM, ADCMEntity, Cluster, ClusterObject, Host, HostProvider, JobLog, Prototype, ServiceComponent
+from cm.models import ADCM, ADCMEntity, Cluster, Component, Host, JobLog, Prototype, Provider, Service
 
 _PlaceholderObjectT = TypeVar("_PlaceholderObjectT", bound=Callable)
 
@@ -65,7 +65,7 @@ class ConcernMessageTemplate:
 
 
 def _retrieve_placeholder_from_adcm_entity(
-    entity: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
+    entity: Cluster | Service | Component | Provider | Host | ADCM,
 ) -> dict:
     return {
         "type": entity.prototype.type,

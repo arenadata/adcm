@@ -1,7 +1,7 @@
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import ConfigurationField from './ConfigurationField';
-import { JSONPrimitive } from '@models/json';
-import { SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive } from '@models/json';
+import type { SingleSchemaDefinition } from '@models/adcm';
 import s from './ConfigurationField.module.scss';
 
 export interface BooleanControlProps {

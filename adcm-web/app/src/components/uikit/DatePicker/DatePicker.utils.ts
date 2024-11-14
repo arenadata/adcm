@@ -9,7 +9,7 @@ import {
   startOfDay,
   startOfMonth,
 } from '@utils/date/calendarUtils';
-import { CalendarMap } from '@uikit/DatePicker/DatePicker.types';
+import type { CalendarMap } from '@uikit/DatePicker/DatePicker.types';
 
 const getActiveMonthInterval = (dateFromProps: Date) =>
   eachDayOfInterval({ start: startOfMonth(dateFromProps), end: endOfMonth(dateFromProps) });

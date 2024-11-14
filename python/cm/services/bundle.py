@@ -140,9 +140,13 @@ def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
                 component=bound_to["component"], service=bound_to["service"]
             )
 
-    for service_name, requires in Prototype.objects.values_list("name", "requires").filter(
+    required_services = set()
+    for service_name, requires, required in Prototype.objects.values_list("name", "requires", "required").filter(
         bundle_id=bundle_id, type=ObjectType.SERVICE
     ):
+        if required:
+            required_services.add(service_name)
+
         if not requires:
             continue
 
@@ -156,4 +160,6 @@ def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
                     ComponentNameKey(component=component_name, service=required_service_name)
                 )
 
-    return BundleRestrictions(service_requires=service_requires, mapping=mapping_restrictions)
+    return BundleRestrictions(
+        service_requires=service_requires, required_services=required_services, mapping=mapping_restrictions
+    )

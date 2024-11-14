@@ -1,4 +1,5 @@
-import { AdcmHost, AdcmMaintenanceMode, AdcmService, AdcmServiceComponent } from '@models/adcm';
+import type { AdcmHost, AdcmService, AdcmServiceComponent } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 
 export type EntityWithMaintenanceModeType = AdcmHost | AdcmService | AdcmServiceComponent;
 

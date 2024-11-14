@@ -1,7 +1,7 @@
 import CircleDiagram from '@uikit/CircleDiagram/CircleDiagram';
 import s from './ClusterOverviewDiagram.module.scss';
 import cn from 'classnames';
-import { AdcmServiceStatus, AdcmHostStatus } from '@models/adcm';
+import type { AdcmServiceStatus, AdcmHostStatus } from '@models/adcm';
 
 interface ClusterOverviewDiagramProps {
   currentCount: number;

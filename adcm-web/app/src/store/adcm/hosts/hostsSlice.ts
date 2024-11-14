@@ -1,4 +1,4 @@
-import { AdcmHost } from '@models/adcm/host';
+import type { AdcmHost } from '@models/adcm/host';
 import { createAsyncThunk } from '@store/redux';
 import { defaultSpinnerDelay } from '@constants';
 import { executeWithMinDelay } from '@utils/requestUtils';

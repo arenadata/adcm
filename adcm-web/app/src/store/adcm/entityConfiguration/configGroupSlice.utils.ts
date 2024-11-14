@@ -1,4 +1,4 @@
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import type { AppDispatch } from '@store/store';

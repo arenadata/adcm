@@ -13,7 +13,9 @@
 from datetime import datetime, timedelta
 
 from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditUser
+from core.rbac.dto import UserUpdateDTO
 from rbac.models import User
+from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 import pytz
 
@@ -50,6 +52,29 @@ class TestAuthorizationAudit(BaseAPITestCase):
             data={"username": username, "password": password},
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+
+    def test_old_token_after_update_adcm_5121_success(self):
+        user = self.create_user(username="new_test_user", password="test_password!")
+        self.login_for_audit(username="new_test_user", password="test_password!")
+        response = self.client.v2["token"].post(
+            data={"username": user.username, "password": "test_password!"},
+        )
+        token = response.json()["token"]
+
+        perform_user_update_as_superuser(
+            user_id=user.pk,
+            update_data=UserUpdateDTO(
+                first_name="test_user_first_name", last_name="test_user_last_name", email="test_user@mail.ru"
+            ),
+            new_password="newtestpassword",
+            new_user_groups=None,
+        )
+
+        self.client.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"
+        response = self.client.v2["token"].post(
+            data={"username": "new_test_user", "password": "newtestpassword"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_logins_success(self):
         response = self.client.v2["audit-login"].get()

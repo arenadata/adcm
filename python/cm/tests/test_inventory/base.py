@@ -28,7 +28,7 @@ from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     MaintenanceMode,
 )
@@ -113,14 +113,14 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
 
     @staticmethod
-    def add_group_config(parent: ADCMModel, hosts: Iterable[Host]) -> GroupConfig:
-        group_config = GroupConfig.objects.create(
+    def add_config_host_group(parent: ADCMModel, hosts: Iterable[Host]) -> ConfigHostGroup:
+        host_group = ConfigHostGroup.objects.create(
             object_type=ContentType.objects.get_for_model(model=parent),
             object_id=parent.pk,
             name=f"Group for {parent.__class__.__name__} {parent.pk}",
         )
-        group_config.hosts.set(hosts)
-        return group_config
+        host_group.hosts.set(hosts)
+        return host_group
 
     @staticmethod
     def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> TaskMappingDelta:

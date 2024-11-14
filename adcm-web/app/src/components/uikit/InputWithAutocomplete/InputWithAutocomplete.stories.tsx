@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import InputWithAutocomplete, { InputWithAutoCompleteProps } from './InputWithAutocomplete';
-import { Meta, StoryObj } from '@storybook/react';
+import type { InputWithAutoCompleteProps } from './InputWithAutocomplete';
+import InputWithAutocomplete from './InputWithAutocomplete';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof InputWithAutocomplete>;
 export default {

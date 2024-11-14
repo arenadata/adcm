@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { loadUsers, updateGroup } from '@store/adcm/groups/groupActionsSlice';
+import { loadUsers, updateGroup } from '@store/adcm/groups/groupsActionsSlice';
 import { isNameUniq, required } from '@utils/validationsUtils';
 
 interface UpdateGroupFormData {

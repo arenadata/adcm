@@ -19,11 +19,11 @@ from cm.issue import update_hierarchy_issues
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernCause,
     Host,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.mapping import change_host_component_mapping
 
@@ -70,7 +70,7 @@ class TestComponent(BaseTestCase):
 
     def test_requires_hc(self):
         service_1 = add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_1)
-        component_1 = ServiceComponent.objects.get(prototype=self.component_1_1_proto, service=service_1)
+        component_1 = Component.objects.get(prototype=self.component_1_1_proto, service=service_1)
         host = Host.objects.create(
             prototype=Prototype.objects.create(type="host", bundle=self.bundle), cluster=self.cluster
         )
@@ -85,7 +85,7 @@ class TestComponent(BaseTestCase):
             )
 
     def test_service_requires_issue(self):
-        service_2 = ClusterObject.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
+        service_2 = Service.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
         update_hierarchy_issues(obj=self.cluster)
         concerns = service_2.concerns.all()
         self.assertEqual(len(concerns), 1)

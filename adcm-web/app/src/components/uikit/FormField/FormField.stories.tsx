@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import FormField from '@uikit/FormField/FormField';
 import React, { useState } from 'react';
 import Input from '@uikit/Input/Input';

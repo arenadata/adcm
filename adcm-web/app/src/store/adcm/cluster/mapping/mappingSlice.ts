@@ -1,8 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterMappingApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import {
+import type {
   AdcmError,
   AdcmHostShortView,
   AdcmMapping,
@@ -11,7 +12,8 @@ import {
 } from '@models/adcm';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
-import { ActionState, RequestState } from '@models/loadState';
+import type { ActionState } from '@models/loadState';
+import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
 
 type GetClusterMappingArg = {

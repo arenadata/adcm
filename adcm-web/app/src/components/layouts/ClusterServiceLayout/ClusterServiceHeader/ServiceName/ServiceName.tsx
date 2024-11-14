@@ -1,6 +1,6 @@
 import React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
-import { AdcmService } from '@models/adcm';
+import type { AdcmService } from '@models/adcm';
 import { servicesStatusesMap } from '@pages/cluster/ClusterServices/ClusterServicesTable/ClusterServicesTable.constants';
 
 interface ServiceNameProps {

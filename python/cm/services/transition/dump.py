@@ -20,8 +20,8 @@ from core.types import (
     ConfigID,
     HostID,
     HostName,
-    HostProviderID,
     ObjectID,
+    ProviderID,
     ServiceID,
     ServiceNameKey,
 )
@@ -33,14 +33,14 @@ from cm.models import (
     AnsibleConfig,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
-    HostProvider,
     MaintenanceMode,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.config.secrets import AnsibleSecrets
 from cm.services.transition.types import (
@@ -50,8 +50,8 @@ from cm.services.transition.types import (
     ComponentInfo,
     ConfigHostGroupInfo,
     HostInfo,
-    HostProviderInfo,
     NamedMappingEntry,
+    ProviderInfo,
     RestorableCondition,
     ServiceInfo,
     TransitionPayload,
@@ -64,8 +64,8 @@ ConfigUpdateAcc: TypeAlias = dict[ConfigID, RestorableCondition | ConfigHostGrou
 def dump(cluster_id: ClusterID) -> TransitionPayload:
     configs_to_set: ConfigUpdateAcc = {}
 
-    hosts, hostprovider_ids = retrieve_hosts(cluster_id=cluster_id, config_acc=configs_to_set)
-    hostproviders, bundles = retrieve_hostproviders(hostproviders=hostprovider_ids, config_acc=configs_to_set)
+    hosts, provider_ids = retrieve_hosts(cluster_id=cluster_id, config_acc=configs_to_set)
+    providers, bundles = retrieve_providers(providers=provider_ids, config_acc=configs_to_set)
     cluster, cluster_bundle_id = retrieve_cluster(
         cluster_id=cluster_id, hosts={host_id: host.name for host_id, host in hosts.items()}, config_acc=configs_to_set
     )
@@ -77,7 +77,7 @@ def dump(cluster_id: ClusterID) -> TransitionPayload:
     return TransitionPayload(
         adcm_version=settings.ADCM_VERSION,
         bundles=bundles_info,
-        hostproviders=hostproviders,
+        hostproviders=providers,
         hosts=list(hosts.values()),
         cluster=cluster,
     )
@@ -85,8 +85,8 @@ def dump(cluster_id: ClusterID) -> TransitionPayload:
 
 def retrieve_hosts(
     cluster_id: ClusterID, config_acc: ConfigUpdateAcc
-) -> tuple[dict[HostID, HostInfo], set[HostProviderID]]:
-    hostproviders = set()
+) -> tuple[dict[HostID, HostInfo], set[ProviderID]]:
+    providers = set()
 
     hosts: dict[HostID, HostInfo] = {}
 
@@ -97,7 +97,7 @@ def retrieve_hosts(
             message = f"Host {entry.fqdn} has unserializable Maintenance Mode state: {entry.maintenance_mode}"
             raise ValueError(message)
 
-        hostproviders.add(entry.provider_id)
+        providers.add(entry.provider_id)
 
         current_condition = RestorableCondition(state=entry.state, multi_state=entry.multi_state)
 
@@ -106,22 +106,22 @@ def retrieve_hosts(
 
         hosts[entry.id] = HostInfo(
             name=entry.fqdn,
-            hostprovider=entry.provider_name,
+            provider=entry.provider_name,
             condition=current_condition,
             maintenance_mode=str(entry.maintenance_mode).lower(),
         )
 
-    return hosts, hostproviders
+    return hosts, providers
 
 
-def retrieve_hostproviders(
-    hostproviders: set[HostProviderID], config_acc: ConfigUpdateAcc
-) -> tuple[list[HostProviderInfo], set[BundleID]]:
+def retrieve_providers(
+    providers: set[ProviderID], config_acc: ConfigUpdateAcc
+) -> tuple[list[ProviderInfo], set[BundleID]]:
     bundles = set()
 
     result = []
 
-    for entry in HostProvider.objects.filter(id__in=hostproviders).annotate(
+    for entry in Provider.objects.filter(id__in=providers).annotate(
         current_config_id=F("config__current"),
         bundle_id_value=F("prototype__bundle_id"),
         bundle_hash=F("prototype__bundle__hash"),
@@ -134,7 +134,7 @@ def retrieve_hostproviders(
             config_acc[entry.current_config_id] = current_condition
 
         result.append(
-            HostProviderInfo(
+            ProviderInfo(
                 bundle=entry.bundle_hash, name=entry.name, description=entry.description, condition=current_condition
             )
         )
@@ -167,7 +167,7 @@ def retrieve_cluster(
     service_id_name_map: dict[ServiceID, ServiceNameKey] = {}
     component_id_name_map: dict[ComponentID, ComponentNameKey] = {}
 
-    for service in ClusterObject.objects.filter(cluster_id=cluster_id).annotate(
+    for service in Service.objects.filter(cluster_id=cluster_id).annotate(
         current_config_id=F("config__current"), service_name=F("prototype__name")
     ):
         name = ServiceNameKey(service=service.service_name)
@@ -187,7 +187,7 @@ def retrieve_cluster(
             name=name.service, condition=condition, maintenance_mode=str(mm).lower()
         )
 
-    for component in ServiceComponent.objects.filter(cluster_id=cluster_id).annotate(
+    for component in Component.objects.filter(cluster_id=cluster_id).annotate(
         current_config_id=F("config__current"),
         component_name=F("prototype__name"),
         service_name=F("prototype__parent__name"),
@@ -218,13 +218,13 @@ def retrieve_cluster(
         )
 
     cluster_ct = ContentType.objects.get_for_model(Cluster)
-    service_ct = ContentType.objects.get_for_model(ClusterObject)
-    component_ct = ContentType.objects.get_for_model(ServiceComponent)
+    service_ct = ContentType.objects.get_for_model(Service)
+    component_ct = ContentType.objects.get_for_model(Component)
 
     host_groups: dict[ObjectID, ConfigHostGroupInfo] = {}
 
     for group in (
-        GroupConfig.objects.filter(
+        ConfigHostGroup.objects.filter(
             Q(object_type=cluster_ct, object_id=cluster_id)
             | Q(object_type=service_ct, object_id__in=service_id_name_map)
             | Q(object_type=component_ct, object_id__in=component_id_name_map)
@@ -245,9 +245,9 @@ def retrieve_cluster(
             key = component_id_name_map[group.object_id]
             cluster_info.services[key.service].components[key.component].host_groups.append(group_info)
 
-    for group_id, host_id in GroupConfig.hosts.through.objects.filter(groupconfig_id__in=host_groups).values_list(
-        "groupconfig_id", "host_id"
-    ):
+    for group_id, host_id in ConfigHostGroup.hosts.through.objects.filter(
+        confighostgroup_id__in=host_groups
+    ).values_list("confighostgroup_id", "host_id"):
         host_groups[group_id].hosts.append(hosts[host_id])
 
     return cluster_info, cluster.bundle_id_value

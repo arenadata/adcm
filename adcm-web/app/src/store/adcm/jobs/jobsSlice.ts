@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmJob, AdcmJobLogItem, AdcmJobStatus, AdcmTask } from '@models/adcm';
+import type { AdcmJob, AdcmJobLogItem, AdcmTask } from '@models/adcm';
+import { AdcmJobStatus } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';

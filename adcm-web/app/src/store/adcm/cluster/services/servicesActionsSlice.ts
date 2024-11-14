@@ -1,14 +1,16 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { getServices, setServiceMaintenanceMode } from '@store/adcm/cluster/services/servicesSlice';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
-import { AdcmMaintenanceMode, AdcmService, AdcmServicePrototype } from '@models/adcm';
+import type { AdcmService, AdcmServicePrototype } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { clearSolvedDependencies } from '@utils/dependsOnUtils';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import type { ModalState } from '@models/modal';
 
 interface AddClusterServicePayload {
   clusterId: number;
@@ -38,7 +40,7 @@ const addServices = createAsyncThunk(
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
     } finally {
-      thunkAPI.dispatch(setIsAddingServices(false));
+      thunkAPI.dispatch(setIsActionInProgress(false));
     }
   },
 );
@@ -46,14 +48,14 @@ const addServices = createAsyncThunk(
 const addServicesWithUpdate = createAsyncThunk(
   'adcm/servicesActions/addServicesWithUpdate',
   async (arg: AddClusterServicePayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsAddingServices(true));
+    thunkAPI.dispatch(setIsActionInProgress(true));
 
     await thunkAPI.dispatch(addServices(arg)).unwrap();
 
-    thunkAPI.dispatch(cleanupServicesActions());
+    thunkAPI.dispatch(cleanupActions());
     await thunkAPI.dispatch(getServices({ clusterId: arg.clusterId })).unwrap();
 
-    thunkAPI.dispatch(setIsAddingServices(false));
+    thunkAPI.dispatch(setIsActionInProgress(false));
   },
 );
 
@@ -69,6 +71,16 @@ const deleteService = createAsyncThunk(
     } finally {
       thunkAPI.dispatch(getServices({ clusterId }));
     }
+  },
+);
+
+const deleteServiceWithUpdate = createAsyncThunk(
+  'adcm/servicesActions/deleteServiceWithUpdate',
+  async (arg: DeleteClusterServicePayload, thunkAPI) => {
+    await thunkAPI.dispatch(deleteService(arg)).unwrap();
+
+    thunkAPI.dispatch(cleanupActions());
+    await thunkAPI.dispatch(getServices({ clusterId: arg.clusterId })).unwrap();
   },
 );
 
@@ -111,64 +123,50 @@ const toggleMaintenanceMode = createAsyncThunk(
   },
 );
 
-interface AdcmClusterServicesActionsState {
-  maintenanceModeDialog: {
-    service: AdcmService | null;
-  };
-  isAddingServices: boolean;
-  addServicesDialog: {
+interface AdcmClusterServicesActionsState extends ModalState<AdcmService, 'service'> {
+  createDialog: {
     isOpen: boolean;
   };
   deleteDialog: {
-    serviceId: number | null;
+    service: AdcmService | null;
+  };
+  maintenanceModeDialog: {
+    service: AdcmService | null;
   };
   relatedData: {
     serviceCandidates: AdcmServicePrototype[];
     isServiceCandidatesLoading: boolean;
   };
+  isActionInProgress: boolean;
 }
 
 const createInitialState = (): AdcmClusterServicesActionsState => ({
+  createDialog: {
+    isOpen: false,
+  },
+  updateDialog: {
+    service: null,
+  },
   maintenanceModeDialog: {
     service: null,
   },
-  addServicesDialog: {
-    isOpen: false,
-  },
-  isAddingServices: false,
   deleteDialog: {
-    serviceId: null,
+    service: null,
   },
   relatedData: {
     serviceCandidates: [],
     isServiceCandidatesLoading: false,
   },
+  isActionInProgress: false,
 });
 
-const servicesActionsSlice = createSlice({
+const servicesActionsSlice = createCrudSlice({
   name: 'adcm/servicesActions',
-  initialState: createInitialState(),
+  entityName: 'service',
+  createInitialState,
   reducers: {
-    cleanupServicesActions() {
-      return createInitialState();
-    },
-    openAddServicesDialog(state) {
-      state.addServicesDialog.isOpen = true;
-    },
-    closeAddServicesDialog(state) {
-      state.addServicesDialog.isOpen = false;
-    },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.serviceId = action.payload;
-    },
     setIsServiceCandidatesLoading(state, action) {
       state.relatedData.isServiceCandidatesLoading = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.serviceId = null;
-    },
-    setIsAddingServices(state, action) {
-      state.isAddingServices = action.payload;
     },
     openMaintenanceModeDialog(state, action) {
       state.maintenanceModeDialog.service = action.payload;
@@ -189,18 +187,18 @@ const servicesActionsSlice = createSlice({
       servicesActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
     builder.addCase(deleteService.pending, (state) => {
-      state.deleteDialog.serviceId = null;
+      servicesActionsSlice.caseReducers.closeDeleteDialog(state);
     });
   },
 });
 
 const {
-  openAddServicesDialog,
-  closeAddServicesDialog,
+  openCreateDialog,
+  closeCreateDialog,
   openDeleteDialog,
   closeDeleteDialog,
-  cleanupServicesActions,
-  setIsAddingServices,
+  cleanupActions,
+  setIsActionInProgress,
   openMaintenanceModeDialog,
   closeMaintenanceModeDialog,
   setIsServiceCandidatesLoading,
@@ -208,16 +206,18 @@ const {
 
 export {
   addServices,
-  deleteService,
+  deleteServiceWithUpdate as deleteService,
   getServiceCandidates,
   toggleMaintenanceMode,
-  openAddServicesDialog,
-  closeAddServicesDialog,
+  openCreateDialog,
+  closeCreateDialog,
   openDeleteDialog,
   closeDeleteDialog,
   openMaintenanceModeDialog,
   closeMaintenanceModeDialog,
   addServicesWithUpdate,
+  cleanupActions,
+  setIsActionInProgress,
 };
 
 export default servicesActionsSlice.reducer;

@@ -1,4 +1,5 @@
-import React, { ComponentProps, HTMLAttributes, useEffect, useState } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
+import React, { useEffect, useState } from 'react';
 import cn from 'classnames';
 import LeftBarMenu from '@commonComponents/LeftBarMenu/LeftBarMenu';
 import LeftBarMenuItem from '@commonComponents/LeftBarMenu/LeftBarMenuItem';

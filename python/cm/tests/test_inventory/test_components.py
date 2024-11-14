@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from cm.models import Action, ClusterObject, ServiceComponent
+from cm.models import Action, Component, Service
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -29,10 +29,10 @@ class TestInventoryComponents(BaseInventoryTestCase):
         )
 
     def test_1_component_1_host(self):
-        service: ClusterObject = self.add_services_to_cluster(
+        service: Service = self.add_services_to_cluster(
             service_names=["service_one_component"], cluster=self.cluster_1
         ).first()
-        component = ServiceComponent.objects.get(service=service, prototype__name="component_1")
+        component = Component.objects.get(service=service, prototype__name="component_1")
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
 
@@ -116,11 +116,11 @@ class TestInventoryComponents(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
 
-        service: ClusterObject = self.add_services_to_cluster(
+        service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).first()
-        component_1 = ServiceComponent.objects.get(service=service, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=service, prototype__name="component_2")
+        component_1 = Component.objects.get(service=service, prototype__name="component_1")
+        component_2 = Component.objects.get(service=service, prototype__name="component_2")
 
         component_2.set_multi_state("kat")
         self.host_2.set_multi_state("bac")
@@ -276,11 +276,11 @@ class TestInventoryComponents(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
 
-        service: ClusterObject = self.add_services_to_cluster(
+        service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).first()
-        component_1 = ServiceComponent.objects.get(service=service, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=service, prototype__name="component_2")
+        component_1 = Component.objects.get(service=service, prototype__name="component_1")
+        component_2 = Component.objects.get(service=service, prototype__name="component_2")
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component_1), (self.host_2, component_2)])
 
@@ -404,19 +404,19 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_on_1_host(self):
-        service: ClusterObject = self.add_services_to_cluster(
+        service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).first()
 
-        component_1_s1 = ServiceComponent.objects.get(service=service, prototype__name="component_1")
-        component_2_s1 = ServiceComponent.objects.get(service=service, prototype__name="component_2")
+        component_1_s1 = Component.objects.get(service=service, prototype__name="component_1")
+        component_2_s1 = Component.objects.get(service=service, prototype__name="component_2")
 
-        another_service: ClusterObject = self.add_services_to_cluster(
+        another_service: Service = self.add_services_to_cluster(
             service_names=["another_service_two_components"], cluster=self.cluster_1
         ).first()
 
-        component_1_s2 = ServiceComponent.objects.get(service=another_service, prototype__name="component_1")
-        component_2_s2 = ServiceComponent.objects.get(service=another_service, prototype__name="component_2")
+        component_1_s2 = Component.objects.get(service=another_service, prototype__name="component_1")
+        component_2_s2 = Component.objects.get(service=another_service, prototype__name="component_2")
 
         self.set_hostcomponent(
             cluster=self.cluster_1,
@@ -547,18 +547,18 @@ class TestInventoryComponents(BaseInventoryTestCase):
         self.host_2 = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
-        service: ClusterObject = self.add_services_to_cluster(
+        service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
-        component_1_s1 = ServiceComponent.objects.get(service=service, prototype__name="component_1")
-        component_2_s1 = ServiceComponent.objects.get(service=service, prototype__name="component_2")
+        component_1_s1 = Component.objects.get(service=service, prototype__name="component_1")
+        component_2_s1 = Component.objects.get(service=service, prototype__name="component_2")
 
-        another_service: ClusterObject = self.add_services_to_cluster(
+        another_service: Service = self.add_services_to_cluster(
             service_names=["another_service_two_components"], cluster=self.cluster_1
         ).first()
 
-        component_1_s2 = ServiceComponent.objects.get(service=another_service, prototype__name="component_1")
-        component_2_s2 = ServiceComponent.objects.get(service=another_service, prototype__name="component_2")
+        component_1_s2 = Component.objects.get(service=another_service, prototype__name="component_1")
+        component_2_s2 = Component.objects.get(service=another_service, prototype__name="component_2")
 
         self.set_hostcomponent(
             cluster=self.cluster_1,

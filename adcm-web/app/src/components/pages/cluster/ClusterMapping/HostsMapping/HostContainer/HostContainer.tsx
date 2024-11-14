@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { SelectOption, Tags } from '@uikit';
+import type { SelectOption } from '@uikit';
+import { Tags } from '@uikit';
 import MappedComponent from './MappedComponent/MappedComponent';
 import type { ComponentsMappingErrors, HostMapping, MappingFilter } from '../../ClusterMapping.types';
 import { type AdcmHostShortView, type AdcmMappingComponent } from '@models/adcm';

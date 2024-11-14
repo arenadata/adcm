@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCMEntityStatus, Cluster, ClusterObject, MaintenanceMode, ObjectType
+from cm.models import ADCMEntityStatus, Cluster, MaintenanceMode, ObjectType, Service
 from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
@@ -46,7 +46,7 @@ class ServiceFilter(FilterSet):
     )
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["id", "name", "display_name", "status", "maintenance_mode", "state"]
 
     @staticmethod
@@ -64,7 +64,7 @@ class ServiceFilter(FilterSet):
         )
         if not mm_is_allowed:
             if value != MaintenanceMode.OFF:
-                return ClusterObject.objects.none()
+                return Service.objects.none()
             return queryset
 
         topology = retrieve_cluster_topology(cluster_id)
@@ -76,4 +76,4 @@ class ServiceFilter(FilterSet):
 
         objects_mm_services_ids = [c for c, v in objects_mm.services.items() if v.value == value]
 
-        return ClusterObject.objects.filter(id__in=objects_mm_services_ids)
+        return Service.objects.filter(id__in=objects_mm_services_ids)

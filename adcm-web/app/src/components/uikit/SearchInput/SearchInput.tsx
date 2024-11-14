@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import cn from 'classnames';
-import Input, { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
+import Input from '@uikit/Input/Input';
 import { useForwardRef } from '@hooks';
 import { createChangeEvent } from '@utils/handlerUtils';
 import IconButton from '@uikit/IconButton/IconButton';

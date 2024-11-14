@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@hooks';
-import { AdcmActionHostGroup } from '@models/adcm';
+import type { AdcmActionHostGroup } from '@models/adcm';
 import { required } from '@utils/validationsUtils';
 
 export type AdcmActionHostGroupFormData = Omit<AdcmActionHostGroup, 'id' | 'hosts'> & {

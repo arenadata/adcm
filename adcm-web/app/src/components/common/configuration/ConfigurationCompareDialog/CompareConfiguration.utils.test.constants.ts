@@ -1,5 +1,5 @@
-import { ConfigurationSchema } from '@models/adcm';
-import { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationSchema } from '@models/adcm';
+import type { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 export const emptyFilter: ConfigurationTreeFilter = { title: '', showAdvanced: true, showInvisible: true };
 

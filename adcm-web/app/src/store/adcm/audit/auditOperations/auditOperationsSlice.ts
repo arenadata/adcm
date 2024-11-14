@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmAuditOperation } from '@models/adcm/audit';
+import type { AdcmAuditOperation } from '@models/adcm/audit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';

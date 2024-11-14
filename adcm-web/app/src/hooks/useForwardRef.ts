@@ -1,4 +1,5 @@
-import { useMemo, ForwardedRef } from 'react';
+import type { ForwardedRef } from 'react';
+import { useMemo } from 'react';
 import { mergeRefs } from 'react-merge-refs';
 import { deleteUndefinedItems } from '@utils/listUtils';
 

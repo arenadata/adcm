@@ -45,9 +45,9 @@ from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import (
+    Component,
     Host,
     Prototype,
-    ServiceComponent,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -1157,7 +1157,7 @@ def check_hostcomponents_objects_exist(hostcomponent_map: List[dict[Literal["hos
     component_ids = {hc["component_id"] for hc in hostcomponent_map}
 
     host_queryset_ids = Host.objects.filter(id__in=host_ids).values_list("pk", flat=True)
-    component_queryset_ids = ServiceComponent.objects.filter(id__in=component_ids).values_list("pk", flat=True)
+    component_queryset_ids = Component.objects.filter(id__in=component_ids).values_list("pk", flat=True)
     if len(diff := host_ids - set(host_queryset_ids)) != 0:
         missing_ids = ", ".join(str(h_id) for h_id in diff)
         raise NotFound(f"Hosts with ids {missing_ids} do not exist")

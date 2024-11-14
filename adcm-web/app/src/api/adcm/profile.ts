@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile';
+import type { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile';
 
 export class AdcmProfileApi {
   public static async getProfile() {

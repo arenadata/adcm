@@ -1,7 +1,7 @@
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
-import { AdcmServicesFilter } from '@models/adcm';
+import type { AdcmServicesFilter } from '@models/adcm';
 
 type AdcmServicesTableState = ListState<AdcmServicesFilter>;
 

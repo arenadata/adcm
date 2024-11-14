@@ -1,7 +1,7 @@
 import React from 'react';
 import { MultiSelectContextProvider } from '../MultiSelectContext/MultiSelectContextProvider';
 import CommonSelectNoResult from '@uikit/Select/CommonSelect/CommonSelectNoResult/CommonSelectNoResult';
-import { MultiSelectOptions } from '@uikit/Select/Select.types';
+import type { MultiSelectOptions } from '@uikit/Select/Select.types';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 import MultiSelectList from '../MultiSelectList/MultiSelectList';
 import MultiSelectSearchFilter from '../MultiSelectSearchFilter/MultiSelectSearchFilter';

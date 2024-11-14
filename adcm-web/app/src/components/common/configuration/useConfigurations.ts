@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm';
+import type { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm';
 
 const getDefaultConfigVersion = (configVersions: AdcmConfigShortView[]) =>
   configVersions.find(({ isCurrent }) => isCurrent)?.id ?? configVersions[0]?.id ?? null;

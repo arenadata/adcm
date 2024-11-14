@@ -1,7 +1,8 @@
 import React from 'react';
 import s from './UserStatusCell.module.scss';
 import { MarkerIcon, TableCell, Tooltip } from '@uikit';
-import { AdcmUser, AdcmUserStatus } from '@models/adcm';
+import type { AdcmUser } from '@models/adcm';
+import { AdcmUserStatus } from '@models/adcm';
 import cn from 'classnames';
 
 interface UserStatusCellProps extends React.HTMLAttributes<HTMLDivElement> {

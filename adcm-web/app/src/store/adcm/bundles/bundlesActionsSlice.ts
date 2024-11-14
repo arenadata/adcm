@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { getBundles, refreshBundles, setLoadState } from './bundlesSlice';
-import { AdcmBundlesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmBundlesApi } from '@api';
 import { LoadState } from '@models/loadState';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';

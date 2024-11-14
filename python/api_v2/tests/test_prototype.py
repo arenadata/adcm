@@ -233,7 +233,7 @@ class TestPrototypeVersion(BaseAPITestCase):
                     bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
                 )
 
-            name = "HostProviderFirst"
+            name = "ProviderFirst"
             bundle = Bundle.objects.create(
                 name=name, version=version, hash="hp", category=ProductCategory.objects.get_or_create(value=name)[0]
             )
@@ -254,13 +254,13 @@ class TestPrototypeVersion(BaseAPITestCase):
             sorted(["ServFirst", "ClustFirst", "CompFirst", self.bundle_1.name, self.bundle_2.name]),
         )
 
-    def test_absent_hostprovider_candidate_bug_4851(self):
+    def test_absent_provider_candidate_bug_4851(self):
         response = (self.client.v2 / "prototypes" / "versions").get(query={"type": ObjectType.PROVIDER.value})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
             sorted(map(itemgetter("name"), response.json())),
-            sorted(["HostProviderFirst", "HostFirst", self.provider_bundle.name]),
+            sorted(["ProviderFirst", "HostFirst", self.provider_bundle.name]),
         )
 
     def test_child_filters_disallowed_failed(self):
@@ -292,7 +292,7 @@ class TestPrototypeVersion(BaseAPITestCase):
                     "CompFirst",
                     self.bundle_1.name,
                     self.bundle_2.name,
-                    "HostProviderFirst",
+                    "ProviderFirst",
                     "HostFirst",
                     self.provider_bundle.name,
                 ]

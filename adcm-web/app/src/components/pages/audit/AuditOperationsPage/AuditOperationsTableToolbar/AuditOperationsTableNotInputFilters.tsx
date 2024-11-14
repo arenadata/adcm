@@ -8,7 +8,7 @@ import {
   operationTypeOptions,
   operationResultOptions,
 } from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperations.constants';
-import { AdcmAuditOperationObjectType, AdcmAuditOperationResult, AdcmAuditOperationType } from '@models/adcm';
+import type { AdcmAuditOperationObjectType, AdcmAuditOperationResult, AdcmAuditOperationType } from '@models/adcm';
 
 const AuditOperationsTableNotInputFilters = () => {
   const dispatch = useDispatch();

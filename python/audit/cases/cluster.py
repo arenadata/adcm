@@ -12,7 +12,7 @@
 
 from operator import itemgetter
 
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
+from cm.models import Cluster, ClusterBind, Host, Prototype, Service
 from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -47,11 +47,11 @@ def get_export_cluster_and_service_names(response: Response, view: GenericAPIVie
         ).first()
 
     if response and response.data and isinstance(response.data.get("export_service_id"), int):
-        service = ClusterObject.objects.filter(
+        service = Service.objects.filter(
             pk=response.data["export_service_id"],
         ).first()
     elif isinstance(view.request.data.get("export_service_id"), int):
-        service = ClusterObject.objects.filter(
+        service = Service.objects.filter(
             pk=view.request.data["export_service_id"],
         ).first()
 
@@ -229,7 +229,7 @@ def cluster_case(
                     service_display_name = response.data["display_name"]
 
                 if "service_id" in view.request.data:
-                    service = ClusterObject.objects.filter(pk=view.request.data["service_id"]).first()
+                    service = Service.objects.filter(pk=view.request.data["service_id"]).first()
                     if service:
                         service_display_name = get_service_name(service)
 
@@ -284,11 +284,11 @@ def cluster_case(
 
             service_display_name = None
             if deleted_obj:
-                if isinstance(deleted_obj, ClusterObject):
-                    deleted_obj: ClusterObject
+                if isinstance(deleted_obj, Service):
+                    deleted_obj: Service
                     service_display_name = deleted_obj.display_name
                 else:
-                    service = ClusterObject.objects.filter(pk=service_pk).first()
+                    service = Service.objects.filter(pk=service_pk).first()
                     if service:
                         service_display_name = get_service_name(service)
 
@@ -304,7 +304,7 @@ def cluster_case(
                 )
 
         case ["cluster", _, "service", service_pk, "bind"]:
-            service = ClusterObject.objects.get(pk=service_pk)
+            service = Service.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.SERVICE.capitalize()} bound to "
@@ -318,7 +318,7 @@ def cluster_case(
             )
 
         case ["cluster", _, "service", service_pk, "bind", _]:
-            service = ClusterObject.objects.get(pk=service_pk)
+            service = Service.objects.get(pk=service_pk)
             cluster_name, service_name = "", ""
             if deleted_obj and isinstance(deleted_obj, ClusterBind):
                 cluster_name = deleted_obj.source_cluster.name

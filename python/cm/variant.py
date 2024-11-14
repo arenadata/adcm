@@ -20,12 +20,12 @@ from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
     Cluster,
-    ClusterObject,
-    GroupConfig,
+    Component,
+    ConfigHostGroup,
     Host,
     HostComponent,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 
 
@@ -51,7 +51,7 @@ def return_empty_on_not_found(func: Callable) -> Callable:
 
 
 def get_cluster(obj) -> Cluster | None:
-    if isinstance(obj, GroupConfig):
+    if isinstance(obj, ConfigHostGroup):
         obj = obj.object
 
     match obj.prototype.type:
@@ -71,7 +71,7 @@ def variant_service_in_cluster(**kwargs):
     if cluster is None:
         return out
 
-    for service in ClusterObject.objects.filter(cluster=cluster).order_by("prototype__name"):
+    for service in Service.objects.filter(cluster=cluster).order_by("prototype__name"):
         out.append(service.prototype.name)
 
     return out
@@ -85,7 +85,7 @@ def variant_service_to_add(**kwargs):
 
     for proto in (
         Prototype.objects.filter(bundle=cluster.prototype.bundle, type="service")
-        .exclude(id__in=ClusterObject.objects.filter(cluster=cluster).values("prototype"))
+        .exclude(id__in=Service.objects.filter(cluster=cluster).values("prototype"))
         .order_by("name")
     ):
         out.append(proto.name)
@@ -117,14 +117,14 @@ def var_host_get_service(cluster, args, func):
     if "service" not in args:
         err("CONFIG_VARIANT_ERROR", f'no "service" argument for predicate "{func}"')
 
-    return ClusterObject.objects.get(cluster=cluster, prototype__name=args["service"])
+    return Service.objects.get(cluster=cluster, prototype__name=args["service"])
 
 
 def var_host_get_component(cluster, args, service, func):
     if "component" not in args:
         err("CONFIG_VARIANT_ERROR", f'no "component" argument for predicate "{func}"')
 
-    return ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
+    return Component.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
 
 
 @return_empty_on_not_found
@@ -283,18 +283,18 @@ def variant_host_in_cluster(**kwargs):
     args = kwargs["args"]
     if args and "service" in args:
         try:
-            service = ClusterObject.objects.get(cluster=cluster, prototype__name=args["service"])
-        except ClusterObject.DoesNotExist:
+            service = Service.objects.get(cluster=cluster, prototype__name=args["service"])
+        except Service.DoesNotExist:
             return []
 
         if "component" in args:
             try:
-                comp = ServiceComponent.objects.get(
+                comp = Component.objects.get(
                     cluster=cluster,
                     service=service,
                     prototype__name=args["component"],
                 )
-            except ServiceComponent.DoesNotExist:
+            except Component.DoesNotExist:
                 return []
 
             for hostcomponent in HostComponent.objects.filter(

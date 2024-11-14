@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, SearchInput } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
-import { AdcmActionHostGroupsFilter } from '@models/adcm';
+import type { AdcmActionHostGroupsFilter } from '@models/adcm';
 
 export interface ActionHostGroupsTableFiltersProps {
   filter: AdcmActionHostGroupsFilter;

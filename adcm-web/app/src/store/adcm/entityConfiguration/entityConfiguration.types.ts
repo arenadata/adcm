@@ -1,44 +1,45 @@
-import { AdcmConfig, AdcmConfigShortView, Batch, SchemaDefinition } from '@models/adcm';
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+import type { AdcmConfig, AdcmConfigShortView, Batch, SchemaDefinition } from '@models/adcm';
 
-import { GetSettingsConfigArgs, CreateSettingsConfigArgs } from '@api/adcm/settings';
-import { GetClusterConfigsArgs, GetClusterConfigArgs, CreateClusterConfigArgs } from '@api/adcm/clusterConfigs';
-import {
+import type { GetSettingsConfigArgs, CreateSettingsConfigArgs } from '@api/adcm/settings';
+import type { GetClusterConfigsArgs, GetClusterConfigArgs, CreateClusterConfigArgs } from '@api/adcm/clusterConfigs';
+import type {
   GetClusterGroupConfigsArgs,
   GetClusterGroupConfigArgs,
   CreateClusterGroupConfigArgs,
 } from '@api/adcm/clusterGroupConfigConfigs';
-import {
+import type {
   GetHostProviderConfigsArgs,
   GetHostProviderConfigArgs,
   CreateHostProviderConfigArgs,
 } from '@api/adcm/hostProviderConfigs';
-import {
+import type {
   GetHostProviderGroupConfigsArgs,
   GetHostProviderGroupConfigArgs,
   CreateHostProviderGroupConfigArgs,
 } from '@api/adcm/hostProviderGroupConfigConfigs';
-import { GetHostConfigsArgs, GetHostConfigArgs, CreateHostConfigArgs } from '@api/adcm/hostConfigs';
-import {
+import type { GetHostConfigsArgs, GetHostConfigArgs, CreateHostConfigArgs } from '@api/adcm/hostConfigs';
+import type {
   GetClusterServiceConfigsArgs,
   GetClusterServiceConfigArgs,
   CreateClusterServiceConfigArgs,
 } from '@api/adcm/clusterServicesConfigs';
-import {
+import type {
   GetClusterServiceGroupConfigsArgs,
   GetClusterServiceGroupConfigArgs,
   CreateClusterServiceGroupConfigArgs,
 } from '@api/adcm/clusterServiceGroupConfigConfigs';
-import {
+import type {
   GetClusterServiceComponentConfigsArgs,
   GetClusterServiceComponentConfigArgs,
   CreateClusterServiceComponentConfigArgs,
 } from '@api/adcm/clusterServiceComponentsConfigs';
-import {
+import type {
   GetClusterServiceComponentGroupConfigsArgs,
   GetClusterServiceComponentGroupConfigArgs,
   CreateClusterServiceComponentGroupConfigArgs,
 } from '@api/adcm/serviceComponentGroupConfigConfigs';
-import {
+import type {
   CreateClusterAnsibleSettingsArgs,
   GetClusterAnsibleSettingsArgs,
   GetClusterAnsibleSettingsSchemaArgs,

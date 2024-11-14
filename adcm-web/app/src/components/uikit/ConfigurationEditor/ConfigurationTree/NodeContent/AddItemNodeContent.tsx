@@ -1,9 +1,9 @@
 import { useRef } from 'react';
-import { Icon } from '@uikit';
-import { ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import type { ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { textToDataTestValue } from '@utils/dataTestUtils';
+import Icon from '@uikit/Icon/Icon';
 
 export interface AddItemNodeContentProps {
   node: ConfigurationNodeView;

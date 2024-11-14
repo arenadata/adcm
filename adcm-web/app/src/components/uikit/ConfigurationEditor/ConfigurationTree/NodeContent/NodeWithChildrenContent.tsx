@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-import { IconButton, MarkerIcon, Tooltip } from '@uikit';
 import { isValueSet } from '@models/json';
 import type { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
@@ -10,6 +9,9 @@ import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
 import { nullStub } from '../ConfigurationTree.constants';
 import type { FieldErrors } from '@models/adcm';
+import IconButton from '@uikit/IconButton/IconButton';
+import Tooltip from '@uikit/Tooltip/Tooltip';
+import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;

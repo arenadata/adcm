@@ -1,4 +1,4 @@
-import { AdcmClusterStatus } from './cluster';
+import type { AdcmClusterStatus } from './cluster';
 
 export enum AdcmClusterImportPayloadType {
   Cluster = 'cluster',

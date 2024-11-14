@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { FormField, FormFieldsContainer, Select } from '@uikit';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 import { useStore } from '@hooks';
-import { UpgradeStepFormProps } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
+import type { UpgradeStepFormProps } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 
 const SelectUpgradeStep: React.FC<UpgradeStepFormProps> = ({ formData, onChange }) => {
   const cluster = useStore(({ adcm }) => adcm.clusterUpgrades.dialog.cluster);

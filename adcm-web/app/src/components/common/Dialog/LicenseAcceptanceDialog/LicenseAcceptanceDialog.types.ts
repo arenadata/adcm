@@ -1,5 +1,5 @@
-import { AdcmLicense } from '@models/adcm';
-import React from 'react';
+import type { AdcmLicense } from '@models/adcm';
+import type React from 'react';
 
 export interface LicensesRequiringAcceptanceList {
   id: number;

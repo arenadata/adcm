@@ -1,36 +1,33 @@
-import { AdcmGroupsApi, AdcmPoliciesApi, AdcmRolesApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmGroupsApi, AdcmPoliciesApi, AdcmRolesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { getPolicies } from './policiesSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import {
-  AdcmGroup,
-  AdcmPolicy,
-  AdcmPolicyPayload,
-  AdcmPolicyUpdatePayload,
-  AdcmRole,
-  AdcmRoleType,
-} from '@models/adcm';
-import { createSlice } from '@reduxjs/toolkit';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmGroup, AdcmPolicy, AdcmPolicyPayload, AdcmPolicyUpdatePayload, AdcmRole } from '@models/adcm';
+import { AdcmRoleType } from '@models/adcm';
+import type { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import type { SortParams } from '@models/table';
 
-interface AdcmPoliciesActionState {
-  isAddPolicyDialogOpen: boolean;
-  isCreating: boolean;
-  deleteDialog: {
-    id: number | null;
+interface AdcmPoliciesActionState extends ModalState<AdcmPolicy, 'policy'> {
+  createDialog: {
+    isOpen: boolean;
   };
-  editDialog: {
+  updateDialog: {
     policy: AdcmPolicy | null;
-    roleId: number | null;
+  };
+  deleteDialog: {
+    policy: AdcmPolicy | null;
   };
   relatedData: {
     roles: AdcmRole[];
     groups: AdcmGroup[];
   };
+  isActionInProgress: boolean;
 }
 
-const openPoliciesAddDialog = createAsyncThunk('adcm/policiesActions/openPoliciesAddDialog', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/policiesActions/loadRelatedData', async (_, thunkAPI) => {
   try {
     await Promise.all([thunkAPI.dispatch(loadRoles()), thunkAPI.dispatch(loadGroups())]);
   } catch (error) {
@@ -39,42 +36,36 @@ const openPoliciesAddDialog = createAsyncThunk('adcm/policiesActions/openPolicie
   }
 });
 
-const openPoliciesEditDialog = createAsyncThunk(
-  'adcm/policiesActions/openPoliciesEditDialog',
-  async (policy: AdcmPolicy, thunkAPI) => {
-    thunkAPI.dispatch(setEditMode(policy));
+const createPolicyWithUpdate = createAsyncThunk(
+  'adcm/policiesActions/createPolicy',
+  async (arg: AdcmPolicyPayload, thunkAPI) => {
+    thunkAPI.dispatch(setIsActionInProgress(true));
     try {
-      thunkAPI.dispatch(openPoliciesAddDialog());
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const createPolicy = createAsyncThunk('adcm/policiesActions/createPolicy', async (arg: AdcmPolicyPayload, thunkAPI) => {
-  try {
-    const policy = await AdcmPoliciesApi.createPolicy(arg);
-    return policy;
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue(error);
-  } finally {
-    thunkAPI.dispatch(getPolicies());
-  }
-});
-
-const updatePolicy = createAsyncThunk(
-  'adcm/policiesActions/updatePolicy',
-  async ({ policyId, updatedValue }: AdcmPolicyUpdatePayload, thunkAPI) => {
-    try {
-      const policy = await AdcmPoliciesApi.updatePolicy(policyId, updatedValue);
+      const policy = await AdcmPoliciesApi.createPolicy(arg);
+      await thunkAPI.dispatch(getPolicies());
       return policy;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     } finally {
-      thunkAPI.dispatch(getPolicies());
+      thunkAPI.dispatch(setIsActionInProgress(false));
+    }
+  },
+);
+
+const updatePolicyWithUpdate = createAsyncThunk(
+  'adcm/policiesActions/updatePolicy',
+  async ({ policyId, updatedValue }: AdcmPolicyUpdatePayload, thunkAPI) => {
+    thunkAPI.dispatch(setIsActionInProgress(true));
+    try {
+      const policy = await AdcmPoliciesApi.updatePolicy(policyId, updatedValue);
+      await thunkAPI.dispatch(getPolicies());
+      return policy;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(setIsActionInProgress(false));
     }
   },
 );
@@ -92,114 +83,66 @@ const deletePolicyWithUpdate = createAsyncThunk(
   },
 );
 
-const loadRoles = createAsyncThunk('adcm/policiesActions/loadRoles', async (arg, thunkAPI) => {
+const sortParams: SortParams = {
+  sortBy: 'displayName',
+  sortDirection: 'asc',
+};
+
+const loadRoles = createAsyncThunk('adcm/policiesActions/loadRoles', async (_, thunkAPI) => {
   try {
     const filterParams = {
       type: AdcmRoleType.Role,
     };
-    const sortParams: SortParams = {
-      sortBy: '',
-      sortDirection: 'asc',
-    };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmRolesApi.getRoles(filterParams, sortParams, paginationParams);
-    sortParams.sortBy = 'displayName';
-    paginationParams.perPage = batch.count;
-    return await AdcmRolesApi.getRoles(filterParams, sortParams, paginationParams);
+    const { count } = await AdcmRolesApi.getRoles(filterParams, sortParams);
+    return await AdcmRolesApi.getRoles(filterParams, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
-const loadGroups = createAsyncThunk('adcm/policiesActions/loadGroups', async (arg, thunkAPI) => {
+const loadGroups = createAsyncThunk('adcm/policiesActions/loadGroups', async (_, thunkAPI) => {
   try {
-    const sortParams: SortParams = {
-      sortBy: '',
-      sortDirection: 'asc',
-    };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
-    sortParams.sortBy = 'displayName';
-    paginationParams.perPage = batch.count;
-    return await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    const { count } = await AdcmGroupsApi.getGroups({}, sortParams);
+    return await AdcmGroupsApi.getGroups({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
 const createInitialState = (): AdcmPoliciesActionState => ({
-  isAddPolicyDialogOpen: false,
-  isCreating: false,
-  deleteDialog: {
-    id: null,
+  createDialog: {
+    isOpen: false,
   },
-  editDialog: {
+  deleteDialog: {
     policy: null,
-    roleId: null,
+  },
+  updateDialog: {
+    policy: null,
   },
   relatedData: {
     roles: [],
     groups: [],
   },
+  isActionInProgress: false,
 });
 
-const policiesActionsSlice = createSlice({
+const policiesActionsSlice = createCrudSlice({
   name: 'adcm/policiesActions',
-  initialState: createInitialState(),
-  reducers: {
-    cleanupActions() {
-      return createInitialState();
-    },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
-    },
-    setIsCreating(state, action) {
-      state.isCreating = action.payload;
-    },
-    setEditMode(state, action) {
-      state.editDialog.policy = action.payload;
-      state.editDialog.roleId = action.payload.role.id;
-    },
-  },
+  entityName: 'policy',
+  createInitialState,
+  reducers: {},
   extraReducers(builder) {
-    builder.addCase(openPoliciesAddDialog.fulfilled, (state) => {
-      state.isAddPolicyDialogOpen = true;
-    });
     builder.addCase(deletePolicyWithUpdate.pending, (state) => {
       policiesActionsSlice.caseReducers.closeDeleteDialog(state);
     });
-    builder.addCase(createPolicy.pending, (state) => {
-      state.isAddPolicyDialogOpen = false;
-      state.isCreating = true;
+    builder.addCase(createPolicyWithUpdate.pending, (state) => {
+      policiesActionsSlice.caseReducers.closeCreateDialog(state);
     });
-    builder.addCase(createPolicy.fulfilled, (state) => {
-      state.isCreating = false;
+    builder.addCase(updatePolicyWithUpdate.pending, (state) => {
+      policiesActionsSlice.caseReducers.closeUpdateDialog(state);
     });
-    builder.addCase(createPolicy.rejected, (state) => {
-      state.isCreating = false;
-    });
-    builder.addCase(updatePolicy.pending, (state) => {
-      state.isAddPolicyDialogOpen = false;
-      state.isCreating = true;
-    });
-    builder.addCase(updatePolicy.fulfilled, (state) => {
-      state.editDialog.policy = null;
-      state.editDialog.roleId = null;
-      state.isCreating = false;
-    });
-    builder.addCase(updatePolicy.rejected, (state) => {
-      state.editDialog.policy = null;
-      state.editDialog.roleId = null;
-      state.isCreating = false;
+    builder.addCase(updatePolicyWithUpdate.rejected, (state) => {
+      state.updateDialog.policy = null;
     });
     builder
       .addCase(loadRoles.fulfilled, (state, action) => {
@@ -217,18 +160,25 @@ const policiesActionsSlice = createSlice({
   },
 });
 
-const { openDeleteDialog, closeDeleteDialog, cleanupActions, setEditMode, setIsCreating } =
-  policiesActionsSlice.actions;
+const {
+  openCreateDialog,
+  openUpdateDialog,
+  closeCreateDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
+  closeUpdateDialog,
+  setIsActionInProgress,
+} = policiesActionsSlice.actions;
 export {
-  createPolicy,
-  updatePolicy,
-  openPoliciesAddDialog,
-  openPoliciesEditDialog,
+  createPolicyWithUpdate as createPolicy,
+  updatePolicyWithUpdate as updatePolicy,
   deletePolicyWithUpdate,
   openDeleteDialog,
   closeDeleteDialog,
-  cleanupActions,
-  setEditMode,
-  setIsCreating,
+  loadRelatedData,
+  openCreateDialog,
+  openUpdateDialog,
+  closeUpdateDialog,
+  closeCreateDialog,
 };
 export default policiesActionsSlice.reducer;

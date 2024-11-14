@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from typing import Iterable
 
-from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
+from core.types import ADCMCoreType, Concern, CoreObjectDescriptor, ObjectID
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
-from cm.converters import core_type_to_model
-from cm.models import ClusterObject, ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype
+from cm.converters import core_type_to_model, model_name_to_core_type
+from cm.models import ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype, Service
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, PlaceholderTypeDTO, build_concern_reason
 
 _issue_template_map = {
@@ -48,6 +49,29 @@ def retrieve_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> ConcernI
     return ConcernItem.objects.filter(
         owner_id=owner.id, owner_type=owner_type, cause=cause, type=ConcernType.ISSUE
     ).first()
+
+
+def retrieve_related_concerns(
+    objects: Iterable[CoreObjectDescriptor], concern_type: ConcernType | None
+) -> dict[CoreObjectDescriptor, set[Concern]]:
+    objects_by_types: dict[ADCMCoreType, set[ObjectID]] = defaultdict(set)
+    for object_ in objects:
+        objects_by_types[object_.type].add(object_.id)
+
+    query = Q()
+    for core_type, ids in objects_by_types.items():
+        query |= Q(owner_type=ContentType.objects.get_for_model(core_type_to_model(core_type)), owner_id__in=ids)
+    if concern_type is not None:
+        query &= Q(type=concern_type)
+
+    concerns = defaultdict(set)
+    for id_, type_, cause, owner_id, owner_model in ConcernItem.objects.filter(query).values_list(
+        "id", "type", "cause", "owner_id", "owner_type__model"
+    ):
+        owner_cod = CoreObjectDescriptor(id=owner_id, type=model_name_to_core_type(owner_model))
+        concerns[owner_cod].add(Concern(id=id_, type=type_, cause=cause))
+
+    return concerns
 
 
 def create_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> ConcernItem:
@@ -93,9 +117,7 @@ def _get_target_and_placeholder_types(
                     type=ObjectType.SERVICE,
                     required=True,
                 )
-                .exclude(
-                    id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=owner.id)
-                )
+                .exclude(id__in=Service.objects.values_list("prototype_id", flat=True).filter(cluster_id=owner.id))
                 .first()
             )
 
@@ -105,12 +127,12 @@ def _get_target_and_placeholder_types(
         case ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
             # owner type = service
 
-            cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
+            cluster_id = Service.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
             placeholder_type_dto = PlaceholderTypeDTO(source="cluster_services", target="prototype")
 
             required_services_names = {require["service"] for require in owner_prototype["requires"]}
             existing_required_services = set(
-                ClusterObject.objects.values_list("prototype__name", flat=True).filter(
+                Service.objects.values_list("prototype__name", flat=True).filter(
                     cluster_id=cluster_id, prototype__name__in=required_services_names
                 )
             )

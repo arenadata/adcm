@@ -1,5 +1,5 @@
 import { AdcmJobStatus } from '@models/adcm';
-import { IconsNames } from '@uikit';
+import type { IconsNames } from '@uikit';
 
 export const jobStatusesIconsMap: { [key in AdcmJobStatus]: IconsNames } = {
   [AdcmJobStatus.Created]: 'g2-created-10x10',

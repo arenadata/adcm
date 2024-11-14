@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SearchInput from '@uikit/SearchInput/SearchInput';
 import { getFilteredOptions } from './CommonSelectSearchFilter.utils';
-import { SelectOption } from '@uikit/Select/Select.types';
+import type { SelectOption } from '@uikit/Select/Select.types';
 
 interface CommonSelectSearchFilterProps<T> {
   originalOptions: SelectOption<T>[];

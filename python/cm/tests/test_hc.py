@@ -15,7 +15,7 @@ from pathlib import Path
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from rest_framework.status import HTTP_200_OK
 
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Component
 from cm.tests.mocks.task_runner import RunTaskMock
 
 
@@ -28,16 +28,16 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster).get()
         service_with_action = self.add_services_to_cluster(["with_hc_acl_actions"], cluster=cluster).get()
 
-        hostprovider = self.add_provider(bundle=self.add_bundle(bundles_dir / "provider"), name="prov")
-        host_1 = self.add_host(provider=hostprovider, fqdn="host-1")
-        host_2 = self.add_host(provider=hostprovider, fqdn="host-2")
+        provider = self.add_provider(bundle=self.add_bundle(bundles_dir / "provider"), name="prov")
+        host_1 = self.add_host(provider=provider, fqdn="host-1")
+        host_2 = self.add_host(provider=provider, fqdn="host-2")
 
         self.add_host_to_cluster(cluster, host_1)
         self.add_host_to_cluster(cluster, host_2)
 
-        component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
-        component_2_1 = ServiceComponent.objects.get(service=service_2, prototype__name="component_1")
-        component_2_2 = ServiceComponent.objects.get(service=service_2, prototype__name="component_2")
+        component_1_1 = Component.objects.get(service=service_1, prototype__name="component_1")
+        component_2_1 = Component.objects.get(service=service_2, prototype__name="component_1")
+        component_2_2 = Component.objects.get(service=service_2, prototype__name="component_2")
         hc = self.set_hostcomponent(
             cluster=cluster,
             entries=(

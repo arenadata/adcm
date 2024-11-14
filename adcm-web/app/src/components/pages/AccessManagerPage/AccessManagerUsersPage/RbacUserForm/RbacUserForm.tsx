@@ -3,8 +3,8 @@ import s from './RbacUserForm.module.scss';
 import { Checkbox, FormField, FormFieldsContainer, Input, MarkerIcon, Tooltip } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
-import { RbacUserFormData } from './RbacUserForm.types';
-import { AdcmGroup, AdcmUserGroup } from '@models/adcm';
+import type { RbacUserFormData } from './RbacUserForm.types';
+import type { AdcmGroup, AdcmUserGroup } from '@models/adcm';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 
 interface RbacUserFormProps {

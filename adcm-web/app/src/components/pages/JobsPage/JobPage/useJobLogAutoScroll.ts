@@ -1,4 +1,5 @@
-import { AdcmJobStatus, AdcmTask } from '@models/adcm';
+import type { AdcmTask } from '@models/adcm';
+import { AdcmJobStatus } from '@models/adcm';
 import { useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 

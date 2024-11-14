@@ -1,7 +1,8 @@
 import React from 'react';
 import s from './ClusterOverviewServiceItem.module.scss';
 import { Statusable, Tooltip } from '@uikit';
-import { AdcmClusterOverviewStatusService, AdcmClusterStatus } from '@models/adcm';
+import type { AdcmClusterOverviewStatusService } from '@models/adcm';
+import { AdcmClusterStatus } from '@models/adcm';
 import { Link } from 'react-router-dom';
 
 interface ClusterOverviewServiceItemProps {

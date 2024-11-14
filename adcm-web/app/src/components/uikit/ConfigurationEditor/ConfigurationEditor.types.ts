@@ -1,6 +1,6 @@
-import { FieldAttributes, SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive, JSONValue } from '@models/json';
-import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
+import type { FieldAttributes, SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive, JSONValue } from '@models/json';
+import type { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 
 export type ConfigurationNodeType = 'object' | 'field' | 'addField' | 'array' | 'addArrayItem';
 export type ConfigurationNodePath = (string | number)[];

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import ConfigurationVersions from '../ConfigurationVersions/ConfigurationVersions';
-import { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm';
-import { ConfigVersionAction, SelectVersionAction } from '../ConfigVersionPanel/ConfigVersionPanel.types';
-import ConfigurationCompareDialog, {
-  ConfigurationsCompareOptions,
-} from '../ConfigurationCompareDialog/ConfigurationCompareDialog';
+import type { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm';
+import type { SelectVersionAction } from '../ConfigVersionPanel/ConfigVersionPanel.types';
+import { ConfigVersionAction } from '../ConfigVersionPanel/ConfigVersionPanel.types';
+import type { ConfigurationsCompareOptions } from '../ConfigurationCompareDialog/ConfigurationCompareDialog';
+import ConfigurationCompareDialog from '../ConfigurationCompareDialog/ConfigurationCompareDialog';
 
 interface ConfigurationHeaderProps {
   configVersions: AdcmConfigShortView[];

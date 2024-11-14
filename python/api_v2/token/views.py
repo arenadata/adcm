@@ -18,8 +18,13 @@ from rest_framework.response import Response
 from api_v2.login.views import BaseLoginView
 
 
+class TokenAuthenticationExcludingTokenAcquiring(TokenAuthentication):
+    def authenticate(self, request):  # noqa: ARG002
+        return
+
+
 class TokenView(BaseLoginView):
-    authentication_classes = (TokenAuthentication,)
+    authentication_classes = (TokenAuthenticationExcludingTokenAcquiring,)
 
     def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         user = self.perform_login(request=request)

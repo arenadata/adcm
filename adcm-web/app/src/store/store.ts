@@ -29,7 +29,6 @@ import clusterMappingSlice from '@store/adcm/cluster/mapping/mappingSlice';
 import breadcrumbsSlice from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import hostProvidersSlice from '@store/adcm/hostProviders/hostProvidersSlice';
 import hostProvidersTableSlice from '@store/adcm/hostProviders/hostProvidersTableSlice';
-import createHostProviderDialogSlice from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
 import hostsTableSlice from '@store/adcm/hosts/hostsTableSlice';
 import hostsSlice from '@store/adcm/hosts/hostsSlice';
 import hostsActionsSlice from '@store/adcm/hosts/hostsActionsSlice';
@@ -65,7 +64,7 @@ import jobsTableSlice from './adcm/jobs/jobsTableSlice';
 import jobsActionsSlice from './adcm/jobs/jobsActionsSlice';
 import groupsSlice from './adcm/groups/groupsSlice';
 import groupsTableSlice from './adcm/groups/groupsTableSlice';
-import groupsActionsSlice from './adcm/groups/groupActionsSlice';
+import groupsActionsSlice from './adcm/groups/groupsActionsSlice';
 import policiesTableSlice from './adcm/policies/policiesTableSlice';
 import policiesSlice from './adcm/policies/policiesSlice';
 import policiesActionsSlice from './adcm/policies/policiesActionsSlice';
@@ -147,7 +146,6 @@ const rootReducer = combineReducers({
     hostProvidersDynamicActions: hostProvidersDynamicActionsSlice,
     hostProviderUpgrades: hostProviderUpgradesSlice,
     hostsDynamicActions: hostsDynamicActionsSlice,
-    createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     host: hostSlice,
     hostsTable: hostsTableSlice,

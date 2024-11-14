@@ -1,4 +1,4 @@
-import { PaginationParams } from '@models/table';
+import type { PaginationParams } from '@models/table';
 import { useMemo } from 'react';
 
 interface UseLocalPaginationProps<T> {

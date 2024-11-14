@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmCluster, AdcmClusterHost } from '@models/adcm';
+import type { AdcmCluster, AdcmClusterHost } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
-import { IconProps } from '@uikit/Icon/Icon';
+import type { IconProps } from '@uikit/Icon/Icon';
 import { openClusterHostDynamicActionDialog } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
 

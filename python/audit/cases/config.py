@@ -12,7 +12,7 @@
 
 from contextlib import suppress
 
-from cm.models import GroupConfig, Host, ObjectConfig
+from cm.models import ConfigHostGroup, Host, ObjectConfig
 from cm.utils import get_obj_type
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
@@ -32,7 +32,7 @@ def config_case(
     path: list[str],
     view: ViewSet,
     response: Response,
-    deleted_obj: GroupConfig,
+    deleted_obj: ConfigHostGroup,
 ) -> tuple[AuditOperation, AuditObject | None, str | None]:
     audit_operation = None
     audit_object = None
@@ -67,7 +67,7 @@ def config_case(
             else:
                 audit_object = None
 
-        case ["group-config", group_config_pk, "config", _, "config-log"]:
+        case ["group-config", host_group_pk, "config", _, "config-log"]:
             audit_operation = AuditOperation(
                 name=f"configuration group {AuditLogOperationType.UPDATE}d",
                 operation_type=AuditLogOperationType.UPDATE,
@@ -76,13 +76,13 @@ def config_case(
             config = None
             if response:
                 config = response.data.serializer.instance.obj_ref
-                if getattr(config, "group_config", None):
-                    config = config.group_config
+                if getattr(config, "config_host_group", None):
+                    config = config.config_host_group
             elif view.request.data.get("obj_ref"):
                 config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
 
             if not config:
-                config = GroupConfig.objects.filter(pk=group_config_pk).first()
+                config = ConfigHostGroup.objects.filter(pk=host_group_pk).first()
 
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
@@ -95,7 +95,7 @@ def config_case(
                     object_type=object_type,
                 )
                 object_type = object_type.capitalize()
-                if isinstance(config, GroupConfig):
+                if isinstance(config, ConfigHostGroup):
                     object_type = config.name
 
                 operation_name = f"{object_type} {audit_operation.name}"
@@ -112,18 +112,18 @@ def config_case(
             )
 
             if response and (new_object_pk := response.data.get("id", None)):
-                name = GroupConfig.objects.values("name").get(pk=new_object_pk)["name"]
+                name = ConfigHostGroup.objects.values("name").get(pk=new_object_pk)["name"]
                 audit_operation.name = f"{name} configuration group created"
 
-        case [*_, owner_type, owner_pk, "config-groups", group_config_pk]:
+        case [*_, owner_type, owner_pk, "config-groups", host_group_pk]:
             audit_object = get_audit_cm_object_from_path_info(
                 object_type_from_path=owner_type, object_pk_from_path=owner_pk
             )
             if deleted_obj:
                 group_name = deleted_obj.name
             else:
-                group_config = GroupConfig.objects.values("name").filter(pk=group_config_pk).first()
-                group_name = group_config["name"] if group_config else ""
+                host_group = ConfigHostGroup.objects.values("name").filter(pk=host_group_pk).first()
+                group_name = host_group["name"] if host_group else ""
 
             if view.action in {"update", "partial_update"}:
                 audit_operation = AuditOperation(
@@ -150,7 +150,7 @@ def config_case(
             )
             if response:
                 if view.action == "destroy":
-                    deleted_obj: GroupConfig
+                    deleted_obj: ConfigHostGroup
                     obj = deleted_obj
                 else:
                     obj = response.data.serializer.instance
@@ -166,7 +166,7 @@ def config_case(
             else:
                 audit_object = None
 
-        case ["group-config", group_config_pk]:
+        case ["group-config", host_group_pk]:
             if view.action in {"update", "partial_update"}:
                 operation_type = AuditLogOperationType.UPDATE
             else:
@@ -178,12 +178,12 @@ def config_case(
             )
             if response:
                 if view.action == "destroy":
-                    deleted_obj: GroupConfig
+                    deleted_obj: ConfigHostGroup
                     obj = deleted_obj
                 else:
                     obj = response.data.serializer.instance
             else:
-                obj = GroupConfig.objects.filter(pk=group_config_pk).first()
+                obj = ConfigHostGroup.objects.filter(pk=host_group_pk).first()
 
             if obj:
                 object_type = get_obj_type(obj.object_type.name)
@@ -198,7 +198,7 @@ def config_case(
                 audit_object = None
 
         case ["group-config", config_group_pk, "host"]:
-            config_group = GroupConfig.objects.get(pk=config_group_pk)
+            config_group = ConfigHostGroup.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
                 name=f"host added to {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.UPDATE,
@@ -223,7 +223,7 @@ def config_case(
                 audit_operation.name = f"{fqdn} {audit_operation.name}"
 
         case [*_, owner_type, owner_pk, "config-groups", config_group_pk, "hosts"]:
-            config_group = GroupConfig.objects.filter(pk=config_group_pk).first()
+            config_group = ConfigHostGroup.objects.filter(pk=config_group_pk).first()
             name_suffix = f"{config_group.name if config_group else ''} configuration group".strip()
             audit_operation = AuditOperation(
                 name=f"host added to {name_suffix}",
@@ -239,7 +239,7 @@ def config_case(
                     audit_operation.name = f"{host['fqdn']} {audit_operation.name}"
 
         case [*_, owner_type, owner_pk, "config-groups", config_group_pk, "hosts", host_pk]:
-            config_group = GroupConfig.objects.filter(pk=config_group_pk).first()
+            config_group = ConfigHostGroup.objects.filter(pk=config_group_pk).first()
             name_suffix = f"{config_group.name if config_group else ''} configuration group".strip()
             audit_operation = AuditOperation(
                 name=f"host removed from {name_suffix}",
@@ -255,7 +255,7 @@ def config_case(
                     audit_operation.name = f"{host['fqdn']} {audit_operation.name}"
 
         case ["group-config", config_group_pk, "host", host_pk]:
-            config_group = GroupConfig.objects.get(pk=config_group_pk)
+            config_group = ConfigHostGroup.objects.get(pk=config_group_pk)
             obj = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
                 name=f"{obj.fqdn} host removed from {config_group.name} configuration group",
@@ -274,8 +274,8 @@ def config_case(
                 name=f"configuration group {operation_type}d",
                 operation_type=operation_type,
             )
-            group_config = GroupConfig.objects.filter(pk=pk).first()
-            operation_name = f"{group_config.name} {audit_operation.name}" if group_config else audit_operation.name
+            host_group = ConfigHostGroup.objects.filter(pk=pk).first()
+            operation_name = f"{host_group.name} {audit_operation.name}" if host_group else audit_operation.name
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:
                 object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]

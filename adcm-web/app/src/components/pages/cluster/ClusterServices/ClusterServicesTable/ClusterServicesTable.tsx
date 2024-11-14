@@ -5,12 +5,12 @@ import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, servicesStatusesMap } from './ClusterServicesTable.constants';
 import { setSortParams } from '@store/adcm/cluster/services/servicesTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
-import { AdcmService } from '@models/adcm';
+import type { AdcmService } from '@models/adcm';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClusterServicesTable = () => {
@@ -21,10 +21,10 @@ const ClusterServicesTable = () => {
   const isLoading = useStore((s) => isShowSpinner(s.adcm.services.loadState));
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);
+  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isActionInProgress);
 
-  const getHandleDeleteClick = (serviceId: number) => () => {
-    dispatch(openDeleteDialog(serviceId));
+  const getHandleDeleteClick = (service: AdcmService) => () => {
+    dispatch(openDeleteDialog(service));
   };
 
   const handleClickMaintenanceMode = (service: AdcmService) => () => {
@@ -65,7 +65,7 @@ const ClusterServicesTable = () => {
                 maintenanceModeStatus={service.maintenanceMode}
                 onClick={handleClickMaintenanceMode(service)}
               />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service.id)} title="Delete" />
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(service)} title="Delete" />
             </TableCell>
           </TableRow>
         );

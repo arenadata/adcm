@@ -1,6 +1,7 @@
 import { Button, ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
-import ActionHostGroupsTableFilters, { ActionHostGroupsTableFiltersProps } from './ActionHostGroupsTableFilters';
+import type { ActionHostGroupsTableFiltersProps } from './ActionHostGroupsTableFilters';
+import ActionHostGroupsTableFilters from './ActionHostGroupsTableFilters';
 
 export interface ActionHostGroupsTableToolbarProps extends ActionHostGroupsTableFiltersProps {
   onOpenCreateDialog: () => void;

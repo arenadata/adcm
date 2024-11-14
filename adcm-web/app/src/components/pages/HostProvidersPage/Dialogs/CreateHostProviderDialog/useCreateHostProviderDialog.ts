@@ -1,7 +1,12 @@
 import { useMemo, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
-import { close, createHostProvider } from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
+import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
+import {
+  createHostProvider,
+  closeCreateDialog,
+  loadRelatedData,
+} from '@store/adcm/hostProviders/hostProvidersActionsSlice';
 import { isHostProviderNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface CreateHostProviderFormData {
@@ -27,15 +32,17 @@ export const useCreateHostProviderDialog = () => {
     useForm<CreateHostProviderFormData>(initialFormData);
 
   const hostProviders = useStore((s) => s.adcm.hostProviders.hostProviders);
-  const {
-    isOpen,
-    relatedData,
-    relatedData: { isLoaded: isRelatedDataLoaded },
-  } = useStore((s) => s.adcm.createHostProviderDialog);
+  const isOpen = useStore(({ adcm }) => adcm.hostProvidersActions.createDialog.isOpen);
+  const prototypeVersions = useStore(({ adcm }) => adcm.hostProvidersActions.relatedData.prototypeVersions);
+  const isRelatedDataLoaded = useStore(({ adcm }) => adcm.hostProvidersActions.relatedData.isRelatedDataLoaded);
 
   useEffect(() => {
-    setFormData(initialFormData);
-  }, [isOpen, setFormData]);
+    if (isOpen) {
+      dispatch(loadRelatedData());
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [isOpen, dispatch, setFormData]);
 
   useEffect(() => {
     setErrors({
@@ -55,7 +62,7 @@ export const useCreateHostProviderDialog = () => {
   }, [formData]);
 
   const handleClose = () => {
-    dispatch(close());
+    dispatch(closeCreateDialog());
   };
 
   const handleCreate = () => {
@@ -76,7 +83,7 @@ export const useCreateHostProviderDialog = () => {
     isValid,
     formData,
     errors,
-    relatedData,
+    prototypeVersions,
     isRelatedDataLoaded,
     onClose: handleClose,
     onCreate: handleCreate,

@@ -15,16 +15,16 @@ from typing import TypeAlias
 
 from cm.models import (
     Cluster,
-    ClusterObject,
-    GroupConfig,
+    Component,
+    ConfigHostGroup,
     Host,
-    HostProvider,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = GroupConfig | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | None
+ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host | None
 
 
 class GetParentObjectMixin:
@@ -35,7 +35,7 @@ class GetParentObjectMixin:
 
         with suppress(ObjectDoesNotExist):
             if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
-                parent_object = ServiceComponent.objects.select_related(
+                parent_object = Component.objects.select_related(
                     "prototype", "cluster__prototype", "service__prototype"
                 ).get(
                     pk=self.kwargs["component_pk"],
@@ -44,7 +44,7 @@ class GetParentObjectMixin:
                 )
 
             elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-                parent_object = ClusterObject.objects.select_related("prototype", "cluster__prototype").get(
+                parent_object = Service.objects.select_related("prototype", "cluster__prototype").get(
                     pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
                 )
 
@@ -61,12 +61,12 @@ class GetParentObjectMixin:
             elif "cluster_pk" in self.kwargs:
                 parent_object = Cluster.objects.select_related("prototype").get(pk=self.kwargs["cluster_pk"])
 
-            elif "hostprovider_pk" in self.kwargs:
-                parent_object = HostProvider.objects.select_related("prototype").get(pk=self.kwargs["hostprovider_pk"])
+            elif "provider_pk" in self.kwargs:
+                parent_object = Provider.objects.select_related("prototype").get(pk=self.kwargs["provider_pk"])
 
-            if "group_config_pk" in self.kwargs and parent_object:
-                parent_object = GroupConfig.objects.get(
-                    pk=self.kwargs["group_config_pk"],
+            if "config_host_group_pk" in self.kwargs and parent_object:
+                parent_object = ConfigHostGroup.objects.get(
+                    pk=self.kwargs["config_host_group_pk"],
                     object_id=parent_object.pk,
                     object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
                 )

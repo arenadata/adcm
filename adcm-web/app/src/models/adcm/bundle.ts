@@ -1,4 +1,4 @@
-import { AdcmPrototype } from './prototype';
+import type { AdcmPrototype } from './prototype';
 
 export enum AdcmBundleSignatureStatus {
   Valid = 'valid',

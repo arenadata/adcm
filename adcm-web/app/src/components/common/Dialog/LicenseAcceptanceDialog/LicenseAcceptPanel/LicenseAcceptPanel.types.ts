@@ -1,4 +1,4 @@
-import { AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmLicenseStatus } from '@models/adcm';
 
 export interface LicensePanel {
   key: string;

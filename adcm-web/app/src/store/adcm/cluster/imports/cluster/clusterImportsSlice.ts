@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterImportsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterImportsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@models/adcm';
+import type { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError, showSuccess } from '@store/notificationsSlice';

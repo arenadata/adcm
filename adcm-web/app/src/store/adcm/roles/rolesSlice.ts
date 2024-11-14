@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmRole } from '@models/adcm';
+import type { AdcmRole } from '@models/adcm';
 import { AdcmRolesApi } from '@api';
 import { LoadState } from '@models/loadState';
 

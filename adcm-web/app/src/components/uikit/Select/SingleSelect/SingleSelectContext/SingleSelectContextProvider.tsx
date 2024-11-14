@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { SingleSelectOptions } from '@uikit/Select/Select.types';
-import { SingleSelectContext, SingleSelectContextOptions } from './SingleSelect.context';
+import type { SingleSelectOptions } from '@uikit/Select/Select.types';
+import type { SingleSelectContextOptions } from './SingleSelect.context';
+import { SingleSelectContext } from './SingleSelect.context';
 
 export const SingleSelectContextProvider = <T,>({
   children,

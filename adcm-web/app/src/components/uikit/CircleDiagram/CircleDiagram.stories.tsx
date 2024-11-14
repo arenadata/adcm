@@ -1,5 +1,6 @@
-import CircleDiagram, { CircleDiagramProps } from './CircleDiagram';
-import { Meta, StoryObj } from '@storybook/react';
+import type { CircleDiagramProps } from './CircleDiagram';
+import CircleDiagram from './CircleDiagram';
+import type { Meta, StoryObj } from '@storybook/react';
 import s from './CircleDiagram.stories.module.scss';
 import { useState } from 'react';
 

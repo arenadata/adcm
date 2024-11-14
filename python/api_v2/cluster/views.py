@@ -35,13 +35,13 @@ from cm.models import (
     AnsibleConfig,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernType,
     Host,
     HostComponent,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import (
@@ -117,13 +117,16 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config.views import ConfigLogViewSet
-from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import (
-    audit_config_group_config_viewset,
-    audit_group_config_viewset,
-    audit_host_group_config_viewset,
+from api_v2.generic.config_host_group.api_schema import (
+    document_config_host_group_viewset,
+    document_host_config_host_group_viewset,
 )
-from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.config_host_group.audit import (
+    audit_config_config_host_group_viewset,
+    audit_config_host_group_viewset,
+    audit_host_config_host_group_viewset,
+)
+from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
@@ -334,7 +337,7 @@ class ClusterViewSet(
 ):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
-        .prefetch_related("clusterobject_set__prototype")
+        .prefetch_related("services__prototype")
         .order_by("name")
     )
     permission_required = [VIEW_CLUSTER_PERM]
@@ -441,7 +444,7 @@ class ClusterViewSet(
     def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = Cluster.objects.get(pk=kwargs["pk"])
         exclude_added_service_prototypes = Q(
-            id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
+            id__in=Service.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
         )
         return self._respond_with_prototypes(
             cluster_prototype_id=cluster.prototype_id, exclude_clause=exclude_added_service_prototypes
@@ -481,7 +484,7 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         url_path="statuses/services",
-        queryset=ClusterObject.objects.select_related("prototype").order_by("prototype__display_name"),
+        queryset=Service.objects.select_related("prototype").order_by("prototype__display_name"),
         permission_required=[VIEW_SERVICE_PERM],
         filterset_class=ClusterServiceFilter,
     )
@@ -632,7 +635,7 @@ class ClusterViewSet(
         )
 
         components = tuple(
-            ServiceComponent.objects.filter(cluster=cluster)
+            Component.objects.filter(cluster=cluster)
             .select_related("prototype", "prototype__parent", "service__prototype")
             .order_by("pk")
         )
@@ -989,21 +992,21 @@ class ClusterImportViewSet(ImportViewSet):
         return obj, None
 
 
-@document_group_config_viewset(object_type="cluster")
-@audit_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterGroupConfigViewSet(GroupConfigViewSet):
+@document_config_host_group_viewset(object_type="cluster")
+@audit_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterCHGViewSet(CHGViewSet):
     ...
 
 
-@document_host_group_config_viewset(object_type="cluster")
-@audit_host_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterHostGroupConfigViewSet(HostGroupConfigViewSet):
+@document_host_config_host_group_viewset(object_type="cluster")
+@audit_host_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="cluster config group", operation_id_variant="ClusterConfigGroup")
-@audit_config_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterConfigHostGroupViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, ClusterObject, MaintenanceMode, ServiceComponent
+from cm.models import Cluster, Component, MaintenanceMode, Service
 from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
@@ -40,7 +40,7 @@ class ComponentFilter(FilterSet):
     )
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name", "state", "maintenance_mode"]
 
     def filter_by_maintenance_mode(self, queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG002
@@ -50,7 +50,7 @@ class ComponentFilter(FilterSet):
         )
         if not mm_is_allowed:
             if value != MaintenanceMode.OFF:
-                return ClusterObject.objects.none()
+                return Service.objects.none()
             return queryset
 
         topology = retrieve_cluster_topology(cluster_id)
@@ -62,4 +62,4 @@ class ComponentFilter(FilterSet):
 
         objects_mm_components_ids = [c for c, v in objects_mm.components.items() if v.value == value]
 
-        return ServiceComponent.objects.filter(id__in=objects_mm_components_ids)
+        return Component.objects.filter(id__in=objects_mm_components_ids)

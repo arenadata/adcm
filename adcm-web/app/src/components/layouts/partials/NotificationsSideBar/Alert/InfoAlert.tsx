@@ -1,7 +1,7 @@
 import React from 'react';
 import Alert from './Alert';
-import { InfoNotification } from '@models/notification';
-import { AlertOptions } from './Alert.types';
+import type { InfoNotification } from '@models/notification';
+import type { AlertOptions } from './Alert.types';
 
 import s from './Alert.module.scss';
 

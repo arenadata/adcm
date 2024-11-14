@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from rbac.models import Policy, Role, User
 from typing_extensions import TypedDict
 
-from cm.models import Bundle, Cluster, HostComponent, HostInfo, HostProvider
+from cm.models import Bundle, Cluster, HostComponent, HostInfo, Provider
 
 
 class BundleData(TypedDict):
@@ -44,7 +44,7 @@ class ClusterData(TypedDict):
     hosts: list[dict]
 
 
-class HostProviderData(TypedDict):
+class ProviderData(TypedDict):
     name: str
     host_count: int
     bundle: dict
@@ -63,7 +63,7 @@ class RoleData(TypedDict):
 class ADCMEntities(BaseModel):
     clusters: list[ClusterData]
     bundles: list[BundleData]
-    providers: list[HostProviderData]
+    providers: list[ProviderData]
 
 
 class RBACEntities(BaseModel):
@@ -107,9 +107,9 @@ class BundleCollector:
             for entry in Bundle.objects.filter(*self._filters).values("id", *BundleData.__annotations__.keys())
         }
 
-        hostproviders_data = [
-            HostProviderData(name=entry["name"], host_count=entry["host_count"], bundle=bundles[entry["bundle_id"]])
-            for entry in HostProvider.objects.filter(prototype__bundle_id__in=bundles.keys())
+        providers_data = [
+            ProviderData(name=entry["name"], host_count=entry["host_count"], bundle=bundles[entry["bundle_id"]])
+            for entry in Provider.objects.filter(prototype__bundle_id__in=bundles.keys())
             .values("name", bundle_id=F("prototype__bundle_id"))
             .annotate(host_count=Count("host"))
         ]
@@ -157,4 +157,4 @@ class BundleCollector:
             for cluster_id, data in cluster_general_info.items()
         ]
 
-        return ADCMEntities(clusters=clusters_data, bundles=bundles.values(), providers=hostproviders_data)
+        return ADCMEntities(clusters=clusters_data, bundles=bundles.values(), providers=providers_data)

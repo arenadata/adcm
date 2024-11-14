@@ -3,9 +3,9 @@ import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { columns, hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmHost } from '@models/adcm/host';
+import type { AdcmHost } from '@models/adcm/host';
 import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openMaintenanceModeDialog, openUpdateDialog } from '@store/adcm/hosts/hostsActionsSlice';
@@ -26,13 +26,12 @@ const HostsTable: React.FC = () => {
 
   const handleClickMaintenanceMode = (host: AdcmHost) => () => {
     if (host.isMaintenanceModeAvailable) {
-      dispatch(openMaintenanceModeDialog(host.id));
+      dispatch(openMaintenanceModeDialog(host));
     }
   };
 
-  const getHandleDeleteClick = (hostId: number) => () => {
-    // set deletable id for show Delete Confirm Dialog
-    dispatch(openDeleteDialog(hostId));
+  const getHandleDeleteClick = (host: AdcmHost) => () => {
+    dispatch(openDeleteDialog(host));
   };
 
   const handleUpdateClick = (host: AdcmHost) => {
@@ -52,7 +51,7 @@ const HostsTable: React.FC = () => {
       variant="secondary"
     >
       {hosts.map((host: AdcmHost) => {
-        const hostLinked = !!host.cluster?.id;
+        const isHostLinked = !!host.cluster?.id;
 
         return (
           <TableRow key={host.id}>
@@ -102,9 +101,9 @@ const HostsTable: React.FC = () => {
               <IconButton
                 icon="g1-delete"
                 size={32}
-                disabled={hostLinked}
-                onClick={getHandleDeleteClick(host.id)}
-                title={hostLinked ? 'Unlink host to enable Delete button' : 'Delete'}
+                disabled={isHostLinked}
+                onClick={getHandleDeleteClick(host)}
+                title={isHostLinked ? 'Unlink host to enable Delete button' : 'Delete'}
               />
             </TableCell>
           </TableRow>

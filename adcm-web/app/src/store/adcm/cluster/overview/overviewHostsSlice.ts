@@ -3,7 +3,7 @@ import { AdcmClusterOverviewApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmClusterOverviewStatusHost } from '@models/adcm/clusterOverview';
+import type { AdcmClusterOverviewStatusHost } from '@models/adcm/clusterOverview';
 import { AdcmHostStatus } from '@models/adcm';
 
 type AdcmClusterOverviewServicesState = {

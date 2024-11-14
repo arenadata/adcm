@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { AdcmDynamicAction } from '@models/adcm/dynamicAction';
+import type { AdcmDynamicAction } from '@models/adcm/dynamicAction';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import IconButton from '@uikit/IconButton/IconButton';
-import { ChildWithRef } from '@uikit/types/element.types';
-import { IconProps } from '@uikit/Icon/Icon';
+import type { ChildWithRef } from '@uikit/types/element.types';
+import type { IconProps } from '@uikit/Icon/Icon';
 import { Button } from '@uikit';
 
 interface DynamicActionsCommonProps {

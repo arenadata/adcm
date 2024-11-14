@@ -3,7 +3,7 @@ import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';

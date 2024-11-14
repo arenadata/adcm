@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 import { useState } from 'react';
 
 interface DownloadFileProps {
@@ -47,7 +47,7 @@ export const useDownloadFile = ({
         postDownloading();
       }
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       if (onError) {
         onError();
       }

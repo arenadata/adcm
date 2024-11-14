@@ -18,12 +18,12 @@ from cm.models import (
     ActionType,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
-    HostProvider,
     MaintenanceMode,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
     SubAction,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -47,7 +47,7 @@ class TestHostAPI(BaseTestCase):
         cluster = Cluster.objects.create(name="test_cluster", prototype=self.cluster_prototype)
 
         self.provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
-        self.host_provider = HostProvider.objects.create(name="test_provider_2", prototype=self.provider_prototype)
+        self.host_provider = Provider.objects.create(name="test_provider_2", prototype=self.provider_prototype)
 
         self.host_prototype = Prototype.objects.create(bundle=self.bundle, type="host")
         self.host = Host.objects.create(
@@ -248,7 +248,7 @@ class TestHostAPI(BaseTestCase):
             path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
         )
-        provider = HostProvider.objects.get(pk=provider_response.data["id"])
+        provider = Provider.objects.get(pk=provider_response.data["id"])
 
         host_response: Response = self.client.post(
             path=reverse(viewname="v1:host", kwargs={"provider_id": provider.pk}),
@@ -270,9 +270,9 @@ class TestHostAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_prototype.pk},
         )
-        service = ClusterObject.objects.get(pk=service_response.data["id"])
+        service = Service.objects.get(pk=service_response.data["id"])
 
-        component = ServiceComponent.objects.get(service=service, prototype__name="first_component")
+        component = Component.objects.get(service=service, prototype__name="first_component")
 
         self.assertFalse(cluster.concerns.exists())
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import Input, { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
+import Input from '@uikit/Input/Input';
 import IconButton from '@uikit/IconButton/IconButton';
 import cn from 'classnames';
 import s from './CommonSelectField.module.scss';

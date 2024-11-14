@@ -1,7 +1,8 @@
 import { createListSlice, createAsyncThunk } from '@store/redux';
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { AdcmPrototypesApi } from '@api';
-import { AdcmClustersFilter, AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmClustersFilter, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeType } from '@models/adcm';
 
 type AdcmClustersTableState = ListState<AdcmClustersFilter> & {
   relatedData: {

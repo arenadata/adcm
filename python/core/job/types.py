@@ -78,7 +78,7 @@ class RelatedObjects(NamedTuple):
     # must be specified for Component
     service: NamedCoreObjectWithPrototype | None = None
     # must be specified for Host
-    hostprovider: NamedCoreObjectWithPrototype | None = None
+    provider: NamedCoreObjectWithPrototype | None = None
 
 
 class TaskOwner(NamedTuple):

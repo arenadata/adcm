@@ -1,5 +1,5 @@
 import React from 'react';
-import { SingleSelectOptions } from '../../Select.types';
+import type { SingleSelectOptions } from '../../Select.types';
 import SingleSelectList from '../SingleSelectList/SingleSelectList';
 import s from './SingleSelectPanel.module.scss';
 import SingleSelectSearchFilter from '../SingleSelectSearchFilter/SingleSelectSearchFilter';

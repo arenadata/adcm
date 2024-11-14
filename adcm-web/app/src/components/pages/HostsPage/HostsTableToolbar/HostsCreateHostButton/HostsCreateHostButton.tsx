@@ -6,7 +6,7 @@ import { openCreateDialog } from '@store/adcm/hosts/hostsActionsSlice';
 const HostsCreateHostButton: React.FC = () => {
   const dispatch = useDispatch();
 
-  const isCreating = useStore(({ adcm }) => adcm.hostsActions.createDialog.isCreating);
+  const isCreating = useStore(({ adcm }) => adcm.hostsActions.isActionInProgress);
 
   const handleClick = () => {
     dispatch(openCreateDialog());

@@ -19,9 +19,9 @@ from cm.models import (
     Bundle,
     ConfigLog,
     Host,
-    HostProvider,
     ObjectConfig,
     Prototype,
+    Provider,
     Upgrade,
 )
 from django.urls import reverse
@@ -54,7 +54,7 @@ class TestProviderAudit(BaseTestCase):
     def check_provider_updated(
         self,
         log: AuditLog,
-        provider: HostProvider,
+        provider: Provider,
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
@@ -72,7 +72,7 @@ class TestProviderAudit(BaseTestCase):
     def check_provider_deleted(
         self,
         log: AuditLog,
-        provider: HostProvider,
+        provider: Provider,
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
@@ -87,7 +87,7 @@ class TestProviderAudit(BaseTestCase):
         self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
-    def check_action_log(self, log: AuditLog, provider: HostProvider, operation_name: str) -> None:
+    def check_action_log(self, log: AuditLog, provider: Provider, operation_name: str) -> None:
         self.assertEqual(log.audit_object.object_id, provider.pk)
         self.assertEqual(log.audit_object.object_name, provider.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.PROVIDER)
@@ -160,7 +160,7 @@ class TestProviderAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_delete(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
@@ -176,7 +176,7 @@ class TestProviderAudit(BaseTestCase):
         )
 
     def test_delete_denied(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
@@ -196,7 +196,7 @@ class TestProviderAudit(BaseTestCase):
         )
 
     def test_delete_denied_view_permission(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
@@ -225,7 +225,7 @@ class TestProviderAudit(BaseTestCase):
         )
 
     def test_delete_failed(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
@@ -248,7 +248,7 @@ class TestProviderAudit(BaseTestCase):
 
     def test_update_and_restore(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        provider = HostProvider.objects.create(prototype=self.prototype, name="test_provider", config=config)
+        provider = Provider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
         config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
         config.current = config_log.pk
@@ -289,7 +289,7 @@ class TestProviderAudit(BaseTestCase):
 
     def test_update_and_restore_denied(self):
         config = ObjectConfig.objects.create(current=1, previous=1)
-        provider = HostProvider.objects.create(prototype=self.prototype, name="test_provider", config=config)
+        provider = Provider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
         ConfigLog.objects.create(obj_ref=config, config="{}")
         with self.no_rights_user_logged_in:
@@ -329,7 +329,7 @@ class TestProviderAudit(BaseTestCase):
         )
 
     def test_action_launch(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
@@ -349,7 +349,7 @@ class TestProviderAudit(BaseTestCase):
         self.check_action_log(log=log, provider=provider, operation_name=f"{action.display_name} action launched")
 
     def test_do_upgrade(self):
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )

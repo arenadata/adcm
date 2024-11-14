@@ -1,7 +1,12 @@
 import { useMemo, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
-import { cleanupClustersActions, createCluster } from '@store/adcm/clusters/clustersActionsSlice';
+import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
+import {
+  cleanupClustersActions,
+  createCluster,
+  loadPrototypesRelatedData,
+} from '@store/adcm/clusters/clustersActionsSlice';
 import { isClusterNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface CreateClusterFormData {
@@ -28,14 +33,18 @@ export const useCreateClusterDialog = () => {
 
   const clusters = useStore((s) => s.adcm.clusters.clusters);
   const {
-    isCreateClusterDialogOpen: isOpen,
+    createDialog: { isOpen },
     relatedData,
     relatedData: { isLoaded: isRelatedDataLoaded },
   } = useStore((s) => s.adcm.clustersActions);
 
   useEffect(() => {
-    setFormData(initialFormData);
-  }, [isOpen, setFormData]);
+    if (isOpen) {
+      dispatch(loadPrototypesRelatedData());
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [isOpen, dispatch, setFormData]);
 
   useEffect(() => {
     setErrors({

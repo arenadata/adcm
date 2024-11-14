@@ -1,4 +1,5 @@
-import { useLayoutEffect, useCallback, RefObject } from 'react';
+import type { RefObject } from 'react';
+import { useLayoutEffect, useCallback } from 'react';
 
 export const useResizeObserver = (ref: RefObject<HTMLElement>, callback?: () => void) => {
   const handleResize = useCallback(

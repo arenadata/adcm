@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmPrototypeVersions } from '@models/adcm';
 import { findBy } from '@utils/arrayUtils';
 import {
   setFilter,
@@ -8,7 +8,7 @@ import {
   setSortParams,
 } from '@store/adcm/bundles/bundlesTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
-import { AdcmBundlesFilter } from '@models/adcm/bundle';
+import type { AdcmBundlesFilter } from '@models/adcm/bundle';
 import { LoadState } from '@models/loadState';
 
 const mergeFilters = (

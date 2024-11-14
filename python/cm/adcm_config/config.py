@@ -40,14 +40,14 @@ from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
@@ -241,17 +241,17 @@ def restore_cluster_config(obj_conf, version, desc=""):
     return config_log
 
 
-def _merge_config_field(origin_config_fields: dict, group_config_fields: dict, group_keys: dict, spec: dict) -> dict:
+def _merge_config_field(origin_config_fields: dict, host_group_fields: dict, group_keys: dict, spec: dict) -> dict:
     for field_name, info in spec.items():
         if info["type"] == "group" and field_name in group_keys:
             _merge_config_field(
                 origin_config_fields=origin_config_fields[field_name],
-                group_config_fields=group_config_fields[field_name],
+                host_group_fields=host_group_fields[field_name],
                 group_keys=group_keys[field_name]["fields"],
                 spec=spec[field_name]["fields"],
             )
         elif group_keys.get(field_name, False):
-            origin_config_fields[field_name] = group_config_fields[field_name]
+            origin_config_fields[field_name] = host_group_fields[field_name]
 
     return origin_config_fields
 
@@ -282,7 +282,7 @@ def _clear_group_keys(group_keys: dict, spec: dict) -> dict:
 
 
 def merge_config_of_group_with_primary_config(
-    group: GroupConfig,
+    group: ConfigHostGroup,
     primary_config: ConfigLog,
     current_config_of_group: ConfigLog,
     description: str,
@@ -292,7 +292,7 @@ def merge_config_of_group_with_primary_config(
 
     config = _merge_config_field(
         origin_config_fields=copy.deepcopy(primary_config.config),
-        group_config_fields=current_config_of_group.config,
+        host_group_fields=current_config_of_group.config,
         group_keys=current_group_keys,
         spec=spec,
     )
@@ -313,33 +313,31 @@ def merge_config_of_group_with_primary_config(
     return ConfigLog.objects.create(obj_ref=group.config, config=config, attr=attr, description=description)
 
 
-def update_group_configs_by_primary_object(
-    object_: Cluster | ClusterObject | ServiceComponent | HostProvider, config: ConfigLog
-) -> None:
-    for config_group in object_.group_config.order_by("id"):
-        current_group_config = ConfigLog.objects.get(id=config_group.config.current)
+def update_host_groups_by_primary_object(object_: Cluster | Service | Component | Provider, config: ConfigLog) -> None:
+    for host_group in object_.config_host_group.order_by("id"):
+        current_config_of_host_group = ConfigLog.objects.get(id=host_group.config.current)
 
         config_log = merge_config_of_group_with_primary_config(
-            group=config_group,
+            group=host_group,
             primary_config=config,
-            current_config_of_group=current_group_config,
+            current_config_of_group=current_config_of_host_group,
             description=config.description,
         )
 
         config_log.save()
 
-        config_group.config.previous = config_group.config.current
-        config_group.config.current = config_log.id
-        config_group.config.save(update_fields=["previous", "current"])
+        host_group.config.previous = host_group.config.current
+        host_group.config.current = config_log.id
+        host_group.config.save(update_fields=["previous", "current"])
 
-        config_group.prepare_files_for_config(config=config_log.config)
+        host_group.prepare_files_for_config(config=config_log.config)
 
 
-def update_group_config(group_config: GroupConfig, config: ConfigLog) -> ConfigLog:
-    primary_config = ConfigLog.objects.get(id=group_config.object.config.current)
+def update_host_group(host_group: ConfigHostGroup, config: ConfigLog) -> ConfigLog:
+    primary_config = ConfigLog.objects.get(id=host_group.object.config.current)
 
     return merge_config_of_group_with_primary_config(
-        group=group_config,
+        group=host_group,
         primary_config=primary_config,
         current_config_of_group=config,
         description=config.description,
@@ -350,13 +348,13 @@ def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, de
     config_log = ConfigLog(obj_ref=object_config, config=config, attr=attr, description=description)
     obj = object_config.object
 
-    if isinstance(obj, GroupConfig):
-        config_log = update_group_config(group_config=obj, config=config_log)
+    if isinstance(obj, ConfigHostGroup):
+        config_log = update_host_group(host_group=obj, config=config_log)
         config_log.save()
         obj.prepare_files_for_config(config=config_log.config)
-    elif isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
+    elif isinstance(obj, (Cluster, Service, Component, Provider)):
         config_log.save()
-        update_group_configs_by_primary_object(object_=obj, config=config_log)
+        update_host_groups_by_primary_object(object_=obj, config=config_log)
     else:
         config_log.save()
 
@@ -580,7 +578,7 @@ def process_json_config(
     check_attr(prototype, obj, new_attr, flat_spec, current_attr)
     group = None
 
-    if isinstance(obj, GroupConfig):
+    if isinstance(obj, ConfigHostGroup):
         group = obj
         obj = group.object
 

@@ -1,6 +1,6 @@
 import { createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
-import { AdcmHostComponentsFilter } from '@models/adcm';
+import type { ListState } from '@models/table';
+import type { AdcmHostComponentsFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmHostComponentsFilter> => ({
   filter: {

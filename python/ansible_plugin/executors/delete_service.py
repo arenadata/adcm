@@ -13,7 +13,7 @@
 from typing import Collection
 
 from cm.api import delete_service
-from cm.models import ClusterBind, ClusterObject, HostComponent, Prototype
+from cm.models import ClusterBind, HostComponent, Prototype, Service
 from cm.services.mapping import change_host_component_mapping, check_nothing
 from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -62,8 +62,8 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
             raise PluginRuntimeError(message)
 
         try:
-            service = ClusterObject.objects.select_related("cluster").get(**search_kwargs)
-        except ClusterObject.DoesNotExist:
+            service = Service.objects.select_related("cluster").get(**search_kwargs)
+        except Service.DoesNotExist:
             return CallResult(
                 value=None, changed=False, error=PluginTargetDetectionError("Failed to locate service to be deleted")
             )

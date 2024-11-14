@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import LicenseAcceptanceList from '@commonComponents/license/LicenseAcceptanceList/LicenseAcceptanceList';
 import { useDispatch } from '@hooks';
-import { AdcmComponentDependency, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmComponentDependency } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { acceptServiceLicense } from '@store/adcm/cluster/services/servicesSlice';
-import { RequiredServicesFormData } from '../RequiredServicesDialog.types';
+import type { RequiredServicesFormData } from '../RequiredServicesDialog.types';
 
 interface ServicesLicensesStepProps {
   formData: RequiredServicesFormData;

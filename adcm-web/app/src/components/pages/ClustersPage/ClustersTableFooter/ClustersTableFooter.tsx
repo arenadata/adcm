@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/clusters/clustersTableSlice';
-import { Pagination, PaginationData } from '@uikit';
+import type { PaginationData } from '@uikit';
+import { Pagination } from '@uikit';
 
 const ClustersTableFooter = () => {
   const dispatch = useDispatch();

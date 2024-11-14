@@ -23,7 +23,7 @@ from cm.adcm_config.config import get_option_value
 from cm.models import (
     CheckLog,
     Cluster,
-    ClusterObject,
+    Service,
     GroupCheckLog,
     JobLog,
     LogStorage,
@@ -40,7 +40,7 @@ from rbac.roles import assign_group_perm
 def get_service_by_name(cluster_id, service_name):
     cluster = Cluster.obj.get(id=cluster_id)
     proto = Prototype.obj.get(type="service", name=service_name, bundle=cluster.prototype.bundle)
-    return ClusterObject.obj.get(cluster=cluster, prototype=proto)
+    return Service.obj.get(cluster=cluster, prototype=proto)
 
 
 def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:

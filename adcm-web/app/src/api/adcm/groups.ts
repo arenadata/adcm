@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
-import { PaginationParams, SortParams } from '@models/table';
-import { Batch, AdcmGroup, AdcmCreateGroupPayload, AdcmUpdateGroupPayload, AdcmGroupFilter } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
+import type { Batch, AdcmGroup, AdcmCreateGroupPayload, AdcmUpdateGroupPayload, AdcmGroupFilter } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 

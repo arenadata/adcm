@@ -1,4 +1,4 @@
-import { GetScrollDataResponse, ScrollDataProps } from '@uikit/ScrollBar/ScrollBarTypes';
+import type { GetScrollDataResponse, ScrollDataProps } from '@uikit/ScrollBar/ScrollBarTypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { defaultScrollData, getScrollData, useObserver } from '@uikit/ScrollBar/ScrollBarHelper';
 

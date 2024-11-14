@@ -67,8 +67,8 @@ class TestBundle(BaseAPITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "BUNDLE_CONFLICT",
-                "desc": "Bundle with the same content is already "
+                "code": "BUNDLE_ERROR",
+                "desc": "Bundle already exists: Bundle with the same content is already "
                 f"uploaded {settings.DOWNLOAD_DIR / self.new_bundle_file}",
                 "level": "error",
             },

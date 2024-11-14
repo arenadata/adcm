@@ -1,37 +1,25 @@
 import Dialog from '@uikit/Dialog/Dialog';
 import { useDispatch, useStore } from '@hooks';
-import { deleteWithUpdateHostProvider, closeDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
+import { deleteHostProvider, closeDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
 
 const HostProvidersDeleteDialog = () => {
   const dispatch = useDispatch();
 
-  const deletableHostProvider = useStore(
-    ({
-      adcm: {
-        hostProviders: { hostProviders },
-        hostProvidersActions: {
-          deleteDialog: { id: deletableId },
-        },
-      },
-    }) => {
-      if (!deletableId) return null;
-      return hostProviders.find(({ id }) => id === deletableId) ?? null;
-    },
-  );
+  const hostProvider = useStore(({ adcm }) => adcm.hostProvidersActions.deleteDialog.hostprovider);
 
-  const isOpenDeleteDialog = !!deletableHostProvider;
+  const isOpenDeleteDialog = !!hostProvider;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!deletableHostProvider?.id) return;
+    if (!hostProvider?.id) return;
 
-    dispatch(deleteWithUpdateHostProvider(deletableHostProvider.id));
+    dispatch(deleteHostProvider(hostProvider.id));
   };
 
-  const hostProviderName = deletableHostProvider?.name;
+  const hostProviderName = hostProvider?.name;
 
   return (
     <Dialog

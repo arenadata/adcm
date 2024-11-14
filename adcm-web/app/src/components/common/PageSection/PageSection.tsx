@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Text from '@uikit/Text/Text';
 import Collapse from '@uikit/Collapse/Collapse';
-import { BaseComponentProps } from '@utils/types';
+import type { BaseComponentProps } from '@utils/types';
 import s from './PageSection.module.scss';
 import cn from 'classnames';
 import Icon from '@uikit/Icon/Icon';

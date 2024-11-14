@@ -21,7 +21,7 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
+from cm.models import Cluster, Host, ProductCategory, Provider, Service
 from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -279,7 +279,7 @@ class RoleViewSet(
                 )
 
         if RBACObjectType.PROVIDER.value in role.parametrized_by_type:
-            for provider in HostProvider.objects.all():
+            for provider in Provider.objects.all():
                 providers.append(
                     {
                         "name": provider.display_name,
@@ -301,7 +301,7 @@ class RoleViewSet(
             or RBACObjectType.COMPONENT.value in role.parametrized_by_type
         ):
             _services = defaultdict(list)
-            for service in ClusterObject.objects.all():
+            for service in Service.objects.all():
                 _services[service].append(
                     {
                         "name": service.cluster.name,

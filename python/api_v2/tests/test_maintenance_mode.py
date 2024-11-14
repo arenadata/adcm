@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ClusterObject, Host, MaintenanceMode, ServiceComponent
+from cm.models import Component, Host, MaintenanceMode, Service
 from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -32,14 +32,14 @@ class TestMMActions(BaseAPITestCase):
         )
         self.cluster = self.add_cluster(bundle=bundle_mm_plugins_mm_actions, name="cluster_mm_plugins_mm_actions")
         self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component = self.service.servicecomponent_set.get(prototype__name="component_1")
+        self.component = self.service.components.get(prototype__name="component_1")
 
         provider_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider")
         provider = self.add_provider(bundle=provider_bundle, name="provider", description="provider")
         self.host = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host")
 
     def _do_change_mm_request(
-        self, obj: Host | ClusterObject | ServiceComponent, failed_job: FailedJobInfo | None = None
+        self, obj: Host | Service | Component, failed_job: FailedJobInfo | None = None
     ) -> tuple[Response, RunTaskMock]:
         match obj.maintenance_mode:
             case MaintenanceMode.ON:

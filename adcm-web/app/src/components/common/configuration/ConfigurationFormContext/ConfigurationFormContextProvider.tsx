@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { ConfigurationFormContextContext } from './ConfigurationFormContext.context';
-import { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 interface ConfigurationContextProviderProps {
   children: React.ReactNode;

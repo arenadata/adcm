@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, HostProvider
+from cm.models import Action, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.status import (
     HTTP_200_OK,
@@ -23,7 +23,7 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase
 
 
-class TestHostProvider(BaseAPITestCase):
+class TestProvider(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
@@ -45,7 +45,7 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.host_provider.pk)
 
     def test_retrieve_not_found_fail(self):
-        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).get()
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=Provider))).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -84,10 +84,10 @@ class TestHostProvider(BaseAPITestCase):
         response = self.client.v2[self.host_provider].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertFalse(HostProvider.objects.filter(pk=self.host_provider.pk).exists())
+        self.assertFalse(Provider.objects.filter(pk=self.host_provider.pk).exists())
 
     def test_delete_not_found_fail(self):
-        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).delete()
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=Provider))).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -156,13 +156,13 @@ class TestHostProvider(BaseAPITestCase):
 
                 self.assertListEqual(
                     get_ordering_results(response),
-                    list(HostProvider.objects.order_by(model_field).values_list(model_field, flat=True)),
+                    list(Provider.objects.order_by(model_field).values_list(model_field, flat=True)),
                 )
 
                 response = (self.client.v2 / "hostproviders").get(query={"ordering": f"-{ordering_field}"})
                 self.assertListEqual(
                     get_ordering_results(response),
-                    list(HostProvider.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                    list(Provider.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
                 )
 
 

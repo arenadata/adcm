@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, JobLog, LogStorage, ObjectType, Prototype, ServiceComponent
+from cm.models import Action, Component, JobLog, LogStorage, ObjectType, Prototype
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import BaseAPITestCase
@@ -27,7 +27,7 @@ class TestLogStorage(BaseAPITestCase):
         component_prototype = Prototype.objects.get(
             bundle=self.bundle_1, type=ObjectType.COMPONENT, name="component_1", parent=self.service.prototype
         )
-        self.component = ServiceComponent.objects.get(
+        self.component = Component.objects.get(
             cluster=self.cluster_1, service=self.service, prototype=component_prototype
         )
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host, self.component)])

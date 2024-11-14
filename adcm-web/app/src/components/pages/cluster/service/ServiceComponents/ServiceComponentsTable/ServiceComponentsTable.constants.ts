@@ -1,4 +1,4 @@
-import { TableColumn, BaseStatus } from '@uikit';
+import type { TableColumn, BaseStatus } from '@uikit';
 import { AdcmServiceComponentStatus } from '@models/adcm';
 
 export const columns: TableColumn[] = [

@@ -28,11 +28,11 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernItem,
     Host,
     HostComponent,
-    ServiceComponent,
+    Service,
 )
 from cm.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
 
@@ -125,11 +125,17 @@ def send_config_creation_event(object_: ADCMEntity) -> None:
 
 
 def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
-    post_event(event=EventTypes.UPDATE.format(object_.type.value), object_id=object_.id, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.type.value)), object_id=object_.id, changes=changes
+    )
 
 
 def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
-    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        changes=changes,
+    )
 
 
 def send_task_status_update_event(task_id: int, status: str) -> None:
@@ -154,7 +160,11 @@ def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
         },
     }
 
-    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
+    post_event(
+        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        changes=changes,
+    )
 
 
 def get_raw_status(url: str) -> int:
@@ -183,7 +193,7 @@ def get_cluster_status(cluster: Cluster) -> int:
     return get_raw_status(url=f"cluster/{cluster.id}/")
 
 
-def get_service_status(service: ClusterObject) -> int:
+def get_service_status(service: Service) -> int:
     return get_status(obj=service, url=f"cluster/{service.cluster.id}/service/{service.id}/")
 
 
@@ -198,11 +208,11 @@ def get_hc_status(hostcomponent: HostComponent) -> int:
     )
 
 
-def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
+def get_host_comp_status(host: Host, component: Component) -> int:
     return get_status(obj=component, url=f"host/{host.id}/component/{component.id}/")
 
 
-def get_component_status(component: ServiceComponent) -> int:
+def get_component_status(component: Component) -> int:
     return get_status(obj=component, url=f"component/{component.id}/")
 
 
@@ -226,7 +236,7 @@ def make_ui_single_host_status(host: Host) -> dict:
     }
 
 
-def make_ui_component_status(component: ServiceComponent, host_components: Iterable[HostComponent]) -> dict:
+def make_ui_component_status(component: Component, host_components: Iterable[HostComponent]) -> dict:
     host_list = []
     for hostcomponent in host_components:
         host_list.append(
@@ -245,7 +255,7 @@ def make_ui_component_status(component: ServiceComponent, host_components: Itera
     }
 
 
-def make_ui_service_status(service: ClusterObject, host_components: Iterable[HostComponent]) -> dict:
+def make_ui_service_status(service: Service, host_components: Iterable[HostComponent]) -> dict:
     component_hc_map = defaultdict(list)
     for hostcomponent in host_components:
         component_hc_map[hostcomponent.component].append(hostcomponent)
@@ -324,12 +334,18 @@ def notify_about_redistributed_concerns(
     }
 
     for core_type, object_id, concern_id in removed:
-        post_event(event=f"delete_{core_type.value}_concern", object_id=object_id, changes={"id": concern_id})
+        post_event(
+            event=f"delete_{fix_object_type(type_=core_type.value)}_concern",
+            object_id=object_id,
+            changes={"id": concern_id},
+        )
 
     for core_type, object_id, concern_id in added_concerns:
         concern = serialized_concerns.get(concern_id)
         if concern:
-            post_event(event=f"create_{core_type.value}_concern", object_id=object_id, changes=concern)
+            post_event(
+                event=f"create_{fix_object_type(type_=core_type.value)}_concern", object_id=object_id, changes=concern
+            )
 
 
 def notify_about_new_concern(concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
