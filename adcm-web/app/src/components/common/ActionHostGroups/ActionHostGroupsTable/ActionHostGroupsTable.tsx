@@ -52,7 +52,10 @@ const ActionHostGroupsTable = ({
             >
               <TableCell>{actionHostGroup.name}</TableCell>
               <TableCell>{actionHostGroup.description}</TableCell>
-              <ExpandDetailsCell handleExpandRow={() => handleExpandClick(actionHostGroup.id)}>
+              <ExpandDetailsCell
+                isDisabled={actionHostGroup.hosts.length === 0}
+                handleExpandRow={() => handleExpandClick(actionHostGroup.id)}
+              >
                 {actionHostGroup.hosts.length}
               </ExpandDetailsCell>
               <TableCell hasIconOnly align="center">
