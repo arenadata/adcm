@@ -82,7 +82,7 @@ def document_action_host_group_hosts_viewset(object_type: str):
         list=extend_schema(
             operation_id=f"get{capitalized_type}ActionHostGroupHosts",
             description=f"Get information about {object_type}'s Action Host Group hosts.",
-            summary="GET {object_type}'s action host group hosts.",
+            summary=f"GET {object_type}'s action host group hosts.",
             parameters=[
                 DefaultParams.ordering_by("name"),
                 OpenApiParameter(
