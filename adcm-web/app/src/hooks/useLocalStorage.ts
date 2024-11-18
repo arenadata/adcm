@@ -17,7 +17,7 @@ export const useLocalStorage = <T>({
   const username = useStore(({ auth }) => auth.username);
 
   if (isUserDependencies) {
-    key = `${username}/${key}`;
+    key = `${username}_${key}`;
   }
 
   const [storageData, setStorageData] = useState<T | null>(() => {
