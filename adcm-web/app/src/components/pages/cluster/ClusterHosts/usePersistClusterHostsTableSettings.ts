@@ -32,6 +32,7 @@ export const usePersistClusterHostsTableSettings = () => {
 
   const urlProps = useGetFilterFromUrl();
 
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const filter = useStore(({ adcm }) => adcm.clusterHostsTable.filter);
   const sortParams = useStore(({ adcm }) => adcm.clusterHostsTable.sortParams);
   const paginationParams = useStore(({ adcm }) => adcm.clusterHostsTable.paginationParams);
@@ -46,6 +47,7 @@ export const usePersistClusterHostsTableSettings = () => {
     {
       localStorageKey: 'adcm/clusterHostsTable',
       settings: {
+        clusterId: cluster?.id,
         filter,
         sortParams,
         requestFrequency,
@@ -58,8 +60,10 @@ export const usePersistClusterHostsTableSettings = () => {
           return;
         }
 
-        const mergedFilter = mergeFilters(settings.filter, filter, hostProviders);
-        dispatch(setFilter(mergedFilter));
+        if (settings.clusterId === cluster?.id) {
+          const mergedFilter = mergeFilters(settings.filter, filter, hostProviders);
+          dispatch(setFilter(mergedFilter));
+        }
         dispatch(setSortParams(settings.sortParams));
         dispatch(setRequestFrequency(settings.requestFrequency));
         dispatch(setPaginationParams(mergePaginationParams(settings.perPage, paginationParams)));
