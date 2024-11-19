@@ -164,7 +164,7 @@ class Bundle(ADCMModel):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
-    signature_status = models.CharField(max_length=10, choices=SignatureStatus.choices, default=SignatureStatus.ABSENT)
+    signature_status = models.CharField(max_length=10, choices=SignatureStatus, default=SignatureStatus.ABSENT)
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
@@ -209,7 +209,7 @@ MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenan
 
 class Prototype(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    type = models.CharField(max_length=1000, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=1000, default="")
     name = models.CharField(max_length=1000)
@@ -522,7 +522,7 @@ class Host(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -562,7 +562,7 @@ class Host(ADCMEntity):
         return cluster.prototype.allow_maintenance_mode
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self.maintenance_mode
 
 
@@ -576,7 +576,7 @@ class Service(ADCMEntity):
     )
     _maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -621,11 +621,11 @@ class Service(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> MaintenanceMode.choices:
+    def maintenance_mode(self) -> MaintenanceMode:
         if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
@@ -655,7 +655,7 @@ class Service(ADCMEntity):
         return self._maintenance_mode
 
     @maintenance_mode.setter
-    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+    def maintenance_mode(self, value: MaintenanceMode) -> None:
         self._maintenance_mode = value
 
     @property
@@ -678,7 +678,7 @@ class Component(ADCMEntity):
     )
     _maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -723,11 +723,11 @@ class Component(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> MaintenanceMode.choices:
+    def maintenance_mode(self) -> MaintenanceMode:
         if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
@@ -745,7 +745,7 @@ class Component(ADCMEntity):
         return self._maintenance_mode
 
     @maintenance_mode.setter
-    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+    def maintenance_mode(self, value: MaintenanceMode) -> None:
         self._maintenance_mode = value
 
     @property
@@ -1030,7 +1030,7 @@ class AbstractAction(ADCMModel):
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
 
-    type = models.CharField(max_length=1000, choices=ActionType.choices)
+    type = models.CharField(max_length=1000, choices=ActionType)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -1340,7 +1340,7 @@ class TaskLog(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus)
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
@@ -1400,7 +1400,7 @@ class TaskLog(ADCMModel):
 class JobLog(AbstractSubAction):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices, default="created")
+    status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 
@@ -1485,7 +1485,7 @@ class LogStorage(ADCMModel):
 
 
 class StagePrototype(ADCMModel):
-    type = models.CharField(max_length=1000, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=1000)
     path = models.CharField(max_length=1000, default="")
@@ -1612,14 +1612,14 @@ class ConcernItem(ADCMModel):
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=100, choices=ConcernType.choices, default=ConcernType.LOCK)
+    type = models.CharField(max_length=100, choices=ConcernType, default=ConcernType.LOCK)
     name = models.CharField(max_length=1000, default="")
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
     owner_id = models.PositiveIntegerField()
     owner_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     owner = GenericForeignKey("owner_type", "owner_id")
-    cause = models.CharField(max_length=100, null=True, choices=ConcernCause.choices)
+    cause = models.CharField(max_length=100, null=True, choices=ConcernCause)
 
     class Meta:
         constraints = [

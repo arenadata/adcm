@@ -30,11 +30,13 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-import pytz
+import zoneinfo
 
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
 from api_v2.tests.base import BaseAPITestCase
+
+UTC = zoneinfo.ZoneInfo("UTC")
 
 
 class TestUserAPI(BaseAPITestCase):
@@ -789,7 +791,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         self.edit_client.login(**creds)
 
     def test_retrieve_blocked_by_login_attempts(self) -> None:
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -812,7 +814,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_retrieve_blocked_both_ways(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -872,7 +874,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.save()
 
@@ -886,7 +888,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_ldap_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.type = OriginType.LDAP
         self.user.save()
