@@ -242,7 +242,7 @@ class ActionsPolicyTestCase(BaseTestCase):
     def test_user_can_run_action(self):
         action = Action.objects.get(display_name="Cluster ready for host")
         with self.another_user_logged_in(username=self.user_1.username, password=self.user_1_password):
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=reverse(viewname="v1:run-task", kwargs={"host_id": self.host_1.pk, "action_id": action.pk}),
             )
 

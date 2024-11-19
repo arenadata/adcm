@@ -36,7 +36,7 @@ class TestConfigLogAudit(BaseTestCase):
         self.bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=self.bundle)
         self.cluster = Cluster.objects.create(prototype=prototype, config=self.config)
-        config_log = ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=self.config, config={})
         self.config.current = config_log.pk
         self.config.save(update_fields=["current"])
 
