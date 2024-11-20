@@ -15,6 +15,7 @@ from django.apps import AppConfig
 
 class CmConfig(AppConfig):
     name = "cm"
+    verbose_name = "cm"
 
     def ready(self):
         from cm.signals import (  # noqa: F401, PLC0415

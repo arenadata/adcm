@@ -841,6 +841,41 @@ class TestMappingConstraints(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
+    def test_one_constraint_fail(self):
+        service = self.add_services_to_cluster(
+            service_names=["service_with_one_component_constraint"], cluster=self.cluster
+        ).get()
+        component = Component.objects.get(
+            prototype__name="one",
+            service=service,
+            cluster=self.cluster,
+        )
+
+        err_msg = (
+            f'Component "{component.display_name}" of service "{component.service.name}" '
+            f"has unsatisfied constraint: {component.prototype.constraint}"
+        )
+        for data in (
+            [],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+            ],
+        ):
+            with self.subTest(f"[odd] constraint, data: {data}"):
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertDictEqual(
+                    response.json(),
+                    {
+                        "code": "COMPONENT_CONSTRAINT_ERROR",
+                        "level": "error",
+                        "desc": err_msg,
+                    },
+                )
+                self.assertEqual(HostComponent.objects.count(), 0)
+
     def test_one_odd_second_variant_constraint_fail(self):
         service = self.add_services_to_cluster(
             service_names=["service_with_one_odd_component_constraint_2"], cluster=self.cluster
@@ -948,6 +983,33 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[0,odd], data: {data}"):
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
+
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+                self.assertEqual(HostComponent.objects.count(), len(data))
+
+    def test_zero_plus_constraint_success(self):
+        service = self.add_services_to_cluster(service_names=["bound_target_service"], cluster=self.cluster).get()
+        component = Component.objects.get(
+            prototype__name="bound_target_component",
+            service=service,
+            cluster=self.cluster,
+        )
+
+        for data in (
+            [],
+            [{"hostId": self.host_1.pk, "componentId": component.pk}],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+            ],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+                {"hostId": self.host_3.pk, "componentId": component.pk},
+            ],
+        ):
+            with self.subTest(f"[0,+], data: {data}"):
                 response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)

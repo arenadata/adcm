@@ -14,9 +14,10 @@ type LoginActionPayload = {
 export enum AUTH_STATE {
   Checking = 'checking',
   NotAuth = 'not_auth',
+  Authorizing = 'authorizing',
   Authed = 'authed',
 }
-export type AuthState = AUTH_STATE.NotAuth | AUTH_STATE.Checking | AUTH_STATE.Authed;
+export type AuthState = AUTH_STATE.NotAuth | AUTH_STATE.Checking | AUTH_STATE.Authed | AUTH_STATE.Authorizing;
 
 type UserState = {
   username: string;
@@ -75,7 +76,7 @@ const authSlice = createSlice({
       state.message = '';
       state.hasError = false;
       state.needCheckSession = false;
-      state.authState = AUTH_STATE.Checking;
+      state.authState = AUTH_STATE.Authorizing;
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.username = action.payload.username;

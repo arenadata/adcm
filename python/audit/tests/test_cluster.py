@@ -62,7 +62,7 @@ class TestClusterAudit(BaseTestCase):
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
 
         config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 
@@ -215,7 +215,7 @@ class TestClusterAudit(BaseTestCase):
 
     def get_component(self) -> tuple[Component, ConfigLog]:
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1334,7 +1334,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update_service_config(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1365,7 +1365,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update_service_config_denied(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1591,7 +1591,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_service_config_restore(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1622,7 +1622,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_service_config_restore_denied(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 

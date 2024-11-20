@@ -31,7 +31,7 @@ const ClusterMapping: React.FC = () => {
   const clusterId = Number(clusterIdFromUrl);
 
   const [isHostsPreviewMode, saveIsHostsPreviewModeToStorage] = useLocalStorage<boolean>({
-    key: 'clusters_mapping_hostsPreviewMode',
+    key: 'adcm/clusters_mapping_hostsPreviewMode',
     initData: false,
     isUserDependencies: true,
   });

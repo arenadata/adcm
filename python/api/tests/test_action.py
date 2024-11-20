@@ -38,7 +38,7 @@ class TestActionAPI(BaseTestCase):
         config = ObjectConfig.objects.create(current=0, previous=0)
         config_log = ConfigLog.objects.create(
             obj_ref=config,
-            config="{}",
+            config={},
             attr={"ldap_integration": {"active": False}},
         )
         config.current = config_log.pk

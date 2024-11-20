@@ -73,7 +73,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         "cluster",
         "service",
         "component",
-        "host provider",
+        "provider",
     }:
         action_prototype_display_name = str_remove_non_alnum(
             value=task.action.prototype.display_name,
@@ -89,7 +89,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         obj_name = task.task_object.name
     elif task.object_type.name == "service" or task.object_type.name == "component":
         obj_name = task.task_object.cluster.name
-    elif task.object_type.name == "host provider":
+    elif task.object_type.name == "provider":
         obj_name = task.task_object.name
     elif task.object_type.name == "host":
         obj_name = task.task_object.fqdn

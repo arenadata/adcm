@@ -56,7 +56,7 @@ class TestComponentAudit(BaseTestCase):
             display_name="test_component",
         )
         config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 

@@ -77,7 +77,7 @@ class AuditSessionLoginResult(TextChoices):
 class AuditObject(Model):
     object_id = PositiveIntegerField()
     object_name = CharField(max_length=2000)
-    object_type = CharField(max_length=2000, choices=AuditObjectType.choices)
+    object_type = CharField(max_length=2000, choices=AuditObjectType)
     is_deleted = BooleanField(default=False)
 
 
@@ -91,8 +91,8 @@ class AuditUser(Model):
 class AuditLog(Model):
     audit_object = ForeignKey(AuditObject, on_delete=CASCADE, null=True)
     operation_name = CharField(max_length=2000)
-    operation_type = CharField(max_length=2000, choices=AuditLogOperationType.choices)
-    operation_result = CharField(max_length=2000, choices=AuditLogOperationResult.choices)
+    operation_type = CharField(max_length=2000, choices=AuditLogOperationType)
+    operation_result = CharField(max_length=2000, choices=AuditLogOperationResult)
     operation_time = DateTimeField(auto_now_add=True)
     user = ForeignKey(AuditUser, on_delete=CASCADE, null=True)
     object_changes = JSONField(default=dict)
@@ -102,7 +102,7 @@ class AuditLog(Model):
 
 class AuditSession(Model):
     user = ForeignKey(AuditUser, on_delete=CASCADE, null=True)
-    login_result = CharField(max_length=2000, choices=AuditSessionLoginResult.choices)
+    login_result = CharField(max_length=2000, choices=AuditSessionLoginResult)
     login_time = DateTimeField(auto_now_add=True)
     login_details = JSONField(default=dict, null=True)
     address = CharField(max_length=255, null=True)
