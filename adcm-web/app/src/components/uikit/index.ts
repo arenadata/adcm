@@ -58,6 +58,7 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
 import ActionMenu from './ActionMenu/ActionMenu';
 import EllipsedTextTableCell from './Table/TableCell/EllipsedTextTableCell';
+import WarningMessage from './WarningMessage/WarningMessage';
 
 export {
   ActionMenu,
@@ -122,4 +123,5 @@ export {
   Text,
   ToolbarPanel,
   Tooltip,
+  WarningMessage,
 };
