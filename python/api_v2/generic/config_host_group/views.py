@@ -31,9 +31,10 @@ from rest_framework.status import (
 )
 
 from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config_host_group.filters import CHGFilter
 from api_v2.generic.config_host_group.permissions import CHGHostsPermissions, CHGPermissions
 from api_v2.generic.config_host_group.serializers import CHGSerializer, HostCHGSerializer
-from api_v2.host.filters import HostMemberFilter
+from api_v2.host.filters import HostMemberConfigFilter, ShortHostFilter
 from api_v2.host.serializers import HostAddSerializer, HostShortSerializer
 from api_v2.views import ADCMGenericViewSet
 
@@ -50,10 +51,13 @@ class CHGViewSet(
     serializer_class = CHGSerializer
     permission_classes = [CHGPermissions]
     permission_required = [VIEW_CONFIG_HOST_GROUP_PERM]
-    filter_backends = []
+    filterset_class = CHGFilter
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
+
+        if self.action == "host_candidates":
+            return Host.objects.none()
 
         if parent_object is None:
             return ConfigHostGroup.objects.none()
@@ -92,7 +96,12 @@ class CHGViewSet(
         return Response(data=self.get_serializer(host_group).data, status=HTTP_201_CREATED)
 
     @action(
-        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+        methods=["get"],
+        detail=False,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
     )
     def owner_host_candidates(self, request: Request, *_, **__):  # noqa: ARG002
         parent_object = self.get_parent_object()
@@ -126,17 +135,26 @@ class CHGViewSet(
             .distinct()
         )
 
+        queryset = self.filter_queryset(hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs))
+
         return Response(
-            data=HostShortSerializer(
-                instance=hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs), many=True
-            ).data,
+            data=HostShortSerializer(instance=queryset, many=True).data,
             status=HTTP_200_OK,
         )
 
-    @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
+    )
     def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
-        host_group: ConfigHostGroup = self.get_object()
-        hosts = host_group.host_candidate()
+        host_group: ConfigHostGroup = ConfigHostGroup.objects.get(pk=kwargs["pk"])
+
+        hosts = self.filter_queryset(host_group.host_candidate())
+
         serializer = HostCHGSerializer(instance=hosts, many=True)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
@@ -210,7 +228,7 @@ class HostCHGViewSet(PermissionListMixin, GetParentObjectMixin, ListModelMixin, 
     )
     permission_classes = [CHGHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
-    filterset_class = HostMemberFilter
+    filterset_class = HostMemberConfigFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
 

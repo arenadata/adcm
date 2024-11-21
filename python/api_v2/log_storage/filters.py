@@ -10,29 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ActionHostGroup
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from cm.models import (
+    LogStorage,
+)
+from django_filters.rest_framework.filters import (
+    CharFilter,
+    OrderingFilter,
+)
+from django_filters.rest_framework.filterset import FilterSet
 
 
-class ActionHostGroupFilter(FilterSet):
-    name = CharFilter(field_name="name", label="Name", lookup_expr="icontains")
-    has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains", distinct=True)
-    description = CharFilter(field_name="description", label="Description", lookup_expr="icontains")
+class LogFilter(FilterSet):
+    name = CharFilter(field_name="name", lookup_expr="icontains")
+    type = CharFilter(field_name="type", lookup_expr="icontains")
+    format = CharFilter(field_name="format", lookup_expr="icontains")
 
     ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "description": "description",
-        },
+        fields={"id": "id", "name": "name", "type": "type", "format": "format"},
         field_labels={
             "id": "ID",
             "name": "Name",
-            "description": "Description",
+            "type": "Type",
+            "format": "Format",
         },
         label="ordering",
     )
 
     class Meta:
-        model = ActionHostGroup
-        fields = ["name", "has_host", "description"]
+        model = LogStorage
+        fields = ["id", "ordering", "name", "type", "format"]

@@ -13,7 +13,9 @@
 from cm.models import ADCMEntityStatus, Cluster
 from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
+from django_filters import NumberFilter
 from django_filters.rest_framework import (
+    BooleanFilter,
     CharFilter,
     ChoiceFilter,
     FilterSet,
@@ -25,24 +27,34 @@ from api_v2.filters import filter_service_status
 
 class ClusterFilter(FilterSet):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
-    prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name", lookup_expr="icontains")
+    prototype_display_name = CharFilter(
+        label="Cluster prototype display name", field_name="prototype__display_name", lookup_expr="icontains"
+    )
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
+    description = CharFilter(label="Cluster description", lookup_expr="icontains")
+    state = CharFilter(label="Cluster state", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
+            "id": "id",
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
+            "state": "state",
+            "description": "description",
         },
         field_labels={
+            "id": "ID",
             "name": "Cluster name",
             "prototype__display_name": "Product",
+            "state": "State",
+            "description": "Description",
         },
         label="ordering",
     )
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
+        fields = ("id", "name", "status", "prototype_name", "prototype_display_name", "state", "description")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
@@ -81,3 +93,29 @@ class ClusterServiceFilter(FilterSet):
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
         return filter_service_status(queryset=queryset, value=value)
+
+
+class ClusterServiceCandidateAndPrototypeFilter(FilterSet):
+    id = NumberFilter(field_name="id", label="Service ID")
+    name = CharFilter(label="Service name", lookup_expr="icontains")
+    display_name = CharFilter(label="Service display name", lookup_expr="icontains")
+    version = CharFilter(label="Service version", lookup_expr="icontains")
+    is_required = BooleanFilter(field_name="is_required", label="Service is required")
+
+    ordering = OrderingFilter(
+        fields={
+            "id": "id",
+            "name": "name",
+            "display_name": "displayName",
+            "version": "version",
+            "is_required": "isRequired",
+        },
+        field_labels={
+            "id": "ID",
+            "name": "Service name",
+            "display_name": "Service display name",
+            "version": "Service version",
+            "is_required": "Service is required",
+        },
+        label="ordering",
+    )

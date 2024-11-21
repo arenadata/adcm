@@ -17,6 +17,7 @@ from django_filters.rest_framework import (
     FilterSet,
     OrderingFilter,
 )
+from rbac.models import User
 
 from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
 
@@ -25,7 +26,11 @@ class UserFilterSet(FilterSet):
     username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
     status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
     type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")
-    ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
+    ordering = OrderingFilter(
+        fields={"username": "username", "id": "id", "type": "type"},
+        field_labels={"username": "Username", "id": "ID", "type": "Type"},
+        label="ordering",
+    )
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
@@ -45,3 +50,7 @@ class UserFilterSet(FilterSet):
             filter_value = UserTypeChoices.LDAP.value
 
         return queryset.filter(type=filter_value)
+
+    class Meta:
+        model = User
+        fields = ["username", "status", "type", "ordering"]

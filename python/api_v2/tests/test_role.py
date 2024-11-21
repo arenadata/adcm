@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import Count
-from rbac.models import Role
+from django.db.models import Count, Prefetch
+from rbac.models import Role, RoleTypes
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -181,32 +181,77 @@ class TestRole(BaseAPITestCase):
         )
 
     def test_ordering_success(self):
-        limit = 10
+        ordering_fields = {
+            "id": "id",
+            "display_name": "displayName",
+            "description": "description",
+            "built_in": "builtIn",
+            "type": "type",
+            "any_category": "anyCategory",
+        }
 
-        response = (self.client.v2 / "rbac" / "roles").get(query={"ordering": "-displayName", "limit": limit})
+        def get_results(response, ordering_field):
+            if ordering_field == "builtIn":
+                return [item["isBuiltIn"] for item in response.json()["results"]]
+            if ordering_field == "anyCategory":
+                return [item["isAnyCategory"] for item in response.json()["results"]]
+            return [item[ordering_field] for item in response.json()["results"]]
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        queryset = Role.objects.prefetch_related(
+            Prefetch(lookup="child", queryset=Role.objects.exclude(type=RoleTypes.HIDDEN)), "category", "policy_set"
+        ).exclude(type=RoleTypes.HIDDEN)
 
-        response_names = [role_data["displayName"] for role_data in response.json()["results"]]
-        db_names = [role.display_name for role in Role.objects.order_by("-display_name").exclude(type="hidden")[:limit]]
-        self.assertListEqual(response_names, db_names)
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "roles").get(query={"ordering": ordering_field, "limit": 100})
+                self.assertListEqual(
+                    get_results(response, ordering_field),
+                    list(queryset.order_by(model_field).values_list(model_field, flat=True)),
+                )
 
-    def test_filtering_by_display_name_success(self):
-        filter_name = "cReAtE"
+                response = (self.client.v2 / "rbac" / "roles").get(
+                    query={"ordering": f"-{ordering_field}", "limit": 100}
+                )
+                self.assertListEqual(
+                    get_results(response, ordering_field),
+                    list(queryset.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
-        response = (self.client.v2 / "rbac" / "roles").get(query={"displayName": filter_name})
+    def test_filtering_success(self):
+        test_role = Role.objects.get(name="View cluster configurations")
+        filters = {
+            "id": (test_role.pk, None, 0),
+            "display_name": (test_role.display_name, test_role.display_name[1:-3].upper(), "wrong"),
+            "description": (test_role.description, test_role.description[1:-3].upper(), "wrong"),
+            "built_in": (test_role.built_in, None, False),
+            "type": (RoleTypes.ROLE.value, None, RoleTypes.BUSINESS.value),
+            "any_category": (test_role.any_category, None, False),
+            "categories": ("cluster_one", None, "wrong"),
+        }
+        items_found = {
+            "id": (1, None, 0),
+            "display_name": (1, 1, 0),
+            "description": (1, 1, 0),
+            "built_in": (77, None, 1),
+            "type": (6, None, 72),
+            "any_category": (22, None, 56),
+            "categories": (36, None, 22),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            exact_items_found, partial_items_found, wrong_items_found = items_found[filter_name]
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "rbac" / "roles").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+                response = (self.client.v2 / "rbac" / "roles").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], wrong_items_found)
 
-        response_pks = [role_data["id"] for role_data in response.json()["results"]]
-        db_pks = [role.pk for role in Role.objects.filter(display_name__icontains=filter_name).exclude(type="hidden")]
-        self.assertListEqual(sorted(response_pks), sorted(db_pks))
-
-    def test_filtering_by_categories_success(self):
-        response = (self.client.v2 / "rbac" / "roles").get(query={"categories": "cluster_one"})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 36)
+                if partial_value:
+                    response = (self.client.v2 / "rbac" / "roles").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_list_object_candidates_success(self):
         response = self.client.v2[self.cluster_config_role, "object-candidates"].get()

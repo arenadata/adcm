@@ -33,11 +33,21 @@ class TaskFilter(FilterSet):
     job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
     object_name = CharFilter(label="Object name", method="filter_object_name")
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
+
     ordering = OrderingFilter(
-        fields={"id": "id", "action__prototype__name": "name", "start_date": "startTime", "finish_date": "endTime"},
+        fields={
+            "id": "id",
+            "action__prototype__name": "name",
+            "status": "status",
+            "action__display_name": "jobName",
+            "start_date": "startTime",
+            "finish_date": "endTime",
+        },
         field_labels={
             "id": "ID",
+            "action__display_name": "Job name",
             "action__prototype__name": "Name",
+            "status": "Status",
             "start_date": "Start time",
             "finish_date": "End time",
         },
@@ -61,4 +71,4 @@ class TaskFilter(FilterSet):
 
     class Meta:
         model = TaskLog
-        fields = ["id", "job_name", "object_name", "status", "ordering"]
+        fields = ["id", "job_name", "object_name", "status", "ordering", "start_date", "finish_date"]

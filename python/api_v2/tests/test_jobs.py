@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from cm.models import (
@@ -21,7 +22,9 @@ from cm.models import (
     Prototype,
 )
 from django.conf import settings
+from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+import pytz
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -201,3 +204,81 @@ class TestJob(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         kill_mock.assert_called()
+
+    def test_filtering_success(self):
+        self.simulate_finished_task(object_=self.cluster_1, action=self.cluster_1_action)
+        self.simulate_finished_task(object_=self.component, action=self.component_action)
+        self.simulate_finished_task(object_=self.service, action=self.service_action)
+
+        for i, job in enumerate(JobLog.objects.all()):
+            job.start_date = timezone.now() - timedelta(days=3 + i)
+            job.finish_date = timezone.now() - timedelta(days=i)
+            if job.action == self.cluster_1_action:
+                job.status = "failed"
+                job.pid = 5555
+            job.save()
+
+        job = JobLog.objects.get(pid=5555)
+
+        filters = {
+            "id": (job.pk, None, 0),
+            "status": (job.status, None, "broken"),
+        }
+        exact_items_found, partial_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "jobs").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
+
+                response = (self.client.v2 / "jobs").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = (self.client.v2 / "jobs").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
+
+    def test_ordering_success(self):
+        self.simulate_finished_task(object_=self.cluster_1, action=self.cluster_1_action)
+        self.simulate_finished_task(object_=self.component, action=self.component_action)
+        self.simulate_finished_task(object_=self.service, action=self.service_action)
+
+        statuses = ["created", "failed", "running"]
+        for i, job in enumerate(JobLog.objects.all()):
+            job.start_date = timezone.now() - timedelta(days=3 + i)
+            job.finish_date = timezone.now() - timedelta(days=i)
+            job.status = statuses[i]
+            job.pid = 5555 + i
+            job.save()
+
+        ordering_fields = {
+            "id": "id",
+            "status": "status",
+            "start_date": "startTime",
+            "finish_date": "endTime",
+        }
+
+        def get_response_results(response, ordering_field):
+            if ordering_field in ("startTime", "endTime"):
+                keyword = "startTime" if ordering_field == "startTime" else "endTime"
+                return [
+                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
+                    for item in response.json()["results"]
+                ]
+            return [item[ordering_field] for item in response.json()["results"]]
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "jobs").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(JobLog.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "jobs").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(JobLog.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
