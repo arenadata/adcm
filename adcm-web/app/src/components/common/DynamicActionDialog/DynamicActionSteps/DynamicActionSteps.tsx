@@ -6,6 +6,7 @@ import DynamicActionAgreeActionHostsGroup from './DynamicActionAgreeActionHostsG
 import DynamicActionHostMapping from './DynamicActionHostMapping/DynamicActionHostMapping';
 import type { AdcmActionHostGroup, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 import { getNextStep, isLastStep } from '@uikit/WizardSteps/WizardSteps.utils';
+import DynamicActionRaisingConcerns from './DynamicActionRaisingConcerns/DynamicActionRaisingConcerns';
 import DynamicActionConfirm from './DynamicActionConfirm/DynamicActionConfirm';
 import { getDefaultRunConfig } from '../DynamicActionDialog.utils';
 import s from '../DynamicActionDialog.module.scss';
@@ -14,6 +15,7 @@ const stepsTitles: Record<DynamicActionStep, string> = {
   [DynamicActionStep.AgreeActionHostsGroup]: 'Hosts group',
   [DynamicActionStep.ConfigSchema]: 'Configuration',
   [DynamicActionStep.HostComponentMapping]: 'Host - Component',
+  [DynamicActionStep.RaisingConcerns]: 'Raising concerns',
   [DynamicActionStep.Confirm]: 'Confirmation',
 };
 
@@ -92,6 +94,9 @@ const DynamicActionSteps = ({
           onNext={handleStepChange}
           onCancel={onCancel}
         />
+      )}
+      {currentStep === DynamicActionStep.RaisingConcerns && (
+        <DynamicActionRaisingConcerns actionDetails={actionDetails} onNext={handleStepChange} onCancel={onCancel} />
       )}
       {currentStep === DynamicActionStep.Confirm && (
         <DynamicActionConfirm actionDetails={actionDetails} onRun={handleStepChange} onCancel={onCancel} />
