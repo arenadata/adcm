@@ -247,6 +247,7 @@ class TestServiceAPI(BaseTestCase):
                 name="test_provider",
                 prototype=Prototype.objects.create(bundle=self.bundle, type="provider"),
             ),
+            cluster=self.cluster,
         )
         service_component = Component.objects.create(
             prototype=Prototype.objects.create(

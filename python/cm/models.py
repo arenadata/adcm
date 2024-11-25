@@ -310,9 +310,6 @@ class ADCMEntity(ADCMModel):
             cause=cause,
         ).first()
 
-    def requires_service_name(self, service_name: str) -> bool:
-        return any(item.get("service") == service_name for item in self.requires)
-
     def __str__(self):
         own_name = getattr(self, "name", None)
         fqdn = getattr(self, "fqdn", None)
