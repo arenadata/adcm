@@ -64,12 +64,15 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(name="name", description="Case insensitive and partial filter by group name."),
+            OpenApiParameter(
+                name="description", description="Case insensitive and partial filter by group description."
+            ),
             OpenApiParameter(name="type", description="Group type.", type=str, enum=("local", "ldap")),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
-                enum=("displayName", "-displayName"),
+                enum=("displayName", "-displayName", "id", "-id", "type", "-type", "description", "-description"),
                 default="displayName",
             ),
         ],

@@ -30,11 +30,13 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-import pytz
+import zoneinfo
 
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
 from api_v2.tests.base import BaseAPITestCase
+
+UTC = zoneinfo.ZoneInfo("UTC")
 
 
 class TestUserAPI(BaseAPITestCase):
@@ -605,42 +607,33 @@ class TestUserAPI(BaseAPITestCase):
         )
 
     def test_ordering_success(self):
-        user_data = [
-            {
-                "username": "username1",
-                "password": "username1password",
-                "email": "username1@mail.ru",
-                "first_name": "username1_first_name",
-                "last_name": "username1_last_name",
-            },
-            {
-                "username": "username2",
-                "password": "username2password",
-                "email": "username2@mail.ru",
-                "first_name": "username2_first_name",
-                "last_name": "username2_last_name",
-            },
-            {
-                "username": "username3",
-                "password": "username3password",
-                "email": "username3@mail.ru",
-                "first_name": "username3_first_name",
-                "last_name": "username3_last_name",
-            },
-        ]
-        for data in user_data:
-            self.create_user(user_data=data)
+        ordering_fields = {
+            "id": "id",
+            "username": "username",
+            "type": "type",
+        }
 
-        response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "-username"})
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(model_field)
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
-        response_usernames = [user["username"] for user in response.json()["results"]]
-        db_usernames = list(
-            User.objects.order_by("-username")
-            .exclude(username__in=settings.ADCM_HIDDEN_USERS)
-            .values_list("username", flat=True)
-        )
-        self.assertListEqual(response_usernames, db_usernames)
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(f"-{model_field}")
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
     def test_ordering_wrong_params_fail(self):
         response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "param"})
@@ -789,7 +782,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         self.edit_client.login(**creds)
 
     def test_retrieve_blocked_by_login_attempts(self) -> None:
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -812,7 +805,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_retrieve_blocked_both_ways(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -872,7 +865,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.save()
 
@@ -886,7 +879,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_ldap_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.type = OriginType.LDAP
         self.user.save()

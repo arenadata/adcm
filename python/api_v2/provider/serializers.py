@@ -57,6 +57,11 @@ class ProviderSerializer(ModelSerializer):
         return get_main_info(obj=host_provider)
 
 
+class ProviderSchemaSerializer(ProviderSerializer):
+    # for use in schema generation
+    pass
+
+
 class ProviderCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
     name = CharField()

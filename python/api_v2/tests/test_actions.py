@@ -264,6 +264,77 @@ class TestActionsFiltering(BaseAPITestCase):
             ]
         )
 
+    def test_filtering_success(self):
+        action_to_filter = Action.objects.create(
+            description="TEST DESCRIPTION 2",
+            display_name="Test service action name",
+            prototype=self.cluster.prototype,
+            type="task",
+            state_available="any",
+            name="test_service_action_name",
+            host_action=False,
+        )
+        self.add_host_to_cluster(self.cluster, self.host_1)
+        filters = {
+            "id": (action_to_filter.pk, None, 0),
+            "name": (action_to_filter.name, action_to_filter.name[1:-3].upper(), "wrong"),
+            "displayName": (action_to_filter.display_name, action_to_filter.display_name[1:-3].upper(), "wrong"),
+            "description": (action_to_filter.description, action_to_filter.description[1:-3].upper(), "wrong"),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            exact_items_found = 1
+            partial_items_found = 1
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.cluster, "actions"].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(len(response.json()), exact_items_found)
+
+                response = self.client.v2[self.cluster, "actions"].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(len(response.json()), 0)
+
+                if partial_value:
+                    response = self.client.v2[self.cluster, "actions"].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(len(response.json()), partial_items_found)
+
+    def test_ordering_success(self):
+        ordering_fields = {
+            "id": "id",
+            "display_name": "displayName",
+            "name": "name",
+            "description": "description",
+        }
+        for i, action in enumerate(Action.objects.filter(prototype=self.cluster.prototype)):
+            action.description = f"description {i}"
+            action.save()
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = self.client.v2[self.cluster, "actions"].get(query={"ordering": ordering_field})
+                expected_ids = [item["id"] for item in response.json()]
+                self.assertListEqual(
+                    [action["id"] for action in response.json()],
+                    [
+                        action.pk
+                        for action in Action.objects.filter(prototype=self.cluster.prototype).order_by(model_field)
+                        if action.pk in expected_ids
+                    ],
+                )
+
+                response = self.client.v2[self.cluster, "actions"].get(query={"ordering": f"-{ordering_field}"})
+                expected_ids = [item["id"] for item in response.json()]
+                self.assertListEqual(
+                    [action["id"] for action in response.json()],
+                    [
+                        action.pk
+                        for action in Action.objects.filter(prototype=self.cluster.prototype).order_by(
+                            f"-{model_field}"
+                        )
+                        if action.pk in expected_ids
+                    ],
+                )
+
     def test_adcm_4516_disallowed_host_action_not_executable_success(self) -> None:
         self.add_host_to_cluster(self.cluster, self.host_1)
         disallowed_action = Action.objects.filter(display_name="cluster_host_action_disallowed").first()

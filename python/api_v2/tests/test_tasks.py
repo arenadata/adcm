@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
 from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
@@ -35,6 +36,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+import pytz
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -92,19 +94,37 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
-    def test_task_filter_by_job_name(self):
-        response = (self.client.v2 / "tasks").get(query={"jobName": "comp"})
+    def test_filtering_success(self):
+        task = self.cluster_task
+        task.status = "running"
+        task.start_date = timezone.now() - timedelta(days=3)
+        task.finish_date = timezone.now()
+        task.save()
+        self.cluster_action.display_name = "unique_action_name"
+        self.cluster_action.save()
+        task.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
+        filters = {
+            "id": (task.pk, None, 0),
+            "jobName": (task.action.display_name, task.action.display_name[1:-7].upper(), "wrong"),
+            "objectName": (self.cluster_1.name, self.cluster_1.name[1:-7].upper(), "wrong"),
+            "status": (task.status, None, "broken"),
+        }
+        exact_items_found, partial_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "tasks").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-    def test_task_filter_by_object_name(self):
-        response = (self.client.v2 / "tasks").get(query={"objectName": "service_1"})
+                response = (self.client.v2 / "tasks").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.service_task.pk)
+                if partial_value:
+                    response = (self.client.v2 / "tasks").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_task_filter_by_job_name_multiple_found_success(self):
         response = (self.client.v2 / "tasks").get(query={"jobName": "action"})
@@ -122,6 +142,55 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.cluster_task.pk)
+
+    def test_ordering_success(self):
+        empty_task = TaskLog.objects.get(action=None)
+        empty_task.delete()
+        for i, task in enumerate(TaskLog.objects.all()):
+            task.start_date = timezone.now() - timedelta(days=3 + i)
+            task.finish_date = timezone.now() - timedelta(days=i)
+            task.save()
+
+        task = self.cluster_task
+        task.status = "running"
+        task.start_date = timezone.now() - timedelta(days=3)
+        task.finish_date = timezone.now()
+        task.save()
+        self.cluster_action.display_name = "unique_action_name"
+        self.cluster_action.save()
+
+        ordering_fields = {
+            "id": "id",
+            "action__display_name": "jobName",
+            "status": "status",
+            "start_date": "startTime",
+            "finish_date": "endTime",
+        }
+
+        def get_response_results(response, ordering_field):
+            if ordering_field in ("startTime", "endTime"):
+                keyword = "startTime" if ordering_field == "startTime" else "endTime"
+                return [
+                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
+                    for item in response.json()["results"]
+                ]
+            if ordering_field == "jobName":
+                return [item["action"]["displayName"] for item in response.json()["results"]]
+            return [item[ordering_field] for item in response.json()["results"]]
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "tasks").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(TaskLog.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "tasks").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(TaskLog.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
     def test_task_retrieve_success(self):
         task_object = {"type": self.cluster_1.content_type.name, "id": self.cluster_1.pk, "name": self.cluster_1.name}

@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from api_v2.api_schema import ErrorSerializer
+from api_v2.log_storage.filters import LogFilter
 from api_v2.log_storage.permissions import LogStoragePermissions
 from api_v2.log_storage.serializers import LogStorageSerializer
 from api_v2.views import ADCMGenericViewSet
@@ -41,6 +42,36 @@ from api_v2.views import ADCMGenericViewSet
             HTTP_200_OK: LogStorageSerializer(many=True),
             **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
         },
+        parameters=[
+            OpenApiParameter(
+                name="name",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by name.",
+            ),
+            OpenApiParameter(
+                name="format",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by log format.",
+                enum=("json", "txt"),
+            ),
+            OpenApiParameter(
+                name="type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by log type.",
+                enum=("stdout", "stderr", "custom", "check"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+                enum=("id", "name", "type", "format", "-id", "-name", "-type", "-format"),
+            ),
+        ],
     ),
     retrieve=extend_schema(
         operation_id="getJobslog",
@@ -78,7 +109,7 @@ from api_v2.views import ADCMGenericViewSet
 class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = LogStorage.objects.select_related("job")
     serializer_class = LogStorageSerializer
-    filter_backends = []
+    filterset_class = LogFilter
     pagination_class = None
     permission_classes = [LogStoragePermissions]
     permission_required = [VIEW_LOGSTORAGE_PERMISSION]

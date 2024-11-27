@@ -15,14 +15,14 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
 from api_v2.prototype.serializers import (
     PrototypeSerializer,
@@ -34,7 +34,82 @@ from api_v2.views import ADCMReadOnlyModelViewSet
 
 
 @extend_schema_view(
-    list=extend_schema(operation_id="getPrototypes", description="Get a list of all prototypes."),
+    list=extend_schema(
+        operation_id="getPrototypes",
+        description="Get a list of all prototypes.",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            DefaultParams.ordering_by("name"),
+            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Prototype ID."),
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by cluster prototype name.",
+            ),
+            OpenApiParameter(
+                name="displayName",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by prototype display name.",
+            ),
+            OpenApiParameter(
+                name="description",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by description.",
+            ),
+            OpenApiParameter(
+                name="version",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by version.",
+            ),
+            OpenApiParameter(
+                name="license",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="License state.",
+                enum=("absent", "accepted", "unaccepted"),
+            ),
+            OpenApiParameter(
+                name="type",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Prototype type.",
+                enum=(
+                    ObjectType.CLUSTER.value,
+                    ObjectType.PROVIDER.value,
+                    ObjectType.HOST.value,
+                    ObjectType.SERVICE.value,
+                    ObjectType.COMPONENT.value,
+                ),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "displayName",
+                    "-displayName",
+                    "description",
+                    "-description",
+                    "version",
+                    "-version",
+                    "license",
+                    "-license",
+                    "type",
+                    "-type",
+                ),
+                default="name",
+            ),
+        ],
+    ),
     retrieve=extend_schema(
         operation_id="getPrototype",
         description="Get detail information about a specific prototype.",
@@ -59,9 +134,38 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     @extend_schema(
         operation_id="getPrototypeVersions",
         description="Get a list of ADCM bundles when creating an object (cluster or provider).",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="type",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Prototype type.",
+                enum=(
+                    ObjectType.CLUSTER.value,
+                    ObjectType.PROVIDER.value,
+                    ObjectType.HOST.value,
+                    ObjectType.SERVICE.value,
+                    ObjectType.COMPONENT.value,
+                ),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "name",
+                    "-name",
+                    "displayName",
+                    "-displayName",
+                ),
+                default="name",
+            ),
+        ],
         responses={200: PrototypeVersionsSerializer(many=True)},
     )
-    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter)
+    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter, pagination_class=None)
     def versions(self, request):  # noqa: ARG001, ARG002
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
@@ -79,9 +183,9 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
         return Response(status=HTTP_200_OK)
 
     def get_filtered_prototypes_unique_by_display_name(self) -> QuerySet:
-        filtered_queryset = self.filter_queryset(
-            Prototype.objects.filter(type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}).all()
-        )
+        filtered_queryset = Prototype.objects.filter(
+            type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}
+        ).all()
 
         prototype_pks = set()
         processed_pairs = set()
@@ -92,4 +196,4 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
             prototype_pks.add(pk)
             processed_pairs.add((type_, display_name))
 
-        return Prototype.objects.filter(pk__in=prototype_pks)
+        return self.filter_queryset(Prototype.objects.filter(pk__in=prototype_pks))

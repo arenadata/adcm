@@ -96,36 +96,6 @@ from api_v2.views import (
         summary="GET host-component statuses of component on hoosts",
         description="Get information about component on hosts statuses.",
         responses={HTTP_200_OK: ComponentStatusSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-        parameters=[
-            OpenApiParameter(
-                name="status",
-                required=True,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by status.",
-                type=str,
-            ),
-            OpenApiParameter(
-                name="clusterId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Cluster id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="serviceId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Service id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="componentId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Component id.",
-                type=int,
-            ),
-        ],
     ),
     retrieve=extend_schema(
         operation_id="getComponent",
@@ -140,7 +110,41 @@ from api_v2.views import (
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("Name", "Display Name"),
+            DefaultParams.ordering_by("id"),
+            OpenApiParameter(
+                name="id",
+                location=OpenApiParameter.QUERY,
+                description="Component id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="state",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by state.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "displayName",
+                    "-displayName",
+                ),
+                default="id",
+            ),
         ],
         responses={HTTP_200_OK: ComponentSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
@@ -223,7 +227,27 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
 @extend_schema_view(
     list=extend_schema(
-        operation_id="getHostComponents", summary="GET host components", description="Get a list of host components."
+        operation_id="getHostComponents",
+        summary="GET host components",
+        description="Get a list of host components.",
+        parameters=[
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "displayName",
+                    "-displayName",
+                ),
+                default="id",
+            ),
+        ],
     )
 )
 class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet):

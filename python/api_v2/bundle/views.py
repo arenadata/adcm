@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import date
+
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -38,6 +41,46 @@ from api_v2.views import ADCMGenericViewSet
     list=extend_schema(
         operation_id="getBundles",
         description="Get a list of ADCM bundles with information on them.",
+        parameters=[
+            OpenApiParameter(
+                name="display_name",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by display name.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="product",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by product.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="edition",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by edition.",
+                enum=("community", "enterprise"),
+                required=False,
+            ),
+            OpenApiParameter(
+                name="upload_time",
+                type=date,
+                location=OpenApiParameter.QUERY,
+                description="Filter by upload time.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="ordering",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                required=False,
+                enum=("displayName", "-displayName", "uploadTime", "-uploadTime", "edition", "-edition", "id", "-id"),
+                default="displayName",
+            ),
+        ],
     ),
     retrieve=extend_schema(
         operation_id="getBundle",

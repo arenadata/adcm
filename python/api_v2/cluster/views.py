@@ -77,11 +77,12 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, responses
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,
+    ClusterServiceCandidateAndPrototypeFilter,
     ClusterServiceFilter,
 )
 from api_v2.cluster.permissions import ClusterPermissions, HostsClusterPermissions
@@ -167,6 +168,55 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET clusters",
         description="Get a list of ADCM clusters with information on them.",
         operation_id="getClusters",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            DefaultParams.ordering_by("name"),
+            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Cluster ID."),
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by cluster name.",
+            ),
+            OpenApiParameter(
+                name="description",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by description.",
+            ),
+            OpenApiParameter(
+                name="state",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Case insensitive and partial filter by state.",
+            ),
+            OpenApiParameter(
+                name="status",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Status filter.",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "description",
+                    "-description",
+                    "prototypeDisplayName",
+                    "-prototypeDisplayName",
+                ),
+                default="name",
+            ),
+        ],
     ),
     retrieve=extend_schema(
         summary="GET cluster",
@@ -200,12 +250,54 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getServicePrototypes",
         summary="GET service prototypes",
         description="Get service prototypes that is related to this cluster.",
+        parameters=[
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+                enum=[
+                    "displayName",
+                    "-displayName",
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "version",
+                    "-version",
+                    "isRequired",
+                    "-isRequired",
+                ],
+            ),
+        ],
         responses=responses(success=ServicePrototypeSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     ),
     service_candidates=extend_schema(
         operation_id="getServiceCandidates",
         summary="GET service candidates",
         description="Get service prototypes that can be added to this cluster.",
+        parameters=[
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+                enum=[
+                    "displayName",
+                    "-displayName",
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "version",
+                    "-version",
+                    "isRequired",
+                    "-isRequired",
+                ],
+            ),
+        ],
         responses=responses(success=ServicePrototypeSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     ),
     hosts_statuses=extend_schema(
@@ -256,6 +348,11 @@ class ClusterViewSet(
         "hosts_statuses",
         "list",
     )
+
+    def get_queryset(self, *args, **kwargs):
+        if self.action in ["service_prototypes", "service_candidates"]:
+            return Prototype.objects.none()
+        return super().get_queryset(*args, **kwargs)
 
     def get_serializer_class(self):
         match self.action:
@@ -326,14 +423,26 @@ class ClusterViewSet(
 
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=["get"], detail=True, url_path="service-prototypes", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="service-prototypes",
+        pagination_class=None,
+        filterset_class=ClusterServiceCandidateAndPrototypeFilter,
+    )
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
+        cluster = Cluster.objects.get(pk=kwargs["pk"])
         return self._respond_with_prototypes(cluster_prototype_id=cluster.prototype_id)
 
-    @action(methods=["get"], detail=True, url_path="service-candidates", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="service-candidates",
+        pagination_class=None,
+        filterset_class=ClusterServiceCandidateAndPrototypeFilter,
+    )
     def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
+        cluster = Cluster.objects.get(pk=kwargs["pk"])
         exclude_added_service_prototypes = Q(
             id__in=Service.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
         )
@@ -345,15 +454,17 @@ class ClusterViewSet(
         exclude_clause = exclude_clause or Q()
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
 
-        prototypes = tuple(
+        prototypes = (
             Prototype.objects.filter(type=ObjectType.SERVICE, bundle_id=bundle_id)
             .exclude(exclude_clause)
             .order_by("display_name")
         )
 
+        prototypes = self.filter_queryset(queryset=prototypes)
+
         context = {"depend_on": {}}
 
-        if any(proto.requires for proto in prototypes):
+        if any(proto.requires for proto in tuple(prototypes)):
             requires_dependencies = build_requires_dependencies_map(retrieve_bundle_restrictions(bundle_id))
             bundle_hash = Bundle.objects.values_list("hash", flat=True).get(id=bundle_id)
             context["depend_on"] = retrieve_serialized_depend_on_hierarchy(
@@ -660,14 +771,38 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
+            OpenApiParameter(name="description", description="Case insensitive and partial filter by description."),
+            OpenApiParameter(name="state", description="Case insensitive and partial filter by state."),
             OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
-            OpenApiParameter(name="componentId", description="Id of component."),
+            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Host ID."),
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("name", "id", default="name"),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "name",
+                    "-name",
+                    "id",
+                    "-id",
+                    "hostproviderName",
+                    "-hostproviderName",
+                    "state",
+                    "-state",
+                    "description",
+                    "-description",
+                    "componentId",
+                    "-componentId",
+                ),
+                default="name",
+            ),
             OpenApiParameter(name="search", exclude=True),
         ],
-        responses=responses(success=HostSerializer, errors=HTTP_404_NOT_FOUND),
+        responses={
+            HTTP_200_OK: HostSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
     ),
     create=extend_schema(
         operation_id="postCusterHosts",

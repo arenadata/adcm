@@ -10,37 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import ConfigHostGroup
 from django_filters.rest_framework import (
     CharFilter,
-    ChoiceFilter,
     FilterSet,
     OrderingFilter,
 )
-from rbac.models import Group, OriginType
 
 
-class GroupFilter(FilterSet):
-    description = CharFilter(lookup_expr="icontains")
-    display_name = CharFilter(lookup_expr="icontains")
-    name = CharFilter(lookup_expr="icontains")
-    type = ChoiceFilter(choices=OriginType.choices)
+class CHGFilter(FilterSet):
+    name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
+    description = CharFilter(label="Description", field_name="description", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
-            "display_name": "displayName",
             "id": "id",
-            "type": "type",
-            "description": "description",
             "name": "name",
+            "description": "description",
         },
         field_labels={
-            "display_name": "Display name",
             "id": "ID",
-            "type": "Type",
-            "description": "Description",
             "name": "Name",
+            "description": "Description",
         },
+        label="ordering",
     )
 
     class Meta:
-        model = Group
-        fields = ["id", "description", "type", "display_name", "ordering", "name"]
+        model = ConfigHostGroup
+        fields = ("id", "name", "description")

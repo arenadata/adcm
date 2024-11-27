@@ -10,19 +10,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ObjectType, Prototype
+from cm.models import LICENSE_STATE, ObjectType, Prototype
 from django_filters import CharFilter, ChoiceFilter, NumberFilter
-from django_filters.rest_framework import FilterSet
+from django_filters.rest_framework import FilterSet, OrderingFilter
 
 
 class PrototypeFilter(FilterSet):
     bundle_id = NumberFilter(field_name="bundle__id", label="Bundle ID")
     type = ChoiceFilter(choices=ObjectType.choices, label="Type")
-    display_name = CharFilter(label="Display name")
+    display_name = CharFilter(label="Display name", field_name="display_name", lookup_expr="icontains")
+
+    name = CharFilter(label="Name", lookup_expr="icontains", field_name="name")
+    license = ChoiceFilter(label="License state", choices=LICENSE_STATE, field_name="license")
+    version = CharFilter(label="Version", lookup_expr="icontains", field_name="version")
+    description = CharFilter(label="Description", lookup_expr="icontains", field_name="description")
+
+    ordering = OrderingFilter(
+        fields={
+            "id": "id",
+            "display_name": "displayName",
+            "name": "name",
+            "version": "version",
+            "description": "description",
+            "license": "license",
+            "type": "type",
+        },
+        field_labels={
+            "id": "ID",
+            "display_name": "Display name",
+            "name": "Name",
+            "version": "Version",
+            "description": "Description",
+            "license": "License",
+            "type": "Type",
+        },
+    )
 
     class Meta:
         model = Prototype
-        fields = ["id", "type", "bundle_id"]
+        fields = [
+            "id",
+            "type",
+            "bundle_id",
+            "display_name",
+            "name",
+            "version",
+            "license",
+            "description",
+        ]
 
 
 class PrototypeVersionFilter(FilterSet):

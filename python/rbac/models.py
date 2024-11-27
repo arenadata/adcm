@@ -70,7 +70,7 @@ class User(AuthUser):
     failed_login_attempts = SmallIntegerField(default=0)
     blocked_at = DateTimeField(null=True)
     last_failed_login_at = DateTimeField(null=True)
-    type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
+    type = CharField(max_length=1000, choices=OriginType, null=False, default=OriginType.LOCAL)
 
     @property
     def name(self):
@@ -80,7 +80,7 @@ class User(AuthUser):
 class Group(AuthGroup):
     description = CharField(max_length=1000, default="")
     built_in = BooleanField(default=False, null=False)
-    type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
+    type = CharField(max_length=1000, choices=OriginType, null=False, default=OriginType.LOCAL)
 
     # works as `name` field because `name` field now contains name and type
     # to bypass unique constraint on `AuthGroup` base table
@@ -106,7 +106,7 @@ class Role(Model):
     init_params = JSONField(default=dict)
     bundle = ForeignKey(Bundle, on_delete=CASCADE, null=True, default=None)
     built_in = BooleanField(default=True, null=False)
-    type = CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
+    type = CharField(max_length=1000, choices=RoleTypes, null=False, default=RoleTypes.ROLE)
     category = ManyToManyField(ProductCategory)
     any_category = BooleanField(default=False)
     # should be a list of `ObjectType` strings
