@@ -50,7 +50,7 @@ class TestCHGAudit(BaseTestCase):
         super().setUp()
 
         self.config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=self.config, config={})
         self.config.current = config_log.pk
         self.config.save(update_fields=["current"])
 

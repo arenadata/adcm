@@ -69,6 +69,7 @@ from api_v2.generic.action_host_group.serializers import (
     AddHostSerializer,
     ShortHostSerializer,
 )
+from api_v2.host.filters import ShortHostFilter
 from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
@@ -206,7 +207,12 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         return Response(status=HTTP_204_NO_CONTENT)
 
     @action(
-        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+        methods=["get"],
+        detail=False,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
     )
     @with_parent_object
     def owner_host_candidate(self, request: Request, parent: CoreObjectDescriptor, **__):
@@ -223,9 +229,19 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
                 message = f"Can't get host candidates for {parent.type}"
                 raise RuntimeError(message)
 
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
 
-    @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
+        return Response(data=list(queryset))
+
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=ShortHostFilter,
+    )
     @with_parent_object
     def host_candidate(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__):
         if not self.filter_by_parent(qs=ActionHostGroup.objects.filter(id=pk), parent=parent).exists():
@@ -234,7 +250,11 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
 
         host_ids = self.action_host_group_service.get_host_candidates(group_id=int(pk))
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
+
+        return Response(data=list(queryset))
 
     def filter_by_parent(self, qs: QuerySet, parent: CoreObjectDescriptor) -> QuerySet:
         return qs.filter(
@@ -257,6 +277,7 @@ class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
     serializer_class = AddHostSerializer
     repo = ActionHostGroupRepo()
     action_host_group_service = ActionHostGroupService(repository=repo)
+    filterset_class = ShortHostFilter
 
     def __init_subclass__(cls, **__):
         audit_view(
@@ -338,9 +359,12 @@ class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
         self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
     ) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
-
         host_ids = self.repo.get_hosts(id=host_group.id)
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
+
+        return Response(data=list(queryset))
 
     @with_group_object
     def retrieve(

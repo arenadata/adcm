@@ -30,6 +30,7 @@ ALLOWED_IMPORTS = (
     "pathlib",
     "typing",
     "uuid",
+    "zoneinfo",
 )
 
 

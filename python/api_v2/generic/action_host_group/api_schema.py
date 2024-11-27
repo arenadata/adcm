@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
@@ -20,7 +20,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action_host_group.serializers import ActionHostGroupSerializer, ShortHostSerializer
 
@@ -79,6 +79,21 @@ def document_action_host_group_hosts_viewset(object_type: str):
     capitalized_type = object_type.capitalize()
 
     return extend_schema_view(
+        list=extend_schema(
+            operation_id=f"get{capitalized_type}ActionHostGroupHosts",
+            description=f"Get information about {object_type}'s Action Host Group hosts.",
+            summary=f"GET {object_type}'s action host group hosts.",
+            parameters=[
+                DefaultParams.ordering_by("name"),
+                OpenApiParameter(
+                    name="name",
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by host name.",
+                    type=str,
+                ),
+            ],
+            responses=responses(success=ShortHostSerializer(many=True), errors=HTTP_403_FORBIDDEN),
+        ),
         create=extend_schema(
             operation_id=f"post{capitalized_type}ActionHostGroupHosts",
             summary=f"POST {object_type}'s Action Host Group hosts",

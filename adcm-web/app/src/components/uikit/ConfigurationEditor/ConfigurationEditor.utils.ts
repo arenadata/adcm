@@ -73,7 +73,10 @@ export const addArrayItem = (
   }
 
   const newItem = generateFromSchema(schema);
-  node.push(newItem);
+  // we need this check because initially node is an object
+  if (Array.isArray(node)) {
+    node.push(newItem);
+  }
 
   return newConfiguration;
 };
@@ -88,7 +91,10 @@ export const deleteArrayItem = (configuration: ConfigurationData, path: Configur
     node = node[part] as JSONObject;
   }
 
-  node.splice(fieldName as number, 1);
+  // we need this check because initially node is an object
+  if (Array.isArray(node)) {
+    node.splice(fieldName as number, 1);
+  }
 
   return newConfiguration;
 };
@@ -113,5 +119,5 @@ export const removeEmpty = (value: unknown): unknown => {
 };
 
 const cloneConfiguration = (configuration: ConfigurationData) => {
-  return JSON.parse(JSON.stringify(configuration));
+  return structuredClone(configuration);
 };

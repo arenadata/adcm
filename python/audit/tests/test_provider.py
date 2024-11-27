@@ -250,7 +250,7 @@ class TestProviderAudit(BaseTestCase):
         config = ObjectConfig.objects.create(current=0, previous=0)
         provider = Provider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -291,7 +291,7 @@ class TestProviderAudit(BaseTestCase):
         config = ObjectConfig.objects.create(current=1, previous=1)
         provider = Provider.objects.create(prototype=self.prototype, name="test_provider", config=config)
 
-        ConfigLog.objects.create(obj_ref=config, config="{}")
+        ConfigLog.objects.create(obj_ref=config, config={})
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:config-history", kwargs={"provider_id": provider.pk}),

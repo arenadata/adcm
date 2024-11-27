@@ -163,6 +163,11 @@ class cleanup_changes(AuditHook):
 
 class detect_request_user(AuditHook):
     def __call__(self):
+        # this check is necessary for idempotence, since this hook can be called twice during processing
+        # of the same view, on pre_call and on_collect
+        if self.context.user is not None:
+            return
+
         request = self.call_arguments.get("request")
         if not hasattr(request, "user"):
             return

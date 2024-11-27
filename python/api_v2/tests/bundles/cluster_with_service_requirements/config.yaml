@@ -12,4 +12,24 @@
 - name: some_other_service
   type: service
   version: *version
+  components:
+    component_in_other_service:
+
+- name: third_service
+  type: service
+  version: *version
+  components:
+    component_from_third_service:
+      requires:
+        - service: some_other_service
+
+- name: fourth_service
+  type: service
+  version: *version
+  components:
+    component_from_fourth_service:
+      requires:
+        - service: some_other_service
+          component: component_in_other_service
+
 

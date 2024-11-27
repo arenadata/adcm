@@ -43,7 +43,7 @@ class TestAuditObjectRename(BaseTestCase):
             prototype=provider_prototype,
         )
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 

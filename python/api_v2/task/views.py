@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from audit.alt.api import audit_update
 from cm.models import TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
-from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -47,16 +47,33 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM tasks.",
         summary="GET tasks",
         parameters=[
-            OpenApiParameter(name="jobName", description="Case insensitive and partial filter by job name."),
-            OpenApiParameter(name="objectName", description="Case insensitive and partial filter by object name."),
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
-                enum=("name", "-name", "id", "-id", "startTime", "-startTime", "endTime", "-endTime"),
+                enum=(
+                    "name",
+                    "-name",
+                    "id",
+                    "-id",
+                    "status",
+                    "-status",
+                    "startTime",
+                    "-startTime",
+                    "endTime",
+                    "-endTime",
+                ),
                 default="-id",
+            ),
+            OpenApiParameter(
+                name="status",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Job status.",
+                type=str,
+                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
             ),
         ],
         responses={
@@ -103,7 +120,6 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
-    filter_backends = (DjangoFilterBackend,)
     permission_classes = [TaskPermissions]
     permission_required = [VIEW_TASKLOG_PERMISSION]
 

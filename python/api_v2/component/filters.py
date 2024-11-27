@@ -10,19 +10,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Component
+from cm.models import Cluster, Component, MaintenanceMode, Service
+from cm.services.cluster import (
+    retrieve_cluster_topology,
+    retrieve_clusters_objects_maintenance_mode,
+)
+from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from django.db.models import QuerySet
+from django_filters import ChoiceFilter
 from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class ComponentFilter(FilterSet):
     name = CharFilter(field_name="prototype__name", label="Name", lookup_expr="icontains")
     display_name = CharFilter(field_name="prototype__display_name", label="Display Name", lookup_expr="icontains")
+    state = CharFilter(field_name="state", label="State", lookup_expr="icontains")
+    maintenance_mode = ChoiceFilter(
+        label="Maintenance mode", choices=MaintenanceMode.choices, method="filter_by_maintenance_mode"
+    )
     ordering = OrderingFilter(
-        fields={"prototype__name": "name", "prototype__display_name": "displayName"},
-        field_labels={"prototype__name": "Name", "prototype__display_name": "Display Name"},
+        fields={"id": "id", "prototype__name": "name", "prototype__display_name": "displayName", "state": "state"},
+        field_labels={
+            "id": "ID",
+            "prototype__name": "Name",
+            "prototype__display_name": "Display Name",
+            "state": "State",
+        },
         label="ordering",
     )
 
     class Meta:
         model = Component
-        fields = ["id"]
+        fields = ["id", "name", "display_name", "state", "maintenance_mode"]
+
+    def filter_by_maintenance_mode(self, queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG002
+        cluster_id = int(self.request.parser_context["kwargs"]["cluster_pk"])
+        mm_is_allowed = (
+            Cluster.objects.values("prototype__allow_maintenance_mode").filter(id=cluster_id).first() or False
+        )
+        if not mm_is_allowed:
+            if value != MaintenanceMode.OFF:
+                return Service.objects.none()
+            return queryset
+
+        topology = retrieve_cluster_topology(cluster_id)
+
+        objects_mm = calculate_maintenance_mode_for_cluster_objects(
+            topology=topology,
+            own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(topology.cluster_id,)),
+        )
+
+        objects_mm_components_ids = [c for c, v in objects_mm.components.items() if v.value == value]
+
+        return Component.objects.filter(id__in=objects_mm_components_ids)

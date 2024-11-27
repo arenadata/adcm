@@ -55,6 +55,20 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             parameters=[
                 DefaultParams.ordering_by("id"),
                 OpenApiParameter(
+                    name="name",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by name.",
+                    type=str,
+                ),
+                OpenApiParameter(
+                    name="displayName",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by display name.",
+                    type=str,
+                ),
+                OpenApiParameter(
                     name="isHostOwnAction",
                     required=False,
                     location=OpenApiParameter.QUERY,
@@ -67,6 +81,25 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
                     location=OpenApiParameter.QUERY,
                     description="Identifier of action's owner",
                     type=int,
+                ),
+                OpenApiParameter(
+                    name="description",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by description.",
+                    type=str,
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    type=str,
+                    enum=(
+                        "name",
+                        "-name",
+                        "id",
+                        "-id",
+                    ),
+                    default="id",
                 ),
                 *_schema_common_filters,
             ],

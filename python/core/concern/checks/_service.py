@@ -55,10 +55,18 @@ def find_unsatisfied_service_requirements(
     return tuple(violations)
 
 
+def find_not_added_required_services(
+    bundle_restrictions: BundleRestrictions, existing_services: Iterable[ServiceName]
+) -> set[ServiceName]:
+    if not bundle_restrictions.required_services:
+        return set()
+
+    return bundle_restrictions.required_services.difference(existing_services)
+
+
 def cluster_has_required_services_issue(
     bundle_restrictions: BundleRestrictions, existing_services: Iterable[ServiceName]
 ) -> HasIssue:
-    if not bundle_restrictions.required_services:
-        return False
-
-    return not bundle_restrictions.required_services.issubset(existing_services)
+    return bool(
+        find_not_added_required_services(bundle_restrictions=bundle_restrictions, existing_services=existing_services)
+    )

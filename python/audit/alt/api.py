@@ -38,7 +38,11 @@ AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
 
 
 class APIOperationAuditContext(OperationAuditContext):
-    DEFAULT_HOOKS = Hooks(pre_call=(detect_request_user, collect_meta), on_collect=(set_api_operation_result,))
+    # The hook is called twice, since the user is authorized by the token during the execution of the View.
+    DEFAULT_HOOKS = Hooks(
+        pre_call=(detect_request_user, collect_meta),
+        on_collect=(detect_request_user, set_api_operation_result),
+    )
 
 
 @dataclass(slots=True, frozen=True)

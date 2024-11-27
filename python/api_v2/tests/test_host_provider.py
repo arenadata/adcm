@@ -91,6 +91,80 @@ class TestProvider(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
+    def test_filtering_success(self):
+        self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.host_provider.state = "installed"
+        self.host_provider.description = "newly created host provider"
+        self.host_provider.save()
+        filters = {
+            "id": (self.host_provider.pk, None, 0),
+            "name": (self.host_provider.name, self.host_provider.name[7:-3].upper(), "wrong"),
+            "state": (self.host_provider.state, self.host_provider.state[1:-3].upper(), "wrong"),
+            "prototypeDisplayName": (
+                self.host_provider.prototype.display_name,
+                self.host_provider.prototype.display_name[1:-3].upper(),
+                "wrong",
+            ),
+            "description": (self.host_provider.description, self.host_provider.description[7:-3].upper(), "wrong"),
+        }
+
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            found_exact_items = 2 if filter_name not in ("state", "description", "id") else 1
+            found_items_partially = 2 if filter_name not in ("state", "description", "id") else 1
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "hostproviders").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], found_exact_items)
+
+                response = (self.client.v2 / "hostproviders").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = (self.client.v2 / "hostproviders").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], found_items_partially)
+
+    def test_ordering_success(self):
+        another_provider = self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.add_provider(self.host_provider_bundle, "third test host provider")
+        another_provider.state = "active"
+        another_provider.name = "yet another name"
+        another_provider.descroption = "yet another description"
+        self.host_provider.state = "installed"
+        self.host_provider.description = "newly created host provider"
+        self.host_provider.save()
+        another_provider.save()
+
+        def get_ordering_results(response):
+            if ordering_field != "prototypeDisplayName":
+                return [provider[ordering_field] for provider in response.json()["results"]]
+            else:
+                return [provider["prototype"]["name"] for provider in response.json()["results"]]
+
+        ordering_fields = {
+            "pk": "id",
+            "name": "name",
+            "prototype__display_name": "prototypeDisplayName",
+            "description": "description",
+            "state": "state",
+        }
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "hostproviders").get(query={"ordering": ordering_field})
+
+                self.assertListEqual(
+                    get_ordering_results(response),
+                    list(Provider.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "hostproviders").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    get_ordering_results(response),
+                    list(Provider.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
+
 
 class TestProviderActions(BaseAPITestCase):
     def setUp(self) -> None:

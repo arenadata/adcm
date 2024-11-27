@@ -17,10 +17,12 @@ from cm.models import (
     Action,
     ADCMEntityStatus,
     Cluster,
+    ClusterBind,
     Component,
     ConcernType,
     HostComponent,
     JobLog,
+    JobStatus,
     MaintenanceMode,
     ObjectType,
     Prototype,
@@ -30,6 +32,7 @@ from cm.models import (
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -59,22 +62,32 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
 
-    def test_adcm_4544_list_service_name_ordering_success(self):
+    def test_adcm_4544_service_ordering_success(self):
         service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
-        service_list = [self.service_1.display_name, self.service_2.display_name, service_3.display_name]
-        response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": "displayName"})
+        self.service_2.state, service_3.state = "non_created", "installed"
+        for service in (self.service_1, self.service_2, service_3):
+            service.save()
 
-        self.assertListEqual(
-            [service["displayName"] for service in response.json()["results"]],
-            service_list,
-        )
+        ordering_fields = {
+            "id": "id",
+            "prototype__display_name": "displayName",
+            "prototype__name": "name",
+            "state": "state",
+        }
 
-        response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": "-displayName"})
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [service[ordering_field] for service in response.json()["results"]],
+                    list(Service.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
 
-        self.assertListEqual(
-            [service["displayName"] for service in response.json()["results"]],
-            service_list[::-1],
-        )
+                response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [service[ordering_field] for service in response.json()["results"]],
+                    list(Service.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
     def test_retrieve_success(self):
         response = self.client.v2[self.service_2].get()
@@ -89,14 +102,182 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(Service.objects.filter(pk=self.service_2.pk).exists())
 
-    def test_delete_failed(self):
+    def test_adcm_6083_delete_service_with_stale_task_from_deleted_bundle(self):
+        # create stale task with `created` status
+        non_existent_cluster_id = self.get_non_existent_pk(model=Cluster)
+        cluster_ct = ContentType.objects.get_for_model(Cluster)
+        TaskLog.objects.create(
+            object_id=non_existent_cluster_id,
+            object_type=cluster_ct,
+            owner_id=non_existent_cluster_id,
+            owner_type=cluster_ct.model,
+            action=None,
+            status=JobStatus.CREATED,
+        )
+
+        response = self.client.v2[self.service_2].delete()
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertFalse(Service.objects.filter(pk=self.service_2.pk).exists())
+
+    def test_delete_wrong_state_failed(self):
         self.service_2.state = "non_created"
         self.service_2.save(update_fields=["state"])
 
         response = self.client.v2[self.service_2].delete()
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_DELETE_ERROR",
+                "desc": "Service can't be deleted if it has not CREATED state",
+                "level": "error",
+            },
+        )
         self.assertTrue(Service.objects.filter(pk=self.service_2.pk).exists())
+
+    def test_delete_mapping_exists_fail(self):
+        host = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
+        component = self.service_1.components.first()
+        self.set_hostcomponent(cluster=self.cluster_1, entries=((host, component),))
+
+        response = self.client.v2[self.service_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Service "{self.service_1.display_name}" has component(s) on host(s)',
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+
+    def test_delete_during_cluster_upgrading_fail(self):
+        self.cluster_1.state = "upgrading"
+        self.cluster_1.before_upgrade = {"services": (self.service_1.prototype.name,)}
+        self.cluster_1.save(update_fields=["state", "before_upgrade"])
+
+        response = self.client.v2[self.service_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "SERVICE_CONFLICT", "desc": "Can't remove service when upgrading cluster", "level": "error"},
+        )
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+
+    def test_delete_with_export_exists_fail(self):
+        service_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        ClusterBind.objects.create(
+            cluster_id=service_2.cluster.pk,
+            service_id=service_2.pk,
+            source_cluster_id=self.service_1.cluster.pk,
+            source_service_id=self.service_1.pk,
+        )
+
+        response = self.client.v2[self.service_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Service "{self.service_1.prototype.display_name}" has exports(s)',
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+
+    def test_delete_required_service_fail(self):
+        prototype = self.service_1.prototype
+        prototype.required = True
+        prototype.save(update_fields=["required"])
+
+        response = self.client.v2[self.service_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Service "{self.service_1.prototype.display_name}" is required',
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+
+    def test_delete_required_by_other_service_fail(self):
+        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
+        bundle = self.add_bundle(source_dir=bundle_dir)
+        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        service = self.add_services_to_cluster(service_names=["service_1", "some_other_service"], cluster=cluster).get(
+            prototype__name="some_other_service"
+        )
+        service_1 = cluster.services.get(prototype__name="service_1")
+
+        response = self.client.v2[service].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Service "{service_1.display_name}" requires this service or its component',
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=service.pk).exists())
+
+    def test_delete_required_by_other_component_only_service_fail(self):
+        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
+        bundle = self.add_bundle(source_dir=bundle_dir)
+        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        service = self.add_services_to_cluster(
+            service_names=["some_other_service", "third_service"], cluster=cluster
+        ).get(prototype__name="some_other_service")
+        third_service = cluster.services.get(prototype__name="third_service")
+        component = third_service.components.get(prototype__name="component_from_third_service")
+
+        response = self.client.v2[service].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Component "{component.prototype.name}" of service "{third_service.prototype.display_name} '
+                f"requires this service or its component",
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=service.pk).exists())
+
+    def test_delete_required_by_other_component_full_requires_fail(self):
+        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
+        bundle = self.add_bundle(source_dir=bundle_dir)
+        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        service = self.add_services_to_cluster(
+            service_names=["some_other_service", "fourth_service"], cluster=cluster
+        ).get(prototype__name="some_other_service")
+        fourth_service = cluster.services.get(prototype__name="fourth_service")
+        component = fourth_service.components.get(prototype__name="component_from_fourth_service")
+
+        response = self.client.v2[service].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": f'Component "{component.prototype.name}" of service "{fourth_service.prototype.display_name} '
+                f"requires this service or its component",
+                "level": "error",
+            },
+        )
+        self.assertTrue(Service.objects.filter(pk=service.pk).exists())
 
     def test_create_success(self):
         initial_service_count = Service.objects.count()
@@ -134,17 +315,30 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(Service.objects.count(), initial_service_count)
 
-    def test_filter_by_name_success(self):
-        response = self.client.v2[self.cluster_1, "services"].get(query={"name": "service_1"})
+    def test_filtering_success(self):
+        filters = {
+            "id": (self.service_1.pk, None, 0),
+            "name": (self.service_1.name, self.service_1.name[1:-2].upper(), "wrong"),
+            "state": (self.service_1.state, self.service_1.state[1:-2].upper(), "wrong"),
+            "display_name": (self.service_1.display_name, self.service_1.display_name[1:-2].upper(), "wrong"),
+            "maintenance_mode": (self.service_1.maintenance_mode, None, "changing"),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            exact_items_found = 2 if filter_name in ("state", "maintenance_mode") else 1
+            partial_items_found = 1 if filter_name in ("maintenance_mode", "id") else 2
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.cluster_1, "services"].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+                response = self.client.v2[self.cluster_1, "services"].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
 
-    def test_filter_by_display_name_success(self):
-        response = self.client.v2[self.cluster_1, "services"].get(query={"display_name": "vice_1"})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+                if partial_value:
+                    response = self.client.v2[self.cluster_1, "services"].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_filter_by_status_success(self):
         status_map = FullStatusMap(
@@ -222,7 +416,9 @@ class TestServiceDeleteAction(BaseAPITestCase):
             cluster=self.cluster_1,
             service=self.service_to_delete,
             component=Component.objects.get(service=self.service_to_delete, prototype__name="component"),
-            host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter"),
+            host=self.add_host(
+                bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1
+            ),
         )
 
     def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:

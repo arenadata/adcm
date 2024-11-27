@@ -48,6 +48,7 @@ from api_v2.provider.filters import ProviderFilter
 from api_v2.provider.permissions import ProviderPermissions
 from api_v2.provider.serializers import (
     ProviderCreateSerializer,
+    ProviderSchemaSerializer,
     ProviderSerializer,
 )
 from api_v2.utils.audit import parent_provider_from_lookup, provider_from_lookup, provider_from_response
@@ -61,6 +62,13 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
             OpenApiParameter(
+                name="id",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Hostprovider id.",
+                type=str,
+            ),
+            OpenApiParameter(
                 name="name",
                 required=False,
                 location=OpenApiParameter.QUERY,
@@ -71,24 +79,52 @@ from api_v2.views import ADCMGenericViewSet
                 name="prototypeName",
                 required=False,
                 location=OpenApiParameter.QUERY,
-                description="Hostprovider prototype name.",
+                description="Case insensitive and partial filter by hostprovider prototype name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="state",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by state.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="description",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by description.",
                 type=str,
             ),
             OpenApiParameter(
                 name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
+                enum=(
+                    "id",
+                    "-id",
+                    "name",
+                    "-name",
+                    "prototypeName",
+                    "-prototypeName",
+                    "state",
+                    "-state",
+                    "description",
+                    "-description",
+                ),
+                default="name",
             ),
         ],
+        responses={
+            200: ProviderSchemaSerializer(many=True),
+        },
     ),
     create=extend_schema(
         operation_id="postHostproviders",
         summary="POST hostproviders",
         description="Creation of a new ADCM hostprovider.",
         responses={
-            201: ProviderSerializer,
+            201: ProviderSchemaSerializer,
             403: ErrorSerializer,
             409: ErrorSerializer,
         },

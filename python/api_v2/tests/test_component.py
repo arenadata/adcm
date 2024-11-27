@@ -36,7 +36,7 @@ class TestComponentAPI(BaseAPITestCase):
         response = self.client.v2[self.service_1, "components"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], 3)
 
     def test_retrieve_success(self):
         response = self.client.v2[self.component_1].get()
@@ -87,6 +87,61 @@ class TestComponentAPI(BaseAPITestCase):
         run_task.runner.run(run_task.target_task.id)
         run_task.target_task.refresh_from_db()
         self.assertEqual(run_task.target_task.status, "success")
+
+    def test_filtering_success(self):
+        filters = {
+            "id": (self.component_1.pk, None, 0),
+            "name": (self.component_1.name, self.component_1.name[1:-3].upper(), "wrong"),
+            "state": (self.component_1.state, self.component_1.state[1:-3].upper(), "wrong"),
+            "display_name": (self.component_1.display_name, self.component_1.display_name[1:-3].upper(), "wrong"),
+            "maintenanceMode": (self.component_1.maintenance_mode, None, "changing"),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            exact_items_found = 3 if filter_name in ("state", "maintenanceMode") else 1
+            partial_items_found = 1 if filter_name == "maintenanceMode" else 3
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.service_1, "components"].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
+
+                response = self.client.v2[self.service_1, "components"].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = self.client.v2[self.service_1, "components"].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
+
+    def test_ordering_success(self):
+        component_3 = Component.objects.get(
+            prototype__name="component_3", service=self.service_1, cluster=self.cluster_1
+        )
+
+        self.component_2_to_delete.state, component_3.state = "non_created", "installed"
+        for component in (self.component_1, self.component_2_to_delete, component_3):
+            component.save()
+
+        ordering_fields = {
+            "id": "id",
+            "prototype__display_name": "displayName",
+            "prototype__name": "name",
+            "state": "state",
+        }
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = self.client.v2[self.service_1, "components"].get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [component[ordering_field] for component in response.json()["results"]],
+                    list(Component.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = self.client.v2[self.service_1, "components"].get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [componenent[ordering_field] for componenent in response.json()["results"]],
+                    list(Component.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
 
 class TestComponentMaintenanceMode(BaseAPITestCase):

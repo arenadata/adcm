@@ -17,11 +17,28 @@ from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 class ProviderFilter(FilterSet):
     name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
     prototype_display_name = CharFilter(
-        field_name="prototype__display_name", label="Hostprovider prototype display name"
+        field_name="prototype__display_name", label="Hostprovider prototype display name", lookup_expr="icontains"
     )
-    state = CharFilter(field_name="state", label="Hostprovider state")
-    ordering = OrderingFilter(fields={"name": "name"}, field_labels={"name": "Name"}, label="ordering")
+    state = CharFilter(field_name="state", label="Hostprovider state", lookup_expr="icontains")
+    description = CharFilter(field_name="description", label="Hostprovider description", lookup_expr="icontains")
+    ordering = OrderingFilter(
+        fields={
+            "id": "id",
+            "name": "name",
+            "prototype__display_name": "prototypeDisplayName",
+            "state": "state",
+            "description": "description",
+        },
+        field_labels={
+            "id": "ID",
+            "name": "Name",
+            "prototype__display_name": "Prototype display name",
+            "state": "State",
+            "description": "Description",
+        },
+        label="ordering",
+    )
 
     class Meta:
         model = Provider
-        fields = ["name", "state", "prototype_display_name", "ordering"]
+        fields = ["id", "name", "state", "prototype_display_name", "description"]
