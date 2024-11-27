@@ -1,0 +1,10 @@
+{
+  "$schema": "./oxlint.schema.json",
+  "plugins": ["import"],
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "import/no-cycle": "error"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "nursery": {
+    "noRestrictedImports": {
+      "level": "error",
+      "options": {
+        "paths": {
+          "react-redux": {
+            "importNames": ["useSelector", "useDispatch"],
+            "message": "Use typed `useStore` and `useDispatch` from '@hooks' instead."
+          },
+          "@reduxjs/toolkit": {
+            "importNames": ["createAsyncThunk"],
+            "message": "Use typed `createAsyncThunk` from '@store/redux' instead."
+          }
+        }
+      }
+    }
+  }
+}
