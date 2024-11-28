@@ -334,7 +334,8 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
                 targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
                 targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
                 targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
-
+        case ADCMCoreType.ADCM:
+            pass
         case _:
             message = f"Direct concerns distribution isn't implemented for {owner.type}"
             raise NotImplementedError(message)
