@@ -33,9 +33,10 @@
         proxy_set_header Host $http_host;
     }
 
-    location /cm {
+    location /versions {
         uwsgi_pass  django;
         include     /etc/nginx/uwsgi_params;
+        proxy_set_header Host $http_host;
     }
 
     location /social {
