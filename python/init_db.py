@@ -24,6 +24,7 @@ from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
+    UNFINISHED_STATUS,
     CheckLog,
     Cluster,
     ConcernItem,
@@ -121,7 +122,7 @@ def recheck_issues():
 
 
 def abort_all():
-    for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
+    for task in TaskLog.objects.filter(status__in=UNFINISHED_STATUS):
         task.status = JobStatus.ABORTED
         task.finish_date = timezone.now()
         task.save(update_fields=["status", "finish_date"])
@@ -131,7 +132,7 @@ def abort_all():
         else:
             delete_task_flag_concern(task_id=task.pk)
 
-    JobLog.objects.filter(status=JobStatus.RUNNING).update(status=JobStatus.ABORTED, finish_date=timezone.now())
+    JobLog.objects.filter(status__in=UNFINISHED_STATUS).update(status=JobStatus.ABORTED, finish_date=timezone.now())
 
 
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
