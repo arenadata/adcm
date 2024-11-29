@@ -28,12 +28,15 @@ const CollapseNode = <T,>({
   const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
+  const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
+  const isNodeExpanded = useMemo(
+    () => (fieldAttributes?.isActive && isExpanded) ?? isExpanded,
+    [fieldAttributes, isExpanded],
+  );
 
   const isIgnoreExpandAll = useMemo(() => {
-    const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
-
     return fieldAttributes?.isActive === false || node.key === rootNodeKey;
-  }, [node]);
+  }, [fieldAttributes, node]);
 
   const handleToggleAllNodes = useCallback(
     (e: CustomEvent<boolean>) => {
@@ -66,7 +69,7 @@ const CollapseNode = <T,>({
       </div>
       {hasChildren && (
         <div className={s.collapseNode__children} data-test="children-block">
-          <Collapse isExpanded={isExpanded}>
+          <Collapse isExpanded={isNodeExpanded}>
             {children.map((childNode) => (
               <CollapseNode
                 node={childNode}
