@@ -1,36 +1,45 @@
-import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
-import JobPageTable from './JobPageTable/JobPageTable';
-import { useRequestJobPage } from './useRequestJobPage';
-import JobsSubPageStopHeader from './JobPageHeader/JobPageHeader';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useDispatch, useStore } from '@hooks';
+import ExpandableSwitch from '@uikit/Switch/ExpandableSwitch';
+import JobOverviewTable from './JobOverviewTable/JobOverviewTable';
+import JobsPageHeader from './JobPageHeader/JobPageHeader';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
-import JobPageChildJobsTable from './JobPageChildJobsTable/JobPageChildJobsTable';
-import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
-import SingleJob from '@pages/JobsPage/JobPage/SingleJob';
+import SubJobsTable from './SubJobsTable/SubJobsTable';
+import StopSubJobDialog from './Dialogs/StopSubJobDialog';
+import { useRequestJob } from './useRequestJob';
+import { useAutoScrollSubjobs } from './useAutoscrollSubjobs';
+import s from './JobPage.module.scss';
 
-const JobPage: React.FC = () => {
-  const { task, dispatch } = useRequestJobPage();
+const JobPage = () => {
+  const subJobsTableRef = useRef(null);
+  const dispatch = useDispatch();
+  const job = useStore(({ adcm }) => adcm.job.job);
+  const jobDisplayName = job?.displayName ?? '';
+
+  useRequestJob();
+  const { isAutoScroll, setIsAutoScroll } = useAutoScrollSubjobs(subJobsTableRef, job);
+
   useEffect(() => {
-    if (task.displayName) {
-      const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }];
+    if (jobDisplayName) {
+      const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: jobDisplayName }];
 
       dispatch(setBreadcrumbs(jobBreadcrumbs));
     }
-  }, [task.displayName, dispatch]);
+  }, [job?.id, jobDisplayName, dispatch]);
+
+  const handleAutoScrollChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsAutoScroll(e.target.checked);
+  };
 
   return (
     <>
-      <JobsSubPageStopHeader />
-      <TableContainer variant="easy">
-        <JobPageTable />
-      </TableContainer>
-      {task.childJobs?.length === 1 && <SingleJob task={task} />}
-      {task.childJobs && task.childJobs.length > 1 && (
-        <TableContainer variant="easy">
-          <JobPageChildJobsTable />
-        </TableContainer>
-      )}
-      <JobPageStopJobDialog />
+      <JobsPageHeader job={job} />
+      <JobOverviewTable />
+      <SubJobsTable ref={subJobsTableRef} />
+      <StopSubJobDialog />
+      <div className={s.subJobsAutoScroll}>
+        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-open" isToggled={isAutoScroll} />
+      </div>
     </>
   );
 };

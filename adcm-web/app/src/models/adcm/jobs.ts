@@ -30,61 +30,75 @@ export interface AdcmJobObjectAdvanced extends AdcmJobObject {
 
 export interface AdcmJob {
   id: number;
-  name?: string;
-  displayName?: string;
+  name: string | null;
+  displayName: string | null;
   status: AdcmJobStatus;
   objects: AdcmJobObject[];
-  duration: number;
-  startTime: string;
-  endTime: string;
+  duration: number | null;
+  startTime: string | null;
+  endTime: string | null;
   isTerminatable: boolean;
-  childJobs?: AdcmJob[];
-  logs?: AdcmJobLogItem[];
-  action?: {
+  childJobs: AdcmSubJob[];
+  action: {
     id: number;
     name: string;
     displayName?: string;
-  };
+  } | null;
 }
 
-export type AdcmJobLogCheckContentItem = {
+export interface AdcmSubJob {
+  id: number;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  isTerminatable: boolean;
+}
+
+export interface AdcmSubJobDetails extends AdcmSubJob {
+  parentTask: AdcmJob;
+}
+
+export type AdcmSubJobLogCheckContentItem = {
   message: string;
   result: boolean;
   title: string;
   type: 'group' | 'check';
-  content?: AdcmJobLogCheckContentItem[];
+  content?: AdcmSubJobLogCheckContentItem[];
 };
 
-export interface AdcmJobLogCheckContentItemWithJobStatus extends AdcmJobLogCheckContentItem {
-  jobStatus?: string;
+export interface AdcmSubJobLogCheckContentItemWithJobStatus extends AdcmSubJobLogCheckContentItem {
+  subJobStatus?: string;
 }
 
-export enum AdcmJobLogType {
+export enum AdcmSubJobLogType {
   Stdout = 'stdout',
   Stderr = 'stderr',
   Check = 'check',
   Custom = 'custom',
 }
 
-interface AdcmJobLogItemCommon {
+interface AdcmSubJobLogItemCommon {
   id: number;
   name: string;
   format: string;
 }
-export interface AdcmJobLogItemCheck extends AdcmJobLogItemCommon {
-  type: AdcmJobLogType.Check;
-  content: AdcmJobLogCheckContentItem[];
+export interface AdcmSubJobLogItemCheck extends AdcmSubJobLogItemCommon {
+  type: AdcmSubJobLogType.Check;
+  content: AdcmSubJobLogCheckContentItem[];
 }
-export interface AdcmJobLogItemStd extends AdcmJobLogItemCommon {
-  type: AdcmJobLogType.Stdout | AdcmJobLogType.Stderr;
+export interface AdcmSubJobLogItemStd extends AdcmSubJobLogItemCommon {
+  type: AdcmSubJobLogType.Stdout | AdcmSubJobLogType.Stderr;
   content: string;
 }
-export interface AdcmJobLogItemCustom extends AdcmJobLogItemCommon {
-  type: AdcmJobLogType.Custom;
+export interface AdcmSubJobLogItemCustom extends AdcmSubJobLogItemCommon {
+  type: AdcmSubJobLogType.Custom;
   content: string;
 }
 
-export type AdcmJobLogItem = AdcmJobLogItemCheck | AdcmJobLogItemStd | AdcmJobLogItemCustom;
+export type AdcmSubJobLogItem = AdcmSubJobLogItemCheck | AdcmSubJobLogItemStd | AdcmSubJobLogItemCustom;
 
 export interface AdcmJobsFilter {
   jobName?: string;
@@ -94,17 +108,4 @@ export interface AdcmJobsFilter {
 
 export interface AdcmRestartJobPayload {
   id: number;
-}
-
-export interface AdcmTask {
-  id: number;
-  name: string;
-  displayName: string;
-  status: AdcmJobStatus;
-  objects: AdcmJobObject[];
-  duration: number;
-  startTime: string;
-  endTime: string;
-  isTerminatable: boolean;
-  childJobs: AdcmJob[];
 }
