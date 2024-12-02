@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import type { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmJob, Batch } from '@models/adcm';
+import type { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmSubJob, Batch } from '@models/adcm';
 import type {
   AdcmActionHostGroup,
   GetAdcmComponentActionHostGroupsArgs,
@@ -85,7 +85,7 @@ export class AdcmClusterServiceComponentActionHostGroupsApi {
 
   public static async postActionHostGroupAction(args: RunAdcmComponentActionHostGroupActionArgs) {
     const { clusterId, serviceId, componentId, actionHostGroupId, actionId, actionRunConfig } = args;
-    const response = await httpClient.post<AdcmJob>(
+    const response = await httpClient.post<AdcmSubJob>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/action-host-groups/${actionHostGroupId}/actions/${actionId}/run/`,
       actionRunConfig,
     );

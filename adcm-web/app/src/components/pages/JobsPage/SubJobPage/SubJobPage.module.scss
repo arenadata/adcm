@@ -1,0 +1,30 @@
+:global {
+  body.theme-dark {
+    --subjob-cell-border: var(--color-xdark);
+    --subjob-cell-background: var(--color-black-12);
+  }
+
+  body.theme-light {
+    --subjob-cell-border: var(--color-light-stroke);
+    --subjob-cell-background: var(--color-xwhite-70);
+  }
+}
+
+.subJobInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  margin-top: 40px;
+
+  border-radius: 8px;
+  border: 1px solid var(--subjob-cell-border);
+  background: var(--subjob-cell-background);
+}
+
+.subJobLogAutoScroll {
+  position: fixed;
+  right: 20px;
+  bottom: 40px;
+  cursor: pointer;
+}

@@ -42,6 +42,7 @@ import AccessManagerRolesPage from '@pages/AccessManagerPage/AccessManagerRolesP
 import AccessManagerPolicyPage from '@pages/AccessManagerPage/AccessManagerPoliciesPage/AccessManagerPoliciesPage';
 import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
 import JobPage from '@pages/JobsPage/JobPage/JobPage';
+import SubJobPage from '@pages/JobsPage/SubJobPage/SubJobPage';
 import ServiceComponent from '@pages/cluster/service/component/ServiceComponent';
 import ComponentPrimaryConfiguration from '@pages/cluster/service/component/ComponentPrimaryConfiguration/ComponentPrimaryConfiguration';
 import ClusterHostLayout from '@layouts/ClusterHostLayout/ClusterHostLayout';
@@ -210,7 +211,7 @@ function App() {
               </Route>
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/jobs/:jobId" element={<JobPage />} />
-              <Route path="/jobs/:jobId/:withAutoStop" element={<JobPage />} />
+              <Route path="/jobs/:jobId/subjobs/:subJobId" element={<SubJobPage />} />
               <Route path="/access-manager" element={<AccessManagerPage />}>
                 <Route index element={<Navigate to="/access-manager/users" replace />} />
                 <Route path="/access-manager/users" element={<AccessManagerUsersPage />} />

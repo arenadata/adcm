@@ -2,7 +2,7 @@ import type {
   Batch,
   AdcmDynamicAction,
   AdcmDynamicActionDetails,
-  AdcmJob,
+  AdcmSubJob,
   AdcmActionHostGroup,
   AdcmActionHostGroupHost,
   GetAdcmClusterActionHostGroupsArgs,
@@ -150,7 +150,7 @@ export interface ActionHostGroupApi {
   // Actions
   getActionHostGroupActions(args: GetAdcmActionHostGroupActionsArgs): Promise<AdcmDynamicAction[]>;
   getActionHostGroupAction(args: GetAdcmActionHostGroupActionArgs): Promise<AdcmDynamicActionDetails>;
-  postActionHostGroupAction(args: RunAdcmActionHostGroupActionArgs): Promise<AdcmJob>;
+  postActionHostGroupAction(args: RunAdcmActionHostGroupActionArgs): Promise<AdcmSubJob>;
   // Host candidates
   getActionHostGroupsHostCandidates(
     args: GetAdcmActionHostGroupsHostCandidatesArgs,
