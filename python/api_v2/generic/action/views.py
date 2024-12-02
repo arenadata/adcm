@@ -195,6 +195,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
                     for entry in serializer.validated_data["host_component_map"]
                 },
                 verbose=serializer.validated_data["is_verbose"],
+                is_blocking=serializer.validated_data["should_block_object"],
             ),
         )
 

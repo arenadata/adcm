@@ -38,6 +38,7 @@ export interface AdcmDynamicActionDetails {
 export interface AdcmDynamicActionRunConfig {
   hostComponentMap: AdcmMapping[];
   isVerbose: boolean;
+  shouldBlockObject: boolean;
   configuration: {
     config: ConfigurationData;
     adcmMeta: ConfigurationAttributes;

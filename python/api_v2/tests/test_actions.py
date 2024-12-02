@@ -19,6 +19,8 @@ from cm.models import (
     Action,
     Cluster,
     Component,
+    ConcernCause,
+    ConcernType,
     Host,
     HostComponent,
     JobLog,
@@ -32,7 +34,12 @@ from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -632,3 +639,38 @@ class TestAction(BaseAPITestCase):
             },
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
+
+    def test_run_non_blocking(self) -> None:
+        action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
+
+        with RunTaskMock() as task_launch:
+            response = self.client.v2[self.cluster_1, "actions", action, "run"].post(data={"shouldBlockObject": False})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task_launch.target_task.refresh_from_db()
+        self.assertIsNone(task_launch.target_task.lock)
+
+        self.assertEqual(self.cluster_1.concerns.count(), 1)
+        first_concern = self.cluster_1.concerns.get()
+        self.assertEqual(first_concern.type, ConcernType.FLAG)
+        self.assertEqual(first_concern.cause, ConcernCause.JOB)
+
+        with self.subTest("Same action can not be launched"):
+            response = self.client.v2[self.cluster_1, "actions", action, "run"].post()
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Another action can be launched"):
+            response = self.client.v2[self.cluster_1, "actions", self.action_with_config].get()
+            configuration = response.json()["configuration"]
+
+            with RunTaskMock():
+                response = self.client.v2[self.cluster_1, "actions", self.action_with_config, "run"].post(
+                    data={"configuration": {"config": configuration["config"], "adcmMeta": configuration["adcmMeta"]}}
+                )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.assertEqual(self.cluster_1.concerns.count(), 2)
+            self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
+            self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)

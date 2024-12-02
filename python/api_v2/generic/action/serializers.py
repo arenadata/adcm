@@ -98,10 +98,14 @@ class ActionRunConfiguration(EmptySerializer):
     adcm_meta = DictField(allow_empty=True)
 
 
-class ActionRunSerializer(EmptySerializer):
+class UpgradeRunSerializer(EmptySerializer):
     host_component_map = HostComponentEntry(many=True, default=list)
     configuration = ActionRunConfiguration(required=False, default=None, allow_null=True)
     is_verbose = BooleanField(required=False, default=False)
+
+
+class ActionRunSerializer(UpgradeRunSerializer):
+    should_block_object = BooleanField(required=False, default=True)
 
 
 class ActionNameSerializer(ModelSerializer):

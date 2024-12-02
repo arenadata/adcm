@@ -19,6 +19,7 @@ import operator
 
 from core.errors import NotFoundError
 from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
+from core.job.repo import ActionRepoInterface, JobRepoInterface
 from core.job.types import (
     ActionInfo,
     BundleInfo,
@@ -72,7 +73,7 @@ from cm.models import (
 )
 
 
-class JobRepoImpl:
+class JobRepoImpl(JobRepoInterface):
     # need to filter out "unsupported" values, because no guarantee DB have correct ones
     _supported_statuses = tuple(entry.value for entry in ExecutionStatus)
     _supported_script_types = tuple(entry.value for entry in ScriptType)
@@ -150,6 +151,7 @@ class JobRepoImpl:
                 multi_state_set=tuple(task_record.action.multi_state_on_fail_set or ()),
                 multi_state_unset=tuple(task_record.action.multi_state_on_fail_unset or ()),
             ),
+            is_blocking=task_record.is_blocking,
         )
 
     @staticmethod
@@ -210,6 +212,7 @@ class JobRepoImpl:
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,
             selector=selector,
+            is_blocking=payload.is_blocking,
         )
 
         return cls.get_task(id=task.pk)
@@ -460,7 +463,7 @@ class JobRepoImpl:
                 raise NotImplementedError(message)
 
 
-class ActionRepoImpl:
+class ActionRepoImpl(ActionRepoInterface):
     @staticmethod
     def get_action(id: ActionID) -> ActionInfo:  # noqa: A002
         action = Action.objects.values("id", "name", "prototype_id", "prototype__type", "scripts_jinja").get(id=id)

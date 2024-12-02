@@ -65,7 +65,7 @@ const hostProviderSlice = createSlice({
     builder.addCase(getHostsCount.fulfilled, (state, action) => {
       state.hostsCount = action.payload.count;
     });
-    builder.addCase(wsActions.update_provider, (state, action) => {
+    builder.addCase(wsActions.update_hostprovider, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.hostProvider?.id == id) {
         state.hostProvider = {

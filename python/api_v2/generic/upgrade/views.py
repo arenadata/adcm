@@ -32,7 +32,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
-from api_v2.generic.action.serializers import ActionRunSerializer
+from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
@@ -48,12 +48,12 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
     )
     filter_backends = []
 
-    def get_serializer_class(self) -> type[UpgradeListSerializer | ActionRunSerializer | UpgradeRetrieveSerializer]:
+    def get_serializer_class(self) -> type[UpgradeListSerializer | UpgradeRunSerializer | UpgradeRetrieveSerializer]:
         if self.action == "retrieve":
             return UpgradeRetrieveSerializer
 
         if self.action == "run":
-            return ActionRunSerializer
+            return UpgradeRunSerializer
 
         return UpgradeListSerializer
 

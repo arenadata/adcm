@@ -123,6 +123,8 @@ class Task(BaseModel):
     on_success: StateChanges
     on_fail: StateChanges
 
+    is_blocking: bool
+
 
 class JobSpec(BaseModel):
     # basic info
