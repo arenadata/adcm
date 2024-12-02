@@ -18,7 +18,7 @@ const concernTypeUrlDict: Record<string, string> = {
   [AdcmConcernType.ProviderConfig]: '/hostproviders/:providerId/primary-configuration/',
   [AdcmConcernType.HostComponent]: '/clusters/:clusterId/mapping/',
   [AdcmConcernType.ClusterServices]: '/clusters/:clusterId/services/', // the same route for the Requirement concern type
-  [AdcmConcernType.Job]: '/jobs/:taskId/',
+  [AdcmConcernType.Job]: '/jobs/:taskId/', // backend sends taskId as jobId
   [AdcmConcernType.Prototype]: '',
   [AdcmConcernType.Adcm]: '',
   [AdcmConcernType.Cluster]: '/clusters/:clusterId/',

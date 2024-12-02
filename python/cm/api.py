@@ -65,8 +65,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.concern import create_issue, delete_issue, retrieve_issue
-from cm.services.concern._operaitons import delete_concerns_of_removed_objects
+from cm.services.concern import create_issue, delete_concerns_of_removed_objects, delete_issue, retrieve_issue
 from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
     recalculate_own_concerns_on_add_hosts,

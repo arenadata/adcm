@@ -1,5 +1,6 @@
-import { createAction } from '@reduxjs/toolkit';
+import { type ActionCreatorWithPayload, createAction } from '@reduxjs/toolkit';
 import type {
+  AdcmBackendEvent,
   CreateConcernEvent,
   CreateConfigEvent,
   DeleteConcernEvent,
@@ -9,7 +10,7 @@ import type {
   UpdateHostEvent,
   UpdateHostProviderEvent,
   UpdateServiceEvent,
-  UpdateTaskEvent,
+  UpdateJobEvent,
 } from '@models/adcm';
 
 export const wsActions = {
@@ -37,8 +38,9 @@ export const wsActions = {
   update_cluster: createAction<UpdateClusterEvent>('adcm/ws/update_cluster'),
   update_service: createAction<UpdateServiceEvent>('adcm/ws/update_service'),
   update_component: createAction<UpdateComponentEvent>('adcm/ws/update_component'),
-  update_provider: createAction<UpdateHostProviderEvent>('adcm/ws/update_hostprovider'),
+  update_hostprovider: createAction<UpdateHostProviderEvent>('adcm/ws/update_hostprovider'),
   update_host: createAction<UpdateHostEvent>('adcm/ws/update_host'),
-  update_task: createAction<UpdateTaskEvent>('adcm/ws/update_task'),
+  update_task: createAction<UpdateJobEvent>('adcm/ws/update_job'),
   update_hostcomponentmap: createAction<UpdateHostComponentMapEvent>('adcm/ws/update_hostcomponentmap'),
-};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} satisfies { [key in AdcmBackendEvent['event']]: ActionCreatorWithPayload<any> };

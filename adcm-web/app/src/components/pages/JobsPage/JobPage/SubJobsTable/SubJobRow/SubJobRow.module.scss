@@ -1,0 +1,16 @@
+:global {
+  body.theme-dark {
+    --job-page-table-subjobs-name-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --job-page-table-subjobs-name-color: var(--color-xdark);
+  }
+}
+
+.subJobRow {
+  &__subJobName {
+    color: var(--job-page-table-subjobs-name-color) !important;
+    font-weight: 500;
+  }
+}

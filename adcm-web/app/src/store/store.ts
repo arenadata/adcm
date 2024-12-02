@@ -62,6 +62,9 @@ import usersActionsSlice from './adcm/users/usersActionsSlice';
 import jobsSlice from './adcm/jobs/jobsSlice';
 import jobsTableSlice from './adcm/jobs/jobsTableSlice';
 import jobsActionsSlice from './adcm/jobs/jobsActionsSlice';
+import jobSlice from './adcm/jobs/jobSlice';
+import subJobSlice from './adcm/jobs/subJobSlice';
+import subJobsActionsSlice from './adcm/jobs/subJobsActionsSlice';
 import groupsSlice from './adcm/groups/groupsSlice';
 import groupsTableSlice from './adcm/groups/groupsTableSlice';
 import groupsActionsSlice from './adcm/groups/groupsActionsSlice';
@@ -188,6 +191,9 @@ const rootReducer = combineReducers({
     bell: bellSlice,
     jobsTable: jobsTableSlice,
     jobsActions: jobsActionsSlice,
+    job: jobSlice,
+    subJob: subJobSlice,
+    subJobsActions: subJobsActionsSlice,
     groups: groupsSlice,
     groupsTable: groupsTableSlice,
     groupsActions: groupsActionsSlice,

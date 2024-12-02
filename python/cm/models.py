@@ -1319,6 +1319,9 @@ class JobStatus(models.TextChoices):
     BROKEN = "broken", "broken"
 
 
+UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.RUNNING)
+
+
 class UserProfile(ADCMModel):
     login = models.CharField(max_length=1000, unique=True)
     profile = models.JSONField(default=str)
@@ -1348,6 +1351,11 @@ class TaskLog(ADCMModel):
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+    is_blocking = models.BooleanField(default=True)
+    """
+    Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,
+    but does affect concern interactions and action launch.
+    """
 
     __error_code__ = "TASK_NOT_FOUND"
 

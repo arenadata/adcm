@@ -1,7 +1,7 @@
 import React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { AdcmJob } from '@models/adcm';
-import { jobStatusesMap } from '../JobPageTable/JobPageTable.constants';
+import { jobStatusesMap } from '../JobPage.constants';
 
 interface JobPageHeaderNameProps {
   job: AdcmJob;

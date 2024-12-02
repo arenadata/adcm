@@ -12,7 +12,7 @@ const createInitialState = (): ListState<AdcmPoliciesFilter> => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: 'displayName',
+    sortBy: 'name',
     sortDirection: 'asc',
   },
 });

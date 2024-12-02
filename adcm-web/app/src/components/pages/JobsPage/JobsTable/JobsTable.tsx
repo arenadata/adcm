@@ -45,9 +45,9 @@ const JobsTable = () => {
             </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
             <JobObjectsCell objects={job.objects} />
-            <TableCell>{secondsToDuration(job.duration)}</TableCell>
-            <DateTimeCell value={job.startTime} />
-            <DateTimeCell value={job.endTime} />
+            <TableCell>{orElseGet(job.duration ?? 0, secondsToDuration)}</TableCell>
+            <DateTimeCell value={job.startTime ?? undefined} />
+            <DateTimeCell value={job.endTime ?? undefined} />
             <TableCell hasIconOnly align="center">
               <IconButton
                 icon="g1-stop"

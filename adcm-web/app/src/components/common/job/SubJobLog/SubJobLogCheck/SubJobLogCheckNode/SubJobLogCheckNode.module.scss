@@ -1,0 +1,111 @@
+:global {
+  body.theme-dark {
+    --subjob-node-background: transparent;
+    --subjob-node-background-hover: var(--color-xdark-plate10);
+
+    --subjob-node-status-color: var(--color-xgray-lighter);
+    --subjob-node-title-color: var(--color-xgray-lighter);
+
+    --subjob-node-status-color-hover: var(--color-xwhite-off);
+    --subjob-node-title-color-hover: var(--color-xwhite-off);
+
+    --subjob-node-status-color-open: var(--color-xwhite-off);
+    --subjob-node-title-color-open: var(--color-xgreen-saturated);
+
+    --subjob-node-title-color-failed: var(--color-xred);
+
+    --subjob-node-message-background: var(--color-xdark-plate10);
+    --subjob-node-message-color: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --subjob-node-background: transparent;
+    --subjob-node-background-hover: rgba(255, 255, 255, 0.4);
+
+    --subjob-node-status-color: var(--color-xgray-darker);
+    --subjob-node-title-color: var(--color-xgray-darker);
+
+    --subjob-node-status-color-hover: var(--color-xdark);
+    --subjob-node-title-color-hover: var(--color-xdark);
+
+    --subjob-node-status-color-open: var(--color-xdark);
+    --subjob-node-title-color-open: var(--color-xgreen);
+
+    --subjob-node-title-color-failed: var(--color-xred-light);
+
+    --subjob-node-message-background: #F7F9FA;
+    --subjob-node-message-color: var(--color-xgray-darker);
+  }
+}
+
+
+.subJobLogCheckNode {
+  border-radius: 16px;
+  border: 2px solid var(--subjob-node-border);
+  padding: 4px 8px;
+  transition: background-color 250ms;
+
+  background: var(--subjob-node-background);
+
+  &:hover {
+    --subjob-node-background: var(--subjob-node-background-hover);
+    --subjob-node-status-color: var(--subjob-node-status-color-hover);
+    --subjob-node-title-color: var(--subjob-node-title-color-hover);
+  }
+
+  &:global(.is-open) {
+    --subjob-node-status-color: var(--subjob-node-status-color-open);
+    --subjob-node-title-color: var(--subjob-node-title-color-open);
+
+    &:global(.is-failed) {
+      --subjob-node-title-color: var(--subjob-node-title-color-failed);
+    }
+  }
+
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  &__iconWrapper {
+    display: flex;
+    min-height: 20px;
+    align-items: center;
+  }
+
+  &__status {
+    color: var(--subjob-node-status-color);
+    transition: color 250ms;
+  }
+
+  &__title {
+    color: var(--subjob-node-title-color);
+    transition: color 250ms;
+    min-width: 0;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  &__arrow {
+    &_up {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__messagePanel {
+    margin: 6px 0 4px 0;
+    background: var(--subjob-node-message-background);
+    padding: 4px 8px 4px 10px;
+    border-radius: 12px;
+    color: var(--subjob-node-message-color);
+  }
+
+  &__message {
+    white-space: pre;
+    font-size: 13px;
+    line-height: 20px;
+    overflow: auto;
+  }
+}

@@ -50,6 +50,8 @@ class TaskPayloadDTO:
     hostcomponent: list[HostComponentEntry] | None = None
     post_upgrade_hostcomponent: list[dict] | None = None
 
+    is_blocking: bool = True
+
 
 class TaskMutableFieldsDTO(BaseModel):
     hostcomponent: HostComponentChanges

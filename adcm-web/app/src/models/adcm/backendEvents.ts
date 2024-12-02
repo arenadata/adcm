@@ -3,7 +3,7 @@ import type { AdcmCluster } from './cluster';
 import type { AdcmHostProvider } from './hostProvider';
 import type { AdcmHost } from './host';
 import type { AdcmServiceComponent } from './clusterServiceComponent';
-import type { AdcmTask } from './jobs';
+import type { AdcmJob } from './jobs';
 import type { AdcmService } from './service';
 
 // Config events
@@ -123,15 +123,15 @@ export type UpdateHostEvent = {
   };
 };
 
-// Task events
+// Job (Task) events
 
-type JobTask = Omit<AdcmTask, 'id'>;
+type JobChanges = Omit<AdcmJob, 'id'>;
 
-export type UpdateTaskEvent = {
-  event: 'update_task';
+export type UpdateJobEvent = {
+  event: 'update_task'; // <-- backend sends `update_task`, so we cann't change here to update_job
   object: {
     id: number;
-    changes: Partial<JobTask>;
+    changes: Partial<JobChanges>;
   };
 };
 
@@ -145,4 +145,4 @@ export type AdcmBackendEvent =
   | UpdateComponentEvent
   | UpdateHostProviderEvent
   | UpdateHostEvent
-  | UpdateTaskEvent;
+  | UpdateJobEvent;

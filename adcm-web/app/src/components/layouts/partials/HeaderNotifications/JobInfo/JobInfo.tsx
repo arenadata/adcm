@@ -18,7 +18,7 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
   return (
     <table className={s.jobs} data-test="jobs-notification-table">
       {jobs.map((job) => {
-        const jobName = orElseGet(job.displayName || '-');
+        const jobName = orElseGet(job.displayName || null);
         return (
           <tr key={job.id}>
             <td className={s.job__id}>{job.id}</td>
