@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
 import type { Node } from './CollapseNode.types';
 import s from './CollapseNode.module.scss';
@@ -29,14 +29,8 @@ const CollapseNode = <T,>({
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
   const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
-  const isNodeExpanded = useMemo(
-    () => (fieldAttributes?.isActive && isExpanded) ?? isExpanded,
-    [fieldAttributes, isExpanded],
-  );
-
-  const isIgnoreExpandAll = useMemo(() => {
-    return fieldAttributes?.isActive === false || node.key === rootNodeKey;
-  }, [fieldAttributes, node]);
+  const isNodeExpanded = fieldAttributes?.isActive !== false && isExpanded;
+  const isIgnoreExpandAll = node.key === rootNodeKey;
 
   const handleToggleAllNodes = useCallback(
     (e: CustomEvent<boolean>) => {
