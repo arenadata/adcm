@@ -26,7 +26,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   ) => {
     const className = cn(outerClassName, s.iconButton, s[`iconButton_${variant}`]);
     const dataTestValue = dataTest ? dataTest : (typeof title === 'string' && textToDataTestValue(title)) || undefined;
-    const otherProps = { ['data-test']: dataTestValue, ...props };
+    const otherProps = { 'data-test': dataTestValue, ...props };
 
     return (
       <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} {...tooltipProps}>

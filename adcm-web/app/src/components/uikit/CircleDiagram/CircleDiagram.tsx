@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './CircleDiagram.module.scss';
 import cn from 'classnames';
 import { ReactComponent as Circle } from './circle.svg';

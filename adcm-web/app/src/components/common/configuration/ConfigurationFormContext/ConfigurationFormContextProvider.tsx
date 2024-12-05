@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import type React from 'react';
+import { useCallback, useState } from 'react';
 import { ConfigurationFormContextContext } from './ConfigurationFormContext.context';
 import type { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 

@@ -29,7 +29,7 @@ const CodeEditorTextAreaV2 = ({ code, rowCount, isReadonly, onChange }: CodeEdit
       onChange={(event) => {
         onChange(event.target.value);
       }}
-      className={cn(s['codeEditor__textArea'], highlighterStyles.codeHighlighterFontParams)}
+      className={cn(s.codeEditor__textArea, highlighterStyles.codeHighlighterFontParams)}
       readOnly={isReadonly}
       value={code}
     />

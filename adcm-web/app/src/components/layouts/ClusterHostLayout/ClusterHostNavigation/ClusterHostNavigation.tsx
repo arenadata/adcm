@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { Tab, TabsBlock } from '@uikit';
 import SubNavigationWrapper from '@commonComponents/SubNavigationWrapper/SubNavigationWrapper';
 import { useDispatch, useStore } from '@hooks';

@@ -1,5 +1,6 @@
 import PageSection from '@commonComponents/PageSection/PageSection';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import s from './ProfilePage.module.scss';
 import { Button, FormField, FormFieldsContainer, LabeledField, Text } from '@uikit';
 import { useDispatch, useStore } from '@hooks';

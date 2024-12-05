@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './Switch.module.scss';
 import cn from 'classnames';
 
@@ -41,7 +41,7 @@ const Switch = ({
         disabled={disabled}
         {...rest}
       />
-      <span className={s.switchLabel}></span>
+      <span className={s.switchLabel} />
       {label || null}
     </label>
   );

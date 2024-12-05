@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useStore } from '@hooks';
 import MainInfoPanel from '@commonComponents/MainInfoPanel/MainInfoPanel';
 

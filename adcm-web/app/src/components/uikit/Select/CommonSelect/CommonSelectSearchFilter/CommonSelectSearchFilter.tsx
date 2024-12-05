@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import SearchInput from '@uikit/SearchInput/SearchInput';
 import { getFilteredOptions } from './CommonSelectSearchFilter.utils';
 import type { SelectOption } from '@uikit/Select/Select.types';

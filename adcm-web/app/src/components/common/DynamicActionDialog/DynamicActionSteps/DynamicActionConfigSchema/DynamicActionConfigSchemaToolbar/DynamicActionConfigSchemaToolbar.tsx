@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Button, ButtonGroup, SearchInput, Switch, ToolbarPanel } from '@uikit';
 import { useConfigurationFormContext } from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContext.context';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import Alert from '@layouts/partials/NotificationsSideBar/Alert/Alert';
 import { store } from '@store';

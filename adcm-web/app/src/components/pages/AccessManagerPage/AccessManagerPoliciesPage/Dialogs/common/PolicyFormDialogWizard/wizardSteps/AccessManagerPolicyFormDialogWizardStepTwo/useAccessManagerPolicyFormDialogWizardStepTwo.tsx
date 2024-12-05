@@ -21,7 +21,7 @@ export const useAccessManagerPolicyFormDialogWizardStepTwo = () => {
     return [
       ...new Map(
         services.map((service) => [
-          service['name'],
+          service.name,
           {
             value: service.name,
             label: service.displayName,

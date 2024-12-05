@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Outlet } from 'react-router-dom';
 import HostHeader from './HostHeader/HostHeader';
 import HostNavigation from './HostNavigation/HostNavigation';

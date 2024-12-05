@@ -11,7 +11,7 @@ interface AdcmProfileState {
   profile: AdcmProfileUser;
 }
 
-const getProfile = createAsyncThunk('adcm/profile', async (arg, thunkAPI) => {
+const getProfile = createAsyncThunk('adcm/profile', async (_arg, thunkAPI) => {
   try {
     return await AdcmProfileApi.getProfile();
   } catch (error) {

@@ -9,7 +9,7 @@ import { getClusterHosts, setHostMaintenanceMode } from './hostsSlice';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
+const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (_arg, thunkAPI) => {
   try {
     const hostsDefault = await AdcmHostsApi.getHosts();
 

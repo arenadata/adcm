@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter } from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
 import { Button, LabeledField, Select, DatePicker } from '@uikit';

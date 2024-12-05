@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import ClusterHostComponents from '@pages/cluster/host/HostComponents/HostComponents';
 import { useStore } from '@hooks';
 import { Spinner, Text } from '@uikit';

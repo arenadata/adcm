@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeBlockDialog, blockUsers } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const AccessManagerUsersBlockDialog: React.FC = () => {
   const dispatch = useDispatch();

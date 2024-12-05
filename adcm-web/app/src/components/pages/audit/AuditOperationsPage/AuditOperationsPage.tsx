@@ -1,4 +1,3 @@
-import React from 'react';
 import { useRequestAuditOperations } from './useRequestAuditOperations';
 import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
 import AuditOperationsTable from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperationsTable';

@@ -16,7 +16,7 @@
     "attributePosition": "auto",
     "bracketSpacing": true
   },
-  "organizeImports": { "enabled": true },
+  "organizeImports": { "enabled": false },
   "linter": {
     "enabled": true,
     "rules": {
@@ -26,8 +26,13 @@
         "noForEach": "off"
       },
       "style": {
-        "useImportType": "off",
-        "noNonNullAssertion": "off"
+        "useImportType": "error",
+        "noNonNullAssertion": "off",
+        // TODO:
+        // there are too many cases where the "else" clause is said to be redundant
+        // they must be refactored and checked carefully
+        // remove the string below once these conditions are fixed
+        "noUselessElse": "off"
       },
       "correctness": {
         "useExhaustiveDependencies": "off",
@@ -36,7 +41,13 @@
       },
       "a11y": {
         "useButtonType": "off",
-        "useKeyWithClickEvents": "off"
+        "useKeyWithClickEvents": "off",
+        "noLabelWithoutControl": "off",
+        "noSvgWithoutTitle": "off",
+        "noPositiveTabindex": "off"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "off"
       }
     }
   },

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import PageSection from '@commonComponents/PageSection/PageSection';
 import s from './ClusterOverviewHosts.module.scss';
 import ClusterOverviewDiagram from '@pages/cluster/ClusterOverview/ClusterOverviewDiagram/ClusterOverviewDiagram';
@@ -25,8 +25,8 @@ const ClusterOverviewHosts = () => {
     dispatch(setPaginationParams(newPaginationParams));
   };
 
-  const firstHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 === 0), [hostsStatuses]);
-  const secondHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 !== 0), [hostsStatuses]);
+  const firstHostsGroup = useMemo(() => hostsStatuses.filter((_item, id) => id % 2 === 0), [hostsStatuses]);
+  const secondHostsGroup = useMemo(() => hostsStatuses.filter((_item, id) => id % 2 !== 0), [hostsStatuses]);
 
   const currentCount = useMemo(() => (!filter.hostsStatus ? upCount : count), [upCount, count, filter.hostsStatus]);
 

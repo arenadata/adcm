@@ -1,4 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
+import type React from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useResizeObserver } from '@hooks';
 import Collapse from '@uikit/Collapse/Collapse';
 import TableRow from '@uikit/Table/TableRow/TableRow';

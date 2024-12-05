@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Table, TableCell, TableRow } from '@uikit';
 import { columns, hostStatusesMap } from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable.constant';

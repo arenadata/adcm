@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { columns, loginsAuditInactiveResults } from './AuditLoginsTable.constants';
 import { Table, TableCell, TableRow } from '@uikit';

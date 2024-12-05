@@ -1,5 +1,6 @@
 import { Table, TableCell, TableRow } from '@uikit';
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { columns } from './BundleOverviewTable.constants';
 import { useStore } from '@hooks';
 import { encode } from 'js-base64';

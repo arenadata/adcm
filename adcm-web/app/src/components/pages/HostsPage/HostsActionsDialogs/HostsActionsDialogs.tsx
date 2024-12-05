@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import HostDeleteDialog from './HostDeleteDialog/HostDeleteDialog';
 import CreateHostDialog from './CreateHostDialog/CreateHostDialog';
 import LinkHostDialog from './LinkHostDialog/LinkHostDialog';

@@ -1,7 +1,8 @@
 import { useDispatch } from '@hooks';
 import { deleteHost } from '@store/adcm/hosts/hostsActionsSlice';
 import { Button, Dialog } from '@uikit';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const HostDeleteButton: React.FC = () => {

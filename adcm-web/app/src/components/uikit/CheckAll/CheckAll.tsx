@@ -1,5 +1,6 @@
 import Checkbox from '@uikit/Checkbox/Checkbox';
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 
 export interface CheckAllProps<T> {
   allList: T[];

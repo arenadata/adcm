@@ -6,7 +6,7 @@ export interface FieldNodeErrorsProps {
 }
 
 const FieldNodeErrors = ({ fieldErrors }: FieldNodeErrorsProps) => {
-  const hasOneOfKeywordError = Boolean(fieldErrors.messages['oneOf']);
+  const hasOneOfKeywordError = Boolean(fieldErrors.messages.oneOf);
 
   return (
     <div className={s.fieldNodeErrors}>

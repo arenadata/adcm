@@ -5,7 +5,7 @@ import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import MappedHost from './MappedHost/MappedHost';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import ComponentRestrictions from '../../HostsMapping/RestrictionsList/ComponentRestrictions';
-import { type AdcmHostShortView, type AdcmMappingComponent } from '@models/adcm';
+import type { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
 import type {
   ComponentAvailabilityErrors,
   ComponentMapping,

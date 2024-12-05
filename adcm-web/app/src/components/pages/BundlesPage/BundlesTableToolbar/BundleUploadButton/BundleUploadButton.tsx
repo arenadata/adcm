@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
-import React, { useRef } from 'react';
+import type React from 'react';
+import { useRef } from 'react';
 import { Button } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { uploadWithUpdateBundles } from '@store/adcm/bundles/bundlesActionsSlice';

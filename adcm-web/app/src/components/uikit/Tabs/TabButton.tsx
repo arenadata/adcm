@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
 import s from '@uikit/Tabs/Tabs.module.scss';
 import type { TabButtonProps } from '@uikit/Tabs/Tab.types';

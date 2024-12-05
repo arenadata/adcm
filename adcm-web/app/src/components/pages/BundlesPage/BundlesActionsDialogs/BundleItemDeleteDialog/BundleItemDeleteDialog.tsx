@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Dialog from '@uikit/Dialog/Dialog';
 import { useDispatch, useStore } from '@hooks';
 import { deleteWithUpdateBundles, closeDeleteDialog } from '@store/adcm/bundles/bundlesActionsSlice';

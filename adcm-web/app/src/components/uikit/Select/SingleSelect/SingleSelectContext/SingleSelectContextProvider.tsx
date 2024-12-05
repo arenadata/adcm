@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import type { SingleSelectOptions } from '@uikit/Select/Select.types';
 import type { SingleSelectContextOptions } from './SingleSelect.context';
 import { SingleSelectContext } from './SingleSelect.context';

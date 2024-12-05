@@ -1,4 +1,3 @@
-import React from 'react';
 import s from './ClusterOverviewServiceItem.module.scss';
 import { Statusable, Tooltip } from '@uikit';
 import type { AdcmClusterOverviewStatusService } from '@models/adcm';

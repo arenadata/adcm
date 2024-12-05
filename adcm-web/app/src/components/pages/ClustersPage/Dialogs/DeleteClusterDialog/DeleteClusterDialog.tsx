@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { deleteClusterWithUpdate, closeDeleteDialog } from '@store/adcm/clusters/clustersActionsSlice';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const DeleteClusterDialog: React.FC = () => {
   const dispatch = useDispatch();

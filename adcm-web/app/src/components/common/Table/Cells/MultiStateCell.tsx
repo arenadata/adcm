@@ -1,6 +1,5 @@
 import type { AdcmCluster, AdcmClusterHost, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
 import { ConditionalWrapper, TableCell, Tooltip } from '@uikit';
-import React from 'react';
 
 interface MultiStateCellProps {
   entity: AdcmCluster | AdcmClusterHost | AdcmHostProvider | AdcmHost | AdcmService;

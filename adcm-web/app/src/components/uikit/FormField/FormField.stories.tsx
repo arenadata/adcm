@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import FormField from '@uikit/FormField/FormField';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import Input from '@uikit/Input/Input';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import Button from '@uikit/Button/Button';

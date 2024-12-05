@@ -1,5 +1,4 @@
 import type { ChangeEvent } from 'react';
-import React from 'react';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import s from './MultiSelectList.module.scss';

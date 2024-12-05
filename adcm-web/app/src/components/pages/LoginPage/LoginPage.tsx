@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import NonAuthLayout from '@layouts/NonAuthLayout/NonAuthLayout';
 import { useStore } from '@hooks';
 import LoginForm from '@pages/LoginPage/LoginForm/LoginForm';

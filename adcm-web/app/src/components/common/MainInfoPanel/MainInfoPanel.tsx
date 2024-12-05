@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import parse, { Element } from 'html-react-parser';
 import cn from 'classnames';

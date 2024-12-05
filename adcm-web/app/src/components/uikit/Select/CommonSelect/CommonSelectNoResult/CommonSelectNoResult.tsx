@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './CommonSelectNoResult.module.scss';
 
 const CommonSelectNoResult: React.FC = () => (

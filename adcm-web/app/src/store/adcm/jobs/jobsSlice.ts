@@ -11,7 +11,7 @@ interface AdcmJobsState {
   isLoading: boolean;
 }
 
-const loadJobsFromBackend = createAsyncThunk('adcm/jobs/loadJobsFromBackend', async (arg, thunkAPI) => {
+const loadJobsFromBackend = createAsyncThunk('adcm/jobs/loadJobsFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       jobsTable: { filter, paginationParams, sortParams },
@@ -26,7 +26,7 @@ const loadJobsFromBackend = createAsyncThunk('adcm/jobs/loadJobsFromBackend', as
   }
 });
 
-const getJobs = createAsyncThunk('adcm/jobs/getJobs', async (arg, thunkAPI) => {
+const getJobs = createAsyncThunk('adcm/jobs/getJobs', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
@@ -41,7 +41,7 @@ const getJobs = createAsyncThunk('adcm/jobs/getJobs', async (arg, thunkAPI) => {
   });
 });
 
-const refreshJobs = createAsyncThunk('adcm/jobs/refreshJobs', async (arg, thunkAPI) => {
+const refreshJobs = createAsyncThunk('adcm/jobs/refreshJobs', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadJobsFromBackend());
 });
 

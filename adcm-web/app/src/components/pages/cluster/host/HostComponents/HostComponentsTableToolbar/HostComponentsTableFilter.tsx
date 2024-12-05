@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter } from '@store/adcm/hostComponents/hostComponentsTableSlice';
 import { SearchInput } from '@uikit';

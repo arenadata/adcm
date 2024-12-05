@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import type { ErrorNotification } from '@models/notification';
 import Alert from './Alert';
 import type { AlertOptions } from './Alert.types';

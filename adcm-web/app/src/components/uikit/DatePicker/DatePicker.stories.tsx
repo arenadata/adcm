@@ -35,7 +35,7 @@ export const DatePickerStory: Story = {
 
     const handleSubmit = (d: Date | undefined) => {
       setDate(d);
-      onSubmit && onSubmit(d);
+      onSubmit?.(d);
     };
 
     return (

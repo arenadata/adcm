@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import AccessManagerPoliciesTable from './AccessManagerPoliciesTable/AccessManagerPoliciesTable';
 import { useRequestAccessManagerPolicies } from './useRequestAccessManagerPolicies';
 import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';

@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 import { deleteService, closeDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const DeleteClusterServiceDialog: React.FC = () => {

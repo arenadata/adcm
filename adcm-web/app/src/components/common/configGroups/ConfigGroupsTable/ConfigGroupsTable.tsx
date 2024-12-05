@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import { columns } from './ConfigGroupsTable.constants';
 import type { AdcmConfigGroup } from '@models/adcm';

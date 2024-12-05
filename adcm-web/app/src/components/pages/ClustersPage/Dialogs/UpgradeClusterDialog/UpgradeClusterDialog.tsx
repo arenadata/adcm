@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Checkbox, Dialog } from '@uikit';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmLicenseStatus } from '@models/adcm';

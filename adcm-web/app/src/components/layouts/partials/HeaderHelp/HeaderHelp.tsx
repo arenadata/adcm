@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
@@ -18,7 +19,7 @@ const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
     className,
   } = props;
 
-  if (typeof value !== 'string') return <li></li>;
+  if (typeof value !== 'string') return <li />;
 
   return (
     <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">

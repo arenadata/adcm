@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useStore } from '@hooks';
 import { FormFieldsContainer, MultiSelectPanel, Spinner } from '@uikit';
 import type { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
@@ -69,10 +70,9 @@ const SelectServicesStep: React.FC<AddClusterServicesStepProps> = ({
             />
           )}
           {hasUnacceptedSelectedServices && (
-            <WarningMessage
-              className={s.selectServicesStep__warning}
-              children="Services you selected require you to accept Terms of Agreement"
-            />
+            <WarningMessage className={s.selectServicesStep__warning}>
+              Services you selected require you to accept Terms of Agreement
+            </WarningMessage>
           )}
         </>
       )}

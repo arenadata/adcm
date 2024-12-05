@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
 import { useAccessManagerPolicyUpdateDialog } from './useAccessManagerPolicyUpdateDialog';
 import type { ChangeFormDataPayload } from '../common/AccessManagerPolicyFormDialog.types';

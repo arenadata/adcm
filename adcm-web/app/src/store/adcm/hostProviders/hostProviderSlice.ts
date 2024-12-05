@@ -67,7 +67,7 @@ const hostProviderSlice = createSlice({
     });
     builder.addCase(wsActions.update_hostprovider, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.hostProvider?.id == id) {
+      if (state.hostProvider?.id === id) {
         state.hostProvider = {
           ...state.hostProvider,
           ...changes,

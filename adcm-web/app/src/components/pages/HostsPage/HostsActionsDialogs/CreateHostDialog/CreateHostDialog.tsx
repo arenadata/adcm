@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input, Select } from '@uikit';
 import { useCreateHostForm } from './useCreateHostForm';
 import { useDispatch, useStore } from '@hooks';

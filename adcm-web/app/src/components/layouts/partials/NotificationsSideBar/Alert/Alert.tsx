@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
 import type { IconsNames } from '@uikit';
 import { Button, Icon } from '@uikit';

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import PaginationNumButton from './PaginationButtons/PaginationNumButton';
 import PaginationStepButton from './PaginationButtons/PaginationStepButton';
 import PaginationDots from './PaginationButtons/PaginationDots';

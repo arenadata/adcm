@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import HostComponentsTable from './HostComponentsTable/HostComponentsTable';
 import HostComponentsTableToolbar from './HostComponentsTableToolbar/HostComponentsTableToolbar';
 import HostComponentsTableFooter from './HostComponentsTableFooter/HostComponentsTableFooter';

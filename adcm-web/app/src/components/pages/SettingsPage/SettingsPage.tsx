@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import SettingsHeader from './SettingsHeader/SettingsHeader';
 import SettingsConfiguration from './SettingsConfiguration/SettingsConfiguration';
 import { useRequestAdcmSettings } from '@pages/SettingsPage/useRequestAdcmSettings';

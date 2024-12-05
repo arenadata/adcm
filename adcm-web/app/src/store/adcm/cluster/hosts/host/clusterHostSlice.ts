@@ -136,7 +136,7 @@ const clusterHostSlice = createSlice({
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.clusterHost?.id == id) {
+      if (state.clusterHost?.id === id) {
         state.clusterHost = { ...state.clusterHost, ...changes };
       }
     });

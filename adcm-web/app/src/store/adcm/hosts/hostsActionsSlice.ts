@@ -10,7 +10,7 @@ import type { SortParams } from '@models/table';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (arg, thunkAPI) => {
+const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (_arg, thunkAPI) => {
   try {
     const clusters = await AdcmClustersApi.getClusters();
     return clusters.results;
@@ -19,7 +19,7 @@ const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (a
   }
 });
 
-const loadHostProviders = createAsyncThunk('adcm/hostsActions/hostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/hostsActions/hostProviders', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };

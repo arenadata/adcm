@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { columns, hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';

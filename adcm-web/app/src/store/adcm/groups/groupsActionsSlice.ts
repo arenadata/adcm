@@ -45,7 +45,7 @@ const updateGroup = createAsyncThunk(
   },
 );
 
-const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, thunkAPI) => {
+const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (_arg, thunkAPI) => {
   try {
     const sortParams: SortParams = {
       sortBy: 'username',

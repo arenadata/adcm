@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeDeleteDialog, deletePolicyWithUpdate } from '@store/adcm/policies/policiesActionsSlice';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const AccessManagerPolicyDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();

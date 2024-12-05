@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { AdcmJob } from '@models/adcm';
 import { jobStatusesMap } from '../JobPage.constants';

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import React from 'react';
+import type React from 'react';
 import type { ModalOptions } from './Modal.types';
 import {
   FloatingFocusManager,

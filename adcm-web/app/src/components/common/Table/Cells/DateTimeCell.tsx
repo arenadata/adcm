@@ -1,4 +1,3 @@
-import React from 'react';
 import { orElseGet } from '@utils/checkUtils';
 import type { TableCellProps } from '@uikit';
 import { TableCell } from '@uikit';

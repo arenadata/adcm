@@ -79,7 +79,7 @@ const updateRole = createAsyncThunk(
   },
 );
 
-const loadAllRoles = createAsyncThunk('adcm/role/createRoleDialog/loadAllRoles', async (arg, thunkAPI) => {
+const loadAllRoles = createAsyncThunk('adcm/role/createRoleDialog/loadAllRoles', async (_arg, thunkAPI) => {
   try {
     const sortParams = {
       sortBy: 'displayName',
@@ -114,7 +114,7 @@ const loadAllRoles = createAsyncThunk('adcm/role/createRoleDialog/loadAllRoles',
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/role/createRoleDialog/loadRelatedData', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/role/createRoleDialog/loadRelatedData', async (_arg, thunkAPI) => {
   await thunkAPI.dispatch(loadAllRoles());
 });
 

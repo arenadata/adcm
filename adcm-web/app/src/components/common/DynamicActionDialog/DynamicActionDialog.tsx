@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { Dialog } from '@uikit';
 import DynamicActionSteps from './DynamicActionSteps/DynamicActionSteps';
 import { getDynamicActionSteps } from './DynamicActionDialog.utils';

@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import ScrollBar from '@uikit/ScrollBar/ScrollBar';
 import ScrollBarWrapper from '@uikit/ScrollBar/ScrollBarWrapper';

@@ -116,7 +116,7 @@ const hostSlice = createSlice({
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id: hostId, changes } = action.payload.object;
-      if (state.host?.id == hostId) {
+      if (state.host?.id === hostId) {
         state.host = { ...state.host, ...changes };
       }
     });

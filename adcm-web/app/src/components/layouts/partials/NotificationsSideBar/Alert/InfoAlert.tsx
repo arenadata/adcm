@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Alert from './Alert';
 import type { InfoNotification } from '@models/notification';
 import type { AlertOptions } from './Alert.types';

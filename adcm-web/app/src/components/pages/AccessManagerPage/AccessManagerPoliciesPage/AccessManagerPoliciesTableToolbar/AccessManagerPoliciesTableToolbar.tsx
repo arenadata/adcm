@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import { Button } from '@uikit';
 import AccessManagerPoliciesTableFilters from './AccessManagerPoliciesTableFilters';

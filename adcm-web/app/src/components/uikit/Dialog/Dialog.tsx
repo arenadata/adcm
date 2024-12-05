@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Modal from '@uikit/Modal/Modal';
 import type { ModalOptions } from '@uikit/Modal/Modal.types';
 import IconButton from '@uikit/IconButton/IconButton';

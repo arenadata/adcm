@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import React from 'react';
+import type React from 'react';
 import { Checkbox, IconButton, Tag } from '@uikit';
 import type { ListTransferItemOptions } from '@uikit/ListTransfer/ListTransfer.types';
 

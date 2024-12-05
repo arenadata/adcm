@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Pagination from '@uikit/Pagination/Pagination';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { PaginationProps } from '@uikit/Pagination/Pagination.types';

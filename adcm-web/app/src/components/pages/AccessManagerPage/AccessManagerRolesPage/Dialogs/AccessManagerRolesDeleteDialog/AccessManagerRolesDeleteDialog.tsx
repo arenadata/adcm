@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeDeleteDialog, deleteRoleWithUpdate } from '@store/adcm/roles/rolesActionsSlice';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const AccessManagerRolesDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();

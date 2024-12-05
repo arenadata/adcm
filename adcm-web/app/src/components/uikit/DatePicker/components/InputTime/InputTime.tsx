@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldStyles } from '@uikit/Field/useFieldStyles';
 import type { ChangeDateHandler } from '@uikit/DatePicker/DatePicker.types';
 import { format, isValid } from '@utils/date';

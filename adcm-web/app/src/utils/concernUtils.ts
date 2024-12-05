@@ -58,9 +58,10 @@ export const getConcernLinkObjectPathsDataArray = (
       if (text === '') return concernLinksData;
       if (linksDataMap.has(text)) {
         const linkData = linksDataMap.get(text);
+        // biome-ignore lint/performance/noAccumulatingSpread: TODO: refactor the thing
         return [...concernLinksData, { path: linkData?.path || '', text: linkData?.text || '' }];
       }
-
+      // biome-ignore lint/performance/noAccumulatingSpread: TODO: refactor the thing
       return [...concernLinksData, { text }];
     }, initialLinksData);
   });

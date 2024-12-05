@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
 import { useRequiredServicesDialog } from './useRequiredServicesDialog';
 import ShowServices from './ShowServices/ShowServices';

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { AdcmJob } from '@models/adcm';
 import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
 import { Link } from 'react-router-dom';
@@ -23,7 +23,7 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
           <tr key={job.id}>
             <td className={s.job__id}>{job.id}</td>
             <td className={s.job__icon}>
-              <JobsStatusIconCell dataTest={'job_status_' + job.status} size={14} status={job.status} />
+              <JobsStatusIconCell dataTest={`job_status_${job.status}`} size={14} status={job.status} />
             </td>
             <td className={s.job__link}>
               <ConditionalWrapper
