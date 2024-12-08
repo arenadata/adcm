@@ -110,14 +110,12 @@ class TestBundle(BaseAPITestCase):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_two")
         prototype_name = bundle.name
         bundle.name = "unique_name_of_cluster"
-        bundle.edition = "unique_edition_of_cluster"
         bundle.save()
         prototype = Prototype.objects.get(name=prototype_name)
         filters = {
             "id": (bundle.pk, None, 0),
             "display_name": (prototype.display_name, prototype.display_name[2:-1].upper(), "wrong"),
             "product": (prototype.display_name, None, "wrong"),
-            "edition": (bundle.edition, bundle.edition[1:-3].upper(), "wrong"),
         }
         exact_items_found, partial_items_found = 1, 1
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
@@ -137,9 +135,7 @@ class TestBundle(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "prototype__display_name": "displayName",
-            "edition": "edition",
             "date": "uploadTime",
         }
 

@@ -28,6 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models import QuerySet
+from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
@@ -170,6 +171,11 @@ class Bundle(ADCMModel):
 
     class Meta:
         unique_together = (("name", "version", "edition"),)
+        indexes = [
+            models.Index(Lower("name"), name="bundle_lower_name_idx"),
+            models.Index(Lower("version"), name="bundle_lower_version_idx"),
+            models.Index(Lower("edition"), name="bundle_lower_edition_idx"),
+        ]
 
 
 class ProductCategory(ADCMModel):
