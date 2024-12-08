@@ -20,8 +20,8 @@ from api_v2.filters import AdvancedFilterSet
 
 class BundleFilter(
     AdvancedFilterSet,
-    char_fields=[("name", "prototype__display_name"), "version", "edition"],
-    number_fields=["id"],
+    char_fields=(("name", "prototype__display_name"), "version", "edition"),
+    number_fields=("id",),
 ):
     display_name = CharFilter(label="Display name", field_name="prototype__display_name", method="filter_display_name")
     product = CharFilter(label="Product name", field_name="prototype__display_name", method="filter_product")

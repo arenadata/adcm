@@ -180,18 +180,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 description="Case insensitive and partial filter by cluster name.",
             ),
             OpenApiParameter(
-                name="description",
-                location=OpenApiParameter.QUERY,
-                type=str,
-                description="Case insensitive and partial filter by description.",
-            ),
-            OpenApiParameter(
-                name="state",
-                location=OpenApiParameter.QUERY,
-                type=str,
-                description="Case insensitive and partial filter by state.",
-            ),
-            OpenApiParameter(
                 name="status",
                 location=OpenApiParameter.QUERY,
                 type=str,
@@ -199,18 +187,21 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 enum=("up", "down"),
             ),
             OpenApiParameter(
+                name="prototypeName", location=OpenApiParameter.QUERY, type=str, description="Filter by prototype name."
+            ),
+            OpenApiParameter(
+                name="prototypeDisplayName",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Filter by prototype display name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
                 enum=(
-                    "id",
-                    "-id",
                     "name",
                     "-name",
-                    "state",
-                    "-state",
-                    "description",
-                    "-description",
                     "prototypeDisplayName",
                     "-prototypeDisplayName",
                 ),
@@ -241,10 +232,33 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
     services_statuses=extend_schema(
         operation_id="getClusterServiceStatuses",
-        summary="GET cluster service statuses",
+        summary="Get information about cluster service statuses.",
         description="Get information about cluster service statuses.",
-        responses=responses(success=RelatedServicesStatusesSerializer, errors=HTTP_404_NOT_FOUND),
-        parameters=[DefaultParams.STATUS_REQUIRED],
+        responses=responses(
+            success=RelatedServicesStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
+        ),
+        parameters=[
+            DefaultParams.ordering_by("displayName"),
+            OpenApiParameter(
+                name="status",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Filter by status",
+                type=str,
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=int,
+                enum=[
+                    "id",
+                    "-id",
+                ],
+            ),
+        ],
     ),
     service_prototypes=extend_schema(
         operation_id="getServicePrototypes",
@@ -302,10 +316,33 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
     hosts_statuses=extend_schema(
         operation_id="getClusterHostStatuses",
-        summary="Get information about cluster host statuses.",
-        description="Get information about cluster service statuses.",
-        responses=responses(success=RelatedServicesStatusesSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
-        parameters=[DefaultParams.STATUS_REQUIRED],
+        summary="Get information about cluster hosts statuses.",
+        description="Get information about cluster hosts statuses.",
+        responses=responses(
+            success=RelatedHostsStatusesSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
+        ),
+        parameters=[
+            DefaultParams.ordering_by("name"),
+            OpenApiParameter(
+                name="status",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Filter by status",
+                type=str,
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=int,
+                enum=[
+                    "id",
+                    "-id",
+                ],
+            ),
+        ],
     ),
     mapping_hosts=extend_schema(
         operation_id="getMappingHosts",

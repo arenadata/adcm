@@ -45,7 +45,7 @@ class NumberInFilter(BaseInFilter, NumberFilter):
     ...
 
 
-def _prepare_filter_fields(fields: list[str | tuple[str, ...]]) -> Generator[tuple[str, str], None, None]:
+def _prepare_filter_fields(fields: tuple[str | tuple[str, ...], ...]) -> Generator[tuple[str, str], None, None]:
     for field in fields:
         if isinstance(field, tuple):
             filter_name, field_name = field
@@ -58,8 +58,8 @@ def _prepare_filter_fields(fields: list[str | tuple[str, ...]]) -> Generator[tup
 class AdvancedFilterSetMetaclass(FilterSetMetaclass):
     def __new__(cls, *args, **kwargs):
         name, bases, attrs = args
-        char_fields: list[str | tuple[str, str]] = kwargs.get("char_fields", [])
-        number_fields: list[str | tuple[str, str]] = kwargs.get("number_fields", [])
+        char_fields: tuple[str | tuple[str, str], ...] = kwargs.get("char_fields", ())
+        number_fields: tuple[str | tuple[str, str], ...] = kwargs.get("number_fields", ())
 
         for filter_name, field_name in _prepare_filter_fields(fields=char_fields):
             attrs[f"{filter_name}__eq"] = CharFilter(field_name=field_name, lookup_expr="exact")

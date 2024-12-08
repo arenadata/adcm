@@ -22,39 +22,30 @@ from django_filters.rest_framework import (
     OrderingFilter,
 )
 
-from api_v2.filters import filter_service_status
+from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 
-class ClusterFilter(FilterSet):
+class ClusterFilter(AdvancedFilterSet, char_fields=("name",), number_fields=(("bundle", "prototype__bundle__id"),)):
+    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name", lookup_expr="icontains")
-    prototype_display_name = CharFilter(
-        label="Cluster prototype display name", field_name="prototype__display_name", lookup_expr="icontains"
-    )
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
+    prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
-    description = CharFilter(label="Cluster description", lookup_expr="icontains")
-    state = CharFilter(label="Cluster state", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
-            "id": "id",
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
-            "state": "state",
-            "description": "description",
         },
         field_labels={
-            "id": "ID",
             "name": "Cluster name",
             "prototype__display_name": "Product",
-            "state": "State",
-            "description": "Description",
         },
         label="ordering",
     )
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name", "state", "description")
+        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
@@ -74,6 +65,7 @@ class ClusterFilter(FilterSet):
 
 class ClusterHostFilter(FilterSet):
     status = ChoiceFilter(label="Host status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
@@ -89,6 +81,7 @@ class ClusterHostFilter(FilterSet):
 
 class ClusterServiceFilter(FilterSet):
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
