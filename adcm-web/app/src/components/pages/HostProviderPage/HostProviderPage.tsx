@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Outlet } from 'react-router-dom';
 import s from './HostProviderPage.module.scss';
 import HostProviderNavigation from './HostProviderNavigation/HostProviderNavigation';

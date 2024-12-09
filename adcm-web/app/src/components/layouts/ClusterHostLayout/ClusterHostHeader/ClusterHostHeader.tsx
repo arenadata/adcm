@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { ButtonGroup } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useStore } from '@hooks';
@@ -20,9 +20,7 @@ const ClusterHostHeader: React.FC = () => {
 
   return (
     <EntityHeader
-      title={orElseGet(clusterHost, (clusterHost) => (
-        <HostName host={clusterHost} />
-      ))}
+      title={orElseGet(clusterHost, (clusterHost) => <HostName host={clusterHost} />)}
       central={orElseGet(clusterHost, (clusterHost) => (
         <>
           <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>

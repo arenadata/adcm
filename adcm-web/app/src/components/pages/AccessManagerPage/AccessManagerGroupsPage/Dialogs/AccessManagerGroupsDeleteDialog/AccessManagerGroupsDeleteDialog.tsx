@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { deleteGroupsWithUpdate, closeDeleteDialog } from '@store/adcm/groups/groupsActionsSlice';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const AccessManagerGroupsDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();

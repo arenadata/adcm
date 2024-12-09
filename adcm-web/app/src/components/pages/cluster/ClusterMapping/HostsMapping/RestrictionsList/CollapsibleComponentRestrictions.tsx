@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { AdcmMappingComponent } from '@models/adcm';
 import { Collapse, Icon } from '@uikit';
 import ComponentRestrictions from './ComponentRestrictions';
@@ -20,7 +20,7 @@ const CollapsibleComponentRestrictions = (props: CollapsibleComponentRestriction
   };
 
   const iconClassName = cn(s.collapsibleComponentRestrictions__icon, {
-    ['is-open']: isExpanded,
+    'is-open': isExpanded,
   });
 
   return (

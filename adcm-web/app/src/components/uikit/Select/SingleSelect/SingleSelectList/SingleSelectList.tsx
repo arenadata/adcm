@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type { SelectOption, DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import s from './SingleSelectList.module.scss';
 import cn from 'classnames';

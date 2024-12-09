@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import type { SwitchProps } from './Switch';
 import Switch from './Switch';
 import type { Meta, StoryObj } from '@storybook/react';

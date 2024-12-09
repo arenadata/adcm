@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
 import HostsTableToolbar from '@pages/HostsPage/HostsTableToolbar/HostsTableToolbar';
 import HostsTable from '@pages/HostsPage/HostsTable/HostsTable';

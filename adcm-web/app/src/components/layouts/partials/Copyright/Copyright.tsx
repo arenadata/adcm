@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './Copyright.module.scss';
 
 const currentYear = new Date().getFullYear();

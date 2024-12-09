@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { AdcmComponentDependency, AdcmPrototypeShortView } from '@models/adcm';
 import { useStore } from '@hooks';
 import MarkedList from '@uikit/MarkedList/MarkedList';
@@ -36,10 +36,9 @@ const ShowServices: React.FC<ShowServicesProps> = ({ dependsServices, unaccepted
       <MarkedList list={dependsServices} getItemKey={getServiceKey} renderItem={renderServiceItem} />
 
       {hasUnacceptedSelectedServices && (
-        <WarningMessage
-          className={s.showServices__warning}
-          children="Services you selected require you to accept Terms of Agreement"
-        />
+        <WarningMessage className={s.showServices__warning}>
+          Services you selected require you to accept Terms of Agreement
+        </WarningMessage>
       )}
     </div>
   );

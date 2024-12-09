@@ -23,7 +23,7 @@ const AccessManagerPoliciesTableExpandedContent = ({ objects }: AccessManagerPol
           {objects.length > 0 && (
             <Tags className={s.content__tags}>
               {objects.map((object: AdcmPolicyObject) => (
-                <Tag key={object.id} children={object.displayName} />
+                <Tag key={object.id}>{object.displayName}</Tag>
               ))}
             </Tags>
           )}

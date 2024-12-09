@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import SettingsDynamicActionsIcon from './SettingsDynamicActionsIcon/SettingsDynamicActionsIcon';
 import Concern from '@commonComponents/Concern/Concern';

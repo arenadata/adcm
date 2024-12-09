@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import s from './BundleOverviewAcceptPanel.module.scss';
 import { Button, Checkbox } from '@uikit';
 import { useDispatch } from '@hooks';

@@ -42,5 +42,5 @@ export const wsActions = {
   update_host: createAction<UpdateHostEvent>('adcm/ws/update_host'),
   update_task: createAction<UpdateJobEvent>('adcm/ws/update_job'),
   update_hostcomponentmap: createAction<UpdateHostComponentMapEvent>('adcm/ws/update_hostcomponentmap'),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
 } satisfies { [key in AdcmBackendEvent['event']]: ActionCreatorWithPayload<any> };

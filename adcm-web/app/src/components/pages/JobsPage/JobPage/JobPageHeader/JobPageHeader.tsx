@@ -9,14 +9,7 @@ export interface JobPageHeaderProps {
 }
 
 const JobPageHeader = ({ job }: JobPageHeaderProps) => {
-  return (
-    <EntityHeader
-      title={orElseGet(job, (job) => (
-        <JobPageHeaderName job={job} />
-      ))}
-      className={s.overviewHeader}
-    />
-  );
+  return <EntityHeader title={orElseGet(job, (job) => <JobPageHeaderName job={job} />)} className={s.overviewHeader} />;
 };
 
 export default JobPageHeader;

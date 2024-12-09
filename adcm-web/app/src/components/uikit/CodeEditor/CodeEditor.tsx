@@ -30,13 +30,9 @@ const TagWithContext: React.FC<{ children: HighlighterChildType }> = ({ children
   const { code, isReadonly, onChange, onKeyDown } = useContext(CodeCtx);
 
   return (
-    <CodeEditorContent
-      children={children}
-      code={code}
-      isReadonly={isReadonly}
-      onChange={onChange}
-      onKeyDown={onKeyDown}
-    />
+    <CodeEditorContent code={code} isReadonly={isReadonly} onChange={onChange} onKeyDown={onKeyDown}>
+      {children}
+    </CodeEditorContent>
   );
 };
 

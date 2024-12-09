@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SelectOption, SelectValue } from '@uikit/Select/Select.types';
 import { Select } from '@uikit';
 

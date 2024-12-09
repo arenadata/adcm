@@ -14,7 +14,7 @@ interface AdcmHostProvidersState {
   loadState: LoadState;
 }
 
-const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (_arg, thunkAPI) => {
   const {
     adcm: {
       hostProvidersTable: { filter, sortParams, paginationParams },
@@ -29,7 +29,7 @@ const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders
   }
 });
 
-const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders', async (arg, thunkAPI) => {
+const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -44,7 +44,7 @@ const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders',
   });
 });
 
-const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostProviders', async (arg, thunkAPI) => {
+const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostProviders', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadHostProviders());
 });
 

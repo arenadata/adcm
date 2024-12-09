@@ -1,7 +1,8 @@
 import { useStore, useDispatch } from '@hooks';
 import { unlinkHostWithUpdate } from '@store/adcm/host/hostSlice';
 import { Button, Dialog } from '@uikit';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 const HostUnlinkButton: React.FC = () => {

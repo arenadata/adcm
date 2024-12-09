@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './ClusterName.module.scss';
 import { useStore } from '@hooks';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';

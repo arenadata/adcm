@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { AdcmSubJobLogType, type AdcmSubJob, type AdcmSubJobLogItem } from '@models/adcm';
 import DownloadSubJobLog from './DownloadSubJobLog/DownloadSubJobLog';
 import SubJobLogCheck from './SubJobLogCheck/SubJobLogCheck';

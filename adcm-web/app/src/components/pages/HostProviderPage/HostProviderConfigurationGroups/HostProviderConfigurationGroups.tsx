@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { useParams } from 'react-router-dom';
 import { useRequestHostProviderConfigurationGroups } from '@pages/HostProviderPage/HostProviderConfigurationGroups/useRequestHostProviderConfigurationGroups';

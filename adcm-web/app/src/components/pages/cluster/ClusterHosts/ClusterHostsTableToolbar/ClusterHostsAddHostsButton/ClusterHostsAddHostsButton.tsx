@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch } from '@hooks';
 import { Button } from '@uikit';
 import { openCreateDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { IconsNames } from '@uikit';
 import IconButton from '@uikit/IconButton/IconButton';
 

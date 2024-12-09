@@ -12,7 +12,7 @@ const wsClient = new WsClient(`${wsHost}/ws/event/`);
 type WsActions = { [key: string]: ActionCreatorWithPayload<unknown> };
 
 export const wsMiddleware: Middleware<
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   {},
   RootState
 > = (storeApi) => {

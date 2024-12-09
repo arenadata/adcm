@@ -13,7 +13,7 @@ import { ActionStatuses } from '@constants';
 
 const loadAdcmSettingsDynamicActions = createAsyncThunk(
   'adcm/clustersDynamicActions/loadAdcmSettingsDynamicActions',
-  async (arg: void, thunkAPI) => {
+  async (_, thunkAPI) => {
     try {
       return await AdcmSettingsApi.getAdcmSettingsActions();
     } catch (error) {

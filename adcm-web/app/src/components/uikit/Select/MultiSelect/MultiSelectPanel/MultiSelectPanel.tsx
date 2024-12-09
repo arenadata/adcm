@@ -1,4 +1,3 @@
-import React from 'react';
 import { MultiSelectContextProvider } from '../MultiSelectContext/MultiSelectContextProvider';
 import CommonSelectNoResult from '@uikit/Select/CommonSelect/CommonSelectNoResult/CommonSelectNoResult';
 import type { MultiSelectOptions } from '@uikit/Select/Select.types';

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './PolicyFormDialogWizard.module.scss';
 import { TabButton, TabsBlock } from '@uikit';
 import { Steps, steps } from '../constants';

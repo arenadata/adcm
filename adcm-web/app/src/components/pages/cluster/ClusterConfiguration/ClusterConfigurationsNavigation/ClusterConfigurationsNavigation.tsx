@@ -1,6 +1,6 @@
 import SubNavigationWrapper from '@commonComponents/SubNavigationWrapper/SubNavigationWrapper';
 import { Tab, TabsBlock } from '@uikit';
-import React from 'react';
+import type React from 'react';
 
 const ClusterConfigurationsNavigation: React.FC = () => {
   return (

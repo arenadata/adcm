@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SwitchProps } from './Switch';
 import Switch from './Switch';
 import s from './ExpandableSwitch.module.scss';

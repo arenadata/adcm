@@ -56,7 +56,7 @@ interface StoryProps {
 
 const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAttributes, schema }: StoryProps) => {
   const safeConfigurationData = initialConfigurationData ?? generateFromSchema(schema);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});
   const [areExpandedAll, setAreExpandedAll] = useState(false);
@@ -167,7 +167,7 @@ export const ConfigurationEditorReadonlyStory: Story = {
 };
 
 const attributes: ConfigurationAttributes = {
-  ['/cluster_config/cluster']: {
+  '/cluster_config/cluster': {
     isActive: true,
     isSynchronized: false,
   },

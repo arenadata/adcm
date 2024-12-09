@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import React, { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { refractor } from 'refractor';
 import { getLines, getParsedCode } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2';
 import './CodeHighlighterTemeV2.scss';

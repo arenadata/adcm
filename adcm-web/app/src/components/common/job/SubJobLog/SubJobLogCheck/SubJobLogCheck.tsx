@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import cn from 'classnames';
 import type { AdcmSubJobLogCheckContentItem, AdcmSubJobLogItemCheck } from '@models/adcm';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';

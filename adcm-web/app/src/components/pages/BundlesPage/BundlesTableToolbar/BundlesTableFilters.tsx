@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter, resetSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';

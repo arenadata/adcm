@@ -1,6 +1,7 @@
 import { useStore, useDispatch } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import ClusterOverviewInfo from './ClusterOverviewInfo/ClusterOverviewInfo';
 import ClusterOverviewServices from './ClusterOverviewServices/ClusterOverviewServices';
 import ClusterOverviewHosts from './ClusterOverviewHosts/ClusterOverviewHosts';

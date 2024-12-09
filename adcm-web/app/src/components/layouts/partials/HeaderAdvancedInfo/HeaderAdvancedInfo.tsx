@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import HeaderHelp from '@layouts/partials/HeaderHelp/HeaderHelp';
 import HeaderNotifications from '@layouts/partials/HeaderNotifications/HeaderNotifications';
 

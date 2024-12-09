@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 import { deleteHostWithUpdate, closeDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 const HostDeleteDialog: React.FC = () => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import ConfigurationVersions from '../ConfigurationVersions/ConfigurationVersions';
 import type { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm';
 import type { SelectVersionAction } from '../ConfigVersionPanel/ConfigVersionPanel.types';

@@ -23,10 +23,9 @@ export function createAsyncThunk<Returned, ThunkArg = void>(
   return createReduxAsyncThunk<Returned, ThunkArg>(typePrefix, payloadCreator);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ExtractFilter<S> = S extends ListState<infer F, infer E> ? F : never;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ExtractEntity<S> = S extends ListState<infer F, infer E> ? E : never;
+type ExtractFilter<S> = S extends ListState<infer F, infer _E> ? F : never;
+
+type ExtractEntity<S> = S extends ListState<infer _F, infer E> ? E : never;
 
 type ExtractSortParams<S> = SortParams<ExtractEntity<S>>;
 

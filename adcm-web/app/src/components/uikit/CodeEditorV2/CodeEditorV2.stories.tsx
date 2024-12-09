@@ -89,7 +89,7 @@ export const CodeEditorV2Story: Story = {
   render: (args) => {
     return (
       <div style={{ height: '500px' }}>
-        <CodeEditorV2Example {...args} />;
+        <CodeEditorV2Example {...args} />
       </div>
     );
   },

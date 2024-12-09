@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Tab, TabsBlock } from '@uikit';
 import ClusterName from './ClusterName/ClusterName';
 

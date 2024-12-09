@@ -11,7 +11,7 @@ interface ClusterHostComponentsPayload {
   clusterId: number;
 }
 
-const loadHostProviders = createAsyncThunk('adcm/clusterHostsTable/hostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/clusterHostsTable/hostProviders', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };

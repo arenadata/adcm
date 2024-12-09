@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
 import Icon from '../Icon/Icon';
 import s from './SortingLabel.module.scss';

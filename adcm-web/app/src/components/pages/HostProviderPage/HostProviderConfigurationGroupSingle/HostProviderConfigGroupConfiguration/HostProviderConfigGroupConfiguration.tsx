@@ -1,5 +1,6 @@
 import { useDispatch } from '@hooks';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { useHostProviderConfigGroupConfiguration } from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigGroupConfiguration/useHostProviderConfigGroupConfiguration';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';

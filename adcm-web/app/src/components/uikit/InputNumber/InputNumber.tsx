@@ -73,7 +73,7 @@ const handleStep = ({ direction, ref, onChange, successCallback }: HandleStepPar
   }
   const result = target.value;
 
-  successCallback && successCallback(result);
+  successCallback?.(result);
 
   if (result === prevValue || !onChange) return;
 

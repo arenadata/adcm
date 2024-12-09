@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { AdcmDynamicAction } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import type { IconProps } from '@uikit/Icon/Icon';

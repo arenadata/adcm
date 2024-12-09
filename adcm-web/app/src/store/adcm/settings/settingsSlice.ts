@@ -11,7 +11,7 @@ interface AdcmSettingsState {
   adcmSettings: AdcmSettings | null;
 }
 
-const getAdcmSettings = createAsyncThunk('adcm/adcmSettings/getAdcmSettings', async (arg: void, thunkAPI) => {
+const getAdcmSettings = createAsyncThunk('adcm/adcmSettings/getAdcmSettings', async (_, thunkAPI) => {
   try {
     const adcmSettings = await AdcmSettingsApi.getSettings();
 

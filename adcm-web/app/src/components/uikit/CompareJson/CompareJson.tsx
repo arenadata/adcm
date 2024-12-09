@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import ReactJsonViewCompare from 'react-json-view-compare';
 import type { JSONObject } from '@models/json';
 import './CompareJson.scss';

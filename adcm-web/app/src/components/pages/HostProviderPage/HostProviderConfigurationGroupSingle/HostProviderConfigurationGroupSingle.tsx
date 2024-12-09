@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useStore } from '@hooks';
 import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader';
 import { useHostProviderConfigGroupSingle } from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/useRequestHostProviderConfigurationGroupSingle';

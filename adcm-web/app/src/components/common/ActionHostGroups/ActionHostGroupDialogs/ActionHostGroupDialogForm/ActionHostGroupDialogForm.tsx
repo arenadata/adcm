@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import type { FormErrors } from '@hooks/useForm';
 import { FormField, FormFieldsContainer, Input } from '@uikit';
 import type { AdcmActionHostGroupHost } from '@models/adcm';

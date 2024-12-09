@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
 import s from './FormField.module.scss';
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter, resetSortParams } from '@store/adcm/roles/rolesTableSlice';
 import { Button, SearchInput } from '@uikit';

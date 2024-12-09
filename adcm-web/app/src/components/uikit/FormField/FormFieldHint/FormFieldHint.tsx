@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import s from '../FormField.module.scss';
 import Tooltip from '@uikit/Tooltip/Tooltip';

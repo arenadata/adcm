@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import ConcernMessages from './ConcernMessages/ConcernMessages';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import type { IconProps } from '@uikit/Icon/Icon';

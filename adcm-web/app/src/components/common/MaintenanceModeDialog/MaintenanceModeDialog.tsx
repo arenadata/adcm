@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
 import { AdcmMaintenanceMode } from '@models/adcm';
 import type { EntityWithMaintenanceModeType } from './MaintenanceModeDialog.utils';

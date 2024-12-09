@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './BundleOverviewHeader.module.scss';
 import { useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';

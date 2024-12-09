@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import Text from '@uikit/Text/Text';
 import Collapse from '@uikit/Collapse/Collapse';
 import type { BaseComponentProps } from '@utils/types';

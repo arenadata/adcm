@@ -107,7 +107,7 @@ const serviceComponentSlice = createSlice({
     });
     builder.addCase(wsActions.update_component, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.serviceComponent?.id == id) {
+      if (state.serviceComponent?.id === id) {
         state.serviceComponent = {
           ...state.serviceComponent,
           ...changes,

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
 import type { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { useForm } from '@hooks';

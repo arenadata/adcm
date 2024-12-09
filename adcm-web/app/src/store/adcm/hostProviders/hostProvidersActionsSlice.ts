@@ -58,7 +58,7 @@ const deleteHostProviderWithUpdate = createAsyncThunk(
 
 const loadPrototypeVersions = createAsyncThunk(
   'adcm/hostProviders/createHostProviderDialog/loadPrototypeVersions',
-  async (arg, thunkAPI) => {
+  async (_arg, thunkAPI) => {
     try {
       const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Provider });
       return prototypeVersions;
@@ -70,7 +70,7 @@ const loadPrototypeVersions = createAsyncThunk(
 
 const loadRelatedData = createAsyncThunk(
   'adcm/hostProviders/createHostProviderDialog/loadRelatedData',
-  async (arg, thunkAPI) => {
+  async (_arg, thunkAPI) => {
     await thunkAPI.dispatch(loadPrototypeVersions());
   },
 );

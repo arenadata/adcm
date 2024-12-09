@@ -15,7 +15,7 @@ export const useDebounce = (callback: UnknownFunction, delay: number) => {
     [],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
   return (...args: any[]) => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);

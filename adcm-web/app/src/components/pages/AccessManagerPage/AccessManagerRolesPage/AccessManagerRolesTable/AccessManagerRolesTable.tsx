@@ -55,7 +55,7 @@ const AccessManagerRolesTable = () => {
             colSpan={columns.length}
             isExpanded={expandableRows[role.id] || false}
             isInactive={!role.children?.length}
-            expandedContent={<AccessManagerRolesTableExpandedContent children={role.children || []} />}
+            expandedContent={<AccessManagerRolesTableExpandedContent rolesChidlren={role.children || []} />}
           >
             <TableCell className={s.roleName}>{role.displayName}</TableCell>
             <TableCell>{role.description}</TableCell>

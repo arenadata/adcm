@@ -5,7 +5,7 @@ import type { RootState } from '../store';
 import type { RequestError } from '@api/httpClient';
 
 export const apiMiddleware: Middleware<
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  // biome-ignore lint/complexity/noBannedTypes:
   {},
   RootState
 > = (storeApi) => (next) => (action) => {

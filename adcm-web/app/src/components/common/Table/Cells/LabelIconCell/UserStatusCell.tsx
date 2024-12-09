@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './UserStatusCell.module.scss';
 import { MarkerIcon, TableCell, Tooltip } from '@uikit';
 import type { AdcmUser } from '@models/adcm';

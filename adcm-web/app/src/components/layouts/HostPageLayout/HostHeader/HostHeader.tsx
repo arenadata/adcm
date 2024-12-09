@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { ButtonGroup } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useStore } from '@hooks';
@@ -18,9 +18,7 @@ const HostHeader: React.FC = () => {
 
   return (
     <EntityHeader
-      title={orElseGet(host, (host) => (
-        <HostName host={host} />
-      ))}
+      title={orElseGet(host, (host) => <HostName host={host} />)}
       central={orElseGet(host, (host) => (
         <>
           <Link className="text-link" to={`/hostproviders/${host.hostprovider.id}`}>

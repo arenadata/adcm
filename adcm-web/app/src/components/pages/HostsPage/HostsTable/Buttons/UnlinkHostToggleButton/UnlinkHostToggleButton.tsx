@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
 import { firstUpperCase } from '@utils/stringUtils';

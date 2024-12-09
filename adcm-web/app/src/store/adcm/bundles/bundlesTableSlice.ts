@@ -33,7 +33,7 @@ const createInitialState = (): AdcmBundlesTableState => ({
   },
 });
 
-const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype', async (arg, thunkAPI) => {
+const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype', async (_arg, thunkAPI) => {
   try {
     const prototypesWithVersions = await Promise.all([
       AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster }),
@@ -45,7 +45,7 @@ const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype'
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/bundlesTable/loadRelatedData', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/bundlesTable/loadRelatedData', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadPrototypeVersions());
 });
 

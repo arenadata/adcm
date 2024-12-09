@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Button, SearchInput } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import type { AdcmActionHostGroupsFilter } from '@models/adcm';

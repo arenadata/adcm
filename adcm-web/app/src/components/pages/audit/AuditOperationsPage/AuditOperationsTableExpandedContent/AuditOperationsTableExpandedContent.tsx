@@ -1,4 +1,3 @@
-import React from 'react';
 import { Table, TableCell, TableRow } from '@uikit';
 import { columns } from './AuditOperationsTableExpandedContent.const';
 import type { AdcmAuditOperationObjectChanges } from '@models/adcm';

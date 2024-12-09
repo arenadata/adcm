@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import TabButton from '@uikit/Tabs/TabButton';
 import { TabsBlock } from '@uikit';
 import type { TabsBlockProps } from '@uikit/Tabs/TabsBlock';

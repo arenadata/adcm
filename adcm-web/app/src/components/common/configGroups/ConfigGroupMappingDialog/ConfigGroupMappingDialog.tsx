@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
+import type React from 'react';
+import { useEffect, useMemo } from 'react';
 import type { AdcmConfigGroup, AdcmHost, AdcmHostCandidate } from '@models/adcm';
 import { Dialog } from '@uikit';
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';

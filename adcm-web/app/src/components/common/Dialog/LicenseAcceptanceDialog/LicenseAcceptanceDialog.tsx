@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, TabsBlock } from '@uikit';
 import cn from 'classnames';
 import s from './LicenseAcceptanceDialog.module.scss';

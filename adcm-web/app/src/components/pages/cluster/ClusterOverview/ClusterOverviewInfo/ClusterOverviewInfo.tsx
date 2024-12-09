@@ -1,4 +1,3 @@
-import React from 'react';
 import PageSection from '@commonComponents/PageSection/PageSection';
 import MainInfoPanel from '@commonComponents/MainInfoPanel/MainInfoPanel';
 import { useStore } from '@hooks';

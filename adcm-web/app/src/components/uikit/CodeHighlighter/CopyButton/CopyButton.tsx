@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import cn from 'classnames';
 import s from './CopyButton.module.scss';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
