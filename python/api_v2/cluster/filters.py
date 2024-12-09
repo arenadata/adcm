@@ -13,9 +13,7 @@
 from cm.models import ADCMEntityStatus, Cluster
 from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
-from django_filters import NumberFilter
 from django_filters.rest_framework import (
-    BooleanFilter,
     CharFilter,
     ChoiceFilter,
     FilterSet,
@@ -25,7 +23,11 @@ from django_filters.rest_framework import (
 from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 
-class ClusterFilter(AdvancedFilterSet, char_fields=("name",), number_fields=(("bundle", "prototype__bundle__id"),)):
+class ClusterFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=(("bundle", "prototype__bundle__id"),),
+):
     # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
     prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
@@ -45,7 +47,7 @@ class ClusterFilter(AdvancedFilterSet, char_fields=("name",), number_fields=(("b
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
+        fields = ["id"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
@@ -88,27 +90,8 @@ class ClusterServiceFilter(FilterSet):
         return filter_service_status(queryset=queryset, value=value)
 
 
-class ClusterServiceCandidateAndPrototypeFilter(FilterSet):
-    id = NumberFilter(field_name="id", label="Service ID")
-    name = CharFilter(label="Service name", lookup_expr="icontains")
-    display_name = CharFilter(label="Service display name", lookup_expr="icontains")
-    version = CharFilter(label="Service version", lookup_expr="icontains")
-    is_required = BooleanFilter(field_name="is_required", label="Service is required")
-
-    ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "display_name": "displayName",
-            "version": "version",
-            "is_required": "isRequired",
-        },
-        field_labels={
-            "id": "ID",
-            "name": "Service name",
-            "display_name": "Service display name",
-            "version": "Service version",
-            "is_required": "Service is required",
-        },
-        label="ordering",
-    )
+class ClusterServiceCandidateAndPrototypeFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name"),
+):
+    ...

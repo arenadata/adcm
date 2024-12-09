@@ -166,3 +166,22 @@ def _find_inner_component_links(node: dict, acc: set[str]) -> set[str]:
             _find_inner_component_links(inner, acc=acc)
 
     return acc
+
+
+def postprocess_hook_exclude_advanced_filters(generator: SchemaGenerator, request: Request, public: bool, result: dict):
+    # This is postprocess hook for remove advanced filters from schema
+
+    _ = generator, request, public
+
+    paths = result.get("paths", {})
+
+    for description in paths.values():
+        if get_parameters := description.get("get", {}).get("parameters", []):
+            new_parameters = []
+            for param in get_parameters:
+                if param["in"] == "query" and "__" not in param["name"]:
+                    new_parameters.append(param)
+
+            description["get"]["parameters"] = new_parameters
+
+    return result

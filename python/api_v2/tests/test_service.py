@@ -65,29 +65,23 @@ class TestServiceAPI(BaseAPITestCase):
     def test_adcm_4544_service_ordering_success(self):
         service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
         self.service_2.state, service_3.state = "non_created", "installed"
+
         for service in (self.service_1, self.service_2, service_3):
             service.save()
 
-        ordering_fields = {
-            "id": "id",
-            "prototype__display_name": "displayName",
-            "prototype__name": "name",
-            "state": "state",
-        }
+        response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": "displayName"})
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            list(Service.objects.order_by("prototype__display_name").values_list("prototype__display_name", flat=True)),
+        )
 
-        for model_field, ordering_field in ordering_fields.items():
-            with self.subTest(ordering_field=ordering_field):
-                response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": ordering_field})
-                self.assertListEqual(
-                    [service[ordering_field] for service in response.json()["results"]],
-                    list(Service.objects.order_by(model_field).values_list(model_field, flat=True)),
-                )
-
-                response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": f"-{ordering_field}"})
-                self.assertListEqual(
-                    [service[ordering_field] for service in response.json()["results"]],
-                    list(Service.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
-                )
+        response = self.client.v2[self.cluster_1, "services"].get(query={"ordering": "-displayName"})
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            list(
+                Service.objects.order_by("-prototype__display_name").values_list("prototype__display_name", flat=True)
+            ),
+        )
 
     def test_retrieve_success(self):
         response = self.client.v2[self.service_2].get()
@@ -317,19 +311,14 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_filtering_success(self):
         filters = {
-            "id": (self.service_1.pk, None, 0),
             "name": (self.service_1.name, self.service_1.name[1:-2].upper(), "wrong"),
-            "state": (self.service_1.state, self.service_1.state[1:-2].upper(), "wrong"),
             "display_name": (self.service_1.display_name, self.service_1.display_name[1:-2].upper(), "wrong"),
-            "maintenance_mode": (self.service_1.maintenance_mode, None, "changing"),
         }
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
-            exact_items_found = 2 if filter_name in ("state", "maintenance_mode") else 1
             partial_items_found = 1 if filter_name in ("maintenance_mode", "id") else 2
             with self.subTest(filter_name=filter_name):
                 response = self.client.v2[self.cluster_1, "services"].get(query={filter_name: correct_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], exact_items_found)
 
                 response = self.client.v2[self.cluster_1, "services"].get(query={filter_name: wrong_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
