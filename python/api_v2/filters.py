@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from itertools import chain
-from typing import Collection, Generator
+from typing import Generator
 
 from cm.models import ADCMEntityStatus
 from cm.services.status.client import retrieve_status_map
@@ -70,23 +70,20 @@ class AdvancedFilterSetMetaclass(FilterSetMetaclass):
             attrs[f"{filter_name}__icontains"] = CharFilter(field_name=field_name, lookup_expr="icontains")
             attrs[f"{filter_name}__in"] = CharInFilter(field_name=field_name, lookup_expr="in")
             attrs[f"{filter_name}__iin"] = CharInFilter(field_name=field_name, lookup_expr="lower__in")
-            attrs[f"{filter_name}__exclude"] = CharInFilter(field_name=field_name, method="filter_exclude")
-            attrs[f"{filter_name}__iexclude"] = CharInFilter(field_name=field_name, method="filter_iexclude")
+            attrs[f"{filter_name}__exclude"] = CharInFilter(field_name=field_name, exclude=True, lookup_expr="in")
+            attrs[f"{filter_name}__iexclude"] = CharInFilter(
+                field_name=field_name, exclude=True, lookup_expr="lower__in"
+            )
 
         for filter_name, field_name in _prepare_filter_fields(fields=number_fields):
             attrs[f"{filter_name}__eq"] = NumberFilter(field_name=field_name, lookup_expr="exact")
             attrs[f"{filter_name}__ne"] = NumberFilter(field_name=field_name, lookup_expr="ne")
             attrs[f"{filter_name}__in"] = NumberInFilter(field_name=field_name, lookup_expr="in")
-            attrs[f"{filter_name}__exclude"] = NumberInFilter(field_name=field_name, method="filter_exclude")
+            attrs[f"{filter_name}__exclude"] = NumberInFilter(field_name=field_name, exclude=True, lookup_expr="in")
 
         return super().__new__(cls, name=name, bases=bases, attrs=attrs)
 
 
 class AdvancedFilterSet(BaseFilterSet, metaclass=AdvancedFilterSetMetaclass):
     # Filter fields must be declared during class initialization, so we need to use a metaclass
-
-    def filter_exclude(self, queryset: QuerySet, field_name: str, value: Collection) -> QuerySet:
-        return queryset.exclude(**{f"{field_name}__in": value})
-
-    def filter_iexclude(self, queryset: QuerySet, field_name: str, value: Collection) -> QuerySet:
-        return queryset.exclude(**{f"{field_name}__lower__in": value})
+    ...

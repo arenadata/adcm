@@ -120,10 +120,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.STATUS_OPTIONAL,
-            DefaultParams.ordering_by("ID"),
             OpenApiParameter(
                 name="name",
                 location=OpenApiParameter.QUERY,
@@ -131,36 +127,26 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 type=str,
             ),
             OpenApiParameter(
-                name="state",
+                # It is necessary to specify such fields with underscores, otherwise this field will be duplicated
+                # in the scheme. The name in the schema must match the name of the field in the filter class
+                name="display_name",
                 location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by service state.",
+                description="Case insensitive and partial filter by service display name.",
                 type=str,
             ),
             OpenApiParameter(
                 name="status",
                 location=OpenApiParameter.QUERY,
                 type=str,
-                description="Status filter.",
+                description="Filter by status",
                 enum=("up", "down"),
             ),
             OpenApiParameter(
-                name="serviceId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Service id.",
-                type=int,
-            ),
-            OpenApiParameter(
                 name="ordering",
+                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
                 enum=(
-                    "id",
-                    "-id",
-                    "name",
-                    "-name",
-                    "state",
-                    "-state",
                     "displayName",
                     "-displayName",
                 ),
