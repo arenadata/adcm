@@ -109,6 +109,7 @@ def get_job_specs_from_template(task_id: TaskID, delta: TaskMappingDelta | None)
     template_builder = TemplateBuilder(
         template_path=scripts_jinja_file,
         context=get_env(task=task, delta=delta),
+        bundle_path=path_resolver.bundle_root,
         error=AdcmEx(code="UNPROCESSABLE_ENTITY", msg="Can't render jinja template"),
     )
 
