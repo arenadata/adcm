@@ -57,6 +57,10 @@ def is_internal() -> bool:
         with socket.create_connection(("adsw.io", 80), timeout=1):
             return True
     except TimeoutError:
+        logger.exception(msg="Timeout error")
+        return False
+    except socket.gaierror:
+        logger.exception(msg="Address-related error")
         return False
 
 
