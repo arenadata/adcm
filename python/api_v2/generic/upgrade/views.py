@@ -35,6 +35,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
+from api_v2.generic.upgrade.filters import UpgradeFilter
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet
@@ -46,7 +47,8 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         .prefetch_related("bundle__prototype_set")
         .order_by("pk")
     )
-    filter_backends = []
+    filterset_class = UpgradeFilter
+    pagination_class = None
 
     def get_serializer_class(self) -> type[UpgradeListSerializer | UpgradeRunSerializer | UpgradeRetrieveSerializer]:
         if self.action == "retrieve":
@@ -120,8 +122,10 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
 
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
-        upgrades = get_upgrade(obj=parent)
-        serializer = self.get_serializer_class()(instance=upgrades, many=True)
+        # TODO: This is very not optimal, and requires reworking
+        available_upgrades = [upgrade.id for upgrade in get_upgrade(obj=parent)]
+        queryset = self.filter_queryset(queryset=self.get_queryset().filter(id__in=available_upgrades))
+        serializer = self.get_serializer_class()(instance=queryset, many=True)
         return Response(data=serializer.data)
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
