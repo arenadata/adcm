@@ -5,5 +5,5 @@ declare const window: Window &
 
 export const getEnv = (name?: string): string => {
   if (typeof name === 'undefined') return '';
-  return import.meta.env[name] || (window && window._getEnv_ && window._getEnv_(name));
+  return import.meta.env[name] || window?._getEnv_?.(name);
 };

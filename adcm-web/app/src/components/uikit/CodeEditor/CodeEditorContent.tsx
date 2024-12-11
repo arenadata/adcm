@@ -19,7 +19,6 @@ const CodeEditorContent = ({ code, children, isReadonly, onChange, onKeyDown }: 
     <div className={highlighterStyles['code-wrapper']}>
       <LineNumbers lineCount={rowCount} />
       <LinesWrapper
-        children={childArray}
         subComponent={
           <CodeEditorTextArea
             code={code}
@@ -29,7 +28,9 @@ const CodeEditorContent = ({ code, children, isReadonly, onChange, onKeyDown }: 
             onKeyDown={onKeyDown}
           />
         }
-      />
+      >
+        {children}
+      </LinesWrapper>
     </div>
   );
 };

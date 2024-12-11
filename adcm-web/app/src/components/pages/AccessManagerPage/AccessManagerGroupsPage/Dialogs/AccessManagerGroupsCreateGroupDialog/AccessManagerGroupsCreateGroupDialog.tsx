@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input } from '@uikit';
 import { useCreateGroupForm } from './useCreateGroupForm';
 import { useDispatch, useStore } from '@hooks';

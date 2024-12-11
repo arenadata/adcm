@@ -39,7 +39,7 @@ const JobsTable = () => {
           <TableRow key={job.id}>
             <TableCell>{job.id}</TableCell>
             <JobsStatusCell status={job.status}>
-              <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className="text-link">
+              <Link to={generatePath('/jobs/:jobId', { jobId: `${job.id}` })} className="text-link">
                 {orElseGet(job.displayName || '-')}
               </Link>
             </JobsStatusCell>

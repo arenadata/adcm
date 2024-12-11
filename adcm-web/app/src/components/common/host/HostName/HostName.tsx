@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { AdcmHost } from '@models/adcm';
 import { hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';

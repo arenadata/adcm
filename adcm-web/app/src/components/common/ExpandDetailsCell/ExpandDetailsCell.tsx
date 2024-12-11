@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Button, TableCell } from '@uikit';
 import s from './ExpandDetailsCell.module.scss';
 

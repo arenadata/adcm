@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import WarningMessage from '@uikit/WarningMessage/WarningMessage';
 import s from './ServicesDependenciesWarning.module.scss';
 import type { AdcmServicePrototype } from '@models/adcm';

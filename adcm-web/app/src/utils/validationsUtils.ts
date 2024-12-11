@@ -1,9 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny:
 export const required = (value: any) => {
   if (typeof value === 'string') {
     return value.length > 0;
-  } else if (value == null) {
-    return false;
   }
   return true;
 };

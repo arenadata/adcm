@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import Panel from '@uikit/Panel/Panel';
 import { Button, Checkbox } from '@uikit';
 import s from './LicenseAcceptancePanel.module.scss';

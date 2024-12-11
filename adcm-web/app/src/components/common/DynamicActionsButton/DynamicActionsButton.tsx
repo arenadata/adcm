@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import type { AdcmDynamicAction } from '@models/adcm/dynamicAction';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import IconButton from '@uikit/IconButton/IconButton';

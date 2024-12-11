@@ -33,6 +33,7 @@ export const useCreateHostProviderDialog = () => {
 
   const hostProviders = useStore((s) => s.adcm.hostProviders.hostProviders);
   const isOpen = useStore(({ adcm }) => adcm.hostProvidersActions.createDialog.isOpen);
+  const isCreating = useStore(({ adcm }) => adcm.hostProvidersActions.createDialog.isCreating);
   const prototypeVersions = useStore(({ adcm }) => adcm.hostProvidersActions.relatedData.prototypeVersions);
   const isRelatedDataLoaded = useStore(({ adcm }) => adcm.hostProvidersActions.relatedData.isRelatedDataLoaded);
 
@@ -55,11 +56,12 @@ export const useCreateHostProviderDialog = () => {
 
   const isValid = useMemo(() => {
     return (
+      !isCreating &&
       formData.prototypeVersion !== null &&
       formData.name &&
       (formData.prototypeVersion.licenseStatus === AdcmLicenseStatus.Absent || formData.isUserAcceptedLicense)
     );
-  }, [formData]);
+  }, [formData, isCreating]);
 
   const handleClose = () => {
     dispatch(closeCreateDialog());

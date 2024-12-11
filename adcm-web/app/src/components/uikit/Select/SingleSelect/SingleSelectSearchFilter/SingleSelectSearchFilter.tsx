@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './SingleSelectSearchFilter.module.scss';
 import { useSingleSelectContext } from '../SingleSelectContext/SingleSelect.context';
 import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';

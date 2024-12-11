@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import ClusterHostsTableToolbar from '@pages/cluster/ClusterHosts/ClusterHostsTableToolbar/ClusterHostsTableToolbar';
 import ClusterHostsActionsDialogs from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/ClusterHostsActionsDialogs';
 import ClusterHostsTable from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable';

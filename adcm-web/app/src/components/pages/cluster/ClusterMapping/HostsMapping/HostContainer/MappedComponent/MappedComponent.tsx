@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Tag, IconButton, MarkerIcon, Tooltip, ConditionalWrapper } from '@uikit';
 import type { ComponentMappingErrors } from '../../../ClusterMapping.types';
 import ComponentRestrictions from '../../RestrictionsList/ComponentRestrictions';
@@ -24,8 +24,8 @@ const MappedComponent = ({
 }: MappedComponentProps) => {
   const isValid = mappingErrors === undefined;
   const className = cn(s.mappingTag, {
-    [s['mappingTag_valid']]: isValid,
-    [s['mappingTag_error']]: !isValid,
+    [s.mappingTag_valid]: isValid,
+    [s.mappingTag_error]: !isValid,
   });
 
   return (

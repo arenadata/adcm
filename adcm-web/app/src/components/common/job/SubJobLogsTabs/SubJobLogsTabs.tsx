@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { TabButton, TabsBlock } from '@uikit';
 import { getStatusLabel } from '@utils/humanizationUtils';
 import type { AdcmSubJobLogItem } from '@models/adcm';

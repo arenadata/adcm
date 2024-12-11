@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
 import {

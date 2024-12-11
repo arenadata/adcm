@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import ConfigVersionPanel from '../ConfigVersionPanel/ConfigVersionPanel';
 import type { AdcmConfigShortView } from '@models/adcm';
 import type { PaginationParams } from '@models/table';

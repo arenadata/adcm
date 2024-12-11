@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { ButtonGroup, Text } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useDispatch, useStore } from '@hooks';
@@ -21,9 +22,7 @@ const HostProviderHeader: React.FC = () => {
 
   return (
     <EntityHeader
-      title={orElseGet(hostProvider, (hostProvider) => (
-        <Text variant="h3">{hostProvider.name}</Text>
-      ))}
+      title={orElseGet(hostProvider, (hostProvider) => <Text variant="h3">{hostProvider.name}</Text>)}
       central={orElseGet(hostProvider, (hostProvider) => (
         <>
           <span>Version {hostProvider.prototype.version}</span>

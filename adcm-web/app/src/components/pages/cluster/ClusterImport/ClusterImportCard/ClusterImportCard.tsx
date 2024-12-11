@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Checkbox, Statusable, Spinner } from '@uikit';
 import s from './ClusterImportCard.module.scss';
 import cn from 'classnames';

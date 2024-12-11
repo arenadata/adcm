@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@uikit';
 import { useDispatch } from '@hooks';
 import { openCreateDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';

@@ -1,9 +1,11 @@
 import { getStatusLabel } from '@utils/humanizationUtils';
 import type { SelectOption } from './Select.types';
 
-export const getOptionsFromEnum = <T extends string, TEnumValue extends string>(someEnum: {
-  [key in T]: TEnumValue;
-}): SelectOption<TEnumValue>[] => {
+export const getOptionsFromEnum = <T extends string, TEnumValue extends string>(
+  someEnum: {
+    [key in T]: TEnumValue;
+  },
+): SelectOption<TEnumValue>[] => {
   const options = Object.values(someEnum).map((value) => ({
     label: getStatusLabel(value as string),
     value: value as TEnumValue,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableCell, ExpandableRowComponent } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
@@ -59,7 +59,7 @@ const ServiceComponentsTable = () => {
             colSpan={columns.length}
             isExpanded={expandableRows[component.id] || false}
             isInactive={!component.hosts.length}
-            expandedContent={<ServiceComponentsTableExpandedContent children={component.hosts || []} />}
+            expandedContent={<ServiceComponentsTableExpandedContent hostComponents={component.hosts || []} />}
           >
             <StatusableCell status={serviceComponentsStatusMap[component.status]}>
               <Link

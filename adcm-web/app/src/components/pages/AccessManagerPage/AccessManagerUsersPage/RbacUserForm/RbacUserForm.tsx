@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import s from './RbacUserForm.module.scss';
 import { Checkbox, FormField, FormFieldsContainer, Input, MarkerIcon, Tooltip } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
@@ -128,14 +129,9 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
             disabled={(!isCreate && isPersonalDataEditForbidden) || !isCurrentUserSuperUser}
           />
           {!isCurrentUserSuperUser && (
-            <>
-              <Tooltip
-                label="You can`t edit this field because you are not an ADCM Administrator"
-                placement="top-start"
-              >
-                <MarkerIcon type="info" variant="square" className={s.markerIcon} />
-              </Tooltip>
-            </>
+            <Tooltip label="You can`t edit this field because you are not an ADCM Administrator" placement="top-start">
+              <MarkerIcon type="info" variant="square" className={s.markerIcon} />
+            </Tooltip>
           )}
         </>
       </FormField>

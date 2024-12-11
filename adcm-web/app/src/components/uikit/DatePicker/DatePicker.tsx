@@ -40,7 +40,7 @@ const DatePicker = ({
 
   const handleSet = (date?: Date) => {
     if (!hasError) {
-      onSubmit && onSubmit(date);
+      onSubmit?.(date);
       handleToggle();
     }
   };

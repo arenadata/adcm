@@ -12,7 +12,7 @@ interface AdcmUsersState {
   loadState: LoadState;
 }
 
-const loadFromBackend = createAsyncThunk('adcm/users/loadFromBackend', async (arg, thunkAPI) => {
+const loadFromBackend = createAsyncThunk('adcm/users/loadFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       usersTable: { filter, paginationParams, sortParams },
@@ -27,7 +27,7 @@ const loadFromBackend = createAsyncThunk('adcm/users/loadFromBackend', async (ar
   }
 });
 
-const getUsers = createAsyncThunk('adcm/users/getUsers', async (arg, thunkAPI) => {
+const getUsers = createAsyncThunk('adcm/users/getUsers', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -42,7 +42,7 @@ const getUsers = createAsyncThunk('adcm/users/getUsers', async (arg, thunkAPI) =
   });
 });
 
-const refreshUsers = createAsyncThunk('adcm/users/refreshUsers', async (arg, thunkAPI) => {
+const refreshUsers = createAsyncThunk('adcm/users/refreshUsers', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadFromBackend());
 });
 

@@ -55,7 +55,7 @@ const AddClusterHostsDialog = () => {
             isSearchable={true}
           />
         )}
-        {hostsOptions.length == 0 && <div>No available hosts found</div>}
+        {hostsOptions.length === 0 && <div>No available hosts found</div>}
       </FormFieldsContainer>
     </Dialog>
   );

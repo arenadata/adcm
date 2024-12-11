@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import MainLogo from '../partials/MainLogo/MainLogo';
 import MainHeader from '../partials/MainHeader/MainHeader';
 import Copyright from '../partials/Copyright/Copyright';

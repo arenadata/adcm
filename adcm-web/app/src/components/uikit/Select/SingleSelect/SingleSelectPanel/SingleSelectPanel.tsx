@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SingleSelectOptions } from '../../Select.types';
 import SingleSelectList from '../SingleSelectList/SingleSelectList';
 import s from './SingleSelectPanel.module.scss';

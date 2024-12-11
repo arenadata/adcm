@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './ErrorPageContent.module.scss';
 
 export interface ErrorPageContentProps {

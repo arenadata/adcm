@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import type React from 'react';
+import { useState, useCallback } from 'react';
 import cn from 'classnames';
 import s from './TableCell.module.scss';
 import type { AlignType } from '../Table.types';

@@ -14,8 +14,8 @@ export class SelectionText {
   }
   position(start?: number, end?: number) {
     const { selectionStart, selectionEnd } = this.elm;
-    this.start = typeof start === 'number' && !isNaN(start) ? start : selectionStart;
-    this.end = typeof end === 'number' && !isNaN(end) ? end : selectionEnd;
+    this.start = typeof start === 'number' && !Number.isNaN(start) ? start : selectionStart;
+    this.end = typeof end === 'number' && !Number.isNaN(end) ? end : selectionEnd;
     this.elm.selectionStart = this.start;
     this.elm.selectionEnd = this.end;
     return this;
@@ -31,8 +31,8 @@ export class SelectionText {
   getSelectedValue(start?: number, end?: number) {
     const { selectionStart, selectionEnd } = this.elm;
     return this.value.slice(
-      typeof start === 'number' && !isNaN(start) ? start : selectionStart,
-      typeof end === 'number' && !isNaN(end) ? start : selectionEnd,
+      typeof start === 'number' && !Number.isNaN(start) ? start : selectionStart,
+      typeof end === 'number' && !Number.isNaN(end) ? start : selectionEnd,
     );
   }
   getLineStartNumber() {
@@ -51,7 +51,7 @@ export class SelectionText {
     const start = this.getLineStartNumber();
     const str = this.getSelectedValue(start);
     let indent = '';
-    str.replace(/(^(\s)+)/, (str, old) => (indent = old));
+    str.replace(/(^(\s)+)/, (_str, old) => (indent = old));
     return indent;
   }
   lineStarInsert(text: string) {

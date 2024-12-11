@@ -1,20 +1,21 @@
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 import { SearchInput, Tag, Tags } from '@uikit';
 import s from './ServiceComponentsTableExpandedContent.module.scss';
 import type { AdcmServiceComponentHost } from '@models/adcm';
 
 export interface ServiceComponentsTableExpandedContentProps {
-  children: AdcmServiceComponentHost[];
+  hostComponents: AdcmServiceComponentHost[];
 }
 
-const ServiceComponentsTableExpandedContent = ({ children }: ServiceComponentsTableExpandedContentProps) => {
+const ServiceComponentsTableExpandedContent = ({ hostComponents }: ServiceComponentsTableExpandedContentProps) => {
   const [textEntered, setTextEntered] = useState('');
 
-  const childrenFiltered = useMemo(() => {
-    return children.filter((child) => child.name.toLowerCase().includes(textEntered.toLowerCase()));
-  }, [children, textEntered]);
+  const hostComponentsFiltered = useMemo(() => {
+    return hostComponents.filter((child) => child.name.toLowerCase().includes(textEntered.toLowerCase()));
+  }, [hostComponents, textEntered]);
 
-  if (!children.length) return null;
+  if (!hostComponentsFiltered.length) return null;
 
   const handleHostsNameFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTextEntered(event.target.value);
@@ -23,10 +24,10 @@ const ServiceComponentsTableExpandedContent = ({ children }: ServiceComponentsTa
   return (
     <div className={s.serviceComponentsTableExpandedContent}>
       <SearchInput placeholder="Search hosts" value={textEntered} onChange={handleHostsNameFilter} />
-      {childrenFiltered.length > 0 && (
+      {hostComponentsFiltered.length > 0 && (
         <Tags className={s.serviceComponentsTableExpandedContent__tags}>
-          {childrenFiltered.map((child) => (
-            <Tag key={child.id} children={child.name} />
+          {hostComponentsFiltered.map((hostComponent) => (
+            <Tag key={hostComponent.id}>{hostComponent.name}</Tag>
           ))}
         </Tags>
       )}

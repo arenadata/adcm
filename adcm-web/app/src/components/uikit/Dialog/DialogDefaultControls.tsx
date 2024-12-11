@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
 import s from './Dialog.module.scss';

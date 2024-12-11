@@ -37,6 +37,7 @@ const ComponentsMapping = ({ servicesMapping, ...restProps }: ComponentsMappingP
       <div data-test="mapping-container">
         {servicesMapping.map(({ service, componentsMapping }) => (
           <Service
+            key={service.id}
             service={service}
             componentsMapping={componentsMapping}
             anchorId={buildServiceAnchorId(service.id)}

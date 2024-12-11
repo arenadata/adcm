@@ -44,7 +44,7 @@ export const getDisabledMappings = (mapping: AdcmMapping[]) => {
 };
 
 export const checkComponentActionsMappingAvailability = (
-  component: AdcmMappingComponent,
+  _component: AdcmMappingComponent,
   allowActions: Set<AdcmHostComponentMapRuleAction>,
 ): ComponentAvailabilityErrors => {
   const result: ComponentAvailabilityErrors = {};

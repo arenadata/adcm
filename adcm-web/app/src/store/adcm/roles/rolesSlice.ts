@@ -15,7 +15,7 @@ interface AdcmRolesState {
   };
 }
 
-const loadFromBackend = createAsyncThunk('adcm/roles/loadFromBackend', async (arg, thunkAPI) => {
+const loadFromBackend = createAsyncThunk('adcm/roles/loadFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       rolesTable: { filter, paginationParams, sortParams },
@@ -30,7 +30,7 @@ const loadFromBackend = createAsyncThunk('adcm/roles/loadFromBackend', async (ar
   }
 });
 
-const getRoles = createAsyncThunk('adcm/roles/getRoles', async (arg, thunkAPI) => {
+const getRoles = createAsyncThunk('adcm/roles/getRoles', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -45,7 +45,7 @@ const getRoles = createAsyncThunk('adcm/roles/getRoles', async (arg, thunkAPI) =
   });
 });
 
-const getProducts = createAsyncThunk('adcm/roles/getProducts', async (arg, thunkAPI) => {
+const getProducts = createAsyncThunk('adcm/roles/getProducts', async (_arg, thunkAPI) => {
   try {
     return await AdcmRolesApi.getProducts();
   } catch (error) {
@@ -53,7 +53,7 @@ const getProducts = createAsyncThunk('adcm/roles/getProducts', async (arg, thunk
   }
 });
 
-const refreshRoles = createAsyncThunk('adcm/roles/refreshRoles', async (arg, thunkAPI) => {
+const refreshRoles = createAsyncThunk('adcm/roles/refreshRoles', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadFromBackend());
 });
 

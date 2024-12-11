@@ -35,7 +35,8 @@ export const LinesWrapper = ({ children, subComponent, dataTest }: LinesWrapperP
 
 export const LineNumbers = ({ lineCount }: LineNumbersProps) => (
   <div className={cn(s['code-wrapper__line-numbers-wrapper'])}>
-    {[...Array(lineCount)].map((item: unknown, id) => (
+    {[...Array(lineCount)].map((_item: unknown, id) => (
+      // biome-ignore lint/suspicious/noArrayIndexKey:
       <div key={id}>{id + 1}</div>
     ))}
   </div>

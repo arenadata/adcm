@@ -46,6 +46,7 @@ def get_jinja_config(
             ),
             "action": get_action_info(action=action),
         },
+        bundle_path=resolver.bundle_root,
     )
 
     configs = []

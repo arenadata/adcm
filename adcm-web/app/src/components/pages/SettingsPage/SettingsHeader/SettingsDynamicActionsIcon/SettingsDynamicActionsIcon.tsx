@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { useDispatch, useStore } from '@hooks';
 import { openAdcmSettingsDynamicActionDialog } from '@store/adcm/settings/settingsDynamicActionsSlice';

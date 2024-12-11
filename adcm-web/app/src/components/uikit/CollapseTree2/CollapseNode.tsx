@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import React, { useEffect, useState, useCallback } from 'react';
+import type React from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
 import type { Node } from './CollapseNode.types';
 import s from './CollapseNode.module.scss';

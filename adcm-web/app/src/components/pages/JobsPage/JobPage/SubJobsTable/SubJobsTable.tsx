@@ -1,4 +1,5 @@
-import React, { useCallback, forwardRef } from 'react';
+import type React from 'react';
+import { useCallback, forwardRef } from 'react';
 import { Table } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './SubJobsTable.constants';
@@ -43,7 +44,9 @@ const SubJobsTable = forwardRef<HTMLTableElement>((_, ref) => {
       className={s.subJobsTable}
       onSorting={handleSorting}
     >
-      {job?.childJobs?.map((subJob) => <SubJobRow key={subJob.id} subJob={subJob} handleStopClick={handleStopClick} />)}
+      {job?.childJobs?.map((subJob) => (
+        <SubJobRow key={subJob.id} subJob={subJob} handleStopClick={handleStopClick} />
+      ))}
     </Table>
   );
 });

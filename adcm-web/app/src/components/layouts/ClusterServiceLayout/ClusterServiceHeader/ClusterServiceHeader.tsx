@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { ButtonGroup } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useStore } from '@hooks';
@@ -15,9 +15,7 @@ const ClusterServiceHeader: React.FC = () => {
 
   return (
     <EntityHeader
-      title={orElseGet(service, (service) => (
-        <ServiceName service={service} />
-      ))}
+      title={orElseGet(service, (service) => <ServiceName service={service} />)}
       central={
         <>
           <span>{orElseGet(service?.prototype.version)}</span>

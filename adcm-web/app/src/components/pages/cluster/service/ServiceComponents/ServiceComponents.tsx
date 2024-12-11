@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { useRequestServiceComponents } from './useRequestServiceComponents';
 import ServiceComponentsTable from './ServiceComponentsTable/ServiceComponentsTable';
 import ServiceComponentsDialogs from './Dialogs';

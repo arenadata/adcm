@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import type React from 'react';
+import { useRef, useState } from 'react';
 import { ReactComponent as Bell } from './images/complex-bell.svg';
 import s from './HeaderNotifications.module.scss';
 import iconButtonStyles from '@uikit/IconButton/IconButton.module.scss';
@@ -61,7 +62,7 @@ const HeaderNotifications: React.FC = () => {
         onClick={handleBellClick}
         data-test="notification-bell-button"
       >
-        <Bell data-test={'status_' + status} width={28} />
+        <Bell data-test={`status_${status}`} width={28} />
       </button>
       <Popover isOpen={isOpen} onOpenChange={setIsOpen} triggerRef={localRef}>
         <div className={s.bellPopoverPanel}>

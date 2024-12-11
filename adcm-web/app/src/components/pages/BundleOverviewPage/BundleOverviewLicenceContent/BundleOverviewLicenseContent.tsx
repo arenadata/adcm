@@ -1,4 +1,3 @@
-import React from 'react';
 import BundleOverviewAcceptPanel from './BundleOverviewAcceptPanel/BundleOverviewAcceptPanel';
 import BundleOverviewLicense from './BundleOverviewLicense/BundleOverviewLicense';
 import { useStore } from '@hooks';

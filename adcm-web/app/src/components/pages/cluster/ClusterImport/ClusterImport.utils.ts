@@ -35,7 +35,7 @@ export const getRequiredImports = (clusterImports: AdcmClusterImport[]): Cluster
   };
 
   clusterImports.forEach((item) => {
-    if (item.importCluster && item.importCluster.isRequired) {
+    if (item.importCluster?.isRequired) {
       importsSet.clusters.add(item.importCluster.prototype.name);
     }
 

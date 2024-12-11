@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import Button from '@uikit/Button/Button';
-import React, { useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DialogProps } from './Dialog';
 import Dialog from './Dialog';
 import s from '@uikit/Dialog/Dialog.module.scss';

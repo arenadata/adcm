@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import s from './LicenseAcceptPanel.module.scss';
 import { Button, Checkbox } from '@uikit';
 import { AdcmLicenseStatus } from '@models/adcm';

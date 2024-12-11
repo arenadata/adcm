@@ -16,7 +16,7 @@ interface AdcmBellState {
   requestFrequency: number;
 }
 
-const loadFromBackend = createAsyncThunk('adcm/bell/loadFromBackend', async (arg, thunkAPI) => {
+const loadFromBackend = createAsyncThunk('adcm/bell/loadFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       bell: { filter, sortParams, paginationParams },
@@ -31,7 +31,7 @@ const loadFromBackend = createAsyncThunk('adcm/bell/loadFromBackend', async (arg
   }
 });
 
-const getJobs = createAsyncThunk('adcm/bell/getJobs', async (arg, thunkAPI) => {
+const getJobs = createAsyncThunk('adcm/bell/getJobs', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
@@ -46,7 +46,7 @@ const getJobs = createAsyncThunk('adcm/bell/getJobs', async (arg, thunkAPI) => {
   });
 });
 
-const refreshJobs = createAsyncThunk('adcm/jobs/refreshJobs', async (arg, thunkAPI) => {
+const refreshJobs = createAsyncThunk('adcm/jobs/refreshJobs', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadFromBackend());
 });
 

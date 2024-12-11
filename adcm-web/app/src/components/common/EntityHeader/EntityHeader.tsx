@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './EntityHeader.module.scss';
 import cn from 'classnames';
 

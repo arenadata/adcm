@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';
 import s from './MultiSelectSearchFilter.module.scss';

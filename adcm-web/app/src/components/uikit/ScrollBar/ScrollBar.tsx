@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import type { ScrollBarProps } from '@uikit/ScrollBar/ScrollBarTypes';
 import { useScrollBar } from '@uikit/ScrollBar/useScrollBar';
 import s from '@uikit/ScrollBar/Scrollbar.module.scss';

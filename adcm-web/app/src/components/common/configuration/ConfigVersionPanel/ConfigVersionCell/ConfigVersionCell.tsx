@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Button } from '@uikit';
 import s from './ConfigVersionCell.module.scss';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import ConfigVersionCell from './ConfigVersionCell/ConfigVersionCell';
 import s from './ConfigVersionPanel.module.scss';
 import { Pagination } from '@uikit';

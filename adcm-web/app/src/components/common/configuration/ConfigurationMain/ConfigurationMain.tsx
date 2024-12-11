@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { ConfigurationEditor } from '@uikit';
 import type { AdcmConfiguration, ConfigurationData, ConfigurationAttributes } from '@models/adcm';
 import { useConfigurationFormContext } from '../ConfigurationFormContext/ConfigurationFormContext.context';

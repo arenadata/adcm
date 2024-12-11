@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import { useDispatch, useStore } from '@hooks';
 import {

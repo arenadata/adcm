@@ -1,5 +1,5 @@
 import { ConditionalWrapper } from '@uikit';
-import React from 'react';
+import type React from 'react';
 import type { To } from 'react-router-dom';
 import { NavLink } from 'react-router-dom';
 

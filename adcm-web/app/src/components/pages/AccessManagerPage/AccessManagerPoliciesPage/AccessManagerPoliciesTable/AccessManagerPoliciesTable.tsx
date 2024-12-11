@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ExpandableRowComponent, IconButton, Table, TableCell, EllipsedTextTableCell } from '@uikit';
 import { columns } from './AccessManagerPoliciesTable.constants';

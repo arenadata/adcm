@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Link } from 'react-router-dom';
 import { AdcmJobStatus, type AdcmSubJob } from '@models/adcm';
 import JobsStatusCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusCell';

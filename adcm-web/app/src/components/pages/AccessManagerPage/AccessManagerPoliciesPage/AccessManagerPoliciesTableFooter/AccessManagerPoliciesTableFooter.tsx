@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/policies/policiesTableSlice';
 import type { PaginationData } from '@uikit';

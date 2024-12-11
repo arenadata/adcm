@@ -53,7 +53,7 @@ const createCluster = createAsyncThunk(
   },
 );
 
-const loadPrototypeVersions = createAsyncThunk('adcm/clustersActions/loadPrototypeVersions', async (arg, thunkAPI) => {
+const loadPrototypeVersions = createAsyncThunk('adcm/clustersActions/loadPrototypeVersions', async (_arg, thunkAPI) => {
   try {
     const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster });
     return prototypeVersions;
@@ -63,7 +63,7 @@ const loadPrototypeVersions = createAsyncThunk('adcm/clustersActions/loadPrototy
   }
 });
 
-const loadPrototypesRelatedData = createAsyncThunk('adcm/clustersActions/loadRelatedData', async (arg, thunkAPI) => {
+const loadPrototypesRelatedData = createAsyncThunk('adcm/clustersActions/loadRelatedData', async (_arg, thunkAPI) => {
   await thunkAPI.dispatch(loadPrototypeVersions());
 });
 

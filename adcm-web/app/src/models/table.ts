@@ -10,7 +10,7 @@ export interface PaginationParams {
   perPage: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+// biome-ignore lint/complexity/noBannedTypes:
 export type EmptyTableFilter = {};
 
 export type ListState<F extends EmptyTableFilter, E extends string = string> = {

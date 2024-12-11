@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import IconButton from '@uikit/IconButton/IconButton';
 
 import s from './InputNumberArrows.module.scss';

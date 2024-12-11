@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { Button, Dialog } from '@uikit';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';

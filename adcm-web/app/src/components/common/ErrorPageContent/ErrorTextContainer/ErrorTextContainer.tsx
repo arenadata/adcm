@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Text } from '@uikit';
 import s from './ErrorTextContainer.module.scss';
 

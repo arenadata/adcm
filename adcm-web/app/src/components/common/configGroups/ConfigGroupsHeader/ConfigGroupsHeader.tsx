@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Panel from '@uikit/Panel/Panel';
 import { Button } from '@uikit';
 import s from './ConfigGroupsHeader.module.scss';

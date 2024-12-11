@@ -58,11 +58,11 @@ export type EntityType =
   | 'service-component'
   | 'service-component-config-group';
 
-export interface LoadConfigurationVersionsArgs {}
+export type LoadConfigurationVersionsArgs = object;
 
-export interface LoadConfigurationArgs {}
+export type LoadConfigurationArgs = object;
 
-export interface SaveConfigurationArgs {}
+export type SaveConfigurationArgs = object;
 
 /* Settings */
 export interface LoadSettingsConfigurationArgs extends LoadConfigurationArgs, GetSettingsConfigArgs {}
@@ -70,7 +70,9 @@ export interface SaveSettingsConfigurationArgs extends SaveConfigurationArgs, Cr
 
 /* Host provider */
 // eslint-disable-next-line prettier/prettier
-export interface LoadHostProviderConfigurationVersionsArgs extends LoadConfigurationVersionsArgs, GetHostProviderConfigsArgs {}
+export interface LoadHostProviderConfigurationVersionsArgs
+  extends LoadConfigurationVersionsArgs,
+    GetHostProviderConfigsArgs {}
 export interface LoadHostProviderConfigurationArgs extends LoadConfigurationArgs, GetHostProviderConfigArgs {}
 export interface SaveHostProviderConfigurationArgs extends SaveConfigurationArgs, CreateHostProviderConfigArgs {}
 

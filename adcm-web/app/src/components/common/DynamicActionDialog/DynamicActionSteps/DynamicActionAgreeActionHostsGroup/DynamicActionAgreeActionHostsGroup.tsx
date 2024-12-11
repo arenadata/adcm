@@ -69,7 +69,7 @@ const DynamicActionAgreeActionHostsGroup = ({
       <div className={s.dynamicActionAgreeActionHostsGroup__content}>
         <div className={cn(s.dynamicActionAgreeActionHostsGroup__hosts, 'scroll')}>
           {filteredHosts.map((h) => (
-            <Tag>{h.name}</Tag>
+            <Tag key={h.id}>{h.name}</Tag>
           ))}
         </div>
         <div className={dialogStyles.dynamicActionDialog__footer}>

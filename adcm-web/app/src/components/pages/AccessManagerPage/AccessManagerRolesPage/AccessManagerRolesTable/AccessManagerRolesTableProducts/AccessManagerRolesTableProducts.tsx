@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { CheckAll, Checkbox } from '@uikit';
 import { useStore } from '@hooks';
 import s from './AccessManagerRolesTableProducts.module.scss';
@@ -38,6 +39,7 @@ const AccessManagerRolesTableProducts = ({ onSelect }: AccessManagerRolesTablePr
           />
           {products.map((p, id) => (
             <Checkbox
+              // biome-ignore lint/suspicious/noArrayIndexKey:
               key={id}
               label={p}
               checked={productsSelected.includes(p)}

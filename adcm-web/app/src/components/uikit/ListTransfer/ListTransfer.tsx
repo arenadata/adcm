@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import s from './ListTransfer.module.scss';
 import ListTransferPanel from './ListTransferPanel/ListTransferPanel';
 import type { ListTransferItem, ListTransferPanelOptions } from './ListTransfer.types';

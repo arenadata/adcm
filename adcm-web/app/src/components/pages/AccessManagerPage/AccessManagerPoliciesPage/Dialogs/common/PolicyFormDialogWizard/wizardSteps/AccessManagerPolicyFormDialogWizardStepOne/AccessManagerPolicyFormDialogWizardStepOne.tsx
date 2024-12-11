@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { FormField, FormFieldsContainer, Input, Select } from '@uikit';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 import { useAccessManagerPolicyFormDialogWizardStepOne } from './useAccessManagerPolicyFormDialogWizardStepOne';

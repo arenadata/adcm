@@ -1,4 +1,5 @@
-import React, { useMemo, forwardRef } from 'react';
+import type React from 'react';
+import { useMemo, forwardRef } from 'react';
 import cn from 'classnames';
 
 import TableHead from './TableHead/TableHead';

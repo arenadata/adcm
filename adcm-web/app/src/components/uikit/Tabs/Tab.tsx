@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Link, NavLink, resolvePath, useLocation } from 'react-router-dom';
 import s from './Tabs.module.scss';
 import cn from 'classnames';

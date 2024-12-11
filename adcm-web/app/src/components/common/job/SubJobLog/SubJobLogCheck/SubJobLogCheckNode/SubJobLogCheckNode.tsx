@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import cn from 'classnames';
 import type { SubJobLogNode } from '@commonComponents/job/SubJobLog/SubJobLogCheck/SubJobLogCheck.types';
 import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';

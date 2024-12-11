@@ -1,5 +1,5 @@
 export const getValueByPath = (object: unknown, path: string) => {
-  return path.split('.').reduce((acc, c) => acc && acc[c as keyof typeof object], object);
+  return path.split('.').reduce((acc, c) => acc?.[c as keyof typeof object], object);
 };
 
 export const isObject = (obj: unknown) => Object.prototype.toString.call(obj) === '[object Object]';

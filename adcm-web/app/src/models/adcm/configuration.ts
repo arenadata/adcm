@@ -79,7 +79,7 @@ export type FieldPath = string;
 export type ErrorKeyword = string;
 export type ErrorMessage = string;
 export type FieldErrors = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
   value: any;
   schema: SchemaDefinition;
   messages: Record<ErrorKeyword, ErrorMessage>;

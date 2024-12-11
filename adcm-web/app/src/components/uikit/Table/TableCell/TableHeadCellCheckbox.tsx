@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import React from 'react';
+import type React from 'react';
 import type { TableCellProps } from '@uikit/Table/TableCell/TableCell';
 import TableCell from '@uikit/Table/TableCell/TableCell';
 import Checkbox from '@uikit/Checkbox/Checkbox';

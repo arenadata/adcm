@@ -76,7 +76,7 @@ const clusterSlice = createSlice({
     });
     builder.addCase(wsActions.update_cluster, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.cluster?.id == id) {
+      if (state.cluster?.id === id) {
         state.cluster = {
           ...state.cluster,
           ...changes,

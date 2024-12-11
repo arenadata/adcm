@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { apiHost } from '@constants';
 import { Button } from '@uikit';
 
@@ -11,8 +11,8 @@ const DownloadSubJobLog: React.FC<DownloadSubJobLogProps> = ({ subJobId, subJobL
   const downloadLink = `${apiHost}/api/v2/jobs/${subJobId}/logs/${subJobLogId}/download/`;
 
   return (
-    <a href={downloadLink} download="download" target="_blank">
-      <Button variant="secondary" children="Download" />
+    <a href={downloadLink} download="download" target="_blank" rel="noreferrer">
+      <Button variant="secondary">Download</Button>
     </a>
   );
 };

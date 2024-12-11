@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 import s from './ListTransferPanel.module.scss';
 import { Button, Checkbox, SearchInput, Tooltip } from '@uikit';
 import type { ListTransferItem, ListTransferItemOptions, ListTransferPanelOptions } from '../ListTransfer.types';
@@ -15,9 +16,9 @@ interface ListTransferPanelProps extends ListTransferPanelOptions {
 }
 
 enum AllCheckboxState {
-  CheckEnabled,
-  UncheckEnabled,
-  UncheckDisabled,
+  CheckEnabled = 0,
+  UncheckEnabled = 1,
+  UncheckDisabled = 2,
 }
 
 const ListTransferPanel: React.FC<ListTransferPanelProps> = ({
