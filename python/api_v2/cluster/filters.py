@@ -95,3 +95,11 @@ class ClusterServiceCandidateAndPrototypeFilter(
     char_fields=("name", "display_name"),
 ):
     ...
+
+
+class ClusterMappingComponentFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+):
+    ...

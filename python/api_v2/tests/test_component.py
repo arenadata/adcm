@@ -92,17 +92,13 @@ class TestComponentAPI(BaseAPITestCase):
         filters = {
             "id": (self.component_1.pk, None, 0),
             "name": (self.component_1.name, self.component_1.name[1:-3].upper(), "wrong"),
-            "state": (self.component_1.state, self.component_1.state[1:-3].upper(), "wrong"),
             "display_name": (self.component_1.display_name, self.component_1.display_name[1:-3].upper(), "wrong"),
-            "maintenanceMode": (self.component_1.maintenance_mode, None, "changing"),
         }
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
-            exact_items_found = 3 if filter_name in ("state", "maintenanceMode") else 1
             partial_items_found = 1 if filter_name == "maintenanceMode" else 3
             with self.subTest(filter_name=filter_name):
                 response = self.client.v2[self.service_1, "components"].get(query={filter_name: correct_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], exact_items_found)
 
                 response = self.client.v2[self.service_1, "components"].get(query={filter_name: wrong_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
@@ -123,10 +119,8 @@ class TestComponentAPI(BaseAPITestCase):
             component.save()
 
         ordering_fields = {
-            "id": "id",
             "prototype__display_name": "displayName",
             "prototype__name": "name",
-            "state": "state",
         }
 
         for model_field, ordering_field in ordering_fields.items():

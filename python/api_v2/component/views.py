@@ -43,7 +43,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import ErrorSerializer
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -100,7 +100,7 @@ from api_v2.views import (
     retrieve=extend_schema(
         operation_id="getComponent",
         description="Get information about a specific component.",
-        summary="GET components",
+        summary="GET component",
         responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
     list=extend_schema(
@@ -108,20 +108,11 @@ from api_v2.views import (
         description="Get a list of all components of a particular service with information on them.",
         summary="GET components",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.ordering_by("id"),
             OpenApiParameter(
                 name="id",
                 location=OpenApiParameter.QUERY,
                 description="Component id.",
                 type=int,
-            ),
-            OpenApiParameter(
-                name="state",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by state.",
-                type=str,
             ),
             OpenApiParameter(
                 name="name",
@@ -130,16 +121,20 @@ from api_v2.views import (
                 type=str,
             ),
             OpenApiParameter(
+                name="display_name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by display name.",
+                type=str,
+            ),
+            OpenApiParameter(
                 name="ordering",
+                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
+                many=True,
                 enum=(
-                    "id",
-                    "-id",
                     "name",
                     "-name",
-                    "state",
-                    "-state",
                     "displayName",
                     "-displayName",
                 ),
@@ -232,16 +227,31 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         description="Get a list of host components.",
         parameters=[
             OpenApiParameter(
+                name="id",
+                location=OpenApiParameter.QUERY,
+                description="Component id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="display_name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by display name.",
+                type=str,
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
+                many=True,
                 enum=(
-                    "id",
-                    "-id",
                     "name",
                     "-name",
-                    "state",
-                    "-state",
                     "displayName",
                     "-displayName",
                 ),

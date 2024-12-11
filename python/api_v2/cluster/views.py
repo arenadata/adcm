@@ -82,6 +82,7 @@ from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_seria
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,
+    ClusterMappingComponentFilter,
     ClusterServiceCandidateAndPrototypeFilter,
     ClusterServiceFilter,
 )
@@ -312,7 +313,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getMappingComponents",
         summary="GET mapping components",
         description="Get a list of components to map.",
-        responses=responses(success=ComponentMappingSerializer, errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ComponentMappingSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     ),
     ansible_config_schema=extend_schema(
         methods=["get"],
@@ -609,13 +610,12 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         pagination_class=None,
-        filter_backends=[],
+        filterset_class=ClusterMappingComponentFilter,
         url_path="mapping/components",
         url_name="mapping-components",
     )
     def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
-        cluster = self.get_object()
-
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         bundle_id, is_mm_available = Prototype.objects.values_list("bundle_id", "allow_maintenance_mode").get(
             id=cluster.prototype_id
         )
@@ -629,8 +629,8 @@ class ClusterViewSet(
             else MaintenanceModeOfObjects(services={}, components={}, hosts={})
         )
 
-        components = tuple(
-            Component.objects.filter(cluster=cluster)
+        components = self.filter_queryset(
+            queryset=Component.objects.filter(cluster=cluster)
             .select_related("prototype", "prototype__parent", "service__prototype")
             .order_by("pk")
         )
