@@ -65,7 +65,7 @@ class ClusterFilter(
         return queryset.exclude(pk__in=exclude_pks)
 
 
-class ClusterHostFilter(FilterSet):
+class ClusterStatusesHostFilter(FilterSet):
     status = ChoiceFilter(label="Host status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
@@ -81,7 +81,7 @@ class ClusterHostFilter(FilterSet):
         return queryset.exclude(pk__in=hosts_up)
 
 
-class ClusterServiceFilter(FilterSet):
+class ClusterStatusesServiceFilter(FilterSet):
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
@@ -100,6 +100,14 @@ class ClusterServiceCandidateAndPrototypeFilter(
 class ClusterMappingComponentFilter(
     AdvancedFilterSet,
     char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+):
+    ...
+
+
+class ClusterMappingHostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
     number_fields=("id",),
 ):
     ...

@@ -34,7 +34,7 @@ from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config_host_group.filters import CHGFilter
 from api_v2.generic.config_host_group.permissions import CHGHostsPermissions, CHGPermissions
 from api_v2.generic.config_host_group.serializers import CHGSerializer, HostCHGSerializer
-from api_v2.host.filters import HostMemberConfigFilter, ShortHostFilter
+from api_v2.host.filters import HostGroupHostFilter
 from api_v2.host.serializers import HostAddSerializer, HostShortSerializer
 from api_v2.views import ADCMGenericViewSet
 
@@ -101,7 +101,7 @@ class CHGViewSet(
         url_path="host-candidates",
         url_name="host-candidates",
         pagination_class=None,
-        filterset_class=ShortHostFilter,
+        filterset_class=HostGroupHostFilter,
     )
     def owner_host_candidates(self, request: Request, *_, **__):  # noqa: ARG002
         parent_object = self.get_parent_object()
@@ -135,7 +135,7 @@ class CHGViewSet(
             .distinct()
         )
 
-        queryset = self.filter_queryset(hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs))
+        queryset = self.filter_queryset(hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs).order_by("fqdn"))
 
         return Response(
             data=HostShortSerializer(instance=queryset, many=True).data,
@@ -148,12 +148,12 @@ class CHGViewSet(
         url_path="host-candidates",
         url_name="host-candidates",
         pagination_class=None,
-        filterset_class=ShortHostFilter,
+        filterset_class=HostGroupHostFilter,
     )
     def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
         host_group: ConfigHostGroup = ConfigHostGroup.objects.get(pk=kwargs["pk"])
 
-        hosts = self.filter_queryset(host_group.host_candidate())
+        hosts = self.filter_queryset(host_group.host_candidate().order_by("fqdn"))
 
         serializer = HostCHGSerializer(instance=hosts, many=True)
 
@@ -228,7 +228,7 @@ class HostCHGViewSet(PermissionListMixin, GetParentObjectMixin, ListModelMixin, 
     )
     permission_classes = [CHGHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
-    filterset_class = HostMemberConfigFilter
+    filterset_class = HostGroupHostFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
 

@@ -929,7 +929,7 @@ class ConfigHostGroup(ADCMModel):
 
         return config, attr
 
-    def host_candidate(self):
+    def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
         if isinstance(self.object, (Cluster, Provider)):

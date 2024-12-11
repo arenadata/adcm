@@ -81,10 +81,11 @@ from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
-    ClusterHostFilter,
     ClusterMappingComponentFilter,
+    ClusterMappingHostFilter,
     ClusterServiceCandidateAndPrototypeFilter,
-    ClusterServiceFilter,
+    ClusterStatusesHostFilter,
+    ClusterStatusesServiceFilter,
 )
 from api_v2.cluster.permissions import ClusterPermissions, HostsClusterPermissions
 from api_v2.cluster.serializers import (
@@ -133,7 +134,7 @@ from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
-from api_v2.host.filters import HostMemberFilter
+from api_v2.host.filters import ClusterHostFilter
 from api_v2.host.serializers import (
     HostAddSerializer,
     HostChangeMaintenanceModeSerializer,
@@ -482,7 +483,7 @@ class ClusterViewSet(
         url_path="statuses/services",
         queryset=Service.objects.select_related("prototype").order_by("prototype__display_name"),
         permission_required=[VIEW_SERVICE_PERM],
-        filterset_class=ClusterServiceFilter,
+        filterset_class=ClusterStatusesServiceFilter,
     )
     def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
@@ -500,7 +501,7 @@ class ClusterViewSet(
         url_path="statuses/hosts",
         queryset=Host.objects.order_by("fqdn"),
         permission_required=[VIEW_HOST_PERM],
-        filterset_class=ClusterHostFilter,
+        filterset_class=ClusterStatusesHostFilter,
     )
     def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
@@ -595,14 +596,15 @@ class ClusterViewSet(
     @action(
         methods=["get"],
         pagination_class=None,
-        filter_backends=[],
+        filterset_class=ClusterMappingHostFilter,
         detail=True,
         url_path="mapping/hosts",
         url_name="mapping-hosts",
     )
     def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
-        serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster).order_by("fqdn"), many=True)
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        queryset = self.filter_queryset(queryset=Host.objects.filter(cluster=cluster).order_by("fqdn"))
+        serializer = self.get_serializer(instance=queryset, many=True)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 
@@ -766,36 +768,44 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
-            OpenApiParameter(name="description", description="Case insensitive and partial filter by description."),
-            OpenApiParameter(name="state", description="Case insensitive and partial filter by state."),
-            OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
-            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Host ID."),
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by host name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="hostprovider_name",
+                location=OpenApiParameter.QUERY,
+                description="Filter by hostprovider name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="component_id",
+                location=OpenApiParameter.QUERY,
+                description="Filter by component id.",
+                type=int,
+            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
+                many=True,
                 enum=(
                     "name",
                     "-name",
+                    "state",
+                    "-state",
                     "id",
                     "-id",
                     "hostproviderName",
                     "-hostproviderName",
-                    "state",
-                    "-state",
-                    "description",
-                    "-description",
-                    "componentId",
-                    "-componentId",
                 ),
                 default="name",
             ),
-            OpenApiParameter(name="search", exclude=True),
         ],
         responses={
-            HTTP_200_OK: HostSerializer,
+            HTTP_200_OK: HostSerializer(many=True),
             HTTP_404_NOT_FOUND: ErrorSerializer,
         },
     ),
@@ -851,7 +861,7 @@ class HostClusterViewSet(
         .prefetch_related("concerns", "hostcomponent_set__component__prototype")
         .order_by("fqdn")
     )
-    filterset_class = HostMemberFilter
+    filterset_class = ClusterHostFilter
     audit_model_hint = Host
     retrieve_status_map_actions = ("list", "statuses")
     exc_conversion_map = {
