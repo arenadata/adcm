@@ -69,7 +69,7 @@ from api_v2.generic.action_host_group.serializers import (
     AddHostSerializer,
     ShortHostSerializer,
 )
-from api_v2.host.filters import ShortHostFilter
+from api_v2.host.filters import HostGroupHostFilter
 from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
@@ -212,7 +212,7 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         url_path="host-candidates",
         url_name="host-candidates",
         pagination_class=None,
-        filterset_class=ShortHostFilter,
+        filterset_class=HostGroupHostFilter,
     )
     @with_parent_object
     def owner_host_candidate(self, request: Request, parent: CoreObjectDescriptor, **__):
@@ -240,7 +240,7 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         url_path="host-candidates",
         url_name="host-candidates",
         pagination_class=None,
-        filterset_class=ShortHostFilter,
+        filterset_class=HostGroupHostFilter,
     )
     @with_parent_object
     def host_candidate(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__):
@@ -274,10 +274,12 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
 
 class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
+    queryset = Host.objects.none()  # This is necessary for the BrowsableAPIRenderer to work correctly
+    pagination_class = None
     serializer_class = AddHostSerializer
     repo = ActionHostGroupRepo()
     action_host_group_service = ActionHostGroupService(repository=repo)
-    filterset_class = ShortHostFilter
+    filterset_class = HostGroupHostFilter
 
     def __init_subclass__(cls, **__):
         audit_view(

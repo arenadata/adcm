@@ -552,12 +552,6 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), group_ids)
 
-        with self.subTest("Filter hosts by Id"):
-            response = self.client.v2[self.service, ACTION_HOST_GROUPS, group_1.pk, "hosts"].get(query={"id": 1})
-
-            self.assertEqual(response.status_code, HTTP_200_OK)
-            self.assertListEqual(response.json(), [{"id": 1, "name": "host-0"}])
-
         with self.subTest("Filter hosts by Name"):
             response = self.client.v2[self.service, ACTION_HOST_GROUPS, group_1.pk, "hosts"].get(
                 query={"name": "host-0"}

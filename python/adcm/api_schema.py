@@ -179,7 +179,7 @@ def postprocess_hook_exclude_advanced_filters(generator: SchemaGenerator, reques
         if get_parameters := description.get("get", {}).get("parameters", []):
             new_parameters = []
             for param in get_parameters:
-                if param["in"] == "query" and "__" not in param["name"]:
+                if not (param["in"] == "query" and "__" in param["name"]):
                     new_parameters.append(param)
 
             description["get"]["parameters"] = new_parameters
