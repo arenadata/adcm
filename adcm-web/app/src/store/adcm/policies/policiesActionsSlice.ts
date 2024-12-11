@@ -84,7 +84,7 @@ const deletePolicyWithUpdate = createAsyncThunk(
 );
 
 const sortParams: SortParams = {
-  sortBy: 'name',
+  sortBy: 'displayName',
   sortDirection: 'asc',
 };
 

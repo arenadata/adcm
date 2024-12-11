@@ -12,6 +12,7 @@ import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 interface AdcmHostProvidersActionsState extends ModalState<AdcmHostProvider, 'hostprovider'> {
   createDialog: {
     isOpen: boolean;
+    isCreating: boolean;
   };
   deleteDialog: {
     hostprovider: AdcmHostProvider | null;
@@ -30,6 +31,7 @@ const createHostProviderWithUpdate = createAsyncThunk(
   'adcm/hostProviders/createHostProviderDialog/createHostProviderWithUpdate',
   async ({ isNeededLicenseAcceptance, ...arg }: CreateAdcmHostproviderWithLicensePayload, thunkAPI) => {
     try {
+      thunkAPI.dispatch(setIsCreating(true));
       if (isNeededLicenseAcceptance) {
         await AdcmPrototypesApi.postAcceptLicense(arg.prototypeId);
       }
@@ -38,6 +40,8 @@ const createHostProviderWithUpdate = createAsyncThunk(
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(setIsCreating(false));
     }
   },
 );
@@ -78,6 +82,7 @@ const loadRelatedData = createAsyncThunk(
 const createInitialState = (): AdcmHostProvidersActionsState => ({
   createDialog: {
     isOpen: false,
+    isCreating: false,
   },
   updateDialog: {
     hostprovider: null,
@@ -95,9 +100,13 @@ const hostProvidersActionsSlice = createCrudSlice({
   name: 'adcm/hostProvidersActions',
   entityName: 'hostprovider',
   createInitialState,
-  reducers: {},
+  reducers: {
+    setIsCreating(state, action) {
+      state.createDialog.isCreating = action.payload;
+    },
+  },
   extraReducers: (builder) => {
-    builder.addCase(createHostProviderWithUpdate.pending, (state) => {
+    builder.addCase(createHostProviderWithUpdate.fulfilled, (state) => {
       hostProvidersActionsSlice.caseReducers.closeCreateDialog(state);
     });
     builder.addCase(deleteHostProviderWithUpdate.pending, (state) => {
@@ -114,7 +123,8 @@ const hostProvidersActionsSlice = createCrudSlice({
   },
 });
 
-const { openDeleteDialog, closeDeleteDialog, openCreateDialog, closeCreateDialog } = hostProvidersActionsSlice.actions;
+const { openDeleteDialog, closeDeleteDialog, openCreateDialog, closeCreateDialog, setIsCreating } =
+  hostProvidersActionsSlice.actions;
 export {
   openDeleteDialog,
   closeDeleteDialog,
