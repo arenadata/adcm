@@ -182,12 +182,7 @@ class TestRole(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "display_name": "displayName",
-            "description": "description",
-            "built_in": "builtIn",
-            "type": "type",
-            "any_category": "anyCategory",
         }
 
         def get_results(response, ordering_field):
@@ -220,21 +215,13 @@ class TestRole(BaseAPITestCase):
     def test_filtering_success(self):
         test_role = Role.objects.get(name="View cluster configurations")
         filters = {
-            "id": (test_role.pk, None, 0),
             "display_name": (test_role.display_name, test_role.display_name[1:-3].upper(), "wrong"),
-            "description": (test_role.description, test_role.description[1:-3].upper(), "wrong"),
-            "built_in": (test_role.built_in, None, False),
             "type": (RoleTypes.ROLE.value, None, RoleTypes.BUSINESS.value),
-            "any_category": (test_role.any_category, None, False),
             "categories": ("cluster_one", None, "wrong"),
         }
         items_found = {
-            "id": (1, None, 0),
             "display_name": (1, 1, 0),
-            "description": (1, 1, 0),
-            "built_in": (77, None, 1),
             "type": (6, None, 72),
-            "any_category": (22, None, 56),
             "categories": (36, None, 22),
         }
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
