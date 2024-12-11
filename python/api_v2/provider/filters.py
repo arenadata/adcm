@@ -10,35 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Provider
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from django_filters.rest_framework import CharFilter, OrderingFilter
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class ProviderFilter(FilterSet):
+class ProviderFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=("id", ("bundle", "prototype__bundle__id")),
+):
     name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
     prototype_display_name = CharFilter(
-        field_name="prototype__display_name", label="Hostprovider prototype display name", lookup_expr="icontains"
+        field_name="prototype__display_name", label="Hostprovider prototype display name", lookup_expr="exact"
     )
-    state = CharFilter(field_name="state", label="Hostprovider state", lookup_expr="icontains")
-    description = CharFilter(field_name="description", label="Hostprovider description", lookup_expr="icontains")
+    state = CharFilter(field_name="state", label="Hostprovider state", lookup_expr="exact")
     ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "prototype__display_name": "prototypeDisplayName",
-            "state": "state",
-            "description": "description",
-        },
-        field_labels={
-            "id": "ID",
-            "name": "Name",
-            "prototype__display_name": "Prototype display name",
-            "state": "State",
-            "description": "Description",
-        },
+        fields={"name": "name"},
+        field_labels={"name": "Name"},
         label="ordering",
     )
-
-    class Meta:
-        model = Provider
-        fields = ["id", "name", "state", "prototype_display_name", "description"]

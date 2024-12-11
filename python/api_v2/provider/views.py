@@ -62,13 +62,6 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
             OpenApiParameter(
-                name="id",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Hostprovider id.",
-                type=str,
-            ),
-            OpenApiParameter(
                 name="name",
                 required=False,
                 location=OpenApiParameter.QUERY,
@@ -76,24 +69,17 @@ from api_v2.views import ADCMGenericViewSet
                 type=str,
             ),
             OpenApiParameter(
-                name="prototypeName",
+                name="prototype_display_name",
                 required=False,
                 location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by hostprovider prototype name.",
+                description="Filter by prototype display name.",
                 type=str,
             ),
             OpenApiParameter(
                 name="state",
                 required=False,
                 location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by state.",
-                type=str,
-            ),
-            OpenApiParameter(
-                name="description",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by description.",
+                description="Filter by state.",
                 type=str,
             ),
             OpenApiParameter(
@@ -101,16 +87,8 @@ from api_v2.views import ADCMGenericViewSet
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
                 enum=(
-                    "id",
-                    "-id",
                     "name",
                     "-name",
-                    "prototypeName",
-                    "-prototypeName",
-                    "state",
-                    "-state",
-                    "description",
-                    "-description",
                 ),
                 default="name",
             ),
