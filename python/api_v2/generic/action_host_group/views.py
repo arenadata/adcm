@@ -38,7 +38,6 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
-from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
 from rest_framework.decorators import action
@@ -131,7 +130,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
     repo = ActionHostGroupRepo()
     action_host_group_service = ActionHostGroupService(repository=repo)
-    filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionHostGroupFilter
 
     def get_serializer_class(self) -> type[Serializer]:

@@ -20,7 +20,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action_host_group.serializers import ActionHostGroupSerializer, ShortHostSerializer
 
@@ -42,6 +42,18 @@ def document_action_host_group_viewset(object_type: str):
             operation_id=f"get{capitalized_type}ActionHostGroups",
             summary=f"GET {object_type}'s Action Host Groups",
             description=f"Return list of {object_type}'s action host groups.",
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by name.",
+                ),
+                OpenApiParameter(
+                    name="has_host",
+                    description="Case insensitive and partial filter by host",
+                ),
+                DefaultParams.LIMIT,
+                DefaultParams.OFFSET,
+            ],
             responses=responses(
                 success=ActionHostGroupSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
             ),

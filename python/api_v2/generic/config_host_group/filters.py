@@ -10,31 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ConfigHostGroup
-from django_filters.rest_framework import (
-    CharFilter,
-    FilterSet,
-    OrderingFilter,
-)
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class CHGFilter(FilterSet):
-    name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
-    description = CharFilter(label="Description", field_name="description", lookup_expr="icontains")
-    ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "description": "description",
-        },
-        field_labels={
-            "id": "ID",
-            "name": "Name",
-            "description": "Description",
-        },
-        label="ordering",
-    )
-
-    class Meta:
-        model = ConfigHostGroup
-        fields = ("id", "name", "description")
+class CHGFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=("id",),
+):
+    ...
