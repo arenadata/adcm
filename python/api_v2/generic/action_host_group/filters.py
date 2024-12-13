@@ -10,29 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ActionHostGroup
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from django_filters.rest_framework import CharFilter
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class ActionHostGroupFilter(FilterSet):
+class ActionHostGroupFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=("id",),
+):
     name = CharFilter(field_name="name", label="Name", lookup_expr="icontains")
     has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains", distinct=True)
-    description = CharFilter(field_name="description", label="Description", lookup_expr="icontains")
-
-    ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "description": "description",
-        },
-        field_labels={
-            "id": "ID",
-            "name": "Name",
-            "description": "Description",
-        },
-        label="ordering",
-    )
-
-    class Meta:
-        model = ActionHostGroup
-        fields = ["name", "has_host", "description"]
