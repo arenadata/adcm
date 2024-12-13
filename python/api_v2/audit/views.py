@@ -12,8 +12,14 @@
 
 from datetime import date
 
-from audit.models import AuditLog, AuditSession
-from django_filters.rest_framework.backends import DjangoFilterBackend
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+    AuditSession,
+    AuditSessionLoginResult,
+)
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -33,53 +39,44 @@ from api_v2.views import ADCMReadOnlyModelViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("-login_time"),
             OpenApiParameter(
                 name="id",
                 type=int,
-                location=OpenApiParameter.QUERY,
-                description="Operation id.",
+                description="Filter by id.",
             ),
             OpenApiParameter(
                 name="login",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="User login.",
+                description="Case insensitive and partial filter by user login.",
             ),
             OpenApiParameter(
-                name="loginResult",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="User login result.",
-                enum=("success", "wrong password", "user not found", "account disabled"),
+                name="login_result",
+                description="Filter by login result.",
+                enum=AuditSessionLoginResult.values,
             ),
             OpenApiParameter(
-                name="loginTime",
+                name="time_from",
+                description="Filter by time from.",
                 type=date,
-                location=OpenApiParameter.QUERY,
-                description="User login time.",
+            ),
+            OpenApiParameter(
+                name="time_to",
+                description="Filter by time to.",
+                type=date,
             ),
             OpenApiParameter(
                 name="ordering",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                required=False,
                 enum=(
                     "loginTime",
-                    "loginResult",
-                    "login",
-                    "id",
                     "-loginTime",
-                    "-loginResult",
-                    "-login",
-                    "-id",
                     "time",
                     "-time",
                 ),
+                many=True,
                 default="-loginTime",
             ),
         ],
+        responses={200: AuditSessionSerializer(many=True), 403: ErrorSerializer},
     ),
     retrieve=extend_schema(
         operation_id="getAuditLogin",
@@ -94,7 +91,6 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
     permission_classes = [DjangoObjectPermissions]
     permission_required = ["audit.view_auditsession"]
     filterset_class = AuditSessionFilter
-    filter_backends = (DjangoFilterBackend,)
 
 
 @extend_schema_view(
@@ -105,58 +101,47 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("-operation_time"),
             OpenApiParameter(
                 name="id",
                 type=int,
-                location=OpenApiParameter.QUERY,
-                description="Operation id.",
+                description="Filter by id.",
             ),
             OpenApiParameter(
-                name="name",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by operation name.",
-                type=str,
+                name="object_name",
+                description="Case insensitive and partial filter by object name.",
             ),
             OpenApiParameter(
-                name="userName",
-                location=OpenApiParameter.QUERY,
+                name="object_type",
+                description="Filter by object type.",
+                enum=AuditObjectType.values,
+            ),
+            OpenApiParameter(
+                name="operation_result",
+                description="Filter by operation result.",
+                enum=AuditLogOperationResult.values,
+            ),
+            OpenApiParameter(
+                name="operation_type",
+                description="Filter by operation type.",
+                enum=AuditLogOperationType.values,
+            ),
+            OpenApiParameter(
+                name="time_from",
+                description="Filter by time from.",
+                type=date,
+            ),
+            OpenApiParameter(
+                name="time_to",
+                description="Filter by time to.",
+                type=date,
+            ),
+            OpenApiParameter(
+                name="user_name",
                 description="Case insensitive and partial filter by user name.",
-                type=str,
             ),
             OpenApiParameter(
-                name="result",
-                location=OpenApiParameter.QUERY,
-                description="Operation result filter.",
-                type=str,
-                enum=(
-                    "success",
-                    "fail",
-                    "denied",
-                ),
-            ),
-            OpenApiParameter(
-                name="type",
-                location=OpenApiParameter.QUERY,
-                description="Operation type filter.",
-                type=str,
-                enum=(
-                    "create",
-                    "update",
-                    "delete",
-                ),
-            ),
-            OpenApiParameter(
-                name="timeFrom",
-                location=OpenApiParameter.QUERY,
-                description="Operation time from.",
-                type=date,
-            ),
-            OpenApiParameter(
-                name="timeTo",
-                location=OpenApiParameter.QUERY,
-                description="Operation time to.",
-                type=date,
+                name="username",
+                description="Case insensitive and partial filter by user name.",
             ),
             OpenApiParameter(
                 name="ordering",
@@ -165,8 +150,6 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 required=False,
                 enum=(
-                    "id",
-                    "-id",
                     "objectName",
                     "-objectName",
                     "objectType",
@@ -182,9 +165,11 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                     "time",
                     "-time",
                 ),
+                many=True,
                 default="-time",
             ),
         ],
+        responses={200: AuditLogSerializer(many=True), 403: ErrorSerializer},
     ),
     retrieve=extend_schema(
         operation_id="getAuditOperation",
@@ -199,4 +184,3 @@ class AuditLogViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
     permission_classes = [DjangoObjectPermissions]
     permission_required = ["audit.view_auditlog"]
     filterset_class = AuditLogFilter
-    filter_backends = (DjangoFilterBackend,)
