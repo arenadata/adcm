@@ -10,31 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import (
-    JobLog,
-    JobStatus,
-)
-from django_filters.rest_framework.filters import (
-    ChoiceFilter,
-    OrderingFilter,
-)
-from django_filters.rest_framework.filterset import FilterSet
+from api_v2.filters import AdvancedFilterSet
 
 
-class JobFilter(FilterSet):
-    status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Job status")
-
-    ordering = OrderingFilter(
-        fields={"id": "id", "finish_date": "endTime", "status": "status", "start_date": "startTime"},
-        field_labels={
-            "id": "ID",
-            "status": "Status",
-            "start_date": "Start time",
-            "finish_date": "End time",
-        },
-        label="ordering",
-    )
-
-    class Meta:
-        model = JobLog
-        fields = ["id", "status", "ordering", "start_date", "finish_date"]
+class JobFilter(
+    AdvancedFilterSet,
+    char_fields=("status",),
+    number_fields=("id", ("task", "task__id")),
+):
+    ...

@@ -42,36 +42,6 @@ from api_v2.views import ADCMGenericViewSet
             HTTP_200_OK: LogStorageSerializer(many=True),
             **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
         },
-        parameters=[
-            OpenApiParameter(
-                name="name",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by name.",
-            ),
-            OpenApiParameter(
-                name="format",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by log format.",
-                enum=("json", "txt"),
-            ),
-            OpenApiParameter(
-                name="type",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by log type.",
-                enum=("stdout", "stderr", "custom", "check"),
-            ),
-            OpenApiParameter(
-                name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=str,
-                enum=("id", "name", "type", "format", "-id", "-name", "-type", "-format"),
-            ),
-        ],
     ),
     retrieve=extend_schema(
         operation_id="getJobslog",
