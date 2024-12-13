@@ -18,17 +18,27 @@ from audit.models import (
     AuditSession,
     AuditSessionLoginResult,
 )
+from django_filters import NumberFilter
 from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
     DateTimeFilter,
-    FilterSet,
     OrderingFilter,
 )
 
+from api_v2.filters import AdvancedFilterSet
 
-class AuditLogFilter(FilterSet):
+
+class AuditLogFilter(
+    AdvancedFilterSet,
+    char_fields=("operation_result", "operation_type", ("username", "user__username")),
+    number_fields=("id",),
+):
+    # Advanced filters
+    object_id__eq = NumberFilter(field_name="audit_object__object_id", lookup_expr="exact")
+    object_type__eq = CharFilter(field_name="audit_object__object_type", lookup_expr="exact")
+
     object_name = CharFilter(field_name="audit_object__object_name", label="Object name", lookup_expr="icontains")
     object_type = ChoiceFilter(
         field_name="audit_object__object_type",
@@ -47,7 +57,6 @@ class AuditLogFilter(FilterSet):
     user_name = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
-            "id": "id",
             "audit_object__object_name": "objectName",
             "audit_object__object_type": "objectType",
             "operation_name": "name",
@@ -57,7 +66,6 @@ class AuditLogFilter(FilterSet):
             "user__username": "userName",
         },
         field_labels={
-            "id": "ID",
             "audit_object__object_name": "Object name",
             "audit_object__object_type": "Object type",
             "operation_name": "Name",
@@ -71,18 +79,7 @@ class AuditLogFilter(FilterSet):
 
     class Meta:
         model = AuditLog
-        fields = [
-            "id",
-            "object_name",
-            "object_type",
-            "operation_result",
-            "operation_type",
-            "time_from",
-            "time_to",
-            "user_name",
-            "username",
-            "ordering",
-        ]
+        fields = ["id"]
 
 
 class AuditSessionOrderingFilter(OrderingFilter):
@@ -106,7 +103,11 @@ class AuditSessionOrderingFilter(OrderingFilter):
         return super().filter(qs, value)
 
 
-class AuditSessionFilter(FilterSet):
+class AuditSessionFilter(
+    AdvancedFilterSet,
+    char_fields=(("username", "user__username"), "login_result"),
+    number_fields=("id",),
+):
     login = CharFilter(field_name="user__username", label="Login", lookup_expr="icontains")
     login_result = ChoiceFilter(
         field_name="login_result", label="Login result", choices=AuditSessionLoginResult.choices
@@ -114,16 +115,11 @@ class AuditSessionFilter(FilterSet):
     time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
     time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
     ordering = AuditSessionOrderingFilter(
-        fields={"login_time": "loginTime", "user__username": "login", "login_result": "loginResult", "id": "id"},
-        field_labels={
-            "login_time": "Login time",
-            "user__username": "Login",
-            "login_result": "Login result",
-            "id": "ID",
-        },
+        fields={"login_time": "loginTime"},
+        field_labels={"login_time": "Login time"},
         label="ordering",
     )
 
     class Meta:
         model = AuditSession
-        fields = ["id", "login", "login_result", "time_from", "time_to", "ordering"]
+        fields = ["id"]
