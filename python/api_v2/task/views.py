@@ -29,7 +29,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import ErrorSerializer
 from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -47,8 +47,31 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM tasks.",
         summary="GET tasks",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="id",
+                location=OpenApiParameter.QUERY,
+                description="Filter by id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="job_name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by job name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="object_name",
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by object name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="status",
+                location=OpenApiParameter.QUERY,
+                description="Filter by status.",
+                type=str,
+                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
+            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -58,22 +81,13 @@ from api_v2.views import ADCMGenericViewSet
                     "-name",
                     "id",
                     "-id",
-                    "status",
-                    "-status",
                     "startTime",
                     "-startTime",
                     "endTime",
                     "-endTime",
                 ),
+                many=True,
                 default="-id",
-            ),
-            OpenApiParameter(
-                name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Job status.",
-                type=str,
-                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
             ),
         ],
         responses={

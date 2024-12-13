@@ -10,32 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import (
-    LogStorage,
-)
-from django_filters.rest_framework.filters import (
-    CharFilter,
-    OrderingFilter,
-)
-from django_filters.rest_framework.filterset import FilterSet
+from api_v2.filters import AdvancedFilterSet
 
 
-class LogFilter(FilterSet):
-    name = CharFilter(field_name="name", lookup_expr="icontains")
-    type = CharFilter(field_name="type", lookup_expr="icontains")
-    format = CharFilter(field_name="format", lookup_expr="icontains")
-
-    ordering = OrderingFilter(
-        fields={"id": "id", "name": "name", "type": "type", "format": "format"},
-        field_labels={
-            "id": "ID",
-            "name": "Name",
-            "type": "Type",
-            "format": "Format",
-        },
-        label="ordering",
-    )
-
-    class Meta:
-        model = LogStorage
-        fields = ["id", "ordering", "name", "type", "format"]
+class LogFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "type"),
+    number_fields=("id", ("job", "job__id")),
+):
+    ...

@@ -16,7 +16,7 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -29,7 +29,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import ErrorSerializer
 from api_v2.job.filters import JobFilter
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
@@ -43,26 +43,6 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getJobs",
         description="Get a list of ADCM jobs.",
         summary="GET jobs",
-        parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=str,
-                enum=["id", "status", "-id", "-status", "startTime", "-startTime", "endTime", "-endTime"],
-            ),
-            OpenApiParameter(
-                name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Job status.",
-                type=str,
-                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
-            ),
-        ],
     ),
     terminate=extend_schema(
         operation_id="postJobTerminate",
