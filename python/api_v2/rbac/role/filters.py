@@ -12,11 +12,12 @@
 
 from django.db.models import Q, QuerySet
 from django_filters import CharFilter, ChoiceFilter, OrderingFilter
-from django_filters.rest_framework import FilterSet
 from rbac.models import Role, RoleTypes
 
+from api_v2.filters import AdvancedFilterSet
 
-class RoleFilter(FilterSet):
+
+class RoleFilter(AdvancedFilterSet, char_fields=("name", "display_name", "type"), number_fields=("id",)):
     display_name = CharFilter(
         field_name="display_name",
         label="Case insensitive and partial filter by role display name.",

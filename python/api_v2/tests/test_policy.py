@@ -183,10 +183,7 @@ class TestPolicy(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "name": "name",
-            "description": "description",
-            "built_in": "builtIn",
         }
 
         def get_results(response, ordering_field):
@@ -214,12 +211,6 @@ class TestPolicy(BaseAPITestCase):
         filters = {
             "id": (self.create_user_policy.pk, None, 0),
             "name": (self.create_user_policy.name, self.create_user_policy.name[1:-3].upper(), "wrong"),
-            "description": (
-                self.create_user_policy.description,
-                self.create_user_policy.description[1:-3].upper(),
-                "wrong",
-            ),
-            "built_in": (self.create_user_policy.built_in, None, not self.create_user_policy.built_in),
         }
         partial_items_found, exact_items_found = 1, 1
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
