@@ -9,10 +9,14 @@ import { AdcmMaintenanceMode } from '@models/adcm';
 import type { SortParams } from '@models/table';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import { unlimitedRequestItems } from '@constants';
 
 const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (_arg, thunkAPI) => {
   try {
-    const clusters = await AdcmClustersApi.getClusters();
+    const clusters = await AdcmClustersApi.getClusters(undefined, undefined, {
+      pageNumber: 0,
+      perPage: unlimitedRequestItems,
+    });
     return clusters.results;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
