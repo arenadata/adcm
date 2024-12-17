@@ -13,34 +13,17 @@
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
-    FilterSet,
     OrderingFilter,
 )
-from rbac.models import Group, OriginType
+from rbac.models import OriginType
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class GroupFilter(FilterSet):
-    description = CharFilter(lookup_expr="icontains")
+class GroupFilter(AdvancedFilterSet, char_fields=("name", "display_name", "type"), number_fields=("id",)):
     display_name = CharFilter(lookup_expr="icontains")
-    name = CharFilter(lookup_expr="icontains")
     type = ChoiceFilter(choices=OriginType.choices)
     ordering = OrderingFilter(
-        fields={
-            "display_name": "displayName",
-            "id": "id",
-            "type": "type",
-            "description": "description",
-            "name": "name",
-        },
-        field_labels={
-            "display_name": "Display name",
-            "id": "ID",
-            "type": "Type",
-            "description": "Description",
-            "name": "Name",
-        },
+        fields={"display_name": "displayName"},
+        field_labels={"display_name": "Display name"},
     )
-
-    class Meta:
-        model = Group
-        fields = ["id", "description", "type", "display_name", "ordering", "name"]

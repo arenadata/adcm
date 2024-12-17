@@ -10,27 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import Q, QuerySet
-from django_filters.rest_framework import (
-    CharFilter,
-    ChoiceFilter,
-    FilterSet,
-    OrderingFilter,
-)
-from rbac.models import User
+from decimal import Decimal
 
+from django.db.models import Q, QuerySet
+from django_filters.rest_framework import CharFilter, ChoiceFilter, NumberFilter, OrderingFilter
+
+from api_v2.filters import AdvancedFilterSet, NumberInFilter
 from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
 
 
-class UserFilterSet(FilterSet):
+class UserFilterSet(AdvancedFilterSet, char_fields=("username", "type"), number_fields=("id")):
     username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
     status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
     type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")
-    ordering = OrderingFilter(
-        fields={"username": "username", "id": "id", "type": "type"},
-        field_labels={"username": "Username", "id": "ID", "type": "Type"},
-        label="ordering",
-    )
+    ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
+
+    # advanced filters
+    group__eq = NumberFilter(field_name="groups__id", lookup_expr="exact")
+    group__ne = NumberFilter(method="filter_group__ne")
+    group__in = NumberInFilter(field_name="groups__id", lookup_expr="in", distinct=True)
+    group__exclude = NumberInFilter(field_name="groups__id", exclude=True, lookup_expr="in")
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
@@ -51,6 +50,9 @@ class UserFilterSet(FilterSet):
 
         return queryset.filter(type=filter_value)
 
-    class Meta:
-        model = User
-        fields = ["username", "status", "type", "ordering"]
+    @staticmethod
+    def filter_group__ne(queryset: QuerySet, name: str, value: Decimal) -> QuerySet:
+        _ = name
+        m2m_model = queryset.model.groups.through
+        exclude_user_ids = m2m_model.objects.filter(group_id=value).values_list("user_id", flat=True)
+        return queryset.exclude(id__in=exclude_user_ids).distinct()

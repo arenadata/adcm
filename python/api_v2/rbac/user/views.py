@@ -92,7 +92,7 @@ from api_v2.views import ADCMGenericViewSet
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
-                enum=("username", "-username", "id", "-id", "type", "-type"),
+                enum=("username", "-username"),
                 default="username",
             ),
         ],
