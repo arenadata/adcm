@@ -23,9 +23,8 @@ from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 class ServiceFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name"), "status"),
 ):
-    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     name = CharFilter(label="Service name", field_name="prototype__name", lookup_expr="icontains")
     display_name = CharFilter(
         label="Service display name", field_name="prototype__display_name", lookup_expr="icontains"

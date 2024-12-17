@@ -23,10 +23,9 @@ from api_v2.filters import AdvancedFilterSet
 
 class HostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"),),
+    char_fields=(("name", "fqdn"), "status"),
     number_fields=("id",),
 ):
-    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
     cluster_name = CharFilter(label="Cluster name", field_name="cluster__name", lookup_expr="exact")
@@ -56,10 +55,9 @@ class HostFilter(
 
 class ClusterHostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"),),
+    char_fields=(("name", "fqdn"), "status"),
     number_fields=("id",),
 ):
-    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
     component_id = NumberFilter(label="Component id", field_name="hostcomponent__component_id")
@@ -82,10 +80,9 @@ class ClusterHostFilter(
 
 class HostGroupHostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"),),
+    char_fields=(("name", "fqdn"), "status"),
     number_fields=("id",),
 ):
-    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
     ordering = OrderingFilter(
