@@ -8,6 +8,7 @@ export const allowIconsNames = [
   'chevron',
   'chevron-double',
   'dots',
+  'download',
   'eye',
   'eye-crossed',
   'g1-actions',

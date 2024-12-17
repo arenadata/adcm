@@ -3,6 +3,10 @@ import type { BaseStatus, TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
+    label: 'Object',
+    name: 'objects',
+  },
+  {
     label: 'Status',
     name: 'status',
   },
@@ -15,7 +19,7 @@ export const columns: TableColumn[] = [
     name: 'startTime',
   },
   {
-    label: 'Finish time',
+    label: 'End time',
     name: 'endTime',
   },
   {
