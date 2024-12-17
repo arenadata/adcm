@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.models import ADCMEntityStatus, Cluster
-from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
@@ -20,15 +19,14 @@ from django_filters.rest_framework import (
     OrderingFilter,
 )
 
-from api_v2.filters import AdvancedFilterSet, filter_service_status
+from api_v2.filters import AdvancedFilterSet, filter_cluster_status, filter_host_status, filter_service_status
 
 
 class ClusterFilter(
     AdvancedFilterSet,
-    char_fields=("name",),
+    char_fields=("name", "status"),
     number_fields=(("bundle", "prototype__bundle__id"),),
 ):
-    # TODO: add advanced filter by status field: __eq, __ieq, __ne, __ine, __in, __iin, __exclude, __iexclude
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
     prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
     prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
@@ -51,18 +49,7 @@ class ClusterFilter(
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status != 0
-            }
-        else:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status == 0
-            }
-
-        return queryset.exclude(pk__in=exclude_pks)
+        return filter_cluster_status(queryset=queryset, value=value)
 
 
 class ClusterStatusesHostFilter(FilterSet):
@@ -71,14 +58,7 @@ class ClusterStatusesHostFilter(FilterSet):
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        hosts_up = {host_id for host_id, status_info in status_map.hosts.items() if status_info.status == 0}
-
-        if value == ADCMEntityStatus.UP:
-            return queryset.filter(pk__in=hosts_up)
-
-        return queryset.exclude(pk__in=hosts_up)
+        return filter_host_status(queryset=queryset, value=value)
 
 
 class ClusterStatusesServiceFilter(FilterSet):
