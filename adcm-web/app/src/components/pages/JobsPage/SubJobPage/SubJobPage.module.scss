@@ -1,11 +1,9 @@
 :global {
   body.theme-dark {
-    --subjob-cell-border: var(--color-xdark);
-    --subjob-cell-background: var(--color-black-12);
+    --subjob-cell-background: var(--color-new-light-30);
   }
 
   body.theme-light {
-    --subjob-cell-border: var(--color-light-stroke);
     --subjob-cell-background: var(--color-xwhite-70);
   }
 }
@@ -14,12 +12,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 20px;
   margin-top: 40px;
-
   border-radius: 8px;
-  border: 1px solid var(--subjob-cell-border);
   background: var(--subjob-cell-background);
+
+  .logsWrapper {
+    padding: 0px 12px;
+  }
 }
 
 .subJobLogAutoScroll {

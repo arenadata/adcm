@@ -1,6 +1,7 @@
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useStore } from '@hooks';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
+import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObjectsCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import { orElseGet } from '@utils/checkUtils';
 import { columns, jobStatusesMap } from './SubJobOverviewTable.constants';
@@ -18,6 +19,7 @@ const SubJobOverviewTable = ({ onStop }: SubJobOverviewTableProps) => {
     <Table variant="quaternary" isLoading={isLoading} columns={columns}>
       {subJob && (
         <TableRow>
+          <JobObjectsCell objects={subJob.parentTask?.objects} />
           <TableCell>{jobStatusesMap[subJob.status]}</TableCell>
           <TableCell>{orElseGet(subJob.duration ?? 0, secondsToDuration)}</TableCell>
           <DateTimeCell value={subJob.startTime ?? undefined} />

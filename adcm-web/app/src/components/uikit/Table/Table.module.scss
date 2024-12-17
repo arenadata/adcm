@@ -48,7 +48,7 @@
 
     // quaternary
     --table-tr-border-quaternary: var(--color-xdark);
-    --table-tr-background-quaternary: var(--color-xdark-new-50);
+    --table-tr-background-quaternary: var(--color-xdark-30);
     --table-td-color-quaternary: var(--color-xgray-lighter);
   }
 
@@ -101,7 +101,7 @@
 
     // quaternary
     --table-tr-border-quaternary: var(--color-stroke-light);
-    --table-tr-background-quaternary: #eef2f5;
+    --table-tr-background-quaternary: var(--color-xgray-alt);
     --table-td-color-quaternary: var(--color-xgray-darker);
   }
 }

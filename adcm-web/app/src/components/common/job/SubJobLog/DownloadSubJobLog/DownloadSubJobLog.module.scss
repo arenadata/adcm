@@ -1,0 +1,28 @@
+:global {
+  body.theme-dark {
+    --download-subjob-log-icon-button-border: var(--color-xdark);
+    --download-subjob-log-icon-color: #989AA8;
+  }
+
+  body.theme-light {
+    --download-subjob-log-icon-button-border: var(--color-xgray-lighter);
+    --download-subjob-log-icon-color: var(--color-adcmx);
+  }
+}
+
+.downloadSubJobLog {
+  display: flex;
+
+  .iconButton {
+    border-radius: 4px;
+    border: 2px solid var(--download-subjob-log-icon-button-border);
+    width: 20px;
+    height: 20px;
+    color: var(--download-subjob-log-icon-color);
+
+    &:hover {
+      color: var(--icon-button-color-hover);
+      background: var(--icon-button-background-hover);
+    }
+  }
+}
