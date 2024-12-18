@@ -6,11 +6,10 @@ import {
   type AdcmMappingComponent,
   type AdcmMappingComponentService,
   type HostId,
-  AdcmMaintenanceMode,
 } from '@models/adcm';
 import type {
   ComponentAvailabilityErrors,
-  DisabledComponentsMappings,
+  InitiallyMappedHostsDictionary,
 } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 
 export const getComponentMapActions = (
@@ -29,8 +28,8 @@ export const getComponentMapActions = (
   return result;
 };
 
-export const getDisabledMappings = (mapping: AdcmMapping[]) => {
-  const result: DisabledComponentsMappings = {};
+export const getInitiallyMappedHostsDictionary = (mapping: AdcmMapping[]) => {
+  const result: InitiallyMappedHostsDictionary = {};
 
   for (const m of mapping) {
     if (result[m.componentId] === undefined) {
@@ -61,14 +60,11 @@ export const checkComponentActionsMappingAvailability = (
   return result;
 };
 
-export const checkHostActionsMappingAvailability = (
+export const checkHostActionsUnmappingAvailability = (
   host: AdcmHostShortView,
   allowActions: Set<AdcmHostComponentMapRuleAction>,
-  disabledHosts: Set<HostId> = new Set(),
+  initiallyMappedHosts: Set<HostId> = new Set(),
 ): string | undefined => {
-  const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
-  const isHostInMaintenanceMode = host.maintenanceMode === AdcmMaintenanceMode.On;
-
+  const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && initiallyMappedHosts.has(host.id);
   if (isDisabled) return 'Removing host is not allowed in the action configuration';
-  if (isHostInMaintenanceMode) return 'The host is in the maintenance mode';
 };
