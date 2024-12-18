@@ -13,26 +13,9 @@
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
-from api_v2.api_schema import DefaultParams, responses
+from api_v2.api_schema import responses
 from api_v2.generic.action.serializers import ActionListSerializer, ActionRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
-
-_schema_common_filters = (
-    OpenApiParameter(
-        name="name",
-        required=False,
-        location=OpenApiParameter.QUERY,
-        description="System name of an action",
-        type=str,
-    ),
-    OpenApiParameter(
-        name="displayName",
-        required=False,
-        location=OpenApiParameter.QUERY,
-        description="Visible name of an action",
-        type=str,
-    ),
-)
 
 
 def document_action_viewset(object_type: str, operation_id_variant: str | None = None):
@@ -53,55 +36,33 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             summary=f"GET {object_type}'s actions",
             description=f"Get a list of {object_type}'s actions.",
             parameters=[
-                DefaultParams.ordering_by("id"),
                 OpenApiParameter(
                     name="name",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by name.",
-                    type=str,
                 ),
                 OpenApiParameter(
-                    name="displayName",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
+                    name="display_name",
                     description="Case insensitive and partial filter by display name.",
-                    type=str,
                 ),
                 OpenApiParameter(
-                    name="isHostOwnAction",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
+                    name="is_host_own_action",
                     description="Filter for host's own actions / actions from another objects",
                     type=bool,
                 ),
                 OpenApiParameter(
-                    name="prototypeId",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
+                    name="prototype_id",
                     description="Identifier of action's owner",
                     type=int,
                 ),
                 OpenApiParameter(
-                    name="description",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
-                    description="Case insensitive and partial filter by description.",
-                    type=str,
-                ),
-                OpenApiParameter(
                     name="ordering",
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    type=str,
                     enum=(
-                        "name",
-                        "-name",
                         "id",
                         "-id",
                     ),
                     default="id",
                 ),
-                *_schema_common_filters,
             ],
             responses=responses(success=ActionListSerializer, errors=HTTP_404_NOT_FOUND),
         ),

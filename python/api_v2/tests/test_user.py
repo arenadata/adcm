@@ -19,6 +19,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 from rbac.models import Group, OriginType, Role, User
+from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import (
@@ -608,9 +609,7 @@ class TestUserAPI(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "username": "username",
-            "type": "type",
         }
 
         for model_field, ordering_field in ordering_fields.items():
@@ -897,3 +896,52 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+
+
+class TestAdvancedUserFilters(BaseAPITestCase):
+    def setUp(self):
+        self.client.login(username="admin", password="admin")
+
+        self.admin_user = User.objects.get(username="admin")
+        self.user_1 = self.create_user(username="user-1", password="secretPassword")
+        self.user_2 = self.create_user(username="user-2", password="secretPassword")
+        self.user_3 = self.create_user(username="user-3", password="secretPassword")
+
+        self.group_1 = create_group(name_to_display="group-1", user_set=[{"id": self.user_1.pk}])
+        self.group_2 = create_group(name_to_display="group-2", user_set=[{"id": self.user_2.pk}])
+        self.group_3 = create_group(
+            name_to_display="group-3", user_set=[{"id": self.user_2.pk}, {"id": self.user_3.pk}]
+        )
+        self.group_empty = create_group(name_to_display="group-empty")
+
+    def _get_usernames(self, query: dict) -> list[str]:
+        response = (self.client.v2 / "rbac" / "users").get(query=query)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return sorted(user["username"] for user in response.json()["results"])
+
+    def test_group__eq(self):
+        response_usernames = self._get_usernames(query={"group__eq": self.group_1.pk})
+        expected_usernames = [self.user_1.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__ne(self):
+        response_usernames = self._get_usernames(query={"group__ne": self.group_2.pk})
+        expected_usernames = [self.admin_user.username, self.user_1.username, self.user_3.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__in(self):
+        target_group_ids = ",".join(map(str, (self.group_2.pk, self.group_3.pk, self.group_empty.pk, -3)))
+        response_usernames = self._get_usernames(query={"group__in": target_group_ids})
+        expected_usernames = [self.user_2.username, self.user_3.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__exclude(self):
+        excluded_group_ids = ",".join(map(str, (self.group_2.pk, self.group_3.pk, self.group_empty.pk, -3)))
+        response_usernames = self._get_usernames(query={"group__exclude": excluded_group_ids})
+        expected_usernames = [self.admin_user.username, self.user_1.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)

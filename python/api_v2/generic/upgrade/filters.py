@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from api_v2.filters import AdvancedFilterSet
 
 
-class CHGFilter(
+class UpgradeFilter(
     AdvancedFilterSet,
-    char_fields=("name",),
+    char_fields=("name", "display_name"),
     number_fields=("id",),
 ):
     ...

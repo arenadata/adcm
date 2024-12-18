@@ -161,8 +161,7 @@ class TestTask(BaseAPITestCase):
 
         ordering_fields = {
             "id": "id",
-            "action__display_name": "jobName",
-            "status": "status",
+            "action__name": "name",
             "start_date": "startTime",
             "finish_date": "endTime",
         }
@@ -174,8 +173,8 @@ class TestTask(BaseAPITestCase):
                     datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
                     for item in response.json()["results"]
                 ]
-            if ordering_field == "jobName":
-                return [item["action"]["displayName"] for item in response.json()["results"]]
+            if ordering_field == "name":
+                return [item["action"]["name"] for item in response.json()["results"]]
             return [item[ordering_field] for item in response.json()["results"]]
 
         for model_field, ordering_field in ordering_fields.items():

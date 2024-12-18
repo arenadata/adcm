@@ -42,7 +42,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import ErrorSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -71,31 +71,26 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         description="Get a list of all hosts.",
         summary="GET hosts",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.ordering_by("name"),
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by host name.",
-                type=str,
             ),
             OpenApiParameter(
-                name="state",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by state.",
-                type=str,
+                name="hostprovider_name",
+                description="Filter by hostprovider name.",
             ),
             OpenApiParameter(
-                name="description",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by description.",
-                type=str,
+                name="cluster_name",
+                description="Filter by cluster name.",
+            ),
+            OpenApiParameter(
+                name="is_in_cluster",
+                description="Filter by is host in cluster.",
+                type=bool,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=(
                     "name",
                     "-name",
@@ -103,10 +98,10 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                     "-id",
                     "state",
                     "-state",
-                    "description",
-                    "-description",
                     "hostproviderName",
                     "-hostproviderName",
+                    "clusterName",
+                    "-clusterName",
                 ),
                 default="name",
             ),

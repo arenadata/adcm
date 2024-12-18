@@ -228,50 +228,20 @@ class TestHost(BaseAPITestCase):
     def test_filtering_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host(provider=self.provider, fqdn="host-2")
-        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
+        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
 
-        self.host.state = "installed"
-        self.host.description = "newly created host"
-        host_3.maintenance_mode = "changing"
-        self.host.save()
-        host_3.save()
         filters = {
-            "id": (self.host.pk, None, 0),
-            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong"),
-            "state": (self.host.state, self.host.state[1:-3].upper(), "wrong"),
-            "hostproviderName": (
-                self.host.provider.name,
-                self.host.provider.name[1:-3].upper(),
-                "wrong",
-            ),
-            "clusterName": (
-                self.host.cluster.name,
-                self.host.cluster.name[1:-3].upper(),
-                "wrong",
-            ),
-            "isInCluster": (
-                True,
-                False,
-                "wrong",
-            ),
-            "description": (self.host.description, self.host.description[4:-3].upper(), "wrong"),
-            "maintenanceMode": ("off", None, "on"),
+            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
+            "hostproviderName": (self.host.provider.name, None, "wrong", 3),
+            "clusterName": (self.host.cluster.name, None, "wrong", 2),
+            "isInCluster": (True, False, "wrong", 2),
         }
 
-        def get_expected_items_number(_filter_name: str) -> tuple[int, int]:
-            if _filter_name in ("state", "description", "id", "name"):
-                return 1, 1
-            elif _filter_name in ("clusterName", "maintenanceMode", "isInCluster"):
-                return 2, 2
-            else:
-                return 3, 3
-
-        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
-            found_exact_items, found_items_partially = get_expected_items_number(filter_name)
+        for filter_name, (correct_value, partial_value, wrong_value, count) in filters.items():
             with self.subTest(filter_name=filter_name):
                 response = (self.client.v2 / "hosts").get(query={filter_name: correct_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], found_exact_items)
+                self.assertEqual(response.json()["count"], count)
 
                 response = (self.client.v2 / "hosts").get(query={filter_name: wrong_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
@@ -281,7 +251,7 @@ class TestHost(BaseAPITestCase):
                 if partial_value:
                     response = (self.client.v2 / "hosts").get(query={filter_name: partial_value})
                     self.assertEqual(response.status_code, HTTP_200_OK)
-                    self.assertEqual(response.json()["count"], found_items_partially)
+                    self.assertEqual(response.json()["count"], count)
 
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
@@ -618,40 +588,18 @@ class TestClusterHost(BaseAPITestCase):
     def test_filtering_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host(provider=self.provider, fqdn="host-2")
-        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
+        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
 
-        self.host.state = "installed"
-        self.host.description = "newly created host"
-        host_3.maintenance_mode = "changing"
-        self.host.save()
-        host_3.save()
         filters = {
-            "id": (self.host.pk, None, 0),
-            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong"),
-            "state": (self.host.state, self.host.state[1:-3].upper(), "wrong"),
-            "hostproviderName": (
-                self.host.provider.name,
-                self.host.provider.name[1:-3].upper(),
-                "wrong",
-            ),
-            "description": (self.host.description, self.host.description[4:-3].upper(), "wrong"),
-            "maintenanceMode": ("off", None, "on"),
+            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
+            "hostproviderName": (self.host.provider.name, None, "wrong", 3),
         }
 
-        def get_expected_items_number(_filter_name: str) -> tuple[int, int]:
-            if _filter_name in ("state", "description", "id", "name"):
-                return 1, 1
-            elif _filter_name == "maintenanceMode":
-                return 2, 2
-            else:
-                return 3, 3
-
-        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
-            found_exact_items, found_items_partially = get_expected_items_number(filter_name)
+        for filter_name, (correct_value, partial_value, wrong_value, count) in filters.items():
             with self.subTest(filter_name=filter_name):
                 response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: correct_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], found_exact_items)
+                self.assertEqual(response.json()["count"], count)
 
                 response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: wrong_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
@@ -660,7 +608,7 @@ class TestClusterHost(BaseAPITestCase):
                 if partial_value:
                     response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: partial_value})
                     self.assertEqual(response.status_code, HTTP_200_OK)
-                    self.assertEqual(response.json()["count"], found_items_partially)
+                    self.assertEqual(response.json()["count"], count)
 
     def test_adcm_5687_filtering_by_component_id(self):
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()

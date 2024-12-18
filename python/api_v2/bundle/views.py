@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import date
 
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
@@ -18,7 +17,6 @@ from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -28,9 +26,17 @@ from rest_framework.mixins import (
 )
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
 from api_v2.utils.audit import bundle_from_lookup
@@ -42,50 +48,34 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getBundles",
         description="Get a list of ADCM bundles with information on them.",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="id",
+                type=int,
+                description="Filter by id.",
+            ),
             OpenApiParameter(
                 name="display_name",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by display name.",
-                required=False,
             ),
             OpenApiParameter(
                 name="product",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description="Filter by product.",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="edition",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description="Filter by edition.",
-                enum=("community", "enterprise"),
-                required=False,
-            ),
-            OpenApiParameter(
-                name="upload_time",
-                type=date,
-                location=OpenApiParameter.QUERY,
-                description="Filter by upload time.",
-                required=False,
+                description="Case insensitive filter by product.",
             ),
             OpenApiParameter(
                 name="ordering",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                required=False,
-                enum=("displayName", "-displayName", "uploadTime", "-uploadTime", "edition", "-edition", "id", "-id"),
+                enum=("displayName", "-displayName", "uploadTime", "-uploadTime"),
                 default="displayName",
             ),
         ],
+        responses={HTTP_200_OK: BundleSerializer(many=True)},
     ),
     retrieve=extend_schema(
         operation_id="getBundle",
         description="Get detail information about a specific bundle.",
-        responses={200: BundleSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: BundleSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, ADCMGenericViewSet):
@@ -119,10 +109,10 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         description="Upload new bundle.",
         request={"multipart/form-data": UploadBundleSerializer},
         responses={
-            201: BundleSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            HTTP_201_CREATED: BundleSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
         },
     )
     @audit_create(name="Bundle uploaded", object_=ignore_object_search)
@@ -139,7 +129,12 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
     @extend_schema(
         operation_id="deleteBundle",
         description="Delete a specific ADCM bundle.",
-        responses={204: None, 403: ErrorSerializer, 404: ErrorSerializer, 409: ErrorSerializer},
+        responses={
+            HTTP_204_NO_CONTENT: None,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
     )
     @audit_delete(name="Bundle deleted", object_=bundle_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs) -> Response:  # noqa: ARG002

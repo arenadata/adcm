@@ -82,96 +82,23 @@ class TestPrototype(BaseAPITestCase):
 
     def test_filtering_success(self):
         prototype = Prototype.objects.filter(name="cluster_one").first()
-        prototype.description = "Custom description"
-        prototype.version = "1.2.3"
-        prototype.license = "accepted"
-        prototype.save()
 
         filters = {
-            "id": (prototype.pk, None, 0),
-            "name": (prototype.name, prototype.name[1:-3].upper(), "wrong"),
-            "description": (prototype.description, prototype.description[4:-3].upper(), "wrong"),
-            "displayName": (prototype.display_name, prototype.display_name[1:-3].upper(), "wrong"),
-            "version": (prototype.version, prototype.version[1:].upper(), "wrong"),
-            "type": (ObjectType.CLUSTER.value, None, ObjectType.ADCM.value),
-            "license": ("absent", None, "accepted"),
+            "id": (prototype.pk, 0, 1),
+            "bundleId": (prototype.bundle.id, 0, 18),
+            "displayName": (prototype.display_name, "wrong", 2),
+            "type": (ObjectType.CLUSTER.value, ObjectType.ADCM.value, 2),
         }
 
-        def get_expected_items_number(_filter_name: str) -> tuple[int, int | None, int]:
-            match _filter_name:
-                case "description" | "id" | "adcmMinVersion" | "path":
-                    return 1, 1, 0
-                case "displayName" | "name":
-                    return 2, 2, 0
-                case "version":
-                    return 1, 1, 0
-                case "type":
-                    return 2, 1, 0
-                case "license":
-                    return 21, 0, 1
-
-        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
-            found_exact_items, found_items_partially, found_items_wrongly = get_expected_items_number(filter_name)
+        for filter_name, (correct_value, wrong_value, count) in filters.items():
             with self.subTest(filter_name=filter_name):
                 response = (self.client.v2 / "prototypes").get(query={filter_name: correct_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], found_exact_items)
+                self.assertEqual(response.json()["count"], count)
 
                 response = (self.client.v2 / "prototypes").get(query={filter_name: wrong_value})
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], found_items_wrongly)
-
-                if partial_value:
-                    response = (self.client.v2 / "prototypes").get(query={filter_name: partial_value})
-                    self.assertEqual(response.status_code, HTTP_200_OK)
-                    self.assertEqual(response.json()["count"], found_items_partially)
-
-    def test_ordering_success(self):
-        prototype = Prototype.objects.filter(name="cluster_one").first()
-        prototype.description = "Custom description"
-        prototype.version = "1.2.3"
-        prototype.license = "accepted"
-        prototype.save()
-
-        ordering_fields = {
-            "id": "id",
-            "name": "name",
-            "display_name": "displayName",
-            "description": "description",
-            "version": "version",
-            "type": "type",
-            "license": "license",
-        }
-
-        def get_ordering_results(response):
-            if ordering_field != "license":
-                return [provider[ordering_field] for provider in response.json()["results"]]
-            elif ordering_field == "license":
-                return [provider[ordering_field]["status"] for provider in response.json()["results"]]
-
-        for model_field, ordering_field in ordering_fields.items():
-            with self.subTest(ordering_field=ordering_field):
-                response = (self.client.v2 / "prototypes").get(query={"ordering": ordering_field})
-                self.assertEqual(response.status_code, HTTP_200_OK)
-
-                self.assertListEqual(
-                    get_ordering_results(response),
-                    list(
-                        Prototype.objects.exclude(type="adcm").order_by(model_field).values_list(model_field, flat=True)
-                    ),
-                )
-
-                response = (self.client.v2 / "prototypes").get(query={"ordering": f"-{ordering_field}"})
-                self.assertEqual(response.status_code, HTTP_200_OK)
-
-                self.assertListEqual(
-                    get_ordering_results(response),
-                    list(
-                        Prototype.objects.exclude(type="adcm")
-                        .order_by(f"-{model_field}")
-                        .values_list(model_field, flat=True)
-                    ),
-                )
+                self.assertEqual(response.json()["count"], 0)
 
 
 class TestPrototypeVersion(BaseAPITestCase):

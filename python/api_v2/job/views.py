@@ -16,7 +16,7 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -46,22 +46,6 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=str,
-                enum=["id", "status", "-id", "-status", "startTime", "-startTime", "endTime", "-endTime"],
-            ),
-            OpenApiParameter(
-                name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Job status.",
-                type=str,
-                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
-            ),
         ],
     ),
     terminate=extend_schema(

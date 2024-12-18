@@ -21,33 +21,41 @@ from cm.models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
+from django_filters import NumberFilter
 from django_filters.rest_framework.filters import (
     CharFilter,
     ChoiceFilter,
     OrderingFilter,
 )
-from django_filters.rest_framework.filterset import FilterSet
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class TaskFilter(FilterSet):
+class TaskFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "action__name"), ("display_name", "action__display_name"), "status"),
+    number_fields=("id", ("action", "action__id")),
+):
+    # Advanced filters
+    target_id__eq = NumberFilter(field_name="object_id", lookup_expr="exact", label="target_id__eq")
+    target_type__eq = CharFilter(field_name="object_type__model", lookup_expr="exact", label="target_type__eq")
+    owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact", label="owner_id__eq")
+    owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact", label="owner_type__eq")
+    # ---
+
     job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
     object_name = CharFilter(label="Object name", method="filter_object_name")
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
-
     ordering = OrderingFilter(
         fields={
             "id": "id",
-            "action__prototype__name": "name",
-            "status": "status",
-            "action__display_name": "jobName",
+            "action__name": "name",
             "start_date": "startTime",
             "finish_date": "endTime",
         },
         field_labels={
             "id": "ID",
-            "action__display_name": "Job name",
-            "action__prototype__name": "Name",
-            "status": "Status",
+            "action__name": "Name",
             "start_date": "Start time",
             "finish_date": "End time",
         },
@@ -71,4 +79,4 @@ class TaskFilter(FilterSet):
 
     class Meta:
         model = TaskLog
-        fields = ["id", "job_name", "object_name", "status", "ordering", "start_date", "finish_date"]
+        fields = ["id"]

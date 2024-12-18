@@ -50,30 +50,37 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
+                name="id",
+                description="Filter by id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="job_name",
+                description="Case insensitive and partial filter by job name.",
+            ),
+            OpenApiParameter(
+                name="object_name",
+                description="Case insensitive and partial filter by object name.",
+            ),
+            OpenApiParameter(
+                name="status",
+                description="Filter by status.",
+                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=(
                     "name",
                     "-name",
                     "id",
                     "-id",
-                    "status",
-                    "-status",
                     "startTime",
                     "-startTime",
                     "endTime",
                     "-endTime",
                 ),
                 default="-id",
-            ),
-            OpenApiParameter(
-                name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Job status.",
-                type=str,
-                enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
             ),
         ],
         responses={

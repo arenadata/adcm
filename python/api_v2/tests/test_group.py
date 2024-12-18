@@ -108,10 +108,7 @@ class TestGroupAPI(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "display_name": "displayName",
-            "description": "description",
-            "type": "type",
         }
 
         for model_field, ordering_field in ordering_fields.items():
@@ -132,10 +129,8 @@ class TestGroupAPI(BaseAPITestCase):
         self.group_ldap.description = "unique_description"
         self.group_ldap.save()
         filters = {
-            "id": (self.group_ldap.pk, None, 0),
             "display_name": (self.group_ldap.display_name, self.group_ldap.display_name[1:-3].upper(), "wrong"),
             "type": (self.group_ldap.type, None, "local"),
-            "description": (self.group_ldap.description, self.group_ldap.description[1:-3].upper(), "wrong"),
         }
         partial_items_found, exact_items_found = 1, 1
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():

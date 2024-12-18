@@ -19,6 +19,7 @@ from cm.services.status.client import retrieve_status_map
 from cm.status_api import get_raw_status
 from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
+from django_filters.rest_framework import DjangoFilterBackend
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
     CamelCaseJSONParser,
@@ -68,6 +69,7 @@ class CamelCaseBrowsableAPIRendererWithoutForms(CamelCaseBrowsableAPIRenderer):
 class ADCMGenericViewSet(GenericViewSet):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRendererWithoutForms]
+    filter_backends = [DjangoFilterBackend]
 
     lookup_value_regex = r"\d+"
 

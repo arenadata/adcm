@@ -11,111 +11,83 @@
 # limitations under the License.
 
 from cm.models import ADCMEntityStatus, Cluster
-from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
-from django_filters import NumberFilter
 from django_filters.rest_framework import (
-    BooleanFilter,
     CharFilter,
     ChoiceFilter,
     FilterSet,
     OrderingFilter,
 )
 
-from api_v2.filters import filter_service_status
+from api_v2.filters import AdvancedFilterSet, filter_cluster_status, filter_host_status, filter_service_status
 
 
-class ClusterFilter(FilterSet):
+class ClusterFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "status"),
+    number_fields=(("bundle", "prototype__bundle__id"),),
+):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name", lookup_expr="icontains")
-    prototype_display_name = CharFilter(
-        label="Cluster prototype display name", field_name="prototype__display_name", lookup_expr="icontains"
-    )
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
+    prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
-    description = CharFilter(label="Cluster description", lookup_expr="icontains")
-    state = CharFilter(label="Cluster state", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
-            "id": "id",
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
-            "state": "state",
-            "description": "description",
         },
         field_labels={
-            "id": "ID",
             "name": "Cluster name",
             "prototype__display_name": "Product",
-            "state": "State",
-            "description": "Description",
         },
         label="ordering",
     )
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name", "state", "description")
+        fields = ["id"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status != 0
-            }
-        else:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status == 0
-            }
-
-        return queryset.exclude(pk__in=exclude_pks)
+        return filter_cluster_status(queryset=queryset, value=value)
 
 
-class ClusterHostFilter(FilterSet):
+class ClusterStatusesHostFilter(FilterSet):
     status = ChoiceFilter(label="Host status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        hosts_up = {host_id for host_id, status_info in status_map.hosts.items() if status_info.status == 0}
-
-        if value == ADCMEntityStatus.UP:
-            return queryset.filter(pk__in=hosts_up)
-
-        return queryset.exclude(pk__in=hosts_up)
+        return filter_host_status(queryset=queryset, value=value)
 
 
-class ClusterServiceFilter(FilterSet):
+class ClusterStatusesServiceFilter(FilterSet):
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
         return filter_service_status(queryset=queryset, value=value)
 
 
-class ClusterServiceCandidateAndPrototypeFilter(FilterSet):
-    id = NumberFilter(field_name="id", label="Service ID")
-    name = CharFilter(label="Service name", lookup_expr="icontains")
-    display_name = CharFilter(label="Service display name", lookup_expr="icontains")
-    version = CharFilter(label="Service version", lookup_expr="icontains")
-    is_required = BooleanFilter(field_name="is_required", label="Service is required")
+class ClusterServiceCandidateAndPrototypeFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name"),
+):
+    ...
 
-    ordering = OrderingFilter(
-        fields={
-            "id": "id",
-            "name": "name",
-            "display_name": "displayName",
-            "version": "version",
-            "is_required": "isRequired",
-        },
-        field_labels={
-            "id": "ID",
-            "name": "Service name",
-            "display_name": "Service display name",
-            "version": "Service version",
-            "is_required": "Service is required",
-        },
-        label="ordering",
-    )
+
+class ClusterMappingComponentFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+):
+    ...
+
+
+class ClusterMappingHostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id",),
+):
+    ...

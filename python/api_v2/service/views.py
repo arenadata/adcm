@@ -32,7 +32,6 @@ from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
 from django.db.models import F
-from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -120,47 +119,25 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.STATUS_OPTIONAL,
-            DefaultParams.ordering_by("ID"),
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by service name.",
-                type=str,
             ),
             OpenApiParameter(
-                name="state",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by service state.",
-                type=str,
+                # It is necessary to specify such fields with underscores, otherwise this field will be duplicated
+                # in the scheme. The name in the schema must match the name of the field in the filter class
+                name="display_name",
+                description="Case insensitive and partial filter by service display name.",
             ),
             OpenApiParameter(
                 name="status",
-                location=OpenApiParameter.QUERY,
-                type=str,
-                description="Status filter.",
+                description="Filter by status",
                 enum=("up", "down"),
-            ),
-            OpenApiParameter(
-                name="serviceId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Service id.",
-                type=int,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=(
-                    "id",
-                    "-id",
-                    "name",
-                    "-name",
-                    "state",
-                    "-state",
                     "displayName",
                     "-displayName",
                 ),
@@ -201,7 +178,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET component statuses",
         description="Get information about component statuses.",
         responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
-        parameters=[DefaultParams.STATUS_REQUIRED],
     ),
 )
 class ServiceViewSet(
@@ -216,7 +192,6 @@ class ServiceViewSet(
 ):
     queryset = Service.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter
-    filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [ServicePermissions]
     audit_model_hint = Service

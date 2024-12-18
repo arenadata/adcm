@@ -140,9 +140,6 @@ class TestAuthorizationAudit(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = (
-            ("id", "id"),
-            ("user__username", "login"),
-            ("login_result", "loginResult"),
             ("login_time", "loginTime"),
             ("login_time", "time"),
         )
@@ -294,7 +291,6 @@ class TestOperationsAudit(BaseAPITestCase):
 
     def test_ordering_success(self):
         ordering_fields = {
-            "id": "id",
             "operation_name": "name",
             "operation_result": "result",
             "operation_type": "type",
