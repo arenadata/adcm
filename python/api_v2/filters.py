@@ -126,65 +126,100 @@ class AdvancedFilterSetMetaclass(FilterSetMetaclass):
             if filter_name == "status":
                 attrs[f"{filter_name}__eq"] = CharFilter(
                     field_name=field_name,
-                    label="Status eq",
+                    label=f"{filter_name}__eq",
                     method="advanced_case_sensitive_filter_by_status",
                 )
                 attrs[f"{filter_name}__in"] = CharInFilter(
                     field_name=field_name,
-                    label="Status eq",
+                    label=f"{filter_name}__in",
                     method="advanced_case_sensitive_filter_by_status",
                 )
                 attrs[f"{filter_name}__ieq"] = CharFilter(
                     field_name=field_name,
-                    label="Status ieq",
+                    label=f"{filter_name}__ieq",
                     method="advanced_case_insensitive_filter_by_status",
                 )
                 attrs[f"{filter_name}__iin"] = CharInFilter(
                     field_name=field_name,
-                    label="Status iin",
+                    label=f"{filter_name}__iin",
                     method="advanced_case_insensitive_filter_by_status",
                 )
                 attrs[f"{filter_name}__ne"] = CharFilter(
                     field_name=field_name,
-                    label="Status ne",
+                    label=f"{filter_name}__ne",
                     method="advanced_case_sensitive_reverse_filter_by_status",
                 )
                 attrs[f"{filter_name}__exclude"] = CharInFilter(
                     field_name=field_name,
-                    label="Status exclude",
+                    label=f"{filter_name}__exclude",
                     method="advanced_case_sensitive_reverse_filter_by_status",
                 )
                 attrs[f"{filter_name}__ine"] = CharFilter(
                     field_name=field_name,
-                    label="Status ine",
+                    label=f"{filter_name}__ine",
                     method="advanced_case_insensitive_reverse_filter_by_status",
                 )
                 attrs[f"{filter_name}__iexclude"] = CharInFilter(
                     field_name=field_name,
-                    label="Status iexclude",
+                    label=f"{filter_name}__iexclude",
                     method="advanced_case_insensitive_reverse_filter_by_status",
                 )
 
                 continue
 
-            attrs[f"{filter_name}__eq"] = CharFilter(field_name=field_name, lookup_expr="exact")
-            attrs[f"{filter_name}__ieq"] = CharFilter(field_name=field_name, lookup_expr="iexact")
-            attrs[f"{filter_name}__ne"] = CharFilter(field_name=field_name, lookup_expr="ne")
-            attrs[f"{filter_name}__ine"] = CharFilter(field_name=field_name, lookup_expr="ine")
-            attrs[f"{filter_name}__contains"] = CharFilter(field_name=field_name, lookup_expr="contains")
-            attrs[f"{filter_name}__icontains"] = CharFilter(field_name=field_name, lookup_expr="icontains")
-            attrs[f"{filter_name}__in"] = CharInFilter(field_name=field_name, lookup_expr="in")
-            attrs[f"{filter_name}__iin"] = CharInFilter(field_name=field_name, lookup_expr="lower__in")
-            attrs[f"{filter_name}__exclude"] = CharInFilter(field_name=field_name, exclude=True, lookup_expr="in")
+            attrs[f"{filter_name}__eq"] = CharFilter(
+                field_name=field_name, lookup_expr="exact", label=f"{filter_name}__eq"
+            )
+            attrs[f"{filter_name}__ieq"] = CharFilter(
+                field_name=field_name, lookup_expr="iexact", label=f"{filter_name}__ieq"
+            )
+            attrs[f"{filter_name}__ne"] = CharFilter(
+                field_name=field_name, lookup_expr="ne", label=f"{filter_name}__ne"
+            )
+            attrs[f"{filter_name}__ine"] = CharFilter(
+                field_name=field_name, lookup_expr="ine", label=f"{filter_name}__ine"
+            )
+            attrs[f"{filter_name}__contains"] = CharFilter(
+                field_name=field_name, lookup_expr="contains", label=f"{filter_name}__contains"
+            )
+            attrs[f"{filter_name}__icontains"] = CharFilter(
+                field_name=field_name, lookup_expr="icontains", label=f"{filter_name}__icontains"
+            )
+            attrs[f"{filter_name}__in"] = CharInFilter(
+                field_name=field_name, lookup_expr="in", label=f"{filter_name}__in"
+            )
+            attrs[f"{filter_name}__iin"] = CharInFilter(
+                field_name=field_name, lookup_expr="lower__in", label=f"{filter_name}__iin"
+            )
+            attrs[f"{filter_name}__exclude"] = CharInFilter(
+                field_name=field_name,
+                lookup_expr="in",
+                label=f"{filter_name}__exclude",
+                exclude=True,
+            )
             attrs[f"{filter_name}__iexclude"] = CharInFilter(
-                field_name=field_name, exclude=True, lookup_expr="lower__in"
+                field_name=field_name,
+                lookup_expr="lower__in",
+                label=f"{filter_name}__iexclude",
+                exclude=True,
             )
 
         for filter_name, field_name in _prepare_filter_fields(fields=number_fields):
-            attrs[f"{filter_name}__eq"] = NumberFilter(field_name=field_name, lookup_expr="exact")
-            attrs[f"{filter_name}__ne"] = NumberFilter(field_name=field_name, lookup_expr="ne")
-            attrs[f"{filter_name}__in"] = NumberInFilter(field_name=field_name, lookup_expr="in")
-            attrs[f"{filter_name}__exclude"] = NumberInFilter(field_name=field_name, exclude=True, lookup_expr="in")
+            attrs[f"{filter_name}__eq"] = NumberFilter(
+                field_name=field_name, lookup_expr="exact", label=f"{filter_name}__eq"
+            )
+            attrs[f"{filter_name}__ne"] = NumberFilter(
+                field_name=field_name, lookup_expr="ne", label=f"{filter_name}__ne"
+            )
+            attrs[f"{filter_name}__in"] = NumberInFilter(
+                field_name=field_name, lookup_expr="in", label=f"{filter_name}__in"
+            )
+            attrs[f"{filter_name}__exclude"] = NumberInFilter(
+                field_name=field_name,
+                lookup_expr="in",
+                label=f"{filter_name}__exclude",
+                exclude=True,
+            )
 
         return super().__new__(cls, name=name, bases=bases, attrs=attrs)
 

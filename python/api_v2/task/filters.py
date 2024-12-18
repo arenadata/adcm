@@ -37,10 +37,11 @@ class TaskFilter(
     number_fields=("id", ("action", "action__id")),
 ):
     # Advanced filters
-    target_id__eq = NumberFilter(field_name="object_id", lookup_expr="exact")
-    target_type__eq = CharFilter(field_name="object_type__model", lookup_expr="exact")
-    owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact")
-    owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact")
+    target_id__eq = NumberFilter(field_name="object_id", lookup_expr="exact", label="target_id__eq")
+    target_type__eq = CharFilter(field_name="object_type__model", lookup_expr="exact", label="target_type__eq")
+    owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact", label="owner_id__eq")
+    owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact", label="owner_type__eq")
+    # ---
 
     job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
     object_name = CharFilter(label="Object name", method="filter_object_name")

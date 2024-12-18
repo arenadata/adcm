@@ -59,23 +59,16 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.OFFSET,
             OpenApiParameter(
                 name="categories",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="List of categories in the role.",
             ),
             OpenApiParameter(
                 name="type",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Type of the role.",
                 enum=("business", "role"),
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=("displayName", "-displayName"),
                 default="displayName",
             ),
@@ -110,16 +103,10 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             OpenApiParameter(
                 name="displayName",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="The new name of the role.",
             ),
             OpenApiParameter(
                 name="description",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="The new description of the role.",
             ),
         ],

@@ -40,26 +40,20 @@ from api_v2.views import ADCMReadOnlyModelViewSet
         parameters=[
             OpenApiParameter(
                 name="id",
-                location=OpenApiParameter.QUERY,
                 type=int,
                 description="Filter by ID.",
             ),
             OpenApiParameter(
                 name="bundle_id",
-                location=OpenApiParameter.QUERY,
                 type=int,
                 description="Filter by bundle ID.",
             ),
             OpenApiParameter(
                 name="display_name",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Filter by display name.",
             ),
             OpenApiParameter(
                 name="type",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Filter by type.",
                 enum=(
                     ObjectType.CLUSTER.value,
@@ -100,8 +94,6 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
         parameters=[
             OpenApiParameter(
                 name="type",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Filter by prototype type.",
                 enum=(
                     ObjectType.CLUSTER.value,

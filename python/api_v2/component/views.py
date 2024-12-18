@@ -110,28 +110,20 @@ from api_v2.views import (
         parameters=[
             OpenApiParameter(
                 name="id",
-                location=OpenApiParameter.QUERY,
                 description="Component id.",
                 type=int,
             ),
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="display_name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by display name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="ordering",
-                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                many=True,
                 enum=(
                     "name",
                     "-name",
@@ -228,27 +220,20 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         parameters=[
             OpenApiParameter(
                 name="id",
-                location=OpenApiParameter.QUERY,
                 description="Component id.",
                 type=int,
             ),
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="display_name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by display name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                many=True,
                 enum=(
                     "name",
                     "-name",

@@ -36,8 +36,9 @@ class AuditLogFilter(
     number_fields=("id",),
 ):
     # Advanced filters
-    object_id__eq = NumberFilter(field_name="audit_object__object_id", lookup_expr="exact")
-    object_type__eq = CharFilter(field_name="audit_object__object_type", lookup_expr="exact")
+    object_id__eq = NumberFilter(field_name="audit_object__object_id", lookup_expr="exact", label="object_id__eq")
+    object_type__eq = CharFilter(field_name="audit_object__object_type", lookup_expr="exact", label="object_type__eq")
+    # ---
 
     object_name = CharFilter(field_name="audit_object__object_name", label="Object name", lookup_expr="icontains")
     object_type = ChoiceFilter(

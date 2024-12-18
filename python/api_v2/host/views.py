@@ -73,33 +73,24 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         parameters=[
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by host name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="hostprovider_name",
-                location=OpenApiParameter.QUERY,
                 description="Filter by hostprovider name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="cluster_name",
-                location=OpenApiParameter.QUERY,
                 description="Filter by cluster name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="is_in_cluster",
-                location=OpenApiParameter.QUERY,
                 description="Filter by is host in cluster.",
                 type=bool,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                many=True,
                 enum=(
                     "name",
                     "-name",

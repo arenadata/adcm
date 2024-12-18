@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
@@ -30,19 +29,13 @@ def document_config_viewset(object_type: str, operation_id_variant: str | None =
             parameters=[
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
-                DefaultParams.ordering_by("id"),
                 OpenApiParameter(
                     name="description",
-                    type=str,
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by description.",
                 ),
                 OpenApiParameter(
                     name="ordering",
-                    type=OpenApiTypes.STR,
-                    location=OpenApiParameter.QUERY,
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    required=False,
                     enum=("description", "id", "-description", "-id"),
                     default="-id",
                 ),

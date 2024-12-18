@@ -20,7 +20,6 @@ from audit.models import (
     AuditSession,
     AuditSessionLoginResult,
 )
-from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
@@ -72,7 +71,6 @@ from api_v2.views import ADCMReadOnlyModelViewSet
                     "time",
                     "-time",
                 ),
-                many=True,
                 default="-loginTime",
             ),
         ],
@@ -145,10 +143,7 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
             ),
             OpenApiParameter(
                 name="ordering",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                required=False,
                 enum=(
                     "objectName",
                     "-objectName",
@@ -165,7 +160,6 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                     "time",
                     "-time",
                 ),
-                many=True,
                 default="-time",
             ),
         ],

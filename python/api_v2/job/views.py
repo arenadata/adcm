@@ -29,7 +29,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.job.filters import JobFilter
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
@@ -43,6 +43,10 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getJobs",
         description="Get a list of ADCM jobs.",
         summary="GET jobs",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+        ],
     ),
     terminate=extend_schema(
         operation_id="postJobTerminate",

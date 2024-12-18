@@ -173,34 +173,24 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("name"),
-            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Cluster ID."),
+            OpenApiParameter(name="id", type=int, description="Cluster ID."),
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Case insensitive and partial filter by cluster name.",
             ),
             OpenApiParameter(
                 name="status",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Status filter.",
                 enum=("up", "down"),
             ),
-            OpenApiParameter(
-                name="prototypeName", location=OpenApiParameter.QUERY, type=str, description="Filter by prototype name."
-            ),
+            OpenApiParameter(name="prototypeName", description="Filter by prototype name."),
             OpenApiParameter(
                 name="prototypeDisplayName",
-                location=OpenApiParameter.QUERY,
-                type=str,
                 description="Filter by prototype display name.",
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=(
                     "name",
                     "-name",
@@ -240,25 +230,22 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
             success=RelatedServicesStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
         ),
         parameters=[
-            DefaultParams.ordering_by("displayName"),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Filter by status",
-                type=str,
                 enum=("up", "down"),
             ),
             OpenApiParameter(
                 name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
                 type=int,
                 enum=[
                     "id",
                     "-id",
                 ],
+                default="displayName",
             ),
         ],
     ),
@@ -282,25 +269,22 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
             success=RelatedHostsStatusesSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
         ),
         parameters=[
-            DefaultParams.ordering_by("name"),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="status",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Filter by status",
-                type=str,
                 enum=("up", "down"),
             ),
             OpenApiParameter(
                 name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
                 type=int,
                 enum=[
                     "id",
                     "-id",
                 ],
+                default="name",
             ),
         ],
     ),
@@ -770,27 +754,20 @@ class ClusterViewSet(
         parameters=[
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by host name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="hostprovider_name",
-                location=OpenApiParameter.QUERY,
                 description="Filter by hostprovider name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="component_id",
-                location=OpenApiParameter.QUERY,
                 description="Filter by component id.",
                 type=int,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                many=True,
                 enum=(
                     "name",
                     "-name",

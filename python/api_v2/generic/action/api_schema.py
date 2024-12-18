@@ -17,23 +17,6 @@ from api_v2.api_schema import responses
 from api_v2.generic.action.serializers import ActionListSerializer, ActionRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
 
-_schema_common_filters = (
-    OpenApiParameter(
-        name="name",
-        required=False,
-        location=OpenApiParameter.QUERY,
-        description="System name of an action",
-        type=str,
-    ),
-    OpenApiParameter(
-        name="displayName",
-        required=False,
-        location=OpenApiParameter.QUERY,
-        description="Visible name of an action",
-        type=str,
-    ),
-)
-
 
 def document_action_viewset(object_type: str, operation_id_variant: str | None = None):
     capitalized_type = operation_id_variant or object_type.capitalize()
@@ -55,41 +38,29 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             parameters=[
                 OpenApiParameter(
                     name="name",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="display_name",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by display name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="is_host_own_action",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
                     description="Filter for host's own actions / actions from another objects",
                     type=bool,
                 ),
                 OpenApiParameter(
                     name="prototype_id",
-                    required=False,
-                    location=OpenApiParameter.QUERY,
                     description="Identifier of action's owner",
                     type=int,
                 ),
                 OpenApiParameter(
                     name="ordering",
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    type=str,
                     enum=(
                         "id",
                         "-id",
                     ),
-                    many=True,
                     default="id",
                 ),
             ],
