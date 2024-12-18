@@ -1,39 +1,20 @@
 /* eslint-disable spellcheck/spell-checker */
 import CodeHighlighter from './CodeHighlighter';
-import type { Meta, StoryObj } from '@storybook/react';
-
-type Story = StoryObj<typeof CodeHighlighter>;
-
-const ansibleText = `PLAY [diamond:graphite:grafana] ************************************************
-
-TASK [diamond : Stop Diamond service] ******************************************
-Monday 14 March 2022  11:06:24 +0000 (0:00:00.077)       0:00:00.077 ********** 
-fatal: [mon-mail-cnt-01]: UNREACHABLE! => changed=false 
-  msg: 'Failed to connect to the host via ssh: ssh: connect to host 10.92.6.39 port 22: Operation timed out'
-  unreachable: true
-fatal: [secondary-ambari]: UNREACHABLE! => changed=false 
-  msg: 'Failed to connect to the host via ssh: ssh: connect to host 10.92.3.5 port 22: Operation timed out'
-  unreachable: true
-
-PLAY RECAP *********************************************************************
-mon-mail-cnt-01            : ok=0    changed=0    unreachable=1    failed=0    skipped=0    rescued=0    ignored=0   
-secondary-ambari           : ok=0    changed=0    unreachable=1    failed=0    skipped=0    rescued=0    ignored=0   
-
-Monday 14 March 2022  11:06:34 +0000 (0:00:10.039)       0:00:10.116 ********** 
-=============================================================================== 
-diamond : Stop Diamond service ----------------------------------------- 10.04s`;
+import type { StoryFn, Meta } from '@storybook/react';
 
 export default {
   title: 'uikit/CodeHighlighter',
   component: CodeHighlighter,
   argTypes: {
-    notCopy: {
+    isNotCopy: {
       description: 'Remove copy button',
       defaultValue: false,
     },
     language: {
-      description: 'highlighter language',
-      defaultValue: 'bash',
+      description: 'Language',
+      defaultValue: 'sql',
+      options: ['sql', 'bash'],
+      control: { type: 'radio' },
     },
     CodeTagComponent: {
       table: {
@@ -43,12 +24,53 @@ export default {
   },
 } as Meta<typeof CodeHighlighter>;
 
-export const CodeHighlighterExample: Story = {
-  args: {
-    language: 'bash',
-    code: ansibleText,
-  },
-  render: (args) => {
-    return <CodeHighlighter code={args.code} language={args.language} notCopy={args.notCopy} />;
-  },
+const Template: StoryFn<typeof CodeHighlighter> = (args) => {
+  return (
+    <div style={{ height: '500px', maxWidth: '1100px' }}>
+      <CodeHighlighter code={args.code} language={args.language} isNotCopy={args.isNotCopy} />
+    </div>
+  );
+};
+
+export const CodeHighlighterElement = Template.bind({});
+CodeHighlighterElement.args = {
+  isNotCopy: false,
+  code: `select count(*), pg_sleep(20)
+from dev1 t1, dev1 t2 where t1.id is not null
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.
+-- Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+-- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.`,
+  language: 'sql',
 };

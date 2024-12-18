@@ -9,22 +9,22 @@
 
 .codeEditor {
   position: relative;
+  height: inherit;
 }
 
 .codeEditor__textArea {
   background: none;
-  left: 0;
-  top: 0;
   color: transparent;
-  position: absolute;
   caret-color: var(--editor-caret-color);
   border: none;
   outline: none;
   resize: none;
   white-space: pre;
-  padding: 24px; // sync with `code-wrapper__code-lines` class from `CodeHighlighter.module.scss`
   min-width: 100%;
   box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .codeEditor__textArea:focus-visible {

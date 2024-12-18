@@ -1,5 +1,4 @@
-import type { ReactElement } from 'react';
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import type { RefractorRoot, RefractorElement, Text } from 'refractor';
 
 export const getParsedCode = (root: RefractorRoot) => {

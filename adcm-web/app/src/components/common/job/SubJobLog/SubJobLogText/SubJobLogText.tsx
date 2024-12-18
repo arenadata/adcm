@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
-import CodeHighlighterV2 from '@uikit/CodeHighlighterV2/CodeHighlighterV2';
+import CodeHighlighter from '@uikit/CodeHighlighter/CodeHighlighter';
 import type { AdcmSubJobLogItemCustom, AdcmSubJobLogItemStd } from '@models/adcm';
 import s from './SubJobLogText.module.scss';
 
@@ -61,6 +61,6 @@ const SubJobLogText: React.FC<SubJobLogTextProps> = ({ log, isAutoScroll, setIsA
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoScroll, highlighterRef]);
 
-  return <CodeHighlighterV2 contentRef={highlighterRef} className={s.subJobLogText} code={content} lang={language} />;
+  return <CodeHighlighter contentRef={highlighterRef} className={s.subJobLogText} code={content} language={language} />;
 };
 export default SubJobLogText;
