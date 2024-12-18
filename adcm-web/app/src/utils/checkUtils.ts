@@ -9,3 +9,6 @@ export const orElseGet = <T, R = T>(
 
   return (callback ? callback(data) : data) as R;
 };
+
+export const isValueUnset = <T>(value: T | undefined | null): value is T =>
+  typeof value === 'undefined' || value === null;
