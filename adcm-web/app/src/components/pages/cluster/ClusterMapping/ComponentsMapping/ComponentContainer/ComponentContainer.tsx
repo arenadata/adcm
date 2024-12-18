@@ -24,10 +24,9 @@ export interface ComponentContainerProps {
   onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   onInstallServices?: (component: AdcmMappingComponent) => void;
-  denyAddHostReason?: React.ReactNode;
-  denyRemoveHostReason?: React.ReactNode;
   checkComponentMappingAvailability: (component: AdcmMappingComponent) => ComponentAvailabilityErrors;
   checkHostMappingAvailability: (host: AdcmHostShortView) => string | undefined;
+  checkHostUnmappingAvailability: (host: AdcmHostShortView) => string | undefined;
 }
 
 const ComponentContainer = ({
@@ -40,24 +39,48 @@ const ComponentContainer = ({
   onInstallServices,
   checkComponentMappingAvailability,
   checkHostMappingAvailability,
+  checkHostUnmappingAvailability,
 }: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const { component, hosts } = componentMapping;
-  const { componentNotAvailableError, addingHostsNotAllowedError } = checkComponentMappingAvailability(component);
+  const { componentNotAvailableError, addingHostsNotAllowedError, removingHostsNotAllowedError } =
+    checkComponentMappingAvailability(component);
+
+  const hostsSets = useMemo(() => new Set(hosts.map((h) => h.id)), [hosts]);
+
+  const componentMapError = componentNotAvailableError ?? addingHostsNotAllowedError;
+  const componentUnmapError = componentNotAvailableError ?? removingHostsNotAllowedError;
+
+  const hostsErrors = useMemo(() => {
+    const result: { [hostId: number]: { allowMapError?: string; allowUnmapError?: string } } = {};
+
+    for (const host of allHosts) {
+      result[host.id] = {
+        allowMapError: componentMapError ?? checkHostMappingAvailability(host),
+        allowUnmapError: componentUnmapError ?? checkHostUnmappingAvailability(host),
+      };
+    }
+
+    return result;
+  }, [allHosts, componentMapping]);
 
   const hostsOptions = useMemo<SelectOption<AdcmHostShortView>[]>(
     () =>
       allHosts.map((host) => {
-        const hostMappingAvailabilityError = checkHostMappingAvailability(host);
+        const isEnabled = Boolean(
+          (hostsErrors[host.id].allowMapError === undefined && !hostsSets.has(host.id)) ||
+            (hostsErrors[host.id].allowUnmapError === undefined && hostsSets.has(host.id)),
+        );
+
         return {
           label: host.name,
           value: host,
-          disabled: Boolean(hostMappingAvailabilityError),
-          title: hostMappingAvailabilityError,
+          disabled: !isEnabled,
+          title: hostsErrors[host.id].allowMapError ?? hostsErrors[host.id].allowUnmapError,
         };
       }),
-    [allHosts, checkHostMappingAvailability],
+    [allHosts, hostsErrors],
   );
 
   const visibleHosts = useMemo(
@@ -115,8 +138,8 @@ const ComponentContainer = ({
             ref={addIconRef}
             label="Add hosts"
             onClick={handleAddClick}
-            tooltip={componentNotAvailableError ?? addingHostsNotAllowedError}
-            isDisabled={Boolean(componentNotAvailableError ?? addingHostsNotAllowedError)}
+            tooltip={componentMapError}
+            isDisabled={Boolean(componentMapError)}
           />
         </div>
         <div className={s.componentContainerContent}>
@@ -134,15 +157,15 @@ const ComponentContainer = ({
             <div className={s.componentContainerContent__mappedHosts}>
               <Tags>
                 {visibleHosts.map((host) => {
-                  const removingHostNotAllowedError = checkHostMappingAvailability(host);
+                  const error = hostsErrors[host.id].allowUnmapError;
                   return (
                     <MappedHost
                       key={host.id}
                       id={host.id}
                       label={host.name}
                       onDeleteClick={handleDelete}
-                      deleteButtonTooltip={componentNotAvailableError ?? removingHostNotAllowedError}
-                      isDisabled={Boolean(componentNotAvailableError ?? removingHostNotAllowedError)}
+                      deleteButtonTooltip={error}
+                      isDisabled={Boolean(error)}
                     />
                   );
                 })}

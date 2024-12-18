@@ -12,13 +12,14 @@ import type {
   AdcmHostShortView,
   AdcmMappingComponent,
 } from '@models/adcm';
+import { checkHostMappingAvailability } from '@pages/cluster/ClusterMapping/ClusterMapping.utils';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import {
   checkComponentActionsMappingAvailability,
-  checkHostActionsMappingAvailability,
+  checkHostActionsUnmappingAvailability,
   getComponentMapActions,
-  getDisabledMappings,
+  getInitiallyMappedHostsDictionary,
 } from './DynamicActionHostMapping.utils';
 
 interface DynamicActionHostMappingProps {
@@ -69,7 +70,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   };
 
   const hasErrors = Object.keys(mappingErrors).length > 0;
-  const disabledMappings = useMemo(() => getDisabledMappings(mapping), [mapping]);
+  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mapping), [mapping]);
 
   return (
     <div>
@@ -107,11 +108,11 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                 return checkComponentActionsMappingAvailability(component, allowActions);
               };
 
-              const checkHostMappingAvailability = (host: AdcmHostShortView) => {
-                return checkHostActionsMappingAvailability(
+              const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
+                return checkHostActionsUnmappingAvailability(
                   host,
                   allowActions,
-                  disabledMappings[componentMapping.component.id],
+                  initiallyMappedHosts[componentMapping.component.id],
                 );
               };
 
@@ -126,6 +127,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                   onUnmap={handleUnmap}
                   checkComponentMappingAvailability={checkComponentMappingAvailability}
                   checkHostMappingAvailability={checkHostMappingAvailability}
+                  checkHostUnmappingAvailability={checkHostUnmappingAvailability}
                 />
               );
             }),
