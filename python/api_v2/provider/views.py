@@ -63,29 +63,19 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             OpenApiParameter(
                 name="name",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by hostprovider name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="prototype_display_name",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Filter by prototype display name.",
-                type=str,
             ),
             OpenApiParameter(
                 name="state",
-                required=False,
-                location=OpenApiParameter.QUERY,
                 description="Filter by state.",
-                type=str,
             ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=(
                     "name",
                     "-name",
@@ -111,30 +101,12 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getHostprovider",
         summary="GET hostprovider",
         description="Get information about a specific hostprovider.",
-        parameters=[
-            OpenApiParameter(
-                name="hostproviderId",
-                required=True,
-                location=OpenApiParameter.QUERY,
-                description="Hostprovider id.",
-                type=int,
-            ),
-        ],
         responses={200: ProviderSerializer, 404: ErrorSerializer},
     ),
     destroy=extend_schema(
         operation_id="deleteHostprovider",
         summary="DELETE hostprovider",
         description="Delete a specific ADCM hostprovider.",
-        parameters=[
-            OpenApiParameter(
-                name="hostproviderId",
-                required=True,
-                location=OpenApiParameter.QUERY,
-                description="Get information about a specific hostprovider.",
-                type=int,
-            ),
-        ],
         responses={
             200: OpenApiResponse(description="OK"),
             403: ErrorSerializer,

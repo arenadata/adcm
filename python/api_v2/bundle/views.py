@@ -17,7 +17,6 @@ from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -37,7 +36,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
 from api_v2.utils.audit import bundle_from_lookup
@@ -49,33 +48,24 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getBundles",
         description="Get a list of ADCM bundles with information on them.",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="id",
-                type=OpenApiTypes.INT,
-                location=OpenApiParameter.QUERY,
+                type=int,
                 description="Filter by id.",
-                required=False,
             ),
             OpenApiParameter(
                 name="display_name",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by display name.",
-                required=False,
             ),
             OpenApiParameter(
                 name="product",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive filter by product.",
-                required=False,
             ),
             OpenApiParameter(
                 name="ordering",
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                required=False,
                 enum=("displayName", "-displayName", "uploadTime", "-uploadTime"),
                 default="displayName",
             ),

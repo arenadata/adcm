@@ -25,11 +25,12 @@ class UserFilterSet(AdvancedFilterSet, char_fields=("username", "type"), number_
     type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")
     ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
 
-    # advanced filters
-    group__eq = NumberFilter(field_name="groups__id", lookup_expr="exact")
-    group__ne = NumberFilter(method="filter_group__ne")
-    group__in = NumberInFilter(field_name="groups__id", lookup_expr="in", distinct=True)
-    group__exclude = NumberInFilter(field_name="groups__id", exclude=True, lookup_expr="in")
+    # Advanced filters
+    group__eq = NumberFilter(field_name="groups__id", lookup_expr="exact", label="group__eq")
+    group__ne = NumberFilter(method="filter_group__ne", label="group__ne")
+    group__in = NumberInFilter(field_name="groups__id", lookup_expr="in", distinct=True, label="group__in")
+    group__exclude = NumberInFilter(field_name="groups__id", exclude=True, lookup_expr="in", label="group__exclude")
+    # ---
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004

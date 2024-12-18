@@ -71,22 +71,15 @@ def document_config_host_group_viewset(object_type: str):
             parameters=[
                 OpenApiParameter(
                     name="name",
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by host name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="hostprovider_name",
-                    location=OpenApiParameter.QUERY,
                     description="Filter by hostprovider name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="ordering",
-                    location=OpenApiParameter.QUERY,
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    type=str,
-                    many=True,
                     enum=(
                         "name",
                         "-name",
@@ -109,22 +102,15 @@ def document_config_host_group_viewset(object_type: str):
             parameters=[
                 OpenApiParameter(
                     name="name",
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by host name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="hostprovider_name",
-                    location=OpenApiParameter.QUERY,
                     description="Filter by hostprovider name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="ordering",
-                    location=OpenApiParameter.QUERY,
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    type=str,
-                    many=True,
                     enum=(
                         "name",
                         "-name",
@@ -154,22 +140,15 @@ def document_host_config_host_group_viewset(object_type: str):
             parameters=[
                 OpenApiParameter(
                     name="name",
-                    location=OpenApiParameter.QUERY,
                     description="Case insensitive and partial filter by host name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="hostprovider_name",
-                    location=OpenApiParameter.QUERY,
                     description="Filter by hostprovider name.",
-                    type=str,
                 ),
                 OpenApiParameter(
                     name="ordering",
-                    location=OpenApiParameter.QUERY,
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                    type=str,
-                    many=True,
                     enum=(
                         "name",
                         "-name",
