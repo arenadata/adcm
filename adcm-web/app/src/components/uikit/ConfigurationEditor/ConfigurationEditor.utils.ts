@@ -3,6 +3,7 @@ import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { ConfigurationNodePath } from './ConfigurationEditor.types';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
+import { isValueUnset } from '@utils/checkUtils';
 
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
@@ -65,7 +66,7 @@ export const addArrayItem = (
   let node = newConfiguration;
   for (const part of path) {
     // handle case when array is required, but not set or must be defined by user
-    if (path.at(-1) === part && node[part] === undefined) {
+    if (path.at(-1) === part && isValueUnset(node[part])) {
       node[part] = [];
     }
 
