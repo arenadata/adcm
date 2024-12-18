@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import CodeHighlighter from '../CodeHighlighter/CodeHighlighter';
-import CodeEditorContent from './CodeEditorContent';
-import type { HighlighterChildType } from './CodeEditor.types';
+import CodeEditorTextArea from './CodeEditorTextArea';
+import { getLines } from '@uikit/CodeHighlighter/CodeHighlighterHelper';
 import s from './CodeEditor.module.scss';
 import cn from 'classnames';
 
@@ -26,13 +26,18 @@ const CodeProvider = ({ children, code, language, isReadonly, onChange, onKeyDow
   return <CodeCtx.Provider value={codeData}>{children}</CodeCtx.Provider>;
 };
 
-const TagWithContext: React.FC<{ children: HighlighterChildType }> = ({ children }) => {
+const TagWithContext = () => {
   const { code, isReadonly, onChange, onKeyDown } = useContext(CodeCtx);
+  const rowCount = getLines(code).length;
 
   return (
-    <CodeEditorContent code={code} isReadonly={isReadonly} onChange={onChange} onKeyDown={onKeyDown}>
-      {children}
-    </CodeEditorContent>
+    <CodeEditorTextArea
+      code={code}
+      isReadonly={isReadonly}
+      rowCount={rowCount}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+    />
   );
 };
 
@@ -40,7 +45,7 @@ const CodeEditor = ({ code, language, isSecret, className, isReadonly, onChange,
   return (
     <CodeProvider code={code} onChange={onChange} onKeyDown={onKeyDown} language={language} isReadonly={isReadonly}>
       <div className={cn(s.codeEditor, className)}>
-        <CodeHighlighter code={code} language={language} isSecret={isSecret} CodeTagComponent={TagWithContext} />
+        <CodeHighlighter code={code} language={language} isSecret={isSecret} codeOverlay={<TagWithContext />} />
       </div>
     </CodeProvider>
   );
