@@ -38,7 +38,12 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
   return (
     <div className={s.subJobLog}>
       {isSubJobLogsShown && (
-        <SubJobLogsTabs subJobLogsList={subJobLogs} currentTabId={currentLogId} onChangeTab={onTabChange} />
+        <SubJobLogsTabs
+          subJobId={subJob?.id}
+          subJobLogsList={subJobLogs}
+          currentTabId={currentLogId}
+          onChangeTab={onTabChange}
+        />
       )}
 
       {!isSubJobLogsShown && (

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { apiHost } from '@constants';
-import { Button } from '@uikit';
+import { IconButton } from '@uikit';
+import s from './DownloadSubJobLog.module.scss';
 
 interface DownloadSubJobLogProps {
   subJobId: number;
@@ -11,8 +12,8 @@ const DownloadSubJobLog: React.FC<DownloadSubJobLogProps> = ({ subJobId, subJobL
   const downloadLink = `${apiHost}/api/v2/jobs/${subJobId}/logs/${subJobLogId}/download/`;
 
   return (
-    <a href={downloadLink} download="download" target="_blank" rel="noreferrer">
-      <Button variant="secondary">Download</Button>
+    <a className={s.downloadSubJobLog} href={downloadLink} download="download" target="_blank" rel="noreferrer">
+      <IconButton size="small" className={s.iconButton} icon="download" />
     </a>
   );
 };
