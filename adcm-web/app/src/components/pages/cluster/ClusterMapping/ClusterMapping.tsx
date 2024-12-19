@@ -12,7 +12,7 @@ import {
   getMappings,
   cleanupMappings,
   getNotAddedServices,
-  saveMapping,
+  saveMappingWithUpdate,
   openRequiredServicesDialog,
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useClusterMapping } from './useClusterMapping';
@@ -88,7 +88,7 @@ const ClusterMapping: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      await dispatch(saveMapping({ clusterId, mapping: localMapping })).unwrap();
+      await dispatch(saveMappingWithUpdate({ clusterId, mapping: localMapping })).unwrap();
     } catch {
       setHasSaveError(true);
     }
