@@ -15,6 +15,7 @@ export enum AdcmJobObjectType {
   Provider = 'provider',
   Host = 'host',
   Component = 'component',
+  ActionHostGroup = 'action_host_group',
 }
 
 export interface AdcmJobObject {
