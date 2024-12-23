@@ -12,7 +12,7 @@
 
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, UndefinedError
+from jinja2 import Environment, FileSystemLoader, UndefinedError, select_autoescape
 import yaml
 
 from cm.logger import logger
@@ -42,7 +42,7 @@ class TemplateBuilder:
         try:
             env = Environment(
                 loader=FileSystemLoader([str(self._template_path.parent), str(self._bundle_path)]),
-                autoescape=True,
+                autoescape=select_autoescape(default_for_string=False, enabled_extensions=("html", "htm")),
             )
             template = env.get_template(self._template_path.name)
             data_yaml = template.render(**self._context)
