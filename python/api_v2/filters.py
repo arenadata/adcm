@@ -56,12 +56,12 @@ def filter_component_status(queryset: QuerySet, value: Collection[str] | str) ->
     components_up = set()
 
     for cluster_info in status_map.clusters.values():
-        for service_info in chain.from_iterable(cluster_info.services.values()):
-            for component_id, component_info in chain.from_iterable(service_info.components.items()):
+        for service_info in cluster_info.services.values():
+            for component_id, component_info in service_info.components.items():
                 if component_info.status == 0:
                     components_up.add(component_id)
 
-    component_up_condition = Q(pk__in=components_up) | Q(service__prototype__monitoring="passive")
+    component_up_condition = Q(pk__in=components_up)
 
     return _filter_status(queryset=queryset, value=value, query=component_up_condition)
 
@@ -121,52 +121,52 @@ class AdvancedFilterSetMetaclass(FilterSetMetaclass):
         name, bases, attrs = args
         char_fields: tuple[str | tuple[str, str], ...] = kwargs.get("char_fields", ())
         number_fields: tuple[str | tuple[str, str], ...] = kwargs.get("number_fields", ())
+        with_object_status: bool = kwargs.get("with_object_status", False)
+
+        if with_object_status:
+            filter_name = field_name = "status"
+            attrs[f"{filter_name}__eq"] = CharFilter(
+                field_name=field_name,
+                label=f"{filter_name}__eq",
+                method="advanced_case_sensitive_filter_by_status",
+            )
+            attrs[f"{filter_name}__in"] = CharInFilter(
+                field_name=field_name,
+                label=f"{filter_name}__in",
+                method="advanced_case_sensitive_filter_by_status",
+            )
+            attrs[f"{filter_name}__ieq"] = CharFilter(
+                field_name=field_name,
+                label=f"{filter_name}__ieq",
+                method="advanced_case_insensitive_filter_by_status",
+            )
+            attrs[f"{filter_name}__iin"] = CharInFilter(
+                field_name=field_name,
+                label=f"{filter_name}__iin",
+                method="advanced_case_insensitive_filter_by_status",
+            )
+            attrs[f"{filter_name}__ne"] = CharFilter(
+                field_name=field_name,
+                label=f"{filter_name}__ne",
+                method="advanced_case_sensitive_reverse_filter_by_status",
+            )
+            attrs[f"{filter_name}__exclude"] = CharInFilter(
+                field_name=field_name,
+                label=f"{filter_name}__exclude",
+                method="advanced_case_sensitive_reverse_filter_by_status",
+            )
+            attrs[f"{filter_name}__ine"] = CharFilter(
+                field_name=field_name,
+                label=f"{filter_name}__ine",
+                method="advanced_case_insensitive_reverse_filter_by_status",
+            )
+            attrs[f"{filter_name}__iexclude"] = CharInFilter(
+                field_name=field_name,
+                label=f"{filter_name}__iexclude",
+                method="advanced_case_insensitive_reverse_filter_by_status",
+            )
 
         for filter_name, field_name in _prepare_filter_fields(fields=char_fields):
-            if filter_name == "status":
-                attrs[f"{filter_name}__eq"] = CharFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__eq",
-                    method="advanced_case_sensitive_filter_by_status",
-                )
-                attrs[f"{filter_name}__in"] = CharInFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__in",
-                    method="advanced_case_sensitive_filter_by_status",
-                )
-                attrs[f"{filter_name}__ieq"] = CharFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__ieq",
-                    method="advanced_case_insensitive_filter_by_status",
-                )
-                attrs[f"{filter_name}__iin"] = CharInFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__iin",
-                    method="advanced_case_insensitive_filter_by_status",
-                )
-                attrs[f"{filter_name}__ne"] = CharFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__ne",
-                    method="advanced_case_sensitive_reverse_filter_by_status",
-                )
-                attrs[f"{filter_name}__exclude"] = CharInFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__exclude",
-                    method="advanced_case_sensitive_reverse_filter_by_status",
-                )
-                attrs[f"{filter_name}__ine"] = CharFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__ine",
-                    method="advanced_case_insensitive_reverse_filter_by_status",
-                )
-                attrs[f"{filter_name}__iexclude"] = CharInFilter(
-                    field_name=field_name,
-                    label=f"{filter_name}__iexclude",
-                    method="advanced_case_insensitive_reverse_filter_by_status",
-                )
-
-                continue
-
             attrs[f"{filter_name}__eq"] = CharFilter(
                 field_name=field_name, lookup_expr="exact", label=f"{filter_name}__eq"
             )

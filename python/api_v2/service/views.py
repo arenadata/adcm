@@ -53,7 +53,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, responses
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -86,6 +86,7 @@ from api_v2.generic.imports.views import ImportViewSet
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (
+    ManyServiceCreateSerializer,
     ServiceCreateSerializer,
     ServiceMaintenanceModeSerializer,
     ServiceRetrieveSerializer,
@@ -150,10 +151,14 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="postClusterServices",
         summary="POST cluster services",
         description="Add a new cluster services.",
-        responses=responses(
-            success=(HTTP_201_CREATED, ServiceRetrieveSerializer),
-            errors=(HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
-        ),
+        request=ManyServiceCreateSerializer,
+        responses={
+            (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_SERVICE_TO_CLUSTER_RESPONSE_SCHEMA,
+            **{
+                k: ErrorSerializer
+                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+            },
+        },
     ),
     destroy=extend_schema(
         operation_id="deleteClusterService",

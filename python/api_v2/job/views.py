@@ -53,7 +53,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Terminate the execution of a specific job.",
         summary="POST job terminate",
         responses={
-            HTTP_200_OK: OpenApiResponse(description="OK"),
+            HTTP_200_OK: OpenApiResponse(),
             **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
         },
     ),

@@ -38,7 +38,9 @@ class TaskFilter(
 ):
     # Advanced filters
     target_id__eq = NumberFilter(field_name="object_id", lookup_expr="exact", label="target_id__eq")
-    target_type__eq = CharFilter(field_name="object_type__model", lookup_expr="exact", label="target_type__eq")
+    target_type__eq = CharFilter(
+        field_name="object_type__model", label="target_type__eq", method="advanced_filter_by_target_type"
+    )
     owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact", label="owner_id__eq")
     owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact", label="owner_type__eq")
     # ---
@@ -76,6 +78,12 @@ class TaskFilter(
             | queryset.filter(object_type=ContentType.objects.get_for_model(Provider), object_id__in=providers)
             | queryset.filter(object_type=ContentType.objects.get_for_model(Host), object_id__in=hosts)
         )
+
+    def advanced_filter_by_target_type(self, queryset: QuerySet, name: str, value: str) -> QuerySet[TaskLog]:
+        if value == "action_host_group":
+            value = "actionhostgroup"
+
+        return queryset.filter(**{f"{name}__exact": value})
 
     class Meta:
         model = TaskLog

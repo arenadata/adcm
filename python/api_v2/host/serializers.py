@@ -19,6 +19,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
+    ListSerializer,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -171,3 +172,7 @@ class HostAuditSerializer(ModelSerializer):
     class Meta:
         model = Host
         fields = ["fqdn", "description", "maintenance_mode"]
+
+
+class ManyHostAddSerializer(ListSerializer):
+    child = HostAddSerializer()

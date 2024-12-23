@@ -23,6 +23,7 @@ from audit.models import (
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.audit.filters import AuditLogFilter, AuditSessionFilter
@@ -74,13 +75,13 @@ from api_v2.views import ADCMReadOnlyModelViewSet
                 default="-loginTime",
             ),
         ],
-        responses={200: AuditSessionSerializer(many=True), 403: ErrorSerializer},
+        responses={HTTP_200_OK: AuditSessionSerializer(many=True), HTTP_403_FORBIDDEN: ErrorSerializer},
     ),
     retrieve=extend_schema(
         operation_id="getAuditLogin",
         summary="GET audit login",
         description="Get information about a specific user authorization in ADCM.",
-        responses={200: AuditSessionSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: AuditSessionSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
@@ -163,13 +164,13 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                 default="-time",
             ),
         ],
-        responses={200: AuditLogSerializer(many=True), 403: ErrorSerializer},
+        responses={HTTP_200_OK: AuditLogSerializer(many=True), HTTP_403_FORBIDDEN: ErrorSerializer},
     ),
     retrieve=extend_schema(
         operation_id="getAuditOperation",
         summary="GET audit operation",
         description="Get information about a specific ADCM operation being audited.",
-        responses={200: AuditLogSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: AuditLogSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class AuditLogViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):

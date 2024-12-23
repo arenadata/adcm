@@ -140,6 +140,7 @@ from api_v2.host.serializers import (
     HostChangeMaintenanceModeSerializer,
     HostMappingSerializer,
     HostSerializer,
+    ManyHostAddSerializer,
 )
 from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import (
@@ -305,6 +306,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getClusterAnsibleConfigs",
         summary="GET cluster ansible configuration",
         description="Get information about cluster ansible config.",
+        examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
         responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
     ),
 )
@@ -790,11 +792,14 @@ class ClusterViewSet(
         operation_id="postCusterHosts",
         description="Add a new hosts to cluster.",
         summary="POST cluster hosts",
-        request=HostAddSerializer(many=True),
-        responses=responses(
-            success=(HTTP_201_CREATED, HostSerializer(many=True)),
-            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
-        ),
+        request=ManyHostAddSerializer,
+        responses={
+            (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA,
+            **{
+                k: ErrorSerializer
+                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+            },
+        },
     ),
     retrieve=extend_schema(
         operation_id="getClusterHost",

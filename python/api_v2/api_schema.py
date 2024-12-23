@@ -13,7 +13,7 @@
 from typing import Iterable, TypeAlias
 
 from adcm.serializers import EmptySerializer
-from drf_spectacular.utils import OpenApiParameter
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter
 from rest_framework.fields import CharField
 from rest_framework.serializers import Serializer
 from rest_framework.status import (
@@ -30,6 +30,145 @@ class ErrorSerializer(EmptySerializer):
 class DefaultParams:
     LIMIT = OpenApiParameter(name="limit", description="Number of records included in the selection.", type=int)
     OFFSET = OpenApiParameter(name="offset", description="Record number from which the selection starts.", type=int)
+    _CONCERN_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "type": {"type": "string"},
+                "reason": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "placeholder": {"type": "object"},
+                    },
+                },
+                "isBlocking": {"type": "boolean"},
+                "cause": {"type": "string"},
+                "owner": {
+                    "type": "object",
+                    "properties": {"id": {"type": "integer"}, "type": {"type": "string"}},
+                },
+            },
+        },
+    }
+    CONFIG_SCHEMA_EXAMPLE = [
+        OpenApiExample(
+            name="schema example",
+            value={
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Configuration",
+                "description": "",
+                "readOnly": False,
+                "adcmMeta": {
+                    "isAdvanced": False,
+                    "isInvisible": False,
+                    "activation": None,
+                    "synchronization": None,
+                    "nullValue": None,
+                    "isSecret": False,
+                    "stringExtra": None,
+                    "enumExtra": None,
+                },
+                "type": "object",
+                "properties": {
+                    "param_1": {
+                        "title": "Special Param",
+                        "type": "string",
+                        "description": "",
+                        "default": "heh",
+                        "readOnly": True,
+                        "adcmMeta": {"isAdvanced": True, "isInvisible": False},
+                    }
+                },
+                "additionalProperties": False,
+                "required": [],
+            },
+            response_only=True,
+        )
+    ]
+    ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "hostprovider": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                    },
+                },
+                "prototype": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                        "version": {"type": "string"},
+                    },
+                },
+                "cluster": {"type": "object", "properties": {"id": {"type": "integer"}, "name": {"type": "string"}}},
+                "status": {"type": "string"},
+                "state": {"type": "string"},
+                "multiState": {"type": "array", "items": {"type": "string"}},
+                "concerns": _CONCERN_SCHEMA,
+                "isMaintenanceModeAvailable": {"type": "boolean"},
+                "maintenanceMode": {"type": "string"},
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "name": {"type": "string"},
+                            "displayName": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        },
+    }
+    ADD_SERVICE_TO_CLUSTER_RESPONSE_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "displayName": {"type": "string"},
+                "prototype": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                        "version": {"type": "string"},
+                    },
+                },
+                "cluster": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                    },
+                },
+                "status": {"type": "string"},
+                "state": {"type": "string"},
+                "multiState": {"type": "array", "items": {"type": "string"}},
+                "concerns": _CONCERN_SCHEMA,
+                "isMaintenanceModeAvailable": {"type": "boolean"},
+                "maintenanceMode": {"type": "string"},
+                "mainInfo": {"type": "string"},
+            },
+        },
+    }
 
 
 ResponseOKType: TypeAlias = Serializer | type[Serializer] | type[dict] | type[list] | None

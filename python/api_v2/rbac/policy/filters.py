@@ -16,7 +16,11 @@ from rbac.models import Policy
 from api_v2.filters import AdvancedFilterSet
 
 
-class PolicyFilter(AdvancedFilterSet, char_fields=("name",), number_fields=("id",)):
+class PolicyFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=("id",),
+):
     name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={"name": "name"},

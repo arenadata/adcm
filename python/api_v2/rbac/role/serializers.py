@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.serializers import EmptySerializer
 from rbac.models import Role
-from rest_framework.fields import BooleanField, CharField
+from rest_framework.fields import BooleanField, CharField, IntegerField
 from rest_framework.serializers import (
+    ListSerializer,
     ManyRelatedField,
     ModelSerializer,
     PrimaryKeyRelatedField,
@@ -78,3 +80,37 @@ class RoleRelatedSerializer(ModelSerializer):
     class Meta:
         model = Role
         fields = ["id", "name", "display_name"]
+
+
+class ObjectCandidateSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+
+
+class ClusterObjectCandidateSerializer(ObjectCandidateSerializer):
+    ...
+
+
+class ServiceObjectCandidateSerializer(EmptySerializer):
+    name = CharField()
+    display_name = CharField()
+    clusters = ClusterObjectCandidateSerializer(many=True)
+
+
+class ProviderObjectCandidateSerializer(ObjectCandidateSerializer):
+    ...
+
+
+class HostObjectCandidateSerializer(ObjectCandidateSerializer):
+    ...
+
+
+class RoleObjectCandidatesSerializer(EmptySerializer):
+    cluster = ClusterObjectCandidateSerializer(many=True, allow_empty=True)
+    provider = ProviderObjectCandidateSerializer(many=True, allow_empty=True)
+    service = ServiceObjectCandidateSerializer(many=True, allow_empty=True)
+    host = HostObjectCandidateSerializer(many=True, allow_empty=True)
+
+
+class RoleCategoriesSerializer(ListSerializer):
+    child = CharField()

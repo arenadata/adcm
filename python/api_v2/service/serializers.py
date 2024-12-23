@@ -16,6 +16,7 @@ from cm.models import Component, MaintenanceMode, Service
 from rest_framework.serializers import (
     ChoiceField,
     IntegerField,
+    ListSerializer,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -91,3 +92,7 @@ class ServiceAuditSerializer(ModelSerializer):
     class Meta:
         model = Service
         fields = ["maintenance_mode"]
+
+
+class ManyServiceCreateSerializer(ListSerializer):
+    child = ServiceCreateSerializer()
