@@ -92,7 +92,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Terminate the execution of a specific task.",
         summary="POST task terminate",
         responses={
-            HTTP_200_OK: OpenApiResponse(description="OK"),
+            HTTP_200_OK: OpenApiResponse(),
             **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
         },
     ),
@@ -118,7 +118,7 @@ from api_v2.views import ADCMGenericViewSet
             ),
         ],
         responses={
-            HTTP_200_OK: OpenApiResponse(description="OK"),
+            (HTTP_200_OK, "application/tar+gzip"): {"type": "string", "format": "binary"},
             **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
         },
     ),
@@ -137,7 +137,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
         return queryset
 
     @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
-    @action(methods=["post"], detail=True)
+    @action(methods=["post"], detail=True, serializer_class=None)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         task = self.get_object()
         task.cancel()

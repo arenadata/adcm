@@ -21,7 +21,14 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_sche
 from guardian.mixins import PermissionListMixin
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.api_schema import ErrorSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -84,7 +91,7 @@ from api_v2.views import ADCMGenericViewSet
             ),
         ],
         responses={
-            200: ProviderSchemaSerializer(many=True),
+            HTTP_200_OK: ProviderSchemaSerializer(many=True),
         },
     ),
     create=extend_schema(
@@ -92,26 +99,26 @@ from api_v2.views import ADCMGenericViewSet
         summary="POST hostproviders",
         description="Creation of a new ADCM hostprovider.",
         responses={
-            201: ProviderSchemaSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            HTTP_201_CREATED: ProviderSchemaSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
         },
     ),
     retrieve=extend_schema(
         operation_id="getHostprovider",
         summary="GET hostprovider",
         description="Get information about a specific hostprovider.",
-        responses={200: ProviderSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: ProviderSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
     destroy=extend_schema(
         operation_id="deleteHostprovider",
         summary="DELETE hostprovider",
         description="Delete a specific ADCM hostprovider.",
         responses={
-            200: OpenApiResponse(description="OK"),
-            403: ErrorSerializer,
-            404: ErrorSerializer,
-            409: ErrorSerializer,
+            HTTP_200_OK: OpenApiResponse(),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
         },
     ),
 )

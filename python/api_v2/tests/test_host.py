@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest.mock import patch
+
 from cm.models import Action, Component, Host, HostComponent, Provider
+from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType
 from rest_framework.status import (
@@ -865,3 +868,162 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.assertListEqual(
             [component["name"] for component in response.json()["results"]], ["component_2", "component_1"]
         )
+
+
+class TestAdvancedFilters(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
+        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-3")
+
+        self.status_map = FullStatusMap(
+            hosts={
+                str(self.host_1.pk): {"status": 0},
+                str(self.host_2.pk): {"status": 16},
+                str(self.host_3.pk): {"status": 16},
+            }
+        )
+
+    def test_filter_by_status__eq(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__eq": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__eq": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+    def test_filter_by_status__ieq(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: Down"):
+                response = (self.client.v2 / "hosts").get(query={"status__ieq": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__ieq": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+    def test_filter_by_status__ne(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__ne": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__ne": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+    def test_filter_by_status__ine(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__ine": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__ine": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+    def test_filter_by_status__in(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+            with self.subTest("Filter value: down,bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "down,bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+    def test_filter_by_status__iin(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+            with self.subTest("Filter value: Up,BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "Up,BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+    def test_filter_by_status__exclude(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+            with self.subTest("Filter value: down,bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "down,bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+    def test_filter_by_status__iexclude(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+            with self.subTest("Filter value: Up,BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "Up,BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)

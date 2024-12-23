@@ -24,8 +24,9 @@ from api_v2.filters import AdvancedFilterSet, filter_cluster_status, filter_host
 
 class ClusterFilter(
     AdvancedFilterSet,
-    char_fields=("name", "status"),
+    char_fields=("name",),
     number_fields=(("bundle", "prototype__bundle__id"),),
+    with_object_status=True,
 ):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
     prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")

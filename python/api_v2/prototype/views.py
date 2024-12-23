@@ -15,12 +15,12 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
-from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
@@ -70,7 +70,7 @@ from api_v2.views import ADCMReadOnlyModelViewSet
     retrieve=extend_schema(
         operation_id="getPrototype",
         description="Get detail information about a specific prototype.",
-        responses={200: PrototypeSerializer(many=True), 404: ErrorSerializer},
+        responses={HTTP_200_OK: PrototypeSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class PrototypeViewSet(ADCMReadOnlyModelViewSet):
@@ -101,7 +101,7 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
                 ),
             ),
         ],
-        responses={200: PrototypeVersionsSerializer(many=True)},
+        responses={HTTP_200_OK: PrototypeVersionsSerializer(many=True)},
     )
     @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter, pagination_class=None)
     def versions(self, request):  # noqa: ARG001, ARG002
@@ -111,7 +111,11 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     @extend_schema(
         operation_id="postLicense",
         description="Accept prototype license.",
-        responses={200: None, 404: ErrorSerializer, 409: ErrorSerializer},
+        responses={
+            HTTP_200_OK: OpenApiResponse(),
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
     )
     @audit_update(name="Bundle license accepted", object_=bundle_from_lookup)
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")

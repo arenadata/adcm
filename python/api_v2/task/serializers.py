@@ -10,20 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.serializers import EmptySerializer
 from cm.models import JobLog, JobStatus, TaskLog
 from drf_spectacular.utils import extend_schema_field
-from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
+from rest_framework.fields import CharField, ChoiceField, DateTimeField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from api_v2.generic.action.serializers import ActionNameSerializer
 
-OBJECT_ORDER = {"adcm": 0, "cluster": 1, "service": 2, "component": 3, "provider": 4, "host": 5, "action_host_group": 6}
+OBJECT_ORDER = {
+    "adcm": 0,
+    "cluster": 1,
+    "service": 2,
+    "component": 3,
+    "provider": 4,
+    "host": 5,
+    "action_host_group": 6,
+}
+
+
+class TaskObjectsFieldSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    type = ChoiceField(choices=tuple((v, v) for v in OBJECT_ORDER))
 
 
 class JobListSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
-    start_time = DateTimeField(source="start_date")
-    end_time = DateTimeField(source="finish_date")
+    start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
+    end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
 
     class Meta:
         model = JobLog
@@ -49,8 +64,8 @@ class TaskSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
     action = ActionNameSerializer(read_only=True, allow_null=True)
     objects = SerializerMethodField()
-    start_time = DateTimeField(source="start_date")
-    end_time = DateTimeField(source="finish_date")
+    start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
+    end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
 
     class Meta:
         model = TaskLog
@@ -78,6 +93,7 @@ class TaskSerializer(ModelSerializer):
         return False
 
     @staticmethod
+    @extend_schema_field(field=TaskObjectsFieldSerializer(many=True), component_name="TaskObjectsField")
     def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
         return [{"type": k, **v} for k, v in sorted(obj.selector.items(), key=lambda k: OBJECT_ORDER[k[0]])]
 
@@ -100,8 +116,8 @@ class TaskListSerializer(TaskSerializer):
 
 class TaskRetrieveByJobSerializer(TaskSerializer):
     action = ActionNameSerializer(read_only=True, allow_null=True)
-    start_time = DateTimeField(source="start_date")
-    end_time = DateTimeField(source="finish_date")
+    start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
+    end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
 
     class Meta:
         model = TaskLog

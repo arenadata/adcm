@@ -20,7 +20,11 @@ from rbac.models import OriginType
 from api_v2.filters import AdvancedFilterSet
 
 
-class GroupFilter(AdvancedFilterSet, char_fields=("name", "display_name", "type"), number_fields=("id",)):
+class GroupFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name", "type"),
+    number_fields=("id",),
+):
     display_name = CharFilter(lookup_expr="icontains")
     type = ChoiceFilter(choices=OriginType.choices)
     ordering = OrderingFilter(

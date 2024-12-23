@@ -105,7 +105,7 @@ class UpgradeRunSerializer(EmptySerializer):
 
 
 class ActionRunSerializer(UpgradeRunSerializer):
-    should_block_object = BooleanField(required=False, default=True)
+    should_block_object = BooleanField(required=False, default=True, initial=True)
 
 
 class ActionNameSerializer(ModelSerializer):

@@ -19,7 +19,11 @@ from api_v2.filters import AdvancedFilterSet, NumberInFilter
 from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
 
 
-class UserFilterSet(AdvancedFilterSet, char_fields=("username", "type"), number_fields=("id")):
+class UserFilterSet(
+    AdvancedFilterSet,
+    char_fields=("username", "type"),
+    number_fields=("id",),
+):
     username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
     status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
     type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")

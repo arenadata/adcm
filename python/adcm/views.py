@@ -15,6 +15,7 @@ import os
 from django.conf import settings
 from django.http.request import HttpRequest
 from django.http.response import JsonResponse
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
@@ -39,6 +40,7 @@ def page_not_found(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # no
     return JsonResponse(data=data, status=HTTP_404_NOT_FOUND)
 
 
+@extend_schema_view(get=extend_schema(exclude=True))
 class ADCMVersions(APIView):
     permission_classes = (AllowAny,)
 

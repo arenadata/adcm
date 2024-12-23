@@ -19,6 +19,8 @@ from api_v2.filters import AdvancedFilterSet
 class ComponentFilter(
     AdvancedFilterSet,
     char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+    with_object_status=True,
 ):
     name = CharFilter(field_name="prototype__name", label="Name", lookup_expr="icontains")
     display_name = CharFilter(field_name="prototype__display_name", label="Display Name", lookup_expr="icontains")

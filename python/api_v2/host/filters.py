@@ -23,8 +23,9 @@ from api_v2.filters import AdvancedFilterSet
 
 class HostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"), "status"),
-    number_fields=("id",),
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
 ):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
@@ -55,8 +56,9 @@ class HostFilter(
 
 class ClusterHostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"), "status"),
-    number_fields=("id",),
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
 ):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
@@ -80,8 +82,9 @@ class ClusterHostFilter(
 
 class HostGroupHostFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "fqdn"), "status"),
-    number_fields=("id",),
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
 ):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
