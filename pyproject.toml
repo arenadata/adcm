@@ -47,6 +47,7 @@ ruyaml = "0.91.0"
 six = "1.16.0"
 social-auth-app-django = "5.4.0"
 uwsgi = "2.0.23"
+hvac = "2.3.0"
 
 [tool.poetry.group.lint]
 optional = true
