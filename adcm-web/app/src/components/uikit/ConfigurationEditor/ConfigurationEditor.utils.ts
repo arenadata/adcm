@@ -30,7 +30,7 @@ export const addField = (configuration: ConfigurationData, path: ConfigurationNo
   let node = newConfiguration;
   for (const part of path) {
     // handle case when map / secretMap is required, but not set or must be defined by user
-    if (path.at(-1) === part && node[part] === undefined) {
+    if (path.at(-1) === part && isValueUnset(node[part])) {
       node[part] = {};
     }
     node = node[part] as JSONObject;
