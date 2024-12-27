@@ -93,7 +93,7 @@ After this you will see invocation of black and pylint on every commit.
     Use `-v /opt/adcm:/adcm/data:Z` for SELinux
 
 ## Running ADCM using client PostgreSQL DB
-_PostgreSQL must be version 11 or newer - JSONB field used_
+_PostgreSQL must be version 13 or newer - JSONB field used_
 
 1. Start container:
    ```shell
