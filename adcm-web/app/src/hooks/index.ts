@@ -19,3 +19,4 @@ export { useLocalPagination } from './useLocalPagination';
 export { useMediaQuery } from './useMediaQuery';
 export { useSelectedItems } from './useSelectedItems';
 export { usePrevious } from './usePrevious';
+export { useClipboardCopy } from './useClipboardCopy/useClipboardCopy';

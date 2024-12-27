@@ -1,39 +1,26 @@
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
 import cn from 'classnames';
 import s from './CopyButton.module.scss';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { useClipboardCopy } from '@hooks';
 
-type CopyButtonProps = {
+const TIMEOUT_TO_HIDE_COPIED = 2000;
+
+interface CopyButtonProps {
   code: string;
   className?: string;
-};
+}
 
 const CopyButton: React.FC<CopyButtonProps> = ({ code, className }) => {
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [isCopied, copyToClipboard] = useClipboardCopy(TIMEOUT_TO_HIDE_COPIED);
 
-  const onCopyText = () => {
-    setIsCopied(true);
+  const copyButtonStyles = cn(s.copyButton, { isCopied }, className);
 
-    timerRef.current = setTimeout(() => {
-      setIsCopied(false);
-    }, 2000);
-  };
-
-  useEffect(
-    () => () => {
-      timerRef.current && clearTimeout(timerRef.current);
-    },
-    [],
-  );
-
-  const copyButtonStyles = cn(s.copyButton, { isCopied: isCopied }, className);
+  const handleCopy = () => copyToClipboard(code);
 
   return (
-    <CopyToClipboard text={code} onCopy={onCopyText}>
-      <button className={copyButtonStyles}>{isCopied ? 'Copied' : 'Copy'}</button>
-    </CopyToClipboard>
+    <button className={copyButtonStyles} onClick={handleCopy}>
+      {isCopied ? 'Copied' : 'Copy'}
+    </button>
   );
 };
 
