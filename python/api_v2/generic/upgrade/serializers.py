@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
 from cm.models import Upgrade
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from api_v2.bundle.serializers import UpgradeBundleSerializer
+from api_v2.generic.action.serializers import ActionConfigurationSerializer, HCMapRuleEntrySerializer
 
 
 class UpgradeListSerializer(ModelSerializer):
@@ -58,14 +59,15 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
 
         return False
 
-    @staticmethod
-    def get_host_component_map_rules(instance: Upgrade) -> Any:
+    @extend_schema_field(field=HCMapRuleEntrySerializer(many=True))
+    def get_host_component_map_rules(self, instance: Upgrade) -> list[dict]:
         if instance.action:
             return instance.action.hostcomponentmap
 
         return []
 
-    def get_configuration(self, _: Upgrade):
+    @extend_schema_field(field=ActionConfigurationSerializer)
+    def get_configuration(self, _: Upgrade) -> dict | None:
         if (
             self.context["config_schema"] is None
             and self.context["config"] is None

@@ -12,11 +12,11 @@ import type {
   AdcmHostShortView,
   AdcmMappingComponent,
 } from '@models/adcm';
-import { checkHostMappingAvailability } from '@pages/cluster/ClusterMapping/ClusterMapping.utils';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import {
   checkComponentActionsMappingAvailability,
+  checkHostActionsMappingAvailability,
   checkHostActionsUnmappingAvailability,
   getComponentMapActions,
   getInitiallyMappedHostsDictionary,
@@ -106,6 +106,14 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
 
               const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
                 return checkComponentActionsMappingAvailability(component, allowActions);
+              };
+
+              const checkHostMappingAvailability = (host: AdcmHostShortView) => {
+                return checkHostActionsMappingAvailability(
+                  host,
+                  allowActions,
+                  initiallyMappedHosts[componentMapping.component.id],
+                );
               };
 
               const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {

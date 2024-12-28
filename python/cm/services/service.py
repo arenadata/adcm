@@ -69,8 +69,8 @@ def _get_error_on_service_deletion(
         return AdcmEx(code="SERVICE_CONFLICT", msg=f'Service "{display_name}" is required')
 
     if TaskLog.objects.filter(
-        owner_id=service_id,
-        owner_type=ContentType.objects.get_for_model(Service),
+        object_id=service_id,
+        object_type=ContentType.objects.get_for_model(Service),
         action__name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,
         status__in={JobStatus.CREATED, JobStatus.RUNNING},
     ).exists():
