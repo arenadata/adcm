@@ -1,5 +1,5 @@
 import Text from '@uikit/Text/Text';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof Text>;
 export default {

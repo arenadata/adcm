@@ -13,16 +13,11 @@
 from typing import Iterable, TypeAlias
 
 from adcm.serializers import EmptySerializer
-from cm.models import ADCMEntityStatus
-from drf_spectacular.utils import OpenApiParameter
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter
 from rest_framework.fields import CharField
 from rest_framework.serializers import Serializer
 from rest_framework.status import (
     HTTP_200_OK,
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
 )
 
 
@@ -32,42 +27,148 @@ class ErrorSerializer(EmptySerializer):
     desc = CharField()
 
 
-DOCS_DEFAULT_ERROR_RESPONSES = {HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer}
-DOCS_CLIENT_INPUT_ERROR_RESPONSES = {HTTP_400_BAD_REQUEST: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer}
-
-
-def status_param(required: bool) -> OpenApiParameter:
-    return OpenApiParameter(
-        name="status",
-        required=required,
-        location=OpenApiParameter.QUERY,
-        description="Case insensitive and partial filter by status.",
-        enum=ADCMEntityStatus.values,
-        type=str,
-    )
-
-
 class DefaultParams:
     LIMIT = OpenApiParameter(name="limit", description="Number of records included in the selection.", type=int)
     OFFSET = OpenApiParameter(name="offset", description="Record number from which the selection starts.", type=int)
-    ORDERING = OpenApiParameter(
-        name="ordering",
-        required=False,
-        location=OpenApiParameter.QUERY,
-        description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-        type=str,
-    )
-
-    STATUS_REQUIRED = status_param(required=True)
-    STATUS_OPTIONAL = status_param(required=False)
-
-    @classmethod
-    def ordering_by(cls, *values: str | tuple[str, str], **kwargs: str | bool | type) -> OpenApiParameter:
-        return OpenApiParameter(
-            location=OpenApiParameter.QUERY,
-            enum=values,
-            **{attr: getattr(cls.ORDERING, attr) for attr in ("name", "required", "description", "type")} | kwargs,
+    _CONCERN_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "type": {"type": "string"},
+                "reason": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "placeholder": {"type": "object"},
+                    },
+                },
+                "isBlocking": {"type": "boolean"},
+                "cause": {"type": "string"},
+                "owner": {
+                    "type": "object",
+                    "properties": {"id": {"type": "integer"}, "type": {"type": "string"}},
+                },
+            },
+        },
+    }
+    CONFIG_SCHEMA_EXAMPLE = [
+        OpenApiExample(
+            name="schema example",
+            value={
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Configuration",
+                "description": "",
+                "readOnly": False,
+                "adcmMeta": {
+                    "isAdvanced": False,
+                    "isInvisible": False,
+                    "activation": None,
+                    "synchronization": None,
+                    "nullValue": None,
+                    "isSecret": False,
+                    "stringExtra": None,
+                    "enumExtra": None,
+                },
+                "type": "object",
+                "properties": {
+                    "param_1": {
+                        "title": "Special Param",
+                        "type": "string",
+                        "description": "",
+                        "default": "heh",
+                        "readOnly": True,
+                        "adcmMeta": {"isAdvanced": True, "isInvisible": False},
+                    }
+                },
+                "additionalProperties": False,
+                "required": [],
+            },
+            response_only=True,
         )
+    ]
+    ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "hostprovider": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                    },
+                },
+                "prototype": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                        "version": {"type": "string"},
+                    },
+                },
+                "cluster": {"type": "object", "properties": {"id": {"type": "integer"}, "name": {"type": "string"}}},
+                "status": {"type": "string"},
+                "state": {"type": "string"},
+                "multiState": {"type": "array", "items": {"type": "string"}},
+                "concerns": _CONCERN_SCHEMA,
+                "isMaintenanceModeAvailable": {"type": "boolean"},
+                "maintenanceMode": {"type": "string"},
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "name": {"type": "string"},
+                            "displayName": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        },
+    }
+    ADD_SERVICE_TO_CLUSTER_RESPONSE_SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "displayName": {"type": "string"},
+                "prototype": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "displayName": {"type": "string"},
+                        "version": {"type": "string"},
+                    },
+                },
+                "cluster": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                    },
+                },
+                "status": {"type": "string"},
+                "state": {"type": "string"},
+                "multiState": {"type": "array", "items": {"type": "string"}},
+                "concerns": _CONCERN_SCHEMA,
+                "isMaintenanceModeAvailable": {"type": "boolean"},
+                "maintenanceMode": {"type": "string"},
+                "mainInfo": {"type": "string"},
+            },
+        },
+    }
 
 
 ResponseOKType: TypeAlias = Serializer | type[Serializer] | type[dict] | type[list] | None

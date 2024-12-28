@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import s from './LabeledField.module.scss';
 import cn from 'classnames';
 import { textToDataTestValue } from '@utils/dataTestUtils';

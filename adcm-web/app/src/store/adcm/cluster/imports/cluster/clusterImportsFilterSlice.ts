@@ -1,4 +1,4 @@
-import { EmptyTableFilter, ListState } from '@models/table';
+import type { EmptyTableFilter, ListState } from '@models/table';
 import { createListSlice } from '@store/redux';
 
 type AdcmImportClusterFilterState = ListState<EmptyTableFilter>;

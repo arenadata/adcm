@@ -1,8 +1,9 @@
-import { AdcmClustersApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmCluster } from '@models/adcm';
+import type { AdcmCluster } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
@@ -75,7 +76,7 @@ const clusterSlice = createSlice({
     });
     builder.addCase(wsActions.update_cluster, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.cluster?.id == id) {
+      if (state.cluster?.id === id) {
         state.cluster = {
           ...state.cluster,
           ...changes,

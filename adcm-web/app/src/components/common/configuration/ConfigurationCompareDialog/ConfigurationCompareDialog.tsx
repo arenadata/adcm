@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, LabeledField, Select } from '@uikit';
-import { AdcmConfigShortView, AdcmConfiguration, AdcmFullConfigurationInfo } from '@models/adcm';
+import type { AdcmConfigShortView, AdcmConfiguration, AdcmFullConfigurationInfo } from '@models/adcm';
 import CompareJson from '@uikit/CompareJson/CompareJson';
 import { dateToString } from '@utils/date/dateConvertUtils';
 import cn from 'classnames';
 import s from './ConfigurationCompareDialog.module.scss';
-import { JSONObject } from '@models/json';
+import type { JSONObject } from '@models/json';
 import { getCompareView } from './CompareConfiguration.utils';
 
 export type ConfigurationsCompareOptions = {

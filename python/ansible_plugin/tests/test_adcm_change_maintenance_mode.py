@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import MaintenanceMode, ServiceComponent
+from cm.models import Component, MaintenanceMode
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import (
@@ -25,7 +25,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)

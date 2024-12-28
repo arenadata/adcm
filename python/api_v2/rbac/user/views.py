@@ -86,13 +86,12 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(name="username", description="Case insensitive and partial filter by user name."),
-            OpenApiParameter(name="status", description="User status.", type=str, enum=("active", "blocked")),
-            OpenApiParameter(name="type", description="User type.", type=str, enum=("local", "ldap")),
+            OpenApiParameter(name="status", description="User status.", enum=("active", "blocked")),
+            OpenApiParameter(name="type", description="User type.", enum=("local", "ldap")),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                enum=("username", "created_at", "updated_at", "-username", "-created_at", "-updated_at"),
+                enum=("username", "-username"),
                 default="username",
             ),
         ],
@@ -124,7 +123,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Change information for a specific user.",
         summary="PATCH user",
         responses={
-            HTTP_200_OK: OpenApiResponse(response="OK"),
+            HTTP_200_OK: UserSerializer,
             **{
                 err_code: ErrorSerializer
                 for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
@@ -136,7 +135,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Block users in the ADCM (manual block).",
         summary="POST user block",
         responses={
-            HTTP_200_OK: OpenApiResponse(response="OK"),
+            HTTP_200_OK: OpenApiResponse(),
             **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
         },
     ),
@@ -145,7 +144,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Unblock the user in the ADCM",
         summary="POST user unblock",
         responses={
-            HTTP_200_OK: OpenApiResponse(response="OK"),
+            HTTP_200_OK: OpenApiResponse(),
             **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
         },
     ),
@@ -181,12 +180,17 @@ class UserViewSet(
     permission_required = [VIEW_USER_PERMISSION]
     permission_classes = (UserPermissions,)
 
-    def get_serializer_class(self) -> type[UserSerializer] | type[UserUpdateSerializer] | type[UserCreateSerializer]:
+    def get_serializer_class(
+        self,
+    ) -> type[UserSerializer] | type[UserUpdateSerializer] | type[UserCreateSerializer] | None:
         if self.action in ("update", "partial_update"):
             return UserUpdateSerializer
 
-        if self.action == "create":
+        elif self.action == "create":
             return UserCreateSerializer
+
+        elif self.action in ("block", "unblock"):
+            return None
 
         return UserSerializer
 

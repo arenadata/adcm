@@ -1,4 +1,6 @@
-import React, { HTMLAttributes, useEffect, useState } from 'react';
+import type { HTMLAttributes } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import cn from 'classnames';
 import s from './AnchorBar.module.scss';
 

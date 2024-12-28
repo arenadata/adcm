@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.converters import orm_object_to_core_type
-from cm.models import ClusterObject, HostComponent, ServiceComponent
+from cm.models import Component, HostComponent, Service
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginTargetDetectionError
@@ -27,7 +27,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
         self.service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
 
@@ -50,8 +50,8 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertFalse(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertFalse(Service.objects.filter(pk=self.service_1.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_2.pk).exists())
         self.assertEqual(HostComponent.objects.filter(cluster_id=self.cluster.pk).count(), 0)
 
     def test_delete_service_forbidden_arg_fail(self) -> None:
@@ -69,7 +69,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNotNone(result.error)
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
 
     def test_delete_service_from_own_context(self) -> None:
         task = self.prepare_task(owner=self.service_2, name="dummy")
@@ -83,8 +83,8 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
-        self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+        self.assertFalse(Service.objects.filter(pk=self.service_2.pk).exists())
 
         actual = list(HostComponent.objects.values_list("host_id", "component_id").filter(cluster_id=self.cluster.pk))
         expected = [(entry.host_id, entry.component_id) for entry in self.initial_hc]
@@ -103,8 +103,8 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
         self.assertIsInstance(result.error, PluginIncorrectCallError)
         self.assertIn("Service can be deleted by name only from cluster's context.", result.error.message)
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
-        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
+        self.assertTrue(Service.objects.filter(pk=self.service_2.pk).exists())
 
     def test_delete_non_existing_service_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")

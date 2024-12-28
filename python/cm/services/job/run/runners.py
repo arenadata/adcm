@@ -20,11 +20,14 @@ from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.job.types import ExecutionStatus, Job, Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
+from cm.services.concern.locks import (
+    delete_task_flag_concern,
+    delete_task_lock_concern,
+    update_task_flag_concern,
+    update_task_lock_concern,
+)
 from cm.services.job.run._task_finalizers import (
-    remove_task_lock,
     set_hostcomponent,
-    set_job_lock,
-    update_issues,
     update_object_maintenance_mode,
 )
 from cm.services.job.run.audit import audit_task_finish
@@ -99,7 +102,7 @@ class JobSequenceRunner(TaskRunner):
             self._prepare_job_environment(task=task, target=current_job)
 
             last_processed_job = current_job.job
-            last_job_result = self._execute_job(target=current_job)
+            last_job_result = self._execute_job(task=task, target=current_job)
 
             if self._runtime.status != ExecutionStatus.ABORTED and last_job_result not in (
                 ExecutionStatus.SUCCESS,
@@ -172,7 +175,7 @@ class JobSequenceRunner(TaskRunner):
         for prepare_environment in target.environment_builders:
             prepare_environment(task=task, job=target.job, configuration=self._settings)
 
-    def _execute_job(self, target: ExecutionTarget) -> ExecutionStatus:
+    def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         target.executor.execute()
 
         self._repo.update_job(
@@ -184,7 +187,12 @@ class JobSequenceRunner(TaskRunner):
             ),
         )
 
-        set_job_lock(job_id=target.job.id)
+        # it's enough to detect the function once (as the delete one),
+        # but implementation of such a thing is better be done with thoughfull concerns refactoring
+        if task.is_blocking:
+            update_task_lock_concern(job_id=target.job.id)
+        else:
+            update_task_flag_concern(job_id=target.job.id)
 
         result = target.executor.wait_finished().result
 
@@ -234,7 +242,10 @@ class JobSequenceRunner(TaskRunner):
     def _finish(self, task: Task, last_job: Job | None):
         task_result = self._runtime.status
 
-        remove_task_lock(task_id=task.id)
+        if task.is_blocking:
+            delete_task_lock_concern(task_id=task.id)
+        else:
+            delete_task_flag_concern(task_id=task.id)
 
         audit_task_finish(task=task, task_result=task_result)
 
@@ -273,8 +284,6 @@ class JobSequenceRunner(TaskRunner):
             and finished_task.hostcomponent.restore_on_fail
         ):
             set_hostcomponent(task=finished_task, logger=self._logger)
-
-        update_issues(object_=owner)
 
     def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
         if self._runtime.status == ExecutionStatus.SUCCESS:

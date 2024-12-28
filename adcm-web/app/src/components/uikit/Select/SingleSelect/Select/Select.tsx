@@ -1,12 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { InputProps } from '@uikit/Input/Input';
+import type { InputProps } from '@uikit/Input/Input';
 import SingleSelectPanel from '@uikit/Select/SingleSelect/SingleSelectPanel/SingleSelectPanel';
 import Popover from '@uikit/Popover/Popover';
-import { SingleSelectOptions } from '@uikit/Select/Select.types';
+import type { SingleSelectOptions } from '@uikit/Select/Select.types';
 import { useForwardRef } from '@hooks';
 import CommonSelectField from '@uikit/Select/CommonSelect/CommonSelectField/CommonSelectField';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
-import { PopoverOptions } from '@uikit/Popover/Popover.types';
+import type { PopoverOptions } from '@uikit/Popover/Popover.types';
 
 export type SelectProps<T> = SingleSelectOptions<T> &
   PopoverOptions &

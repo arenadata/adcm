@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Tag, Tags } from '@uikit';
 import s from './AccessManagerPoliciesTableExpandedContent.module.scss';
-import { AdcmPolicyObject } from '@models/adcm';
+import type { AdcmPolicyObject } from '@models/adcm';
 
 export interface AccessManagerPoliciesTableExpandedContentProps {
   objects: AdcmPolicyObject[];
@@ -23,7 +23,7 @@ const AccessManagerPoliciesTableExpandedContent = ({ objects }: AccessManagerPol
           {objects.length > 0 && (
             <Tags className={s.content__tags}>
               {objects.map((object: AdcmPolicyObject) => (
-                <Tag key={object.id} children={object.displayName} />
+                <Tag key={object.id}>{object.displayName}</Tag>
               ))}
             </Tags>
           )}

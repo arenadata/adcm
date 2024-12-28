@@ -1,5 +1,4 @@
 import { useCallback, useRef, useMemo, useState } from 'react';
-import { IconButton, Tooltip, MarkerIcon } from '@uikit';
 import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import { emptyStringStub, nullStub, secretStub, whiteSpaceStringStub } from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
@@ -11,6 +10,9 @@ import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } fro
 import { isPrimitiveValueSet } from '@models/json';
 import type { FieldErrors } from '@models/adcm';
 import { isWhiteSpaceOnly } from '@utils/validationsUtils';
+import IconButton from '@uikit/IconButton/IconButton';
+import Tooltip from '@uikit/Tooltip/Tooltip';
+import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;

@@ -1,0 +1,36 @@
+:global {
+  body.theme-dark {
+    // default
+    --subjob-node-border-default: var(--color-xdark);
+
+    // failed
+    --subjob-node-border-error: var(--color-dark-red);
+  }
+
+  body.theme-light {
+    // default
+    --subjob-node-border-default: var(--color-xgray-lighter);
+
+    // failed
+    --subjob-node-border-error: var(--color-xred-light);
+  }
+}
+
+.subJobLogCheck {
+  margin: 32px 0;
+
+  &__collapseNode {
+    --subjob-node-border: var(--subjob-node-border-default);
+    // borders
+    --collapse-node-parent-border-color: var(--subjob-node-border-default);
+    --collapse-node-child-border-color: var(--subjob-node-border);
+
+    &_failed {
+      --subjob-node-border: var(--subjob-node-border-error);
+    }
+
+    & > div {
+      width: auto;
+    }
+  }
+}

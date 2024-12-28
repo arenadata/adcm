@@ -2,10 +2,10 @@ import { useCallback, useState } from 'react';
 import ConfigurationTree from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree';
 import AddConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
 import EditConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
-import { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
+import type { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
-import { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
-import { JSONPrimitive, JSONValue } from '@models/json';
+import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
+import type { JSONPrimitive, JSONValue } from '@models/json';
 
 type SelectedNode = {
   node: ConfigurationNodeView;
@@ -67,7 +67,9 @@ const ConfigurationEditor = ({
   const handleValueChange = useCallback(
     (node: ConfigurationNodeView, value: JSONPrimitive) => {
       const newConfiguration = editField(configuration, node.data.path, value);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
@@ -75,7 +77,9 @@ const ConfigurationEditor = ({
   const handleAddEmptyObject = useCallback(
     (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, node.data.fieldSchema.default as JSONValue);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
@@ -92,7 +96,9 @@ const ConfigurationEditor = ({
   const handleClearField = useCallback(
     (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, null);
-      onConfigurationChange(newConfiguration);
+      if (newConfiguration) {
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );

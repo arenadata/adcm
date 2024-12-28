@@ -1,14 +1,17 @@
 /* eslint-disable spellcheck/spell-checker */
-import Table, { TableProps } from './Table';
-import { Meta, StoryObj } from '@storybook/react';
-import { TableColumn } from '@uikit/Table/Table.types';
+import type { TableProps } from './Table';
+import Table from './Table';
+import type { Meta, StoryObj } from '@storybook/react';
+import type { TableColumn } from '@uikit/Table/Table.types';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
 import { orElseGet } from '@utils/checkUtils';
 import IconButton from '@uikit/IconButton/IconButton';
-import React, { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import cn from 'classnames';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { getSortingData } from '@utils/localFilteredData';
 import Statusable from '@uikit/Statusable/Statusable';
 import Checkbox from '@uikit/Checkbox/Checkbox';

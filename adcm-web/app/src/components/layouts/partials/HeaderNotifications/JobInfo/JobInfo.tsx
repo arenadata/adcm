@@ -1,5 +1,5 @@
-import React from 'react';
-import { AdcmJob } from '@models/adcm';
+import type React from 'react';
+import type { AdcmJob } from '@models/adcm';
 import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
@@ -18,12 +18,12 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
   return (
     <table className={s.jobs} data-test="jobs-notification-table">
       {jobs.map((job) => {
-        const jobName = orElseGet(job.displayName || '-');
+        const jobName = orElseGet(job.displayName || null);
         return (
           <tr key={job.id}>
             <td className={s.job__id}>{job.id}</td>
             <td className={s.job__icon}>
-              <JobsStatusIconCell dataTest={'job_status_' + job.status} size={14} status={job.status} />
+              <JobsStatusIconCell dataTest={`job_status_${job.status}`} size={14} status={job.status} />
             </td>
             <td className={s.job__link}>
               <ConditionalWrapper

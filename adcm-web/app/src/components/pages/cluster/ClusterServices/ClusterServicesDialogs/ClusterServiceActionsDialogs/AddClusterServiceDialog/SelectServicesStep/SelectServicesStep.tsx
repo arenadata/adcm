@@ -1,11 +1,18 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useStore } from '@hooks';
 import { FormFieldsContainer, MultiSelectPanel, Spinner } from '@uikit';
-import { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
+import type { AddClusterServicesStepProps } from '../AddClusterServiceDialog.types';
 import ServicesDependenciesWarning from '../ServicesDependenciesWarning/ServicesDependenciesWarning';
 import WarningMessage from '@uikit/WarningMessage/WarningMessage';
 import s from './SelectServicesStep.module.scss';
-import { AdcmServicePrototype } from '@models/adcm';
+import type { AdcmDependOnService, AdcmServicePrototype } from '@models/adcm';
+
+const isDependOnDeselectedServices = (selectedServicesIds: number[], dependOn: AdcmDependOnService[] | null) => {
+  if (!dependOn) return false;
+
+  return dependOn.filter(({ servicePrototype }) => !selectedServicesIds.includes(servicePrototype.id)).length > 0;
+};
 
 const SelectServicesStep: React.FC<AddClusterServicesStepProps> = ({
   formData,
@@ -17,7 +24,9 @@ const SelectServicesStep: React.FC<AddClusterServicesStepProps> = ({
 
   const servicesDependencies = useMemo<AdcmServicePrototype[]>(() => {
     return serviceCandidates.filter(
-      ({ id, dependOn }) => formData.selectedServicesIds.includes(id) && dependOn && dependOn.length > 0,
+      ({ id, dependOn }) =>
+        formData.selectedServicesIds.includes(id) &&
+        isDependOnDeselectedServices(formData.selectedServicesIds, dependOn),
     );
   }, [formData, serviceCandidates]);
 
@@ -61,10 +70,9 @@ const SelectServicesStep: React.FC<AddClusterServicesStepProps> = ({
             />
           )}
           {hasUnacceptedSelectedServices && (
-            <WarningMessage
-              className={s.selectServicesStep__warning}
-              children="Services you selected require you to accept Terms of Agreement"
-            />
+            <WarningMessage className={s.selectServicesStep__warning}>
+              Services you selected require you to accept Terms of Agreement
+            </WarningMessage>
           )}
         </>
       )}

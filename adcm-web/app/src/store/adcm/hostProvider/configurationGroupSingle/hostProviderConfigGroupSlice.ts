@@ -1,5 +1,5 @@
 import { AdcmHostProviderConfigGroupsApi } from '@api';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 

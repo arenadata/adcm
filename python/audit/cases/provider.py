@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import HostProvider
+from cm.models import Provider
 from rest_framework.response import Response
 
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
@@ -25,7 +25,7 @@ from audit.models import (
 def provider_case(
     path: list[str],
     response: Response,
-    deleted_obj: HostProvider,
+    deleted_obj: Provider,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
@@ -43,7 +43,7 @@ def provider_case(
                 name=f"{AuditObjectType.PROVIDER.capitalize()} {AuditLogOperationType.DELETE}d",
                 operation_type=AuditLogOperationType.DELETE,
             )
-            if isinstance(deleted_obj, HostProvider):
+            if isinstance(deleted_obj, Provider):
                 audit_object = get_or_create_audit_obj(
                     object_id=provider_pk,
                     object_name=deleted_obj.name,

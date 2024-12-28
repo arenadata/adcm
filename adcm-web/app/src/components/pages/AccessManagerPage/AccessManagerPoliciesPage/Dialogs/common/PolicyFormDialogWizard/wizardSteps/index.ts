@@ -1,0 +1,8 @@
+import AccessManagerPolicyFormDialogWizardStepOne from './AccessManagerPolicyFormDialogWizardStepOne/AccessManagerPolicyFormDialogWizardStepOne';
+import AccessManagerPolicyFormDialogWizardStepTwo from './AccessManagerPolicyFormDialogWizardStepTwo/AccessManagerPolicyFormDialogWizardStepTwo';
+
+export {
+  //
+  AccessManagerPolicyFormDialogWizardStepOne,
+  AccessManagerPolicyFormDialogWizardStepTwo,
+};

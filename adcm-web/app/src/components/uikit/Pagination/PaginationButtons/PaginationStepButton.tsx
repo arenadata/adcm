@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import cn from 'classnames';
 import s from './PaginationButtons.module.scss';
 import Icon from '@uikit/Icon/Icon';

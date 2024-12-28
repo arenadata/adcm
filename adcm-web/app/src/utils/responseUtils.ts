@@ -1,4 +1,4 @@
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { RequestState } from '@models/loadState';
 
 export const processErrorResponse = (payload: RequestError) => {

@@ -3,7 +3,7 @@ import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
@@ -39,15 +39,15 @@ const JobsTable = () => {
           <TableRow key={job.id}>
             <TableCell>{job.id}</TableCell>
             <JobsStatusCell status={job.status}>
-              <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className="text-link">
+              <Link to={generatePath('/jobs/:jobId', { jobId: `${job.id}` })} className="text-link">
                 {orElseGet(job.displayName || '-')}
               </Link>
             </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
             <JobObjectsCell objects={job.objects} />
-            <TableCell>{secondsToDuration(job.duration)}</TableCell>
-            <DateTimeCell value={job.startTime} />
-            <DateTimeCell value={job.endTime} />
+            <TableCell>{orElseGet(job.duration ?? 0, secondsToDuration)}</TableCell>
+            <DateTimeCell value={job.startTime ?? undefined} />
+            <DateTimeCell value={job.endTime ?? undefined} />
             <TableCell hasIconOnly align="center">
               <IconButton
                 icon="g1-stop"

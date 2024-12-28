@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import ClusterHostsTableFilters from '@pages/cluster/ClusterHosts/ClusterHostsTableToolbar/ClusterHostsTableFilters';

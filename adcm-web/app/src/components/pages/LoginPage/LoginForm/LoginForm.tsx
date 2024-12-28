@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { clearError, login } from '@store/authSlice';
 import Input from '@uikit/Input/Input';

@@ -10,19 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ServiceComponent
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from cm.models import Component
+from django_filters.rest_framework import CharFilter, OrderingFilter
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class ComponentFilter(FilterSet):
+class ComponentFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+    with_object_status=True,
+):
     name = CharFilter(field_name="prototype__name", label="Name", lookup_expr="icontains")
     display_name = CharFilter(field_name="prototype__display_name", label="Display Name", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={"prototype__name": "name", "prototype__display_name": "displayName"},
-        field_labels={"prototype__name": "Name", "prototype__display_name": "Display Name"},
+        field_labels={
+            "prototype__name": "Name",
+            "prototype__display_name": "Display Name",
+        },
         label="ordering",
     )
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id"]

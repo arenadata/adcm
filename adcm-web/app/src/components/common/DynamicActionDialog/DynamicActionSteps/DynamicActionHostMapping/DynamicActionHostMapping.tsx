@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
+import type React from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
@@ -16,8 +17,9 @@ import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/
 import {
   checkComponentActionsMappingAvailability,
   checkHostActionsMappingAvailability,
+  checkHostActionsUnmappingAvailability,
   getComponentMapActions,
-  getDisabledMappings,
+  getInitiallyMappedHostsDictionary,
 } from './DynamicActionHostMapping.utils';
 
 interface DynamicActionHostMappingProps {
@@ -68,7 +70,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   };
 
   const hasErrors = Object.keys(mappingErrors).length > 0;
-  const disabledMappings = useMemo(() => getDisabledMappings(mapping), [mapping]);
+  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mapping), [mapping]);
 
   return (
     <div>
@@ -110,7 +112,15 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                 return checkHostActionsMappingAvailability(
                   host,
                   allowActions,
-                  disabledMappings[componentMapping.component.id],
+                  initiallyMappedHosts[componentMapping.component.id],
+                );
+              };
+
+              const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
+                return checkHostActionsUnmappingAvailability(
+                  host,
+                  allowActions,
+                  initiallyMappedHosts[componentMapping.component.id],
                 );
               };
 
@@ -125,6 +135,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                   onUnmap={handleUnmap}
                   checkComponentMappingAvailability={checkComponentMappingAvailability}
                   checkHostMappingAvailability={checkHostMappingAvailability}
+                  checkHostUnmappingAvailability={checkHostUnmappingAvailability}
                 />
               );
             }),

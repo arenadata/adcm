@@ -1,4 +1,4 @@
-import { IconsNames } from '@uikit/Icon/sprite';
+import type { IconsNames } from '@uikit/Icon/sprite';
 
 export type MarkerIconType = 'alert' | 'warning' | 'check' | 'info';
 export type MarkerVariantType = 'square' | 'round';

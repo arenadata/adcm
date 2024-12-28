@@ -20,6 +20,7 @@ from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
 class JobRepoInterface(Protocol):
     def get_task(self, id: int) -> Task:  # noqa: A002
         """Should raise `NotFoundError` on fail"""
+        ...
 
     def create_task(
         self, target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
@@ -40,6 +41,7 @@ class JobRepoInterface(Protocol):
 
     def get_job(self, id: int) -> Job:  # noqa: A002
         """Should raise `NotFoundError` on fail"""
+        ...
 
     def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
         ...

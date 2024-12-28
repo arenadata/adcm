@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableColumn } from '../Table.types';
+import type { TableColumn } from '../Table.types';
 import TableRow from '../TableRow/TableRow';
 import { TableHeadCell, TableHeadCellCheckbox } from '../TableCell';
 

@@ -1,8 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterMappingApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import {
+import type {
   AdcmError,
   AdcmHostShortView,
   AdcmMapping,
@@ -11,7 +12,8 @@ import {
 } from '@models/adcm';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
-import { ActionState, RequestState } from '@models/loadState';
+import type { ActionState } from '@models/loadState';
+import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
 
 type GetClusterMappingArg = {
@@ -54,6 +56,14 @@ const loadMapping = createAsyncThunk(
   },
 );
 
+const refreshMapping = createAsyncThunk(
+  'adcm/cluster/mapping/refreshMapping',
+  async ({ clusterId }: GetClusterMappingArg, _thunkAPI) => {
+    const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+    return mapping;
+  },
+);
+
 const saveMapping = createAsyncThunk(
   'adcm/cluster/mapping/saveMapping',
   async ({ clusterId, mapping }: SaveClusterMappingArg, thunkAPI) => {
@@ -65,6 +75,14 @@ const saveMapping = createAsyncThunk(
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);
     }
+  },
+);
+
+const saveMappingWithUpdate = createAsyncThunk(
+  'adcm/cluster/mapping/saveMappingWithUpdate',
+  async ({ clusterId, mapping }: SaveClusterMappingArg, thunkAPI) => {
+    await thunkAPI.dispatch(saveMapping({ clusterId, mapping })).unwrap();
+    await thunkAPI.dispatch(refreshMappings({ clusterId }));
   },
 );
 
@@ -80,6 +98,14 @@ const loadMappingHosts = createAsyncThunk(
   },
 );
 
+const refreshMappingHosts = createAsyncThunk(
+  'adcm/cluster/mapping/refreshMappingHosts',
+  async ({ clusterId }: GetClusterMappingArg, _thunkAPI) => {
+    const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+    return hosts;
+  },
+);
+
 const loadMappingComponents = createAsyncThunk(
   'adcm/cluster/mapping/loadMappingComponents',
   async ({ clusterId }: GetClusterMappingArg, thunkAPI) => {
@@ -92,12 +118,31 @@ const loadMappingComponents = createAsyncThunk(
   },
 );
 
+const refreshMappingComponents = createAsyncThunk(
+  'adcm/cluster/mapping/refreshMappingComponents',
+  async ({ clusterId }: GetClusterMappingArg, _thunkAPI) => {
+    const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+    return components;
+  },
+);
+
 const getMappings = createAsyncThunk(
   'adcm/cluster/mapping/getMappings',
   async (arg: GetClusterMappingArg, thunkAPI) => {
     const mapping = await thunkAPI.dispatch(loadMapping(arg));
     const hosts = await thunkAPI.dispatch(loadMappingHosts(arg));
     const components = await thunkAPI.dispatch(loadMappingComponents(arg));
+
+    return { mapping, hosts, components };
+  },
+);
+
+const refreshMappings = createAsyncThunk(
+  'adcm/cluster/mapping/refreshMappings',
+  async (arg: GetClusterMappingArg, thunkAPI) => {
+    const mapping = await thunkAPI.dispatch(refreshMapping(arg));
+    const hosts = await thunkAPI.dispatch(refreshMappingHosts(arg));
+    const components = await thunkAPI.dispatch(refreshMappingComponents(arg));
 
     return { mapping, hosts, components };
   },
@@ -167,10 +212,19 @@ const mappingSlice = createSlice({
     builder.addCase(loadMapping.rejected, (state, action) => {
       state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
     });
+    builder.addCase(refreshMapping.fulfilled, (state, action) => {
+      state.mapping = action.payload;
+    });
     builder.addCase(loadMappingHosts.fulfilled, (state, action) => {
       state.hosts = action.payload;
     });
+    builder.addCase(refreshMappingHosts.fulfilled, (state, action) => {
+      state.hosts = action.payload;
+    });
     builder.addCase(loadMappingComponents.fulfilled, (state, action) => {
+      state.components = action.payload;
+    });
+    builder.addCase(refreshMappingComponents.fulfilled, (state, action) => {
       state.components = action.payload;
     });
     builder.addCase(saveMapping.pending, (state) => {
@@ -195,6 +249,7 @@ const { cleanupMappings, openRequiredServicesDialog, closeRequiredServicesDialog
 export {
   getMappings,
   saveMapping,
+  saveMappingWithUpdate,
   cleanupMappings,
   getNotAddedServices,
   openRequiredServicesDialog,

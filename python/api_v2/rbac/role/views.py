@@ -21,9 +21,13 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
+from cm.models import Cluster, Host, ProductCategory, Provider, Service
 from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    extend_schema_view,
+)
 from guardian.mixins import PermissionListMixin
 from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
@@ -44,7 +48,13 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.permissions import RolePermissions
-from api_v2.rbac.role.serializers import RoleCreateSerializer, RoleSerializer, RoleUpdateSerializer
+from api_v2.rbac.role.serializers import (
+    RoleCategoriesSerializer,
+    RoleCreateSerializer,
+    RoleObjectCandidatesSerializer,
+    RoleSerializer,
+    RoleUpdateSerializer,
+)
 from api_v2.utils.audit import retrieve_role_children, role_from_lookup, role_from_response, update_role_name
 from api_v2.views import ADCMGenericViewSet
 
@@ -57,11 +67,18 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(name="name", description="Case insensitive and partial filter by role name."),
+            OpenApiParameter(
+                name="categories",
+                description="List of categories in the role.",
+            ),
+            OpenApiParameter(
+                name="type",
+                description="Type of the role.",
+                enum=("business", "role"),
+            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=("displayName", "-displayName"),
                 default="displayName",
             ),
@@ -93,22 +110,6 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="patchRole",
         description="Change information about the ADCM user role.",
         summary="PATCH role",
-        parameters=[
-            OpenApiParameter(
-                name="displayName",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="The new name of the role.",
-            ),
-            OpenApiParameter(
-                name="description",
-                type=str,
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="The new description of the role.",
-            ),
-        ],
         responses={
             HTTP_200_OK: RoleCreateSerializer,
             **{
@@ -131,7 +132,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Get information about objects which are might be chosen in policy for concrete role.",
         summary="GET Candidate",
         responses={
-            HTTP_200_OK: OpenApiResponse(response={"cluster": [], "provider": [], "service": [], "host": []}),
+            HTTP_200_OK: RoleObjectCandidatesSerializer,
             HTTP_403_FORBIDDEN: ErrorSerializer,
         },
     ),
@@ -140,7 +141,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Get information about objects which are might be chosen in policy for concrete role.",
         summary="GET Candidate",
         responses={
-            HTTP_200_OK: OpenApiResponse(response=[ProductCategory.value]),
+            HTTP_200_OK: RoleCategoriesSerializer,
             HTTP_403_FORBIDDEN: ErrorSerializer,
         },
     ),
@@ -168,8 +169,12 @@ class RoleViewSet(
         if self.action == "create":
             return RoleCreateSerializer
 
-        if self.action == "partial_update":
+        elif self.action == "partial_update":
             return RoleUpdateSerializer
+        elif self.action == "categories":
+            return RoleCategoriesSerializer
+        elif self.action == "object_candidates":
+            return RoleObjectCandidatesSerializer
 
         return RoleSerializer
 
@@ -219,9 +224,11 @@ class RoleViewSet(
 
         return super().destroy(request, *args, **kwargs)
 
-    @action(methods=["get"], detail=False)
+    @action(methods=["get"], detail=False, pagination_class=None)
     def categories(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
-        return Response(data=sorted(category.value for category in ProductCategory.objects.all()), status=HTTP_200_OK)
+        serializer = self.get_serializer(data=sorted(ProductCategory.objects.values_list("value", flat=True)))
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=HTTP_200_OK)
 
     @action(methods=["get"], detail=True, url_path="object-candidates", url_name="object-candidates")
     def object_candidates(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
@@ -244,7 +251,7 @@ class RoleViewSet(
                 )
 
         if RBACObjectType.PROVIDER.value in role.parametrized_by_type:
-            for provider in HostProvider.objects.all():
+            for provider in Provider.objects.all():
                 providers.append(
                     {
                         "name": provider.display_name,
@@ -266,7 +273,7 @@ class RoleViewSet(
             or RBACObjectType.COMPONENT.value in role.parametrized_by_type
         ):
             _services = defaultdict(list)
-            for service in ClusterObject.objects.all():
+            for service in Service.objects.all():
                 _services[service].append(
                     {
                         "name": service.cluster.name,
@@ -282,11 +289,14 @@ class RoleViewSet(
                     },
                 )
 
-        return Response(
-            {
+        serializer = self.get_serializer(
+            data={
                 "cluster": sorted(clusters, key=lambda x: x["name"]),
                 "provider": sorted(providers, key=lambda x: x["name"]),
                 "service": sorted(services, key=lambda x: x["name"]),
                 "host": sorted(hosts, key=lambda x: x["name"]),
-            },
+            }
         )
+        serializer.is_valid(raise_exception=True)
+
+        return Response(data=serializer.data, status=HTTP_200_OK)

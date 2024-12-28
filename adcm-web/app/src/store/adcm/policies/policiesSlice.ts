@@ -4,10 +4,11 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmObjectCandidates, AdcmPolicy } from '@models/adcm/policy';
-import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, AdcmPoliciesApi, RequestError } from '@api';
-import { SortParams } from '@models/table';
-import { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
+import type { AdcmObjectCandidates, AdcmPolicy } from '@models/adcm/policy';
+import type { RequestError } from '@api';
+import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, AdcmPoliciesApi } from '@api';
+import type { SortParams } from '@models/table';
+import type { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
 import { LoadState } from '@models/loadState';
 
 interface AdcmPoliciesState {
@@ -24,7 +25,7 @@ interface AdcmPoliciesState {
   };
 }
 
-const loadPoliciesFromBackend = createAsyncThunk('adcm/policies/loadPoliciesFromBackend', async (arg, thunkAPI) => {
+const loadPoliciesFromBackend = createAsyncThunk('adcm/policies/loadPoliciesFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       policiesTable: { filter, paginationParams, sortParams },
@@ -40,7 +41,7 @@ const loadPoliciesFromBackend = createAsyncThunk('adcm/policies/loadPoliciesFrom
   }
 });
 
-const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, thunkAPI) => {
+const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -55,7 +56,7 @@ const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, th
   });
 });
 
-const refreshPolicies = createAsyncThunk('adcm/policies/refreshPolicies', async (arg, thunkAPI) => {
+const refreshPolicies = createAsyncThunk('adcm/policies/refreshPolicies', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadPoliciesFromBackend());
 });
 
@@ -86,7 +87,7 @@ const loadObjectCandidates = createAsyncThunk(
   },
 );
 
-const loadClusters = createAsyncThunk('adcm/policies/loadClusters', async (arg, thunkAPI) => {
+const loadClusters = createAsyncThunk('adcm/policies/loadClusters', async (_arg, thunkAPI) => {
   try {
     const clusters = await AdcmClustersApi.getClusters();
     return clusters.results;
@@ -95,7 +96,7 @@ const loadClusters = createAsyncThunk('adcm/policies/loadClusters', async (arg, 
   }
 });
 
-const loadHosts = createAsyncThunk('adcm/policies/loadHosts', async (arg, thunkAPI) => {
+const loadHosts = createAsyncThunk('adcm/policies/loadHosts', async (_arg, thunkAPI) => {
   try {
     const hosts = await AdcmHostsApi.getHosts();
     return hosts.results;
@@ -104,7 +105,7 @@ const loadHosts = createAsyncThunk('adcm/policies/loadHosts', async (arg, thunkA
   }
 });
 
-const loadHostProviders = createAsyncThunk('adcm/policies/loadHostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/policies/loadHostProviders', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };

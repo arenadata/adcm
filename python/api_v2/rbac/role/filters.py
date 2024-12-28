@@ -12,15 +12,24 @@
 
 from django.db.models import Q, QuerySet
 from django_filters import CharFilter, ChoiceFilter, OrderingFilter
-from django_filters.rest_framework import FilterSet
 from rbac.models import Role, RoleTypes
 
+from api_v2.filters import AdvancedFilterSet
 
-class RoleFilter(FilterSet):
-    display_name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
+
+class RoleFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name", "type"),
+    number_fields=("id",),
+):
+    display_name = CharFilter(
+        field_name="display_name",
+        label="Case insensitive and partial filter by role display name.",
+        lookup_expr="icontains",
+    )
     categories = CharFilter(label="Categories", method="filter_category")
-    ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
     type = ChoiceFilter(choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN])
+    ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
 
     @staticmethod
     def filter_category(queryset: QuerySet, name: str, value: str):  # noqa: ARG001, ARG004
@@ -28,4 +37,4 @@ class RoleFilter(FilterSet):
 
     class Meta:
         model = Role
-        fields = ["type"]
+        fields = ["display_name", "categories", "type", "ordering"]

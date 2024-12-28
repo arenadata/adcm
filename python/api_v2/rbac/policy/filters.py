@@ -10,11 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from django_filters.rest_framework import CharFilter, OrderingFilter
 from rbac.models import Policy
 
+from api_v2.filters import AdvancedFilterSet
 
-class PolicyFilter(FilterSet):
+
+class PolicyFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=("id",),
+):
     name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={"name": "name"},

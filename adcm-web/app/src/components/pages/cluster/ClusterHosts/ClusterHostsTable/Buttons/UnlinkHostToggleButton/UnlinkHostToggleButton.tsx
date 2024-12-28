@@ -1,7 +1,7 @@
-import React from 'react';
+import type React from 'react';
 import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
-import { AdcmHost } from '@models/adcm';
+import type { AdcmHost } from '@models/adcm';
 import { openUnlinkDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 interface LinkHostProps {
@@ -12,8 +12,8 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
   const dispatch = useDispatch();
 
   const handleLinkClick = () => {
-    if (host.cluster?.id) {
-      dispatch(openUnlinkDialog(host.id));
+    if (host) {
+      dispatch(openUnlinkDialog(host));
     }
   };
 

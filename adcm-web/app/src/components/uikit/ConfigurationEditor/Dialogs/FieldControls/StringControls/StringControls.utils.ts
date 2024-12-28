@@ -1,4 +1,4 @@
-import { SingleSchemaDefinition } from '@models/adcm';
+import type { SingleSchemaDefinition } from '@models/adcm';
 import { getPatternErrorMessage } from '@utils/jsonSchema/jsonSchemaUtils';
 
 export const validate = (value: string, fieldSchema: SingleSchemaDefinition): string | undefined => {
@@ -9,7 +9,7 @@ export const validate = (value: string, fieldSchema: SingleSchemaDefinition): st
       if (!re.test(value)) {
         error = getPatternErrorMessage(fieldSchema.pattern);
       }
-    } catch (e) {
+    } catch (_e) {
       return 'invalid pattern';
     }
   }

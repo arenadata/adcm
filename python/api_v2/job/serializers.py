@@ -18,8 +18,8 @@ from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializ
 
 class JobRetrieveSerializer(JobListSerializer):
     parent_task = TaskRetrieveByJobSerializer(source="task", allow_null=True)
-    start_time = DateTimeField(source="start_date")
-    end_time = DateTimeField(source="finish_date")
+    start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
+    end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
 
     class Meta:
         model = JobLog

@@ -1,6 +1,7 @@
-import { AdcmClusterHostsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterHostsApi } from '@api';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmServiceComponent } from '@models/adcm';
+import type { AdcmServiceComponent } from '@models/adcm';
 import { LoadState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';

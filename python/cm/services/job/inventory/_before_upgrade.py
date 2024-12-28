@@ -22,15 +22,15 @@ from django.db.models import F, JSONField, Q, Value
 from cm.converters import core_type_to_db_record_type, db_record_type_to_core_type
 from cm.models import (
     Cluster,
-    ClusterObject,
+    Component,
     Host,
-    HostProvider,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import retrieve_flat_spec_for_objects
-from cm.services.group_config import GroupConfigInfo, GroupConfigName
+from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.inventory._types import ObjectsInInventoryMap
 
@@ -49,7 +49,7 @@ class ProcessedBeforeUpgrade:
     prototype_name: str | tuple[str, str] | None = None
     config_id: int | None = None
     bundle_id: int | None = None
-    group_configs_info: dict[GroupConfigName, ConfigID] = field(default_factory=dict)
+    config_host_groups_info: dict[ConfigHostGroupName, ConfigID] = field(default_factory=dict)
 
 
 def extract_objects_before_upgrade(
@@ -72,10 +72,10 @@ def extract_objects_before_upgrade(
             )
             for orm_type, core_type in (
                 (Cluster, ADCMCoreType.CLUSTER),
-                (ClusterObject, ADCMCoreType.SERVICE),
-                (ServiceComponent, ADCMCoreType.COMPONENT),
+                (Service, ADCMCoreType.SERVICE),
+                (Component, ADCMCoreType.COMPONENT),
                 (Host, ADCMCoreType.HOST),
-                (HostProvider, ADCMCoreType.HOSTPROVIDER),
+                (Provider, ADCMCoreType.PROVIDER),
             )
         ),
     )
@@ -100,7 +100,7 @@ def extract_objects_before_upgrade(
             if not row["service_name"]
             else (row["service_name"], row["prototype_name"]),
             bundle_id=raw_before_upgrade.get("bundle_id", row["parent_before_upgrade"].get("bundle_id")),
-            group_configs_info={
+            config_host_groups_info={
                 group_name: int(group_info["group_config_id"])
                 for group_name, group_info in raw_before_upgrade.get("groups", {}).items()
             },
@@ -110,12 +110,13 @@ def extract_objects_before_upgrade(
 
 
 def get_before_upgrades(
-    before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade], group_configs: Iterable[GroupConfigInfo] = ()
-) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict]:
+    before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade],
+    config_host_groups: Iterable[ConfigHostGroupInfo] = (),
+) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict]:
     required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]] = defaultdict(set)
-    required_configs: dict[[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName]], ConfigID] = {}
+    required_configs: dict[[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName]], ConfigID] = {}
 
-    result: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict] = {}
+    result: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict] = {}
 
     for object_, before_upgrade_info in before_upgrades.items():
         if before_upgrade_info.is_default:
@@ -131,8 +132,8 @@ def get_before_upgrades(
         if before_upgrade_info.config_id:
             required_configs[object_] = before_upgrade_info.config_id
 
-        for group_config_name, config_id in before_upgrade_info.group_configs_info.items():
-            required_configs[object_, group_config_name] = config_id
+        for host_group_name, config_id in before_upgrade_info.config_host_groups_info.items():
+            required_configs[object_, host_group_name] = config_id
 
     if not (required_configs and required_prototypes):
         for missed_key in set(before_upgrades) - result.keys():
@@ -167,8 +168,8 @@ def get_before_upgrades(
     }
     specifications_for_prototypes = retrieve_flat_spec_for_objects(prototypes=existing_prototypes.values())
 
-    group_config_name_id_map: dict[GroupConfigName, ObjectID] = {
-        group_info.name: group_info.id for group_info in group_configs
+    host_group_name_id_map: dict[ConfigHostGroupName, ObjectID] = {
+        group_info.name: group_info.id for group_info in config_host_groups
     }
 
     for unprocessed_object, before_upgrade_info in (
@@ -200,8 +201,8 @@ def get_before_upgrades(
             config_owner=unprocessed_object,
         )
 
-        for group_config_name, config_id in before_upgrade_info.group_configs_info.items():
-            if group_config_name not in group_config_name_id_map:
+        for host_group_name, config_id in before_upgrade_info.config_host_groups_info.items():
+            if host_group_name not in host_group_name_id_map:
                 # if group for some reason doesn't exist in "inventory scope" it's of no interest to us
                 continue
 
@@ -211,14 +212,14 @@ def get_before_upgrades(
                 # here nothing should be added to result dict
                 continue
 
-            result[unprocessed_object, group_config_name] = {
+            result[unprocessed_object, host_group_name] = {
                 "state": before_upgrade_info.before_upgrade.get("state"),
                 "config": update_configuration_for_inventory_inplace(
                     configuration=configuration,
                     attributes=attributes,
                     specification=specification,
                     config_owner=unprocessed_object,
-                    group_config_id=group_config_name_id_map[group_config_name],
+                    config_host_group_id=host_group_name_id_map[host_group_name],
                 ),
             }
 

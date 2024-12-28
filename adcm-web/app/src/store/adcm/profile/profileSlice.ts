@@ -1,6 +1,6 @@
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { AdcmProfileApi } from '@api/adcm/profile';
-import { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile';
+import type { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile';
 import { createSlice } from '@reduxjs/toolkit';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
@@ -11,7 +11,7 @@ interface AdcmProfileState {
   profile: AdcmProfileUser;
 }
 
-const getProfile = createAsyncThunk('adcm/profile', async (arg, thunkAPI) => {
+const getProfile = createAsyncThunk('adcm/profile', async (_arg, thunkAPI) => {
   try {
     return await AdcmProfileApi.getProfile();
   } catch (error) {

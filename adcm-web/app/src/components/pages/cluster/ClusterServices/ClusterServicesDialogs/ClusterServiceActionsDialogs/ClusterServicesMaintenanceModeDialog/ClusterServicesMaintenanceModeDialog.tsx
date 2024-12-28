@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
@@ -7,12 +7,7 @@ import { toggleMaintenanceMode, closeMaintenanceModeDialog } from '@store/adcm/c
 const ClusterServicesMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const clusterService = useStore(({ adcm }) => {
-    return (
-      adcm.services.services.find(({ id }) => id === adcm.servicesActions.maintenanceModeDialog.service?.id) ?? null
-    );
-  });
-
+  const clusterService = useStore(({ adcm }) => adcm.servicesActions.maintenanceModeDialog.service);
   const clusterId = clusterService?.cluster.id;
   const clusterServiceId = clusterService?.id;
 

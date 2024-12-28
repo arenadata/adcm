@@ -1,4 +1,4 @@
-import { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
+import type { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
 import {
   editField,
   addField,
@@ -214,6 +214,6 @@ describe('removeEmpty', () => {
     field4: [1, 2, 3, {}],
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
   expect(removeEmpty(sample as any)).toStrictEqual(expected);
 });

@@ -1,10 +1,12 @@
 import { httpClient } from '@api/httpClient';
-import { PaginationParams, SortParams } from '@models/table';
-import { Batch, AdcmJobsFilter, AdcmJob, AdcmJobLogItem, AdcmTask } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
+import type { Batch, AdcmJobsFilter, AdcmSubJobLogItem, AdcmJob, AdcmSubJobDetails } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmJobsApi {
+  // Jobs (backend tasks)
+
   public static async getJobs(filter: AdcmJobsFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
@@ -14,17 +16,7 @@ export class AdcmJobsApi {
   }
 
   public static async getJob(id: number) {
-    const response = await httpClient.get<AdcmJob>(`/api/v2/jobs/${id}/`);
-    return response.data;
-  }
-
-  public static async getJobLog(id: number) {
-    const response = await httpClient.get<AdcmJobLogItem[]>(`/api/v2/jobs/${id}/logs/`);
-    return response.data;
-  }
-
-  public static async getTask(id: number) {
-    const response = await httpClient.get<AdcmTask>(`/api/v2/tasks/${id}/`);
+    const response = await httpClient.get<AdcmJob>(`/api/v2/tasks/${id}/`);
     return response.data;
   }
 
@@ -32,7 +24,19 @@ export class AdcmJobsApi {
     await httpClient.post(`/api/v2/tasks/${id}/terminate/`);
   }
 
-  public static async stopChildJob(childJobId: number) {
-    await httpClient.post(`/api/v2/jobs/${childJobId}/terminate/`);
+  // Sub jobs (backend jobs)
+
+  public static async getSubJob(id: number) {
+    const response = await httpClient.get<AdcmSubJobDetails>(`/api/v2/jobs/${id}/`);
+    return response.data;
+  }
+
+  public static async getSubJobLog(id: number) {
+    const response = await httpClient.get<AdcmSubJobLogItem[]>(`/api/v2/jobs/${id}/logs/`);
+    return response.data;
+  }
+
+  public static async stopSubJob(id: number) {
+    await httpClient.post(`/api/v2/jobs/${id}/terminate/`);
   }
 }

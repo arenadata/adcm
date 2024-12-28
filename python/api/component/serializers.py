@@ -12,7 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import MAINTENANCE_MODE_BOTH_CASES_CHOICES, Action, ServiceComponent
+from cm.models import MAINTENANCE_MODE_BOTH_CASES_CHOICES, Action, Component
 from cm.status_api import get_component_status
 from rest_framework.serializers import (
     BooleanField,
@@ -27,7 +27,7 @@ from rest_framework.serializers import (
 
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.config_host_group.serializers import CHGsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, filter_actions
 
@@ -45,7 +45,7 @@ class ComponentSerializer(EmptySerializer):
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
 
-    def to_representation(self, instance: ServiceComponent) -> dict:
+    def to_representation(self, instance: Component) -> dict:
         data = super().to_representation(instance=instance)
         data["maintenance_mode"] = data["maintenance_mode"].upper()
 
@@ -63,11 +63,11 @@ class ComponentUISerializer(ComponentSerializer):
     )
 
     @staticmethod
-    def get_version(obj: ServiceComponent) -> str:
+    def get_version(obj: Component) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_status(obj: ServiceComponent) -> int:
+    def get_status(obj: Component) -> int:
         return get_component_status(obj)
 
 
@@ -100,10 +100,10 @@ class ComponentDetailSerializer(ComponentSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
+    group_config = CHGsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
-    def get_status(obj: ServiceComponent) -> int:
+    def get_status(obj: Component) -> int:
         return get_component_status(obj)
 
 
@@ -113,7 +113,7 @@ class ComponentStatusSerializer(EmptySerializer):
     status = SerializerMethodField()
 
     @staticmethod
-    def get_status(obj: ServiceComponent) -> int:
+    def get_status(obj: Component) -> int:
         return get_component_status(obj)
 
 
@@ -136,11 +136,11 @@ class ComponentDetailUISerializer(ComponentDetailSerializer):
         return acts.data
 
     @staticmethod
-    def get_version(obj: ServiceComponent) -> str:
+    def get_version(obj: Component) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_main_info(obj: ServiceComponent) -> str | None:
+    def get_main_info(obj: Component) -> str | None:
         return get_main_info(obj)
 
 
@@ -148,14 +148,14 @@ class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
     maintenance_mode = ChoiceField(choices=MAINTENANCE_MODE_BOTH_CASES_CHOICES)
 
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ("maintenance_mode",)
 
     @staticmethod
     def validate_maintenance_mode(value: str) -> str:
         return value.lower()
 
-    def to_representation(self, instance: ServiceComponent) -> dict:
+    def to_representation(self, instance: Component) -> dict:
         data = super().to_representation(instance=instance)
         data["maintenance_mode"] = data["maintenance_mode"].upper()
 
@@ -164,10 +164,10 @@ class ComponentChangeMaintenanceModeSerializer(ModelSerializer):
 
 class ComponentAuditSerializer(ModelSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ("maintenance_mode",)
 
-    def to_representation(self, instance: ServiceComponent) -> dict:
+    def to_representation(self, instance: Component) -> dict:
         data = super().to_representation(instance=instance)
         data["maintenance_mode"] = data["maintenance_mode"].upper()
 

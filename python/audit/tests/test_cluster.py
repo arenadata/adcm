@@ -20,16 +20,16 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
+    Component,
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
-    ServiceComponent,
+    Provider,
+    Service,
     Upgrade,
 )
 from django.conf import settings
@@ -62,7 +62,7 @@ class TestClusterAudit(BaseTestCase):
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
 
         config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 
@@ -72,13 +72,13 @@ class TestClusterAudit(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(
+        self.service = Service.objects.create(
             prototype=self.service_prototype,
             cluster=self.cluster,
         )
 
         provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=provider_prototype,
         )
@@ -109,7 +109,7 @@ class TestClusterAudit(BaseTestCase):
     def check_log(
         self,
         log: AuditLog,
-        obj: Cluster | Host | HostComponent | ClusterObject | ServiceComponent,
+        obj: Cluster | Host | HostComponent | Service | Component,
         obj_name: str,
         obj_type: AuditObjectType,
         operation_name: str,
@@ -182,10 +182,10 @@ class TestClusterAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
-    def get_sc(self) -> ServiceComponent:
+    def get_sc(self) -> Component:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
-        return ServiceComponent.objects.create(
+        return Component.objects.create(
             cluster=self.cluster,
             service=self.service,
             prototype=service_component_prototype,
@@ -204,7 +204,7 @@ class TestClusterAudit(BaseTestCase):
         PrototypeExport.objects.create(prototype=service_prototype, name="service_export")
 
         cluster = Cluster.objects.create(prototype=cluster_prototype, name="Export cluster")
-        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        service = Service.objects.create(prototype=service_prototype, cluster=cluster)
 
         PrototypeImport.objects.create(prototype=self.cluster_prototype, name="Export_cluster")
         PrototypeImport.objects.create(prototype=self.cluster_prototype, name="Export_service")
@@ -213,16 +213,16 @@ class TestClusterAudit(BaseTestCase):
 
         return cluster, service
 
-    def get_component(self) -> tuple[ServiceComponent, ConfigLog]:
+    def get_component(self) -> tuple[Component, ConfigLog]:
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
         prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
         return (
-            ServiceComponent.objects.create(
+            Component.objects.create(
                 cluster=self.cluster,
                 service=self.service,
                 prototype=prototype,
@@ -348,7 +348,7 @@ class TestClusterAudit(BaseTestCase):
             type="service",
             display_name="new_test_service",
         )
-        service = ClusterObject.objects.create(
+        service = Service.objects.create(
             prototype=service_prototype,
             cluster_id=cluster_1.pk,
         )
@@ -391,7 +391,7 @@ class TestClusterAudit(BaseTestCase):
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_failed(self):
-        cluster_pks = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
+        cluster_pks = Service.objects.all().values_list("pk", flat=True).order_by("-pk")
         res = self.client.delete(path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -1334,7 +1334,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update_service_config(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1365,7 +1365,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_update_service_config_denied(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1591,7 +1591,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_service_config_restore(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 
@@ -1622,7 +1622,7 @@ class TestClusterAudit(BaseTestCase):
 
     def test_service_config_restore_denied(self):
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 

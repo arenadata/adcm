@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmAuditOperation } from '@models/adcm/audit';
+import type { AdcmAuditOperation } from '@models/adcm/audit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -13,7 +13,7 @@ type AdcmAuditOperationsState = {
   loadState: LoadState;
 };
 
-const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOperations', async (arg, thunkAPI) => {
+const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOperations', async (_arg, thunkAPI) => {
   const {
     adcm: {
       auditOperationsTable: { filter, sortParams, paginationParams },
@@ -34,7 +34,7 @@ const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOper
   }
 });
 
-const getAuditOperations = createAsyncThunk('adcm/auditOperations/getAuditOperations', async (arg, thunkAPI) => {
+const getAuditOperations = createAsyncThunk('adcm/auditOperations/getAuditOperations', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -51,7 +51,7 @@ const getAuditOperations = createAsyncThunk('adcm/auditOperations/getAuditOperat
 
 const refreshAuditOperations = createAsyncThunk(
   'adcm/auditOperations/refreshAuditOperations',
-  async (arg, thunkAPI) => {
+  async (_arg, thunkAPI) => {
     thunkAPI.dispatch(loadAuditOperations());
   },
 );

@@ -19,10 +19,10 @@ from yaml import safe_load
 from cm.models import (
     Action,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     PrototypeConfig,
-    ServiceComponent,
+    Service,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_related_cluster_topology
@@ -33,7 +33,7 @@ from cm.services.template import TemplateBuilder
 
 
 def get_jinja_config(
-    action: Action, cluster_relative_object: Cluster | ClusterObject | ServiceComponent | Host
+    action: Action, cluster_relative_object: Cluster | Service | Component | Host
 ) -> tuple[list[PrototypeConfig], dict[str, Any]]:
     resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
     jinja_conf_file = resolver.resolve(action.config_jinja)
@@ -46,6 +46,7 @@ def get_jinja_config(
             ),
             "action": get_action_info(action=action),
         },
+        bundle_path=resolver.bundle_root,
     )
 
     configs = []

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Tag, IconButton } from '@uikit';
 
 export interface MappedHostProps {

@@ -2,7 +2,8 @@ import type { ListState, SortParams } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import type { AdcmClusterHostsFilter } from '@models/adcm/clusterHosts';
 import type { AdcmHostProvider, AdcmMappingComponent } from '@models/adcm';
-import { AdcmClusterMappingApi, AdcmHostProvidersApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterMappingApi, AdcmHostProvidersApi } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 
@@ -10,7 +11,7 @@ interface ClusterHostComponentsPayload {
   clusterId: number;
 }
 
-const loadHostProviders = createAsyncThunk('adcm/clusterHostsTable/hostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/clusterHostsTable/hostProviders', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };

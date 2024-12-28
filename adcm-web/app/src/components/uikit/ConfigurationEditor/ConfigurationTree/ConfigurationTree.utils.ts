@@ -1,4 +1,4 @@
-import {
+import type {
   ConfigurationData,
   ConfigurationSchema,
   SchemaDefinition,
@@ -9,8 +9,8 @@ import {
   FieldAttributes,
   FieldErrors,
 } from '@models/adcm';
-import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
-import {
+import type { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
+import type {
   ConfigurationObject,
   ConfigurationNode,
   ConfigurationTreeFilter,
@@ -90,7 +90,7 @@ export const filterConfigurationErrors = (errors: ConfigurationErrors, attribute
     if (fieldSchema.type === 'string' && fieldSchema.adcmMeta.isSecret) {
       const fieldValue = fieldErrors.value as string;
       const isIgnoredKeyword =
-        fieldErrors.messages['pattern'] || fieldErrors.messages['minLength'] || fieldErrors.messages['maxLength'];
+        fieldErrors.messages.pattern || fieldErrors.messages.minLength || fieldErrors.messages.maxLength;
 
       // ignore hashed secrets from backend
       if (isIgnoredKeyword && fieldValue.startsWith(secretFieldValuePrefixToIgnore)) {

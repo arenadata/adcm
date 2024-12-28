@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader';
 import { useDispatch, useStore } from '@hooks';
 import { useServiceConfigGroupSingle } from './useServiceConfigGroupSingle';

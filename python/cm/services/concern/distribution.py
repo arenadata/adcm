@@ -24,8 +24,8 @@ from core.types import (
     ConcernID,
     CoreObjectDescriptor,
     HostID,
-    HostProviderID,
     ObjectID,
+    ProviderID,
     ServiceID,
 )
 from django.contrib.contenttypes.models import ContentType
@@ -34,13 +34,13 @@ from django.db.models import Q
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import (
     Cluster,
-    ClusterObject,
+    Component,
     ConcernItem,
     ConcernType,
     Host,
     HostComponent,
-    HostProvider,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 
 # PUBLIC redistribute_issues_and_flags
@@ -49,7 +49,7 @@ from cm.models import (
 TopologyObjectMap: TypeAlias = dict[ADCMCoreType, tuple[ObjectID, ...]]
 OwnObjectConcernMap: TypeAlias = dict[ADCMCoreType, dict[ObjectID, set[ConcernID]]]
 AffectedObjectConcernMap: TypeAlias = OwnObjectConcernMap
-ProviderHostMap: TypeAlias = dict[HostProviderID, set[HostID]]
+ProviderHostMap: TypeAlias = dict[ProviderID, set[HostID]]
 
 
 def redistribute_issues_and_flags(
@@ -84,19 +84,19 @@ def redistribute_issues_and_flags(
 
     # Step #2. Find difference before-after in concern relations state
 
-    # For difference, we exclude concerns that came from host/hostprovider on hosts
+    # For difference, we exclude concerns that came from host/provider on hosts
     # to ensure they aren't deleted/added
-    hostprovider_hierarchy_concerns = objects_concerns.get(ADCMCoreType.HOST, {})
+    provider_hierarchy_concerns = objects_concerns.get(ADCMCoreType.HOST, {})
     full_distribution = _calculate_concerns_distribution_for_topology(
         topology=topology, objects_concerns=objects_concerns
     )
     added, removed = _find_distribution_difference(
         old=_retrieve_current_concerns_distribution(
             topology_objects=topology_objects,
-            hosts_existing_concerns=hostprovider_hierarchy_concerns,
+            hosts_existing_concerns=provider_hierarchy_concerns,
         ),
         new=_remove_host_hierarchy_links_from_hosts(
-            concerns=full_distribution, hosts_existing_concerns=hostprovider_hierarchy_concerns
+            concerns=full_distribution, hosts_existing_concerns=provider_hierarchy_concerns
         ),
     )
 
@@ -112,20 +112,20 @@ def _retrieve_concerns_of_objects_in_topology(
     objects_concerns = _get_own_concerns_of_objects(
         with_types=(ConcernType.ISSUE, ConcernType.FLAG),
         clusters=topology_objects[ADCMCoreType.CLUSTER],
-        hosts=topology_objects[ADCMCoreType.HOST],
         services=topology_objects[ADCMCoreType.SERVICE],
         components=topology_objects[ADCMCoreType.COMPONENT],
-        hostproviders=set(provider_host_mapping),
+        hosts=topology_objects[ADCMCoreType.HOST],
+        providers=set(provider_host_mapping),
     )
 
     if not objects_concerns:
         # nothing to redistribute, expected that no links will be found too
         return objects_concerns
 
-    if ADCMCoreType.HOSTPROVIDER in objects_concerns:
-        # Merge HostProvider concerns to corresponding hosts so the passing of concerns will go smoothly
+    if ADCMCoreType.PROVIDER in objects_concerns:
+        # Merge Provider concerns to corresponding hosts so the passing of concerns will go smoothly
         # without need to extract provider's concerns for each host-component relation
-        for provider_id, concerns in objects_concerns.pop(ADCMCoreType.HOSTPROVIDER).items():
+        for provider_id, concerns in objects_concerns.pop(ADCMCoreType.PROVIDER).items():
             for host_id in provider_host_mapping[provider_id]:
                 objects_concerns[ADCMCoreType.HOST][host_id] |= concerns
 
@@ -188,7 +188,7 @@ def _retrieve_current_concerns_distribution(
     }
 
     # ADCMCoreType.HOST is a special case,
-    # because we really don't want to work with own host / hostprovider concerns here
+    # because we really don't want to work with own host / provider concerns here
     for core_type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
         orm_model = core_type_to_model(core_type)
         id_field = f"{orm_model.__name__.lower()}_id"
@@ -201,10 +201,10 @@ def _retrieve_current_concerns_distribution(
             concern_links[core_type][object_id].add(concern_id)
 
     # handle hosts links
-    hostprovider_hierarchy_concerns = set(chain.from_iterable(hosts_existing_concerns.values()))
+    provider_hierarchy_concerns = set(chain.from_iterable(hosts_existing_concerns.values()))
     for object_id, concern_id in (
         Host.concerns.through.objects.filter(host_id__in=topology_objects[ADCMCoreType.HOST])
-        .exclude(Q(concernitem_id__in=hostprovider_hierarchy_concerns) | Q(concernitem__type=ConcernType.LOCK))
+        .exclude(Q(concernitem_id__in=provider_hierarchy_concerns) | Q(concernitem__type=ConcernType.LOCK))
         .values_list("host_id", "concernitem_id")
     ):
         concern_links[ADCMCoreType.HOST][object_id].add(concern_id)
@@ -286,10 +286,10 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
     match owner.type:
         case ADCMCoreType.CLUSTER:
             targets[ADCMCoreType.SERVICE] |= set(
-                ClusterObject.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
+                Service.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
             )
             targets[ADCMCoreType.COMPONENT] |= set(
-                ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
+                Component.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
             )
             targets[ADCMCoreType.HOST] |= set(
                 HostComponent.objects.values_list("host_id", flat=True).filter(cluster_id=owner.id)
@@ -300,14 +300,12 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
                 HostComponent.objects.values_list("host_id", flat=True).filter(service_id=owner.id)
             )
             targets[ADCMCoreType.COMPONENT] |= set(
-                ServiceComponent.objects.values_list("id", flat=True).filter(service_id=owner.id)
+                Component.objects.values_list("id", flat=True).filter(service_id=owner.id)
             )
-            targets[ADCMCoreType.CLUSTER].add(
-                ClusterObject.objects.values_list("cluster_id", flat=True).get(id=owner.id)
-            )
+            targets[ADCMCoreType.CLUSTER].add(Service.objects.values_list("cluster_id", flat=True).get(id=owner.id))
 
         case ADCMCoreType.COMPONENT:
-            cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(id=owner.id)
+            cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=owner.id)
 
             targets[ADCMCoreType.CLUSTER].add(cluster_id)
             targets[ADCMCoreType.SERVICE].add(service_id)
@@ -324,7 +322,7 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
                 targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
                 targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
 
-        case ADCMCoreType.HOSTPROVIDER:
+        case ADCMCoreType.PROVIDER:
             targets[ADCMCoreType.HOST] |= set(Host.objects.values_list("id", flat=True).filter(provider_id=owner.id))
 
             hc_records = tuple(
@@ -336,7 +334,8 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
                 targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
                 targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
                 targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
-
+        case ADCMCoreType.ADCM:
+            pass
         case _:
             message = f"Direct concerns distribution isn't implemented for {owner.type}"
             raise NotImplementedError(message)
@@ -394,7 +393,7 @@ def _get_own_concerns_of_objects(
     services: Iterable[ServiceID] = (),
     components: Iterable[ComponentID] = (),
     hosts: Iterable[HostID] = (),
-    hostproviders: Iterable[HostProviderID] = (),
+    providers: Iterable[ProviderID] = (),
 ) -> dict[ADCMCoreType, dict[ObjectID, set[int]]]:
     existing_concerns_qs = (
         ConcernItem.objects.select_related("owner_type")
@@ -402,14 +401,14 @@ def _get_own_concerns_of_objects(
         .filter(
             Q(owner_id__in=clusters, owner_type=ContentType.objects.get_for_model(Cluster))
             | Q(owner_id__in=hosts, owner_type=ContentType.objects.get_for_model(Host))
-            | Q(owner_id__in=services, owner_type=ContentType.objects.get_for_model(ClusterObject))
-            | Q(owner_id__in=components, owner_type=ContentType.objects.get_for_model(ServiceComponent))
-            | Q(owner_id__in=hostproviders, owner_type=ContentType.objects.get_for_model(HostProvider))
+            | Q(owner_id__in=services, owner_type=ContentType.objects.get_for_model(Service))
+            | Q(owner_id__in=components, owner_type=ContentType.objects.get_for_model(Component))
+            | Q(owner_id__in=providers, owner_type=ContentType.objects.get_for_model(Provider))
         )
     )
 
     # Those are own concerns of objects defined by type and ID
-    # except Host which set of concerns will also contain HostProvider concerns
+    # except Host which set of concerns will also contain Provider concerns
     objects_concerns: dict[ADCMCoreType, dict[int, set[int]]] = defaultdict(lambda: defaultdict(set))
     for concern in existing_concerns_qs.all():
         concern: ConcernItem

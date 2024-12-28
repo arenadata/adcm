@@ -12,18 +12,27 @@
 
 from pathlib import Path
 
-from jinja2 import Template, UndefinedError
+from jinja2 import Environment, FileSystemLoader, UndefinedError, select_autoescape
 import yaml
+
+from cm.logger import logger
 
 
 class TemplateBuilder:
-    __slots__ = ("_template_path", "_error", "_context", "_data")
+    __slots__ = ("_template_path", "_error", "_context", "_data", "_bundle_path")
 
-    def __init__(self, template_path: Path | str, context: dict, error: Exception | None = None):
+    def __init__(
+        self,
+        template_path: Path | str,
+        context: dict,
+        bundle_path: Path | str,
+        error: Exception | None = None,
+    ):
         self._template_path = Path(template_path)
         self._context = context
         self._error = error
         self._data = None
+        self._bundle_path = Path(bundle_path)
 
     @property
     def data(self):
@@ -31,10 +40,20 @@ class TemplateBuilder:
             return self._data
 
         try:
-            template = Template(source=self._template_path.read_text(encoding="utf-8"))
+            env = Environment(
+                loader=FileSystemLoader([str(self._template_path.parent), str(self._bundle_path)]),
+                autoescape=select_autoescape(default_for_string=False, enabled_extensions=("html", "htm")),
+            )
+            template = env.get_template(self._template_path.name)
             data_yaml = template.render(**self._context)
             data = yaml.load(stream=data_yaml, Loader=yaml.loader.SafeLoader)
-        except (yaml.reader.ReaderError, UndefinedError, FileNotFoundError, TypeError) as e:
+        except (
+            yaml.reader.ReaderError,
+            UndefinedError,
+            FileNotFoundError,
+            TypeError,
+        ) as e:
+            logger.error(msg=f"Error during render jinja template: {e}")
             if self._error is not None:
                 raise self._error from e
             raise

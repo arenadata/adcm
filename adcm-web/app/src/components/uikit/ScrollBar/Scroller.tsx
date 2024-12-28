@@ -1,4 +1,5 @@
-import React, { PropsWithChildren, RefObject, useRef } from 'react';
+import type { PropsWithChildren, RefObject } from 'react';
+import { useRef } from 'react';
 import ScrollBar from '@uikit/ScrollBar/ScrollBar';
 import ScrollBarWrapper from '@uikit/ScrollBar/ScrollBarWrapper';
 import cn from 'classnames';

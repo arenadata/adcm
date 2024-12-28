@@ -1,6 +1,6 @@
-import { AdcmAuditOperationFilter } from '@models/adcm';
+import type { AdcmAuditOperationFilter } from '@models/adcm';
 import { createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { getStartDayEndDay } from '@utils/date/calendarUtils';
 
 type AdcmAuditOperationsTableState = ListState<AdcmAuditOperationFilter>;

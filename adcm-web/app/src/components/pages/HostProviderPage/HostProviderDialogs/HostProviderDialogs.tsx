@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import HostProviderDynamicActionDialog from '@pages/HostProvidersPage/Dialogs/HostProviderDynamicActionDialog/HostProviderDynamicActionDialog';
 
 const HostProviderDialogs: React.FC = () => {

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import s from './Breadcrumbs.module.scss';
 import cn from 'classnames';
-import { BreadcrumbsItemConfig } from '@routes/routes.types';
+import type { BreadcrumbsItemConfig } from '@routes/routes.types';
 import { useDispatch } from '@hooks';
 import { cleanupBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 

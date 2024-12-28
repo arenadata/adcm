@@ -1,8 +1,8 @@
 import { httpClient } from '@api/httpClient';
-import { PaginationParams, SortParams } from '@models/table';
+import type { PaginationParams, SortParams } from '@models/table';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
-import { Batch, AdcmCreateRolePayload, AdcmRole, AdcmRolesFilter, AdcmUpdateRolePayload } from '@models/adcm';
+import type { Batch, AdcmCreateRolePayload, AdcmRole, AdcmRolesFilter, AdcmUpdateRolePayload } from '@models/adcm';
 
 export class AdcmRolesApi {
   public static async createRole(payload: AdcmCreateRolePayload) {

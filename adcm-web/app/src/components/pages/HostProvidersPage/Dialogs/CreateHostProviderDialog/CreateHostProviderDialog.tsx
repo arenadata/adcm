@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input, Select, Checkbox } from '@uikit';
-import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
+import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { useCreateHostProviderDialog } from './useCreateHostProviderDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateHostProviderDialog = () => {
-  const { isOpen, relatedData, formData, isValid, errors, onCreate, onClose, onChangeFormData } =
+  const { isOpen, prototypeVersions, formData, isValid, errors, onCreate, onClose, onChangeFormData } =
     useCreateHostProviderDialog();
 
   const prototypeOptions = useMemo(
-    () => relatedData.prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
-    [relatedData.prototypeVersions],
+    () => prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
+    [prototypeVersions],
   );
 
   const prototypeVersionsOptions = useMemo(

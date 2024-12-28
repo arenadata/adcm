@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import ErrorPageContent from '@commonComponents/ErrorPageContent/ErrorPageContent';
 import ErrorTextContainer from '@commonComponents/ErrorPageContent/ErrorTextContainer/ErrorTextContainer';

@@ -1,6 +1,6 @@
-import React from 'react';
 import { orElseGet } from '@utils/checkUtils';
-import { TableCell, TableCellProps } from '@uikit';
+import type { TableCellProps } from '@uikit';
+import { TableCell } from '@uikit';
 import { dateToString } from '@utils/date/dateConvertUtils';
 
 interface DateTimeCellProps extends TableCellProps {

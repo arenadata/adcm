@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmCluster } from '@models/adcm';
+import type { AdcmCluster } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -14,7 +14,7 @@ type AdcmClustersState = {
   loadState: LoadState;
 };
 
-const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFromBackend', async (arg, thunkAPI) => {
+const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       clustersTable: { filter, paginationParams, sortParams },
@@ -29,7 +29,7 @@ const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFrom
   }
 });
 
-const getClusters = createAsyncThunk('adcm/clusters/getClusters', async (arg, thunkAPI) => {
+const getClusters = createAsyncThunk('adcm/clusters/getClusters', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -44,7 +44,7 @@ const getClusters = createAsyncThunk('adcm/clusters/getClusters', async (arg, th
   });
 });
 
-const refreshClusters = createAsyncThunk('adcm/clusters/refreshClusters', async (arg, thunkAPI) => {
+const refreshClusters = createAsyncThunk('adcm/clusters/refreshClusters', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadClustersFromBackend());
 });
 

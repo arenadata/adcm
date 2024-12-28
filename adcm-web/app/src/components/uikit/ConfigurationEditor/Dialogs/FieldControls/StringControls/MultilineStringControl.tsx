@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import CodeEditor from '@uikit/CodeEditor/CodeEditor';
 import ConfigurationField from '../ConfigurationField';
-import { SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import type { SingleSchemaDefinition } from '@models/adcm';
+import type { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
 import { validate } from './StringControls.utils';
 

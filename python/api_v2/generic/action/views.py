@@ -28,7 +28,6 @@ from cm.stack import check_hostcomponents_objects_exist
 from core.cluster.types import HostComponentEntry
 from django.conf import settings
 from django.db.models import Q
-from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -55,7 +54,6 @@ from api_v2.views import ADCMGenericViewSet
 
 
 class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, ADCMGenericViewSet):
-    filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
     general_queryset = (
         Action.objects.select_related("prototype")
@@ -63,6 +61,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
         .filter(upgrade__isnull=True)
         .order_by("pk")
     )
+    pagination_class = None
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
@@ -195,6 +194,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
                     for entry in serializer.validated_data["host_component_map"]
                 },
                 verbose=serializer.validated_data["is_verbose"],
+                is_blocking=serializer.validated_data["should_block_object"],
             ),
         )
 

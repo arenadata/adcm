@@ -1,28 +1,15 @@
-import { ESLint } from 'eslint'
-
-const eslintCheck = (filenames) => `eslint ${filenames.join(' ')} --ext ts,tsx --report-unused-disable-directives --max-warnings 0`;
-
-/**
- * lint-stage don't understand .eslintignore file
- * https://www.curiouslychase.com/posts/eslint-error-file-ignored-because-of-a-matching-ignore-pattern/
- */
-const removeIgnoredFiles = async (files) => {
-  const eslint = new ESLint()
-  const isIgnored = await Promise.all(
-    files.map((file) => {
-      return eslint.isPathIgnored(file)
-    })
-  )
-  return files.filter((_, i) => !isIgnored[i]);
+const lintCheck = (filenames) => {
+  const preparedFilenames = filenames.join(' ');
+  return `yarn biome-check --staged && yarn oxlint-check ${preparedFilenames}`;
 }
 
 export default {
   '*.(js|jsx|ts|tsx)': async (filenames) => {
-    // Run ESLint on entire repo if more than 10 staged files
+    // Run the whole check
     if (filenames.length > 10) {
-      return 'yarn lint'
+      return 'yarn lint';
     }
-    const filesToLint = await removeIgnoredFiles(filenames);
-    return eslintCheck(filesToLint);
-  }
-}
+
+    return lintCheck(filenames);
+  },
+};

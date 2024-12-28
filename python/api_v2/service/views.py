@@ -27,12 +27,11 @@ from audit.alt.hooks import (
     extract_previous_from_object,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject
+from cm.models import Cluster, Service
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
 from django.db.models import F
-from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -54,7 +53,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, responses
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -72,18 +71,22 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config.views import ConfigLogViewSet
-from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import (
-    audit_config_group_config_viewset,
-    audit_group_config_viewset,
-    audit_host_group_config_viewset,
+from api_v2.generic.config_host_group.api_schema import (
+    document_config_host_group_viewset,
+    document_host_config_host_group_viewset,
 )
-from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.config_host_group.audit import (
+    audit_config_config_host_group_viewset,
+    audit_config_host_group_viewset,
+    audit_host_config_host_group_viewset,
+)
+from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (
+    ManyServiceCreateSerializer,
     ServiceCreateSerializer,
     ServiceMaintenanceModeSerializer,
     ServiceRetrieveSerializer,
@@ -117,21 +120,29 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.ordering_by("Display name"),
-            DefaultParams.STATUS_OPTIONAL,
             OpenApiParameter(
                 name="name",
-                location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by service name.",
-                type=str,
             ),
             OpenApiParameter(
+                # It is necessary to specify such fields with underscores, otherwise this field will be duplicated
+                # in the scheme. The name in the schema must match the name of the field in the filter class
                 name="display_name",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by service displayName.",
-                type=str,
+                description="Case insensitive and partial filter by service display name.",
+            ),
+            OpenApiParameter(
+                name="status",
+                description="Filter by status",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                enum=(
+                    "displayName",
+                    "-displayName",
+                ),
+                default="id",
             ),
         ],
         responses=responses(success=ServiceRetrieveSerializer(many=True), errors=HTTP_404_NOT_FOUND),
@@ -140,10 +151,14 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="postClusterServices",
         summary="POST cluster services",
         description="Add a new cluster services.",
-        responses=responses(
-            success=(HTTP_201_CREATED, ServiceRetrieveSerializer),
-            errors=(HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
-        ),
+        request=ManyServiceCreateSerializer,
+        responses={
+            (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_SERVICE_TO_CLUSTER_RESPONSE_SCHEMA,
+            **{
+                k: ErrorSerializer
+                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+            },
+        },
     ),
     destroy=extend_schema(
         operation_id="deleteClusterService",
@@ -164,11 +179,10 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         ),
     ),
     statuses=extend_schema(
-        operation_id="getServiceComponentStatuses",
-        summary="GET service component statuses",
-        description="Get information about service component statuses.",
+        operation_id="getComponentStatuses",
+        summary="GET component statuses",
+        description="Get information about component statuses.",
         responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
-        parameters=[DefaultParams.STATUS_REQUIRED],
     ),
 )
 class ServiceViewSet(
@@ -181,12 +195,11 @@ class ServiceViewSet(
     ObjectWithStatusViewMixin,
     ADCMGenericViewSet,
 ):
-    queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
+    queryset = Service.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter
-    filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [ServicePermissions]
-    audit_model_hint = ClusterObject
+    audit_model_hint = Service
     retrieve_status_map_actions = ("list", "statuses")
 
     def get_queryset(self, *args, **kwargs):
@@ -249,15 +262,15 @@ class ServiceViewSet(
         audit_update(name="Service updated", object_=service_from_lookup)
         .attach_hooks(on_collect=adjust_denied_on_404_result(service_with_parents_specified_in_path_exists))
         .track_changes(
-            before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
+            before=extract_previous_from_object(model=Service, maintenance_mode=F("_maintenance_mode")),
             after=extract_current_from_response("maintenance_mode"),
         )
     )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        service: ClusterObject = get_object_for_user(
-            user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"]
+        service: Service = get_object_for_user(
+            user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
 
         if not service.is_maintenance_mode_available:
@@ -278,7 +291,7 @@ class ServiceViewSet(
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
+        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, id=kwargs["pk"])
 
         return Response(data=ServiceStatusSerializer(instance=service, context=self.get_serializer_context()).data)
 
@@ -305,29 +318,29 @@ class ServiceViewSet(
 class ServiceImportViewSet(ImportViewSet):
     def detect_get_check_kwargs(self) -> tuple[dict, dict]:
         return (
-            {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]},
-            {"action_type": VIEW_IMPORT_PERM, "model": ClusterObject.__name__.lower()},
+            {"perms": VIEW_SERVICE_PERM, "klass": Service, "id": self.kwargs["service_pk"]},
+            {"action_type": VIEW_IMPORT_PERM, "model": Service.__name__.lower()},
         )
 
-    def detect_cluster_service_bind_arguments(self, obj: Cluster | ClusterObject) -> tuple[Cluster, ClusterObject]:
+    def detect_cluster_service_bind_arguments(self, obj: Cluster | Service) -> tuple[Cluster, Service]:
         return obj.cluster, obj
 
 
-@document_group_config_viewset(object_type="service")
-@audit_group_config_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceGroupConfigViewSet(GroupConfigViewSet):
+@document_config_host_group_viewset(object_type="service")
+@audit_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceCHGViewSet(CHGViewSet):
     ...
 
 
-@document_host_group_config_viewset(object_type="service")
-@audit_host_group_config_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceHostGroupConfigViewSet(HostGroupConfigViewSet):
+@document_host_config_host_group_viewset(object_type="service")
+@audit_host_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="service config group", operation_id_variant="ServiceConfigGroup")
-@audit_config_group_config_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceConfigHostGroupViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 

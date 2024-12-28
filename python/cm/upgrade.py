@@ -43,20 +43,20 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
-    HostProvider,
     MaintenanceMode,
     ObjectType,
     Prototype,
     PrototypeImport,
-    ServiceComponent,
+    Provider,
+    Service,
     Upgrade,
 )
 from cm.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
@@ -77,7 +77,7 @@ from cm.status_api import notify_about_redistributed_concerns_from_maps, send_pr
 from cm.utils import obj_ref
 
 
-def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
+def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]:
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]
 
@@ -102,7 +102,7 @@ def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, 
     return True, ""
 
 
-def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
+def get_upgrade(obj: Cluster | Provider, order=None) -> list[Upgrade]:
     res = []
     for upgrade in Upgrade.objects.filter(bundle__name=obj.prototype.bundle.name):
         success, _ = _check_upgrade_version(prototype=obj.prototype, upgrade=upgrade)
@@ -137,7 +137,7 @@ def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
 
 
 def do_upgrade(
-    obj: Cluster | HostProvider,
+    obj: Cluster | Provider,
     upgrade: Upgrade,
     config: dict,
     attr: dict,
@@ -212,18 +212,18 @@ def do_upgrade(
     return {"id": obj.id, "upgradable": bool(get_upgrade(obj=obj)), "task_id": task_id}
 
 
-def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
+def bundle_switch(obj: Cluster | Provider, upgrade: Upgrade) -> None:
     if isinstance(obj, Cluster):
         switch = _ClusterBundleSwitch(target=obj, upgrade=upgrade)
-    elif isinstance(obj, HostProvider):
-        switch = _HostProviderBundleSwitch(target=obj, upgrade=upgrade)
+    elif isinstance(obj, Provider):
+        switch = _ProviderBundleSwitch(target=obj, upgrade=upgrade)
     else:
         raise AdcmEx(code="UPGRADE_ERROR", msg="can upgrade only cluster or host provider")
 
     switch.perform()
 
 
-def bundle_revert(obj: Cluster | HostProvider) -> None:
+def bundle_revert(obj: Cluster | Provider) -> None:
     upgraded_bundle = obj.prototype.bundle
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
@@ -234,7 +234,7 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
 
     if isinstance(obj, Cluster):
         for service_prototype in Prototype.objects.filter(bundle=old_bundle, type="service"):
-            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
+            service = Service.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
             if not service:
                 continue
 
@@ -242,7 +242,7 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
             for component_prototype in Prototype.objects.filter(
                 bundle=old_bundle, parent=service_prototype, type="component"
             ):
-                component = ServiceComponent.objects.filter(
+                component = Component.objects.filter(
                     cluster=obj,
                     service=service,
                     prototype__name=component_prototype.name,
@@ -251,7 +251,7 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
                 if component:
                     _revert_object(obj=component, old_proto=component_prototype)
                 else:
-                    component = ServiceComponent.objects.create(
+                    component = Component.objects.create(
                         cluster=obj,
                         service=service,
                         prototype=component_prototype,
@@ -260,20 +260,20 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
                     component.config = obj_conf
                     component.save(update_fields=["config"])
 
-        ClusterObject.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
-        ServiceComponent.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
+        Service.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
+        Component.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
 
         for service_name in service_names:
             prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type="service")
 
-            if not ClusterObject.objects.filter(prototype=prototype, cluster=obj).exists():
+            if not Service.objects.filter(prototype=prototype, cluster=obj).exists():
                 add_service_to_cluster(cluster=obj, proto=prototype)
 
         host_comp_list = []
         for hostcomponent in before_upgrade_hc:
             host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
-            service = ClusterObject.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
-            component = ServiceComponent.objects.get(
+            service = Service.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
+            component = Component.objects.get(
                 prototype__name=hostcomponent["component"],
                 cluster=obj,
                 service=service,
@@ -290,13 +290,13 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
             checks_func=check_nothing,
         )
 
-    if isinstance(obj, HostProvider):
+    if isinstance(obj, Provider):
         for host in Host.objects.filter(provider=obj):
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
             _revert_object(obj=host, old_proto=old_host_proto)
 
 
-def _switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
+def _switch_object(obj: Host | Service, new_prototype: Prototype) -> None:
     logger.info("upgrade switch from %s to %s", proto_ref(prototype=obj.prototype), proto_ref(prototype=new_prototype))
 
     old_prototype = obj.prototype
@@ -306,8 +306,8 @@ def _switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
     switch_config(obj=obj, new_prototype=new_prototype, old_prototype=old_prototype)
 
 
-def _switch_components(cluster: Cluster, service: ClusterObject, new_component_prototype: Prototype) -> None:
-    for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
+def _switch_components(cluster: Cluster, service: Service, new_component_prototype: Prototype) -> None:
+    for component in Component.objects.filter(cluster=cluster, service=service):
         try:
             new_comp_prototype = Prototype.objects.get(
                 parent=new_component_prototype, type="component", name=component.prototype.name
@@ -318,8 +318,8 @@ def _switch_components(cluster: Cluster, service: ClusterObject, new_component_p
 
     for component_prototype in Prototype.objects.filter(parent=new_component_prototype, type="component"):
         kwargs = {"cluster": cluster, "service": service, "prototype": component_prototype}
-        if not ServiceComponent.objects.filter(**kwargs).exists():
-            component = ServiceComponent.objects.create(**kwargs)
+        if not Component.objects.filter(**kwargs).exists():
+            component = Component.objects.create(**kwargs)
             make_object_config(obj=component, prototype=component_prototype)
 
 
@@ -447,7 +447,7 @@ def _set_before_upgrade(obj: ADCMEntity) -> None:
     if obj.config:
         obj.before_upgrade["config_id"] = obj.config.current
 
-    if groups := GroupConfig.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
+    if groups := ConfigHostGroup.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
         obj.before_upgrade["groups"] = {}
 
         for group in groups:
@@ -465,29 +465,27 @@ def _set_before_upgrade(obj: ADCMEntity) -> None:
             )
 
         obj.before_upgrade["hc"] = hc_map
-        obj.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=obj)
-        ]
+        obj.before_upgrade["services"] = [service.prototype.name for service in Service.objects.filter(cluster=obj)]
 
     obj.save(update_fields=["before_upgrade"])
 
 
-def _update_before_upgrade(obj: Cluster | HostProvider) -> None:
+def _update_before_upgrade(obj: Cluster | Provider) -> None:
     _set_before_upgrade(obj=obj)
 
     if isinstance(obj, Cluster):
-        for service in ClusterObject.objects.filter(cluster=obj):
+        for service in Service.objects.filter(cluster=obj):
             _set_before_upgrade(obj=service)
-            for component in ServiceComponent.objects.filter(service=service, cluster=obj):
+            for component in Component.objects.filter(service=service, cluster=obj):
                 _set_before_upgrade(obj=component)
 
-    if isinstance(obj, HostProvider):
+    if isinstance(obj, Provider):
         for host in Host.objects.filter(provider=obj):
             _set_before_upgrade(obj=host)
 
 
 class _BundleSwitch(ABC):
-    def __init__(self, target: Cluster | HostProvider, upgrade: Upgrade):
+    def __init__(self, target: Cluster | Provider, upgrade: Upgrade):
         self._target = target
         self._upgrade = upgrade
 
@@ -535,7 +533,7 @@ class _ClusterBundleSwitch(_BundleSwitch):
         super().__init__(target, upgrade)
 
     def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:
-        for service in ClusterObject.objects.select_related("prototype").filter(cluster=self._target):
+        for service in Service.objects.select_related("prototype").filter(cluster=self._target):
             check_license(prototype=service.prototype)
             try:
                 new_service_prototype = Prototype.objects.get(
@@ -575,39 +573,39 @@ class _ClusterBundleSwitch(_BundleSwitch):
             ):
                 # probably operations below can be performed in bulk for speed improvement
                 try:
-                    service = ClusterObject.objects.select_related("prototype").get(
+                    service = Service.objects.select_related("prototype").get(
                         cluster=self._target, prototype=proto_service
                     )
-                except ClusterObject.DoesNotExist:
+                except Service.DoesNotExist:
                     # this code was taken from service creation from `cm.api` skipping checks, concerns, etc.
                     check_license(prototype=proto_service)
-                    service = ClusterObject.objects.create(cluster=self._target, prototype=proto_service)
+                    service = Service.objects.create(cluster=self._target, prototype=proto_service)
                     service.config = init_object_config(proto=proto_service, obj=service)
                     service.save(update_fields=["config"])
 
-                if not ServiceComponent.objects.filter(cluster=self._target, service=service).exists():
+                if not Component.objects.filter(cluster=self._target, service=service).exists():
                     add_components_to_service(cluster=self._target, service=service)
 
     def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
         recalculate_concerns_on_cluster_upgrade(cluster=self._target)
         return redistribute_issues_and_flags(topology=retrieve_cluster_topology(self._target.id))
 
-    def _get_objects_map_for_policy_update(self) -> dict[Cluster | ClusterObject | ServiceComponent, ContentType]:
+    def _get_objects_map_for_policy_update(self) -> dict[Cluster | Service | Component, ContentType]:
         obj_type_map = {self._target: ContentType.objects.get_for_model(Cluster)}
 
-        service_content_type = ContentType.objects.get_for_model(ClusterObject)
-        for service in ClusterObject.objects.filter(cluster=self._target):
+        service_content_type = ContentType.objects.get_for_model(Service)
+        for service in Service.objects.filter(cluster=self._target):
             obj_type_map[service] = service_content_type
 
-        component_content_type = ContentType.objects.get_for_model(ServiceComponent)
-        for component in ServiceComponent.objects.filter(cluster=self._target):
+        component_content_type = ContentType.objects.get_for_model(Component)
+        for component in Component.objects.filter(cluster=self._target):
             obj_type_map[component] = component_content_type
 
         return obj_type_map
 
 
-class _HostProviderBundleSwitch(_BundleSwitch):
-    def __init__(self, target: HostProvider, upgrade: Upgrade):
+class _ProviderBundleSwitch(_BundleSwitch):
+    def __init__(self, target: Provider, upgrade: Upgrade):
         super().__init__(target, upgrade)
 
     def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:  # noqa: ARG002
@@ -666,8 +664,8 @@ class _HostProviderBundleSwitch(_BundleSwitch):
 
         return added, removed
 
-    def _get_objects_map_for_policy_update(self) -> dict[HostProvider | Host, ContentType]:
-        obj_type_map = {self._target: ContentType.objects.get_for_model(HostProvider)}
+    def _get_objects_map_for_policy_update(self) -> dict[Provider | Host, ContentType]:
+        obj_type_map = {self._target: ContentType.objects.get_for_model(Provider)}
 
         host_content_type = ContentType.objects.get_for_model(Host)
         for host in Host.objects.filter(provider=self._target):

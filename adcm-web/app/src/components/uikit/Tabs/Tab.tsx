@@ -1,9 +1,9 @@
-import React from 'react';
+import type React from 'react';
 import { Link, NavLink, resolvePath, useLocation } from 'react-router-dom';
 import s from './Tabs.module.scss';
 import cn from 'classnames';
 import { isCurrentPathname } from '@utils/urlUtils';
-import { TabProps } from '@uikit/Tabs/Tab.types';
+import type { TabProps } from '@uikit/Tabs/Tab.types';
 
 const Tab: React.FC<TabProps> = ({ children, to, subPattern, disabled = false, isActive = false, onClick }) => {
   const { pathname } = useLocation();

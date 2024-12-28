@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
@@ -7,11 +7,7 @@ import { closeMaintenanceModeDialog, toggleMaintenanceMode } from '@store/adcm/c
 const ClusterHostsMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const clusterHost = useStore(({ adcm }) => {
-    return (
-      adcm.clusterHosts.hosts.find(({ id }) => id === adcm.clusterHostsActions.maintenanceModeDialog.host?.id) ?? null
-    );
-  });
+  const clusterHost = useStore(({ adcm }) => adcm.clusterHostsActions.maintenanceModeDialog.clusterHost);
 
   const clusterId = clusterHost?.cluster.id;
 

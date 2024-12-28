@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 
 type WrapOrEmptyProps<T = object> = React.PropsWithChildren<T> & {
   Component: React.FC<T>;

@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmServicesFilter } from '@models/adcm';
+import type { AdcmServicesFilter } from '@models/adcm';
 import {
   setFilter,
   setPaginationParams,
@@ -21,6 +21,7 @@ const mergeFilters = (filterFromStorage: AdcmServicesFilter, actualFilter: AdcmS
 export const usePersistClusterServicesTableSettings = () => {
   const dispatch = useDispatch();
 
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const filter = useStore(({ adcm }) => adcm.servicesTable.filter);
   const sortParams = useStore(({ adcm }) => adcm.servicesTable.sortParams);
   const paginationParams = useStore(({ adcm }) => adcm.servicesTable.paginationParams);
@@ -32,6 +33,7 @@ export const usePersistClusterServicesTableSettings = () => {
     {
       localStorageKey: 'adcm/servicesTable',
       settings: {
+        clusterId: cluster?.id,
         filter,
         sortParams,
         requestFrequency,
@@ -39,8 +41,10 @@ export const usePersistClusterServicesTableSettings = () => {
       },
       isReadyToLoad: true,
       onSettingsLoaded: (settings) => {
-        const mergedFilter = mergeFilters(settings.filter, filter);
-        dispatch(setFilter(mergedFilter));
+        if (settings.clusterId === cluster?.id) {
+          const mergedFilter = mergeFilters(settings.filter, filter);
+          dispatch(setFilter(mergedFilter));
+        }
         dispatch(setSortParams(settings.sortParams));
         dispatch(setRequestFrequency(settings.requestFrequency));
         dispatch(setPaginationParams(mergePaginationParams(settings.perPage, paginationParams)));

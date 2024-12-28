@@ -1,5 +1,4 @@
-import React from 'react';
-import { SelectOption, SelectValue } from '@uikit/Select/Select.types';
+import type { SelectOption, SelectValue } from '@uikit/Select/Select.types';
 import { Select } from '@uikit';
 
 export interface FrequencySelectProps {

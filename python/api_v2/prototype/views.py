@@ -15,14 +15,14 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
 from api_v2.prototype.serializers import (
     PrototypeSerializer,
@@ -34,11 +34,43 @@ from api_v2.views import ADCMReadOnlyModelViewSet
 
 
 @extend_schema_view(
-    list=extend_schema(operation_id="getPrototypes", description="Get a list of all prototypes."),
+    list=extend_schema(
+        operation_id="getPrototypes",
+        description="Get a list of all prototypes.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                description="Filter by ID.",
+            ),
+            OpenApiParameter(
+                name="bundle_id",
+                type=int,
+                description="Filter by bundle ID.",
+            ),
+            OpenApiParameter(
+                name="display_name",
+                description="Filter by display name.",
+            ),
+            OpenApiParameter(
+                name="type",
+                description="Filter by type.",
+                enum=(
+                    ObjectType.CLUSTER.value,
+                    ObjectType.PROVIDER.value,
+                    ObjectType.HOST.value,
+                    ObjectType.SERVICE.value,
+                    ObjectType.COMPONENT.value,
+                ),
+            ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+        ],
+    ),
     retrieve=extend_schema(
         operation_id="getPrototype",
         description="Get detail information about a specific prototype.",
-        responses={200: PrototypeSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: PrototypeSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class PrototypeViewSet(ADCMReadOnlyModelViewSet):
@@ -59,9 +91,19 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     @extend_schema(
         operation_id="getPrototypeVersions",
         description="Get a list of ADCM bundles when creating an object (cluster or provider).",
-        responses={200: PrototypeVersionsSerializer(many=True)},
+        parameters=[
+            OpenApiParameter(
+                name="type",
+                description="Filter by prototype type.",
+                enum=(
+                    ObjectType.CLUSTER.value,
+                    ObjectType.PROVIDER.value,
+                ),
+            ),
+        ],
+        responses={HTTP_200_OK: PrototypeVersionsSerializer(many=True)},
     )
-    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter)
+    @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter, pagination_class=None)
     def versions(self, request):  # noqa: ARG001, ARG002
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
@@ -69,7 +111,11 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     @extend_schema(
         operation_id="postLicense",
         description="Accept prototype license.",
-        responses={200: None, 404: ErrorSerializer, 409: ErrorSerializer},
+        responses={
+            HTTP_200_OK: OpenApiResponse(),
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
     )
     @audit_update(name="Bundle license accepted", object_=bundle_from_lookup)
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
@@ -79,9 +125,9 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
         return Response(status=HTTP_200_OK)
 
     def get_filtered_prototypes_unique_by_display_name(self) -> QuerySet:
-        filtered_queryset = self.filter_queryset(
-            Prototype.objects.filter(type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}).all()
-        )
+        filtered_queryset = Prototype.objects.filter(
+            type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}
+        ).all()
 
         prototype_pks = set()
         processed_pairs = set()
@@ -92,4 +138,4 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
             prototype_pks.add(pk)
             processed_pairs.add((type_, display_name))
 
-        return Prototype.objects.filter(pk__in=prototype_pks)
+        return self.filter_queryset(Prototype.objects.filter(pk__in=prototype_pks))

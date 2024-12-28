@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldStyles } from '@uikit/Field/useFieldStyles';
-import { ChangeDateHandler } from '@uikit/DatePicker/DatePicker.types';
+import type { ChangeDateHandler } from '@uikit/DatePicker/DatePicker.types';
 import { format, isValid } from '@utils/date';
 import s from './InputTime.module.scss';
 import cn from 'classnames';

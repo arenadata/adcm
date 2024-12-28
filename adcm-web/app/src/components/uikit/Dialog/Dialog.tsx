@@ -1,9 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import Modal from '@uikit/Modal/Modal';
-import { ModalOptions } from '@uikit/Modal/Modal.types';
+import type { ModalOptions } from '@uikit/Modal/Modal.types';
 import IconButton from '@uikit/IconButton/IconButton';
 import Text from '@uikit/Text/Text';
-import DialogDefaultControls, { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
+import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
+import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import Panel from '@uikit/Panel/Panel';
 import s from './Dialog.module.scss';
 import cn from 'classnames';

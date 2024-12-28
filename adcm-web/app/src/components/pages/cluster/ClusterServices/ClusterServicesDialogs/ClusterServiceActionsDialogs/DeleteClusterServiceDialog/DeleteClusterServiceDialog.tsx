@@ -1,35 +1,23 @@
 import { useDispatch, useStore } from '@hooks';
 import { Dialog } from '@uikit';
-import React from 'react';
+import type React from 'react';
 import { deleteService, closeDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const DeleteClusterServiceDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableService = useStore(
-    ({
-      adcm: {
-        services: { services },
-        servicesActions: {
-          deleteDialog: { serviceId },
-        },
-      },
-    }) => {
-      if (!serviceId) return null;
-      return services.find(({ id }) => id === serviceId) ?? null;
-    },
-  );
+  const clusterService = useStore(({ adcm }) => adcm.servicesActions.deleteDialog.service);
 
-  const isOpenDeleteDialog = !!deletableService;
+  const isOpenDeleteDialog = !!clusterService;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    const { id } = deletableService ?? {};
-    if (id && deletableService?.cluster.id) {
-      dispatch(deleteService({ clusterId: deletableService?.cluster.id, serviceId: id }));
+    const { id } = clusterService ?? {};
+    if (id && clusterService?.cluster.id) {
+      dispatch(deleteService({ clusterId: clusterService?.cluster.id, serviceId: id }));
     }
   };
 
@@ -37,7 +25,7 @@ const DeleteClusterServiceDialog: React.FC = () => {
     <Dialog
       isOpen={isOpenDeleteDialog}
       onOpenChange={handleCloseDialog}
-      title={`Delete "${deletableService?.displayName}" service`}
+      title={`Delete "${clusterService?.displayName}" service`}
       onAction={handleConfirmDialog}
       actionButtonLabel="Delete"
     >

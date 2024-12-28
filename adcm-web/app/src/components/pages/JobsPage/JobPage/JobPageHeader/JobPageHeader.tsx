@@ -1,21 +1,15 @@
-import React from 'react';
 import s from './JobPageHeader.module.scss';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
-import { useStore } from '@hooks';
 import JobPageHeaderName from './JobPageHeaderName';
 import { orElseGet } from '@utils/checkUtils';
+import type { AdcmJob, AdcmSubJob } from '@models/adcm';
 
-const JobPageHeader: React.FC = () => {
-  const task = useStore((s) => s.adcm.jobs.task);
+export interface JobPageHeaderProps {
+  job?: AdcmJob | AdcmSubJob;
+}
 
-  return (
-    <EntityHeader
-      title={orElseGet(task, (task) => (
-        <JobPageHeaderName job={task} />
-      ))}
-      className={s.overviewHeader}
-    />
-  );
+const JobPageHeader = ({ job }: JobPageHeaderProps) => {
+  return <EntityHeader title={orElseGet(job, (job) => <JobPageHeaderName job={job} />)} className={s.overviewHeader} />;
 };
 
 export default JobPageHeader;

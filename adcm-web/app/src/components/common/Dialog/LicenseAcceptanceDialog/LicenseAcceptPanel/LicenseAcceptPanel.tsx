@@ -1,9 +1,11 @@
-import React, { ChangeEvent, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import s from './LicenseAcceptPanel.module.scss';
 import { Button, Checkbox } from '@uikit';
 import { AdcmLicenseStatus } from '@models/adcm';
 import cn from 'classnames';
-import { LicenseAcceptanceDialogProps } from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptPanel/LicenseAcceptPanel.types';
+import type { LicenseAcceptanceDialogProps } from '@commonComponents/Dialog/LicenseAcceptanceDialog/LicenseAcceptPanel/LicenseAcceptPanel.types';
 
 const LicenseAcceptPanel: React.FC<LicenseAcceptanceDialogProps> = ({
   license,

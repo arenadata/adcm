@@ -1,5 +1,5 @@
-import { JSONObject } from '@models/json';
-import { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
+import type { JSONObject } from '@models/json';
+import type { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 
 export interface AdcmFieldMetaData {
   isAdvanced?: boolean;
@@ -79,7 +79,7 @@ export type FieldPath = string;
 export type ErrorKeyword = string;
 export type ErrorMessage = string;
 export type FieldErrors = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny:
   value: any;
   schema: SchemaDefinition;
   messages: Record<ErrorKeyword, ErrorMessage>;

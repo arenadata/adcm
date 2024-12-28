@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 import Panel from '@uikit/Panel/Panel';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import { Button } from '@uikit';
 import { Link } from 'react-router-dom';
 import s from './ConfigGroupSingleHeader.module.scss';

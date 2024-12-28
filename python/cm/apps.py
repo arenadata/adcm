@@ -11,13 +11,21 @@
 # limitations under the License.
 
 from django.apps import AppConfig
+from django.db.models import Field
+
+from cm.lookups import CaseInsensitiveNotEqualLookup, LowerCaseTransform, NotEqualLookup
 
 
 class CmConfig(AppConfig):
     name = "cm"
+    verbose_name = "cm"
 
     def ready(self):
         from cm.signals import (  # noqa: F401, PLC0415
             rename_audit_object,
             rename_audit_object_host,
         )
+
+        Field.register_lookup(NotEqualLookup)
+        Field.register_lookup(CaseInsensitiveNotEqualLookup)
+        Field.register_lookup(LowerCaseTransform)

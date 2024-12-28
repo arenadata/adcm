@@ -1,5 +1,5 @@
 import InputNumberComponent from './InputNumber';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof InputNumberComponent>;
 export default {

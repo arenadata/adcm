@@ -13,10 +13,10 @@
 from itertools import chain, product
 
 from cm.models import (
-    ClusterObject,
+    Component,
     ConfigLog,
     ObjectConfig,
-    ServiceComponent,
+    Service,
 )
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -46,15 +46,15 @@ class TestBulkAddServices(BaseAPITestCase):
             cluster=self.cluster_1,
         )
         self.assertEqual(services_qs.count(), 3)
-        components_qs = ServiceComponent.objects.filter(service__in=services_qs, cluster=self.cluster_1)
-        self.assertEqual(components_qs.count(), 2)
+        components_qs = Component.objects.filter(service__in=services_qs, cluster=self.cluster_1)
+        self.assertEqual(components_qs.count(), 3)
 
         new_object_configs = ObjectConfig.objects.exclude(pk__in=self.initial_object_config_pks)
         new_config_logs = ConfigLog.objects.exclude(pk__in=self.initial_config_log_pks)
 
         # 3 services, 2 components
-        self.assertEqual(new_object_configs.count(), 5)
-        self.assertEqual(new_config_logs.count(), 5)
+        self.assertEqual(new_object_configs.count(), 6)
+        self.assertEqual(new_config_logs.count(), 6)
 
         self.assertTrue(
             all(
@@ -77,11 +77,11 @@ class TestBulkAddServices(BaseAPITestCase):
                 ],
                 cluster=self.cluster_1,
             )
-            components_qs = ServiceComponent.objects.filter(service__in=services_qs, cluster=self.cluster_1)
+            components_qs = Component.objects.filter(service__in=services_qs, cluster=self.cluster_1)
             self.client.login(**self.test_user_credentials)
 
             for request_type, obj in product(["object", "config"], chain(services_qs, components_qs)):
-                obj: ClusterObject | ServiceComponent
+                obj: Service | Component
                 if request_type == "object":
                     viewname = self.client.v2[obj]
                 elif request_type == "config":

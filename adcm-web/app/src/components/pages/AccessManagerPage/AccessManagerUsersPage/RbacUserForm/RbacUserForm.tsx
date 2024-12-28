@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import s from './RbacUserForm.module.scss';
 import { Checkbox, FormField, FormFieldsContainer, Input, MarkerIcon, Tooltip } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
-import { RbacUserFormData } from './RbacUserForm.types';
-import { AdcmGroup, AdcmUserGroup } from '@models/adcm';
+import type { RbacUserFormData } from './RbacUserForm.types';
+import type { AdcmGroup, AdcmUserGroup } from '@models/adcm';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 
 interface RbacUserFormProps {
@@ -128,14 +129,9 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
             disabled={(!isCreate && isPersonalDataEditForbidden) || !isCurrentUserSuperUser}
           />
           {!isCurrentUserSuperUser && (
-            <>
-              <Tooltip
-                label="You can`t edit this field because you are not an ADCM Administrator"
-                placement="top-start"
-              >
-                <MarkerIcon type="info" variant="square" className={s.markerIcon} />
-              </Tooltip>
-            </>
+            <Tooltip label="You can`t edit this field because you are not an ADCM Administrator" placement="top-start">
+              <MarkerIcon type="info" variant="square" className={s.markerIcon} />
+            </Tooltip>
           )}
         </>
       </FormField>

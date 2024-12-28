@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter } from '@store/adcm/audit/auditLogins/auditLoginsTableSlice';
 import { Button, LabeledField, Select, DatePicker, SearchInput, ButtonGroup } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { loginsResultOptions } from '@pages/audit/AuditLoginsPage/AuditLoginsTable/AuditLoginsTable.constants';
-import { AdcmAuditLoginResultType } from '@models/adcm';
+import type { AdcmAuditLoginResultType } from '@models/adcm';
 
 const AuditLoginsTableFilters = () => {
   const dispatch = useDispatch();

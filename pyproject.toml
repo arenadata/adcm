@@ -6,9 +6,9 @@ authors = [""]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "~3.10"
 
-Django = "3.2.23"
+Django = "5.1.1"
 adcm-version = "1.0.3"
 ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p6" }
 apache-libcloud = "3.8.0"
@@ -47,6 +47,7 @@ ruyaml = "0.91.0"
 six = "1.16.0"
 social-auth-app-django = "5.4.0"
 uwsgi = "2.0.23"
+hvac = "2.3.0"
 
 [tool.poetry.group.lint]
 optional = true

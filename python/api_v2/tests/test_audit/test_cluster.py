@@ -14,11 +14,11 @@ from cm.models import (
     Action,
     AnsibleConfig,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
     Upgrade,
 )
 from django.contrib.contenttypes.models import ContentType
@@ -51,8 +51,8 @@ class TestClusterAudit(BaseAPITestCase):
         self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host3")
 
         self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
-        self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
-        self.component_1 = ServiceComponent.objects.get(
+        self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"
         )
 
@@ -846,7 +846,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_non_existent_service_fail(self):
-        response = self.client.v2[self.cluster_1, "services", self.get_non_existent_pk(model=ServiceComponent)].delete()
+        response = self.client.v2[self.cluster_1, "services", self.get_non_existent_pk(model=Component)].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(

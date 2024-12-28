@@ -1,10 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import Statusable from '@uikit/Statusable/Statusable';
-import { AdcmJob } from '@models/adcm';
-import { jobStatusesMap } from '../JobPageTable/JobPageTable.constants';
+import type { AdcmJob, AdcmSubJob } from '@models/adcm';
+import { jobStatusesMap } from '../JobPage.constants';
 
 interface JobPageHeaderNameProps {
-  job: AdcmJob;
+  job: AdcmJob | AdcmSubJob;
 }
 
 const JobPageHeaderName: React.FC<JobPageHeaderNameProps> = ({ job }) => {

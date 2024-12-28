@@ -1,5 +1,7 @@
-import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
-import { AdcmMaintenanceMode, AdcmServiceComponent } from '@models/adcm';
+import type { RequestError } from '@api';
+import { AdcmClusterServiceComponentsApi } from '@api';
+import type { AdcmServiceComponent } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
@@ -105,7 +107,7 @@ const serviceComponentSlice = createSlice({
     });
     builder.addCase(wsActions.update_component, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.serviceComponent?.id == id) {
+      if (state.serviceComponent?.id === id) {
         state.serviceComponent = {
           ...state.serviceComponent,
           ...changes,

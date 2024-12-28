@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import s from './Spinner.module.scss';
 import cn from 'classnames';
 
@@ -25,12 +25,8 @@ export const Spinner: React.FC<SpinnerProps> = ({ className, size = 40 }) => {
             className={s.polygon_1}
             strokeWidth="1.2"
             points="29.5,36.5 10.5,36.5 1,20 10.5,3.5 29.5,3.5 39,20"
-          ></polygon>
-          <polygon
-            className={s.polygon_2}
-            strokeWidth="0.5"
-            points="26.3,31 13.7,31 7.3,20 13.7,9 26.3,9 32.7,20"
-          ></polygon>
+          />
+          <polygon className={s.polygon_2} strokeWidth="0.5" points="26.3,31 13.7,31 7.3,20 13.7,9 26.3,9 32.7,20" />
         </g>
       </svg>
     </div>

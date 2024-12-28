@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, HostProvider
+from cm.models import Action, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.status import (
     HTTP_200_OK,
@@ -23,7 +23,7 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase
 
 
-class TestHostProvider(BaseAPITestCase):
+class TestProvider(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
@@ -45,7 +45,7 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.host_provider.pk)
 
     def test_retrieve_not_found_fail(self):
-        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).get()
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=Provider))).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -84,12 +84,57 @@ class TestHostProvider(BaseAPITestCase):
         response = self.client.v2[self.host_provider].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertFalse(HostProvider.objects.filter(pk=self.host_provider.pk).exists())
+        self.assertFalse(Provider.objects.filter(pk=self.host_provider.pk).exists())
 
     def test_delete_not_found_fail(self):
-        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).delete()
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=Provider))).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_filtering_success(self):
+        self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.host_provider.state = "installed"
+        self.host_provider.description = "newly created host provider"
+        self.host_provider.save()
+        filters = {
+            "name": (self.host_provider.name, self.host_provider.name[7:-3].upper(), "wrong"),
+            "state": (self.host_provider.state, None, "wrong"),
+            "prototypeDisplayName": (self.host_provider.prototype.display_name, None, "wrong"),
+        }
+
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                exact_items = 2 if filter_name in ("name", "prototypeDisplayName") else 1
+
+                response = (self.client.v2 / "hostproviders").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items)
+
+                response = (self.client.v2 / "hostproviders").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = (self.client.v2 / "hostproviders").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], 2)
+
+    def test_ordering_success(self):
+        self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.add_provider(self.host_provider_bundle, "third test host provider")
+
+        response = (self.client.v2 / "hostproviders").get(query={"ordering": "name"})
+
+        self.assertListEqual(
+            [provider["name"] for provider in response.json()["results"]],
+            ["second test host provider", "test host provider", "third test host provider"],
+        )
+
+        response = (self.client.v2 / "hostproviders").get(query={"ordering": "-name"})
+        self.assertListEqual(
+            [provider["name"] for provider in response.json()["results"]],
+            ["third test host provider", "test host provider", "second test host provider"],
+        )
 
 
 class TestProviderActions(BaseAPITestCase):

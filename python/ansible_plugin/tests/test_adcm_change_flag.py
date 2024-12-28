@@ -13,7 +13,7 @@
 from typing import Collection
 from unittest.mock import patch
 
-from cm.models import ConcernItem, ServiceComponent
+from cm.models import Component, ConcernItem
 from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
@@ -35,7 +35,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             ["service_1", "service_2"], cluster=self.cluster
         ).order_by("prototype__name")
         self.component_1, self.component_2 = (
-            ServiceComponent.objects.filter(service=self.service_1).order_by("prototype__name").all()
+            Component.objects.filter(service=self.service_1).order_by("prototype__name").all()
         )
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
@@ -142,7 +142,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                 operation: up
                 name: adcm_outdated_config
             """,
-            targets=(CoreObjectDescriptor(id=self.provider.id, type=ADCMCoreType.HOSTPROVIDER),),
+            targets=(CoreObjectDescriptor(id=self.provider.id, type=ADCMCoreType.PROVIDER),),
         )
 
     def test_raise_default_flag_changed_message_on_component_from_context_success(self) -> None:
@@ -176,7 +176,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         )
 
     def test_lower_all_service_context_from_objects_success(self) -> None:
-        component = ServiceComponent.objects.get(prototype__name="component_2", service=self.service_2)
+        component = Component.objects.get(prototype__name="component_2", service=self.service_2)
 
         self.check_lower_all_called(
             task=self.prepare_task(owner=self.service_2, name="dummy"),

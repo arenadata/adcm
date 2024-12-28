@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 
 interface ConfigGroupDeleteDialogProps {
   configGroup: AdcmConfigGroup | null;

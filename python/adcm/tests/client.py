@@ -18,14 +18,14 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
-    ClusterObject,
-    GroupConfig,
+    Component,
+    ConfigHostGroup,
     Host,
-    HostProvider,
     JobLog,
     LogStorage,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
     TaskLog,
 )
 from django.test.client import AsyncClient
@@ -33,8 +33,8 @@ from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
-PathObject = _RootPathObject | ClusterObject | ServiceComponent | LogStorage | GroupConfig
+_RootPathObject = Bundle | Cluster | Provider | Host | TaskLog | JobLog | Prototype
+PathObject = _RootPathObject | Service | Component | LogStorage | ConfigHostGroup
 
 
 class WithID(Protocol):
@@ -101,7 +101,7 @@ class V2RootNode(RootNode):
     _CLASS_ROOT_EP_MAP = {
         Bundle: "bundles",
         Cluster: "clusters",
-        HostProvider: "hostproviders",
+        Provider: "hostproviders",
         Host: "hosts",
         TaskLog: "tasks",
         JobLog: "jobs",
@@ -115,6 +115,7 @@ class V2RootNode(RootNode):
         "schema": "schema",
         "token": "token",
         "audit-login": "audit/logins",
+        "audit-operation": "audit/operations",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:
@@ -136,7 +137,7 @@ class V2RootNode(RootNode):
                 *self._path, root_endpoint, *object_id_path, *tail, client=self._client, node_class=self._node_class
             )
 
-        if isinstance(path_object, ClusterObject):
+        if isinstance(path_object, Service):
             return self._node_class(
                 *self._path,
                 "clusters",
@@ -148,7 +149,7 @@ class V2RootNode(RootNode):
                 node_class=self._node_class,
             )
 
-        if isinstance(path_object, ServiceComponent):
+        if isinstance(path_object, Component):
             return self._node_class(
                 *self._path,
                 "clusters",
@@ -162,7 +163,7 @@ class V2RootNode(RootNode):
                 node_class=self._node_class,
             )
 
-        if isinstance(path_object, GroupConfig):
+        if isinstance(path_object, ConfigHostGroup):
             # generally it's move clean and obvious when multiple `/` is used, but in here it looks like an overkill
             return self[path_object.object] / "/".join(("config-groups", str(path_object.id), *tail))
 

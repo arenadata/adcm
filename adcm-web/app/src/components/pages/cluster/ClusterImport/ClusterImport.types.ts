@@ -1,4 +1,4 @@
-import { AdcmClusterImportPostItem, AdcmClusterImportService } from '@models/adcm';
+import type { AdcmClusterImportPostItem, AdcmClusterImportService } from '@models/adcm';
 
 export interface SelectedImportItem extends AdcmClusterImportPostItem {
   prototypeName: string;

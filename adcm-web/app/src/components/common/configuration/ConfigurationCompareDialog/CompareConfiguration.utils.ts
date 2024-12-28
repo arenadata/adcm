@@ -1,8 +1,8 @@
-import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { JSONObject, JSONValue } from '@models/json';
-// eslint-disable-next-line spellcheck/spell-checker
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
+import type { JSONObject, JSONValue } from '@models/json';
+
 // TODO: import from @uikit, after fix jest paths
-import { ConfigurationNode } from '../../../uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationNode } from '../../../uikit/ConfigurationEditor/ConfigurationEditor.types';
 import { buildConfigurationNodes } from '../../../uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
 
 type NameValueTuple = { name: string; value: JSONValue };

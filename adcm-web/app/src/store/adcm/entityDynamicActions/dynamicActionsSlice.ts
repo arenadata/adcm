@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import type { AdcmActionHostGroup, AdcmDynamicActionDetails, EntitiesDynamicActions } from '@models/adcm';

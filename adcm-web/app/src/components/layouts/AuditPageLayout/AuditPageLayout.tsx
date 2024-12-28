@@ -1,4 +1,3 @@
-import React from 'react';
 import AuditHeader from '@layouts/AuditPageLayout/AuditHeader';
 import { Outlet } from 'react-router-dom';
 

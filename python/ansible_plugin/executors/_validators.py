@@ -18,13 +18,13 @@ from ansible_plugin.base import retrieve_orm_object
 from ansible_plugin.errors import PluginTargetError
 
 _CLUSTER_TYPES = {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}
-_HOSTPROVIDER_TYPES = {ADCMCoreType.HOSTPROVIDER, ADCMCoreType.HOST}
+_PROVIDER_TYPES = {ADCMCoreType.PROVIDER, ADCMCoreType.HOST}
 _ALLOWED_CONTEXT_OWNER_MAP: dict[ADCMCoreType, set[ADCMCoreType]] = {
     ADCMCoreType.CLUSTER: _CLUSTER_TYPES,
     ADCMCoreType.SERVICE: _CLUSTER_TYPES,
     ADCMCoreType.COMPONENT: _CLUSTER_TYPES,
-    ADCMCoreType.HOSTPROVIDER: _HOSTPROVIDER_TYPES,
-    ADCMCoreType.HOST: _HOSTPROVIDER_TYPES,
+    ADCMCoreType.PROVIDER: _PROVIDER_TYPES,
+    ADCMCoreType.HOST: _PROVIDER_TYPES,
 }
 
 
@@ -52,7 +52,7 @@ def validate_target_allowed_for_context_owner(
         return PluginTargetError(message="Wrong context. One host can't be changed from another's context.")
 
     if (
-        context_owner.type == ADCMCoreType.HOSTPROVIDER
+        context_owner.type == ADCMCoreType.PROVIDER
         and target.type == ADCMCoreType.HOST
         and retrieve_orm_object(object_=target).provider_id != context_owner.id
     ):

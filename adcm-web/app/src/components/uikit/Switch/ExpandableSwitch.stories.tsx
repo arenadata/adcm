@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import ExpandableSwitch, { ExpandableSwitchProps } from './ExpandableSwitch';
-import { Meta, StoryObj } from '@storybook/react';
+import type React from 'react';
+import { useState } from 'react';
+import type { ExpandableSwitchProps } from './ExpandableSwitch';
+import ExpandableSwitch from './ExpandableSwitch';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof ExpandableSwitch>;
 

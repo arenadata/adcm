@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmGroupsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmGroup } from '@models/adcm';
+import type { AdcmGroup } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { LoadState } from '@models/loadState';
@@ -12,7 +12,7 @@ interface AdcmGroupsState {
   loadState: LoadState;
 }
 
-const loadFromBackend = createAsyncThunk('adcm/groups/loadFromBackend', async (arg, thunkAPI) => {
+const loadFromBackend = createAsyncThunk('adcm/groups/loadFromBackend', async (_arg, thunkAPI) => {
   const {
     adcm: {
       groupsTable: { filter, paginationParams, sortParams },
@@ -27,7 +27,7 @@ const loadFromBackend = createAsyncThunk('adcm/groups/loadFromBackend', async (a
   }
 });
 
-const getGroups = createAsyncThunk('adcm/groups/getGroups', async (arg, thunkAPI) => {
+const getGroups = createAsyncThunk('adcm/groups/getGroups', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -42,7 +42,7 @@ const getGroups = createAsyncThunk('adcm/groups/getGroups', async (arg, thunkAPI
   });
 });
 
-const refreshGroups = createAsyncThunk('adcm/groups/refreshGroups', async (arg, thunkAPI) => {
+const refreshGroups = createAsyncThunk('adcm/groups/refreshGroups', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadFromBackend());
 });
 

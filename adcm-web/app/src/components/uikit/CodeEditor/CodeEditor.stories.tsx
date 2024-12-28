@@ -1,7 +1,7 @@
 /* eslint-disable spellcheck/spell-checker */
 import { useState } from 'react';
 import CodeEditor from './CodeEditor';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 
 type Story = StoryObj<typeof CodeEditor>;
 
@@ -38,7 +38,11 @@ export default {
 
 const CodeEditorExample = ({ ...args }) => {
   const [code, setCode] = useState(args.code);
-  return <CodeEditor code={code} language={args.language} isSecret={args.isSecret} onChange={setCode} />;
+  return (
+    <div style={{ height: '500px', maxWidth: '1100px' }}>
+      <CodeEditor code={code} language={args.language} isSecret={args.isSecret} onChange={setCode} />
+    </div>
+  );
 };
 
 export const CodeEditorStory: Story = {

@@ -1,9 +1,9 @@
-import { Action, Middleware } from 'redux';
+import type { Action, Middleware } from 'redux';
 import { wsHost } from '@constants';
 import type { RootState } from '../store';
 import { wsActions } from './wsMiddleware.constants';
-import { ActionCreatorWithPayload } from '@reduxjs/toolkit';
-import { AdcmBackendEvent } from '@models/adcm';
+import type { ActionCreatorWithPayload } from '@reduxjs/toolkit';
+import type { AdcmBackendEvent } from '@models/adcm';
 import { WsClient } from '@api/wsClient/wsClient';
 import { login, checkSession, logout } from '@store/authSlice';
 
@@ -12,7 +12,7 @@ const wsClient = new WsClient(`${wsHost}/ws/event/`);
 type WsActions = { [key: string]: ActionCreatorWithPayload<unknown> };
 
 export const wsMiddleware: Middleware<
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   {},
   RootState
 > = (storeApi) => {

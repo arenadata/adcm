@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
-import { Batch, AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
-import { EmptyTableFilter, PaginationParams, SortParams } from '@models/table';
+import type { Batch, AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
+import type { EmptyTableFilter, PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
 

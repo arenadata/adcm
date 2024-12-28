@@ -1,5 +1,5 @@
 import React from 'react';
-import { PopoverPanelProps } from '@uikit/Popover/Popover.types';
+import type { PopoverPanelProps } from '@uikit/Popover/Popover.types';
 import cn from 'classnames';
 import s from './PopoverPanelDefault.module.scss';
 

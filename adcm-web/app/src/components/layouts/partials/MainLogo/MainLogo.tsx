@@ -1,4 +1,5 @@
-import React, { HTMLAttributes } from 'react';
+import type { HTMLAttributes } from 'react';
+import type React from 'react';
 import { Link } from 'react-router-dom';
 import { ReactComponent as FullLogo } from './images/logo.svg';
 import { ReactComponent as MiniLogo } from './images/mini-logo.svg';

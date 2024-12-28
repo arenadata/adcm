@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import type React from 'react';
+import { useState, useCallback } from 'react';
 import cn from 'classnames';
 import s from './TableCell.module.scss';
-import { AlignType } from '../Table.types';
+import type { AlignType } from '../Table.types';
 import { useTableContext } from '@uikit/Table/TableContext';
 
 export interface TableCellProps extends Omit<React.HTMLProps<HTMLTableCellElement>, 'align'> {

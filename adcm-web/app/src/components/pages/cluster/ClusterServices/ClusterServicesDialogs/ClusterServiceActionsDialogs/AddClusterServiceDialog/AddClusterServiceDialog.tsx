@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
 import { AddServiceStepKey } from './AddClusterServiceDialog.types';
 import SelectServicesStep from './SelectServicesStep/SelectServicesStep';

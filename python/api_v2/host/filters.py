@@ -10,14 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Host
-from django_filters.rest_framework import BooleanFilter, CharFilter, FilterSet, NumberFilter, OrderingFilter
+from django.db.models import QuerySet
+from django_filters.rest_framework import (
+    BooleanFilter,
+    CharFilter,
+    NumberFilter,
+    OrderingFilter,
+)
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class HostFilter(FilterSet):
+class HostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
+):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
-    cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
+    cluster_name = CharFilter(label="Cluster name", field_name="cluster__name", lookup_expr="exact")
     is_in_cluster = BooleanFilter(label="Is host in cluster", method="filter_is_in_cluster")
     ordering = OrderingFilter(
         fields={
@@ -37,18 +49,19 @@ class HostFilter(FilterSet):
         label="ordering",
     )
 
-    class Meta:
-        model = Host
-        fields = ["name", "hostprovider_name", "cluster_name", "is_in_cluster"]
-
     @staticmethod
-    def filter_is_in_cluster(queryset, _, value):
+    def filter_is_in_cluster(queryset: QuerySet, _, value: bool) -> QuerySet:
         return queryset.filter(cluster__isnull=not value)
 
 
-class HostMemberFilter(FilterSet):
+class ClusterHostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
+):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
     component_id = NumberFilter(label="Component id", field_name="hostcomponent__component_id")
     ordering = OrderingFilter(
         fields={
@@ -66,6 +79,27 @@ class HostMemberFilter(FilterSet):
         label="ordering",
     )
 
-    class Meta:
-        model = Host
-        fields = ["name", "hostprovider_name", "component_id", "ordering"]
+
+class HostGroupHostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id", ("hostprovider", "provider__id")),
+    with_object_status=True,
+):
+    name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
+    ordering = OrderingFilter(
+        fields={
+            "fqdn": "name",
+            "state": "state",
+            "id": "id",
+            "provider__name": "hostproviderName",
+        },
+        field_labels={
+            "name": "Name",
+            "id": "Id",
+            "state": "State",
+            "hostproviderName": "Hostprovider name",
+        },
+        label="ordering",
+    )

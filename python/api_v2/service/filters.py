@@ -10,35 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCMEntityStatus, ClusterObject, ObjectType
+from cm.models import ADCMEntityStatus
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
-    FilterSet,
     OrderingFilter,
 )
 
-from api_v2.filters import filter_service_status
+from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 
-class ServiceFilter(FilterSet):
-    name = CharFilter(label="Service name", method="filter_name")
-    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
+class ServiceFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+    with_object_status=True,
+):
+    name = CharFilter(label="Service name", field_name="prototype__name", lookup_expr="icontains")
+    display_name = CharFilter(
+        label="Service display name", field_name="prototype__display_name", lookup_expr="icontains"
+    )
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(
         fields={"prototype__display_name": "displayName"},
-        field_labels={"prototype__display_name": "Display name"},
+        field_labels={
+            "prototype__display_name": "Display name",
+        },
     )
-
-    class Meta:
-        model = ClusterObject
-        fields = ["name", "display_name", "status"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
         return filter_service_status(queryset=queryset, value=value)
-
-    @staticmethod
-    def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
-        return queryset.filter(prototype__type=ObjectType.SERVICE, prototype__name__icontains=value)

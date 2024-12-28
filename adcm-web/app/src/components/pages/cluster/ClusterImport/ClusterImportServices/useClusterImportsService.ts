@@ -14,7 +14,7 @@ import {
   resetFilter,
 } from '@store/adcm/cluster/imports/service/clusterImportsServiceFilterSlice';
 
-import {
+import type {
   ClusterImportsSetGroup,
   SelectedImportHandlerData,
   SelectedImportsGroup,
@@ -28,7 +28,7 @@ import {
   prepToggleSelectedSingleBindData,
 } from '@pages/cluster/ClusterImport/ClusterImport.utils';
 
-import { PaginationParams } from '@models/table';
+import type { PaginationParams } from '@models/table';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 export const useClusterImportsService = () => {

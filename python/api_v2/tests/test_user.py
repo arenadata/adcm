@@ -19,6 +19,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 from rbac.models import Group, OriginType, Role, User
+from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import (
@@ -30,11 +31,13 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-import pytz
+import zoneinfo
 
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
 from api_v2.tests.base import BaseAPITestCase
+
+UTC = zoneinfo.ZoneInfo("UTC")
 
 
 class TestUserAPI(BaseAPITestCase):
@@ -605,42 +608,31 @@ class TestUserAPI(BaseAPITestCase):
         )
 
     def test_ordering_success(self):
-        user_data = [
-            {
-                "username": "username1",
-                "password": "username1password",
-                "email": "username1@mail.ru",
-                "first_name": "username1_first_name",
-                "last_name": "username1_last_name",
-            },
-            {
-                "username": "username2",
-                "password": "username2password",
-                "email": "username2@mail.ru",
-                "first_name": "username2_first_name",
-                "last_name": "username2_last_name",
-            },
-            {
-                "username": "username3",
-                "password": "username3password",
-                "email": "username3@mail.ru",
-                "first_name": "username3_first_name",
-                "last_name": "username3_last_name",
-            },
-        ]
-        for data in user_data:
-            self.create_user(user_data=data)
+        ordering_fields = {
+            "username": "username",
+        }
 
-        response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "-username"})
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(model_field)
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
-        response_usernames = [user["username"] for user in response.json()["results"]]
-        db_usernames = list(
-            User.objects.order_by("-username")
-            .exclude(username__in=settings.ADCM_HIDDEN_USERS)
-            .values_list("username", flat=True)
-        )
-        self.assertListEqual(response_usernames, db_usernames)
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(f"-{model_field}")
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
     def test_ordering_wrong_params_fail(self):
         response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "param"})
@@ -789,7 +781,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         self.edit_client.login(**creds)
 
     def test_retrieve_blocked_by_login_attempts(self) -> None:
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -812,7 +804,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_retrieve_blocked_both_ways(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.save()
 
         response = self.client.v2[self.user].get()
@@ -872,7 +864,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.save()
 
@@ -886,7 +878,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
     def test_unblock_ldap_success(self) -> None:
         self.user.is_active = False
-        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.blocked_at = datetime.datetime.now(tz=UTC)
         self.user.failed_login_attempts = 10
         self.user.type = OriginType.LDAP
         self.user.save()
@@ -904,3 +896,52 @@ class TestBlockUnblockAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+
+
+class TestAdvancedUserFilters(BaseAPITestCase):
+    def setUp(self):
+        self.client.login(username="admin", password="admin")
+
+        self.admin_user = User.objects.get(username="admin")
+        self.user_1 = self.create_user(username="user-1", password="secretPassword")
+        self.user_2 = self.create_user(username="user-2", password="secretPassword")
+        self.user_3 = self.create_user(username="user-3", password="secretPassword")
+
+        self.group_1 = create_group(name_to_display="group-1", user_set=[{"id": self.user_1.pk}])
+        self.group_2 = create_group(name_to_display="group-2", user_set=[{"id": self.user_2.pk}])
+        self.group_3 = create_group(
+            name_to_display="group-3", user_set=[{"id": self.user_2.pk}, {"id": self.user_3.pk}]
+        )
+        self.group_empty = create_group(name_to_display="group-empty")
+
+    def _get_usernames(self, query: dict) -> list[str]:
+        response = (self.client.v2 / "rbac" / "users").get(query=query)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return sorted(user["username"] for user in response.json()["results"])
+
+    def test_group__eq(self):
+        response_usernames = self._get_usernames(query={"group__eq": self.group_1.pk})
+        expected_usernames = [self.user_1.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__ne(self):
+        response_usernames = self._get_usernames(query={"group__ne": self.group_2.pk})
+        expected_usernames = [self.admin_user.username, self.user_1.username, self.user_3.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__in(self):
+        target_group_ids = ",".join(map(str, (self.group_2.pk, self.group_3.pk, self.group_empty.pk, -3)))
+        response_usernames = self._get_usernames(query={"group__in": target_group_ids})
+        expected_usernames = [self.user_2.username, self.user_3.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)
+
+    def test_group__exclude(self):
+        excluded_group_ids = ",".join(map(str, (self.group_2.pk, self.group_3.pk, self.group_empty.pk, -3)))
+        response_usernames = self._get_usernames(query={"group__exclude": excluded_group_ids})
+        expected_usernames = [self.admin_user.username, self.user_1.username]
+
+        self.assertListEqual(response_usernames, expected_usernames)

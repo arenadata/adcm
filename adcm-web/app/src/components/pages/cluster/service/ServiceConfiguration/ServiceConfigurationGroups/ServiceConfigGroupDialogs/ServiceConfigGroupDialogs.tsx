@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
 import {
@@ -7,7 +7,7 @@ import {
   createClusterServiceConfigGroup,
   deleteClusterServiceConfigGroupWithUpdate,
 } from '@store/adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
-import { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
+import type { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
 import ConfigGroupDeleteDialog from '@commonComponents/configGroups/ConfigGroupDeleteDialog/ConfigGroupDeleteDialog';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
 import ClusterConfigGroupMappingDialog from './ServiceConfigGroupMappingDialog/ServiceConfigGroupMappingDialog';

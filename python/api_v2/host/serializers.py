@@ -12,13 +12,14 @@
 
 from adcm import settings
 from adcm.serializers import EmptySerializer
-from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
+from cm.models import Cluster, Component, Host, MaintenanceMode, Provider
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
+    ListSerializer,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -28,9 +29,9 @@ from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from api_v2.serializers import WithStatusSerializer
 
 
-class HostProviderSerializer(ModelSerializer):
+class ProviderSerializer(ModelSerializer):
     class Meta:
-        model = HostProvider
+        model = Provider
         fields = ["id", "name", "display_name"]
 
 
@@ -42,12 +43,12 @@ class HostClusterSerializer(ModelSerializer):
 
 class HCComponentNameSerializer(ModelSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name"]
 
 
 class HostSerializer(WithStatusSerializer):
-    hostprovider = HostProviderSerializer(source="provider")
+    hostprovider = ProviderSerializer(source="provider")
     prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True)
     name = CharField(
@@ -87,7 +88,7 @@ class HostSerializer(WithStatusSerializer):
         ]
 
     @staticmethod
-    @extend_schema_field(field=HCComponentNameSerializer)
+    @extend_schema_field(field=HCComponentNameSerializer(many=True))
     def get_components(instance: Host) -> list[dict]:
         return HCComponentNameSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
@@ -171,3 +172,7 @@ class HostAuditSerializer(ModelSerializer):
     class Meta:
         model = Host
         fields = ["fqdn", "description", "maintenance_mode"]
+
+
+class ManyHostAddSerializer(ListSerializer):
+    child = HostAddSerializer()

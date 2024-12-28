@@ -17,7 +17,7 @@ from adcm import settings
 from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 from cm.models import JobLog, LogStorage
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from api_v2.api_schema import ErrorSerializer
+from api_v2.log_storage.filters import LogFilter
 from api_v2.log_storage.permissions import LogStoragePermissions
 from api_v2.log_storage.serializers import LogStorageSerializer
 from api_v2.views import ADCMGenericViewSet
@@ -70,7 +71,8 @@ from api_v2.views import ADCMGenericViewSet
             ),
         ],
         responses={
-            HTTP_200_OK: OpenApiResponse(description="OK"),
+            (HTTP_200_OK, "text/plain"): {"type": "string", "format": "binary"},
+            (HTTP_200_OK, "application/json"): {"type": "string", "format": "binary"},
             **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
         },
     ),
@@ -78,7 +80,7 @@ from api_v2.views import ADCMGenericViewSet
 class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = LogStorage.objects.select_related("job")
     serializer_class = LogStorageSerializer
-    filter_backends = []
+    filterset_class = LogFilter
     pagination_class = None
     permission_classes = [LogStoragePermissions]
     permission_required = [VIEW_LOGSTORAGE_PERMISSION]

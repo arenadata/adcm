@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 
 
@@ -26,6 +26,20 @@ def document_config_viewset(object_type: str, operation_id_variant: str | None =
             summary=f"GET {object_type}'s config versions",
             description=f"Get information about {object_type}'s config versions.",
             responses=responses(success=ConfigLogListSerializer, errors=HTTP_404_NOT_FOUND),
+            parameters=[
+                DefaultParams.LIMIT,
+                DefaultParams.OFFSET,
+                OpenApiParameter(
+                    name="description",
+                    description="Case insensitive and partial filter by description.",
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    enum=("description", "id", "-description", "-id"),
+                    default="-id",
+                ),
+            ],
         ),
         retrieve=extend_schema(
             operation_id=f"get{capitalized_type}Config",

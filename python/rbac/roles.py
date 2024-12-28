@@ -15,14 +15,14 @@ from cm.models import (
     Action,
     ActionHostGroup,
     ADCMEntity,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     JobLog,
     LogStorage,
-    ServiceComponent,
+    Service,
     TaskLog,
 )
 from django.apps import apps
@@ -303,7 +303,7 @@ class ConfigRole(AbstractRole):
                 continue
 
             object_type = ContentType.objects.get_for_model(obj)
-            config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
+            config_groups = ConfigHostGroup.objects.filter(object_type=object_type, object_id=obj.id)
 
             for perm in role.get_permissions():
                 if perm.content_type.model == "objectconfig":
@@ -322,7 +322,7 @@ class ConfigRole(AbstractRole):
                         for config in config_group.config.configlog_set.all():
                             assign_group_perm(policy=policy, permission=perm, obj=config)
 
-                if perm.content_type.model == "groupconfig":
+                if perm.content_type.model == "confighostgroup":
                     for config_group in config_groups:
                         assign_group_perm(policy=policy, permission=perm, obj=config_group)
 
@@ -357,10 +357,10 @@ class ParentRole(AbstractRole):
 
             if obj.prototype.type == "cluster":
                 if "service" in parametrized_by or "component" in parametrized_by:
-                    for service in ClusterObject.obj.filter(cluster=obj):
+                    for service in Service.obj.filter(cluster=obj):
                         self.find_and_apply(obj=service, policy=policy, role=role)
                         if "component" in parametrized_by:
-                            for comp in ServiceComponent.obj.filter(service=service):
+                            for comp in Component.obj.filter(service=service):
                                 self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:
@@ -368,7 +368,7 @@ class ParentRole(AbstractRole):
                         self.find_and_apply(obj=host, policy=policy, role=role)
             elif obj.prototype.type == "service":
                 if "component" in parametrized_by:
-                    for comp in ServiceComponent.obj.filter(service=obj):
+                    for comp in Component.obj.filter(service=obj):
                         self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:
@@ -396,7 +396,7 @@ class ParentRole(AbstractRole):
                 )
                 assign_group_perm(
                     policy=policy,
-                    permission=Permission.objects.get(codename="view_clusterobject"),
+                    permission=Permission.objects.get(codename="view_service"),
                     obj=obj.service,
                 )
             elif obj.prototype.type == "provider":

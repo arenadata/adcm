@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmClusterImport, AdcmClusterImportPostPayload, Batch } from '@models/adcm';
-import { PaginationParams } from '@models/table';
+import type { AdcmClusterImport, AdcmClusterImportPostPayload, Batch } from '@models/adcm';
+import type { PaginationParams } from '@models/table';
 import { prepareLimitOffset } from '@utils/apiUtils';
 import qs from 'qs';
 

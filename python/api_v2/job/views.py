@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from adcm.permissions import VIEW_JOBLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -29,6 +30,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.job.filters import JobFilter
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
@@ -44,13 +46,6 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=str,
-            ),
         ],
     ),
     terminate=extend_schema(
@@ -58,7 +53,7 @@ from api_v2.views import ADCMGenericViewSet
         description="Terminate the execution of a specific job.",
         summary="POST job terminate",
         responses={
-            HTTP_200_OK: OpenApiResponse(description="OK"),
+            HTTP_200_OK: OpenApiResponse(),
             **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
         },
     ),
@@ -74,7 +69,7 @@ from api_v2.views import ADCMGenericViewSet
 )
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
-    filter_backends = []
+    filterset_class = JobFilter
     permission_classes = [JobPermissions]
     permission_required = [VIEW_JOBLOG_PERMISSION]
 

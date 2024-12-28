@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import { Button, ButtonGroup, Panel, SearchInput, Switch, IconButton } from '@uikit';
 import type { MappingFilter } from '../ClusterMapping.types';
-import { ActionState } from '@models/loadState';
-import { SortDirection } from '@models/table';
+import type { ActionState } from '@models/loadState';
+import type { SortDirection } from '@models/table';
 import s from './ClusterMappingToolbar.module.scss';
 import cn from 'classnames';
 
@@ -74,7 +74,8 @@ const ClusterMappingToolbar = ({
         />
         <div className={s.clusterMappingToolbar__sortIconWrapper}>
           {/* eslint-disable-next-line prettier/prettier*/}
-          <IconButton icon="arrow" size="medium" className={sortIconClassName} onClick={handleOrderChange} /> A - Z order
+          <IconButton icon="arrow" size="medium" className={sortIconClassName} onClick={handleOrderChange} /> A - Z
+          order
         </div>
         <Switch
           //

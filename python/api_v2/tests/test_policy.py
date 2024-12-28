@@ -27,7 +27,7 @@ class TestPolicy(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.remove_hostprovider_role = role_create(
+        self.remove_provider_role = role_create(
             name="Remove Host-Provider",
             display_name="Remove Host-Provider",
             child=[Role.objects.get(name="Remove provider", built_in=True)],
@@ -41,11 +41,19 @@ class TestPolicy(BaseAPITestCase):
         self.group_1 = Group.objects.create(name="test_local_group_1")
         self.group_2 = Group.objects.create(name="test_local_group_2")
 
-        self.remove_hostprovider_policy = policy_create(
-            name="Awesome Policy", role=self.remove_hostprovider_role, group=[self.group_1], object=[self.provider]
+        self.remove_provider_policy = policy_create(
+            name="Awesome Policy",
+            role=self.remove_provider_role,
+            group=[self.group_1],
+            object=[self.provider],
+            description="first description",
         )
         self.create_user_policy = policy_create(
-            name="Create User Policy", role=self.create_user_role, group=[self.group_1, self.group_2], object=[]
+            name="Create User Policy",
+            role=self.create_user_role,
+            group=[self.group_1, self.group_2],
+            object=[],
+            description="second description",
         )
 
     def test_list_policy_success(self) -> None:
@@ -88,7 +96,7 @@ class TestPolicy(BaseAPITestCase):
         response = (self.client.v2 / "rbac" / "policies").post(
             data={
                 "name": "New Policy",
-                "role": {"id": self.remove_hostprovider_role.pk},
+                "role": {"id": self.remove_provider_role.pk},
                 "objects": [{"id": self.provider.pk, "type": "provider"}],
                 "groups": [self.group_1.pk],
             }
@@ -121,12 +129,12 @@ class TestPolicy(BaseAPITestCase):
             "objects": [],
             "groups": [self.group_2.pk],
         }
-        response = self.client.v2[self.remove_hostprovider_policy].patch(data=new_data)
+        response = self.client.v2[self.remove_provider_policy].patch(data=new_data)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data).issuperset({"id", "objects", "groups"}))
-        self.assertEqual(data["id"], self.remove_hostprovider_policy.pk)
+        self.assertEqual(data["id"], self.remove_provider_policy.pk)
         self.assertListEqual(data["objects"], [])
         self.assertEqual(
             data["groups"],
@@ -172,3 +180,51 @@ class TestPolicy(BaseAPITestCase):
         policies = [p["name"] for p in response.json()["results"]]
         self.assertEqual(len(policies), 6)
         self.assertEqual(policies, ["Awesome Policy", "Best", "Class", "Create User Policy", "Good", "Test"])
+
+    def test_ordering_success(self):
+        ordering_fields = {
+            "name": "name",
+        }
+
+        def get_results(response, ordering_field):
+            if ordering_field == "builtIn":
+                return [item["isBuiltIn"] for item in response.json()["results"]]
+            return [item[ordering_field] for item in response.json()["results"]]
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "policies").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    get_results(response, ordering_field),
+                    list(Policy.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "rbac" / "policies").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    get_results(response, ordering_field),
+                    list(Policy.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
+
+    def test_filtering_success(self):
+        self.create_user_policy.built_in = True
+        self.create_user_policy.save()
+        filters = {
+            "id": (self.create_user_policy.pk, None, 0),
+            "name": (self.create_user_policy.name, self.create_user_policy.name[1:-3].upper(), "wrong"),
+        }
+        partial_items_found, exact_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            wrong_items_found = 1 if filter_name == "built_in" else 0
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "rbac" / "policies").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
+
+                response = (self.client.v2 / "rbac" / "policies").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], wrong_items_found)
+
+                if partial_value:
+                    response = (self.client.v2 / "rbac" / "policies").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)

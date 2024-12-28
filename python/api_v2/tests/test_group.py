@@ -48,13 +48,13 @@ class TestGroupAPI(BaseAPITestCase):
         self.create_user(user_data=user_create_data)
         self.client.login(**user_credentials)
 
-        response: Response = (self.client.v2 / "rbac" / "groups").get()
+        response = (self.client.v2 / "rbac" / "groups").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 0)
 
     def test_create_required_fields_success(self):
-        response: Response = (self.client.v2 / "rbac" / "groups").post(data={"display_name": "new group name"})
+        response = (self.client.v2 / "rbac" / "groups").post(data={"display_name": "new group name"})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Group.objects.count(), 3)
@@ -68,7 +68,7 @@ class TestGroupAPI(BaseAPITestCase):
         new_user = self.create_user()
         create_data = {"display_name": "new group name", "description": "new group description", "users": [new_user.pk]}
 
-        response: Response = (self.client.v2 / "rbac" / "groups").post(data=create_data)
+        response = (self.client.v2 / "rbac" / "groups").post(data=create_data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Group.objects.count(), 3)
@@ -82,7 +82,7 @@ class TestGroupAPI(BaseAPITestCase):
             "users": [new_user.pk],
         }
 
-        response: Response = self.client.v2[self.group_local].patch(data=update_data)
+        response = self.client.v2[self.group_local].patch(data=update_data)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.group_local.refresh_from_db()
@@ -90,7 +90,7 @@ class TestGroupAPI(BaseAPITestCase):
         self.assertEqual(self.group_local.description, update_data["description"])
         self.assertListEqual(list(self.group_local.user_set.values_list("id", flat=True)), update_data["users"])
 
-        response: Response = self.client.v2[self.group_local].patch(data={"display_name": "new_display name"})
+        response = self.client.v2[self.group_local].patch(data={"display_name": "new_display name"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.group_local.refresh_from_db()
@@ -100,46 +100,57 @@ class TestGroupAPI(BaseAPITestCase):
 
     def test_delete_success(self):
         group_ldap_pk = self.group_ldap.pk
-        response: Response = self.client.v2[self.group_ldap].delete()
+        response = self.client.v2[self.group_ldap].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         with self.assertRaises(Group.DoesNotExist):
             Group.objects.get(pk=group_ldap_pk)
 
-    def test_ordering_by_name_success(self):
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": "displayName"})
+    def test_ordering_success(self):
+        ordering_fields = {
+            "display_name": "displayName",
+        }
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertListEqual(
-            [group["displayName"] for group in response.json()["results"]],
-            [group.display_name for group in Group.objects.order_by("name")],
-        )
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [group[ordering_field] for group in response.json()["results"]],
+                    list(Group.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
 
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": "-displayName"})
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertListEqual(
-            [group["displayName"] for group in response.json()["results"]],
-            [group.display_name for group in Group.objects.order_by("-name")],
-        )
+                response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [group[ordering_field] for group in response.json()["results"]],
+                    list(Group.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
-    def test_filtering_by_display_name_success(self):
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"displayName": "nonexistentname"})
+    def test_filtering_success(self):
+        self.group_ldap.description = "unique_description"
+        self.group_ldap.save()
+        filters = {
+            "display_name": (self.group_ldap.display_name, self.group_ldap.display_name[1:-3].upper(), "wrong"),
+            "type": (self.group_ldap.type, None, "local"),
+        }
+        partial_items_found, exact_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            wrong_items_found = 0 if filter_name != "type" else 1
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "rbac" / "groups").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 0)
+                response = (self.client.v2 / "rbac" / "groups").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], wrong_items_found)
 
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"displayName": "_lDaP_"})
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-
-    def test_filtering_by_type_success(self):
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"type": "local"})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+                if partial_value:
+                    response = (self.client.v2 / "rbac" / "groups").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_filtering_by_wrong_type_fail(self):
-        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"type": "wrong-group-type"})
+        response = (self.client.v2 / "rbac" / "groups").get(query={"type": "wrong-group-type"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 

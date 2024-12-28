@@ -159,6 +159,8 @@
       constraint: [ 0, + ]
       actions:
         action_1_comp_2: *action
+    component_3:
+      constraint: [ 0, + ]
 
 - name: service_2
   type: service

@@ -23,7 +23,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, HostProvider, Prototype
+from cm.models import Cluster, ConcernType, Host, Prototype, Provider
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -42,7 +42,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import ErrorSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -71,14 +71,38 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         description="Get a list of all hosts.",
         summary="GET hosts",
         parameters=[
-            OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="name",
+                description="Case insensitive and partial filter by host name.",
+            ),
+            OpenApiParameter(
+                name="hostprovider_name",
+                description="Filter by hostprovider name.",
+            ),
+            OpenApiParameter(
+                name="cluster_name",
+                description="Filter by cluster name.",
+            ),
+            OpenApiParameter(
+                name="is_in_cluster",
+                description="Filter by is host in cluster.",
+                type=bool,
+            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
-                enum=("name", "-name", "id", "-id"),
+                enum=(
+                    "name",
+                    "-name",
+                    "id",
+                    "-id",
+                    "state",
+                    "-state",
+                    "hostproviderName",
+                    "-hostproviderName",
+                    "clusterName",
+                    "-clusterName",
+                ),
                 default="name",
             ),
         ],
@@ -203,10 +227,10 @@ class HostViewSet(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        request_hostprovider = get_object_for_user(
+        request_provider = get_object_for_user(
             user=request.user,
             perms=VIEW_PROVIDER_PERM,
-            klass=HostProvider,
+            klass=Provider,
             id=serializer.validated_data["hostprovider_id"],
         )
 
@@ -217,10 +241,10 @@ class HostViewSet(
             )
 
         with atomic():
-            bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_hostprovider.prototype_id)
+            bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_provider.prototype_id)
             host = create_host(
                 bundle_id=bundle_id,
-                provider_id=request_hostprovider.id,
+                provider_id=request_provider.id,
                 fqdn=serializer.validated_data["fqdn"],
                 cluster=request_cluster,
             )

@@ -1,6 +1,8 @@
-import React, { Fragment, useMemo, useState } from 'react';
+import type React from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import TabButton from '@uikit/Tabs/TabButton';
-import { AdcmLicenseStatus, AdcmPrototype } from '@models/adcm';
+import type { AdcmPrototype } from '@models/adcm';
+import { AdcmLicenseStatus } from '@models/adcm';
 import { Panel, TabsBlock } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import LicenseText from '@commonComponents/license/LicenseText/LicenseText';

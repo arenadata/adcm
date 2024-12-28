@@ -1,4 +1,4 @@
-import {
+import type {
   AdcmHostShortView,
   AdcmMappingComponent,
   AdcmMappingComponentService,
@@ -50,7 +50,7 @@ export type ComponentHostsDictionary = Record<ComponentId, AdcmHostShortView[]>;
 export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
 export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
-export type DisabledComponentsMappings = Record<ComponentId, Set<HostId>>;
+export type InitiallyMappedHostsDictionary = Record<ComponentId, Set<HostId>>;
 
 export type ComponentsMappingErrors = Record<ComponentId, ComponentMappingErrors>;
 

@@ -1,11 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import { Dialog } from '@uikit';
 import { AdcmMaintenanceMode } from '@models/adcm';
-import {
-  EntityWithMaintenanceModeType,
-  getEntityDisplayName,
-  getRevertedMaintenanceModeStatus,
-} from './MaintenanceModeDialog.utils';
+import type { EntityWithMaintenanceModeType } from './MaintenanceModeDialog.utils';
+import { getEntityDisplayName, getRevertedMaintenanceModeStatus } from './MaintenanceModeDialog.utils';
 
 interface MaintenanceModeDialogProps {
   entity: EntityWithMaintenanceModeType;

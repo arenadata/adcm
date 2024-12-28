@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmHostProvider } from '@models/adcm/hostProvider';
+import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';
@@ -14,7 +14,7 @@ interface AdcmHostProvidersState {
   loadState: LoadState;
 }
 
-const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (_arg, thunkAPI) => {
   const {
     adcm: {
       hostProvidersTable: { filter, sortParams, paginationParams },
@@ -29,7 +29,7 @@ const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders
   }
 });
 
-const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders', async (arg, thunkAPI) => {
+const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -44,7 +44,7 @@ const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders',
   });
 });
 
-const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostProviders', async (arg, thunkAPI) => {
+const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostProviders', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadHostProviders());
 });
 
@@ -73,7 +73,7 @@ const hostProvidersSlice = createSlice({
     builder.addCase(loadHostProviders.rejected, (state) => {
       state.hostProviders = [];
     });
-    builder.addCase(wsActions.update_provider, (state, action) => {
+    builder.addCase(wsActions.update_hostprovider, (state, action) => {
       const { id, changes } = action.payload.object;
       state.hostProviders = updateIfExists<AdcmHostProvider>(
         state.hostProviders,

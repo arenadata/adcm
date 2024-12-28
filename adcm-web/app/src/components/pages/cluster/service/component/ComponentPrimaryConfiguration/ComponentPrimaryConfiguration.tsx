@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { useDispatch } from '@hooks';
 import { useComponentPrimaryConfiguration } from '@pages/cluster/service/component/ComponentPrimaryConfiguration/useComponentPrimaryConfiguration';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';

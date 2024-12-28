@@ -1,6 +1,6 @@
 import { useDispatch, useForm, useStore } from '@hooks';
-import { closeUserUpdateDialog, updateUser } from '@store/adcm/users/usersActionsSlice';
-import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
+import { closeUserUpdateDialog, loadGroups, updateUser } from '@store/adcm/users/usersActionsSlice';
+import type { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
 import { isEmailValid, required } from '@utils/validationsUtils';
 
@@ -18,7 +18,7 @@ const initialFormData: RbacUserFormData = {
 export const useRbacUserUpdateDialog = () => {
   const dispatch = useDispatch();
   const user = useStore((s) => s.adcm.usersActions.updateDialog.user);
-  const isUpdating = useStore((s) => s.adcm.usersActions.updateDialog.isUpdating);
+  const isUpdating = useStore((s) => s.adcm.usersActions.isActionInProgress);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
@@ -30,10 +30,12 @@ export const useRbacUserUpdateDialog = () => {
     useForm<RbacUserFormData>(initialFormData);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      dispatch(loadGroups());
+    } else {
       setFormData(initialFormData);
     }
-  }, [isOpen, setFormData]);
+  }, [dispatch, isOpen, setFormData]);
 
   useEffect(() => {
     if (user) {

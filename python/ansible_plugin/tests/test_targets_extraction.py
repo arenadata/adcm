@@ -14,7 +14,7 @@ from pathlib import Path
 
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin, DummyExecutor
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
-from cm.models import ClusterObject, ServiceComponent
+from cm.models import Component, Service
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -75,13 +75,13 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         """
 
         expected_cluster = self.cluster_1
-        expected_service = ClusterObject.objects.get(prototype__name="service_2", cluster=self.cluster_1)
-        expected_component = ServiceComponent.objects.get(
+        expected_service = Service.objects.get(prototype__name="service_2", cluster=self.cluster_1)
+        expected_component = Component.objects.get(
             prototype__name="component_2", service__prototype__name="service_1", cluster=self.cluster_1
         )
 
-        another_service = ClusterObject.objects.get(prototype__name="service_1", cluster=self.cluster_1)
-        another_component = ServiceComponent.objects.get(
+        another_service = Service.objects.get(prototype__name="service_1", cluster=self.cluster_1)
+        another_component = Component.objects.get(
             prototype__name="component_2", service__prototype__name="service_1", cluster=self.cluster_1
         )
 
@@ -114,10 +114,10 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         }
 
         parent_cluster = self.cluster_2
-        context_service = ClusterObject.objects.get(prototype__name="service_2", cluster=parent_cluster)
-        another_service = ClusterObject.objects.get(prototype__name="service_1", cluster=parent_cluster)
-        child_component = ServiceComponent.objects.get(service=context_service, prototype__name="component_1")
-        another_service_component = ServiceComponent.objects.get(service=another_service, prototype__name="component_1")
+        context_service = Service.objects.get(prototype__name="service_2", cluster=parent_cluster)
+        another_service = Service.objects.get(prototype__name="service_1", cluster=parent_cluster)
+        child_component = Component.objects.get(service=context_service, prototype__name="component_1")
+        another_service_component = Component.objects.get(service=another_service, prototype__name="component_1")
 
         self.check_target_detection(
             arguments=arguments,
@@ -154,13 +154,13 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         }
 
         parent_cluster = self.cluster_2
-        context_service = ClusterObject.objects.get(prototype__name="service_2", cluster=parent_cluster)
-        another_service = ClusterObject.objects.get(prototype__name="service_1", cluster=parent_cluster)
-        context_component = ServiceComponent.objects.get(service=context_service, prototype__name="component_1")
-        another_component_of_same_service = ServiceComponent.objects.get(
+        context_service = Service.objects.get(prototype__name="service_2", cluster=parent_cluster)
+        another_service = Service.objects.get(prototype__name="service_1", cluster=parent_cluster)
+        context_component = Component.objects.get(service=context_service, prototype__name="component_1")
+        another_component_of_same_service = Component.objects.get(
             service=context_service, prototype__name="component_2"
         )
-        another_service_component = ServiceComponent.objects.get(service=another_service, prototype__name="component_1")
+        another_service_component = Component.objects.get(service=another_service, prototype__name="component_1")
 
         self.check_target_detection(
             arguments=arguments,
@@ -192,7 +192,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
             task=self.prepare_task(owner=host, name="dummy"),
             expected_targets=[
                 CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
-                CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER),
+                CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER),
             ],
         )
 
@@ -201,7 +201,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
 
         host = self.host_2
         parent_cluster = self.cluster_1
-        component = ServiceComponent.objects.filter(cluster=parent_cluster).first()
+        component = Component.objects.filter(cluster=parent_cluster).first()
 
         self.add_host_to_cluster(cluster=parent_cluster, host=host)
         self.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
@@ -221,7 +221,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         arguments = {"objects": [{"type": "component", "component_name": "component_not_exist"}]}
 
         parent_cluster = self.cluster_2
-        context_service = ClusterObject.objects.get(prototype__name="service_2", cluster=parent_cluster)
+        context_service = Service.objects.get(prototype__name="service_2", cluster=parent_cluster)
 
         task = self.prepare_task(owner=context_service, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

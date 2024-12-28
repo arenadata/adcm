@@ -1,10 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterServiceConfigGroupsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterServiceConfigGroupsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
-import { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
+import type { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
+import type { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
 import { getClusterServiceConfigGroups } from './serviceConfigGroupsSlice';
 import { mappedHostsToConfigGroup } from '@store/adcm/entityConfiguration/configGroupSlice.utils';
 

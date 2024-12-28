@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
 import { useRequestBundles } from './useRequestBundles';
 import BundlesTable from './BundlesTable/BundlesTable';

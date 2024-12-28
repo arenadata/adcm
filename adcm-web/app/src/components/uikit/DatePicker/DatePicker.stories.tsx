@@ -1,5 +1,5 @@
 import DatePicker from '@uikit/DatePicker/DatePicker';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useState } from 'react';
 
 type Story = StoryObj<typeof DatePicker>;
@@ -35,7 +35,7 @@ export const DatePickerStory: Story = {
 
     const handleSubmit = (d: Date | undefined) => {
       setDate(d);
-      onSubmit && onSubmit(d);
+      onSubmit?.(d);
     };
 
     return (

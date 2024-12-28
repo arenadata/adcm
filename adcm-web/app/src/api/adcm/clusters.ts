@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
-import { PaginationParams, SortParams } from '@models/table';
-import {
+import type { PaginationParams, SortParams } from '@models/table';
+import type {
   Batch,
   AdcmClustersFilter,
   AdcmCluster,
@@ -12,7 +12,11 @@ import {
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
-import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import type {
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm/dynamicAction';
 
 export class AdcmClustersApi {
   public static async getClusters(

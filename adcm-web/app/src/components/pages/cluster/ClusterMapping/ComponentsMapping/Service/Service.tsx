@@ -62,6 +62,7 @@ const Service = ({
             onInstallServices={onInstallServices}
             checkComponentMappingAvailability={checkComponentMappingAvailability}
             checkHostMappingAvailability={checkHostMappingAvailability}
+            checkHostUnmappingAvailability={checkHostMappingAvailability} // use same checks for unmapping as for mapping
           />
         );
       })}

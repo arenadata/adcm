@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import LeftSideBar from '@layouts/partials/LeftSideBar/LeftSideBar';
 
 import s from './MainLayout.module.scss';

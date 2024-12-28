@@ -1,8 +1,7 @@
-import React from 'react';
 import Tag from '@uikit/Tags/Tag';
 import IconButton from '@uikit/IconButton/IconButton';
 import Tags from '@uikit/Tags/Tags';
-import { MultiPropsParams } from '@uikit/Select/Select.types';
+import type { MultiPropsParams } from '@uikit/Select/Select.types';
 import s from './MultiSelectResults.module.scss';
 
 type MultiSelectResultsProps<T> = MultiPropsParams<T>;

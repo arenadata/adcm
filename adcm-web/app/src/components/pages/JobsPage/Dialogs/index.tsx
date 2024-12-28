@@ -1,9 +1,9 @@
-import JobsStopDialog from './JobsStopDialog/JobsStopDialog';
+import StopJobDialog from './StopJobDialog/StopJobDialog';
 
 const JobsDialogs = () => {
   return (
     <>
-      <JobsStopDialog />
+      <StopJobDialog />
     </>
   );
 };

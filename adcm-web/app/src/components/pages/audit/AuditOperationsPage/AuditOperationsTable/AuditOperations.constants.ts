@@ -1,4 +1,4 @@
-import { TableColumn } from '@uikit';
+import type { TableColumn } from '@uikit';
 import { AdcmAuditOperationObjectType, AdcmAuditOperationResult, AdcmAuditOperationType } from '@models/adcm';
 import { getOptionsFromEnum } from '@uikit/Select/Select.utils';
 

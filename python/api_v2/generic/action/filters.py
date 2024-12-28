@@ -10,22 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django_filters import NumberFilter
 from django_filters.rest_framework import (
     BooleanFilter,
     CharFilter,
-    FilterSet,
-    NumberFilter,
     OrderingFilter,
 )
 
+from api_v2.filters import AdvancedFilterSet
 
-class ActionFilter(FilterSet):
+
+class ActionFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name"),
+    number_fields=("id",),
+):
     name = CharFilter(label="Action Name", field_name="name", lookup_expr="icontains")
     display_name = CharFilter(label="Action Display Name", field_name="display_name", lookup_expr="icontains")
     is_host_own_action = BooleanFilter(
         label="Is Host Own Action", field_name="host_action", method="filter_is_host_own_action"
     )
     prototype_id = NumberFilter(field_name="prototype", label="Prototype ID")
+
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")
 
     def filter_is_host_own_action(self, queryset, name, value):

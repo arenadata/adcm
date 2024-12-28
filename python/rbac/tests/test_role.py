@@ -21,11 +21,11 @@ from cm.models import (
     ActionType,
     Bundle,
     Cluster,
-    ClusterObject,
-    HostProvider,
+    Component,
     ProductCategory,
     Prototype,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from django.conf import settings
 from django.contrib.auth.models import Permission
@@ -261,7 +261,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.service1_action.id,
                     "app_name": "cm",
-                    "model": "ClusterObject",
+                    "model": "Service",
                     "filter": {
                         "prototype__name": "service_1",
                         "prototype__type": "service",
@@ -286,7 +286,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.component11_action.id,
                     "app_name": "cm",
-                    "model": "ServiceComponent",
+                    "model": "Component",
                     "filter": {
                         "prototype__name": "component_1",
                         "prototype__type": "component",
@@ -311,7 +311,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.component21_action.id,
                     "app_name": "cm",
-                    "model": "ServiceComponent",
+                    "model": "Component",
                     "filter": {
                         "prototype__name": "component_2",
                         "prototype__type": "component",
@@ -330,7 +330,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.service2_action.id,
                     "app_name": "cm",
-                    "model": "ClusterObject",
+                    "model": "Service",
                     "filter": {
                         "prototype__name": "service_2",
                         "prototype__type": "service",
@@ -355,7 +355,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.component12_action.id,
                     "app_name": "cm",
-                    "model": "ServiceComponent",
+                    "model": "Component",
                     "filter": {
                         "prototype__name": "component_1",
                         "prototype__type": "component",
@@ -380,7 +380,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.component22_action.id,
                     "app_name": "cm",
-                    "model": "ServiceComponent",
+                    "model": "Component",
                     "filter": {
                         "prototype__name": "component_2",
                         "prototype__type": "component",
@@ -477,32 +477,32 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": f"Can run {cluster_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "content_type": ContentType.objects.get_for_model(Service),
                 "codename": f"run_action_{service_1_action_name}",
                 "name": f"Can run {service_1_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "content_type": ContentType.objects.get_for_model(Service),
                 "codename": f"run_action_{service_2_action_name}",
                 "name": f"Can run {service_2_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "content_type": ContentType.objects.get_for_model(Component),
                 "codename": f"run_action_{component_1_1_action_name}",
                 "name": f"Can run {component_1_1_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "content_type": ContentType.objects.get_for_model(Component),
                 "codename": f"run_action_{component_2_1_action_name}",
                 "name": f"Can run {component_2_1_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "content_type": ContentType.objects.get_for_model(Component),
                 "codename": f"run_action_{component_1_2_action_name}",
                 "name": f"Can run {component_1_2_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "content_type": ContentType.objects.get_for_model(Component),
                 "codename": f"run_action_{component_2_2_action_name}",
                 "name": f"Can run {component_2_2_action_name} actions",
             },
@@ -562,13 +562,13 @@ class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
         init_adcm()
 
         self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
-        self.provider = HostProvider.objects.create(
+        self.provider = Provider.objects.create(
             name="test_provider",
             prototype=self.provider_prototype,
         )
         self.host = self.add_host(provider=self.provider, fqdn="testhost", cluster=self.cluster)
-        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
-        self.component = ServiceComponent.objects.create(
+        self.service = Service.objects.create(cluster=self.cluster, prototype=self.sp_1)
+        self.component = Component.objects.create(
             cluster=self.cluster,
             service=self.service,
             prototype=self.cop_11,

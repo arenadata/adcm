@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { BreadcrumbsItemConfig } from '@routes/routes.types';
+import type { BreadcrumbsItemConfig } from '@routes/routes.types';
 
 interface AdcmBreadcrumbsState {
   breadcrumbs: BreadcrumbsItemConfig[];

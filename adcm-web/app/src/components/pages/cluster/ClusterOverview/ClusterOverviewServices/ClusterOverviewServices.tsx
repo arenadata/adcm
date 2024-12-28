@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import PageSection from '@commonComponents/PageSection/PageSection';
 import s from './ClusterOverviewServices.module.scss';
 import ClusterOverviewDiagram from '@pages/cluster/ClusterOverview/ClusterOverviewDiagram/ClusterOverviewDiagram';
@@ -6,9 +6,9 @@ import ClusterOverviewServiceItem from '@pages/cluster/ClusterOverview/ClusterOv
 import { Pagination, Spinner } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import ClusterOverviewFilter from '@pages/cluster/ClusterOverview/ClusterOverviewFilter/ClusterOverviewFilter';
-import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
+import type { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
 import { setFilter, setPaginationParams } from '@store/adcm/cluster/overview/overviewServicesTableSlice';
-import { PaginationParams } from '@uikit/types/list.types';
+import type { PaginationParams } from '@uikit/types/list.types';
 import { useParams } from 'react-router-dom';
 import { resetCount } from '@store/adcm/cluster/overview/overviewServicesSlice';
 

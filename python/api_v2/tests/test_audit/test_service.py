@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Cluster, ClusterObject, MaintenanceMode, ObjectType
+from cm.models import Action, Cluster, MaintenanceMode, ObjectType, Service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -43,7 +43,7 @@ class TestServiceAudit(BaseAPITestCase):
 
         self.export_service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
         self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
-        self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
+        self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
 
         self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)
 
@@ -101,9 +101,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_update_config_not_exists_fail(self):
-        response = self.client.v2[
-            self.cluster_1, "services", self.get_non_existent_pk(model=ClusterObject), "configs"
-        ].post(
+        response = self.client.v2[self.cluster_1, "services", self.get_non_existent_pk(model=Service), "configs"].post(
             data=self.config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -202,7 +200,7 @@ class TestServiceAudit(BaseAPITestCase):
                 / "clusters"
                 / self.cluster_1.pk
                 / "services"
-                / self.get_non_existent_pk(model=ClusterObject)
+                / self.get_non_existent_pk(model=Service)
                 / "maintenance-mode",
                 self.prepare_audit_object_arguments(expected_object=None),
             ),
@@ -327,9 +325,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_create_import_not_found_fail(self):
-        response = self.client.v2[
-            self.cluster_1, "services", self.get_non_existent_pk(model=ClusterObject), "imports"
-        ].post(
+        response = self.client.v2[self.cluster_1, "services", self.get_non_existent_pk(model=Service), "imports"].post(
             data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

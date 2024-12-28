@@ -15,19 +15,20 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.hierarchy import Tree
-from cm.issue import lock_affected_objects
+from cm.converters import orm_object_to_core_descriptor
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
     ObjectConfig,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
+from cm.services.concern.distribution import distribute_concern_on_related_objects
+from cm.services.concern.locks import create_task_lock_concern
 from cm.services.mapping import change_host_component_mapping
 from cm.tests.utils import (
     gen_adcm,
@@ -889,9 +890,7 @@ class TestAPI2(BaseTestCase):
             state="installed",
         )
 
-    def save_hc(
-        self, cluster: Cluster, hc_list: Iterable[tuple[ClusterObject, Host, ServiceComponent]]
-    ) -> list[HostComponent]:
+    def save_hc(self, cluster: Cluster, hc_list: Iterable[tuple[Service, Host, Component]]) -> list[HostComponent]:
         change_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.bundle_id,
@@ -903,7 +902,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.services.mapping.reset_hc_map")
     def test_save_hc(self, mock_reset_hc_map):
-        cluster_object = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        cluster_object = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)
         component = Prototype.objects.create(
             parent=self.component_prototype,
@@ -911,7 +910,7 @@ class TestAPI2(BaseTestCase):
             bundle_id=self.bundle.id,
             name="node",
         )
-        service_component = ServiceComponent.objects.create(
+        service_component = Component.objects.create(
             cluster=self.cluster,
             service=cluster_object,
             prototype=component,
@@ -964,9 +963,11 @@ class TestAPI2(BaseTestCase):
 
         task = gen_task_log(service)
         gen_job_log(task)
-        tree = Tree(self.cluster)
-        affected = (node.value for node in tree.get_all_affected(tree.built_from))
-        lock_affected_objects(task=task, objects=affected)
+
+        concern_id = create_task_lock_concern(task=task)
+        distribute_concern_on_related_objects(owner=orm_object_to_core_descriptor(service), concern_id=concern_id)
+        task.lock_id = concern_id
+        task.save(update_fields=["lock_id"])
 
         # refresh due to new instances were updated in task.lock_affected()
         host_1.refresh_from_db()

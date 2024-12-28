@@ -1,15 +1,17 @@
-import React, { Dispatch, SetStateAction, useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import type React from 'react';
+import { useCallback } from 'react';
 import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './BundlesTable.constants';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
-import { AdcmBundle } from '@models/adcm';
+import type { AdcmBundle } from '@models/adcm';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import {
   openDeleteDialog,
   setSelectedItemsIds as setSelectedBundlesIds,
 } from '@store/adcm/bundles/bundlesActionsSlice';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Link } from 'react-router-dom';
 import cn from 'classnames';

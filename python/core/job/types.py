@@ -78,7 +78,7 @@ class RelatedObjects(NamedTuple):
     # must be specified for Component
     service: NamedCoreObjectWithPrototype | None = None
     # must be specified for Host
-    hostprovider: NamedCoreObjectWithPrototype | None = None
+    provider: NamedCoreObjectWithPrototype | None = None
 
 
 class TaskOwner(NamedTuple):
@@ -122,6 +122,8 @@ class Task(BaseModel):
 
     on_success: StateChanges
     on_fail: StateChanges
+
+    is_blocking: bool
 
 
 class JobSpec(BaseModel):

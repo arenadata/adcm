@@ -20,9 +20,9 @@ from cm.models import (
     Action,
     ADCMModel,
     Cluster,
-    ClusterObject,
+    Component,
     PrototypeImport,
-    ServiceComponent,
+    Service,
 )
 from cm.services.job.inventory import get_imports_for_inventory, get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
@@ -56,24 +56,20 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
         self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = ServiceComponent.objects.get(service=self.service)
+        self.component = Component.objects.get(service=self.service)
 
         self.export_cluster_1 = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_group_config"), name="Cluster With Export 1"
+            bundle=self.add_bundle(self.bundles_dir / "cluster_config_host_group"), name="Cluster With Export 1"
         )
         self.export_cluster_2 = self.add_cluster(
             bundle=self.export_cluster_1.prototype.bundle, name="Cluster With Export 2"
@@ -91,7 +87,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "component": self.component,
             "host_1": self.host_1,
             "host_2": self.host_2,
-            "hostprovider": self.hostprovider,
+            "hostprovider": self.provider,
             "filedir": self.directories["FILE_DIR"],
         }
 
@@ -108,7 +104,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     @staticmethod
-    def bind_objects(*entries: tuple[Cluster | ClusterObject, Iterable[Cluster | ClusterObject]]) -> None:
+    def bind_objects(*entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
         for import_object, export_objects in entries:
             multibind_data: list[DataForMultiBind] = []
 
@@ -155,13 +151,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             },
         )
 
-    def test_hostprovider_objects_success(self) -> None:
+    def test_provider_objects_success(self) -> None:
         self.change_config_partial(target=self.host_1)
         self.change_config_full(target=self.host_2)
-        self.change_config_partial(target=self.hostprovider)
+        self.change_config_partial(target=self.provider)
 
         for object_, template in (
-            (self.hostprovider, "hostprovider_full.json.j2"),
+            (self.provider, "provider_full.json.j2"),
             (self.host_1, "host_1_full.json.j2"),
             (self.host_2, "host_2_full.json.j2"),
         ):
@@ -350,15 +346,15 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
-    def test_group_config_effect_on_import_with_default(self) -> None:
-        host_3 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-3")
-        host_4 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-4")
+    def test_config_host_group_effect_on_import_with_default(self) -> None:
+        host_3 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-3")
+        host_4 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-4")
 
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
-        component = ServiceComponent.objects.filter(service=self.service_with_defaults).get()
+        component = Component.objects.filter(service=self.service_with_defaults).get()
         self.set_hostcomponent(cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)])
-        group = self.add_group_config(parent=self.service_with_defaults, hosts=[host_3])
+        group = self.add_config_host_group(parent=self.service_with_defaults, hosts=[host_3])
         self.change_configuration(
             target=self.service_with_defaults,
             config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},

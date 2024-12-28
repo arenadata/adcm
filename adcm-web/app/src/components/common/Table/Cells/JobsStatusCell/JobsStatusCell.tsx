@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import s from './JobsStatusCell.module.scss';
 import { TableCell } from '@uikit';
 import JobsStatusIconCell from './JobsStatusIcon/JobsStatusIcon';
-import { AdcmJobStatus } from '@models/adcm';
+import type { AdcmJobStatus } from '@models/adcm';
 import cn from 'classnames';
 
 interface JobsStatusCellProps extends React.HTMLAttributes<HTMLDivElement> {

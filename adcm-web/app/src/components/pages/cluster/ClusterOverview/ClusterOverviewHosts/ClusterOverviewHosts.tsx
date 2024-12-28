@@ -1,13 +1,13 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import PageSection from '@commonComponents/PageSection/PageSection';
 import s from './ClusterOverviewHosts.module.scss';
 import ClusterOverviewDiagram from '@pages/cluster/ClusterOverview/ClusterOverviewDiagram/ClusterOverviewDiagram';
 import { Pagination, Spinner } from '@uikit';
 import ClusterOverviewFilter from '@pages/cluster/ClusterOverview/ClusterOverviewFilter/ClusterOverviewFilter';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
+import type { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
 import { setFilter, setPaginationParams } from '@store/adcm/cluster/overview/overviewHostsTableSlice';
-import { PaginationParams } from '@uikit/types/list.types';
+import type { PaginationParams } from '@uikit/types/list.types';
 import ClusterOverviewHostsTable from '@pages/cluster/ClusterOverview/ClusterOverviewHosts/ClusterOverviewHostsTable';
 import { resetCount } from '@store/adcm/cluster/overview/overviewHostsSlice';
 
@@ -25,8 +25,8 @@ const ClusterOverviewHosts = () => {
     dispatch(setPaginationParams(newPaginationParams));
   };
 
-  const firstHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 === 0), [hostsStatuses]);
-  const secondHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 !== 0), [hostsStatuses]);
+  const firstHostsGroup = useMemo(() => hostsStatuses.filter((_item, id) => id % 2 === 0), [hostsStatuses]);
+  const secondHostsGroup = useMemo(() => hostsStatuses.filter((_item, id) => id % 2 !== 0), [hostsStatuses]);
 
   const currentCount = useMemo(() => (!filter.hostsStatus ? upCount : count), [upCount, count, filter.hostsStatus]);
 

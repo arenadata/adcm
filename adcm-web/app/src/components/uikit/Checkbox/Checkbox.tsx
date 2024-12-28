@@ -1,4 +1,5 @@
-import { InputHTMLAttributes, ReactNode, forwardRef } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
+import { forwardRef } from 'react';
 import cn from 'classnames';
 import s from './Checkbox.module.scss';
 import Icon from '@uikit/Icon/Icon';

@@ -1,7 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHost, AdcmClusterHostComponentsStatus } from '@models/adcm';
-import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
+import type { AdcmHost } from '@models/adcm';
+import { AdcmClusterHostComponentsStatus } from '@models/adcm';
+import type { RequestError } from '@api';
+import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
@@ -114,7 +116,7 @@ const hostSlice = createSlice({
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id: hostId, changes } = action.payload.object;
-      if (state.host?.id == hostId) {
+      if (state.host?.id === hostId) {
         state.host = { ...state.host, ...changes };
       }
     });

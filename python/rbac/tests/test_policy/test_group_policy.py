@@ -13,7 +13,7 @@
 from pathlib import Path
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Action, ConfigLog, ObjectType, ServiceComponent
+from cm.models import Action, Component, ConfigLog, ObjectType
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -198,7 +198,7 @@ class ActionsPolicyTestCase(BaseTestCase):
 
         cluster = self.get_cluster()
         action_service = self.create_service(cluster_pk=cluster.pk, name="actions_service")
-        component = ServiceComponent.objects.get(prototype__name="single_component")
+        component = Component.objects.get(prototype__name="single_component")
 
         provider = self.create_provider(
             bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",
@@ -242,7 +242,7 @@ class ActionsPolicyTestCase(BaseTestCase):
     def test_user_can_run_action(self):
         action = Action.objects.get(display_name="Cluster ready for host")
         with self.another_user_logged_in(username=self.user_1.username, password=self.user_1_password):
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=reverse(viewname="v1:run-task", kwargs={"host_id": self.host_1.pk, "action_id": action.pk}),
             )
 

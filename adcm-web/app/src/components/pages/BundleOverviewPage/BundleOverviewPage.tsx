@@ -1,6 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { useRequestBundle } from './useRequestBundle';
 import BundleOverviewHeader from './BundleOverviewHeader/BundleOverviewHeader';
 import BundleOverviewTable from './BundleOverviewTable/BundleOverviewTable';

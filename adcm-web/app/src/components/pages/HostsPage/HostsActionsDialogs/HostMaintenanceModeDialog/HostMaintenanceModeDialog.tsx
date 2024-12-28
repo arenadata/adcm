@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { closeMaintenanceModeDialog, toggleMaintenanceMode } from '@store/adcm/hosts/hostsActionsSlice';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
@@ -7,9 +7,7 @@ import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceM
 const HostsMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const host = useStore(({ adcm }) => {
-    return adcm.hosts.hosts.find(({ id }) => id === adcm.hostsActions.maintenanceModeDialog.id) ?? null;
-  });
+  const host = useStore(({ adcm }) => adcm.hostsActions.maintenanceModeDialog.host);
 
   const hostId = host?.id;
 

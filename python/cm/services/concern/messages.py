@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Generic, NamedTuple, TypeVar
 
-from cm.models import ADCM, ADCMEntity, Cluster, ClusterObject, Host, HostProvider, JobLog, Prototype, ServiceComponent
+from cm.models import ADCM, ADCMEntity, Cluster, Component, Host, JobLog, Prototype, Provider, Service
 
 _PlaceholderObjectT = TypeVar("_PlaceholderObjectT", bound=Callable)
 
@@ -65,7 +65,7 @@ class ConcernMessageTemplate:
 
 
 def _retrieve_placeholder_from_adcm_entity(
-    entity: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
+    entity: Cluster | Service | Component | Provider | Host | ADCM,
 ) -> dict:
     return {
         "type": entity.prototype.type,
@@ -125,6 +125,12 @@ class ConcernMessage(Enum):
         placeholders=Placeholders(
             retrieve_job=_retrieve_placeholder_from_job,
             retrieve_target=_retrieve_placeholder_from_adcm_entity,
+        ),
+    )
+    FLAGGED_BY_JOB = ConcernMessageTemplate(
+        message="${source} has a flag: running job ${job}",
+        placeholders=Placeholders(
+            retrieve_job=_retrieve_placeholder_from_job, retrieve_source=_retrieve_placeholder_from_adcm_entity
         ),
     )
     # Note that flag's message in template is just "left part"

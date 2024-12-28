@@ -1,9 +1,9 @@
 /* eslint-disable spellcheck/spell-checker */
-import React from 'react';
-import { Meta, StoryObj } from '@storybook/react';
+import type React from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { Icon, Statusable, Tab, TabsBlock } from '@uikit';
-import { TabsBlockProps } from './TabsBlock';
+import type { TabsBlockProps } from './TabsBlock';
 
 const pageStyles = {
   marginTop: '30px',

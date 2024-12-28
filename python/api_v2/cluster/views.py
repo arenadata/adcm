@@ -35,13 +35,13 @@ from cm.models import (
     AnsibleConfig,
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     ConcernType,
     Host,
     HostComponent,
     ObjectType,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import (
@@ -77,12 +77,15 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, responses
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
-    ClusterHostFilter,
-    ClusterServiceFilter,
+    ClusterMappingComponentFilter,
+    ClusterMappingHostFilter,
+    ClusterServiceCandidateAndPrototypeFilter,
+    ClusterStatusesHostFilter,
+    ClusterStatusesServiceFilter,
 )
 from api_v2.cluster.permissions import ClusterPermissions, HostsClusterPermissions
 from api_v2.cluster.serializers import (
@@ -116,24 +119,28 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config.views import ConfigLogViewSet
-from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import (
-    audit_config_group_config_viewset,
-    audit_group_config_viewset,
-    audit_host_group_config_viewset,
+from api_v2.generic.config_host_group.api_schema import (
+    document_config_host_group_viewset,
+    document_host_config_host_group_viewset,
 )
-from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.config_host_group.audit import (
+    audit_config_config_host_group_viewset,
+    audit_config_host_group_viewset,
+    audit_host_config_host_group_viewset,
+)
+from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
-from api_v2.host.filters import HostMemberFilter
+from api_v2.host.filters import ClusterHostFilter
 from api_v2.host.serializers import (
     HostAddSerializer,
     HostChangeMaintenanceModeSerializer,
     HostMappingSerializer,
     HostSerializer,
+    ManyHostAddSerializer,
 )
 from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import (
@@ -164,6 +171,36 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET clusters",
         description="Get a list of ADCM clusters with information on them.",
         operation_id="getClusters",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(name="id", type=int, description="Cluster ID."),
+            OpenApiParameter(
+                name="name",
+                description="Case insensitive and partial filter by cluster name.",
+            ),
+            OpenApiParameter(
+                name="status",
+                description="Status filter.",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(name="prototypeName", description="Filter by prototype name."),
+            OpenApiParameter(
+                name="prototypeDisplayName",
+                description="Filter by prototype display name.",
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                enum=(
+                    "name",
+                    "-name",
+                    "prototypeDisplayName",
+                    "-prototypeDisplayName",
+                ),
+                default="name",
+            ),
+        ],
     ),
     retrieve=extend_schema(
         summary="GET cluster",
@@ -188,10 +225,30 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
     services_statuses=extend_schema(
         operation_id="getClusterServiceStatuses",
-        summary="GET cluster service statuses",
+        summary="Get information about cluster service statuses.",
         description="Get information about cluster service statuses.",
-        responses=responses(success=RelatedServicesStatusesSerializer, errors=HTTP_404_NOT_FOUND),
-        parameters=[DefaultParams.STATUS_REQUIRED],
+        responses=responses(
+            success=RelatedServicesStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
+        ),
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="status",
+                description="Filter by status",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=int,
+                enum=[
+                    "id",
+                    "-id",
+                ],
+                default="displayName",
+            ),
+        ],
     ),
     service_prototypes=extend_schema(
         operation_id="getServicePrototypes",
@@ -207,10 +264,30 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
     hosts_statuses=extend_schema(
         operation_id="getClusterHostStatuses",
-        summary="Get information about cluster host statuses.",
-        description="Get information about cluster service statuses.",
-        responses=responses(success=RelatedServicesStatusesSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
-        parameters=[DefaultParams.STATUS_REQUIRED],
+        summary="Get information about cluster hosts statuses.",
+        description="Get information about cluster hosts statuses.",
+        responses=responses(
+            success=RelatedHostsStatusesSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
+        ),
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="status",
+                description="Filter by status",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=int,
+                enum=[
+                    "id",
+                    "-id",
+                ],
+                default="name",
+            ),
+        ],
     ),
     mapping_hosts=extend_schema(
         operation_id="getMappingHosts",
@@ -222,13 +299,14 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getMappingComponents",
         summary="GET mapping components",
         description="Get a list of components to map.",
-        responses=responses(success=ComponentMappingSerializer, errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ComponentMappingSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     ),
     ansible_config_schema=extend_schema(
         methods=["get"],
         operation_id="getClusterAnsibleConfigs",
         summary="GET cluster ansible configuration",
         description="Get information about cluster ansible config.",
+        examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
         responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
     ),
 )
@@ -242,7 +320,7 @@ class ClusterViewSet(
 ):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
-        .prefetch_related("clusterobject_set__prototype")
+        .prefetch_related("services__prototype")
         .order_by("name")
     )
     permission_required = [VIEW_CLUSTER_PERM]
@@ -253,6 +331,11 @@ class ClusterViewSet(
         "hosts_statuses",
         "list",
     )
+
+    def get_queryset(self, *args, **kwargs):
+        if self.action in ["service_prototypes", "service_candidates"]:
+            return Prototype.objects.none()
+        return super().get_queryset(*args, **kwargs)
 
     def get_serializer_class(self):
         match self.action:
@@ -323,16 +406,28 @@ class ClusterViewSet(
 
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=["get"], detail=True, url_path="service-prototypes", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="service-prototypes",
+        pagination_class=None,
+        filterset_class=ClusterServiceCandidateAndPrototypeFilter,
+    )
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
+        cluster = Cluster.objects.get(pk=kwargs["pk"])
         return self._respond_with_prototypes(cluster_prototype_id=cluster.prototype_id)
 
-    @action(methods=["get"], detail=True, url_path="service-candidates", pagination_class=None)
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="service-candidates",
+        pagination_class=None,
+        filterset_class=ClusterServiceCandidateAndPrototypeFilter,
+    )
     def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
+        cluster = Cluster.objects.get(pk=kwargs["pk"])
         exclude_added_service_prototypes = Q(
-            id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
+            id__in=Service.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
         )
         return self._respond_with_prototypes(
             cluster_prototype_id=cluster.prototype_id, exclude_clause=exclude_added_service_prototypes
@@ -342,15 +437,17 @@ class ClusterViewSet(
         exclude_clause = exclude_clause or Q()
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
 
-        prototypes = tuple(
+        prototypes = (
             Prototype.objects.filter(type=ObjectType.SERVICE, bundle_id=bundle_id)
             .exclude(exclude_clause)
             .order_by("display_name")
         )
 
+        prototypes = self.filter_queryset(queryset=prototypes)
+
         context = {"depend_on": {}}
 
-        if any(proto.requires for proto in prototypes):
+        if any(proto.requires for proto in tuple(prototypes)):
             requires_dependencies = build_requires_dependencies_map(retrieve_bundle_restrictions(bundle_id))
             bundle_hash = Bundle.objects.values_list("hash", flat=True).get(id=bundle_id)
             context["depend_on"] = retrieve_serialized_depend_on_hierarchy(
@@ -370,9 +467,9 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         url_path="statuses/services",
-        queryset=ClusterObject.objects.select_related("prototype").order_by("prototype__display_name"),
+        queryset=Service.objects.select_related("prototype").order_by("prototype__display_name"),
         permission_required=[VIEW_SERVICE_PERM],
-        filterset_class=ClusterServiceFilter,
+        filterset_class=ClusterStatusesServiceFilter,
     )
     def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
@@ -390,7 +487,7 @@ class ClusterViewSet(
         url_path="statuses/hosts",
         queryset=Host.objects.order_by("fqdn"),
         permission_required=[VIEW_HOST_PERM],
-        filterset_class=ClusterHostFilter,
+        filterset_class=ClusterStatusesHostFilter,
     )
     def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
@@ -485,14 +582,15 @@ class ClusterViewSet(
     @action(
         methods=["get"],
         pagination_class=None,
-        filter_backends=[],
+        filterset_class=ClusterMappingHostFilter,
         detail=True,
         url_path="mapping/hosts",
         url_name="mapping-hosts",
     )
     def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        cluster = self.get_object()
-        serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster).order_by("fqdn"), many=True)
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        queryset = self.filter_queryset(queryset=Host.objects.filter(cluster=cluster).order_by("fqdn"))
+        serializer = self.get_serializer(instance=queryset, many=True)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 
@@ -500,13 +598,12 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         pagination_class=None,
-        filter_backends=[],
+        filterset_class=ClusterMappingComponentFilter,
         url_path="mapping/components",
         url_name="mapping-components",
     )
     def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
-        cluster = self.get_object()
-
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         bundle_id, is_mm_available = Prototype.objects.values_list("bundle_id", "allow_maintenance_mode").get(
             id=cluster.prototype_id
         )
@@ -520,8 +617,8 @@ class ClusterViewSet(
             else MaintenanceModeOfObjects(services={}, components={}, hosts={})
         )
 
-        components = tuple(
-            ServiceComponent.objects.filter(cluster=cluster)
+        components = self.filter_queryset(
+            queryset=Component.objects.filter(cluster=cluster)
             .select_related("prototype", "prototype__parent", "service__prototype")
             .order_by("pk")
         )
@@ -657,24 +754,52 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
-            OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
-            OpenApiParameter(name="componentId", description="Id of component."),
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            DefaultParams.ordering_by("name", "id", default="name"),
-            OpenApiParameter(name="search", exclude=True),
+            OpenApiParameter(
+                name="name",
+                description="Case insensitive and partial filter by host name.",
+            ),
+            OpenApiParameter(
+                name="hostprovider_name",
+                description="Filter by hostprovider name.",
+            ),
+            OpenApiParameter(
+                name="component_id",
+                description="Filter by component id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                enum=(
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "id",
+                    "-id",
+                    "hostproviderName",
+                    "-hostproviderName",
+                ),
+                default="name",
+            ),
         ],
-        responses=responses(success=HostSerializer, errors=HTTP_404_NOT_FOUND),
+        responses={
+            HTTP_200_OK: HostSerializer(many=True),
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
     ),
     create=extend_schema(
         operation_id="postCusterHosts",
         description="Add a new hosts to cluster.",
         summary="POST cluster hosts",
-        request=HostAddSerializer(many=True),
-        responses=responses(
-            success=(HTTP_201_CREATED, HostSerializer(many=True)),
-            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
-        ),
+        request=ManyHostAddSerializer,
+        responses={
+            (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA,
+            **{
+                k: ErrorSerializer
+                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+            },
+        },
     ),
     retrieve=extend_schema(
         operation_id="getClusterHost",
@@ -718,7 +843,7 @@ class HostClusterViewSet(
         .prefetch_related("concerns", "hostcomponent_set__component__prototype")
         .order_by("fqdn")
     )
-    filterset_class = HostMemberFilter
+    filterset_class = ClusterHostFilter
     audit_model_hint = Host
     retrieve_status_map_actions = ("list", "statuses")
     exc_conversion_map = {
@@ -854,21 +979,21 @@ class ClusterImportViewSet(ImportViewSet):
         return obj, None
 
 
-@document_group_config_viewset(object_type="cluster")
-@audit_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterGroupConfigViewSet(GroupConfigViewSet):
+@document_config_host_group_viewset(object_type="cluster")
+@audit_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterCHGViewSet(CHGViewSet):
     ...
 
 
-@document_host_group_config_viewset(object_type="cluster")
-@audit_host_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterHostGroupConfigViewSet(HostGroupConfigViewSet):
+@document_host_config_host_group_viewset(object_type="cluster")
+@audit_host_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="cluster config group", operation_id_variant="ClusterConfigGroup")
-@audit_config_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterConfigHostGroupViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 

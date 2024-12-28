@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useCollapse } from 'react-collapsed';
 
 type CollapseProps = React.PropsWithChildren<{

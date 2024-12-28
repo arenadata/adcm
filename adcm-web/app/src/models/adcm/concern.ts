@@ -16,7 +16,7 @@ export enum AdcmConcernOwnerType {
   Provider = 'provider',
 }
 
-export enum AdcmConcernType {
+export enum AdcmConcernPlaceholderType {
   AdcmConfig = 'adcm_config',
   ClusterConfig = 'cluster_config',
   ComponentConfig = 'component_config',
@@ -38,7 +38,7 @@ export enum AdcmConcernType {
 
 export interface AdcmConcernCommonPlaceholder {
   name: string;
-  type: AdcmConcernType;
+  type: AdcmConcernPlaceholderType;
 }
 
 export interface AdcmConcernClusterPlaceholder extends AdcmConcernCommonPlaceholder {
@@ -112,8 +112,10 @@ interface AdcmConcernOwner {
   type: AdcmConcernOwnerType;
 }
 
+export type AdcmConcernType = 'lock' | 'issue' | 'flag';
 export interface AdcmConcerns {
   id: number;
+  type: AdcmConcernType;
   reason: AdcmConcernReason;
   isBlocking: boolean;
   cause: AdcmConcernCause;

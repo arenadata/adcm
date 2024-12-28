@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import Text from '@uikit/Text/Text';
 import Breadcrumbs from '@layouts/partials/Breadcrumbs/Breadcrumbs';
 import { usePageRouteInfo, useStore } from '@hooks';

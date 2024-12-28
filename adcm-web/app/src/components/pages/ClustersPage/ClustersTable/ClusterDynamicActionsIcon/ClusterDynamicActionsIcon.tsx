@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmCluster } from '@models/adcm';
+import type { AdcmCluster } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { openClusterDynamicActionDialog } from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import { IconProps } from '@uikit/Icon/Icon';
+import type { IconProps } from '@uikit/Icon/Icon';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 interface ClusterDynamicActionsButtonProps {

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input, Select } from '@uikit';
 import { useCreateHostForm } from './useCreateHostForm';
 import { useDispatch, useStore } from '@hooks';
@@ -8,7 +9,7 @@ const CreateHostDialog = () => {
   const dispatch = useDispatch();
 
   const isOpenDialog = useStore(({ adcm }) => adcm.hostsActions.createDialog.isOpen);
-  const isCreating = useStore(({ adcm }) => adcm.hostsActions.createDialog.isCreating);
+  const isCreating = useStore(({ adcm }) => adcm.hostsActions.isActionInProgress);
 
   const {
     formData,

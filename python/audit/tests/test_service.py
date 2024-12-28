@@ -20,12 +20,12 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
     ConfigLog,
     ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    Service,
 )
 from django.conf import settings
 from django.urls import reverse
@@ -58,11 +58,11 @@ class TestServiceAudit(BaseTestCase):
             display_name="test_service",
         )
         config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 
-        self.service = ClusterObject.objects.create(
+        self.service = Service.objects.create(
             prototype=self.service_prototype,
             cluster=self.cluster,
             config=config,
@@ -160,7 +160,7 @@ class TestServiceAudit(BaseTestCase):
             user=self.test_user,
         )
 
-    def get_service_and_cluster(self) -> tuple[ClusterObject, Cluster]:
+    def get_service_and_cluster(self) -> tuple[Service, Cluster]:
         bundle = Bundle.objects.create(name="test_bundle_2")
         cluster_prototype = Prototype.objects.create(
             bundle=bundle,
@@ -175,7 +175,7 @@ class TestServiceAudit(BaseTestCase):
         )
         cluster = Cluster.objects.create(prototype=cluster_prototype, name="Export cluster")
         PrototypeExport.objects.create(prototype=cluster_prototype, name="Export_cluster")
-        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        service = Service.objects.create(prototype=service_prototype, cluster=cluster)
         PrototypeExport.objects.create(prototype=service_prototype, name="Export_service")
         PrototypeImport.objects.create(prototype=self.service_prototype, name="Export_cluster")
         PrototypeImport.objects.create(prototype=self.service_prototype, name="Export_service")
@@ -368,7 +368,7 @@ class TestServiceAudit(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        service = ClusterObject.objects.get(pk=response.data["id"])
+        service = Service.objects.get(pk=response.data["id"])
         username = "new_user"
         password = self.get_random_str_num(length=12)
         response: Response = self.client.post(

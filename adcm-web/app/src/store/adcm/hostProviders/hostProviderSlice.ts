@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmHostProvider } from '@models/adcm/hostProvider';
+import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
@@ -64,9 +65,9 @@ const hostProviderSlice = createSlice({
     builder.addCase(getHostsCount.fulfilled, (state, action) => {
       state.hostsCount = action.payload.count;
     });
-    builder.addCase(wsActions.update_provider, (state, action) => {
+    builder.addCase(wsActions.update_hostprovider, (state, action) => {
       const { id, changes } = action.payload.object;
-      if (state.hostProvider?.id == id) {
+      if (state.hostProvider?.id === id) {
         state.hostProvider = {
           ...state.hostProvider,
           ...changes,

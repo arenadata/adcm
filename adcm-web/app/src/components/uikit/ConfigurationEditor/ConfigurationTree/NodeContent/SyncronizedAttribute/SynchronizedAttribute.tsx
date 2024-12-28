@@ -1,5 +1,5 @@
-import React from 'react';
-import { IconButton, IconsNames } from '@uikit';
+import type { IconsNames } from '@uikit';
+import IconButton from '@uikit/IconButton/IconButton';
 
 export interface SynchronizedAttributeProps {
   isAllowChange: boolean;

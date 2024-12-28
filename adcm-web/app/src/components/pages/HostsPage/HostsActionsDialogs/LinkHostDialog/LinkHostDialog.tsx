@@ -7,19 +7,7 @@ import { closeLinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
 const LinkHostDialog = () => {
   const dispatch = useDispatch();
 
-  const linkableHost = useStore(
-    ({
-      adcm: {
-        hosts: { hosts },
-        hostsActions: {
-          linkDialog: { id: linkableId },
-        },
-      },
-    }) => {
-      if (!linkableId) return null;
-      return hosts.find(({ id }) => id === linkableId) ?? null;
-    },
-  );
+  const host = useStore(({ adcm }) => adcm.hostsActions.linkDialog.host);
 
   const {
     formData,
@@ -33,13 +21,13 @@ const LinkHostDialog = () => {
 
   useEffect(() => {
     reset();
-    if (linkableHost) {
+    if (host) {
       loadRelatedData();
-      onChangeFormData({ hostId: linkableHost.id });
+      onChangeFormData({ hostId: host.id });
     }
-  }, [linkableHost, reset, loadRelatedData, onChangeFormData]);
+  }, [host, reset, loadRelatedData, onChangeFormData]);
 
-  const isOpenLink = !!linkableHost;
+  const isOpenLink = !!host;
 
   const handleCloseDialog = () => {
     dispatch(closeLinkDialog());

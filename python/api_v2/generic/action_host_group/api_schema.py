@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
@@ -20,7 +20,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action_host_group.serializers import ActionHostGroupSerializer, ShortHostSerializer
 
@@ -42,6 +42,18 @@ def document_action_host_group_viewset(object_type: str):
             operation_id=f"get{capitalized_type}ActionHostGroups",
             summary=f"GET {object_type}'s Action Host Groups",
             description=f"Return list of {object_type}'s action host groups.",
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by name.",
+                ),
+                OpenApiParameter(
+                    name="has_host",
+                    description="Case insensitive and partial filter by host",
+                ),
+                DefaultParams.LIMIT,
+                DefaultParams.OFFSET,
+            ],
             responses=responses(
                 success=ActionHostGroupSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
             ),
@@ -62,12 +74,62 @@ def document_action_host_group_viewset(object_type: str):
             operation_id=f"get{capitalized_type}ActionHostGroupCandidates",
             summary=f"GET {object_type}'s Action Host Group's host candidates",
             description=f"Return list of {object_type}'s hosts that can be added to action host group.",
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by host name.",
+                ),
+                OpenApiParameter(
+                    name="hostprovider_name",
+                    description="Filter by hostprovider name.",
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    enum=(
+                        "name",
+                        "-name",
+                        "state",
+                        "-state",
+                        "id",
+                        "-id",
+                        "hostproviderName",
+                        "-hostproviderName",
+                    ),
+                    default="name",
+                ),
+            ],
             responses=responses(success=ShortHostSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),
         owner_host_candidate=extend_schema(
             operation_id=f"get{capitalized_type}ActionHostGroupOwnCandidates",
             summary=f"GET {object_type}'s host candidates for new Action Host Group",
             description=f"Return list of {object_type}'s hosts that can be added to newly created action host group.",
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by host name.",
+                ),
+                OpenApiParameter(
+                    name="hostprovider_name",
+                    description="Filter by hostprovider name.",
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    enum=(
+                        "name",
+                        "-name",
+                        "state",
+                        "-state",
+                        "id",
+                        "-id",
+                        "hostproviderName",
+                        "-hostproviderName",
+                    ),
+                    default="name",
+                ),
+            ],
             responses=responses(
                 success=ShortHostSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
             ),
@@ -79,6 +141,37 @@ def document_action_host_group_hosts_viewset(object_type: str):
     capitalized_type = object_type.capitalize()
 
     return extend_schema_view(
+        list=extend_schema(
+            operation_id=f"get{capitalized_type}ActionHostGroupHosts",
+            description=f"Get information about {object_type}'s Action Host Group hosts.",
+            summary=f"GET {object_type}'s action host group hosts.",
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by host name.",
+                ),
+                OpenApiParameter(
+                    name="hostprovider_name",
+                    description="Filter by hostprovider name.",
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                    enum=(
+                        "name",
+                        "-name",
+                        "state",
+                        "-state",
+                        "id",
+                        "-id",
+                        "hostproviderName",
+                        "-hostproviderName",
+                    ),
+                    default="name",
+                ),
+            ],
+            responses=responses(success=ShortHostSerializer, errors=HTTP_403_FORBIDDEN),
+        ),
         create=extend_schema(
             operation_id=f"post{capitalized_type}ActionHostGroupHosts",
             summary=f"POST {object_type}'s Action Host Group hosts",

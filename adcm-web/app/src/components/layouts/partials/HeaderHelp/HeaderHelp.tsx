@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import AboutAdcm from './AboutAdcm/AboutAdcm';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
-import { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
+import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 
 enum HelperLinkActions {
   Help = 'https://t.me/arenadata_cm',
@@ -18,7 +19,7 @@ const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
     className,
   } = props;
 
-  if (typeof value !== 'string') return <li></li>;
+  if (typeof value !== 'string') return <li />;
 
   return (
     <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.models import ADCMEntityStatus, Cluster
-from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
@@ -20,10 +19,15 @@ from django_filters.rest_framework import (
     OrderingFilter,
 )
 
-from api_v2.filters import filter_service_status
+from api_v2.filters import AdvancedFilterSet, filter_cluster_status, filter_host_status, filter_service_status
 
 
-class ClusterFilter(FilterSet):
+class ClusterFilter(
+    AdvancedFilterSet,
+    char_fields=("name",),
+    number_fields=(("bundle", "prototype__bundle__id"),),
+    with_object_status=True,
+):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
     prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
     prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
@@ -42,42 +46,49 @@ class ClusterFilter(FilterSet):
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
+        fields = ["id"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status != 0
-            }
-        else:
-            exclude_pks = {
-                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status == 0
-            }
-
-        return queryset.exclude(pk__in=exclude_pks)
+        return filter_cluster_status(queryset=queryset, value=value)
 
 
-class ClusterHostFilter(FilterSet):
+class ClusterStatusesHostFilter(FilterSet):
     status = ChoiceFilter(label="Host status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        status_map = retrieve_status_map()
-
-        hosts_up = {host_id for host_id, status_info in status_map.hosts.items() if status_info.status == 0}
-
-        if value == ADCMEntityStatus.UP:
-            return queryset.filter(pk__in=hosts_up)
-
-        return queryset.exclude(pk__in=hosts_up)
+        return filter_host_status(queryset=queryset, value=value)
 
 
-class ClusterServiceFilter(FilterSet):
+class ClusterStatusesServiceFilter(FilterSet):
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
         return filter_service_status(queryset=queryset, value=value)
+
+
+class ClusterServiceCandidateAndPrototypeFilter(
+    AdvancedFilterSet,
+    char_fields=("name", "display_name"),
+):
+    ...
+
+
+class ClusterMappingComponentFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    number_fields=("id",),
+):
+    ...
+
+
+class ClusterMappingHostFilter(
+    AdvancedFilterSet,
+    char_fields=(("name", "fqdn"),),
+    number_fields=("id",),
+):
+    ...

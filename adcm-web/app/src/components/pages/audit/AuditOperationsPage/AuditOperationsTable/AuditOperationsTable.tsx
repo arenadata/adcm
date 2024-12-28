@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import {
   columns,
@@ -6,7 +6,7 @@ import {
 } from '@pages/audit/AuditOperationsPage/AuditOperationsTable/AuditOperations.constants';
 import { Button, Table, TableCell, ExpandableRowComponent } from '@uikit';
 import { setSortParams } from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
-import { SortParams } from '@models/table';
+import type { SortParams } from '@models/table';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import AuditOperationsTableExpandedContent from '@pages/audit/AuditOperationsPage/AuditOperationsTableExpandedContent/AuditOperationsTableExpandedContent';
 import { orElseGet } from '@utils/checkUtils';

@@ -26,6 +26,7 @@ export const getDynamicActionSteps = (
     steps.push(DynamicActionStep.HostComponentMapping);
   }
 
+  steps.push(DynamicActionStep.RaisingConcerns);
   steps.push(DynamicActionStep.Confirm);
   return steps;
 };
@@ -38,6 +39,10 @@ const getDefaultConfigurationRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'c
   configuration: null,
 });
 
+const getDefaultShouldBlockObjectConfig = (): Pick<AdcmDynamicActionRunConfig, 'shouldBlockObject'> => ({
+  shouldBlockObject: true,
+});
+
 const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbose'> => ({
   isVerbose: false,
 });
@@ -45,6 +50,7 @@ const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbo
 export const getDefaultRunConfig = (): AdcmDynamicActionRunConfig => ({
   ...getDefaultHostMappingRunConfig(),
   ...getDefaultConfigurationRunConfig(),
+  ...getDefaultShouldBlockObjectConfig(),
   ...getDefaultVerboseRunConfig(),
 });
 

@@ -1,7 +1,7 @@
-import { ListState, SortParams } from '@models/table';
+import type { ListState, SortParams } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import { AdcmClustersApi, AdcmHostProvidersApi } from '@api';
-import { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
+import type { AdcmCluster, AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
 
 type AdcmHostsTableState = ListState<AdcmHostsFilter> & {
   relatedData: {
@@ -37,7 +37,7 @@ const createInitialState = (): AdcmHostsTableState => ({
   isAllDataLoaded: false,
 });
 
-const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (arg, thunkAPI) => {
+const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const clusters = await AdcmClustersApi.getClusters(emptyFilter);
@@ -47,7 +47,7 @@ const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (arg
   }
 });
 
-const loadHostProviders = createAsyncThunk('adcm/hostsTable/hostProviders', async (arg, thunkAPI) => {
+const loadHostProviders = createAsyncThunk('adcm/hostsTable/hostProviders', async (_arg, thunkAPI) => {
   try {
     const emptyFilter = {};
     const defaultSortParams: SortParams = { sortBy: 'name', sortDirection: 'asc' };
@@ -59,7 +59,7 @@ const loadHostProviders = createAsyncThunk('adcm/hostsTable/hostProviders', asyn
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/hostsTable/loadRelatedData', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/hostsTable/loadRelatedData', async (_arg, thunkAPI) => {
   await Promise.all([thunkAPI.dispatch(loadClusters()), thunkAPI.dispatch(loadHostProviders())]);
 });
 

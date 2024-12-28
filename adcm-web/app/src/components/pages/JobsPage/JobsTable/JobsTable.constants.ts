@@ -1,5 +1,5 @@
 import { AdcmJobObjectType } from '@models/adcm';
-import { TableColumn } from '@uikit';
+import type { TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
@@ -46,4 +46,5 @@ export const linkByObjectTypeMap: { [key in AdcmJobObjectType]: string } = {
   [AdcmJobObjectType.Provider]: 'hostproviders',
   [AdcmJobObjectType.Host]: 'hosts',
   [AdcmJobObjectType.Component]: 'components',
+  [AdcmJobObjectType.ActionHostGroup]: 'action-host-groups',
 };

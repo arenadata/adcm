@@ -1,9 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
-import { Button, Icon, IconsNames } from '@uikit';
+import type { IconsNames } from '@uikit';
+import { Button, Icon } from '@uikit';
 
 import s from './Alert.module.scss';
-import { AlertOptions } from '@layouts/partials/NotificationsSideBar/Alert/Alert.types';
+import type { AlertOptions } from '@layouts/partials/NotificationsSideBar/Alert/Alert.types';
 
 interface AlertProps extends AlertOptions {
   icon: Extract<IconsNames, 'check-hollow' | 'lamp' | 'triangle-alert'>;

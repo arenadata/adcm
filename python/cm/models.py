@@ -28,6 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models import QuerySet
+from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
@@ -164,12 +165,17 @@ class Bundle(ADCMModel):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
-    signature_status = models.CharField(max_length=10, choices=SignatureStatus.choices, default=SignatureStatus.ABSENT)
+    signature_status = models.CharField(max_length=10, choices=SignatureStatus, default=SignatureStatus.ABSENT)
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
     class Meta:
         unique_together = (("name", "version", "edition"),)
+        indexes = [
+            models.Index(Lower("name"), name="bundle_lower_name_idx"),
+            models.Index(Lower("version"), name="bundle_lower_version_idx"),
+            models.Index(Lower("edition"), name="bundle_lower_edition_idx"),
+        ]
 
 
 class ProductCategory(ADCMModel):
@@ -209,7 +215,7 @@ MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenan
 
 class Prototype(ADCMModel):
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    type = models.CharField(max_length=1000, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     path = models.CharField(max_length=1000, default="")
     name = models.CharField(max_length=1000)
@@ -263,11 +269,11 @@ class ObjectConfig(ADCMModel):
         object_types = [
             "adcm",
             "cluster",
-            "clusterobject",
-            "servicecomponent",
-            "hostprovider",
+            "service",
+            "component",
+            "provider",
             "host",
-            "group_config",
+            "config_host_group",
         ]
         for object_type in object_types:
             if hasattr(self, object_type):
@@ -309,9 +315,6 @@ class ADCMEntity(ADCMModel):
             owner_type=self.content_type,
             cause=cause,
         ).first()
-
-    def requires_service_name(self, service_name: str) -> bool:
-        return any(item.get("service") == service_name for item in self.requires)
 
     def __str__(self):
         own_name = getattr(self, "name", None)
@@ -383,7 +386,7 @@ class ADCMEntity(ADCMModel):
             concern.delete()
 
         super().delete(using, keep_parents)
-        if self.config is not None and not isinstance(self, ServiceComponent):
+        if self.config is not None and not isinstance(self, Component):
             self.config.delete()
 
 
@@ -440,8 +443,8 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -476,11 +479,11 @@ class Cluster(ADCMEntity):
         return result if result["issue"] else {}
 
 
-class HostProvider(ADCMEntity):
+class Provider(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -518,11 +521,11 @@ class HostProvider(ADCMEntity):
 class Host(ADCMEntity):
     fqdn = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -562,22 +565,21 @@ class Host(ADCMEntity):
         return cluster.prototype.allow_maintenance_mode
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self.maintenance_mode
 
 
-class ClusterObject(ADCMEntity):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    group_config = GenericRelation(
-        "GroupConfig",
+class Service(ADCMEntity):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="services")
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
     _maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -622,15 +624,15 @@ class ClusterObject(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> MaintenanceMode.choices:
+    def maintenance_mode(self) -> MaintenanceMode:
         if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
-        service_components = ServiceComponent.objects.filter(service=self)
+        service_components = Component.objects.filter(service=self)
         if service_components:
             if all(
                 service_component.maintenance_mode_attr == MaintenanceMode.ON
@@ -656,7 +658,7 @@ class ClusterObject(ADCMEntity):
         return self._maintenance_mode
 
     @maintenance_mode.setter
-    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+    def maintenance_mode(self, value: MaintenanceMode) -> None:
         self._maintenance_mode = value
 
     @property
@@ -667,19 +669,19 @@ class ClusterObject(ADCMEntity):
         unique_together = (("cluster", "prototype"),)
 
 
-class ServiceComponent(ADCMEntity):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
+class Component(ADCMEntity):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="components")
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="components")
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
     _maintenance_mode = models.CharField(
         max_length=1000,
-        choices=MaintenanceMode.choices,
+        choices=MaintenanceMode,
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
@@ -724,11 +726,11 @@ class ServiceComponent(ADCMEntity):
         return result if result["issue"] else {}
 
     @property
-    def maintenance_mode_attr(self) -> MaintenanceMode.choices:
+    def maintenance_mode_attr(self) -> MaintenanceMode:
         return self._maintenance_mode
 
     @property
-    def maintenance_mode(self) -> MaintenanceMode.choices:
+    def maintenance_mode(self) -> MaintenanceMode:
         if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
@@ -746,7 +748,7 @@ class ServiceComponent(ADCMEntity):
         return self._maintenance_mode
 
     @maintenance_mode.setter
-    def maintenance_mode(self, value: MaintenanceMode.choices) -> None:
+    def maintenance_mode(self, value: MaintenanceMode) -> None:
         self._maintenance_mode = value
 
     @property
@@ -757,8 +759,8 @@ class ServiceComponent(ADCMEntity):
         unique_together = (("cluster", "service", "prototype"),)
 
 
-@receiver(post_delete, sender=ServiceComponent)
-def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # noqa: ARG001
+@receiver(post_delete, sender=Component)
+def auto_delete_config_with_component(sender, instance, **kwargs):  # noqa: ARG001
     if instance.config is not None:
         instance.config.delete()
 
@@ -775,14 +777,20 @@ class ActionHostGroup(models.Model):
         unique_together = ["object_id", "object_type", "name"]
 
 
-class GroupConfig(ADCMModel):
+class ConfigHostGroup(ADCMModel):
+    """
+    Configuration Host Group is a type of host group that connects hosts of some object with a different configuraiton.
+    It's mainly named ConfigHostGroup, but is also known as CHG,
+    and may be referenced as host_group in code where no contextual collision with other host group types occurs.
+    """
+
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey("object_type", "object_id")
     name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
+    hosts = models.ManyToManyField(Host, blank=True, related_name="config_host_group")
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="config_host_group")
 
     __error_code__ = "GROUP_CONFIG_NOT_FOUND"
 
@@ -859,7 +867,7 @@ class GroupConfig(ADCMModel):
 
         return config_log.attr.get("group_keys", {})
 
-    def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
+    def merge_config(self, object_config: dict, config_host_group: dict, group_keys: dict, config=None):
         """Merge object config with group config based group_keys"""
 
         if config is None:
@@ -870,13 +878,13 @@ class GroupConfig(ADCMModel):
                 config.setdefault(group_key, {})
                 self.merge_config(
                     object_config[group_key],
-                    group_config[group_key],
+                    config_host_group[group_key],
                     group_keys[group_key]["fields"],
                     config[group_key],
                 )
             else:
-                if group_value and group_key in group_config:
-                    config[group_key] = group_config[group_key]
+                if group_value and group_key in config_host_group:
+                    config[group_key] = config_host_group[group_key]
                 else:
                     if group_key in object_config:
                         config[group_key] = object_config[group_key]
@@ -912,28 +920,28 @@ class GroupConfig(ADCMModel):
         object_config = object_cl.config
         object_attr = object_cl.attr
         group_cl = ConfigLog.objects.get(id=self.config.current)
-        group_config = group_cl.config
+        host_group = group_cl.config
         group_keys = group_cl.attr.get("group_keys", {})
         group_attr = self.get_config_attr()
-        config = self.merge_config(object_config, group_config, group_keys)
+        config = self.merge_config(object_config, host_group, group_keys)
         attr = self.merge_attr(object_attr, group_attr, group_keys)
         self.prepare_files_for_config(config)
 
         return config, attr
 
-    def host_candidate(self):
+    def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
-        if isinstance(self.object, (Cluster, HostProvider)):
+        if isinstance(self.object, (Cluster, Provider)):
             hosts = self.object.host_set.order_by("id")
-        elif isinstance(self.object, ClusterObject):
+        elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
-        elif isinstance(self.object, ServiceComponent):
+        elif isinstance(self.object, Component):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__component=self.object).distinct()
         else:
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
 
-        return hosts.exclude(group_config__in=self.object.group_config.all())
+        return hosts.exclude(config_host_group__in=self.object.config_host_group.all())
 
     def check_host_candidate(self, host_ids: list[int]):
         if self.hosts.filter(pk__in=host_ids).exists():
@@ -1025,7 +1033,7 @@ class AbstractAction(ADCMModel):
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
 
-    type = models.CharField(max_length=1000, choices=ActionType.choices)
+    type = models.CharField(max_length=1000, choices=ActionType)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -1145,14 +1153,14 @@ class Action(AbstractAction):
                 if Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists():
                     return MANY_HOSTS_IN_MM
 
-                related_services = ClusterObject.objects.filter(cluster=obj)
+                related_services = Service.objects.filter(cluster=obj)
 
                 if any(service.maintenance_mode == MaintenanceMode.ON for service in related_services):
                     return SERVICE_IN_MM
 
                 if any(
                     component.maintenance_mode == MaintenanceMode.ON
-                    for component in ServiceComponent.objects.filter(service__in=related_services)
+                    for component in Component.objects.filter(service__in=related_services)
                 ):
                     return COMPONENT_IN_MM
 
@@ -1163,7 +1171,7 @@ class Action(AbstractAction):
 
                 if any(
                     component.maintenance_mode == MaintenanceMode.ON
-                    for component in ServiceComponent.objects.filter(service=obj)
+                    for component in Component.objects.filter(service=obj)
                 ):
                     return COMPONENT_IN_MM
 
@@ -1218,8 +1226,8 @@ class SubAction(AbstractSubAction):
 class HostComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
     state = models.CharField(max_length=1000, default="created")
 
     class Meta:
@@ -1291,10 +1299,10 @@ class PrototypeImport(ADCMModel):
 
 class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, null=True, default=None)
     source_cluster = models.ForeignKey(Cluster, related_name="source_cluster", on_delete=models.CASCADE)
     source_service = models.ForeignKey(
-        ClusterObject,
+        Service,
         related_name="source_service",
         on_delete=models.CASCADE,
         null=True,
@@ -1317,6 +1325,9 @@ class JobStatus(models.TextChoices):
     BROKEN = "broken", "broken"
 
 
+UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.RUNNING)
+
+
 class UserProfile(ADCMModel):
     login = models.CharField(max_length=1000, unique=True)
     profile = models.JSONField(default=str)
@@ -1335,7 +1346,7 @@ class TaskLog(ADCMModel):
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus)
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
@@ -1346,6 +1357,11 @@ class TaskLog(ADCMModel):
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+    is_blocking = models.BooleanField(default=True)
+    """
+    Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,
+    but does affect concern interactions and action launch.
+    """
 
     __error_code__ = "TASK_NOT_FOUND"
 
@@ -1395,7 +1411,7 @@ class TaskLog(ADCMModel):
 class JobLog(AbstractSubAction):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices, default="created")
+    status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 
@@ -1480,7 +1496,7 @@ class LogStorage(ADCMModel):
 
 
 class StagePrototype(ADCMModel):
-    type = models.CharField(max_length=1000, choices=ObjectType.choices)
+    type = models.CharField(max_length=1000, choices=ObjectType)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=1000)
     path = models.CharField(max_length=1000, default="")
@@ -1607,14 +1623,14 @@ class ConcernItem(ADCMModel):
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=100, choices=ConcernType.choices, default=ConcernType.LOCK)
+    type = models.CharField(max_length=100, choices=ConcernType, default=ConcernType.LOCK)
     name = models.CharField(max_length=1000, default="")
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
     owner_id = models.PositiveIntegerField()
     owner_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     owner = GenericForeignKey("owner_type", "owner_id")
-    cause = models.CharField(max_length=100, null=True, choices=ConcernCause.choices)
+    cause = models.CharField(max_length=100, null=True, choices=ConcernCause)
 
     class Meta:
         constraints = [
@@ -1629,9 +1645,9 @@ class ConcernItem(ADCMModel):
         return chain(
             self.adcm_entities.order_by("id"),
             self.cluster_entities.order_by("id"),
-            self.clusterobject_entities.order_by("id"),
-            self.servicecomponent_entities.order_by("id"),
-            self.hostprovider_entities.order_by("id"),
+            self.service_entities.order_by("id"),
+            self.component_entities.order_by("id"),
+            self.provider_entities.order_by("id"),
             self.host_entities.order_by("id"),
         )
 
@@ -1640,9 +1656,9 @@ class ConcernItem(ADCMModel):
         return (
             self.adcm_entities,
             self.cluster_entities,
-            self.clusterobject_entities,
-            self.servicecomponent_entities,
-            self.hostprovider_entities,
+            self.service_entities,
+            self.component_entities,
+            self.provider_entities,
             self.host_entities,
         )
 
@@ -1652,22 +1668,22 @@ class ADCMEntityStatus(models.TextChoices):
     DOWN = "down", "down"
 
 
-MainObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+MainObject: TypeAlias = Cluster | Service | Component | Provider | Host
 
-_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
+_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | ConfigHostGroup | Action | Upgrade | TaskLog | JobLog
 
 CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "adcm": ADCM,
     "cluster": Cluster,
     "clusters": Cluster,
-    "service": ClusterObject,
-    "services": ClusterObject,
-    "component": ServiceComponent,
-    "components": ServiceComponent,
-    "provider": HostProvider,
-    "providers": HostProvider,
-    "hostprovider": HostProvider,
-    "hostproviders": HostProvider,
+    "service": Service,
+    "services": Service,
+    "component": Component,
+    "components": Component,
+    "provider": Provider,
+    "providers": Provider,
+    "hostprovider": Provider,
+    "hostproviders": Provider,
     "host": Host,
     "hosts": Host,
     "config": ConfigLog,
@@ -1675,9 +1691,10 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "upgrade": Upgrade,
     "task": TaskLog,
     "job": JobLog,
-    "group_config": GroupConfig,
-    "config-group": GroupConfig,
-    "config-groups": GroupConfig,
+    "group_config": ConfigHostGroup,
+    "config_host_group": ConfigHostGroup,
+    "config-group": ConfigHostGroup,
+    "config-groups": ConfigHostGroup,
     "prototype": Prototype,
     "prototypes": Prototype,
     "bundle": Bundle,

@@ -1,4 +1,6 @@
-import React, { ComponentProps, HTMLAttributes, useEffect, useState } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import cn from 'classnames';
 import LeftBarMenu from '@commonComponents/LeftBarMenu/LeftBarMenu';
 import LeftBarMenuItem from '@commonComponents/LeftBarMenu/LeftBarMenuItem';
@@ -7,7 +9,7 @@ import s from './LeftSideBar.module.scss';
 import { useDispatch, useStore, useMediaQuery } from '@hooks';
 import { logout } from '@store/authSlice';
 import { getAdcmSettings } from '@store/adcm/settings/settingsSlice';
-import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { isIssueConcernPresent } from '@utils/concernUtils';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
   const dispatch = useDispatch();
@@ -15,11 +17,11 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
   const { adcmSettings } = useStore((s) => s.adcm.adcmSettings);
 
   const [isSlim, setIsSlim] = useState(false);
-  const [isConcernHasConflicts, setIsConcernHasConflicts] = useState(false);
+  const [hasSettingsIssue, setHasSettingsIssue] = useState(false);
 
   useEffect(() => {
     if (adcmSettings) {
-      setIsConcernHasConflicts(isBlockingConcernPresent(adcmSettings.concerns));
+      setHasSettingsIssue(isIssueConcernPresent(adcmSettings.concerns));
     }
   }, [adcmSettings]);
 
@@ -65,7 +67,7 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
           icon="g2-configuration"
           to="/settings"
           isSmall={isSlim}
-          variant={isConcernHasConflicts ? 'alert' : 'default'}
+          variant={hasSettingsIssue ? 'alert' : 'default'}
         >
           Settings
         </LeftBarMenuItem>

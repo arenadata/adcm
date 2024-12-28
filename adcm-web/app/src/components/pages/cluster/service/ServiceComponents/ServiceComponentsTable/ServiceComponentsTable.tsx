@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableCell, ExpandableRowComponent } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
@@ -59,7 +59,7 @@ const ServiceComponentsTable = () => {
             colSpan={columns.length}
             isExpanded={expandableRows[component.id] || false}
             isInactive={!component.hosts.length}
-            expandedContent={<ServiceComponentsTableExpandedContent children={component.hosts || []} />}
+            expandedContent={<ServiceComponentsTableExpandedContent hostComponents={component.hosts || []} />}
           >
             <StatusableCell status={serviceComponentsStatusMap[component.status]}>
               <Link
@@ -69,7 +69,10 @@ const ServiceComponentsTable = () => {
                 {component.displayName}
               </Link>
             </StatusableCell>
-            <ExpandDetailsCell handleExpandRow={() => handleExpandClick(component.id)}>
+            <ExpandDetailsCell
+              isDisabled={component.hosts.length === 0}
+              handleExpandRow={() => handleExpandClick(component.id)}
+            >
               <Link className="text-link" to={`/clusters/${component.cluster.id}/hosts?componentId=${component.id}`}>
                 {component.hosts.length} {component.hosts.length === 1 ? 'host' : 'hosts'}
               </Link>

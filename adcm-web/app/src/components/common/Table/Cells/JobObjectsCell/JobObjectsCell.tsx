@@ -1,4 +1,4 @@
-import { AdcmJobObject } from '@models/adcm';
+import type { AdcmJobObject } from '@models/adcm';
 import { TableCell } from '@uikit';
 import { Link } from 'react-router-dom';
 import s from './JobObjectsCell.module.scss';

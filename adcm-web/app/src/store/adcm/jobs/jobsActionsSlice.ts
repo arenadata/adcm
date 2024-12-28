@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RequestError } from '@api';
+import type { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { getTask, refreshJobs } from './jobsSlice';
+import { refreshJobs } from './jobsSlice';
 import { AdcmJobsApi } from '@api/adcm/jobs';
 
 interface AdcmJobsActionState {
@@ -26,29 +26,6 @@ const stopJobWithUpdate = createAsyncThunk('adcm/jobsActions/stopJobWithUpdate',
   await thunkAPI.dispatch(stopJob(arg)).unwrap();
   thunkAPI.dispatch(refreshJobs());
 });
-
-const stopChildJob = createAsyncThunk('adcm/jobsActions/stopChildJob', async (childJobId: number, thunkAPI) => {
-  try {
-    await AdcmJobsApi.stopChildJob(childJobId);
-    thunkAPI.dispatch(showInfo({ message: 'Job has been stopped' }));
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return error;
-  }
-});
-
-interface StopChildJobWithUpdatePayload {
-  childJobId: number;
-  jobId: number;
-}
-
-const stopChildJobWithUpdate = createAsyncThunk(
-  'adcm/jobsActions/stopChildJobWithUpdate',
-  async ({ childJobId, jobId }: StopChildJobWithUpdatePayload, thunkAPI) => {
-    await thunkAPI.dispatch(stopChildJob(childJobId)).unwrap();
-    thunkAPI.dispatch(getTask(jobId));
-  },
-);
 
 const createInitialState = (): AdcmJobsActionState => ({
   stopDialog: {
@@ -74,12 +51,9 @@ const jobsSlice = createSlice({
     builder.addCase(stopJob.pending, (state) => {
       jobsSlice.caseReducers.closeStopDialog(state);
     });
-    builder.addCase(stopChildJob.pending, (state) => {
-      jobsSlice.caseReducers.closeStopDialog(state);
-    });
   },
 });
 
 const { openStopDialog, closeStopDialog } = jobsSlice.actions;
-export { stopJobWithUpdate, stopChildJobWithUpdate, openStopDialog, closeStopDialog };
+export { stopJobWithUpdate, openStopDialog, closeStopDialog };
 export default jobsSlice.reducer;

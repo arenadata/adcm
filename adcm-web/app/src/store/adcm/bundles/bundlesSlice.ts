@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmBundle } from '@models/adcm/bundle';
+import type { AdcmBundle } from '@models/adcm/bundle';
 import { AdcmBundlesApi } from '@api';
 import { LoadState } from '@models/loadState';
 
@@ -12,7 +12,7 @@ type AdcmBundlesState = {
   loadState: LoadState;
 };
 
-const loadBundles = createAsyncThunk('adcm/bundles/loadBundles', async (arg, thunkAPI) => {
+const loadBundles = createAsyncThunk('adcm/bundles/loadBundles', async (_arg, thunkAPI) => {
   const {
     adcm: {
       bundlesTable: { filter, sortParams, paginationParams },
@@ -27,7 +27,7 @@ const loadBundles = createAsyncThunk('adcm/bundles/loadBundles', async (arg, thu
   }
 });
 
-const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (arg, thunkAPI) => {
+const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -42,7 +42,7 @@ const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (arg, thunk
   });
 });
 
-const refreshBundles = createAsyncThunk('adcm/bundles/refreshBundles', async (arg, thunkAPI) => {
+const refreshBundles = createAsyncThunk('adcm/bundles/refreshBundles', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadBundles());
 });
 

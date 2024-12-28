@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, ClusterObject, Host, ObjectType, Prototype
+from cm.models import Bundle, Host, ObjectType, Prototype, Service
 
 from rbac.models import Group
 
@@ -71,7 +71,7 @@ class PolicyBaseTestCase(BaseTestCase):
 
     def get_host_components(self) -> list[dict]:
         host_pks = [host.pk for host in Host.objects.order_by("id")]
-        services = list(ClusterObject.objects.order_by("id"))
+        services = list(Service.objects.order_by("id"))
         hostcomponent_data = []
 
         for host_pk, service in zip(host_pks, services):

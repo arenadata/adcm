@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
-import TableRow, { TableRowProps } from './TableRow';
+import type { TableRowProps } from './TableRow';
+import TableRow from './TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
 
 export interface EmptyRowProps extends TableRowProps {

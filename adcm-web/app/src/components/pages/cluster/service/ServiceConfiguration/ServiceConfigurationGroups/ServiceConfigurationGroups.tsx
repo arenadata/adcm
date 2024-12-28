@@ -1,10 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import ConfigGroupsHeader from '@commonComponents/configGroups/ConfigGroupsHeader/ConfigGroupsHeader';
 import ConfigGroupsTable from '@commonComponents/configGroups/ConfigGroupsTable/ConfigGroupsTable';
 import { useRequestServiceConfigGroups } from './useRequestServiceConfigGroups';
 import ServiceConfigGroupTableFooter from './ServiceConfigGroupTableFooter/ServiceConfigGroupTableFooterConfigGroupTableFooter';
-import { SortParams } from '@uikit/types/list.types';
+import type { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice';
 import {
   openCreateDialog,
@@ -12,7 +12,7 @@ import {
   openMappingDialog,
 } from '@store/adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
 import { useParams } from 'react-router-dom';
-import { AdcmConfigGroup } from '@models/adcm';
+import type { AdcmConfigGroup } from '@models/adcm';
 import ServiceConfigGroupDialogs from './ServiceConfigGroupDialogs/ServiceConfigGroupDialogs';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 

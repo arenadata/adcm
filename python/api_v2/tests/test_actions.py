@@ -18,13 +18,15 @@ import json
 from cm.models import (
     Action,
     Cluster,
-    ClusterObject,
+    Component,
+    ConcernCause,
+    ConcernType,
     Host,
     HostComponent,
-    HostProvider,
     JobLog,
     MaintenanceMode,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -32,11 +34,16 @@ from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.tests.base import BaseAPITestCase
 
-ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -46,18 +53,14 @@ class TestActionsFiltering(BaseAPITestCase):
         self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
         self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_2"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        self.component_2: Component = Component.objects.get(service=self.service_1, prototype__name="component_2")
         self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider=self.hostprovider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.hostprovider, fqdn="host-2")
+        self.provider = self.add_provider(provider_bundle, "Provider with Actions")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.available_at_any = ["state_any"]
         common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
@@ -130,7 +133,7 @@ class TestActionsFiltering(BaseAPITestCase):
         service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
         self.cluster_1.save()
 
@@ -157,7 +160,7 @@ class TestActionsFiltering(BaseAPITestCase):
     def test_upgrading_status_foreign_service_remove_fail(self) -> None:
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
 
         response = self.client.v2[self.cluster_1, "services", self.service_1].delete()
@@ -165,7 +168,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_filter_object_own_actions_success(self) -> None:
-        for object_ in (self.cluster, self.service_1, self.component_1, self.hostprovider, self.host_1):
+        for object_ in (self.cluster, self.service_1, self.component_1, self.provider, self.host_1):
             with self.subTest(msg=f"{object_.__class__.__name__} at different states"):
                 self.check_object_action_list(object_=object_, expected_actions=self.available_at_created_no_multi)
 
@@ -259,6 +262,61 @@ class TestActionsFiltering(BaseAPITestCase):
                 "from cluster multi flag",
                 *cluster_host_actions,
             ]
+        )
+
+    def test_filtering_success(self):
+        action_to_filter = Action.objects.create(
+            description="TEST DESCRIPTION 2",
+            display_name="Test service action name",
+            prototype=self.cluster.prototype,
+            type="task",
+            state_available="any",
+            name="test_service_action_name",
+            host_action=False,
+        )
+        self.add_host_to_cluster(self.cluster, self.host_1)
+        filters = {
+            "name": (action_to_filter.name, action_to_filter.name[1:-3].upper(), "wrong"),
+            "displayName": (action_to_filter.display_name, action_to_filter.display_name[1:-3].upper(), "wrong"),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            exact_items_found = 1
+            partial_items_found = 1
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.cluster, "actions"].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(len(response.json()), exact_items_found)
+
+                response = self.client.v2[self.cluster, "actions"].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(len(response.json()), 0)
+
+                if partial_value:
+                    response = self.client.v2[self.cluster, "actions"].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(len(response.json()), partial_items_found)
+
+    def test_ordering_success(self):
+        response = self.client.v2[self.cluster, "actions"].get(query={"ordering": "id"})
+        expected_ids = [item["id"] for item in response.json()]
+        self.assertListEqual(
+            [action["id"] for action in response.json()],
+            [
+                action.pk
+                for action in Action.objects.filter(prototype=self.cluster.prototype).order_by("id")
+                if action.pk in expected_ids
+            ],
+        )
+
+        response = self.client.v2[self.cluster, "actions"].get(query={"ordering": "-id"})
+        expected_ids = [item["id"] for item in response.json()]
+        self.assertListEqual(
+            [action["id"] for action in response.json()],
+            [
+                action.pk
+                for action in Action.objects.filter(prototype=self.cluster.prototype).order_by("-id")
+                if action.pk in expected_ids
+            ],
         )
 
     def test_adcm_4516_disallowed_host_action_not_executable_success(self) -> None:
@@ -446,7 +504,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(
-        self, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, expected_actions: list[str]
+        self, object_: Cluster | Service | Component | Provider | Host, expected_actions: list[str]
     ) -> None:
         response = self.client.v2[object_, "actions"].get()
 
@@ -466,9 +524,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="first_component"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
     def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
@@ -567,3 +623,38 @@ class TestAction(BaseAPITestCase):
             },
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
+
+    def test_run_non_blocking(self) -> None:
+        action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
+
+        with RunTaskMock() as task_launch:
+            response = self.client.v2[self.cluster_1, "actions", action, "run"].post(data={"shouldBlockObject": False})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task_launch.target_task.refresh_from_db()
+        self.assertIsNone(task_launch.target_task.lock)
+
+        self.assertEqual(self.cluster_1.concerns.count(), 1)
+        first_concern = self.cluster_1.concerns.get()
+        self.assertEqual(first_concern.type, ConcernType.FLAG)
+        self.assertEqual(first_concern.cause, ConcernCause.JOB)
+
+        with self.subTest("Same action can not be launched"):
+            response = self.client.v2[self.cluster_1, "actions", action, "run"].post()
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Another action can be launched"):
+            response = self.client.v2[self.cluster_1, "actions", self.action_with_config].get()
+            configuration = response.json()["configuration"]
+
+            with RunTaskMock():
+                response = self.client.v2[self.cluster_1, "actions", self.action_with_config, "run"].post(
+                    data={"configuration": {"config": configuration["config"], "adcmMeta": configuration["adcmMeta"]}}
+                )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.assertEqual(self.cluster_1.concerns.count(), 2)
+            self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
+            self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)

@@ -19,9 +19,10 @@ from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from api_v2.adcm.serializers import AdcmSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -38,7 +39,7 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getADCMObject",
         summary="GET ADCM object",
         description="GET ADCM object.",
-        responses={200: AdcmSerializer},
+        responses={HTTP_200_OK: AdcmSerializer},
     ),
 )
 class ADCMViewSet(RetrieveModelMixin, ADCMGenericViewSet):
@@ -65,7 +66,8 @@ class ADCMConfigView(ConfigLogViewSet):
     @extend_schema(
         summary="Get ADCM config schema",
         description="Full representation of ADCM config.",
-        responses={200: AdcmSerializer},
+        examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
+        responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer},
     )
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002

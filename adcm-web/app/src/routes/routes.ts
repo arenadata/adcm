@@ -1,4 +1,4 @@
-import { RoutesConfigs } from './routes.types';
+import type { RoutesConfigs } from './routes.types';
 
 const routes: RoutesConfigs = {
   // Clusters
@@ -591,7 +591,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/jobs/:jobId/:withAutoStop': {
+  '/jobs/:jobId/subjobs/:subJobId': {
     pageTitle: 'Jobs',
     breadcrumbs: [
       {
@@ -600,6 +600,10 @@ const routes: RoutesConfigs = {
       },
       {
         label: ':jobId',
+        href: '/jobs/:jobId',
+      },
+      {
+        label: ':subJobId',
       },
     ],
   },

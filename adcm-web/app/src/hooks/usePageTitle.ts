@@ -1,5 +1,5 @@
 import routes from '@routes/routes';
-import { Route } from '@routes/routes.types';
+import type { Route } from '@routes/routes.types';
 
 export const usePageTitle = (currentRoute?: Route): string => {
   const path = currentRoute?.path;

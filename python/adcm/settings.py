@@ -211,7 +211,6 @@ AUTHENTICATION_BACKENDS = (
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 STATIC_ROOT = BASE_DIR / "wwwroot/static/"
@@ -375,6 +374,9 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",
+        # The order is important, `postprocess_hook_exclude_advanced_filters` hook
+        # must be called before `camelize_serializer_fields`
+        "adcm.api_schema.postprocess_hook_exclude_advanced_filters",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
     ],

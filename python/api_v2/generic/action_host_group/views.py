@@ -25,7 +25,7 @@ from audit.alt.hooks import adjust_denied_on_404_result
 from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
-from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, ClusterObject, Host, ServiceComponent
+from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
 from cm.services.action_host_group import (
     ActionHostGroupRepo,
     ActionHostGroupService,
@@ -38,7 +38,6 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
-from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
 from rest_framework.decorators import action
@@ -69,12 +68,13 @@ from api_v2.generic.action_host_group.serializers import (
     AddHostSerializer,
     ShortHostSerializer,
 )
+from api_v2.host.filters import HostGroupHostFilter
 from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
     ADCMCoreType.CLUSTER: (VIEW_CLUSTER_PERM, Cluster),
-    ADCMCoreType.SERVICE: (VIEW_SERVICE_PERM, ClusterObject),
-    ADCMCoreType.COMPONENT: (VIEW_COMPONENT_PERM, ServiceComponent),
+    ADCMCoreType.SERVICE: (VIEW_SERVICE_PERM, Service),
+    ADCMCoreType.COMPONENT: (VIEW_COMPONENT_PERM, Component),
 }
 
 
@@ -90,7 +90,7 @@ REQUIRE_EDIT_PERMISSION_DENIED = PermissionCheckDTO(require_edit=True, no_group_
 
 
 def check_has_group_permissions_for_object(
-    user: User, parent_object: Cluster | ClusterObject | ServiceComponent, dto: PermissionCheckDTO
+    user: User, parent_object: Cluster | Service | Component, dto: PermissionCheckDTO
 ) -> None:
     """
     If user hasn't got enough permissions on group, an error will be raised.
@@ -130,7 +130,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
     repo = ActionHostGroupRepo()
     action_host_group_service = ActionHostGroupService(repository=repo)
-    filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionHostGroupFilter
 
     def get_serializer_class(self) -> type[Serializer]:
@@ -206,7 +205,12 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         return Response(status=HTTP_204_NO_CONTENT)
 
     @action(
-        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+        methods=["get"],
+        detail=False,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=HostGroupHostFilter,
     )
     @with_parent_object
     def owner_host_candidate(self, request: Request, parent: CoreObjectDescriptor, **__):
@@ -223,9 +227,19 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
                 message = f"Can't get host candidates for {parent.type}"
                 raise RuntimeError(message)
 
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
 
-    @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
+        return Response(data=list(queryset))
+
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="host-candidates",
+        url_name="host-candidates",
+        pagination_class=None,
+        filterset_class=HostGroupHostFilter,
+    )
     @with_parent_object
     def host_candidate(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__):
         if not self.filter_by_parent(qs=ActionHostGroup.objects.filter(id=pk), parent=parent).exists():
@@ -234,7 +248,11 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
 
         host_ids = self.action_host_group_service.get_host_candidates(group_id=int(pk))
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
+
+        return Response(data=list(queryset))
 
     def filter_by_parent(self, qs: QuerySet, parent: CoreObjectDescriptor) -> QuerySet:
         return qs.filter(
@@ -254,9 +272,12 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
 
 class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
+    queryset = Host.objects.none()  # This is necessary for the BrowsableAPIRenderer to work correctly
+    pagination_class = None
     serializer_class = AddHostSerializer
     repo = ActionHostGroupRepo()
     action_host_group_service = ActionHostGroupService(repository=repo)
+    filterset_class = HostGroupHostFilter
 
     def __init_subclass__(cls, **__):
         audit_view(
@@ -338,9 +359,12 @@ class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
         self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
     ) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
-
         host_ids = self.repo.get_hosts(id=host_group.id)
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+
+        queryset = Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")
+        queryset = self.filter_queryset(queryset)
+
+        return Response(data=list(queryset))
 
     @with_group_object
     def retrieve(

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Pagination from '@uikit/Pagination/Pagination';
-import { Meta, StoryObj } from '@storybook/react';
-import { PaginationProps } from '@uikit/Pagination/Pagination.types';
+import type { Meta, StoryObj } from '@storybook/react';
+import type { PaginationProps } from '@uikit/Pagination/Pagination.types';
 import { defaultPerPagesList } from '@constants';
-import { PaginationParams } from '@uikit/types/list.types';
+import type { PaginationParams } from '@uikit/types/list.types';
 
 type Story = StoryObj<typeof Pagination>;
 

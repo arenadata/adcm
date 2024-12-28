@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { useNavigate } from 'react-router-dom';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
@@ -9,7 +9,7 @@ import {
   createHostProviderConfigGroup,
   deleteHostProviderConfigGroupWithUpdate,
 } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
-import { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
+import type { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
 import HostProviderConfigGroupMappingDialog from './HostProviderConfigGroupMappingDialog/HostProviderConfigGroupMappingDialog';
 
 const HostProviderConfigGroupDialogs: React.FC = () => {

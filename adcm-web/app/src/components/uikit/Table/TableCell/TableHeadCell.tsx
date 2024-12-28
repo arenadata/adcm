@@ -1,5 +1,5 @@
-import React from 'react';
-import { TableColumn } from '../Table.types';
+import type React from 'react';
+import type { TableColumn } from '../Table.types';
 import TableCell from './TableCell';
 import SortingLabel from '@uikit/SortingLabel/SortingLabel';
 import { useTableContext } from '../TableContext';

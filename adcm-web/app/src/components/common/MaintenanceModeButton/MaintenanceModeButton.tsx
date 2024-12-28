@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { IconButton } from '@uikit';
 import s from './MaintenanceModeButton.module.scss';
 import cn from 'classnames';
@@ -20,7 +20,6 @@ const getTooltipLabel = (status: string) => {
     case AdcmMaintenanceMode.Changing:
       label += 'in progress';
       break;
-    case AdcmMaintenanceMode.Off:
     default:
       label = 'Maintenance mode';
       break;

@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import ConfigurationEditorDialog from '../ConfigurationEditorDialog/ConfigurationEditorDialog';
-import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
-import { JSONPrimitive } from '@models/json';
-import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import type { Node } from '@uikit/CollapseTree2/CollapseNode.types';
+import type { JSONPrimitive } from '@models/json';
+import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import EnumControl from '../FieldControls/EnumControl';
 import StringControl from '../FieldControls/StringControls/StringControl';
 import MultilineStringControl from '../FieldControls/StringControls/MultilineStringControl';

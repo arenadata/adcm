@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmCluster, AdcmService } from '@models/adcm';
+import type { AdcmCluster, AdcmService } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
-import { IconProps } from '@uikit/Icon/Icon';
+import type { IconProps } from '@uikit/Icon/Icon';
 import { openClusterServiceDynamicActionDialog } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
 

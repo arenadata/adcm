@@ -1,7 +1,7 @@
 import ListTransfer from './ListTransfer';
-import { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { ListTransferItem } from '@uikit/ListTransfer/ListTransfer.types';
+import type { ListTransferItem } from '@uikit/ListTransfer/ListTransfer.types';
 
 type Story = StoryObj<typeof ListTransfer>;
 export default {

@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
+from unittest.mock import patch
+
+from cm.models import Action, Component, Host, HostComponent, Provider
+from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType
 from rest_framework.status import (
@@ -94,7 +97,7 @@ class TestHost(BaseAPITestCase):
 
     def test_create_failed_wrong_provider(self):
         response = (self.client.v2 / "hosts").post(
-            data={"hostprovider_id": self.get_non_existent_pk(model=HostProvider), "name": "woohoo"}
+            data={"hostprovider_id": self.get_non_existent_pk(model=Provider), "name": "woohoo"}
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -225,46 +228,33 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
 
-    def test_filter_is_host_in_cluster_success(self):
-        host2 = self.add_host(
-            bundle=self.provider_bundle,
-            description="description",
-            provider=self.provider,
-            fqdn="test_host_2",
-            cluster=self.cluster_1,
-        )
+    def test_filtering_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host(provider=self.provider, fqdn="host-2")
+        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
 
-        response = (self.client.v2 / "hosts").get(query={"isInCluster": True})
+        filters = {
+            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
+            "hostproviderName": (self.host.provider.name, None, "wrong", 3),
+            "clusterName": (self.host.cluster.name, None, "wrong", 2),
+            "isInCluster": (True, False, "wrong", 2),
+        }
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
-        self.assertEqual(response.json()["results"][0]["cluster"]["name"], self.cluster_1.name)
+        for filter_name, (correct_value, partial_value, wrong_value, count) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "hosts").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], count)
 
-    def test_filter_is_host_not_in_cluster_success(self):
-        host2 = self.add_host(
-            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host_2"
-        )
-        self.add_host_to_cluster(self.cluster_1, host=host2)
+                response = (self.client.v2 / "hosts").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                wrong_value = 0 if filter_name != "isInCluster" else 3
+                self.assertEqual(response.json()["count"], wrong_value)
 
-        response = (self.client.v2 / "hosts").get(query={"isInCluster": False})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.host.pk)
-        self.assertEqual(response.json()["results"][0]["cluster"], None)
-
-    def test_hostprovider_filter(self):
-        second_provider = self.add_provider(bundle=self.provider_bundle, name="second_provider", description="provider")
-        host2 = self.add_host(
-            bundle=self.provider_bundle, description="description", provider=second_provider, fqdn="test_host_2"
-        )
-
-        response = (self.client.v2 / "hosts").get(query={"hostproviderName": second_provider.name})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
+                if partial_value:
+                    response = (self.client.v2 / "hosts").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], count)
 
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
@@ -598,10 +588,35 @@ class TestClusterHost(BaseAPITestCase):
                 [host["name"] for host in response.json()["results"]],
             )
 
+    def test_filtering_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host(provider=self.provider, fqdn="host-2")
+        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
+
+        filters = {
+            "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
+            "hostproviderName": (self.host.provider.name, None, "wrong", 3),
+        }
+
+        for filter_name, (correct_value, partial_value, wrong_value, count) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], count)
+
+                response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = self.client.v2[self.cluster_1, "hosts"].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], count)
+
     def test_adcm_5687_filtering_by_component_id(self):
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = service.servicecomponent_set.get(prototype__name="component_1")
-        component_2 = service.servicecomponent_set.get(prototype__name="component_2")
+        component_1 = service.components.get(prototype__name="component_1")
+        component_2 = service.components.get(prototype__name="component_2")
 
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
@@ -615,7 +630,7 @@ class TestClusterHost(BaseAPITestCase):
             ({"componentId": component_1.pk}, {self.host.pk}),
             ({"componentId": component_2.pk}, {self.host_2.pk}),
             (None, {self.host.pk, self.host_2.pk, self.control_host_same_cluster.pk}),
-            ({"componentId": self.get_non_existent_pk(model=ServiceComponent)}, set()),
+            ({"componentId": self.get_non_existent_pk(model=Component)}, set()),
         ):
             with self.subTest(query=query, expected_ids=expected_ids):
                 response = self.client.v2[self.cluster_1, "hosts"].get(query=query)
@@ -634,7 +649,7 @@ class TestHostActions(BaseAPITestCase):
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
 
     def test_host_cluster_list_success(self):
         response = self.client.v2[self.cluster_1, "hosts", self.host, "actions"].get()
@@ -805,10 +820,10 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        self.component_2 = ServiceComponent.objects.get(
+        self.component_2 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
         self.set_hostcomponent(
@@ -853,3 +868,162 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.assertListEqual(
             [component["name"] for component in response.json()["results"]], ["component_2", "component_1"]
         )
+
+
+class TestAdvancedFilters(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
+        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-3")
+
+        self.status_map = FullStatusMap(
+            hosts={
+                str(self.host_1.pk): {"status": 0},
+                str(self.host_2.pk): {"status": 16},
+                str(self.host_3.pk): {"status": 16},
+            }
+        )
+
+    def test_filter_by_status__eq(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__eq": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__eq": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+    def test_filter_by_status__ieq(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: Down"):
+                response = (self.client.v2 / "hosts").get(query={"status__ieq": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__ieq": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+    def test_filter_by_status__ne(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__ne": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__ne": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+    def test_filter_by_status__ine(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__ine": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__ine": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+    def test_filter_by_status__in(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+            with self.subTest("Filter value: down,bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__in": "down,bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+    def test_filter_by_status__iin(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+            with self.subTest("Filter value: Up,BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iin": "Up,BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+    def test_filter_by_status__exclude(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: up"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "up"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)
+
+            with self.subTest("Filter value: bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+            with self.subTest("Filter value: down,bar"):
+                response = (self.client.v2 / "hosts").get(query={"status__exclude": "down,bar"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+    def test_filter_by_status__iexclude(self):
+        with patch("api_v2.filters.retrieve_status_map", return_value=self.status_map):
+            with self.subTest("Filter value: DoWn"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "DoWn"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+                self.assertEqual(response.json()["results"][0]["id"], self.host_1.pk)
+
+            with self.subTest("Filter value: BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 3)
+
+            with self.subTest("Filter value: Up,BaR"):
+                response = (self.client.v2 / "hosts").get(query={"status__iexclude": "Up,BaR"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 2)

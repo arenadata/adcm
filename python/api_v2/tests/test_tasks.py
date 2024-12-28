@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
 from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
@@ -20,11 +21,12 @@ from cm.models import (
     ADCM,
     Action,
     Cluster,
-    ClusterObject,
+    Component,
     Host,
     HostComponent,
-    HostProvider,
-    ServiceComponent,
+    JobStatus,
+    Provider,
+    Service,
     TaskLog,
 )
 from cm.services.job.action import prepare_task_for_action
@@ -34,6 +36,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+import pytz
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -47,7 +50,7 @@ class TestTask(BaseAPITestCase):
 
         self.adcm = ADCM.objects.first()
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = ServiceComponent.objects.filter(service=self.service_1, prototype__name="component_1").first()
+        component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
         component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
@@ -91,19 +94,37 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
-    def test_task_filter_by_job_name(self):
-        response = (self.client.v2 / "tasks").get(query={"jobName": "comp"})
+    def test_filtering_success(self):
+        task = self.cluster_task
+        task.status = "running"
+        task.start_date = timezone.now() - timedelta(days=3)
+        task.finish_date = timezone.now()
+        task.save()
+        self.cluster_action.display_name = "unique_action_name"
+        self.cluster_action.save()
+        task.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
+        filters = {
+            "id": (task.pk, None, 0),
+            "jobName": (task.action.display_name, task.action.display_name[1:-7].upper(), "wrong"),
+            "objectName": (self.cluster_1.name, self.cluster_1.name[1:-7].upper(), "wrong"),
+            "status": (task.status, None, "broken"),
+        }
+        exact_items_found, partial_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "tasks").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-    def test_task_filter_by_object_name(self):
-        response = (self.client.v2 / "tasks").get(query={"objectName": "service_1"})
+                response = (self.client.v2 / "tasks").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.service_task.pk)
+                if partial_value:
+                    response = (self.client.v2 / "tasks").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
     def test_task_filter_by_job_name_multiple_found_success(self):
         response = (self.client.v2 / "tasks").get(query={"jobName": "action"})
@@ -121,6 +142,54 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.cluster_task.pk)
+
+    def test_ordering_success(self):
+        empty_task = TaskLog.objects.get(action=None)
+        empty_task.delete()
+        for i, task in enumerate(TaskLog.objects.all()):
+            task.start_date = timezone.now() - timedelta(days=3 + i)
+            task.finish_date = timezone.now() - timedelta(days=i)
+            task.save()
+
+        task = self.cluster_task
+        task.status = "running"
+        task.start_date = timezone.now() - timedelta(days=3)
+        task.finish_date = timezone.now()
+        task.save()
+        self.cluster_action.display_name = "unique_action_name"
+        self.cluster_action.save()
+
+        ordering_fields = {
+            "id": "id",
+            "action__name": "name",
+            "start_date": "startTime",
+            "finish_date": "endTime",
+        }
+
+        def get_response_results(response, ordering_field):
+            if ordering_field in ("startTime", "endTime"):
+                keyword = "startTime" if ordering_field == "startTime" else "endTime"
+                return [
+                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
+                    for item in response.json()["results"]
+                ]
+            if ordering_field == "name":
+                return [item["action"]["name"] for item in response.json()["results"]]
+            return [item[ordering_field] for item in response.json()["results"]]
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "tasks").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(TaskLog.objects.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "tasks").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    get_response_results(response, ordering_field),
+                    list(TaskLog.objects.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
     def test_task_retrieve_success(self):
         task_object = {"type": self.cluster_1.content_type.name, "id": self.cluster_1.pk, "name": self.cluster_1.name}
@@ -158,6 +227,10 @@ class TestTask(BaseAPITestCase):
         self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
 
     def test_adcm_4142_visibility_after_object_deletion(self):
+        # otherwise action won't be launched (see ADCM-6081)
+        self.service_task.status = JobStatus.SUCCESS
+        self.service_task.save()
+
         cluster_admin_credentials = self.test_user_credentials
         cluster_admin = self.test_user
         service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
@@ -226,7 +299,7 @@ class TestTaskObjects(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
 
-        self.component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="just-host")
 
@@ -308,7 +381,7 @@ class TestTaskObjects(BaseAPITestCase):
 
     @staticmethod
     def create_task(
-        object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
+        object_: Cluster | Service | Component | Provider | Host | ADCM,
         action_name: str,
         *,
         host: Host | None = None,

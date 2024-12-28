@@ -21,19 +21,21 @@ from django.utils import timezone
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
-from cm.issue import unlock_affected_objects, update_hierarchy_issues
+from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
+    UNFINISHED_STATUS,
     CheckLog,
     Cluster,
     ConcernItem,
     ConcernType,
     GroupCheckLog,
-    HostProvider,
     JobLog,
     JobStatus,
+    Provider,
     TaskLog,
 )
+from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from django.conf import settings
 from rbac.models import User
 
@@ -114,20 +116,23 @@ def recheck_issues():
     Could slow down startup process
     """
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
-    for model in [ADCM, Cluster, HostProvider]:
+    for model in [ADCM, Cluster, Provider]:
         for obj in model.objects.order_by("id"):
             update_hierarchy_issues(obj)
 
 
 def abort_all():
-    for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
+    for task in TaskLog.objects.filter(status__in=UNFINISHED_STATUS):
         task.status = JobStatus.ABORTED
         task.finish_date = timezone.now()
         task.save(update_fields=["status", "finish_date"])
 
-        unlock_affected_objects(task=task)
+        if task.is_blocking:
+            delete_task_lock_concern(task_id=task.pk)
+        else:
+            delete_task_flag_concern(task_id=task.pk)
 
-    JobLog.objects.filter(status=JobStatus.RUNNING).update(status=JobStatus.ABORTED, finish_date=timezone.now())
+    JobLog.objects.filter(status__in=UNFINISHED_STATUS).update(status=JobStatus.ABORTED, finish_date=timezone.now())
 
 
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):

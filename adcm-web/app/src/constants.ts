@@ -23,3 +23,5 @@ export const emailRegexp = new RegExp(/^[^@ ]+@[^@ ]+\.[a-zA-Z]+$/);
 export enum ActionStatuses {
   SuccessRun = 'Action was launched successfully',
 }
+
+export const unlimitedRequestItems = 10000;

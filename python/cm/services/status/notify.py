@@ -17,7 +17,7 @@ from core.cluster.operations import calculate_maintenance_mode_for_cluster_objec
 from core.cluster.types import ObjectMaintenanceModeState
 from requests import Response
 
-from cm.models import Cluster, ClusterObject, Host, HostComponent, ServiceComponent
+from cm.models import Cluster, Component, Host, HostComponent, Service
 from cm.services.cluster import (
     retrieve_clusters_objects_maintenance_mode,
     retrieve_multiple_clusters_topology,
@@ -35,9 +35,7 @@ def reset_hc_map() -> None:
     for cluster_id, service_id, component_id, host_id in (
         HostComponent.objects.values_list("cluster_id", "service_id", "component_id", "host_id")
         .exclude(
-            component_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(
-                prototype__monitoring="passive"
-            )
+            component_id__in=Component.objects.values_list("id", flat=True).filter(prototype__monitoring="passive")
         )
         .order_by("id")
     ):
@@ -48,7 +46,7 @@ def reset_hc_map() -> None:
     for host_id, cluster_id in Host.objects.values_list("id", "cluster_id").filter(prototype__monitoring="active"):
         hosts[cluster_id or 0].append(host_id)
 
-    for service_id, cluster_id in ClusterObject.objects.values_list("id", "cluster_id").filter(
+    for service_id, cluster_id in Service.objects.values_list("id", "cluster_id").filter(
         prototype__monitoring="active"
     ):
         services[cluster_id].append(service_id)

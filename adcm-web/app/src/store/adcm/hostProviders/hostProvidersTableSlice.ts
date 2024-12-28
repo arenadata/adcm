@@ -1,6 +1,7 @@
-import { AdcmHostProviderFilter, AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmHostProviderFilter, AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeType } from '@models/adcm';
 import { createAsyncThunk, createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
+import type { ListState } from '@models/table';
 import { AdcmPrototypesApi } from '@api';
 
 type AdcmHostProviderTableState = ListState<AdcmHostProviderFilter> & {
@@ -30,7 +31,7 @@ const createInitialState = (): AdcmHostProviderTableState => ({
   isAllDataLoaded: false,
 });
 
-const loadPrototypes = createAsyncThunk('adcm/hostProvidersTable/loadPrototype', async (arg, thunkAPI) => {
+const loadPrototypes = createAsyncThunk('adcm/hostProvidersTable/loadPrototype', async (_arg, thunkAPI) => {
   try {
     const prototypesWithVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Provider });
     return prototypesWithVersions;
@@ -39,7 +40,7 @@ const loadPrototypes = createAsyncThunk('adcm/hostProvidersTable/loadPrototype',
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/hostProvidersTable/loadRelatedData', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/hostProvidersTable/loadRelatedData', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadPrototypes());
 });
 

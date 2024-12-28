@@ -1,6 +1,7 @@
-import { AdcmSettingsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmSettingsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmSettings } from '@models/adcm';
+import type { AdcmSettings } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -10,7 +11,7 @@ interface AdcmSettingsState {
   adcmSettings: AdcmSettings | null;
 }
 
-const getAdcmSettings = createAsyncThunk('adcm/adcmSettings/getAdcmSettings', async (arg: void, thunkAPI) => {
+const getAdcmSettings = createAsyncThunk('adcm/adcmSettings/getAdcmSettings', async (_, thunkAPI) => {
   try {
     const adcmSettings = await AdcmSettingsApi.getSettings();
 

@@ -1,8 +1,9 @@
 import { createAsyncThunk, createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
-import { AdcmBundlesFilter } from '@models/adcm/bundle';
+import type { ListState } from '@models/table';
+import type { AdcmBundlesFilter } from '@models/adcm/bundle';
 import { AdcmPrototypesApi } from '@api';
-import { AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmPrototypeVersions } from '@models/adcm';
+import { AdcmPrototypeType } from '@models/adcm';
 import { LoadState } from '@models/loadState';
 
 type AdcmBundlesTableState = ListState<AdcmBundlesFilter> & {
@@ -32,7 +33,7 @@ const createInitialState = (): AdcmBundlesTableState => ({
   },
 });
 
-const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype', async (arg, thunkAPI) => {
+const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype', async (_arg, thunkAPI) => {
   try {
     const prototypesWithVersions = await Promise.all([
       AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster }),
@@ -44,7 +45,7 @@ const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype'
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/bundlesTable/loadRelatedData', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/bundlesTable/loadRelatedData', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadPrototypeVersions());
 });
 

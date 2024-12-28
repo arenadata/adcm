@@ -16,11 +16,11 @@ from cm.models import (
     Cluster,
     ConfigLog,
     Host,
-    HostProvider,
     MaintenanceMode,
     ObjectConfig,
     ObjectType,
     Prototype,
+    Provider,
 )
 from django.urls import reverse
 from rbac.models import Group, Policy, Role, RoleTypes
@@ -38,12 +38,12 @@ class TestAuditObjectRename(BaseTestCase):
 
         provider_prototype = Prototype.objects.create(bundle=bundle, type="provider")
         host_prototype = Prototype.objects.create(bundle=bundle, type="host")
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=provider_prototype,
         )
         config = ObjectConfig.objects.create(current=0, previous=0)
-        config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = config_log.pk
         config.save(update_fields=["current"])
 

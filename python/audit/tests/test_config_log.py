@@ -13,7 +13,7 @@
 from datetime import datetime
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
+from cm.models import Bundle, Cluster, ConfigHostGroup, ConfigLog, ObjectConfig, Prototype
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
@@ -36,12 +36,12 @@ class TestConfigLogAudit(BaseTestCase):
         self.bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=self.bundle)
         self.cluster = Cluster.objects.create(prototype=prototype, config=self.config)
-        config_log = ConfigLog.objects.create(obj_ref=self.config, config="{}")
+        config_log = ConfigLog.objects.create(obj_ref=self.config, config={})
         self.config.current = config_log.pk
         self.config.save(update_fields=["current"])
 
-        self.group_config = GroupConfig.objects.create(
-            name="test_group_config",
+        self.host_group = ConfigHostGroup.objects.create(
+            name="test_config_host_group",
             object_id=self.cluster.pk,
             object_type=ContentType.objects.get(app_label="cm", model="cluster"),
             config_id=self.config.pk,
@@ -97,9 +97,9 @@ class TestConfigLogAudit(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_create_via_group_config(self):
+    def test_create_via_config_host_group(self):
         self.client.post(
-            path=f"/api/v1/group-config/{self.group_config.pk}/" f"config/{self.config.pk}/config-log/",
+            path=f"/api/v1/group-config/{self.host_group.pk}/" f"config/{self.config.pk}/config-log/",
             data={"obj_ref": self.config.pk, "config": "{}"},
         )
 
@@ -112,10 +112,10 @@ class TestConfigLogAudit(BaseTestCase):
             user=self.test_user,
         )
 
-    def test_create_via_group_config_denied(self):
+    def test_create_via_config_host_group_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=f"/api/v1/group-config/{self.group_config.pk}/" f"config/{self.config.pk}/config-log/",
+                path=f"/api/v1/group-config/{self.host_group.pk}/" f"config/{self.config.pk}/config-log/",
                 data={"obj_ref": self.config.pk, "config": "{}"},
             )
 

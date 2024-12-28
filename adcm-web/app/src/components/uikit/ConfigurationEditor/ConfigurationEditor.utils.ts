@@ -3,6 +3,7 @@ import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { ConfigurationNodePath } from './ConfigurationEditor.types';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
+import { isValueUnset } from '@utils/checkUtils';
 
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
@@ -29,7 +30,7 @@ export const addField = (configuration: ConfigurationData, path: ConfigurationNo
   let node = newConfiguration;
   for (const part of path) {
     // handle case when map / secretMap is required, but not set or must be defined by user
-    if (path.at(-1) === part && node[part] == undefined) {
+    if (path.at(-1) === part && isValueUnset(node[part])) {
       node[part] = {};
     }
     node = node[part] as JSONObject;
@@ -65,7 +66,7 @@ export const addArrayItem = (
   let node = newConfiguration;
   for (const part of path) {
     // handle case when array is required, but not set or must be defined by user
-    if (path.at(-1) === part && node[part] == undefined) {
+    if (path.at(-1) === part && isValueUnset(node[part])) {
       node[part] = [];
     }
 
@@ -73,7 +74,10 @@ export const addArrayItem = (
   }
 
   const newItem = generateFromSchema(schema);
-  node.push(newItem);
+  // we need this check because initially node is an object
+  if (Array.isArray(node)) {
+    node.push(newItem);
+  }
 
   return newConfiguration;
 };
@@ -88,7 +92,10 @@ export const deleteArrayItem = (configuration: ConfigurationData, path: Configur
     node = node[part] as JSONObject;
   }
 
-  node.splice(fieldName as number, 1);
+  // we need this check because initially node is an object
+  if (Array.isArray(node)) {
+    node.splice(fieldName as number, 1);
+  }
 
   return newConfiguration;
 };
@@ -113,5 +120,5 @@ export const removeEmpty = (value: unknown): unknown => {
 };
 
 const cloneConfiguration = (configuration: ConfigurationData) => {
-  return JSON.parse(JSON.stringify(configuration));
+  return structuredClone(configuration);
 };

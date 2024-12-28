@@ -2,15 +2,15 @@ import {
   type AdcmDynamicActionDetails,
   AdcmHostComponentMapRuleAction,
   type AdcmHostShortView,
+  AdcmMaintenanceMode,
   type AdcmMapping,
   type AdcmMappingComponent,
   type AdcmMappingComponentService,
   type HostId,
-  AdcmMaintenanceMode,
 } from '@models/adcm';
 import type {
   ComponentAvailabilityErrors,
-  DisabledComponentsMappings,
+  InitiallyMappedHostsDictionary,
 } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 
 export const getComponentMapActions = (
@@ -29,8 +29,8 @@ export const getComponentMapActions = (
   return result;
 };
 
-export const getDisabledMappings = (mapping: AdcmMapping[]) => {
-  const result: DisabledComponentsMappings = {};
+export const getInitiallyMappedHostsDictionary = (mapping: AdcmMapping[]) => {
+  const result: InitiallyMappedHostsDictionary = {};
 
   for (const m of mapping) {
     if (result[m.componentId] === undefined) {
@@ -44,31 +44,46 @@ export const getDisabledMappings = (mapping: AdcmMapping[]) => {
 };
 
 export const checkComponentActionsMappingAvailability = (
-  component: AdcmMappingComponent,
+  _component: AdcmMappingComponent,
   allowActions: Set<AdcmHostComponentMapRuleAction>,
 ): ComponentAvailabilityErrors => {
   const result: ComponentAvailabilityErrors = {};
 
   result.componentNotAvailableError =
     allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : result.componentNotAvailableError;
-  result.addingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Add)
-    ? 'Adding hosts is not allowed in the action configuration'
-    : undefined;
-  result.removingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Remove)
-    ? 'Removing hosts is not allowed in the action configuration'
-    : undefined;
-
   return result;
 };
 
 export const checkHostActionsMappingAvailability = (
   host: AdcmHostShortView,
   allowActions: Set<AdcmHostComponentMapRuleAction>,
-  disabledHosts: Set<HostId> = new Set(),
+  initiallyMappedHosts: Set<HostId> = new Set(),
 ): string | undefined => {
-  const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
-  const isHostInMaintenanceMode = host.maintenanceMode === AdcmMaintenanceMode.On;
+  // always allow revert removable INCLUDES to initial hosts
+  if (initiallyMappedHosts.has(host.id)) return undefined;
 
-  if (isDisabled) return 'Removing host is not allowed in the action configuration';
-  if (isHostInMaintenanceMode) return 'The host is in the maintenance mode';
+  if (host.maintenanceMode !== AdcmMaintenanceMode.Off) {
+    return 'Maintenance mode on the host must be Off';
+  }
+
+  if (!allowActions.has(AdcmHostComponentMapRuleAction.Add)) {
+    return 'Adding host is not allowed in the action configuration';
+  }
+
+  return undefined;
+};
+
+export const checkHostActionsUnmappingAvailability = (
+  host: AdcmHostShortView,
+  allowActions: Set<AdcmHostComponentMapRuleAction>,
+  initiallyMappedHosts: Set<HostId> = new Set(),
+): string | undefined => {
+  // always allow revert appendable NOT includes to initial hosts
+  if (!initiallyMappedHosts.has(host.id)) return undefined;
+
+  if (!allowActions.has(AdcmHostComponentMapRuleAction.Remove)) {
+    return 'Removing host is not allowed in the action configuration';
+  }
+
+  return undefined;
 };

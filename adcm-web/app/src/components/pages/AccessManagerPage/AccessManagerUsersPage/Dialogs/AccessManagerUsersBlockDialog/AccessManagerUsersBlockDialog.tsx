@@ -1,25 +1,23 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeBlockDialog, blockUsers } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
-import React, { useMemo } from 'react';
+import type React from 'react';
 
 const AccessManagerUsersBlockDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const users = useStore((s) => s.adcm.users.users);
-  const selectedIds = useStore((s) => s.adcm.usersActions.blockDialog.ids);
-  const selectedUsers = useMemo(() => users.filter(({ id }) => selectedIds.includes(id)), [users, selectedIds]);
+  const userToBlock = useStore(({ adcm }) => adcm.usersActions.blockDialog?.user);
 
-  const isOpenDialog = !!selectedUsers?.length;
+  const isOpenDialog = !!userToBlock;
 
   const handleCloseConfirm = () => {
     dispatch(closeBlockDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!selectedUsers?.length) return;
+    if (!userToBlock?.id) return;
 
-    dispatch(blockUsers(selectedUsers.map((user) => user.id)));
+    dispatch(blockUsers([userToBlock.id]));
   };
 
   return (

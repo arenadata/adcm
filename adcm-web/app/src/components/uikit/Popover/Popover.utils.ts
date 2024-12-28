@@ -1,5 +1,5 @@
-import React from 'react';
-import { PopoverWidth } from '@uikit/Popover/Popover.types';
+import type React from 'react';
+import type { PopoverWidth } from '@uikit/Popover/Popover.types';
 export const getRefWidth = (ref: React.RefObject<HTMLElement>): number | undefined => {
   return ref?.current?.getBoundingClientRect().width;
 };

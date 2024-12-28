@@ -1,12 +1,12 @@
-import React from 'react';
+import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Table, TableCell, TableRow } from '@uikit';
 import { columns, hostStatusesMap } from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable.constant';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import UnlinkHostToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
 import { setSortParams } from '@store/adcm/cluster/hosts/hostsTableSlice';
-import { SortParams } from '@models/table';
-import { AdcmClusterHost } from '@models/adcm/clusterHosts';
+import type { SortParams } from '@models/table';
+import type { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { Link, generatePath } from 'react-router-dom';

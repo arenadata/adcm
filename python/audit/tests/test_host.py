@@ -20,9 +20,9 @@ from cm.models import (
     Cluster,
     ConfigLog,
     Host,
-    HostProvider,
     ObjectConfig,
     Prototype,
+    Provider,
 )
 from django.urls import reverse
 from rbac.models import User
@@ -50,13 +50,13 @@ class TestHostAudit(BaseTestCase):
         self.bundle = Bundle.objects.create()
         provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
         self.host_prototype = Prototype.objects.create(bundle=self.bundle, type="host")
-        self.provider = HostProvider.objects.create(
+        self.provider = Provider.objects.create(
             name="test_provider",
             prototype=provider_prototype,
         )
         self.fqdn = "test-fqdn"
         config = ObjectConfig.objects.create(current=0, previous=0)
-        self.config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.config_log = ConfigLog.objects.create(obj_ref=config, config={})
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 

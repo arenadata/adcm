@@ -77,7 +77,7 @@ class ComponentNode(_GenericInventoryNode):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class HostProviderNode(_MultiStateConversionModel):
+class ProviderNode(_MultiStateConversionModel):
     id: ObjectID
     host_prototype_id: ObjectID
     name: str

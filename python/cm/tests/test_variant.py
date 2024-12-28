@@ -17,10 +17,10 @@ from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
+    Component,
     HostComponent,
     Prototype,
-    ServiceComponent,
+    Service,
 )
 from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
 
@@ -44,7 +44,7 @@ def cook_provider():
 def cook_service(cluster, name="UBER"):
     proto = Prototype.objects.create(type="service", name=name, bundle=cluster.prototype.bundle)
 
-    return ClusterObject.objects.create(cluster=cluster, prototype=proto)
+    return Service.objects.create(cluster=cluster, prototype=proto)
 
 
 def cook_component(cluster, service, name):
@@ -55,7 +55,7 @@ def cook_component(cluster, service, name):
         parent=service.prototype,
     )
 
-    return ServiceComponent.objects.create(cluster=cluster, service=service, prototype=proto)
+    return Component.objects.create(cluster=cluster, service=service, prototype=proto)
 
 
 class TestVariantInline(BaseTestCase):

@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import cn from 'classnames';
 import Icon from '../Icon/Icon';
 import s from './SortingLabel.module.scss';
-import { SortingProps, SortParams } from '@uikit/types/list.types';
+import type { SortingProps, SortParams } from '@uikit/types/list.types';
 
 interface SortingLabelProps extends Partial<SortingProps> {
   children: React.ReactNode;

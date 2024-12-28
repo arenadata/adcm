@@ -1,4 +1,4 @@
-import { AdcmHost } from '@models/adcm/host';
+import type { AdcmHost } from '@models/adcm/host';
 import { createAsyncThunk } from '@store/redux';
 import { defaultSpinnerDelay } from '@constants';
 import { executeWithMinDelay } from '@utils/requestUtils';
@@ -14,7 +14,7 @@ type AdcmHostsState = {
   loadState: LoadState;
 };
 
-const loadHosts = createAsyncThunk('adcm/hosts/loadHosts', async (arg, thunkAPI) => {
+const loadHosts = createAsyncThunk('adcm/hosts/loadHosts', async (_arg, thunkAPI) => {
   const {
     adcm: {
       hostsTable: { filter, sortParams, paginationParams },
@@ -29,7 +29,7 @@ const loadHosts = createAsyncThunk('adcm/hosts/loadHosts', async (arg, thunkAPI)
   }
 });
 
-const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (arg, thunkAPI) => {
+const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
@@ -44,7 +44,7 @@ const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (arg, thunkAPI) =
   });
 });
 
-const refreshHosts = createAsyncThunk('adcm/hosts/refreshHosts', async (arg, thunkAPI) => {
+const refreshHosts = createAsyncThunk('adcm/hosts/refreshHosts', async (_arg, thunkAPI) => {
   thunkAPI.dispatch(loadHosts());
 });
 

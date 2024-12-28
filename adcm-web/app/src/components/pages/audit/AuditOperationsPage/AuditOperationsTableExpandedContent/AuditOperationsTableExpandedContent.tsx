@@ -1,9 +1,8 @@
-import React from 'react';
 import { Table, TableCell, TableRow } from '@uikit';
 import { columns } from './AuditOperationsTableExpandedContent.const';
-import { AdcmAuditOperationObjectChanges } from '@models/adcm';
+import type { AdcmAuditOperationObjectChanges } from '@models/adcm';
 import { orElseGet } from '@utils/checkUtils';
-import { JSONValue } from '@models/json';
+import type { JSONValue } from '@models/json';
 
 export interface AuditOperationsTableExpandedContentProps {
   objectChanges: AdcmAuditOperationObjectChanges;

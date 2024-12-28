@@ -1,7 +1,7 @@
 import { AdcmClusterImportPayloadType } from '@models/adcm';
 import { Checkbox } from '@uikit';
 import s from '@pages/cluster/ClusterImport/ClusterImportCard/ClusterImportCard.module.scss';
-import { ClusterImportCardServiceItemProps } from '@pages/cluster/ClusterImport/ClusterImport.types';
+import type { ClusterImportCardServiceItemProps } from '@pages/cluster/ClusterImport/ClusterImport.types';
 
 const ClusterImportCardServiceItem = ({
   service,

@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 import s from './NotificationsSideBar.module.scss';
 import { useDispatch, useStore } from '@hooks';
-import { Notification, NotificationVariant } from '@models/notification';
+import type { Notification } from '@models/notification';
+import { NotificationVariant } from '@models/notification';
 import ErrorAlert from '@layouts/partials/NotificationsSideBar/Alert/ErrorAlert';
 import InfoAlert from '@layouts/partials/NotificationsSideBar/Alert/InfoAlert';
 import { closeNotification } from '@store/notificationsSlice';

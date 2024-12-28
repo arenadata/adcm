@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Button, ButtonGroup, Switch, Panel, SearchInput } from '@uikit';
 import s from './ClusterAnsibleSettingsToolbar.module.scss';
 import { useConfigurationFormContext } from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContext.context';

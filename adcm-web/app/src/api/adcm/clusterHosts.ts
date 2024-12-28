@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import {
+import type {
   AdcmMaintenanceMode,
   AdcmServiceComponent,
   Batch,
@@ -9,8 +9,12 @@ import {
   AdcmSetMaintenanceModeResponse,
   AdcmHostComponentsFilter,
 } from '@models/adcm';
-import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import { PaginationParams, SortParams } from '@models/table';
+import type {
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm/dynamicAction';
+import type { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
 

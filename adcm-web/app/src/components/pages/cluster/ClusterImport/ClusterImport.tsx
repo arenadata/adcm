@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import s from './ClusterImport.module.scss';
 import { Tab, TabsBlock } from '@uikit';

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useHostProviderUpgradeDialog } from '@pages/HostProvidersPage/Dialogs/HostProviderUpgradeDialog/useHostProviderUpgradeDialog';
 import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';

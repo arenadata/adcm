@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useRequestServiceComponent } from './useRequestServiceComponent';
 import ServiceComponentTable from './ServiceComponentTable/ServiceComponentTable';
 import ComponentConfigurationsNavigation from './ComponentConfigurationsNavigation/ComponentConfigurationsNavigation';

@@ -24,39 +24,39 @@ from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
-    ClusterObject,
+    Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
-    HostProvider,
     Prototype,
     PrototypeConfig,
-    ServiceComponent,
+    Provider,
+    Service,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.variant import get_variant
 from django.db.models import QuerySet
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 
-ParentObject: TypeAlias = Cluster, ClusterObject, ServiceComponent, HostProvider, Host, GroupConfig
+ParentObject: TypeAlias = Cluster, Service, Component, Provider, Host, ConfigHostGroup
 
 
 class Field(ABC):
     def __init__(
-        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | ConfigHostGroup, path_resolver: PathResolver
     ):
         self.object_ = object_
-        self.is_group_config = False
+        self.is_host_group = False
 
-        if isinstance(object_, GroupConfig):
-            self.is_group_config = True
+        if isinstance(object_, ConfigHostGroup):
+            self.is_host_group = True
             self.object_ = object_.object
 
         self.prototype_config = prototype_config
@@ -110,7 +110,7 @@ class Field(ABC):
 
     @property
     def synchronization(self) -> dict | None:
-        if not self.is_group_config:
+        if not self.is_host_group:
             return None
 
         is_allow_change = self.prototype_config.group_customization
@@ -309,7 +309,7 @@ class SecretMap(Map):
 
 class Structure(Field):
     def __init__(
-        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | ConfigHostGroup, path_resolver: PathResolver
     ):
         super().__init__(prototype_config=prototype_config, object_=object_, path_resolver=path_resolver)
 
@@ -437,7 +437,7 @@ class Group(Field):
     def __init__(
         self,
         prototype_config: PrototypeConfig,
-        object_: ADCMEntity | GroupConfig,
+        object_: ADCMEntity | ConfigHostGroup,
         path_resolver: PathResolver,
         group_fields: QuerySet[PrototypeConfig],
     ):
@@ -635,7 +635,7 @@ def get_field(
 
 
 def get_config_schema(
-    object_: ADCMEntity | GroupConfig, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
+    object_: ADCMEntity | ConfigHostGroup, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
 ) -> dict:
     """
     Prepare config schema based on provided `prototype_configs`
@@ -690,41 +690,7 @@ class ConfigSchemaMixin:
         operation_id="getObjectConfigSchema",
         summary="GET object's config schema",
         description="Get object's config schema information.",
-        examples=[
-            OpenApiExample(
-                name="schema example",
-                value={
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "title": "Configuration",
-                    "description": "",
-                    "readOnly": False,
-                    "adcmMeta": {
-                        "isAdvanced": False,
-                        "isInvisible": False,
-                        "activation": None,
-                        "synchronization": None,
-                        "nullValue": None,
-                        "isSecret": False,
-                        "stringExtra": None,
-                        "enumExtra": None,
-                    },
-                    "type": "object",
-                    "properties": {
-                        "param_1": {
-                            "title": "Special Param",
-                            "type": "string",
-                            "description": "",
-                            "default": "heh",
-                            "readOnly": True,
-                            "adcmMeta": {"isAdvanced": True, "isInvisible": False},
-                        }
-                    },
-                    "additionalProperties": False,
-                    "required": [],
-                },
-                response_only=True,
-            )
-        ],
+        examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
         responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     )
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")

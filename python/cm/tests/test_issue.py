@@ -21,7 +21,6 @@ from cm.hierarchy import Tree
 from cm.issue import (
     add_concern_to_object,
     add_issue_on_linked_objects,
-    create_lock,
     recheck_issues,
     remove_issue,
     update_hierarchy_issues,
@@ -30,14 +29,16 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     ClusterBind,
-    ClusterObject,
     ConcernCause,
+    ConcernItem,
     ObjectType,
     Prototype,
     PrototypeImport,
+    Service,
 )
 from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.concern.checks import object_has_required_services_issue, object_imports_has_issue
+from cm.services.concern.checks import object_has_required_services_issue_orm_version, object_imports_has_issue
+from cm.services.concern.locks import create_task_lock_concern
 from cm.services.status import notify
 from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
@@ -115,7 +116,7 @@ class CreateIssueTest(BaseTestCase):
         issue_type = ConcernCause.CONFIG
         add_issue_on_linked_objects(self.cluster, issue_type)
         cluster_issue = self.cluster.get_own_issue(issue_type)
-        ClusterObject.objects.filter(cluster=self.cluster).delete()
+        Service.objects.filter(cluster=self.cluster).delete()
         Prototype.objects.filter(bundle=self.cluster.prototype.bundle, type="service").update(required=True)
 
         new_service = gen_service(self.cluster, self.cluster.prototype.bundle)
@@ -145,25 +146,25 @@ class CreateIssueTest(BaseTestCase):
         )
 
         with self.subTest("Clusters have no required services"):
-            self.assertFalse(object_has_required_services_issue(self.cluster))
-            self.assertFalse(object_has_required_services_issue(cluster_2))
+            self.assertFalse(object_has_required_services_issue_orm_version(self.cluster))
+            self.assertFalse(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have required services"):
             prototype = Prototype.objects.create(
                 type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
             )
-            self.assertTrue(object_has_required_services_issue(self.cluster))
-            self.assertTrue(object_has_required_services_issue(cluster_2))
+            self.assertTrue(object_has_required_services_issue_orm_version(self.cluster))
+            self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have required services and the service is added to one of them cluster"):
             service = add_service_to_cluster(self.cluster, prototype)
-            self.assertFalse(object_has_required_services_issue(self.cluster))
-            self.assertTrue(object_has_required_services_issue(cluster_2))
+            self.assertFalse(object_has_required_services_issue_orm_version(self.cluster))
+            self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have no required services after prototype deleted"):
             service.delete()
-            self.assertTrue(object_has_required_services_issue(self.cluster))
-            self.assertTrue(object_has_required_services_issue(cluster_2))
+            self.assertTrue(object_has_required_services_issue_orm_version(self.cluster))
+            self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
 
 class RemoveIssueTest(BaseTestCase):
@@ -364,7 +365,7 @@ class TestConcernsRedistribution(BaseTestCase):
         self.cluster = self.hierarchy["cluster"]
         self.service = self.hierarchy["service"]
         self.component = self.hierarchy["component"]
-        self.hostprovider = self.hierarchy["provider"]
+        self.provider = self.hierarchy["provider"]
         self.host = self.hierarchy["host"]
 
         for object_ in self.hierarchy.values():
@@ -376,18 +377,19 @@ class TestConcernsRedistribution(BaseTestCase):
 
     def add_lock(self, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
         """Check out lock_affected_objects"""
+        job = gen_job_log(gen_task_log(obj=owner))
 
-        lock = create_lock(owner=owner, job=gen_job_log(gen_task_log(obj=owner)))
+        lock = create_task_lock_concern(task=job.task)
 
         for obj in affected_objects:
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=ConcernItem.objects.get(id=lock))
 
     def test_map_host_to_cluster(self) -> None:
         concerns_before = self.host.concerns.all()
         self.assertEqual(len(concerns_before), 4)
         self.assertEqual(
             set(map(attrgetter("owner_type"), concerns_before)),
-            {self.hostprovider.content_type, self.host.content_type},
+            {self.provider.content_type, self.host.content_type},
         )
 
         with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
@@ -397,5 +399,5 @@ class TestConcernsRedistribution(BaseTestCase):
         concerns_after = self.host.concerns.all()
         self.assertEqual(len(concerns_after), 4)
         self.assertEqual(
-            set(map(attrgetter("owner_type"), concerns_after)), {self.hostprovider.content_type, self.host.content_type}
+            set(map(attrgetter("owner_type"), concerns_after)), {self.provider.content_type, self.host.content_type}
         )

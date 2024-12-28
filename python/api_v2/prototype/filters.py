@@ -12,20 +12,28 @@
 
 from cm.models import ObjectType, Prototype
 from django_filters import CharFilter, ChoiceFilter, NumberFilter
-from django_filters.rest_framework import FilterSet
+
+from api_v2.filters import AdvancedFilterSet
 
 
-class PrototypeFilter(FilterSet):
+class PrototypeFilter(
+    AdvancedFilterSet,
+    char_fields=("type",),
+    number_fields=("id", ("bundle", "bundle__id")),
+):
     bundle_id = NumberFilter(field_name="bundle__id", label="Bundle ID")
     type = ChoiceFilter(choices=ObjectType.choices, label="Type")
-    display_name = CharFilter(label="Display name")
+    display_name = CharFilter(label="Display name", field_name="display_name", lookup_expr="exact")
 
     class Meta:
         model = Prototype
-        fields = ["id", "type", "bundle_id"]
+        fields = ["id"]
 
 
-class PrototypeVersionFilter(FilterSet):
+class PrototypeVersionFilter(
+    AdvancedFilterSet,
+    char_fields=("type",),
+):
     type = ChoiceFilter(choices=(("cluster", "cluster"), ("provider", "provider")), label="Type")
 
     class Meta:

@@ -13,8 +13,8 @@ import {
 } from '@floating-ui/react';
 import { getWidthStyles } from '@uikit/Popover/Popover.utils';
 import { useForwardRef } from '@hooks';
-import { ChildWithRef } from '@uikit/types/element.types';
-import { PopoverOptions } from '@uikit/Popover/Popover.types';
+import type { ChildWithRef } from '@uikit/types/element.types';
+import type { PopoverOptions } from '@uikit/Popover/Popover.types';
 
 export interface PopoverProps extends PopoverOptions {
   isOpen: boolean;

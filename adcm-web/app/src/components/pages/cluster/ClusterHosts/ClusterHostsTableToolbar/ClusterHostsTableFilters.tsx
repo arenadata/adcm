@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';

@@ -4,12 +4,12 @@ import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
 import { setSortParams } from '@store/adcm/hostProviders/hostProvidersTableSlice';
-import { SortParams } from '@models/table';
+import type { SortParams } from '@models/table';
 import Concern from '@commonComponents/Concern/Concern';
 import { Link } from 'react-router-dom';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/HostProvidersDynamicActionsIcon';
-import { AdcmHostProvider } from '@models/adcm';
+import type { AdcmHostProvider } from '@models/adcm';
 import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
@@ -21,8 +21,8 @@ const HostProviderTable = () => {
   const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.hostProviders.loadState));
   const sortParams = useStore(({ adcm }) => adcm.hostProvidersTable.sortParams);
 
-  const handleDeleteAction = (id: number) => {
-    dispatch(openDeleteDialog(id));
+  const handleDeleteAction = (hostProvider: AdcmHostProvider) => {
+    dispatch(openDeleteDialog(hostProvider));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -64,7 +64,7 @@ const HostProviderTable = () => {
               onClick={() => handleUpgradeClick(hostProvider)}
               title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
             />
-            <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider.id)} title="Delete" />
+            <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider)} title="Delete" />
           </TableCell>
         </TableRow>
       ))}

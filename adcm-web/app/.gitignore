@@ -34,3 +34,4 @@ dist-ssr
 !.storybook
 !.husky
 !.editorconfig
+!.oxlintrc-precommit.json

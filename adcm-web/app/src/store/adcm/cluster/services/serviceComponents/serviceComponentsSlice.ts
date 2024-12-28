@@ -1,6 +1,7 @@
-import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterServiceComponentsApi } from '@api';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmServiceComponent } from '@models/adcm';
+import type { AdcmServiceComponent } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';

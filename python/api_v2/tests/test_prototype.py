@@ -80,6 +80,26 @@ class TestPrototype(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
 
+    def test_filtering_success(self):
+        prototype = Prototype.objects.filter(name="cluster_one").first()
+
+        filters = {
+            "id": (prototype.pk, 0, 1),
+            "bundleId": (prototype.bundle.id, 0, 18),
+            "displayName": (prototype.display_name, "wrong", 2),
+            "type": (ObjectType.CLUSTER.value, ObjectType.ADCM.value, 2),
+        }
+
+        for filter_name, (correct_value, wrong_value, count) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "prototypes").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], count)
+
+                response = (self.client.v2 / "prototypes").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
 
 class TestPrototypeVersion(BaseAPITestCase):
     def setUp(self):
@@ -140,7 +160,7 @@ class TestPrototypeVersion(BaseAPITestCase):
                     bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
                 )
 
-            name = "HostProviderFirst"
+            name = "ProviderFirst"
             bundle = Bundle.objects.create(
                 name=name, version=version, hash="hp", category=ProductCategory.objects.get_or_create(value=name)[0]
             )
@@ -161,13 +181,13 @@ class TestPrototypeVersion(BaseAPITestCase):
             sorted(["ServFirst", "ClustFirst", "CompFirst", self.bundle_1.name, self.bundle_2.name]),
         )
 
-    def test_absent_hostprovider_candidate_bug_4851(self):
+    def test_absent_provider_candidate_bug_4851(self):
         response = (self.client.v2 / "prototypes" / "versions").get(query={"type": ObjectType.PROVIDER.value})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
             sorted(map(itemgetter("name"), response.json())),
-            sorted(["HostProviderFirst", "HostFirst", self.provider_bundle.name]),
+            sorted(["ProviderFirst", "HostFirst", self.provider_bundle.name]),
         )
 
     def test_child_filters_disallowed_failed(self):
@@ -199,7 +219,7 @@ class TestPrototypeVersion(BaseAPITestCase):
                     "CompFirst",
                     self.bundle_1.name,
                     self.bundle_2.name,
-                    "HostProviderFirst",
+                    "ProviderFirst",
                     "HostFirst",
                     self.provider_bundle.name,
                 ]

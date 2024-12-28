@@ -199,13 +199,13 @@ export const validateConstraints = (
   componentHostsCount: number,
 ): ConstraintError | undefined => {
   const [c1, c2] = constraints;
-  if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
+  if (constraints.length === 2 && typeof c1 === 'number' && typeof c2 === 'number') {
     return c1 <= componentHostsCount && componentHostsCount <= c2
       ? undefined
       : { type: 'constraint', message: `From ${c1} to ${c2} components should be mapped.` };
   }
 
-  if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
+  if (constraints.length === 2 && typeof c1 === 'number' && typeof c2 === 'string') {
     switch (c2) {
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
@@ -214,7 +214,6 @@ export const validateConstraints = (
               type: 'constraint',
               message: `${c1} or more components should be mapped. Total amount should be odd.`,
             };
-      case '+':
       default:
         return componentHostsCount >= c1
           ? undefined
@@ -222,13 +221,13 @@ export const validateConstraints = (
     }
   }
 
-  if (constraints.length == 1 && typeof c1 === 'number') {
+  if (constraints.length === 1 && typeof c1 === 'number') {
     return componentHostsCount === c1
       ? undefined
       : { type: 'constraint', message: `Exactly ${c1} component should be mapped.` };
   }
 
-  if (constraints.length == 1 && typeof c1 === 'string') {
+  if (constraints.length === 1 && typeof c1 === 'string') {
     switch (c1) {
       case '+':
         return componentHostsCount === hostsCount

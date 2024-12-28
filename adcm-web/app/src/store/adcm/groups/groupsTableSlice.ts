@@ -1,6 +1,6 @@
 import { createListSlice } from '@store/redux';
-import { ListState } from '@models/table';
-import { AdcmGroupFilter } from '@models/adcm';
+import type { ListState } from '@models/table';
+import type { AdcmGroupFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmGroupFilter> => ({
   filter: {

@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AnchorBar, AnchorBarItem, AnchorList } from '@uikit';
+import type { AnchorBarItem } from '@uikit';
+import { AnchorBar, AnchorList } from '@uikit';
 import Service from './Service/Service';
-import { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
+import type { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
 import type { MappingFilter, ComponentsMappingErrors, ServiceMapping } from '../ClusterMapping.types';
 import s from './ComponentsMapping.module.scss';
 
@@ -36,6 +37,7 @@ const ComponentsMapping = ({ servicesMapping, ...restProps }: ComponentsMappingP
       <div data-test="mapping-container">
         {servicesMapping.map(({ service, componentsMapping }) => (
           <Service
+            key={service.id}
             service={service}
             componentsMapping={componentsMapping}
             anchorId={buildServiceAnchorId(service.id)}

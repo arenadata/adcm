@@ -61,7 +61,6 @@ from api_v2.views import ADCMGenericViewSet
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                type=str,
                 enum=("name", "-name"),
                 default="name",
             ),

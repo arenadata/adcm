@@ -1,12 +1,15 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
+import type { RequestError } from '@api';
+import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi } from '@api';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmHost, AdcmMaintenanceMode, AddClusterHostsPayload } from '@models/adcm';
+import type { AdcmClusterHost, AdcmHost, AddClusterHostsPayload } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 import { getClusterHosts, setHostMaintenanceMode } from './hostsSlice';
+import type { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
+const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (_arg, thunkAPI) => {
   try {
     const hostsDefault = await AdcmHostsApi.getHosts();
 
@@ -92,16 +95,15 @@ const toggleMaintenanceMode = createAsyncThunk(
   },
 );
 
-interface AdcmHostsActionsState {
-  addDialog: {
+interface AdcmHostsActionsState extends ModalState<AdcmClusterHost, 'clusterHost'> {
+  createDialog: {
     isOpen: boolean;
   };
   maintenanceModeDialog: {
-    isOpen: boolean;
-    host: AdcmHost | null;
+    clusterHost: AdcmHost | null;
   };
   unlinkDialog: {
-    id: null;
+    clusterHost: AdcmHost | null;
   };
   relatedData: {
     hosts: AdcmHost[];
@@ -109,48 +111,42 @@ interface AdcmHostsActionsState {
 }
 
 const createInitialState = (): AdcmHostsActionsState => ({
-  addDialog: {
+  createDialog: {
     isOpen: false,
+  },
+  updateDialog: {
+    clusterHost: null,
+  },
+  deleteDialog: {
+    clusterHost: null,
   },
   maintenanceModeDialog: {
-    isOpen: false,
-    host: null,
+    clusterHost: null,
   },
   unlinkDialog: {
-    id: null,
+    clusterHost: null,
   },
   relatedData: {
     hosts: [],
   },
 });
 
-const clusterHostsActionsSlice = createSlice({
+const clusterHostsActionsSlice = createCrudSlice({
   name: 'adcm/clusterHostsActions',
-  initialState: createInitialState(),
+  entityName: 'clusterHost',
+  createInitialState,
   reducers: {
-    cleanupActions() {
-      return createInitialState();
-    },
     openUnlinkDialog(state, action) {
-      state.unlinkDialog.id = action.payload;
+      state.unlinkDialog.clusterHost = action.payload;
     },
     closeUnlinkDialog(state) {
-      state.unlinkDialog.id = null;
+      state.unlinkDialog.clusterHost = null;
     },
     openMaintenanceModeDialog(state, action) {
-      state.maintenanceModeDialog.isOpen = true;
-      state.maintenanceModeDialog.host = action.payload;
+      state.maintenanceModeDialog.clusterHost = action.payload;
     },
     closeMaintenanceModeDialog(state) {
-      state.maintenanceModeDialog.isOpen = false;
-      state.maintenanceModeDialog.host = null;
-    },
-    openAddDialog(state) {
-      state.addDialog.isOpen = true;
-    },
-    closeAddDialog(state) {
-      state.addDialog.isOpen = false;
-      state.relatedData.hosts = [];
+      state.maintenanceModeDialog.clusterHost = null;
     },
   },
   extraReducers: (builder) => {
@@ -158,7 +154,7 @@ const clusterHostsActionsSlice = createSlice({
       clusterHostsActionsSlice.caseReducers.closeUnlinkDialog(state);
     });
     builder.addCase(addClusterHosts.fulfilled, (state) => {
-      clusterHostsActionsSlice.caseReducers.closeAddDialog(state);
+      clusterHostsActionsSlice.caseReducers.closeCreateDialog(state);
     });
     builder.addCase(getClusterHosts.pending, () => {
       // hide actions dialogs, when load new hosts list (not silent refresh)
@@ -177,8 +173,8 @@ const clusterHostsActionsSlice = createSlice({
 });
 
 export const {
-  openAddDialog,
-  closeAddDialog,
+  openCreateDialog,
+  closeCreateDialog,
   openUnlinkDialog,
   closeUnlinkDialog,
   openMaintenanceModeDialog,

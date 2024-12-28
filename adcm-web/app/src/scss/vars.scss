@@ -8,9 +8,11 @@
 
   --color-xblue: #1997E8;
 
-  --colo-new-black: #2F3338;
+  --color-new-black: #2F3338;
+  --color-black-12: #121212;
   --color-all-new-black: #4C555E;
   --color-xdark: #353E47;
+  --color-xdark-30: color-mix(in srgb, var(--color-xdark) 30%, transparent);
   --color-new-dakx-50: rgba(50, 50, 57, 0.50);
   --color-xdark-new: #323239;
   --color-xdark-new-20: rgba(50, 50, 57, 0.2);
@@ -47,6 +49,7 @@
   --color-green-light: #00D2A0;
   --color-presson-light: #00C787;
   --color-new-light: #2F3136;
+  --color-new-light-30: color-mix(in srgb, var(--color-new-light) 30%, transparent);
   --color-stroke-light: #D9DEF3;
   --color-background-light: #F3F3F3;
 

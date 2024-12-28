@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { cleanupAdcmSettings, getAdcmSettings } from '@store/adcm/settings/settingsSlice';
+import { getAdcmSettings } from '@store/adcm/settings/settingsSlice';
 import {
   cleanupAdcmSettingsDynamicActions,
   loadAdcmSettingsDynamicActions,
@@ -14,7 +14,6 @@ export const useRequestAdcmSettings = () => {
     dispatch(getAdcmSettings());
 
     return () => {
-      dispatch(cleanupAdcmSettings());
       dispatch(cleanupAdcmSettingsDynamicActions());
     };
   }, [dispatch]);
