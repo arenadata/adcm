@@ -18,7 +18,6 @@ from cm.models import (
     ObjectConfig,
     Service,
 )
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import BaseAPITestCase
@@ -90,5 +89,5 @@ class TestBulkAddServices(BaseAPITestCase):
                     raise AssertionError("Wrong object type")
 
                 with self.subTest(f"View: {viewname.path}"):
-                    response: Response = viewname.get()
+                    response = viewname.get()
                     self.assertEqual(response.status_code, HTTP_200_OK)

@@ -159,12 +159,26 @@
       constraint: [ 0, + ]
       actions:
         action_1_comp_2: *action
+      config:
+        - name: string_field
+          type: string
+          default: "string value"
     component_3:
       constraint: [ 0, + ]
+      config:
+        - name: string_field
+          type: string
+          default: "string value"
 
 - name: service_2
   type: service
   version: *version
+
+  config:
+    - name: string_field
+      type: string
+      default: "string value"
+
   actions:
     action_1_service_2: *action
     action_2_service_2: *action
