@@ -77,7 +77,7 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                 type: 'string',
                 default: 'default cluster name',
                 readOnly: false,
-                pattern: '[a-',
+                pattern: '[a-z]',
                 adcmMeta: {
                   isAdvanced: false,
                   isInvisible: false,
@@ -219,7 +219,7 @@ export const initialClusterConfiguration = {
   cluster_config: {
     cluster: [
       {
-        cluster_name: 'Lorem ipsum cluster',
+        // cluster_name: 'Lorem ipsum cluster',
         cluster_password: '$ANSIBLE_VAULT;1.1;AES256\n34326665616563333065323730386465316132646533343764663738',
         shard: [
           { internal_replica: 1, replicas: [{ host: 'host111' }], weight: 11 },

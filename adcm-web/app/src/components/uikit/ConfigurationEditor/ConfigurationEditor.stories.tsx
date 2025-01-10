@@ -19,6 +19,7 @@ type Story = StoryObj<typeof ConfigurationEditor>;
 export default {
   title: 'uikit/ConfigurationEditor',
   component: ConfigurationEditor,
+  excludeStories: ['ConfigurationEditorStoryWithHooks'],
 } as Meta<typeof ConfigurationEditor>;
 
 // const initialAttributes: ConfigurationAttributes = {
@@ -54,7 +55,11 @@ interface StoryProps {
   schema: ConfigurationSchema;
 }
 
-const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAttributes, schema }: StoryProps) => {
+export const ConfigurationEditorStoryWithHooks = ({
+  initialConfigurationData,
+  initialAttributes,
+  schema,
+}: StoryProps) => {
   const safeConfigurationData = initialConfigurationData ?? generateFromSchema(schema);
   // biome-ignore lint/suspicious/noExplicitAny:
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);

@@ -41,31 +41,35 @@ export const validate = (schema: SchemaDefinition, configuration: JSONObject, at
 export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSchema>) => {
   const result: ConfigurationErrors = {};
 
+  const addError = (path: string, schema: SchemaDefinition, value: unknown, keyword: string, message: string) => {
+    if (!result[path]) {
+      result[path] = { schema, value, messages: {} };
+    }
+
+    const fieldErrors = result[path] as FieldErrors;
+    fieldErrors.messages[keyword] = message;
+  };
+
   if (!errors || errors.length === 0) {
     return result;
   }
 
   // group error by fieldPath
   for (const error of errors) {
-    let instancePath = error.instancePath;
-    let errorMessage = error.message || '';
+    addError(
+      error.instancePath,
+      error.parentSchema as SchemaDefinition,
+      error.data,
+      error.keyword,
+      error.message || '',
+    );
 
-    // extend error from structure to field
+    // config tree generates from schema. And we must show missing property error on property node
+    // extend error from structure to field,
     if (error.keyword === 'required') {
-      instancePath += `/${error.params.missingProperty}`;
-      errorMessage = 'required';
+      const fieldPath = `${error.instancePath}/${error.params.missingProperty}`;
+      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data, error.keyword, 'required');
     }
-
-    if (!result[instancePath]) {
-      result[instancePath] = {
-        schema: error.parentSchema as SchemaDefinition,
-        value: error.data,
-        messages: {},
-      };
-    }
-
-    const fieldErrors = result[instancePath] as FieldErrors;
-    fieldErrors.messages[error.keyword] = errorMessage;
   }
 
   return result;
@@ -118,7 +122,10 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
     for (let i = 1; i < parts.length - 1; i++) {
       const part = parts[i];
       path = `${path}/${part}`;
-      errors[path] = true;
+
+      if (!errors[path]) {
+        errors[path] = true;
+      }
     }
   }
 };
@@ -213,6 +220,16 @@ export const buildConfigurationNodes = (
   const rootNode = buildRootNode(schema, configuration, attributes);
   return rootNode;
 };
+
+export function* iterateConfigurationNodes(node: ConfigurationNode): Iterable<ConfigurationNode> {
+  yield node;
+
+  if (node.children) {
+    for (const child of node.children) {
+      yield* iterateConfigurationNodes(child);
+    }
+  }
+}
 
 const buildRootNode = (
   schema: ConfigurationSchema,

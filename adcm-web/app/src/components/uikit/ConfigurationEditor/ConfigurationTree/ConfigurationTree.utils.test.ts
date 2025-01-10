@@ -393,6 +393,30 @@ describe('validate', () => {
 
     expect(errors).toStrictEqual(expected);
   });
+
+  test('required validation', () => {
+    const attributes = {};
+
+    const configuration = {
+      cluster_config: {
+        cluster: {
+          // ^-- must be an error
+          // cluster_name: 'name', <-- required field
+          shard: [],
+        },
+        auth: {
+          token: 'test',
+          expire: 10,
+        },
+      },
+    };
+
+    const { isValid, configurationErrors } = validate(clusterConfigurationSchema, configuration, attributes);
+    expect(isValid).toBe(false);
+    expect(configurationErrors['/cluster_config']).toBe(true);
+    expect(configurationErrors['/cluster_config/cluster']).not.toBe(undefined);
+    expect(configurationErrors['/cluster_config/cluster/cluster_name']).not.toBe(undefined);
+  });
 });
 
 describe('filter', () => {
