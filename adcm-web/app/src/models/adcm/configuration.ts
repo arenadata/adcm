@@ -85,4 +85,5 @@ export type FieldErrors = {
   messages: Record<ErrorKeyword, ErrorMessage>;
 };
 
+// true as record value means that child node has error(s)
 export type ConfigurationErrors = Record<FieldPath, true | FieldErrors>;

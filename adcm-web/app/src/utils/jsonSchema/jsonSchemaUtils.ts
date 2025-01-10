@@ -53,3 +53,55 @@ export const generateFromSchema = <T>(schema: Schema): T | null => {
 export { Schema };
 
 export const getPatternErrorMessage = (pattern: string) => `The value must match pattern: ${pattern}`;
+
+/**
+ * @deprecated
+ */
+export const swapTitleAsPropertyName = (schema: Schema): Schema => {
+  if (typeof schema === 'boolean') {
+    return schema;
+  }
+
+  const result = JSON.parse(JSON.stringify(schema));
+
+  if (result.type === 'object') {
+    const props = Object.keys(result.properties);
+
+    const required = new Set(result.required ?? []);
+
+    for (const propName of props) {
+      const title = result.properties[propName].title;
+      const newPropName = title ?? propName;
+      result.properties[newPropName] = swapTitleAsPropertyName(result.properties[propName]);
+
+      if (title && propName !== title) {
+        result.properties[newPropName].title = propName;
+        delete result.properties[propName];
+      }
+
+      if (title && required.has(propName) && propName !== title) {
+        required.delete(propName);
+        required.add(title);
+      }
+    }
+
+    if (result.required) {
+      result.required = [...required];
+    }
+  }
+
+  if (result.type === 'array') {
+    result.items = swapTitleAsPropertyName(result.items);
+  }
+
+  const compositionKey = result.oneOf ? 'oneOf' : result.anyOf ? 'anyOf' : result.allOf ? 'allOf' : undefined;
+  if (compositionKey && result[compositionKey]) {
+    for (let i = 0; i < result[compositionKey].length; i++) {
+      result[compositionKey][i] = swapTitleAsPropertyName(result[compositionKey][i]);
+    }
+  }
+
+  return result;
+};
+
+// const iterateObjectPropsAndSwap
