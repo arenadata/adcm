@@ -35,6 +35,10 @@
         - name: simple
           type: string
           required: false
+        - name: file
+          read_only: any
+          type: file
+          default: ./text.txt
         - name: grouped
           type: group
           subs:
@@ -44,11 +48,28 @@
             - name: second
               type: float
               default: 4.3
+            - name: structure
+              type: structure
+              yspec: ./schema.yaml
+              default:
+                nested:
+                  attr: "nice"
+                  op: "eq"
+                  tech: "true"
+                quantity: 14443
         - name: after
           type: list
           default:
             - "1"
             - "woohoo"
+        - name: variant_config_type_strict
+          type: variant
+          required: false
+          source:
+            type: config
+            strict: true
+            name: list  # param from cluster config in before version
+          default: value1
       hc_acl:
         - action: add
           service: service_1

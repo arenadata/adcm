@@ -13,6 +13,7 @@
 from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
 from cm.models import ADCM, ConfigLog, PrototypeConfig
+from cm.services.bundle import ADCMBundlePathResolver
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -72,9 +73,11 @@ class ADCMConfigView(ConfigLogViewSet):
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         instance = self.get_parent_object()
+        path_resolver = ADCMBundlePathResolver()
         schema = get_config_schema(
             object_=instance,
             prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
+            path_resolver=path_resolver,
         )
 
         return Response(data=schema, status=HTTP_200_OK)

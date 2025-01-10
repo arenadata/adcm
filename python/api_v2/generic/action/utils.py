@@ -116,7 +116,7 @@ def get_action_configuration(
         else:
             config[name] = value
 
-    config_schema = get_config_schema(object_=object_, prototype_configs=prototype_configs)
+    config_schema = get_config_schema(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
     adcm_meta = convert_attr_to_adcm_meta(attr=attr)
 
     return config_schema, config, adcm_meta

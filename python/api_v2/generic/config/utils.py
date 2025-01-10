@@ -20,7 +20,6 @@ import json
 from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
 from cm.models import (
-    ADCM,
     Action,
     ADCMEntity,
     Cluster,
@@ -33,7 +32,7 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
+from cm.services.bundle import BundlePathResolver, PathResolver
 from cm.variant import get_variant
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
@@ -465,7 +464,9 @@ class Group(Field):
         data = {"properties": OrderedDict(), "required": [], "default": {}}
 
         for field in self.group_fields:
-            data["properties"][field.subname] = get_field(prototype_config=field, object_=self.root_object).to_dict()
+            data["properties"][field.subname] = get_field(
+                prototype_config=field, object_=self.root_object, path_resolver=self._path_resolver
+            ).to_dict()
             data["required"].append(field.subname)
 
         return data
@@ -584,13 +585,9 @@ class Variant(Field):
 def get_field(
     prototype_config: PrototypeConfig,
     object_: ADCMEntity,
+    path_resolver: PathResolver,
     group_fields: QuerySet[PrototypeConfig] | None = None,
 ):
-    path_resolver = (
-        ADCMBundlePathResolver()
-        if isinstance(object_, ADCM)
-        else BundlePathResolver(bundle_hash=object_.prototype.bundle.hash)
-    )
     common_kwargs = {"prototype_config": prototype_config, "object_": object_, "path_resolver": path_resolver}
 
     match prototype_config.type:
@@ -635,7 +632,9 @@ def get_field(
 
 
 def get_config_schema(
-    object_: ADCMEntity | ConfigHostGroup, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
+    object_: ADCMEntity | ConfigHostGroup,
+    prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig],
+    path_resolver: PathResolver,
 ) -> dict:
     """
     Prepare config schema based on provided `prototype_configs`
@@ -675,9 +674,11 @@ def get_config_schema(
                 for pc in prototype_configs
                 if pc.name == field.name and pc.prototype == field.prototype and pc.type != "group"
             ]
-            item = get_field(prototype_config=field, object_=object_, group_fields=group_fields).to_dict()
+            item = get_field(
+                prototype_config=field, object_=object_, path_resolver=path_resolver, group_fields=group_fields
+            ).to_dict()
         else:
-            item = get_field(prototype_config=field, object_=object_).to_dict()
+            item = get_field(prototype_config=field, object_=object_, path_resolver=path_resolver).to_dict()
 
         schema["properties"][field.name] = item
         schema["required"].append(field.name)
@@ -704,9 +705,12 @@ class ConfigSchemaMixin:
             or request.user.has_perm(instance_config_view_perm)
         ):
             raise PermissionDenied
+
+        path_resolver = BundlePathResolver(bundle_hash=instance.prototype.bundle.hash)
         schema = get_config_schema(
             object_=instance,
             prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
+            path_resolver=path_resolver,
         )
 
         return Response(data=schema, status=HTTP_200_OK)
