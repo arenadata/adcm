@@ -690,6 +690,15 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_adcm_6258_check_init_config_success(self):
+        # has initial config by ansible
+        self.assertIsNotNone(self.service_1.config)
+        self.assertEqual(self.service_1.config.current, self.service_1_initial_config.pk)
+
+        # has no initial config
+        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        self.assertIsNone(service_3.config)
+
     def test_schema(self):
         response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1171,6 +1180,18 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_adcm_6258_check_init_config_success(self):
+        # has initial config by ansible
+        self.assertIsNotNone(self.component_1.config)
+        self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
+
+        # has no initial config
+        service_3 = self.add_services_to_cluster(service_names=["service_with_bound_to"], cluster=self.cluster_1).get()
+        component_3 = Component.objects.get(
+            cluster=self.cluster_1, service=service_3, prototype__name="will_have_bound_to"
+        )
+        self.assertIsNone(component_3.config)
 
     def test_schema(self):
         response = self.client.v2[self.component_1, CONFIG_SCHEMA].get()

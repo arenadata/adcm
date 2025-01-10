@@ -30,15 +30,20 @@ from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_hc_map
 from cm.status_api import notify_about_redistributed_concerns_from_maps
 from django.db import connection, transaction
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from rbac.models import re_apply_object_policy
 
 
 def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[Service]:
     with transaction.atomic():
         Service.objects.bulk_create(objs=[Service(cluster=cluster, prototype=proto) for proto in prototypes])
-        services = Service.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
-        bulk_init_config(objects=services)
+        services = (
+            Service.objects.annotate(config_count=Count("prototype__prototypeconfig"))
+            .filter(cluster=cluster, prototype__in=prototypes)
+            .select_related("prototype")
+        )
+
+        bulk_init_config(objects=services.filter(config_count__gt=0))
 
         service_proto_service_map = {service.prototype.pk: service for service in services}
         Component.objects.bulk_create(
@@ -49,7 +54,11 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
                 ).select_related("parent")
             ]
         )
-        components = Component.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
+        components = (
+            Component.objects.annotate(config_count=Count("prototype__prototypeconfig"))
+            .filter(cluster=cluster, service__in=services, config_count__gt=0)
+            .select_related("prototype")
+        )
         bulk_init_config(objects=components)
 
         recalculate_own_concerns_on_add_services(
