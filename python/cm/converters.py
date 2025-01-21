@@ -101,6 +101,35 @@ def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActio
     return model_to_core_type(model=model)
 
 
+def model_name_to_action_target_type(model_name: str) -> ADCMCoreType | ExtraActionTargetType:
+    if model_name == "actionhostgroup":
+        return ExtraActionTargetType.ACTION_HOST_GROUP
+
+    return ADCMCoreType(model_name)
+
+
+def action_target_type_to_model(
+    target_type: ADCMCoreType | ExtraActionTargetType,
+) -> type[ADCM] | type[CoreObject] | type[ActionHostGroup]:
+    match target_type:
+        case ADCMCoreType.ADCM:
+            return ADCM
+        case ADCMCoreType.CLUSTER:
+            return Cluster
+        case ADCMCoreType.SERVICE:
+            return Service
+        case ADCMCoreType.COMPONENT:
+            return Component
+        case ADCMCoreType.PROVIDER:
+            return Provider
+        case ADCMCoreType.HOST:
+            return Host
+        case ExtraActionTargetType.ACTION_HOST_GROUP:
+            return ActionHostGroup
+
+    raise ValueError(f"Can't convert {target_type} to ORM model")
+
+
 def orm_object_to_action_target_type(
     object_: ADCM | CoreObject | ActionHostGroup,
 ) -> ADCMCoreType | ExtraActionTargetType:
