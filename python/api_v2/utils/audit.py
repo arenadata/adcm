@@ -20,10 +20,16 @@ from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, Oper
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.converters import core_type_to_model, model_name_to_audit_object_type, model_name_to_core_type
+from cm.converters import (
+    action_target_type_to_model,
+    core_type_to_model,
+    model_name_to_action_target_type,
+    model_name_to_audit_object_type,
+    model_name_to_core_type,
+)
 from cm.models import (
     ADCM,
-    ADCMCoreType,
+    ActionHostGroup,
     Bundle,
     Cluster,
     Component,
@@ -569,7 +575,7 @@ def detect_object_for_task(
     except TypeError:  # this error is returned to unpack None, which can return if the object is not found
         return None
 
-    model = core_type_to_model(core_type=model_name_to_core_type(model_name=model_name))
+    model = action_target_type_to_model(target_type=model_name_to_action_target_type(model_name=model_name))
 
     if not model.objects.filter(id=object_id).exists():
         return None
@@ -621,15 +627,28 @@ def set_task_name(
     context.name = context.name.format(task_name=task_name).strip()
 
 
-def get_audit_object_name(object_id: int, model_name: str) -> str:
-    core_type = model_name_to_core_type(model_name=model_name)
+def get_ahg_audit_name(id_: int) -> str | None:
+    try:
+        group_name, parent_object_id, parent_model_name = (
+            ActionHostGroup.objects.filter(id=id_).values_list("name", "object_id", "object_type__model").first()
+        )
+    except TypeError:  # this error is returned to unpack None, which can return if the object is not found
+        return None
 
-    match core_type:
-        case ADCMCoreType.CLUSTER:
+    parent_name = get_audit_object_name(object_id=parent_object_id, model_name=parent_model_name)
+
+    return "/".join((parent_name, group_name))
+
+
+def get_audit_object_name(object_id: int, model_name: str) -> str:
+    audit_type = model_name_to_audit_object_type(model_name=model_name)
+
+    match audit_type:
+        case AuditObjectType.CLUSTER:
             names = Cluster.objects.values_list("name").filter(id=object_id).first()
-        case ADCMCoreType.SERVICE:
+        case AuditObjectType.SERVICE:
             names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=object_id).first()
-        case ADCMCoreType.COMPONENT:
+        case AuditObjectType.COMPONENT:
             names = (
                 Component.objects.values_list(
                     "cluster__name", "service__prototype__display_name", "prototype__display_name"
@@ -637,11 +656,13 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
                 .filter(id=object_id)
                 .first()
             )
-        case ADCMCoreType.PROVIDER:
+        case AuditObjectType.PROVIDER:
             names = Provider.objects.values_list("name").filter(id=object_id).first()
-        case ADCMCoreType.HOST:
+        case AuditObjectType.HOST:
             names = Host.objects.values_list("fqdn").filter(id=object_id).first()
+        case AuditObjectType.ACTION_HOST_GROUP:
+            names = (get_ahg_audit_name(id_=object_id),)
         case _:
-            raise ValueError(f"Unsupported core type: {core_type}")
+            raise ValueError(f"Unexpected audit type: {audit_type}")
 
     return "/".join(names or ())

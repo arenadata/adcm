@@ -20,7 +20,7 @@ from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObjectType
 from cm.models import ActionHostGroup, Host
 
-from api_v2.utils.audit import ExtractID, get_audit_object_name, object_does_exist
+from api_v2.utils.audit import ExtractID, get_ahg_audit_name, object_does_exist
 
 # hooks
 
@@ -30,16 +30,7 @@ class ActionHostGroupAuditObjectCreator(IDBasedAuditObjectCreator):
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
-        try:
-            group_name, parent_object_id, parent_model_name = (
-                ActionHostGroup.objects.filter(id=id_).values_list("name", "object_id", "object_type__model").first()
-            )
-        except TypeError:  # this error is returned to unpack None, which can return if the object is not found
-            return None
-
-        parent_name = get_audit_object_name(object_id=parent_object_id, model_name=parent_model_name)
-
-        return "/".join((parent_name, group_name))
+        return get_ahg_audit_name(id_=id_)
 
 
 _extract_action_host_group = partial(

@@ -47,6 +47,7 @@
       script: ./playbook.yaml
       script_type: ansible
       allow_to_terminate: true
+      allow_for_action_host_group: true
       states:
         available: any
 
@@ -90,6 +91,7 @@
 
     cluster_on_host: &host_action
       <<: *action
+      allow_for_action_host_group: false
       host_action: true
 
   export:
