@@ -15,11 +15,13 @@ from unittest.mock import patch
 
 from cm.models import (
     Action,
+    ActionHostGroup,
     ADCMEntityStatus,
     Cluster,
     ClusterBind,
     Component,
     ConcernType,
+    ConfigHostGroup,
     HostComponent,
     JobLog,
     JobStatus,
@@ -272,6 +274,41 @@ class TestServiceAPI(BaseAPITestCase):
             },
         )
         self.assertTrue(Service.objects.filter(pk=service.pk).exists())
+
+    def test_adcm_6146_delete_generic_relations_on_service_deletion(self):
+        response = self.client.v2[self.service_1, "config-groups"].post(data={"name": "Service CHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        service_chg_id = response.json()["id"]
+        self.assertTrue(ConfigHostGroup.objects.filter(pk=service_chg_id).exists())
+
+        response = self.client.v2[self.service_1, "action-host-groups"].post(data={"name": "Service AHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        service_ahg_id = response.json()["id"]
+        self.assertTrue(ActionHostGroup.objects.filter(pk=service_ahg_id).exists())
+
+        component = self.service_1.components.get(prototype__name="component_1")
+
+        response = self.client.v2[component, "config-groups"].post(data={"name": "Component CHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        component_chg_id = response.json()["id"]
+        self.assertTrue(ConfigHostGroup.objects.filter(pk=component_chg_id).exists())
+
+        response = self.client.v2[component, "action-host-groups"].post(data={"name": "Component AHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        component_ahg_id = response.json()["id"]
+        self.assertTrue(ActionHostGroup.objects.filter(pk=component_ahg_id).exists())
+
+        response = self.client.v2[self.service_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertFalse(Service.objects.filter(pk=self.service_1.pk).exists())
+        self.assertFalse(Component.objects.filter(pk=component.pk).exists())
+
+        self.assertFalse(ConfigHostGroup.objects.filter(pk=service_chg_id).exists())
+        self.assertFalse(ActionHostGroup.objects.filter(pk=service_ahg_id).exists())
+
+        self.assertFalse(ConfigHostGroup.objects.filter(pk=component_chg_id).exists())
+        self.assertFalse(ActionHostGroup.objects.filter(pk=component_ahg_id).exists())
 
     def test_create_success(self):
         initial_service_count = Service.objects.count()
