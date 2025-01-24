@@ -443,11 +443,12 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
+    ansible_config = GenericRelation(to="AnsibleConfig", object_id_field="object_id", content_type_field="object_type")
     config_host_group = GenericRelation(
-        "ConfigHostGroup",
-        object_id_field="object_id",
-        content_type_field="object_type",
-        on_delete=models.CASCADE,
+        to="ConfigHostGroup", object_id_field="object_id", content_type_field="object_type"
+    )
+    action_host_group = GenericRelation(
+        to="ActionHostGroup", object_id_field="object_id", content_type_field="object_type"
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
@@ -483,10 +484,7 @@ class Provider(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     config_host_group = GenericRelation(
-        "ConfigHostGroup",
-        object_id_field="object_id",
-        content_type_field="object_type",
-        on_delete=models.CASCADE,
+        "ConfigHostGroup", object_id_field="object_id", content_type_field="object_type"
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
@@ -572,10 +570,10 @@ class Host(ADCMEntity):
 class Service(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="services")
     config_host_group = GenericRelation(
-        "ConfigHostGroup",
-        object_id_field="object_id",
-        content_type_field="object_type",
-        on_delete=models.CASCADE,
+        "ConfigHostGroup", object_id_field="object_id", content_type_field="object_type"
+    )
+    action_host_group = GenericRelation(
+        to="ActionHostGroup", object_id_field="object_id", content_type_field="object_type"
     )
     _maintenance_mode = models.CharField(
         max_length=1000,
@@ -674,10 +672,10 @@ class Component(ADCMEntity):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="components")
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config_host_group = GenericRelation(
-        "ConfigHostGroup",
-        object_id_field="object_id",
-        content_type_field="object_type",
-        on_delete=models.CASCADE,
+        "ConfigHostGroup", object_id_field="object_id", content_type_field="object_type"
+    )
+    action_host_group = GenericRelation(
+        to="ActionHostGroup", object_id_field="object_id", content_type_field="object_type"
     )
     _maintenance_mode = models.CharField(
         max_length=1000,

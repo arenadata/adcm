@@ -76,6 +76,7 @@ optional = true
 
 [tool.poetry.group.profiling.dependencies]
 django-silk = "^5.0.4"
+django-debug-toolbar = "^5.0.1"
 
 [build-system]
 requires = ["poetry-core"]
