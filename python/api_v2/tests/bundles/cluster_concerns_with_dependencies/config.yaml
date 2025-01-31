@@ -1,0 +1,91 @@
+- type: cluster
+  name: cluster_dep
+  version: 1.0
+
+  config: &config
+    - name: string_param
+      type: string
+      default: some_default_value
+
+    - name: int_param
+      type: integer
+      display_name: Some Int
+      default: 12
+
+  actions:
+    action: &action
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+- type: service
+  name: first_service
+  flag_autogeneration:
+    enable_outdated_config: True
+  version: 1.5
+  config: *config
+  actions:
+    action: *action
+
+  components:
+    first_component:
+      flag_autogeneration:
+        enable_outdated_config: True
+      config: *config
+      actions:
+        action: *action
+
+    second_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+      actions:
+        action: *action
+
+- type: service
+  name: second_service
+  requires:
+    - service: first_service
+      component: first_component
+  flag_autogeneration:
+    enable_outdated_config: False
+  version: 1.2
+  config: *config
+  actions:
+    action: *action
+
+  components:
+    first_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+      actions:
+        action: *action
+
+    second_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+      actions:
+        action: *action
+
+
+- type: service
+  name: third_service
+  flag_autogeneration:
+    enable_outdated_config: False
+  version: 1.2
+  config: *config
+  actions:
+    action: *action
+
+  components:
+    single_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+      actions:
+        action: *action
+
