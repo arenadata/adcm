@@ -981,6 +981,7 @@ def cook_conf(
     dict_to_obj(config, "required", stage_prototype_config)
     dict_to_obj(config, "ui_options", stage_prototype_config)
     dict_to_obj(config, "group_customization", stage_prototype_config)
+    dict_to_obj(config, "ansible_options", stage_prototype_config)
 
     config["limits"] = process_limits(
         config=config, name=name, subname=subname, prototype=prototype, path_resolver=path_resolver

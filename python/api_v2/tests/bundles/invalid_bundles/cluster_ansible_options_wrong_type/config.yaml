@@ -1,0 +1,21 @@
+---
+- type: cluster
+  name: cluster_invalid
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  allow_maintenance_mode: false
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: integer
+          required: false
+          default: 0
+          ansible_options:
+            unsafe: 1

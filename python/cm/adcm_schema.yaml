@@ -179,6 +179,11 @@ version_rule:
     - string
     - float
 
+ansible_options:
+  match: dict
+  items:
+    unsafe: boolean
+
 # Upgrade Block
 cluster_upgrade_list:
   match: list
@@ -288,10 +293,10 @@ config_dict_sub:
     boolean: config_dict_sub_boolean
     integer: config_dict_sub_integer
     float: config_dict_sub_float
-    string: config_dict_sub_string_with_pattern
+    string: config_dict_sub_string_with_pattern_and_ansible_options
     password: config_dict_sub_string_with_pattern
     secrettext: config_dict_sub_string_with_pattern
-    text: config_dict_sub_string_with_pattern
+    text: config_dict_sub_string_with_pattern_and_ansible_options
     file: config_dict_sub_string
     secretfile: config_dict_sub_string
     list: config_dict_sub_list
@@ -347,10 +352,16 @@ config_dict_sub_string:
 
 config_dict_sub_string_with_pattern:
   <<: *config_dict_sub_common
-  items:
+  items: &config_dict_sub_items_with_pattern
     <<: *config_dict_sub_items
     default: string
     pattern: string
+
+config_dict_sub_string_with_pattern_and_ansible_options:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items_with_pattern
+    ansible_options: ansible_options
 
 config_dict_sub_list:
   <<: *config_dict_sub_common
@@ -455,10 +466,10 @@ config_sub_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string_with_pattern
+    string: config_list_string_with_pattern_and_ansible_options
     password: config_list_string_with_pattern
     secrettext: config_list_string_with_pattern
-    text: config_list_string_with_pattern
+    text: config_list_string_with_pattern_and_ansible_options
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
@@ -483,10 +494,18 @@ config_list_string:
 
 config_list_string_with_pattern:
   <<: *config_list_common
-  items:
+  items: &config_list_items_with_pattern
     <<: *config_list_items
     default: string
     pattern: string
+
+config_list_string_with_pattern_and_ansible_options:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items_with_pattern
+    ansible_options: ansible_options
+
+
 
 config_list_integer:
   <<: *config_list_common
