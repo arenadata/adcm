@@ -38,7 +38,6 @@ from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from api_v2.tests.base import BaseAPITestCase
@@ -66,6 +65,9 @@ class TestConcernsResponse(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
         self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
 
+        bundle_dir = self.test_bundles_dir / "cluster_concerns_with_dependencies"
+        self.complex_dependencies = self.add_bundle(source_dir=bundle_dir)
+
     def test_required_service_concern(self):
         cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
@@ -84,7 +86,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -102,7 +104,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -120,11 +122,84 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
+    def test_adcm_6275_concern_propagation_success(self):
+        cluster = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies")
+        self.add_services_to_cluster(
+            service_names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+
+        components = Component.objects.filter(cluster=cluster)
+
+        hosts = []
+        for host_n in range(1, 4):
+            hosts.append(self.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
+
+        hostcomponent_entries = []
+        for i, component in enumerate(components.exclude(prototype__name="single_component")):
+            if i % 2 == 0:
+                hostcomponent_entries.append((hosts[0], component))
+            else:
+                hostcomponent_entries.append((hosts[1], component))
+
+        hostcomponent_entries.append(
+            (hosts[2], Component.objects.get(cluster=cluster, prototype__name="single_component"))
+        )
+
+        self.set_hostcomponent(cluster=cluster, entries=hostcomponent_entries)
+
+        objects_to_be_locked_by_action = sorted(
+            [(cluster.pk, cluster.prototype_id)]
+            + list(Service.objects.exclude(prototype__name="third_service").values_list("pk", "prototype_id"))
+            + list(Component.objects.filter(hostcomponent__host=hosts[0]).values_list("pk", "prototype_id"))
+            + [(hosts[0].pk, hosts[0].prototype_id)]
+        )
+
+        def run_action(_object, object_action) -> list[tuple[int, int]]:
+            response = self.client.v2[_object, "actions", object_action, "run"].post()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            concern = ConcernItem.objects.filter(name="job_lock").first()
+            related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
+            concern.delete()
+
+            return related_objects
+
+        with self.subTest("Action is run on component"):
+            component = components.get(prototype__name="first_component", service__prototype__name="first_service")
+            component_action = Action.objects.get(name="action", prototype=component.prototype)
+
+            related_objects = run_action(component, component_action)
+
+            self.assertListEqual(related_objects, objects_to_be_locked_by_action)
+
+        with self.subTest("Action is run on service"):
+            service = Service.objects.get(prototype__name="first_service")
+            service_action = Action.objects.get(name="action", prototype=service.prototype)
+
+            related_objects = run_action(service, service_action)
+
+            self.assertListEqual(
+                related_objects,
+                sorted(
+                    objects_to_be_locked_by_action
+                    + list(Component.objects.filter(hostcomponent__host=hosts[1]).values_list("pk", "prototype_id"))
+                    + [(hosts[1].pk, hosts[1].prototype_id)]
+                ),
+            )
+
+        with self.subTest("Action is run on host"):
+            host = Host.objects.get(fqdn="host_1")
+            host_action = Action.objects.get(prototype=host.prototype)
+
+            related_objects = run_action(host, host_action)
+
+            self.assertListEqual(related_objects, objects_to_be_locked_by_action)
 
     def test_required_hc_concern(self):
         cluster = self.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
@@ -136,7 +211,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -149,12 +224,12 @@ class TestConcernsResponse(BaseAPITestCase):
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
-        response: Response = self.client.v2[cluster, "configs"].post(
+        response = self.client.v2[cluster, "configs"].post(
             data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         with self.subTest("Absent on state = 'created'"):
@@ -164,12 +239,12 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster.state = "notcreated"
         cluster.save(update_fields=["state"])
 
-        response: Response = self.client.v2[cluster, "configs"].post(
+        response = self.client.v2[cluster, "configs"].post(
             data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         with self.subTest("Present on another state"):
@@ -200,7 +275,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.v2[service].get()
+        response = self.client.v2[service].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -228,7 +303,7 @@ class TestConcernsResponse(BaseAPITestCase):
                 },
             }
 
-            response: Response = self.client.v2[self.cluster_1].get()
+            response = self.client.v2[self.cluster_1].get()
 
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(len(response.json()["concerns"]), 1)
@@ -273,11 +348,11 @@ class TestConcernsLogic(BaseAPITestCase):
         unused_import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="unused_import_cluster")
         export_cluster = self.cluster_1
 
-        response: Response = self.client.v2[import_cluster].get()
+        response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(import_cluster.concerns.count(), 1)
 
-        response: Response = self.client.v2[unused_import_cluster].get()
+        response = self.client.v2[unused_import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(import_cluster.concerns.count(), 1)
 
@@ -285,25 +360,25 @@ class TestConcernsLogic(BaseAPITestCase):
             data=[{"source": {"id": export_cluster.pk, "type": ObjectType.CLUSTER}}],
         )
 
-        response: Response = self.client.v2[import_cluster].get()
+        response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(import_cluster.concerns.count(), 0)
 
-        response: Response = self.client.v2[unused_import_cluster].get()
+        response = self.client.v2[unused_import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(unused_import_cluster.concerns.count(), 1)
 
     def test_non_required_import_do_not_raises_concern(self):
         self.assertGreater(PrototypeImport.objects.filter(prototype=self.cluster_2.prototype).count(), 0)
 
-        response: Response = self.client.v2[self.cluster_2].get()
+        response = self.client.v2[self.cluster_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(self.cluster_2.concerns.count(), 0)
 
     def test_concern_owner_cluster(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
-        response: Response = self.client.v2[import_cluster].get()
+        response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(response.json()["concerns"][0]["owner"]["id"], import_cluster.pk)
         self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "cluster")
@@ -311,7 +386,7 @@ class TestConcernsLogic(BaseAPITestCase):
     def test_concern_owner_service(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
-        response: Response = self.client.v2[service].get()
+        response = self.client.v2[service].get()
 
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(response.json()["concerns"][0]["owner"]["id"], service.pk)
@@ -342,7 +417,7 @@ class TestConcernsLogic(BaseAPITestCase):
         }
 
         # initial hc concern (from component's constraint)
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         actual_concern = response.json()["concerns"][0]
         del actual_concern["id"]
@@ -353,57 +428,57 @@ class TestConcernsLogic(BaseAPITestCase):
         host_1 = self.add_host(provider=provider, fqdn="host_1", cluster=cluster)
         self.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
-        response: Response = self.client.v2[host_1].get()
+        response = self.client.v2[host_1].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
         # add second host to cluster. Concerns should be on cluster and mapped host (host_1)
         host_2 = self.add_host(provider=provider, fqdn="host_2", cluster=cluster)
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         actual_concern = response.json()["concerns"][0]
         del actual_concern["id"]
         self.assertDictEqual(actual_concern, expected_concern_part)
 
-        response: Response = self.client.v2[host_1].get()
+        response = self.client.v2[host_1].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         actual_concern = response.json()["concerns"][0]
         del actual_concern["id"]
         self.assertDictEqual(actual_concern, expected_concern_part)
 
         # not mapped host has no concerns
-        response: Response = self.client.v2[host_2].get()
+        response = self.client.v2[host_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
         # unlink host_2 from cluster, 0 concerns on cluster and host_1
-        response: Response = self.client.v2[cluster, "hosts", str(host_2.pk)].delete()
+        response = self.client.v2[cluster, "hosts", str(host_2.pk)].delete()
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
-        response: Response = self.client.v2[host_1].get()
+        response = self.client.v2[host_1].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
         # link host_2 to cluster. Concerns should appear again
-        response: Response = self.client.v2[cluster, "hosts"].post(data={"hostId": host_2.pk})
+        response = self.client.v2[cluster, "hosts"].post(data={"hostId": host_2.pk})
 
-        response: Response = self.client.v2[cluster].get()
+        response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         actual_concern = response.json()["concerns"][0]
         del actual_concern["id"]
         self.assertDictEqual(actual_concern, expected_concern_part)
 
-        response: Response = self.client.v2[host_1].get()
+        response = self.client.v2[host_1].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         actual_concern = response.json()["concerns"][0]
         del actual_concern["id"]
         self.assertDictEqual(actual_concern, expected_concern_part)
 
         # not mapped host has no concerns
-        response: Response = self.client.v2[host_2].get()
+        response = self.client.v2[host_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
 
     def test_concerns_on_add_services(self):
@@ -923,7 +998,7 @@ class TestConcernRedistribution(BaseAPITestCase):
                 single_c_concern,
                 *mapped_hosts_concerns,
             )
-            expected_concerns["free_c"] = (*cluster_own_concerns, main_s_own_concern, *mapped_hosts_concerns)
+            expected_concerns["free_c"] = [*cluster_own_concerns, main_s_own_concern, *mapped_hosts_concerns]
             expected_concerns["single_c"] = (
                 *cluster_own_concerns,
                 main_s_own_concern,

@@ -271,6 +271,11 @@ ConcernRelatedObjects: TypeAlias = dict[ADCMCoreType, set[ObjectID]]
 
 def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID) -> ConcernRelatedObjects:
     distribution_targets = _find_concern_distribution_targets(owner=owner)
+    if (
+        owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
+        and ConcernItem.objects.filter(pk=concern_id, type__in=[ConcernType.LOCK, ConcernType.ISSUE]).exists()
+    ):
+        _distribute_by_hosts(distribution_targets)
     _add_concern_links_to_objects_in_db(targets=distribution_targets, concern_id=concern_id)
     return distribution_targets
 
@@ -280,7 +285,6 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
     Find objects that should be affected by appeared concern on given objects considering HC.
     """
     targets: ConcernRelatedObjects = defaultdict(set)
-
     targets[owner.type].add(owner.id)
 
     match owner.type:
@@ -296,13 +300,13 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
             )
 
         case ADCMCoreType.SERVICE:
-            targets[ADCMCoreType.HOST] |= set(
-                HostComponent.objects.values_list("host_id", flat=True).filter(service_id=owner.id)
-            )
+            targets[ADCMCoreType.CLUSTER].add(Service.objects.values_list("cluster_id", flat=True).get(id=owner.id))
             targets[ADCMCoreType.COMPONENT] |= set(
                 Component.objects.values_list("id", flat=True).filter(service_id=owner.id)
             )
-            targets[ADCMCoreType.CLUSTER].add(Service.objects.values_list("cluster_id", flat=True).get(id=owner.id))
+            targets[ADCMCoreType.HOST] |= set(
+                HostComponent.objects.values_list("host_id", flat=True).filter(service_id=owner.id)
+            )
 
         case ADCMCoreType.COMPONENT:
             cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=owner.id)
@@ -341,6 +345,20 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
             raise NotImplementedError(message)
 
     return targets
+
+
+def _distribute_by_hosts(targets: ConcernRelatedObjects) -> None:
+    queryset = tuple(
+        HostComponent.objects.filter(host_id__in=targets[ADCMCoreType.HOST])
+        .values_list("service_id", "component_id")
+        .distinct()
+    )
+
+    if queryset:
+        service_ids, component_ids = zip(*queryset)
+
+        targets[ADCMCoreType.COMPONENT].update(component_ids)
+        targets[ADCMCoreType.SERVICE].update(service_ids)
 
 
 # PUBLIC lock/unlock multiple objects
