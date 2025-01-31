@@ -1007,6 +1007,7 @@ def copy_stage_config(stage_configs, prototype):
                 "required",
                 "ui_options",
                 "group_customization",
+                "ansible_options",
             ),
         )
         if stage_config.action:

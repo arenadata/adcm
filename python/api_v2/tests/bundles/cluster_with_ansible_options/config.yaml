@@ -1,0 +1,27 @@
+---
+- type: cluster
+  name: cluster_ansible_options
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  allow_maintenance_mode: false
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          required: true
+          default: string
+          ansible_options:
+            unsafe: true
+        - name: text
+          type: text
+          required: false
+          default: default text
+          ansible_options:
+            unsafe: true
