@@ -31,7 +31,7 @@ const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, on
     }
   };
 
-  const stringValue = value as string;
+  const stringValue = (value as string) ?? '';
 
   return (
     <ConfigurationField
