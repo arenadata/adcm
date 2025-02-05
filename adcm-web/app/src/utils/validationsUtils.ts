@@ -1,9 +1,11 @@
+import { isValidData } from '@utils/checkUtils';
+
 // biome-ignore lint/suspicious/noExplicitAny:
 export const required = (value: any) => {
   if (typeof value === 'string') {
     return value.length > 0;
   }
-  return true;
+  return isValidData(value);
 };
 
 export const isEmailValid = (email: string) => {
