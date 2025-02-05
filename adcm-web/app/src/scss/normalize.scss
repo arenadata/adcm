@@ -8,6 +8,7 @@ ul, ol, li, button, textarea, input {
   padding: 0;
   font-family: inherit;
   list-style: none;
+  font-variant-ligatures: none;
 }
 
 input::placeholder, textarea::placeholder {
