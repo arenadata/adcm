@@ -1,11 +1,11 @@
 ---
 - type: cluster
   name: cluster_invalid
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   config_group_customization: true
   allow_maintenance_mode: false
-  config: &config
+  config:
     - name: string
       type: string
       required: false

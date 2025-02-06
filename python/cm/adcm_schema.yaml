@@ -380,6 +380,7 @@ config_dict_sub_structure:
   items:
     <<: *config_dict_sub_items
     default: json
+    ansible_options: ansible_options
     yspec: string
   required_items:
     - yspec
@@ -419,10 +420,10 @@ config_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string_with_pattern
+    string: config_list_string_with_pattern_and_ansible_options
     password: config_list_string_with_pattern
     secrettext: config_list_string_with_pattern
-    text: config_list_string_with_pattern
+    text: config_list_string_with_pattern_and_ansible_options
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
