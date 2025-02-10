@@ -69,7 +69,7 @@ from api_v2.generic.action_host_group.views import (
 )
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.generic.config_host_group.api_schema import (
     document_config_host_group_viewset,
@@ -184,6 +184,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         description="Get information about component statuses.",
         responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
+    config_schema=extend_config_schema("service"),
 )
 class ServiceViewSet(
     PermissionListMixin,

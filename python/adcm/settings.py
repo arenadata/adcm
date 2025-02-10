@@ -380,6 +380,18 @@ SPECTACULAR_SETTINGS = {
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
     ],
+    "ENUM_NAME_OVERRIDES": {
+        "MaintenanceModeEnum": "cm.models.MaintenanceMode",
+        "MaintenanceModeChangeEnum": ("on", "off"),
+        "JobStatusEnum": "cm.models.JobStatus",
+        "LicenseStatusEnum": "cm.models.LICENSE_STATE",
+        "SignatureStatusEnum": "cm.models.SignatureStatus",
+        "ObjectStatusEnum": ("up", "down"),
+        "ObjectTypeEnum": "cm.models.ObjectType",
+        "ClusterServiceEnum": ("cluster", "service"),
+        "OriginType": "rbac.models.OriginType",
+        "RoleTypeEnum": "rbac.models.RoleTypes",
+    },
 }
 
 USERNAME_MAX_LENGTH = 150
