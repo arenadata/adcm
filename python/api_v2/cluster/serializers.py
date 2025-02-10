@@ -40,9 +40,9 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import LicenseSerializer, PrototypeRelatedSerializer
+from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-from api_v2.serializers import DependOnSerializer, WithStatusSerializer
+from api_v2.serializers import DependOnDict, WithStatusSerializer
 
 
 class ClusterSerializer(WithStatusSerializer):
@@ -151,13 +151,11 @@ class ServicePrototypeSerializer(ModelSerializer):
         model = Prototype
         fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license"]
 
-    @extend_schema_field(field=DependOnSerializer(many=True))
-    def get_depend_on(self, prototype: Prototype) -> list[dict] | None:
+    def get_depend_on(self, prototype: Prototype) -> list[DependOnDict] | None:
         return self.context["depend_on"].get(prototype.id)
 
     @staticmethod
-    @extend_schema_field(field=LicenseSerializer)
-    def get_license(prototype: Prototype) -> dict:
+    def get_license(prototype: Prototype) -> LicenseDict:
         return {
             "status": prototype.license,
             "text": get_license_text(
@@ -302,8 +300,7 @@ class ComponentMappingSerializer(ModelSerializer):
             "service",
         ]
 
-    @extend_schema_field(field=DependOnSerializer(many=True))
-    def get_depend_on(self, instance: Component) -> list[dict] | None:
+    def get_depend_on(self, instance: Component) -> list[DependOnDict] | None:
         return self.context["depend_on"].get(instance.id)
 
     @extend_schema_field(field=ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value)))

@@ -686,14 +686,18 @@ def get_config_schema(
     return schema
 
 
-class ConfigSchemaMixin:
-    @extend_schema(
-        operation_id="getObjectConfigSchema",
-        summary="GET object's config schema",
-        description="Get object's config schema information.",
+def extend_config_schema(type_: str):
+    capitalized_type = type_.capitalize()
+    return extend_schema(
+        operation_id=f"get{capitalized_type}ConfigSchema",
+        summary=f"GET {type_}'s config schema",
+        description=f"Get {type_}'s config schema information.",
         examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
         responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     )
+
+
+class ConfigSchemaMixin:
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         instance = self.get_object()

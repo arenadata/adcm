@@ -402,7 +402,11 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         )
 
     def get_queryset(self, *_, **__) -> QuerySet:
-        group_owner = self.parent_object.object
+        try:
+            group_owner = self.parent_object.object
+        except AttributeError:
+            # may occur during schema generation, check out comments for Actions
+            return self.general_queryset.none()
         self.prototype_objects = {group_owner.prototype: group_owner}
         return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)
 

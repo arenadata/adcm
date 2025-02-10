@@ -66,7 +66,7 @@ from api_v2.generic.action_host_group.views import (
 )
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.generic.config_host_group.api_schema import (
     document_config_host_group_viewset,
@@ -147,6 +147,7 @@ from api_v2.views import (
             },
         },
     ),
+    config_schema=extend_config_schema("config"),
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = Component.objects.select_related("cluster", "service").order_by("pk")
