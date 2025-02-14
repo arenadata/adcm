@@ -1,0 +1,74 @@
+---
+- type: cluster
+  name: dummy
+  display_name: dummy
+  description: dummy
+  version: "1.0.0"
+  edition: "enterprise"
+  allow_maintenance_mode: true
+  venv: "2.9"
+
+  config:
+
+    - name: test_action_with_jinja_conf
+      type: list
+      required: False
+      default: []
+      ui_options:
+        invisible: True
+
+  actions:
+    test_action_group:
+      display_name: "Test action with jinja group"
+      type: job
+      allow_to_terminate: true
+      script_type: ansible
+      script: ./group_test_action.yaml
+      allow_in_maintenance_mode: true
+      config_jinja: ./group_test.j2
+      log_files:
+        - check
+      states:
+        available: [created]
+
+- type: service
+  name: service_name
+  display_name: service_name
+  version: "1.0.0"
+  flag_autogeneration:
+    enable_outdated_config: True
+
+  actions:
+    test_action_group_service:
+      display_name: "Test action with jinja group"
+      type: job
+      allow_to_terminate: true
+      script_type: ansible
+      script: ./group_test_action.yaml
+      allow_in_maintenance_mode: true
+      config_jinja: ./group_service_test.j2
+      log_files:
+        - check
+      states:
+        available: [ created ]
+
+
+  components:
+    server:
+      display_name: "Server"
+      constraint: [1,+]
+
+      actions:
+        test_action_group_component:
+          display_name: "Test action with jinja group"
+          type: job
+          allow_to_terminate: true
+          script_type: ansible
+          script: ./group_test_action.yaml
+          allow_in_maintenance_mode: true
+          config_jinja: ./group_component_test.j2
+          log_files:
+            - check
+          states:
+            available: [ created ]
+
