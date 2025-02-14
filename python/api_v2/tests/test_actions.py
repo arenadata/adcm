@@ -28,7 +28,7 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.job.jinja_scripts import get_action_info
+from cm.services.jinja_env import _get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -526,6 +526,38 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
         self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
+    def test_group_jinja_config(self):
+        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
+        cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions 2")
+
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=cluster)
+        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=cluster)
+
+        service = self.add_services_to_cluster(service_names=["service_name"], cluster=cluster)[0]
+
+        component = service.components.get(prototype__name="server")
+        self.set_hostcomponent(cluster=cluster, entries=((host_1, component), (host_3, component)))
+
+        response = (self.client.v2 / "hosts" / host_2.pk / "maintenance-mode").post(
+            data={"maintenanceMode": "on"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        action = Action.objects.get(name="test_action_group")
+        response = self.client.v2[cluster, "actions", action.pk].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(
+            {k: sorted(v) for k, v in response.json()["configuration"]["config"]["group"].items()},
+            {
+                "CLUSTER": ["host-1", "host-3"],
+                "CLUSTER.maintenance_mode": ["host-2"],
+                "service_name": ["host-1", "host-3"],
+                "service_name.server": ["host-1", "host-3"],
+            },
+        )
+
     def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
 
@@ -592,7 +624,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
         ):
             action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
-            self.assertDictEqual(get_action_info(action=action), {"name": "check_state", "owner_group": group})
+            self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
 
 class TestAction(BaseAPITestCase):
