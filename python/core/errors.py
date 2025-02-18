@@ -10,8 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMMessageError
+from core.types import ADCMCoreError, ADCMMessageError
 
 
 class NotFoundError(ADCMMessageError):
     ...
+
+
+class BundleParsingError(ADCMCoreError):
+    def __init__(self, code: str, msg: str) -> None:
+        super().__init__()
+        self.code = code
+        self.msg = msg
