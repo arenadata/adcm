@@ -10,26 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreError, ADCMMessageError
+from core.bundle_alt.types import BundleDefinitionKey, Definition
 
 
-class NotFoundError(ADCMMessageError):
-    ...
+def is_service(definition: Definition) -> bool:
+    return definition.type == "service"
 
 
-class _AdcmExLikeError(ADCMCoreError):
-    def __init__(self, code: str, msg: str) -> None:
-        super().__init__()
-        self.code = code
-        self.msg = msg
+def is_component(definition: Definition) -> bool:
+    return definition.type == "component"
 
 
-class BundleParsingError(_AdcmExLikeError):
-    ...
+def is_component_key(key: BundleDefinitionKey) -> bool:
+    return key[0] == "component"
 
 
-class ConfigValueError(_AdcmExLikeError):
-    """
-    Added as part of ADCM-6355.
-    May be removed/reworked later.
-    """
+def is_service_key(key: BundleDefinitionKey) -> bool:
+    return key[0] == "service"
+
+
+def has_requires(definition: Definition) -> bool:
+    return bool(definition.requires)

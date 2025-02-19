@@ -13,11 +13,10 @@
 from pathlib import Path
 from unittest import TestCase
 
+from core.bundle_alt.types import ConfigDefinition, ConfigParamPlainSpec, Script
 from core.bundle_alt.validation import (
     ActionDefinition,
-    ConfigDefinition,
     Definition,
-    Script,
     UpgradeDefinition,
     check_action_hc_acl_rules,
     check_bound_to,
@@ -56,6 +55,9 @@ def make_def(key, **kwargs):
         "path": Path(),
     }
 
+    if "config" in kwargs:
+        kwargs["config"] = ConfigDefinition(parameters=kwargs["config"], default_values={}, default_attrs={})
+
     return Definition(**(defaults | kwargs))
 
 
@@ -83,8 +85,20 @@ def make_script(**kwargs):
 
 
 def make_config(**kwargs):
-    defaults = {"name": "some", "type": "integer"}
-    return ConfigDefinition(**(defaults | kwargs))
+    defaults = {"name": "some", "type": "integer"} | {
+        "key": ("a",),
+        "display_name": "A",
+        "description": "aaaaa",
+        "default": None,
+        "limits": {},
+        "ui_options": dict,
+        "required": True,
+        "group_customization": None,
+    }
+
+    result = defaults | kwargs
+    result["key"] = tuple(result.pop("name").split("/"))
+    return ConfigParamPlainSpec(**result)
 
 
 class TestBundleValidation(TestCase):
