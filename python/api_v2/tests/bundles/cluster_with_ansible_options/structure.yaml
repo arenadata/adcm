@@ -1,0 +1,29 @@
+---
+root:
+  match: list
+  item: check_entry
+
+check_entry:
+  match: dict
+  items:
+    job: some_string
+    assert_name: some_string
+    assert_message: some_string
+    hosts: some_string
+    ansible_options: ansible_options_dict
+
+  required_items:
+    - job
+    - assert_name
+    - assert_message
+
+some_string:
+  match: string
+
+ansible_options_dict:
+  match: dict
+  items:
+    unsafe: some_boolean
+
+some_boolean:
+  match: bool

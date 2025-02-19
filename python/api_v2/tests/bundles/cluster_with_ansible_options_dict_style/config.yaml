@@ -1,0 +1,33 @@
+---
+- type: cluster
+  name: cluster_ansible_options_old_style
+  version: '1.0'
+  edition: community
+  config_group_customization: true
+  allow_maintenance_mode: false
+  config:
+    string:
+      type: string
+      required: false
+      default: string
+    my_string:
+      type: string
+      display_name: "My String"
+      default: "something"
+      ansible_options:
+        unsafe: true
+    my_text:
+      type: text
+      display_name: "My Text"
+      default: "something\text"
+      ansible_options:
+        unsafe: true
+    structure_list:
+      type: structure
+      yspec: ./structure.yaml
+      default:
+        - job: "job name"
+          assert_name: "job name"
+          assert_message: "job mess"
+          ansible_options:
+            unsafe: true

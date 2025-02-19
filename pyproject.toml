@@ -10,7 +10,7 @@ python = "~3.10"
 
 Django = "5.1.1"
 adcm-version = "1.0.3"
-ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p6" }
+ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p7" }
 apache-libcloud = "3.8.0"
 attr = "0.3.2"
 casestyle = "0.0.4"

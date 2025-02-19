@@ -1266,6 +1266,7 @@ class PrototypeConfig(ADCMModel):
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
     group_customization = models.BooleanField(null=True)
+    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
 
     class Meta:
         ordering = ["id"]
@@ -1561,6 +1562,7 @@ class StagePrototypeConfig(ADCMModel):
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
     group_customization = models.BooleanField(null=True)
+    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
 
     class Meta:
         ordering = ["id"]

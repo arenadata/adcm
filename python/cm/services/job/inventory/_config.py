@@ -13,7 +13,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from functools import reduce
-from typing import Any, Iterable, NamedTuple
+from typing import Any, Iterable, Literal, NamedTuple
 
 from core.cluster.types import ClusterTopology
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, GeneralEntityDescriptor, ObjectID, PrototypeID
@@ -249,7 +249,15 @@ def update_configuration_for_inventory_inplace(
         if key in skip_deactivated_groups or key not in configuration:
             continue
 
+        is_unsafe = bool(field_.ansible_options.get("unsafe", False))
+
         match field_.type, subkey:
+            case ["string" | "text", ""]:
+                if is_unsafe and isinstance(configuration[key], str):
+                    configuration[key] = _to_unsafe_dict(configuration[key])
+            case ["string" | "text", _]:
+                if is_unsafe and isinstance(configuration[key].get(subkey), str):
+                    configuration[key][subkey] = _to_unsafe_dict(configuration[key][subkey])
             case ["file" | "secretfile", ""]:
                 if configuration[key]:
                     configuration[key] = _build_string_path_for_file(
@@ -289,6 +297,10 @@ def update_configuration_for_inventory_inplace(
                     group[subkey] = {} if field_.type == "map" else []
 
     return configuration
+
+
+def _to_unsafe_dict(value: str) -> dict[Literal["__ansible_unsafe"], str]:
+    return {"__ansible_unsafe": value}
 
 
 def _build_string_path_for_file(
