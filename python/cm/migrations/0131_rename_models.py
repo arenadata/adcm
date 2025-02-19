@@ -15,24 +15,6 @@ from functools import partial
 from django.db import migrations, models
 
 
-def update_content_type(apps, schema_editor, old_model: str, new_model: str):
-    ContentType = apps.get_model("contenttypes", "ContentType")
-    ContentType.objects.filter(app_label="cm", model=old_model).update(model=new_model)
-
-
-fix_service_ct = partial(update_content_type, old_model="clusterobject", new_model="service")
-revert_service_ct = partial(update_content_type, old_model="service", new_model="clusterobject")
-
-fix_component_ct = partial(update_content_type, old_model="servicecomponent", new_model="component")
-revert_component_ct = partial(update_content_type, old_model="component", new_model="servicecomponent")
-
-fix_provider_ct = partial(update_content_type, old_model="hostprovider", new_model="provider")
-revert_provider_ct = partial(update_content_type, old_model="provider", new_model="hostprovider")
-
-fix_chg_ct = partial(update_content_type, old_model="groupconfig", new_model="confighostgroup")
-revert_chg_ct = partial(update_content_type, old_model="confighostgroup", new_model="groupconfig")
-
-
 def update_tasklog(apps, schema_editor, old_value: str, new_value: str):
     TaskLog = apps.get_model("cm", "TaskLog")
     TaskLog.objects.filter(owner_type=old_value).update(owner_type=new_value)
@@ -48,14 +30,47 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Updating old records in the django_content_type table to avoid conflicts in the following queries,
+        # see the ADCM-6265 task.
+        migrations.RunSQL(
+            sql="""
+            UPDATE django_content_type
+            SET model = 'stale_' || model
+            WHERE app_label = 'cm'
+              AND model in ('component', 'stagecomponent', 'dummydata', 'role', 'messagetemplate');
+        """,
+            reverse_sql="""
+            UPDATE django_content_type
+            SET model = replace(model, 'stale_', '')
+            WHERE app_label = 'cm'
+              AND model in ('stale_component', 'stale_stagecomponent', 'stale_dummydata', 'stale_role',
+                            'stale_messagetemplate');
+        """,
+        ),
+        migrations.RunSQL(
+            sql="""
+            UPDATE auth_permission
+            SET codename = codename || '_stale'
+            WHERE content_type_id in (SELECT id
+                                      FROM django_content_type
+                                      WHERE app_label = 'cm'
+                                        AND model IN ('stale_component', 'stale_stagecomponent', 'stale_dummydata',
+                                                      'stale_role', 'stale_messagetemplate'));
+        """,
+            reverse_sql="""
+            UPDATE auth_permission
+            SET codename = replace(codename, '_stale', '')
+            WHERE content_type_id in (SELECT id
+                                      FROM django_content_type
+                                      WHERE app_label = 'cm'
+                                        AND model IN ('stale_component', 'stale_stagecomponent', 'stale_dummydata',
+                                                      'stale_role', 'stale_messagetemplate'));
+            """,
+        ),
         migrations.RenameModel(old_name="ClusterObject", new_name="Service"),
-        migrations.RunPython(code=fix_service_ct, reverse_code=revert_service_ct),
         migrations.RenameModel(old_name="ServiceComponent", new_name="Component"),
-        migrations.RunPython(code=fix_component_ct, reverse_code=revert_component_ct),
         migrations.RenameModel(old_name="HostProvider", new_name="Provider"),
-        migrations.RunPython(code=fix_provider_ct, reverse_code=revert_provider_ct),
         migrations.RenameModel(old_name="GroupConfig", new_name="ConfigHostGroup"),
-        migrations.RunPython(code=fix_chg_ct, reverse_code=revert_chg_ct),
         migrations.AlterField(
             model_name="tasklog",
             name="owner_type",
