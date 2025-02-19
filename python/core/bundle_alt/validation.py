@@ -10,109 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol, TypeAlias
 
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
 
+from core.bundle_alt._config import check_default_values
+from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
+from core.bundle_alt.representation import dependency_entry_to_key, find_parent, make_ref
+from core.bundle_alt.types import ActionDefinition, BundleDefinitionKey, Definition, DefinitionsMap, UpgradeDefinition
 from core.errors import BundleParsingError
-
-
-class WithName(Protocol):
-    name: str
-
-
-@dataclass(slots=True)
-class Script:
-    script_type: str
-    script: str
-
-
-@dataclass(slots=True)
-class ActionDefinition(Script):
-    type: str
-    scripts: list[Script]
-    hostcomponentmap: list
-    jinja_scripts: str | None
-    jinja_config: str | None
-
-
-@dataclass(slots=True)
-class UpgradeDefinition:
-    name: str
-    hostcomponentmap: list
-    scripts: list[Script]
-
-
-@dataclass(slots=True)
-class ConfigDefinition:
-    name: str
-    type: str
-
-
-@dataclass(slots=True)
-class Definition:
-    path: Path
-    type: str
-    name: str
-    version: str | None
-    requires: list[dict]
-    bound_to: dict
-    # make it a dict too
-    actions: dict[str, ActionDefinition]
-    config: dict[str, ConfigDefinition]
-    # specifics
-    upgrades: dict[str, UpgradeDefinition]
-    export: list[str] | None
-    import_: list[dict] | None
-    constraint: list | None
-
-
-BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | tuple[Literal["component"], str, str]
-DefinitionsMap: TypeAlias = dict[BundleDefinitionKey, Definition]
-
-
-def is_service(definition: Definition) -> bool:
-    return definition.type == "service"
-
-
-def is_component(definition: Definition) -> bool:
-    return definition.type == "component"
-
-
-def is_component_key(key: BundleDefinitionKey) -> bool:
-    return key[0] == "component"
-
-
-def is_service_key(key: BundleDefinitionKey) -> bool:
-    return key[0] == "service"
-
-
-def has_requires(definition: Definition) -> bool:
-    return bool(definition.requires)
-
-
-def dependency_entry_to_key(entry: dict) -> BundleDefinitionKey:
-    if "component" in entry:
-        return ("component", entry["service"], entry["component"])
-
-    return ("service", entry["service"])
-
-
-def make_ref(d: Definition) -> str:
-    return f'{d.type} "{d.name}" {d.version}'
-
-
-def find_parent(key: BundleDefinitionKey, definitions: DefinitionsMap) -> Definition:
-    if is_component_key(key):
-        return definitions[("service", key[1])]
-
-    if is_service_key(key):
-        return definitions[("cluster",)]
-
-    raise RuntimeError(f"No parent for {key}")
 
 
 def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path) -> None:
@@ -124,6 +31,7 @@ def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path) 
         check_exported_values_exists_in_config(definition)
         check_upgrades(definition, definitions)
 
+        check_config(definition)
         check_actions(definition, definitions, bundle_root)
 
         # unify check arguments and make it a map for each type?
@@ -175,14 +83,23 @@ def check_bound_to(key: BundleDefinitionKey, definition: Definition, definitions
         raise BundleParsingError(code="COMPONENT_CONSTRAINT_ERROR", msg=message)
 
 
+def check_config(definition: Definition) -> None:
+    check_default_values(
+        parameters=definition.config.parameters,
+        values=definition.config.default_values,
+        attributes=definition.config.default_attrs,
+        object_=definition,
+    )
+
+
 def check_actions(definition: Definition, definitions: DefinitionsMap, bundle_root: Path) -> None:
-    for action in definition.actions.values():
+    for action in definition.actions:
         check_action_hc_acl_rules(action.hostcomponentmap, definition, definitions)
         check_jinja_templates_are_correct(action, bundle_root)
 
 
 def check_upgrades(definition: Definition, definitions: DefinitionsMap) -> None:
-    for upgrade in definition.upgrades.values():
+    for upgrade in definition.upgrades:
         check_action_hc_acl_rules(upgrade.hostcomponentmap, definition, definitions)
         check_bundle_switch_amount_for_upgrade_action(definition, upgrade)
 
@@ -261,14 +178,14 @@ def check_component_constraint_length(definition: Definition, service_def: Defin
 def check_exported_values_exists_in_config(definition: Definition) -> None:
     for value in definition.export or ():
         key = f"/{value}"
-        if key not in definition.config:
+        if key not in definition.config.parameters:
             raise BundleParsingError(
                 code="INVALID_OBJECT_DEFINITION", msg=f'{make_ref(definition)} does not has "{value}" config group'
             )
 
 
 def check_import_defaults_exist_in_config(definition: Definition) -> None:
-    group_names_in_config = {entry.name for entry in definition.config.values() if entry.type == "group"}
+    group_names_in_config = {entry.name for entry in definition.config.parameters.values() if entry.type == "group"}
     for entry in definition.import_ or ():
         for default_name in entry.get("default", ()):
             if default_name not in group_names_in_config:
