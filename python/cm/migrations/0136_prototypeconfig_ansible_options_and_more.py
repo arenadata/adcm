@@ -19,7 +19,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0134_bundle_bundle_lower_name_idx_and_more"),
+        ("cm", "0135_remove_stale_ansibleconfig_actionhostgroup_entries"),
     ]
 
     operations = [
