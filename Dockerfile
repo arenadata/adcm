@@ -59,7 +59,7 @@ RUN apk add --no-cache --virtual .build-deps \
     $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
     $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root && \
     python -m venv /adcm/venv/2.9 --system-site-packages && \
-    /adcm/venv/2.9/bin/pip install --no-cache-dir git+https://github.com/arenadata/ansible.git@v2.9.27-p2 && \
+    /adcm/venv/2.9/bin/pip install --no-cache-dir git+https://github.com/arenadata/ansible.git@v2.9.27-p3 && \
     $POETRY_VENV/bin/poetry cache clear pypi --all && \
     apk del .build-deps && \
     apk cache clean --purge && \
