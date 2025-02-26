@@ -105,11 +105,11 @@ def check_upgrades(definition: Definition, definitions: DefinitionsMap) -> None:
 
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
-    if action.jinja_config:
-        check_file_is_correct_template(bundle_root / action.jinja_config)
+    if action.config_jinja:
+        check_file_is_correct_template(bundle_root / action.config_jinja)
 
-    if action.jinja_scripts:
-        check_file_is_correct_template(bundle_root / action.jinja_scripts)
+    if action.scripts_jinja:
+        check_file_is_correct_template(bundle_root / action.scripts_jinja)
 
 
 # Atomic checks
@@ -133,7 +133,10 @@ def check_file_is_correct_template(path: Path) -> None:
 
 
 def check_bundle_switch_amount_for_upgrade_action(definition: Definition, upgrade: UpgradeDefinition) -> None:
-    scripts = upgrade.scripts
+    if not upgrade.action:
+        return
+
+    scripts = upgrade.action.scripts
 
     scripts_with_bundle_switch = tuple(
         script for script in scripts if script.script_type == "internal" and script.script == "bundle_switch"
@@ -157,6 +160,7 @@ def check_bundle_switch_amount_for_upgrade_action(definition: Definition, upgrad
 
 
 def check_component_constraint_length(definition: Definition, service_def: Definition) -> None:
+    # todo this stuff should be checked during normalization (not it's most likely checked during parsing even)
     if definition.constraint is None:
         return
 
@@ -176,7 +180,7 @@ def check_component_constraint_length(definition: Definition, service_def: Defin
 
 
 def check_exported_values_exists_in_config(definition: Definition) -> None:
-    for value in definition.export or ():
+    for value in definition.exports or ():
         key = f"/{value}"
         if key not in definition.config.parameters:
             raise BundleParsingError(
@@ -185,8 +189,11 @@ def check_exported_values_exists_in_config(definition: Definition) -> None:
 
 
 def check_import_defaults_exist_in_config(definition: Definition) -> None:
-    group_names_in_config = {entry.name for entry in definition.config.parameters.values() if entry.type == "group"}
-    for entry in definition.import_ or ():
+    group_names_in_config = {}
+    if definition.config:
+        group_names_in_config = {entry.name for entry in definition.config.parameters.values() if entry.type == "group"}
+
+    for entry in definition.imports or ():
         for default_name in entry.get("default", ()):
             if default_name not in group_names_in_config:
                 raise BundleParsingError(
