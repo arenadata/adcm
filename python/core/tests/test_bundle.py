@@ -13,7 +13,15 @@
 from pathlib import Path
 from unittest import TestCase
 
-from core.bundle_alt.types import ConfigDefinition, ConfigParamPlainSpec, Script
+from core.bundle_alt.convertion import schema_entry_to_definitions
+from core.bundle_alt.schema import ClusterSchema, HostSchema, ProviderSchema, ServiceSchema
+from core.bundle_alt.types import (
+    ActionAvailability,
+    ConfigDefinition,
+    ConfigParamPlainSpec,
+    UpgradeRestrictions,
+    VersionBound,
+)
 from core.bundle_alt.validation import (
     ActionDefinition,
     Definition,
@@ -27,6 +35,7 @@ from core.bundle_alt.validation import (
     check_requires,
 )
 from core.errors import BundleParsingError
+from core.job.types import JobSpec, ScriptType
 
 CLUSTER = "cluster"
 SERVICE = "service"
@@ -40,20 +49,7 @@ def make_def(key, **kwargs):
     if len(key) > 1:
         name = key[-1]
 
-    defaults = {
-        "type": key[0],
-        "name": name,
-        "version": "3.0",
-        "requires": [],
-        "bound_to": {},
-        "actions": {},
-        "upgrades": {},
-        "config": {},
-        "import_": None,
-        "export": None,
-        "constraint": None,
-        "path": Path(),
-    }
+    defaults = {"type": key[0], "name": name, "version": "3.0"}
 
     if "config" in kwargs:
         kwargs["config"] = ConfigDefinition(parameters=kwargs["config"], default_values={}, default_attrs={})
@@ -62,26 +58,28 @@ def make_def(key, **kwargs):
 
 
 def make_action(**kwargs):
-    defaults = {
-        "hostcomponentmap": [],
-        "type": "job",
-        "script": "run.yaml",
-        "script_type": "ansible",
-        "scripts": [],
-        "jinja_scripts": None,
-        "jinja_config": None,
-    }
+    defaults = {"name": "aaa", "type": "job"}
     return ActionDefinition(**(defaults | kwargs))
 
 
 def make_upgrade(**kwargs):
-    defaults = {"name": "blahblah", "hostcomponentmap": [], "scripts": []}
+    defaults = {"name": "blahblah"}
     return UpgradeDefinition(**(defaults | kwargs))
 
 
 def make_script(**kwargs):
-    defaults = {"script": "aaa.yaml", "script_type": "ansible"}
-    return Script(**(defaults | kwargs))
+    defaults = {
+        "script": "aaa.yaml",
+        "script_type": "ansible",
+        "allow_to_terminate": False,
+        "name": "aaa",
+        "display_name": "aaa",
+        "state_on_fail": "",
+        "multi_state_on_fail_set": [],
+        "multi_state_on_fail_unset": [],
+        "params": {},
+    }
+    return JobSpec(**(defaults | kwargs))
 
 
 def make_config(**kwargs):
@@ -296,7 +294,9 @@ class TestBundleValidation(TestCase):
             ),
         ]:
             with self.subTest(case):
-                upgrade = make_upgrade(scripts=[make_script(**script) for script in correct_scripts])
+                upgrade = make_upgrade(
+                    action=make_action(scripts=[make_script(**script) for script in correct_scripts])
+                )
 
                 check_bundle_switch_amount_for_upgrade_action(definition, upgrade)
 
@@ -316,7 +316,9 @@ class TestBundleValidation(TestCase):
             ("multi_switch", multiple_switch_err, [ansible, bundle_switch, ansible, bundle_switch]),
         ]:
             with self.subTest(case):
-                upgrade = make_upgrade(scripts=[make_script(**script) for script in correct_scripts])
+                upgrade = make_upgrade(
+                    action=make_action(scripts=[make_script(**script) for script in correct_scripts])
+                )
 
                 with self.assertRaises(BundleParsingError) as err:
                     check_bundle_switch_amount_for_upgrade_action(definition, upgrade)
@@ -358,16 +360,16 @@ class TestBundleValidation(TestCase):
 
     def test_check_exported_values_exists_in_config_success(self) -> None:
         config = {"/a": ..., "/b": ...}
-        definition = make_def((CLUSTER,), config=config, export=[])
+        definition = make_def((CLUSTER,), config=config, exports=[])
 
         check_exported_values_exists_in_config(definition)
 
-        definition = make_def((CLUSTER,), config=config, export=["a"])
+        definition = make_def((CLUSTER,), config=config, exports=["a"])
         check_exported_values_exists_in_config(definition)
 
     def test_check_exported_values_exists_in_config_fail(self) -> None:
         config = {"/a": ..., "/b": ..., "/c/k": ...}
-        definition = make_def((CLUSTER,), config=config, export=["k"])
+        definition = make_def((CLUSTER,), config=config, exports=["k"])
 
         with self.assertRaises(BundleParsingError) as err:
             check_exported_values_exists_in_config(definition)
@@ -379,12 +381,12 @@ class TestBundleValidation(TestCase):
         config = {"/a": make_config(name="a", type="group"), "/b": make_config(name="b"), "/c/k": make_config(name="c")}
 
         with self.subTest("Import with no default"):
-            definition = make_def((CLUSTER,), config=config, import_=[{}])
+            definition = make_def((CLUSTER,), config=config, imports=[{}])
 
             check_import_defaults_exist_in_config(definition)
 
         with self.subTest("Import with existing default"):
-            definition = make_def((CLUSTER,), config=config, import_=[{"default": "a"}])
+            definition = make_def((CLUSTER,), config=config, imports=[{"default": "a"}])
 
             check_import_defaults_exist_in_config(definition)
 
@@ -396,10 +398,409 @@ class TestBundleValidation(TestCase):
             ("Import default not existing field", [{"default": "p"}]),
         ]:
             with self.subTest(case):
-                definition = make_def((CLUSTER,), config=config, import_=imports)
+                definition = make_def((CLUSTER,), config=config, imports=imports)
 
                 with self.assertRaises(BundleParsingError) as err:
                     check_import_defaults_exist_in_config(definition)
 
                 self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
                 self.assertIn("No import default group", err.exception.msg)
+
+
+class TestBundleDefinitionConvertion(TestCase):
+    maxDiff = None
+
+    def convert(self, source, path="."):
+        return tuple(schema_entry_to_definitions(source, path, Path()))
+
+    def test_simple_definition(self):
+        for type_, model in (("cluster", ClusterSchema), ("provider", ProviderSchema), ("host", HostSchema)):
+            with self.subTest(type_):
+                raw = {"type": type_, "name": "AAA", "version": 2.3}
+                schema = model.model_validate(raw)
+
+                expected = Definition(type=type_, name="AAA", display_name="AAA", version="2.3")
+
+                result = self.convert(schema, path=".")
+
+                self.assertEqual(len(result), 1)
+
+                key, definition = result[0]
+
+                self.assertEqual(key, (type_,))
+                self.assertEqual(definition, expected)
+
+    def test_simple_service_no_components(self):
+        raw = {"type": "service", "name": "strange", "display_name": "is Different", "version": 4}
+        schema = ServiceSchema.model_validate(raw)
+
+        expected = Definition(type="service", name="strange", display_name="is Different", version="4", path="inner")
+
+        result = self.convert(schema, path="inner")
+
+        self.assertEqual(len(result), 1)
+
+        key, definition = result[0]
+
+        self.assertEqual(key, ("service", "strange"))
+        self.assertEqual(definition, expected)
+
+    def test_simple_service_components(self):
+        raw = {
+            "type": "service",
+            "name": "strange",
+            "version": 4,
+            "components": {"a": None, "b": {"display_name": "ho ho"}},
+        }
+        schema = ServiceSchema.model_validate(raw)
+
+        expected_service = Definition(type="service", name="strange", display_name="strange", version="4", path="inner")
+        expected_component_a = Definition(type="component", name="a", display_name="a", version="4", path="inner")
+        expected_component_b = Definition(type="component", name="b", display_name="ho ho", version="4", path="inner")
+
+        result = self.convert(schema, path="inner")
+
+        self.assertEqual(len(result), 3)
+
+        key, definition = result[0]
+
+        self.assertEqual(key, ("service", "strange"))
+        self.assertEqual(definition, expected_service)
+
+        key, definition = result[1]
+
+        self.assertEqual(key, ("component", "strange", "a"))
+        self.assertEqual(definition, expected_component_a)
+
+        key, definition = result[2]
+
+        self.assertEqual(key, ("component", "strange", "b"))
+        self.assertEqual(definition, expected_component_b)
+
+    def test_actions(self):
+        raw = {
+            "type": "service",
+            "name": "strange",
+            "version": "aa.fb",
+            "actions": {
+                "simple_job": {"script": "wow.yaml", "type": "job", "script_type": "ansible"},
+                "simple_task": {
+                    "type": "task",
+                    "display_name": "Awesome ma I",
+                    "scripts": [
+                        {"name": "first", "script": "./root.yaml", "script_type": "ansible"},
+                        {
+                            "name": "second",
+                            "display_name": "Special",
+                            "script": "another.yaml",
+                            "script_type": "ansible",
+                        },
+                    ],
+                },
+                "jinja_config_job": {
+                    "script": "haha.yaml",
+                    "type": "job",
+                    "script_type": "python",
+                    "config_jinja": "./path/to/file.j2",
+                },
+                "jinja_scripts_task": {"type": "task", "scripts_jinja": "./path/to/file.j2"},
+                "not_full_states": {
+                    "script": "x.py",
+                    "type": "job",
+                    "script_type": "python",
+                    "states": {"available": "any"},
+                },
+                "not_full_masking": {
+                    "script": "x.py",
+                    "type": "job",
+                    "script_type": "python",
+                    "masking": {"state": {"unavailable": ["o"]}},
+                },
+            },
+        }
+        schema = ServiceSchema.model_validate(raw)
+        script_defaults = {
+            "params": {},
+            "allow_to_terminate": False,
+            "state_on_fail": "",
+            "multi_state_on_fail_set": [],
+            "multi_state_on_fail_unset": [],
+        }
+
+        actions = [
+            ActionDefinition(
+                type="job",
+                name="simple_job",
+                display_name="simple_job",
+                scripts=[
+                    JobSpec(
+                        name="simple_job",
+                        display_name="simple_job",
+                        script="wow.yaml",
+                        script_type=ScriptType.ANSIBLE,
+                        **script_defaults,
+                    )
+                ],
+            ),
+            ActionDefinition(
+                type="task",
+                name="simple_task",
+                display_name="Awesome ma I",
+                scripts=[
+                    JobSpec(
+                        name="first",
+                        display_name="first",
+                        script="inner/root.yaml",
+                        script_type=ScriptType.ANSIBLE,
+                        **script_defaults,
+                    ),
+                    JobSpec(
+                        name="second",
+                        display_name="Special",
+                        script="another.yaml",
+                        script_type=ScriptType.ANSIBLE,
+                        **script_defaults,
+                    ),
+                ],
+            ),
+            ActionDefinition(
+                type="job",
+                name="jinja_config_job",
+                display_name="jinja_config_job",
+                scripts=[
+                    JobSpec(
+                        name="jinja_config_job",
+                        display_name="jinja_config_job",
+                        script="haha.yaml",
+                        script_type=ScriptType.PYTHON,
+                        **script_defaults,
+                    )
+                ],
+                config_jinja="inner/path/to/file.j2",
+            ),
+            ActionDefinition(
+                type="task",
+                name="jinja_scripts_task",
+                display_name="jinja_scripts_task",
+                scripts=[],
+                scripts_jinja="inner/path/to/file.j2",
+            ),
+            ActionDefinition(
+                type="job",
+                name="not_full_states",
+                display_name="not_full_states",
+                scripts=[
+                    JobSpec(
+                        name="not_full_states",
+                        display_name="not_full_states",
+                        script="x.py",
+                        script_type=ScriptType.PYTHON,
+                        **script_defaults,
+                    )
+                ],
+                available_at=ActionAvailability(states="any", multi_states="any"),
+            ),
+            ActionDefinition(
+                type="job",
+                name="not_full_masking",
+                display_name="not_full_masking",
+                scripts=[
+                    JobSpec(
+                        name="not_full_masking",
+                        display_name="not_full_masking",
+                        script="x.py",
+                        script_type=ScriptType.PYTHON,
+                        **script_defaults,
+                    )
+                ],
+                unavailable_at=ActionAvailability(states=["o"], multi_states=[]),
+            ),
+        ]
+
+        (_, definition), *_ = self.convert(schema, path="inner")
+
+        self.assertEqual(definition.actions, actions)
+
+    def test_config(self):
+        raw = {
+            "type": "cluster",
+            "name": "strange",
+            "version": "aa.fb",
+            "config_group_customization": True,
+            "config": [
+                {"name": "a", "display_name": "Wow", "type": "string"},
+                {
+                    "name": "g1",
+                    "type": "group",
+                    "subs": [
+                        {"name": "a", "type": "string"},
+                        {"name": "b", "type": "text", "pattern": "oo", "default": "haha"},
+                    ],
+                },
+                {
+                    "name": "g2",
+                    "display_name": "Very Active",
+                    "type": "group",
+                    "activatable": True,
+                    "active": True,
+                    "subs": [
+                        {"name": "a", "type": "list", "default": ["u"]},
+                        {"name": "b", "type": "map", "default": {"k": "v"}},
+                        {"name": "whatshere", "type": "file", "default": "./special.txt"},
+                    ],
+                },
+                {"name": "b", "type": "integer", "default": 43, "group_customization": False},
+            ],
+        }
+        schema = ClusterSchema.model_validate(raw)
+
+        s = ConfigParamPlainSpec
+        cfg_val = {"group_customization": True}
+
+        expected = ConfigDefinition(
+            parameters={
+                spec.key: spec
+                for spec in [
+                    s(key=("a",), display_name="Wow", type="string", **cfg_val),
+                    s(key=("g1",), display_name="g1", type="group", **cfg_val),
+                    s(key=("g1", "a"), display_name="a", type="string", **cfg_val),
+                    s(
+                        key=("g1", "b"),
+                        display_name="b",
+                        type="text",
+                        limits={"pattern": "oo"},
+                        default="haha",
+                        **cfg_val,
+                    ),
+                    s(
+                        key=("g2",),
+                        display_name="Very Active",
+                        type="group",
+                        limits={"activatable": True, "active": True},
+                        **cfg_val,
+                    ),
+                    s(key=("g2", "a"), display_name="a", type="list", default=["u"], **cfg_val),
+                    s(key=("g2", "b"), display_name="b", type="map", default={"k": "v"}, **cfg_val),
+                    s(
+                        key=("g2", "whatshere"),
+                        display_name="whatshere",
+                        type="file",
+                        default="details/special.txt",
+                        **cfg_val,
+                    ),
+                    s(key=("b",), display_name="b", type="integer", default=43, group_customization=False),
+                ]
+            },
+            default_values={
+                ("g1", "b"): "haha",
+                ("g2", "a"): ["u"],
+                ("g2", "b"): {"k": "v"},
+                ("g2", "whatshere"): "details/special.txt",
+                ("b",): 43,
+            },
+            default_attrs={("g2",): {"active": True}},
+        )
+
+        (_, definition), *_ = self.convert(schema, "details")
+
+        self.assertDictEqual(definition.config.default_attrs, expected.default_attrs)
+        self.assertDictEqual(definition.config.default_values, expected.default_values)
+        self.assertDictEqual(definition.config.parameters, expected.parameters)
+
+    def test_upgrades(self):
+        raw = {
+            "type": "cluster",
+            "name": "strange",
+            "version": "aa.fb",
+            "upgrade": [
+                {
+                    "name": "full",
+                    "description": "this is desc",
+                    "display_name": "own Value",
+                    "states": {"available": ["o", "no"], "on_success": "upgr"},
+                    "from_edition": ["enterprise"],
+                    "versions": {"min": 0, "max": 43.3},
+                },
+                {"name": "simple", "versions": {"max_strict": 2}},
+                {
+                    "name": "action-like",
+                    "states": {"available": "any"},
+                    "from_edition": ["yet", "custom"],
+                    "versions": {"min_strict": "12.2.eee", "max": 43.3},
+                    "scripts": [
+                        {"name": "first", "script": "./root.yaml", "script_type": "ansible"},
+                        {
+                            "name": "second",
+                            "display_name": "Special",
+                            "script": "bundle_switch",
+                            "script_type": "internal",
+                        },
+                    ],
+                },
+            ],
+        }
+        schema = ClusterSchema.model_validate(raw)
+
+        script_defaults = {
+            "params": {},
+            "allow_to_terminate": False,
+            "state_on_fail": "",
+            "multi_state_on_fail_set": [],
+            "multi_state_on_fail_unset": [],
+        }
+
+        upgrades = [
+            UpgradeDefinition(
+                name="full",
+                description="this is desc",
+                display_name="own Value",
+                state_available=["o", "no"],
+                state_on_success="upgr",
+                restrictions=UpgradeRestrictions(
+                    min_version=VersionBound(value="0", is_strict=False),
+                    max_version=VersionBound(value="43.3", is_strict=False),
+                    from_editions=["enterprise"],
+                ),
+            ),
+            UpgradeDefinition(
+                name="simple",
+                display_name="simple",
+                restrictions=UpgradeRestrictions(max_version=VersionBound(value="2", is_strict=True)),
+            ),
+            UpgradeDefinition(
+                name="action-like",
+                display_name="action-like",
+                state_available="any",
+                restrictions=UpgradeRestrictions(
+                    min_version=VersionBound(value="12.2.eee", is_strict=True),
+                    max_version=VersionBound(value="43.3", is_strict=False),
+                    from_editions=["yet", "custom"],
+                ),
+                action=ActionDefinition(
+                    name="action-like",
+                    display_name="action-like",
+                    type="task",
+                    available_at=ActionAvailability(states="any", multi_states="any"),
+                    scripts=[
+                        JobSpec(
+                            name="first",
+                            display_name="first",
+                            script="root.yaml",
+                            script_type=ScriptType.ANSIBLE,
+                            **script_defaults,
+                        ),
+                        JobSpec(
+                            name="second",
+                            display_name="Special",
+                            script="bundle_switch",
+                            script_type=ScriptType.INTERNAL,
+                            **script_defaults,
+                        ),
+                    ],
+                ),
+            ),
+        ]
+
+        (_, definition), *_ = self.convert(schema, ".")
+
+        self.assertEqual(definition.upgrades, upgrades)
