@@ -1,0 +1,35 @@
+.markers {
+  margin-top: 5px;
+  background-color: white;
+  width: 300px;
+  opacity: 0.5;
+  border-radius: 8px;
+  color: var(--color-xblack);
+  padding: 0.25rem;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .marker {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+
+    &:hover {
+      background-color: var(--color-xgray-light-new);
+    }
+  }
+
+  & .markerText {
+    margin-left: 0.5rem;
+  }
+
+  .warningIcon {
+    color: var(--warning-color);
+  }
+
+  .errorIcon {
+    color: var(--error-color);
+  }
+}

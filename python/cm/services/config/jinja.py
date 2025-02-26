@@ -102,6 +102,7 @@ def _normalize_field(
     normalized_field["group_customization"] = field.get("group_customization", None)
     normalized_field["required"] = field.get("required", True)
     normalized_field["ui_options"] = field.get("ui_options", {})
+    normalized_field["ansible_options"] = field.get("ansible_options", {})
 
     if "subs" in field:
         for sub in field["subs"]:

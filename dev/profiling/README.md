@@ -123,3 +123,26 @@ The most simple way to prepare ADCM for silk profiling is:
 4. Commit your container state to new image (e.g. `docker commit adcm-pg-code hub.adsw.io/adcm/adcm:adcm-prof`)
 5. Run container from new image providing `DJANGO_SETTINGS_MODULE` as env variable
    and provide `-e DEBUG=1`
+
+
+### Django Debug Toolbar
+
+#### Description
+
+[django-debug-toolbar](https://github.com/django-commons/django-debug-toolbar) 
+is a configurable set of panels that display various debug information about the current request/response and 
+when clicked, display more details about the panel's content.
+
+#### How To
+1. Run ADCM container (named `adcm`, for example)
+2. Copy files to container and install dependencies
+   ```shell
+   docker cp dev/profiling/django_debug_toolbar/. adcm:adcm/python/adcm/ && \
+   docker exec -it adcm pip install django-debug-toolbar && \
+   docker exec -it -e DJANGO_SETTINGS_MODULE=adcm.ddt_settings adcm /adcm/python/manage.py collectstatic
+   ```
+3. Commit your container state to new image
+   ```shell
+   docker commit adcm hub.adsw.io/adcm/adcm:adcm-ddt
+   ```
+4. Run container from new image providing `DJANGO_SETTINGS_MODULE=adcm.ddt_settings`

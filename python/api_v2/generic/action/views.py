@@ -64,7 +64,13 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
     pagination_class = None
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
-        if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+        # Using getattr here for schema generation purposes.
+        # There's no `parent_object` attr during that process,
+        # so assuming it's absent is a correct path generally speaking.
+        if (
+            getattr(self, "parent_object", None) is None
+            or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists()
+        ):
             return Action.objects.none()
 
         self.prototype_objects = {}

@@ -1,5 +1,5 @@
 import type { Schema } from 'ajv/dist/2020';
-import { validate, generateFromSchema } from './jsonSchemaUtils';
+import { validate, generateFromSchema, swapTitleAsPropertyName } from './jsonSchemaUtils';
 
 describe('validate', () => {
   const schema: Schema = {
@@ -288,5 +288,173 @@ describe('generateFromSchema', () => {
 
     const errors3 = validate(schema, object);
     expect(errors3).not.toBe(null);
+  });
+});
+
+describe('swap title as property name', () => {
+  const simpleSchema: Schema = {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    required: ['clusterConfiguration'],
+    readOnly: false,
+    properties: {
+      clusterConfiguration: {
+        title: 'Cluster Configuration',
+        description: '',
+        type: 'object',
+        required: ['cluster_config'],
+        properties: {
+          cluster_config: {
+            type: 'object',
+            required: ['cluster'],
+            properties: {
+              cluster: {
+                title: 'cluster',
+                type: 'object',
+                required: ['cluster_name'],
+                additionalProperties: false,
+                properties: {
+                  cluster_name: {
+                    title: 'cluster name',
+                    type: 'string',
+                  },
+                  shard: {
+                    type: 'array',
+                    description: 'List of shards',
+                    items: {
+                      description: 'shard',
+                      type: 'object',
+                      required: ['internal_replica', 'weight'],
+                      properties: {
+                        internal_replica: {
+                          type: 'integer',
+                          minimum: 12,
+                        },
+                        weight: {
+                          type: 'integer',
+                          title: 'shard weight',
+                          maximum: 10,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const schemaWithAnyOf: Schema = {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    required: ['cluster_config'],
+    properties: {
+      cluster_config: {
+        title: 'CLUSTER CONFIG',
+        anyOf: [
+          { type: 'null' },
+          {
+            type: 'object',
+            required: ['cluster_name'],
+            properties: {
+              cluster_name: {
+                title: 'CLUSTER NAME',
+                type: 'string',
+                readOnly: false,
+              },
+            },
+          },
+        ],
+      },
+    },
+  };
+
+  test('swap simple schema', () => {
+    const newSchema = swapTitleAsPropertyName(simpleSchema);
+    expect(newSchema).toStrictEqual({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['Cluster Configuration'],
+      readOnly: false,
+      properties: {
+        'Cluster Configuration': {
+          title: 'clusterConfiguration',
+          description: '',
+          type: 'object',
+          required: ['cluster_config'],
+          properties: {
+            cluster_config: {
+              type: 'object',
+              required: ['cluster'],
+              properties: {
+                cluster: {
+                  title: 'cluster',
+                  type: 'object',
+                  required: ['cluster name'],
+                  additionalProperties: false,
+                  properties: {
+                    'cluster name': {
+                      title: 'cluster_name',
+                      type: 'string',
+                    },
+                    shard: {
+                      type: 'array',
+                      description: 'List of shards',
+                      items: {
+                        description: 'shard',
+                        type: 'object',
+                        required: ['internal_replica', 'shard weight'],
+                        properties: {
+                          internal_replica: {
+                            type: 'integer',
+                            minimum: 12,
+                          },
+                          'shard weight': {
+                            type: 'integer',
+                            title: 'weight',
+                            maximum: 10,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test('swap anyof schema', () => {
+    const newSchema = swapTitleAsPropertyName(schemaWithAnyOf);
+    expect(newSchema).toStrictEqual({
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['CLUSTER CONFIG'],
+      properties: {
+        'CLUSTER CONFIG': {
+          title: 'cluster_config',
+          anyOf: [
+            { type: 'null' },
+            {
+              type: 'object',
+              required: ['CLUSTER NAME'],
+              properties: {
+                'CLUSTER NAME': {
+                  title: 'cluster_name',
+                  type: 'string',
+                  readOnly: false,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
   });
 });

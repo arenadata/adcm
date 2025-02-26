@@ -12,6 +12,7 @@
 
 
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
+from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import TaskLog
 from django.contrib.contenttypes.models import ContentType
@@ -137,7 +138,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
         return queryset
 
     @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
-    @action(methods=["post"], detail=True, serializer_class=None)
+    @action(methods=["post"], detail=True, serializer_class=EmptySerializer)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         task = self.get_object()
         task.cancel()

@@ -1,0 +1,19 @@
+root:
+  match: dict
+  items:
+    nested: inner_group
+    quantity: integer
+
+inner_group:
+  match: dict
+  items:
+    attr: string
+    op: string
+    tech: string
+  invisible_items: [ "tech" ]
+
+integer:
+  match: int
+
+string:
+  match: string

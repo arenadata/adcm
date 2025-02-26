@@ -19,3 +19,5 @@ export { useLocalPagination } from './useLocalPagination';
 export { useMediaQuery } from './useMediaQuery';
 export { useSelectedItems } from './useSelectedItems';
 export { usePrevious } from './usePrevious';
+export { useOutsideClick } from './useOutsideClick';
+export { useClipboardCopy } from './useClipboardCopy/useClipboardCopy';

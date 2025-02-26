@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from cm.models import (
     Action,
+    ActionHostGroup,
     Component,
     JobLog,
     ObjectType,
@@ -21,7 +22,13 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -289,3 +296,22 @@ class TestTaskAudit(BaseAPITestCase):
                 **self.prepare_audit_object_arguments(expected_object=None),
                 user__username="admin",
             )
+
+    def test_adcm_6270_terminate_task_of_action_host_group(self):
+        response = self.client.v2[self.cluster_1, "action-host-groups"].post(data={"name": "Test AHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        ahg = ActionHostGroup.objects.get(pk=response.json()["id"])
+        task, _ = self.simulate_running_task(object_=ahg, action=self.cluster_action)
+
+        with patch("cm.models.os.kill"):
+            response = self.client.v2[task, "terminate"].post(data={})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_record(
+            operation_name=f"{self.cluster_action.display_name} cancelled",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=ahg),
+            user__username="admin",
+        )

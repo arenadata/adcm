@@ -18,7 +18,7 @@ from rest_framework.serializers import ModelSerializer
 
 from api_v2.bundle.serializers import BundleRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-from api_v2.serializers import LicenseSerializer
+from api_v2.serializers import LicenseDict
 
 
 class PrototypeSerializer(ModelSerializer):
@@ -39,7 +39,7 @@ class PrototypeSerializer(ModelSerializer):
         )
 
     @staticmethod
-    @extend_schema_field(field=LicenseSerializer)
+    @extend_schema_field(field=LicenseDict)
     def get_license(prototype: Prototype) -> dict:
         return {
             "status": prototype.license,

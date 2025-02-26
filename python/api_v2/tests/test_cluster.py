@@ -15,10 +15,12 @@ from unittest.mock import patch
 from adcm.tests.base import BusinessLogicMixin
 from cm.models import (
     Action,
+    ActionHostGroup,
     ADCMEntityStatus,
     AnsibleConfig,
     Cluster,
     Component,
+    ConfigHostGroup,
     ObjectType,
     Prototype,
     Service,
@@ -285,6 +287,30 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(Cluster.objects.filter(pk=self.cluster_1.pk).exists())
+
+    def test_adcm_6146_delete_generic_relations_on_cluster_deletion(self):
+        response = self.client.v2[self.cluster_1, "config-groups"].post(data={"name": "Cluster CHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        chg_id = response.json()["id"]
+        self.assertTrue(ConfigHostGroup.objects.filter(pk=chg_id).exists())
+
+        response = self.client.v2[self.cluster_1, "action-host-groups"].post(data={"name": "Cluster AHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        ahg_id = response.json()["id"]
+        self.assertTrue(ActionHostGroup.objects.filter(pk=ahg_id).exists())
+
+        ansible_config_id = AnsibleConfig.objects.get(
+            object_id=self.cluster_1.pk, object_type=ContentType.objects.get_for_model(self.cluster_1)
+        ).pk
+
+        response = self.client.v2[self.cluster_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertFalse(Cluster.objects.filter(pk=self.cluster_1.pk).exists())
+
+        self.assertFalse(ConfigHostGroup.objects.filter(pk=chg_id).exists())
+        self.assertFalse(ActionHostGroup.objects.filter(pk=ahg_id).exists())
+        self.assertFalse(AnsibleConfig.objects.filter(pk=ansible_config_id).exists())
 
     def test_service_prototypes_success(self):
         response = (self.client.v2[self.cluster_1] / "service-prototypes").get()

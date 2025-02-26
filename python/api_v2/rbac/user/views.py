@@ -13,6 +13,7 @@
 from typing import Any
 
 from adcm.permissions import VIEW_USER_PERMISSION
+from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import (
     extract_current_from_response,
@@ -190,7 +191,7 @@ class UserViewSet(
             return UserCreateSerializer
 
         elif self.action in ("block", "unblock"):
-            return None
+            return EmptySerializer
 
         return UserSerializer
 

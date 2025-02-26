@@ -14,6 +14,7 @@ from cm.errors import AdcmEx
 from cm.models import ConfigHostGroup, Host
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import CharField
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
@@ -44,6 +45,7 @@ class CHGSerializer(ModelSerializer):
 
 class HostCHGSerializer(ModelSerializer):
     id = PrimaryKeyRelatedField(queryset=Host.objects.all())
+    name = CharField()  # for schema without warnings
 
     class Meta:
         model = Host
