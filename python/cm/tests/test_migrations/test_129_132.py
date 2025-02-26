@@ -42,10 +42,6 @@ class TestDirectMigration(MigratorTestCase):
         m2m_chg_field = "confighostgroup_id" if state == "new_state" else "groupconfig_id"
 
         return {
-            "service_ct_id": ContentType.objects.get_for_model(ServiceModel).pk,
-            "component_ct_id": ContentType.objects.get_for_model(ComponentModel).pk,
-            "provider_ct_id": ContentType.objects.get_for_model(ProviderModel).pk,
-            "config_host_group_ct_id": ContentType.objects.get_for_model(ConfigHostGroupModel).pk,
             "cluster": tuple(Cluster.objects.values_list("id", "prototype_id").order_by("id")),
             "service": tuple(ServiceModel.objects.values_list("id", "cluster_id", "prototype_id").order_by("id")),
             "component": tuple(
