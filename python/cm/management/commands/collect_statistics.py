@@ -107,14 +107,6 @@ class Command(BaseCommand):
     @audit_background_operation(name='"Statistics collection on schedule" job', type_=AuditLogOperationType.UPDATE)
     def handle(self, *_, mode: str, **__):
         logger.debug(msg="Statistics collector: started")
-        statistics_data = {
-            "adcm": {
-                "uuid": str(ADCM.objects.values_list("uuid", flat=True).get()),
-                "version": settings.ADCM_VERSION,
-                "is_internal": is_internal(),
-            },
-            "format_version": 0.3,
-        }
         logger.debug(msg="Statistics collector: RBAC data preparation")
         rbac_entries_data: dict = RBACCollector(date_format=DATE_TIME_FORMAT)().model_dump()
         storage = TarFileWithJSONFileStorage(date_format=DATE_FORMAT)
@@ -126,6 +118,11 @@ class Command(BaseCommand):
                 if not get_enabled():
                     logger.debug(msg="Statistics collector: disabled")
                     return
+
+                # Shouldn't try to detect internal status (or write errors)
+                # until needed to.
+                # See ADCM-6359 for more info.
+                statistics_data = self._get_statistics_data()
 
                 logger.debug(
                     msg="Statistics collector: bundles data preparation, collect everything except 'enterprise' edition"
@@ -155,6 +152,10 @@ class Command(BaseCommand):
             case "archive-all":
                 logger.debug(msg="Statistics collector: 'archive-all' mode is used")
                 logger.debug(msg="Statistics collector: bundles data preparation, collect everything")
+                # Shouldn't try to detect internal status (or write errors)
+                # until needed to.
+                # See ADCM-6359 for more info.
+                statistics_data = self._get_statistics_data()
                 bundle_data: ADCMEntities = collect_all()
                 storage.add(
                     JSONFile(
@@ -178,3 +179,13 @@ class Command(BaseCommand):
                 pass
 
         logger.debug(msg="Statistics collector: finished")
+
+    def _get_statistics_data(self) -> dict:
+        return {
+            "adcm": {
+                "uuid": str(ADCM.objects.values_list("uuid", flat=True).get()),
+                "version": settings.ADCM_VERSION,
+                "is_internal": is_internal(),
+            },
+            "format_version": 0.3,
+        }
