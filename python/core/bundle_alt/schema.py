@@ -13,14 +13,18 @@
 from pathlib import Path
 from typing import Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field
 from typing_extensions import TypedDict
 import yaml
 
 VERSION: TypeAlias = int | float | str
-VENV: TypeAlias = Annotated[Literal["default", "2.9"], Field(default="default")]
-MONITORING: TypeAlias = Annotated[Literal["active", "passive"], Field(default="active")]
+VENV: TypeAlias = Annotated[Literal["default", "2.9"] | None, Field(default=None)]
+MONITORING: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(default=None)]
 ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
+
+
+class _BaseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 ########
@@ -49,15 +53,15 @@ def convert_config(config: list | dict) -> list:
     return new_config
 
 
-class _BaseConfigItemSchema(BaseModel):
+class _BaseConfigItemSchema(_BaseModel):
     type: str
     name: str
     read_only: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
     writable: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
-    required: Annotated[bool, Field(default=True)]
+    required: Annotated[bool | None, Field(default=None)]
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
-    ui_options: Annotated[dict, Field(default_factory=dict)]
+    ui_options: Annotated[dict | None, Field(default=None)]
     group_customization: Annotated[bool | None, Field(default=None)]
 
 
@@ -118,7 +122,7 @@ class ConfigItemOptionSchema(_BaseConfigItemSchema):
     default: Annotated[str | int | float | None, Field(default=None)]
 
 
-class _BaseVariantSourceSchema(BaseModel):
+class _BaseVariantSourceSchema(_BaseModel):
     type: str
     strict: Annotated[bool | None, Field(default=None)]
 
@@ -234,7 +238,7 @@ CONFIG_TYPE: TypeAlias = Annotated[
 
 
 class StatesSchema(TypedDict):
-    available: Annotated[str | list[str] | None, Field(default=None)]
+    available: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
     on_success: Annotated[str | None, Field(default=None)]
     on_fail: Annotated[str | None, Field(default=None)]
 
@@ -284,9 +288,11 @@ class UpgradeScriptSchema(TypedDict):
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
 
 
-class _BaseUpgradeSchema(TypedDict):
+class _BaseUpgradeSchema(_BaseModel):
     name: str
     versions: VersionsSchema
+    display_name: Annotated[str | None, Field(default=None)]
+    description: Annotated[str | None, Field(default=None)]
     states: Annotated[StatesSchema, Field(default=None)]
     from_edition: Annotated[str | list[str] | None, Field(default=None)]
     scripts: Annotated[list[UpgradeScriptSchema] | None, Field(default=None)]
@@ -317,7 +323,7 @@ class ActionStatesSchema(TypedDict):
     on_fail: Annotated[str | None, Field(default=None)]
 
 
-class _BaseActionSchema(BaseModel):
+class _BaseActionSchema(_BaseModel):
     type: str
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
@@ -356,7 +362,7 @@ class ScriptsSchema(TypedDict):
     display_name: Annotated[str | None, Field(default=None)]
     params: Annotated[dict | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
-    allow_to_terminate: Annotated[bool, Field(default=False)]
+    allow_to_terminate: Annotated[bool | None, Field(default=None)]
 
 
 class TaskPlainSchema(_BaseTaskSchema):
@@ -377,8 +383,18 @@ ACTIONS_TYPE: TypeAlias = Annotated[
 #########
 
 
+def init_not_defined_components(components: dict[str, Any]) -> dict[str, "ComponentSchema"]:
+    if not isinstance(components, dict):
+        return components
+
+    for component_name in filter(lambda comp_key: components[comp_key] is None, components):
+        components[component_name] = ComponentSchema()
+
+    return components
+
+
 class FlagAutogenerationSchema(TypedDict):
-    enable_outdated_config: Annotated[bool, Field(default=False)]
+    enable_outdated_config: bool
 
 
 class ServiceRequiresSchema(TypedDict):
@@ -397,13 +413,13 @@ class BoundSchema(TypedDict):
 
 
 class ImportSchema(TypedDict):
-    versions: Annotated[VersionsSchema, Field(default_factory=dict)]
-    required: Annotated[bool, Field(default=False)]
-    multibind: Annotated[bool, Field(default=False)]
-    default: Annotated[list[str], Field(default_factory=list)]
+    versions: Annotated[VersionsSchema | None, Field(default=None)]
+    required: Annotated[bool | None, Field(default=None)]
+    multibind: Annotated[bool | None, Field(default=None)]
+    default: Annotated[list[str] | None, Field(default=None)]
 
 
-class _BaseObjectSchema(BaseModel):
+class _BaseObjectSchema(_BaseModel):
     type: Literal["cluster", "service", "provider", "host", "adcm"]
     name: str
     version: VERSION
@@ -427,21 +443,21 @@ class ClusterSchema(_BaseObjectSchema):
     upgrade: Annotated[list[ClusterUpgradeSchema] | None, Field(default=None)]
     imports: Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]
     export: Annotated[str | list[str] | None, Field(default=None)]
-    config_group_customization: Annotated[bool, Field(default=False)]
-    allow_maintenance_mode: Annotated[bool, Field(default=False)]
+    config_group_customization: Annotated[bool | None, Field(default=None)]
+    allow_maintenance_mode: Annotated[bool | None, Field(default=None)]
 
 
-class ComponentSchema(BaseModel):
+class ComponentSchema(_BaseModel):
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
     monitoring: MONITORING
     constraint: Annotated[list[int | Literal["+", "odd"]] | None, Field(default=None, min_length=1, max_length=2)]
     bound_to: Annotated[BoundSchema | None, Field(default=None)]
-    params: Annotated[Any, Field(default=None)]
+    params: Annotated[Any, Field(default=None, deprecated=True)]
     requires: Annotated[list[ComponentRequiresSchema] | None, Field(default=None)]
     config: CONFIG_TYPE
     actions: ACTIONS_TYPE
-    config_group_customization: Annotated[bool, Field(default=False)]
+    config_group_customization: Annotated[bool | None, Field(default=None)]
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
     venv: VENV
 
@@ -451,7 +467,9 @@ class ServiceSchema(_BaseObjectSchema):
     imports: Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]
     export: Annotated[str | list[str] | None, Field(default=None)]
     shared: Annotated[bool | None, Field(default=None, deprecated=True)]
-    components: Annotated[dict[str, ComponentSchema | None] | None, Field(default=None)]
+    components: Annotated[
+        dict[str, ComponentSchema | None] | None, Field(default=None), AfterValidator(init_not_defined_components)
+    ]
     required: Annotated[bool | None, Field(default=None)]
     requires: Annotated[list[ServiceRequiresSchema] | None, Field(default=None)]
     monitoring: MONITORING
