@@ -15,14 +15,22 @@ from pathlib import Path
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
 
-from core.bundle_alt._config import check_default_values
+from core.bundle_alt._config import check_default_values, key_to_str
+from core.bundle_alt._yspec import FormatError, check_rule, process_rule
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
 from core.bundle_alt.representation import dependency_entry_to_key, find_parent, make_ref
 from core.bundle_alt.types import ActionDefinition, BundleDefinitionKey, Definition, DefinitionsMap, UpgradeDefinition
 from core.errors import BundleParsingError
 
+# This section should be in sort of global consts module
+ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
+ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
+ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
+ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
+# section end
 
-def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path) -> None:
+
+def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, yspec_schema: dict) -> None:
     # special, require too much context to include it in main loop
     check_requires(definitions)
 
@@ -31,7 +39,7 @@ def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path) 
         check_exported_values_exists_in_config(definition)
         check_upgrades(definition, definitions)
 
-        check_config(definition)
+        check_config(definition, bundle_root, yspec_schema)
         check_actions(definition, definitions, bundle_root)
 
         # unify check arguments and make it a map for each type?
@@ -83,7 +91,44 @@ def check_bound_to(key: BundleDefinitionKey, definition: Definition, definitions
         raise BundleParsingError(code="COMPONENT_CONSTRAINT_ERROR", msg=message)
 
 
-def check_config(definition: Definition) -> None:
+def check_config(definition: Definition, bundle_root: Path, yspec_schema: dict) -> None:
+    if not definition.config:
+        return
+
+    for key, parameter in definition.config.parameters.items():
+        if parameter.type in ("file", "secretfile"):
+            default = definition.config.default_values.get(key)
+            if default and not (bundle_root / default).is_file():
+                raise BundleParsingError(
+                    code="INVALID_CONFIG_DEFINITION",
+                    msg=f"Default file is missing for {'.'.join(key)} {definition.type} {definition.name}: {default}",
+                )
+
+        if parameter.type == "structure":
+            param_schema = parameter.limits["yspec"]
+            key_repr = key_to_str(key)
+            try:
+                process_rule(data=param_schema, rules=yspec_schema, name="root")
+            except FormatError as error:
+                msg = (
+                    f"Error in yspec file of config key {key_repr} from"
+                    f" '{definition.display_name}' {definition.type}: {error}"
+                )
+                raise BundleParsingError(code="INVALID_OBJECT_DEFINITION", msg=msg) from error
+
+            success, error = check_rule(rules=param_schema)
+            if not success:
+                raise BundleParsingError(
+                    code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{key_repr}" error: {error}'
+                )
+
+            for _, value in param_schema.items():
+                if value["match"] in {"one_of", "dict_key_selection", "set", "none", "any"}:
+                    raise BundleParsingError(
+                        code="CONFIG_TYPE_ERROR",
+                        msg=f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported",
+                    )
+
     check_default_values(
         parameters=definition.config.parameters,
         values=definition.config.default_values,
@@ -94,13 +139,17 @@ def check_config(definition: Definition) -> None:
 
 def check_actions(definition: Definition, definitions: DefinitionsMap, bundle_root: Path) -> None:
     for action in definition.actions:
+        check_mm_host_action_is_allowed(action, definition)
         check_action_hc_acl_rules(action.hostcomponentmap, definition, definitions)
         check_jinja_templates_are_correct(action, bundle_root)
 
 
 def check_upgrades(definition: Definition, definitions: DefinitionsMap) -> None:
     for upgrade in definition.upgrades:
-        check_action_hc_acl_rules(upgrade.hostcomponentmap, definition, definitions)
+        if not upgrade.action:
+            continue
+
+        check_action_hc_acl_rules(upgrade.action.hostcomponentmap, definition, definitions)
         check_bundle_switch_amount_for_upgrade_action(definition, upgrade)
 
 
@@ -113,6 +162,22 @@ def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Pat
 
 
 # Atomic checks
+
+
+def check_mm_host_action_is_allowed(action: ActionDefinition, definition: Definition) -> None:
+    if action.name not in (ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME):
+        return
+
+    if definition.type != "cluster":
+        raise BundleParsingError(
+            code="INVALID_OBJECT_DEFINITION", msg=f'Action named "{action.name}" can be started only in cluster context'
+        )
+
+    if not action.is_host_action:
+        raise BundleParsingError(
+            code="INVALID_OBJECT_DEFINITION",
+            msg=f'Action named "{action.name}" should have "host_action: true" property',
+        )
 
 
 def check_action_hc_acl_rules(hostcomponentmap: list, definition: Definition, definitions: DefinitionsMap) -> None:

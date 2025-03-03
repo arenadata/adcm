@@ -144,8 +144,8 @@ class VersionBound(NamedTuple):
 
 @dataclass(slots=True)
 class UpgradeRestrictions:
-    min_version: VersionBound | None = None
-    max_version: VersionBound | None = None
+    min_version: VersionBound = VersionBound(value="0", is_strict=False)
+    max_version: VersionBound = VersionBound(value="0", is_strict=False)
     from_editions: list[str] = field(default_factory=partial(list, ("community",)))
 
 
@@ -157,11 +157,12 @@ class UpgradeDefinition:
     description: str = ""
 
     # Details
+    # should be set, defaults are tricky
     restrictions: UpgradeRestrictions = field(default_factory=UpgradeRestrictions)
     # improve typing here, it should be similar/the same as with action
     # ;; also how is it calculated??
     state_available: str | list = field(default_factory=list)
-    state_on_success: str | None = None
+    state_on_success: str = ""
 
     # Related objects
     action: ActionDefinition | None = None
@@ -185,6 +186,7 @@ class Definition(GeneralObjectDescription):
     # Details
     display_name: str = ""
     description: str = ""
+    edition: str = "community"
     license: License = field(default_factory=partial(License))
     monitoring: Literal["active", "passive"] = "active"
     allow_maintenance_mode: bool = False

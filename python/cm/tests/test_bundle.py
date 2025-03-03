@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from unittest import TestCase
 import json
 import tempfile
 
@@ -604,7 +605,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
             self.assertDictEqual(paths, expected_scripts)
 
 
-class TestBundleSchema(BaseTestCase):
+class TestBundleSchema(TestCase):
     """Here we're testing schemas retrieval on minimal definitions"""
 
     @staticmethod
@@ -624,7 +625,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               flag_autogeneration:
                 enable_outdated_config: true
@@ -639,7 +640,7 @@ class TestBundleSchema(BaseTestCase):
 
             expected = {
                 "type": "cluster",
-                "name": "Some Cluster",
+                "name": "some_cluster",
                 "version": 12,
                 "adcm_min_version": None,
                 "display_name": None,
@@ -669,7 +670,7 @@ class TestBundleSchema(BaseTestCase):
             # cluster
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               extra: field
             """
@@ -680,7 +681,7 @@ class TestBundleSchema(BaseTestCase):
             # flag_autogeneration
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               flag_autogeneration:
                 enable_outdated_config: true
@@ -693,7 +694,7 @@ class TestBundleSchema(BaseTestCase):
             # import
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               import:
                 service:
@@ -709,11 +710,11 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               requires:
                 - service: s1
@@ -725,7 +726,7 @@ class TestBundleSchema(BaseTestCase):
             _, service_schema = schemas
             expected_service = {
                 "type": "service",
-                "name": "Some Service",
+                "name": "some_service",
                 "version": 11,
                 "adcm_min_version": None,
                 "display_name": None,
@@ -751,11 +752,11 @@ class TestBundleSchema(BaseTestCase):
             # service
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               attr: not valid
             """
@@ -766,11 +767,11 @@ class TestBundleSchema(BaseTestCase):
             # requires
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               requires:
                 - service: s1
@@ -784,11 +785,11 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
             """
@@ -800,11 +801,11 @@ class TestBundleSchema(BaseTestCase):
 
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
                 some_component:
@@ -838,11 +839,11 @@ class TestBundleSchema(BaseTestCase):
 
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
                 some_component:
@@ -858,11 +859,11 @@ class TestBundleSchema(BaseTestCase):
             # component
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
                 some_component:
@@ -876,11 +877,11 @@ class TestBundleSchema(BaseTestCase):
             # bound_to
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
                 some_component:
@@ -896,11 +897,11 @@ class TestBundleSchema(BaseTestCase):
             # requires
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
 
             - type: service
-              name: Some Service
+              name: some_service
               version: 11
               components:
                 some_component:
@@ -916,7 +917,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: provider
-              name: Some Provider
+              name: some_provider
               version: 8
             """
             raw = yaml.safe_load(yaml_schema)
@@ -925,7 +926,7 @@ class TestBundleSchema(BaseTestCase):
 
             expected_provider = {
                 "type": "provider",
-                "name": "Some Provider",
+                "name": "some_provider",
                 "version": 8,
                 "adcm_min_version": None,
                 "display_name": None,
@@ -944,7 +945,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("With extra field"):
             yaml_schema = """
             - type: provider
-              name: Some Provider
+              name: some_provider
               version: 8
               new: field
             """
@@ -956,11 +957,11 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: provider
-              name: Some Provider
+              name: some_provider
               version: 8
 
             - type: host
-              name: Some Host
+              name: some_host
               version: 9
             """
             raw = yaml.safe_load(yaml_schema)
@@ -969,7 +970,7 @@ class TestBundleSchema(BaseTestCase):
 
             _, host_schema = schemas
             expected_host = {
-                "name": "Some Host",
+                "name": "some_host",
                 "type": "host",
                 "version": 9,
                 "actions": None,
@@ -987,11 +988,11 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("With extra field"):
             yaml_schema = """
             - type: provider
-              name: Some Provider
+              name: some_provider
               version: 8
 
             - type: host
-              name: Some Host
+              name: some_host
               version: 9
               newfield: somevalue
             """
@@ -1003,7 +1004,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: adcm
-              name: Some ADCM
+              name: some_adcm
               version: 3
             """
             raw = yaml.safe_load(yaml_schema)
@@ -1011,7 +1012,7 @@ class TestBundleSchema(BaseTestCase):
             self.assertEqual(len(schemas), 1)
 
             expected_adcm = {
-                "name": "Some ADCM",
+                "name": "some_adcm",
                 "type": "adcm",
                 "version": 3,
                 "actions": None,
@@ -1030,7 +1031,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("With extra field"):
             yaml_schema = """
             - type: adcm
-              name: Some ADCM
+              name: some_adcm
               version: 3
               adcm_property: adcm_value
             """
@@ -1042,10 +1043,10 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
                       max: 2
@@ -1073,7 +1074,7 @@ class TestBundleSchema(BaseTestCase):
             self.assertEqual(len(upgrades), 1)
 
             expected_upgrade = {
-                "name": "Some Upgrade",
+                "name": "some_upgrade",
                 "versions": {"min": 1, "max": 2, "min_strict": None, "max_strict": None},
                 "states": {"available": "any", "on_success": "upgraded", "on_fail": "failed"},
                 "scripts": [
@@ -1101,12 +1102,13 @@ class TestBundleSchema(BaseTestCase):
 
             yaml_schema = """
             - type: provider
-              name: Some Provider
+              name: some_provider
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                     min: 8
+                    max: 12
             """
             raw = yaml.safe_load(yaml_schema)
             schemas = self.validate_schema(raw)
@@ -1114,8 +1116,8 @@ class TestBundleSchema(BaseTestCase):
             self.assertEqual(len(upgrades), 1)
 
             expected_upgrade = {
-                "name": "Some Upgrade",
-                "versions": {"min": 8, "max": None, "min_strict": None, "max_strict": None},
+                "name": "some_upgrade",
+                "versions": {"min": 8, "max": 12, "min_strict": None, "max_strict": None},
                 "display_name": None,
                 "description": None,
                 "states": None,
@@ -1134,12 +1136,13 @@ class TestBundleSchema(BaseTestCase):
             # upgrade
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   upgrade_property: 123
             """
             raw = yaml.safe_load(yaml_schema)
@@ -1149,12 +1152,13 @@ class TestBundleSchema(BaseTestCase):
             # versions
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                       maximum_version: 12
             """
             raw = yaml.safe_load(yaml_schema)
@@ -1164,12 +1168,13 @@ class TestBundleSchema(BaseTestCase):
             # states
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   states:
                     available: any
                     on_success: upgraded
@@ -1183,12 +1188,13 @@ class TestBundleSchema(BaseTestCase):
             # scripts
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   scripts:
                     - name: script_1
                       script: script.yaml
@@ -1202,12 +1208,13 @@ class TestBundleSchema(BaseTestCase):
             # masking
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   masking:
                     state:
                       unavailable: any
@@ -1222,12 +1229,13 @@ class TestBundleSchema(BaseTestCase):
             # masking.state
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   masking:
                     state:
                       unavailable: any
@@ -1242,12 +1250,13 @@ class TestBundleSchema(BaseTestCase):
             # masking.multi_state
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 4
                   masking:
                     state:
                       unavailable: any
@@ -1262,12 +1271,13 @@ class TestBundleSchema(BaseTestCase):
             # hc_acl
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               upgrade:
-                - name: Some Upgrade
+                - name: some_upgrade
                   versions:
                       min: 1
+                      max: 5
                   hc_acl:
                     - component: component_1
                       action: add
@@ -1282,7 +1292,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 job:
@@ -1387,7 +1397,7 @@ class TestBundleSchema(BaseTestCase):
             # job
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 job:
@@ -1404,7 +1414,7 @@ class TestBundleSchema(BaseTestCase):
             # task
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 task_plain:
@@ -1422,7 +1432,7 @@ class TestBundleSchema(BaseTestCase):
             # scripts
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 task_plain:
@@ -1440,7 +1450,7 @@ class TestBundleSchema(BaseTestCase):
             # on_fail
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 task_plain:
@@ -1460,7 +1470,7 @@ class TestBundleSchema(BaseTestCase):
             # multi_state
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 3
               actions:
                 task_plain:
@@ -1483,7 +1493,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("Success case"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               config:
                 - name: bool_field
@@ -1728,7 +1738,7 @@ class TestBundleSchema(BaseTestCase):
         with self.subTest("With extra field"):
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               config:
                 - name: bool_field
@@ -1742,7 +1752,7 @@ class TestBundleSchema(BaseTestCase):
 
             yaml_schema = """
             - type: cluster
-              name: Some Cluster
+              name: some_cluster
               version: 12
               config:
                 - name: group_field
