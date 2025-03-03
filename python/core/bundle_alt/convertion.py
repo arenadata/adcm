@@ -12,6 +12,7 @@
 
 from pathlib import Path
 from typing import Any, Iterable, Literal
+import re
 
 import yaml
 
@@ -31,7 +32,9 @@ from core.bundle_alt._extract import (
     when,
     with_defaults,
 )
-from core.bundle_alt.schema import ADCMSchema, ClusterSchema, HostSchema, ProviderSchema, ServiceSchema
+from core.bundle_alt.predicates import is_component_key
+from core.bundle_alt.representation import find_parent
+from core.bundle_alt.schema import ADCMSchema, ClusterSchema, ComponentSchema, HostSchema, ProviderSchema, ServiceSchema
 from core.bundle_alt.types import (
     ActionAvailability,
     ActionDefinition,
@@ -101,35 +104,33 @@ def check_variant(config: dict) -> dict:
 # COPY End
 
 
-def schema_entry_to_definitions(
-    entry: ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema,
+def schema_entry_to_definition(
+    key: BundleDefinitionKey,
+    entry: ClusterSchema | ServiceSchema | ComponentSchema | ProviderSchema | HostSchema | ADCMSchema,
+    entries: dict[
+        BundleDefinitionKey, ClusterSchema | ServiceSchema | ComponentSchema | ProviderSchema | HostSchema | ADCMSchema
+    ],
     source_relative_path: str,
     bundle_root: Path,
-) -> Iterable[tuple[BundleDefinitionKey, Definition]]:
+) -> Definition:
     convert = _prepare_converter()
+
     plain_entity = entry.model_dump(exclude_unset=True, exclude_none=True, exclude_defaults=True)
-
-    is_service = isinstance(entry, ServiceSchema)
-
-    key = (entry.type,) if not is_service else (entry.type, entry.name)
     context = {"bundle_root": bundle_root, "path": source_relative_path, "key": key, "object": plain_entity}
+
+    if is_component_key(key):
+        parent = find_parent(key, entries)
+        inherited = {
+            "name": key[-1],
+            "version": parent.version,
+            "type": "component",
+            "adcm_min_version": parent.adcm_min_version,
+        }
+        plain_entity |= inherited
 
     definition: Definition = convert(plain_entity, context)
 
-    yield key, definition
-
-    if is_service:
-        for name, component_entity in plain_entity.get("components", {}).items():
-            inherited = {"name": name, "version": definition.version, "type": "component"}
-            component_full_entity = (component_entity or {}) | inherited
-
-            key = ("component", definition.name, name)
-
-            component_definition = convert(
-                component_full_entity, context | {"key": key, "object": component_full_entity}
-            )
-
-            yield key, component_definition
+    return definition
 
 
 # Converter
@@ -216,7 +217,6 @@ def _prepare_converter() -> Step:
                     ),
                     to(UpgradeRestrictions),
                 ),
-                # todo fix name for action
                 "action": (when(is_set("scripts")), extract_action),
             }
         ),
@@ -256,6 +256,8 @@ def _prepare_converter() -> Step:
             }
         ),
         to(Definition),
+        # have to patch it afterwards due to lack of data before
+        _patch_upgrade_action_names,
     )
 
 
@@ -284,6 +286,46 @@ def _from_object(key: str):
 
 
 # Specific Steps
+
+
+def _patch_upgrade_action_names(result: Definition, _: dict) -> Definition:
+    if not result.upgrades:
+        return result
+
+    owner = result
+
+    for upgrade in result.upgrades:
+        if not upgrade.action:
+            continue
+
+        min_ = upgrade.restrictions.min_version
+        max_ = upgrade.restrictions.max_version
+
+        versions = f"{min_.value}_strict_{min_.is_strict}-" f"{max_.value}_strict_{max_.is_strict}"
+        editions = f"editions-{'_'.join(upgrade.restrictions.from_editions)}"
+        available = f"state_available-{'_'.join(upgrade.state_available)}"
+        on_success = f"state_on_success-{upgrade.state_on_success}"
+
+        parts = (
+            owner.name,
+            owner.version,
+            # todo add edition to def
+            owner.edition,
+            upgrade.name,
+            versions,
+            editions,
+            available,
+            on_success,
+        )
+
+        name = "_".join(map(str, parts))
+        name = re.sub(r"\s+", "_", name).strip().lower()
+        name = re.sub(r"[()]", "", name)
+
+        upgrade.action.name = name
+        upgrade.action.display_name = f"Upgrade: {upgrade.name}"
+
+    return result
 
 
 def _extract_license(result: dict, context: dict) -> License | None:

@@ -19,7 +19,7 @@ class NotFoundError(ADCMMessageError):
 
 class _AdcmExLikeError(ADCMCoreError):
     def __init__(self, code: str, msg: str) -> None:
-        super().__init__()
+        super().__init__(msg)
         self.code = code
         self.msg = msg
 

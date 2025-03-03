@@ -13,7 +13,7 @@
 from pathlib import Path
 from unittest import TestCase
 
-from core.bundle_alt.convertion import schema_entry_to_definitions
+from core.bundle_alt.convertion import schema_entry_to_definition
 from core.bundle_alt.schema import ClusterSchema, HostSchema, ProviderSchema, ServiceSchema
 from core.bundle_alt.types import (
     ActionAvailability,
@@ -23,6 +23,8 @@ from core.bundle_alt.types import (
     VersionBound,
 )
 from core.bundle_alt.validation import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
     ActionDefinition,
     Definition,
     UpgradeDefinition,
@@ -32,6 +34,7 @@ from core.bundle_alt.validation import (
     check_component_constraint_length,
     check_exported_values_exists_in_config,
     check_import_defaults_exist_in_config,
+    check_mm_host_action_is_allowed,
     check_requires,
 )
 from core.errors import BundleParsingError
@@ -118,6 +121,39 @@ class TestBundleValidation(TestCase):
         }
         self.missing_message = "No required"
         self.not_self_message = "can not require themself"
+
+    def test_check_mm_on_host_wrong_object_type_fail(self) -> None:
+        for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
+            for type_ in ("service", "component", "provider", "host", "adcm"):
+                with self.subTest(f"{name}-{type_}"):
+                    action = ActionDefinition(type="job", name=name)
+                    definition = Definition(type=type_, name="aaa", version="1")
+
+                    with self.assertRaises(BundleParsingError) as err:
+                        check_mm_host_action_is_allowed(action, definition)
+
+                    self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
+                    self.assertEqual(err.exception.msg, f'Action named "{name}" can be started only in cluster context')
+
+    def test_check_mm_on_host_not_host_action_type_fail(self) -> None:
+        for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
+            with self.subTest(name):
+                action = ActionDefinition(type="task", name=name, is_host_action=False)
+                definition = Definition(type="cluster", name="aaa", version="1")
+
+                with self.assertRaises(BundleParsingError) as err:
+                    check_mm_host_action_is_allowed(action, definition)
+
+                self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
+                self.assertEqual(err.exception.msg, f'Action named "{name}" should have "host_action: true" property')
+
+    def test_check_mm_on_host_not_host_action_type_success(self) -> None:
+        for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
+            with self.subTest(name):
+                action = ActionDefinition(type="task", name=name, is_host_action=True)
+                definition = Definition(type="cluster", name="aaa", version="1")
+
+                check_mm_host_action_is_allowed(action, definition)
 
     def test_check_requires_success(self) -> None:
         for case_name, key, requires in [
@@ -411,7 +447,16 @@ class TestBundleDefinitionConvertion(TestCase):
     maxDiff = None
 
     def convert(self, source, path="."):
-        return tuple(schema_entry_to_definitions(source, path, Path()))
+        if isinstance(source, ServiceSchema):
+            entries: dict = {("service", source.name): source}
+            for name, component in (source.components or {}).items():
+                entries[("component", source.name, name)] = component
+        else:
+            entries = {(source.type,): source}
+
+        return tuple(
+            (key, schema_entry_to_definition(key, entry, entries, path, Path())) for key, entry in entries.items()
+        )
 
     def test_simple_definition(self):
         for type_, model in (("cluster", ClusterSchema), ("provider", ProviderSchema), ("host", HostSchema)):
@@ -721,7 +766,7 @@ class TestBundleDefinitionConvertion(TestCase):
                     "from_edition": ["enterprise"],
                     "versions": {"min": 0, "max": 43.3},
                 },
-                {"name": "simple", "versions": {"max_strict": 2}},
+                {"name": "simple", "versions": {"max_strict": 2, "min_strict": 0}},
                 {
                     "name": "action-like",
                     "states": {"available": "any"},
@@ -740,6 +785,11 @@ class TestBundleDefinitionConvertion(TestCase):
             ],
         }
         schema = ClusterSchema.model_validate(raw)
+
+        upgrade_action_name = (
+            "strange_aa.fb_community_action-like_12.2.eee_strict_true-43.3_strict_false_"
+            "editions-yet_custom_state_available-a_n_y_state_on_success-"
+        )
 
         script_defaults = {
             "params": {},
@@ -765,7 +815,10 @@ class TestBundleDefinitionConvertion(TestCase):
             UpgradeDefinition(
                 name="simple",
                 display_name="simple",
-                restrictions=UpgradeRestrictions(max_version=VersionBound(value="2", is_strict=True)),
+                restrictions=UpgradeRestrictions(
+                    min_version=VersionBound(value="0", is_strict=True),
+                    max_version=VersionBound(value="2", is_strict=True),
+                ),
             ),
             UpgradeDefinition(
                 name="action-like",
@@ -777,8 +830,8 @@ class TestBundleDefinitionConvertion(TestCase):
                     from_editions=["yet", "custom"],
                 ),
                 action=ActionDefinition(
-                    name="action-like",
-                    display_name="action-like",
+                    name=upgrade_action_name,
+                    display_name="Upgrade: action-like",
                     type="task",
                     available_at=ActionAvailability(states="any", multi_states="any"),
                     scripts=[
