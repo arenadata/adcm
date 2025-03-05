@@ -70,7 +70,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", host_1.fqdn): (
+            ("hosts", host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
@@ -89,7 +89,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         }
 
         expected_data_for_host = {
-            ("HOST", "hosts", host_1.fqdn): (
+            ("hosts", host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
@@ -128,13 +128,13 @@ class TestClusterHosts(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", host_1.fqdn): (
+            ("hosts", host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", host_2.fqdn): (
+            ("hosts", host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,
@@ -153,7 +153,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         }
 
         expected_data_for_host_1 = {
-            ("HOST", "hosts", host_1.fqdn): (
+            ("hosts", host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
@@ -173,7 +173,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         }
 
         expected_data_for_host_2 = {
-            ("HOST", "hosts", host_2.fqdn): (
+            ("hosts", host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,

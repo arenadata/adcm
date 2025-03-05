@@ -81,7 +81,7 @@ class TestHostAction(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", f"{self.host_1.fqdn}"): (
+            ("hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -93,58 +93,10 @@ class TestHostAction(BaseInventoryTestCase):
                     "component_config_integer": 103,
                 },
             ),
-            ("CLUSTER", "hosts", f"{self.host_2.fqdn}"): (
+            ("hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_one_component.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                    "cluster_config_integer": 101,
-                    "cluster_id": self.cluster.pk,
-                    "service_id": self.service.pk,
-                    "service_config_integer": 102,
-                    "component_id": self.component.pk,
-                    "component_config_integer": 103,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", f"{self.host_2.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_one_component.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                    "cluster_config_integer": 101,
-                    "cluster_id": self.cluster.pk,
-                    "service_id": self.service.pk,
-                    "service_config_integer": 102,
-                    "component_id": self.component.pk,
-                    "component_config_integer": 103,
-                },
-            ),
-            (self.service.name, "hosts", f"{self.host_2.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            ("target", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_one_component.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                    "cluster_id": self.cluster.pk,
-                    "service_id": self.service.pk,
-                    "component_id": self.component.pk,
-                    "cluster_config_integer": 101,
-                    "service_config_integer": 102,
-                    "component_config_integer": 103,
                 },
             ),
             ("vars", "cluster"): (

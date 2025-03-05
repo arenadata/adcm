@@ -86,10 +86,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for key_chain, template_data in templates_data.items():
             template_path, kwargs = template_data
 
-            full_key_chain = ("all", "children", *key_chain)
-
-            if "vars" in key_chain:
-                full_key_chain = ("all", *key_chain)
+            full_key_chain = ("all", *key_chain)
 
             expected_data = self.render_json_template(file=template_path, context=kwargs)
             actual_data = reduce(dict.get, full_key_chain, data)

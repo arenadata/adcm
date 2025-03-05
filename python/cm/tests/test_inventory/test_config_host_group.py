@@ -187,9 +187,8 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                 actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
                 self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
-                for group in actual_inventory["all"]["children"].values():
-                    for host_name, actual_data in group["hosts"].items():
-                        self.assertDictEqual(
-                            actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
-                        )
-                        self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])
+                for host_name, actual_data in actual_inventory["all"]["hosts"].items():
+                    self.assertDictEqual(
+                        actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
+                    )
+                    self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])
