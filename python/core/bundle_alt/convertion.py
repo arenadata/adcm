@@ -10,28 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal
 import re
 
 import yaml
 
-from core.bundle_alt._extract import (
-    Step,
-    any_true,
-    cast,
-    compose,
-    const,
-    each,
-    either,
-    extract,
-    from_context,
-    get,
-    is_set,
-    to,
-    when,
-    with_defaults,
-)
 from core.bundle_alt.predicates import is_component_key
 from core.bundle_alt.representation import find_parent
 from core.bundle_alt.schema import ADCMSchema, ClusterSchema, ComponentSchema, HostSchema, ProviderSchema, ServiceSchema
@@ -113,8 +98,6 @@ def schema_entry_to_definition(
     source_relative_path: str,
     bundle_root: Path,
 ) -> Definition:
-    convert = _prepare_converter()
-
     plain_entity = entry.model_dump(exclude_unset=True, exclude_none=True, exclude_defaults=True)
     context = {"bundle_root": bundle_root, "path": source_relative_path, "key": key, "object": plain_entity}
 
@@ -128,147 +111,185 @@ def schema_entry_to_definition(
         }
         plain_entity |= inherited
 
-    definition: Definition = convert(plain_entity, context)
+    definition: Definition = _convert(plain_entity, context)
 
     return definition
 
 
-# Converter
+def _convert(entity: dict, context: dict):
+    result = {
+        "name": entity["name"],
+        "type": entity["type"],
+        "version": str(entity["version"]),
+        "path": context["path"],
+        "upgrades": _extract_upgrades(entity, context),
+        "actions": _extract_actions(entity, context),
+        "config": _extract_config(entity, context),
+        "imports": _extract_imports(entity),
+        "exports": _extract_exports(entity),
+        "license": _extract_license(entity, context),
+    }
 
-_patch_display_name = either(get("display_name"), get("name"))
+    _fill_value(result, entity, "adcm_min_version", cast=str)
+    _fill_value(result, entity, "description")
+    _fill_value(result, entity, "edition")
+    _fill_value(result, entity, "flag_autogeneration")
+    _fill_value(result, entity, "venv")
+    _fill_value(result, entity, "shared")
+    _fill_value(result, entity, "requried")
+    _fill_value(result, entity, "monitoring")
+    _fill_value(result, entity, "config_group_customization")
+    _fill_value(result, entity, "allow_maintenance_mode")
+    _fill_value(result, entity, "constraint")
+    _fill_value(result, entity, "bound_to")
+    _fill_value(result, entity, "requires")
+
+    _patch_display_name(result, entity)
+
+    definition = Definition(**_drop_unset(result))
+    _patch_upgrade_action_names(definition)
+
+    return definition
 
 
-def _prepare_converter() -> Step:
-    extract_config = compose(get("config"), _to_flat_config_dict, _to_config_definition)
+def _extract_imports(entity: dict) -> list[dict] | None:
+    imports = entity.get("imports")
+    if imports is None:
+        return None
 
-    extract_job_spec = compose(
-        _flatten_on_fail,
-        extract(
-            {
-                ".": (
-                    "name",
-                    "params",
-                    "state_on_fail",
-                    "multi_state_on_fail_set",
-                    "multi_state_on_fail_unset",
-                    "allow_to_terminate",
-                ),
-                "display_name": _patch_display_name,
-                "script": (get("script"), _normalize_path),
-                "script_type": (get("script_type"), cast(ScriptType)),
-            }
-        ),
-        # thou most definitions has defaults, JobSpec doesn't,
-        # so for a time being we'll provide it in here
-        with_defaults({"params": {}, "allow_to_terminate": False}),
-        to(JobSpec),
-    )
+    return _to_named_list(imports)
 
+
+def _extract_exports(entity: dict) -> list | None:
+    exports = entity.get("export")
+    if exports is None:
+        return None
+
+    return _ensure_list(exports)
+
+
+def _extract_actions(entity: dict, context: dict) -> list[ActionDefinition] | None:
+    actions = entity.get("actions")
+    if actions is None:
+        return None
+
+    return [_extract_action(action, context) for action in _to_named_list(actions)]
+
+
+def _extract_action(entity, context):
     # thou we rely on default from definition classes,
     # specifics of availability states detection force to duplicate default in here
     defaults_for_available_at = {"states": [], "multi_states": "any"}
     defaults_for_unavailable_at = {"states": [], "multi_states": []}
 
-    extract_action = compose(
-        _universalise_action_types,
-        _states_to_masking,
-        extract(
-            {
-                ".": (
-                    "type",
-                    "name",
-                    "description",
-                    "ui_options",
-                    "allow_to_terminate",
-                    "allow_for_action_host_group",
-                    "allow_in_maintenance_mode",
-                    "venv",
-                    "partial_execution",
-                ),
-                "display_name": _patch_display_name,
-                "hostcomponentmap": get("hc_acl"),
-                "config": extract_config,
-                "config_jinja": (get("config_jinja"), _normalize_path),
-                "scripts": (get("scripts"), each(extract_job_spec)),
-                "scripts_jinja": (get("scripts_jinja"), _normalize_path),
-                "available_at": _extract_action_availability("available", defaults_for_available_at),
-                "unavailable_at": _extract_action_availability("unavailable", defaults_for_unavailable_at),
-                "on_success": _extract_action_completion("on_success"),
-                "on_fail": _extract_action_completion("on_fail"),
-            }
-        ),
-        to(ActionDefinition),
-    )
+    entity = _states_to_masking(_universalise_action_types(entity))
 
-    extract_upgrade = compose(
-        extract(
-            {
-                ".": ("name", "description"),
-                "display_name": _patch_display_name,
-                "state_available": (get("states"), get("available")),
-                "state_on_success": (get("states"), get("on_success")),
-                "restrictions": (
-                    extract(
-                        {
-                            "min_version": _extract_version_bound("min"),
-                            "max_version": _extract_version_bound("max"),
-                            "from_editions": get("from_edition"),
-                        }
-                    ),
-                    to(UpgradeRestrictions),
-                ),
-                "action": (when(is_set("scripts")), extract_action),
-            }
-        ),
-        to(UpgradeDefinition),
-    )
+    result = {
+        "config": _extract_config(entity, context),
+        "scripts": _extract_scripts(entity, context),
+        "available_at": _extract_action_availability(entity, "available", defaults_for_available_at),
+        "unavailable_at": _extract_action_availability(entity, "unavailable", defaults_for_unavailable_at),
+        "on_success": _extract_action_completion(entity, "on_success"),
+        "on_fail": _extract_action_completion(entity, "on_fail"),
+    }
 
-    return compose(
-        extract(
-            {
-                ".": (
-                    "name",
-                    "type",
-                    "description",
-                    "edition",
-                    "flag_autogeneration",
-                    "venv",
-                    "shared",
-                    "requried",
-                    "monitoring",
-                    # propagate?
-                    "config_group_customization",
-                    "allow_maintenance_mode",
-                    "constraint",
-                    "bound_to",
-                    "requires",
-                ),
-                "display_name": _patch_display_name,
-                "path": from_context("path"),
-                "adcm_min_version": (get("adcm_min_version"), cast(str)),
-                "version": (get("version"), cast(str)),
-                "config": extract_config,
-                "upgrades": (get("upgrade"), each(extract_upgrade)),
-                "license": _extract_license,
-                "actions": (get("actions"), _to_named_list, each(extract_action)),
-                "imports": (get("imports"), _to_named_list),
-                "exports": (get("export"), _ensure_list),
-            }
-        ),
-        to(Definition),
-        # have to patch it afterwards due to lack of data before
-        _patch_upgrade_action_names,
-    )
+    _fill_value(result, entity, "type")
+    _fill_value(result, entity, "name")
+    _fill_value(result, entity, "description")
+    _fill_value(result, entity, "ui_options")
+    _fill_value(result, entity, "allow_to_terminate")
+    _fill_value(result, entity, "allow_for_action_host_group")
+    _fill_value(result, entity, "allow_in_maintenance_mode")
+    _fill_value(result, entity, "venv")
+    _fill_value(result, entity, "partial_execution")
+    _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
+    _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
+    _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
+
+    _patch_display_name(result, entity)
+
+    return ActionDefinition(**_drop_unset(result))
+
+
+def _extract_scripts(entity: dict, context: dict) -> list[JobSpec] | None:
+    scripts = entity.get("scripts")
+    if scripts is None:
+        return None
+
+    scripts_list = []
+
+    for script in map(_flatten_on_fail, scripts):
+        result = {}
+
+        _fill_value(result, script, "name")
+        _fill_value(result, script, "params")
+        _fill_value(result, script, "state_on_fail")
+        _fill_value(result, script, "multi_state_on_fail_set")
+        _fill_value(result, script, "multi_state_on_fail_unset")
+        _fill_value(result, script, "allow_to_terminate")
+        _fill_value(result, script, "script", cast=partial(_normalize_path, context=context))
+        _fill_value(result, script, "script_type", cast=ScriptType)
+
+        _patch_display_name(result, script)
+
+        # set defaults before cleanup
+        scripts_list.append(JobSpec(**_drop_unset({"params": {}, "allow_to_terminate": False} | result)))
+
+    return scripts_list
+
+
+def _extract_config(entity: dict, context: dict) -> ConfigDefinition | None:
+    config = entity.get("config")
+    if config is None:
+        return None
+
+    flat_config = dict(__iterate_parameters(group=config, key=()))
+    return _to_config_definition(flat_config, context)
+
+
+def _extract_upgrades(entity: dict, context: dict) -> list[UpgradeDefinition] | None:
+    upgrades = entity.get("upgrade")
+    if upgrades is None:
+        return None
+
+    upgrades_list = []
+
+    for upgrade in upgrades:
+        result = {}
+
+        _fill_value(result, upgrade, "name")
+        _fill_value(result, upgrade, "description")
+        _fill_value(result, upgrade, "state_available", source_keys=("states", "available"))
+        _fill_value(result, upgrade, "state_on_success", source_keys=("states", "on_success"))
+
+        result["restrictions"] = UpgradeRestrictions(
+            **_drop_unset(
+                {
+                    "min_version": _extract_version_bound(upgrade, "min"),
+                    "max_version": _extract_version_bound(upgrade, "max"),
+                    "from_editions": upgrade.get("from_edition"),
+                }
+            )
+        )
+
+        if "scripts" in upgrade:
+            result["action"] = _extract_action(upgrade, context)
+
+        _patch_display_name(result, upgrade)
+
+        upgrades_list.append(UpgradeDefinition(**_drop_unset(result)))
+
+    return upgrades_list
 
 
 # Generic Steps
 
 
-def _to_named_list(result: dict[str, dict], _) -> list[dict]:
+def _to_named_list(result: dict[str, dict]) -> list[dict]:
     return [{"name": key, **value} for key, value in result.items()]
 
 
-def _ensure_list(result: list | Any, _) -> list:
+def _ensure_list(result: list | Any) -> list:
     if not isinstance(result, list):
         return [result]
 
@@ -281,14 +302,10 @@ def _normalize_path(result: str, context: dict) -> str:
     return str(path_from_root)
 
 
-def _from_object(key: str):
-    return lambda _, c: c["object"].get(key)
-
-
 # Specific Steps
 
 
-def _patch_upgrade_action_names(result: Definition, _: dict) -> Definition:
+def _patch_upgrade_action_names(result: Definition) -> Definition:
     if not result.upgrades:
         return result
 
@@ -309,7 +326,6 @@ def _patch_upgrade_action_names(result: Definition, _: dict) -> Definition:
         parts = (
             owner.name,
             owner.version,
-            # todo add edition to def
             owner.edition,
             upgrade.name,
             versions,
@@ -336,7 +352,7 @@ def _extract_license(result: dict, context: dict) -> License | None:
     return License(status="unaccepted", path=_normalize_path(context["path"], license_path))
 
 
-def _universalise_action_types(result: dict, _: dict):
+def _universalise_action_types(result: dict):
     if "type" not in result:
         # upgrade case
         return result | {"type": "task"}
@@ -350,7 +366,7 @@ def _universalise_action_types(result: dict, _: dict):
     return result
 
 
-def _states_to_masking(result: dict, _):
+def _states_to_masking(result: dict):
     if "states" not in result or "masking" in result:
         return result
 
@@ -376,7 +392,7 @@ def _states_to_masking(result: dict, _):
     return result | extra
 
 
-def _flatten_on_fail(result: dict, _) -> dict:
+def _flatten_on_fail(result: dict) -> dict:
     on_fail = result.get("on_fail", {})
     if isinstance(on_fail, str):
         on_fail: dict = {"state": on_fail}
@@ -392,75 +408,50 @@ def _flatten_on_fail(result: dict, _) -> dict:
     return result | extra_fields
 
 
-def _extract_version_bound(x: Literal["min", "max"]) -> tuple:
+def _extract_version_bound(entry: dict, x: Literal["min", "max"]) -> VersionBound | None:
     strict_key = f"{x}_strict"
-    return (
-        get("versions"),
-        when(any_true(is_set(x), is_set(strict_key))),
-        extract({"value": compose(either(get(x), get(strict_key)), cast(str)), "is_strict": is_set(strict_key)}),
-        to(VersionBound),
-    )
+
+    versions = entry.get("versions")
+    if versions is None:
+        return None
+
+    if x in versions:
+        return VersionBound(value=str(versions[x]), is_strict=False)
+
+    if strict_key in versions:
+        return VersionBound(value=str(versions[strict_key]), is_strict=True)
+
+    return None
 
 
-def _extract_action_availability(x: Literal["available", "unavailable"], defaults: dict):
-    return (
-        either(
-            compose(
-                get("masking"),
-                extract(
-                    {
-                        "states": (get("state"), get(x)),
-                        "multi_states": (get("multi_state"), get(x)),
-                    }
-                ),
-                with_defaults(defaults),
-            ),
-            const(defaults),
-        ),
-        to(ActionAvailability),
-    )
+def _extract_action_availability(entity: dict, x: Literal["available", "unavailable"], defaults: dict):
+    masking = entity.get("masking")
+    if masking is None:
+        return None
+
+    result = {}
+
+    _fill_value(result, masking, "states", source_keys=("state", x))
+    _fill_value(result, masking, "multi_states", source_keys=("multi_state", x))
+
+    return ActionAvailability(**_drop_unset(defaults | result))
 
 
-def _extract_action_completion(outcome: Literal["on_success", "on_fail"]):
-    return (
-        get("masking"),
-        extract(
-            {
-                "set_state": (get(outcome), get("state")),
-                "set_multi_state": (get(outcome), get("multi_state"), get("set")),
-                "unset_multi_state": (get(outcome), get("multi_state"), get("unset")),
-            }
-        ),
-        to(OnCompletion),
-    )
+def _extract_action_completion(entity: dict, outcome: Literal["on_success", "on_fail"]):
+    masking = entity.get("masking")
+    if masking is None:
+        return None
 
+    result = {}
 
-def _to_flat_config_dict(result: list[dict], _) -> dict[ParameterKey, dict]:
-    return dict(__iterate_parameters(group=result, key=()))
+    _fill_value(result, masking, "set_state", source_keys=(outcome, "state"))
+    _fill_value(result, masking, "set_multi_state", source_keys=(outcome, "multi_state", "set"))
+    _fill_value(result, masking, "unset_multi_state", source_keys=(outcome, "multi_state", "unset"))
+
+    return OnCompletion(**_drop_unset(result))
 
 
 def _to_config_definition(result: dict[ParameterKey, dict], context: dict) -> ConfigDefinition:
-    extract_spec = compose(
-        extract(
-            {
-                ".": (
-                    "type",
-                    "description",
-                    "required",
-                    "ui_options",
-                    "default",
-                    "read_only",
-                    "writable",
-                ),
-                "key": from_context("_param_key"),
-                "display_name": _patch_display_name,
-                "group_customization": either(get("group_customization"), _from_object("config_group_customization")),
-                "limits": extract({".": ("min", "max", "pattern", "option", "activatable")}),
-            }
-        ),
-        to(ConfigParamPlainSpec),
-    )
-
     parameters = {}
     values = {}
     attrs = {}
@@ -469,7 +460,7 @@ def _to_config_definition(result: dict[ParameterKey, dict], context: dict) -> Co
 
     for key, param in result.items():
         param_context = {"_param_key": key}
-        spec = extract_spec(param, context | param_context)
+        spec = _extract_spec(param, context | param_context)
 
         # > Fine-tuning (patching spec) section
 
@@ -501,6 +492,38 @@ def _to_config_definition(result: dict[ParameterKey, dict], context: dict) -> Co
     return ConfigDefinition(parameters=parameters, default_values=values, default_attrs=attrs)
 
 
+def _extract_spec(entity: dict, context: dict) -> ConfigParamPlainSpec:
+    result = {"key": context["_param_key"]}
+
+    limits = _drop_unset(
+        {
+            "min": entity.get("min"),
+            "max": entity.get("max"),
+            "pattern": entity.get("pattern"),
+            "option": entity.get("option"),
+            "activatable": entity.get("activatable"),
+        }
+    )
+    if limits:
+        result["limits"] = limits
+
+    _fill_value(result, entity, "type")
+    _fill_value(result, entity, "description")
+    _fill_value(result, entity, "required")
+    _fill_value(result, entity, "ui_options")
+    _fill_value(result, entity, "default")
+    _fill_value(result, entity, "read_only")
+    _fill_value(result, entity, "writable")
+
+    result["group_customization"] = entity.get(
+        "group_customization", context["object"].get("config_group_customization")
+    )
+
+    _patch_display_name(result, entity)
+
+    return ConfigParamPlainSpec(**_drop_unset(result))
+
+
 def __iterate_parameters(group: list[dict], key: ParameterKey) -> Iterable[tuple[ParameterKey, dict]]:
     for param in group:
         param_key = (*key, str(param["name"]))
@@ -509,3 +532,34 @@ def __iterate_parameters(group: list[dict], key: ParameterKey) -> Iterable[tuple
 
         if param["type"] == "group":
             yield from __iterate_parameters(group=param["subs"], key=param_key)
+
+
+# Utils
+
+
+def _patch_display_name(target: dict, source: dict) -> None:
+    target["display_name"] = source.get("display_name") or source["name"]
+
+
+def _drop_unset(d: dict) -> dict:
+    return {k: v for k, v in d.items() if v is not None}
+
+
+def _fill_value(
+    target: dict, source: dict, key: str, source_keys: tuple[str, ...] | None = None, cast: Callable | None = None
+) -> None:
+    source_keys = source_keys or (key,)
+
+    value = source
+    for k in source_keys:
+        value = value.get(k)
+        if value is None:
+            break
+
+    if value is None:
+        return
+
+    if cast:
+        value = cast(value)
+
+    target[key] = value
