@@ -69,43 +69,13 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
         }
 
         expected_data_base = {
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
                 },
             ),
-            ("CLUSTER.maintenance_mode", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.maintenance_mode", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}.maintenance_mode", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            ("target", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -133,7 +103,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
 
         expected_data_for_host_2 = {
             **expected_data_base,
-            ("target", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -141,7 +111,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
             ),
         }
 
-        expected_data_for_host_2.pop(("target", "hosts", self.host_1.fqdn), None)
+        expected_data_for_host_2.pop(("hosts", self.host_1.fqdn), None)
 
         for obj, action, expected_topology, expected_data in [
             (self.host_1, self.cluster_action, expected_topology_base, expected_data_base),
@@ -168,46 +138,16 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
         }
 
         expected_data_base = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            ("target", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
                 },
             ),
             ("vars", "cluster"): (
@@ -234,7 +174,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
 
         expected_data_for_host_2 = {
             **expected_data_base,
-            ("target", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -242,7 +182,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
             ),
         }
 
-        expected_data_for_host_2.pop(("target", "hosts", self.host_1.fqdn))
+        expected_data_for_host_2.pop(("hosts", self.host_1.fqdn))
 
         for obj, action, expected_topology, expected_data in [
             (self.host_1, self.cluster_action, expected_topology_base, expected_data_base),
@@ -269,46 +209,16 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
         }
 
         expected_data_base = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            ("target", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
                 },
             ),
             ("vars", "cluster"): (
@@ -335,7 +245,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
 
         expected_data_for_host_2 = {
             **expected_data_base,
-            ("target", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -343,7 +253,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
             ),
         }
 
-        expected_data_for_host_2.pop(("target", "hosts", self.host_1.fqdn))
+        expected_data_for_host_2.pop(("hosts", self.host_1.fqdn))
 
         for obj, action, expected_topology, expected_data in [
             (self.host_1, self.cluster_action, expected_topology_base, expected_data_base),

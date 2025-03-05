@@ -214,16 +214,16 @@ def _get_inventory_for_action_from_cluster_bundle(
     return {
         "all": {
             "children": {
-                group_name: {
-                    "hosts": {
-                        host_name: basic_nodes[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
-                        | alternative_host_nodes.get(host_name, {})
-                        for host_id, host_name in sorted(host_tuples, key=itemgetter(0))
-                    }
-                }
+                group_name: {"hosts": {host_name: {} for _, host_name in sorted(host_tuples, key=itemgetter(0))}}
                 for group_name, host_tuples in host_groups.items()
             },
             "vars": cluster_vars_dict,
+            "hosts": {
+                host_name: basic_nodes[ADCMCoreType.HOST, host_id].model_dump(by_alias=True, exclude_defaults=True)
+                | alternative_host_nodes.get(host_name, {})
+                for host_tuples in host_groups.values()
+                for host_id, host_name in sorted(set(host_tuples), key=itemgetter(0))
+            },
         }
     }
 
@@ -273,14 +273,15 @@ def _get_inventory_for_action_from_provider_bundle(object_: Provider | Host) -> 
         "all": {
             "children": {
                 group_name: {
-                    "hosts": {
-                        host_name: nodes_info[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
-                        | alternative_host_nodes.get(host_name, {})
-                        for host_id, host_name in sorted(hosts_group, key=itemgetter(0))
-                    },
+                    "hosts": {host_name: {} for _, host_name in sorted(hosts_group, key=itemgetter(0))},
                 }
             },
             "vars": provider_vars,
+            "hosts": {
+                host_name: nodes_info[ADCMCoreType.HOST, host_id].model_dump(by_alias=True, exclude_defaults=True)
+                | alternative_host_nodes.get(host_name, {})
+                for host_id, host_name in sorted(set(hosts_group), key=itemgetter(0))
+            },
         }
     }
 

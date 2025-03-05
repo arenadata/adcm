@@ -77,7 +77,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         expected_topology_host_2 = {"HOST": [self.host_2.fqdn]}
 
         expected_data_provider = {
-            ("PROVIDER", "hosts"): (
+            ("hosts",): (
                 self.templates_dir / "before_upgrade_2_hosts.json.j2",
                 {
                     "host_1_id": self.host_1.pk,
@@ -94,7 +94,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         }
 
         expected_data_host_1 = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "before_upgrade_1_host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -109,7 +109,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             ),
         }
         expected_data_host_2 = {
-            ("HOST", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "before_upgrade_1_host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -182,49 +182,13 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service_two_components.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service_two_components.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service_two_components.name}.{self.component_1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service_two_components.name}.{self.component_1.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service_two_components.name}.{self.component_2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service_two_components.name}.{self.component_2.name}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -345,18 +309,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         expected_data = {
             ("vars", "cluster"): (cluster_file, {}),
             ("vars", "services"): (services_file, {}),
-            ("CLUSTER", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("CLUSTER", "hosts", "host_1", "services"): expected_host_1_services,
-            ("CLUSTER", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components.component_1", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components.component_1", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components.component_1", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components.component_2", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components.component_2", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components.component_2", "hosts", "host_2", "services"): expected_host_2_services,
+            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("hosts", "host_1", "services"): expected_host_1_services,
+            ("hosts", "host_2", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -390,18 +345,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         expected_data = {
             ("vars", "cluster"): (cluster_file, {}),
             ("vars", "services"): (services_file, {}),
-            ("CLUSTER", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("CLUSTER", "hosts", "host_1", "services"): expected_host_1_services,
-            ("CLUSTER", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components.component_1", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components.component_1", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components.component_1", "hosts", "host_2", "services"): expected_host_2_services,
-            ("service_two_components.component_2", "hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("service_two_components.component_2", "hosts", "host_1", "services"): expected_host_1_services,
-            ("service_two_components.component_2", "hosts", "host_2", "services"): expected_host_2_services,
+            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("hosts", "host_1", "services"): expected_host_1_services,
+            ("hosts", "host_2", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -472,7 +418,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         group_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}.group.{component_group.id}"
 
-        hosts_node = inventory["all"]["children"]["CLUSTER"]["hosts"]
+        hosts_node = inventory["all"]["hosts"]
         node = hosts_node["host_1"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
         self.assertEqual(node["plain"], f"{group_prefix}.plain.")
         self.assertEqual(node["secte"], f"{group_prefix}.secte.")
