@@ -44,9 +44,14 @@ class ADCMCoreError(Exception):
 
 class ADCMMessageError(ADCMCoreError):
     def __init__(self, message: str):
-        super().__init__()
+        super().__init__(message)
 
         self.message = message
+
+
+class ADCMComposableError(ADCMMessageError):
+    def add_prefix(self, prefix: str) -> None:
+        self.message = f"{prefix}\n{self.message}"
 
 
 class ADCMCoreType(Enum):

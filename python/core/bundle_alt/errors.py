@@ -10,15 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreError
+from core.types import ADCMComposableError, ADCMCoreError
 
 
-class BundleParsingError(ADCMCoreError):
+class BundleParsingError(ADCMComposableError):
+    """
+    Use for errors occured during parsing and structural validation of bundle's definitions
+    """
+
+
+class BundleValidationError(ADCMComposableError):
+    """
+    Use for errors in objects relations and overall "sanity" of bundle definitions
+    """
+
+
+class BundleParsingAdcmExLikeError(ADCMCoreError):
     def __init__(self, code: str, msg: str) -> None:
-        super().__init__()
+        super().__init__(f"{code}: {msg}")
         self.code = code
         self.msg = msg
 
 
-class BundleUnpackingError(BundleParsingError):
+class BundleUnpackingError(BundleParsingAdcmExLikeError):
     pass

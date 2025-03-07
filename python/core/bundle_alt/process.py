@@ -19,6 +19,7 @@ import yaml
 
 from core.bundle_alt.bundle_load import get_config_files
 from core.bundle_alt.convertion import schema_entry_to_definition
+from core.bundle_alt.errors import BundleParsingAdcmExLikeError, BundleParsingError
 from core.bundle_alt.representation import build_parent_key_safe, find_parent
 from core.bundle_alt.schema import (
     ADCMSchema,
@@ -27,11 +28,10 @@ from core.bundle_alt.schema import (
     HostSchema,
     ProviderSchema,
     ServiceSchema,
-    parse_raw_definition,
+    parse,
 )
 from core.bundle_alt.types import BundleDefinitionKey, Definition
 from core.bundle_alt.validation import check_definitions_are_valid
-from core.errors import BundleParsingError
 
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
@@ -78,9 +78,15 @@ def _parse_bundle_definitions(
     definitions_map = {}
     paths_map = {}
 
-    for raw_definition, path_to_source in definition_path_pairs:
+    # ensure it's re-entrable
+    pairs = tuple(definition_path_pairs)
+
+    # need to check all versions first
+    for raw_definition, _ in pairs:
         check_adcm_min_version(current=adcm_version, required=str(raw_definition.get("adcm_min_version", "0")))
-        root_level_definition = parse_raw_definition(raw_definition)
+
+    for raw_definition, path_to_source in pairs:
+        root_level_definition = parse(raw_definition)
         for key, parsed_definition in _flatten_definitions(root_level_definition):
             _check_is_not_duplicate(key, definitions_map)
             definitions_map[key] = parsed_definition
@@ -105,10 +111,10 @@ def _check_no_definition_type_conflicts(keys: Iterable[BundleDefinitionKey]) -> 
             "Definitions in bundle doesn't fit cluster, provider or ADCM format: "
             f"{', '.join(sorted(definition_types))}"
         )
-        raise BundleParsingError(code="BUNDLE_ERROR", msg=message)
+        raise BundleParsingAdcmExLikeError(code="BUNDLE_ERROR", msg=message)
 
     if is_cluster_bundle and not definition_types.issuperset({"cluster", "service"}):
-        raise BundleParsingError(
+        raise BundleParsingAdcmExLikeError(
             code="BUNDLE_ERROR", msg="Both cluster and service definitions should be present in cluster bundle"
         )
 
@@ -155,15 +161,14 @@ def _flatten_definitions(definition: _ParsedRootDefinition) -> Iterable[tuple[Bu
 
 def _check_is_not_duplicate(key: BundleDefinitionKey, existing_entries: Iterable[BundleDefinitionKey]) -> None:
     if key in existing_entries:
-        raise BundleParsingError(code="INVALID_OBJECT_DEFINITION", msg=f"Duplicate definition of {key}")
+        raise BundleParsingError(f"Duplicate definition of {key}")
 
 
 # Probably worth moving the section below in separate modules
 def check_adcm_min_version(current: str, required: str):
     if compare_adcm_versions(required, current) > 0:
         raise BundleParsingError(
-            code="BUNDLE_VERSION_ERROR",
-            msg=f"This bundle required ADCM version equal to {required} or newer.",
+            f"This bundle required ADCM version equal to {required} or newer.",
         )
 
 

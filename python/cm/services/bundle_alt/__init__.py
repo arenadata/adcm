@@ -9,21 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from core.types import ADCMCoreError, ADCMMessageError
-
-
-class NotFoundError(ADCMMessageError):
-    ...
-
-
-class ConfigValueError(ADCMCoreError):
-    """
-    Added as part of ADCM-6355.
-    May be removed/reworked later.
-    """
-
-    def __init__(self, code: str, msg: str) -> None:
-        super().__init__(msg)
-        self.code = code
-        self.msg = msg

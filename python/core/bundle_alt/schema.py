@@ -10,17 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-from typing import Annotated, Any, Iterable, Literal, TypeAlias
+from contextlib import contextmanager
+from typing import Annotated, Any, Literal, TypeAlias
 import re
 
 from adcm_version import compare_prototype_versions
-from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import TypedDict
-import yaml
 
 from core.bundle_alt._pattern import Pattern
-from core.errors import BundleParsingError
+from core.bundle_alt.errors import BundleParsingError
 
 # Should be moved to consts section
 ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
@@ -49,12 +57,8 @@ ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
 
 def validate_name(name: str) -> str:
     if NAME_REGEX.fullmatch(name) is None:
-        # raise value error?
-        # or identify object right here?
-        # otherwise it's almost useless
-        raise BundleParsingError(
-            code="WRONG_NAME",
-            msg="Name is incorrect. Only latin characters, digits, "
+        raise ValueError(
+            "Name is incorrect. Only latin characters, digits, "
             "dots (.), dashes (-), and underscores (_) are allowed.",
         )
 
@@ -118,25 +122,19 @@ def convert_config(config: list | dict) -> list:
     return new_config
 
 
-def check_license_allowed(type_: str) -> None:
+def license_allowed_for_type(type_: str) -> None:
     allowed_types = {"cluster", "service", "provider"}
 
     if type_ not in allowed_types:
-        raise BundleParsingError(
-            code="INVALID_OBJECT_DEFINITION", msg="License can be placed in cluster, service or provider"
-        )
+        raise ValueError("License can be placed in cluster, service or provider")
 
 
 def min_and_max_present(versions: "VersionsSchema"):
     if versions.min is None and versions.min_strict is None:
-        raise BundleParsingError(
-            code="INVALID_VERSION_DEFINITION", msg="min or min_strict should be present in versions of upgrade"
-        )
+        raise ValueError("min or min_strict should be present in versions of upgrade")
 
     if versions.max is None and versions.max_strict is None:
-        raise BundleParsingError(
-            code="INVALID_VERSION_DEFINITION", msg="max or max_strict should be present in versions of upgrade"
-        )
+        raise ValueError("max or max_strict should be present in versions of upgrade")
 
     return versions
 
@@ -146,18 +144,14 @@ def min_less_than_max(versions: "VersionsSchema"):
         return versions
 
     if compare_prototype_versions(str(versions.min), str(versions.max)) > 0:
-        raise BundleParsingError(
-            code="INVALID_VERSION_DEFINITION", msg="Min version should be less or equal max version"
-        )
+        raise ValueError("Min version should be less or equal max version")
 
     return versions
 
 
 def script_is_correct_path(script: str):
     if not is_path_correct(script):
-        raise BundleParsingError(
-            code="INVALID_OBJECT_DEFINITION", msg=f"Action's script has unsupported path format: {script}"
-        )
+        raise ValueError(f"Action's script has unsupported path format: {script}")
 
     return script
 
@@ -167,22 +161,19 @@ def is_correct_pattern(pattern: str | None):
         return pattern
 
     if not Pattern(pattern).is_valid:
-        raise BundleParsingError(
-            code="INVALID_CONFIG_DEFINITION", msg=f"Pattern is not valid regular expression: {pattern}"
-        )
+        raise ValueError(f"Pattern is not valid regular expression: {pattern}")
 
     return pattern
 
 
-def check_forbidden_mm_action_fields(actions: Any):
+def forbidden_mm_actions(actions: Any):
     if not isinstance(actions, dict):
         return None
 
     for name, data in actions.items():
         if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(data.keys()):
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION",
-                msg="Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+            raise ValueError(
+                "Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
 
     return actions
@@ -200,14 +191,13 @@ class _BaseConfigItemSchema(_BaseModel):
     group_customization: Annotated[bool | None, Field(default=None)]
 
     @model_validator(mode="after")
-    def mutually_exclusive_editable_options(self):
+    def exclusive_editable_options(self):
         read_only_specified = self.read_only is not None
         writable_specified = self.writable is not None
 
         if read_only_specified and writable_specified:
-            raise BundleParsingError(
-                code="INVALID_CONFIG_DEFINITION",
-                msg='Config entry can not have "read_only" and "writable" simultaneously',
+            raise ValueError(
+                'Config entry can not have "read_only" and "writable" simultaneously',
             )
 
         return self
@@ -373,7 +363,7 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
     active: Annotated[bool | None, Field(default=None)]
 
 
-def check_no_duplicates_in_config(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
+def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
     if not parameters:
         return None
 
@@ -381,12 +371,12 @@ def check_no_duplicates_in_config(parameters: list[CONFIG_ITEMS | ConfigItemGrou
 
     for param in parameters:
         if param.name in names:
-            raise BundleParsingError(code="INVALID_CONFIG_DEFINITION", msg=f"Duplicate config for key {param.name}")
+            raise ValueError(f"Duplicate config for key {param.name}")
 
         names.add(param.name)
 
         if isinstance(param, ConfigItemGroupSchema):
-            check_no_duplicates_in_config(param.subs)
+            config_duplicates(param.subs)
 
     return parameters
 
@@ -395,7 +385,7 @@ CONFIG_TYPE: TypeAlias = Annotated[
     list[Annotated[CONFIG_ITEMS | ConfigItemGroupSchema, Field(discriminator="type")]] | None,
     Field(default=None),
     BeforeValidator(convert_config),
-    AfterValidator(check_no_duplicates_in_config),
+    AfterValidator(config_duplicates),
 ]
 
 
@@ -446,16 +436,12 @@ class VersionsSchema(_BaseModel):
     max_strict: Annotated[VERSION | None, Field(default=None)]
 
     @model_validator(mode="after")
-    def check_mutualy_exclusive(self):
+    def exclusive_min_max_stricts(self):
         if self.min is not None and self.min_strict is not None:
-            raise BundleParsingError(
-                code="INVALID_VERSION_DEFINITION", msg="min and min_strict can not be used simultaneously in versions"
-            )
+            raise ValueError("min and min_strict can not be used simultaneously in versions")
 
         if self.max is not None and self.max_strict is not None:
-            raise BundleParsingError(
-                code="INVALID_VERSION_DEFINITION", msg="max and max_strict can not be used simultaneously in versions"
-            )
+            raise ValueError("max and max_strict can not be used simultaneously in versions")
 
         return self
 
@@ -485,16 +471,15 @@ class _BaseUpgradeSchema(_BaseModel):
     config: CONFIG_TYPE
 
     @model_validator(mode="after")
-    def check_masking_with_scripts(self):
+    def exclusive_masking_and_scripts(self):
         if self.scripts is not None:
             return self
 
         any_masking_field_set = any(x is not None for x in (self.masking, self.on_success, self.on_fail))
 
         if any_masking_field_set:
-            raise BundleParsingError(
-                code="INVALID_UPGRADE_DEFINITION",
-                msg="Upgrade couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block",
+            raise ValueError(
+                "Upgrade couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block",
             )
 
         return self
@@ -542,64 +527,55 @@ class _BaseActionSchema(_BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def check_jinja_mutual_exclusive(cls, data: Any):
+    def exclusive_jinja_fields(cls, data: Any):
         if not isinstance(data, dict):
             return data
 
         scripts_jinja_specified = "scripts_jinja" in data
         scripts_specified = "scripts" in data
         if scripts_jinja_specified and scripts_specified:
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg='"scripts" and "scripts_jinja" are mutually exclusive'
-            )
+            raise ValueError('"scripts" and "scripts_jinja" are mutually exclusive')
 
         config_jinja_specified = "config_jinja" in data
         config_specified = "config" in data
         if config_jinja_specified and config_specified:
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg='"config" and "config_jinja" are mutually exclusive'
-            )
+            raise ValueError('"config" and "config_jinja" are mutually exclusive')
 
         return data
 
     @model_validator(mode="after")
-    def check_mutually_exclusive_visibility_fields(self):
+    def exclusive_visibility_fields(self):
         states_specified = self.states is not None
         masking_specified = self.masking is not None
 
         if states_specified and masking_specified:
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg='Action uses both mutual excluding states "states" and "masking"'
-            )
+            raise ValueError('Action uses both mutual excluding states "states" and "masking"')
 
         on_fail_success_specified = self.on_fail is not None or self.on_success is not None
         if states_specified and on_fail_success_specified:
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg='Action uses "on_success/on_fail" states without "masking"'
-            )
+            raise ValueError('Action uses "on_success/on_fail" states without "masking"')
 
         return self
 
     @model_validator(mode="after")
-    def check_either_host_action_or_action_host_group(self):
+    def exclusive_host_action_and_action_host_group(self):
         is_host_action = bool(self.host_action)
         is_allowed_in_host_group = bool(self.allow_for_action_host_group)
 
         if is_host_action and is_allowed_in_host_group:
-            raise BundleParsingError(
-                code="INVALID_ACTION_DEFINITION",
-                msg="The allow_for_action_host_group and host_action attributes are mutually exclusive.",
+            raise ValueError(
+                "The allow_for_action_host_group and host_action attributes are mutually exclusive.",
             )
 
         return self
 
     @model_validator(mode="after")
-    def check_config_jinja_path_correct(self):
+    def config_jinja_path_format(self):
         if not isinstance(self.config_jinja, str):
             return self
 
         if not is_path_correct(self.config_jinja):
-            raise BundleParsingError(code="INVALID_OBJECT_DEFINITION", msg='"config_jinja" has unsupported path format')
+            raise ValueError('"config_jinja" has unsupported path format')
 
         return self
 
@@ -633,11 +609,9 @@ class TaskJinjaSchema(_BaseTaskSchema):
 
     @field_validator("scripts_jinja")
     @classmethod
-    def check_scripts_jinja(cls, v: str):
+    def scripts_jinja_path_format(cls, v: str):
         if not is_path_correct(v):
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg='"scripts_jinja" has unsupported path format'
-            )
+            raise ValueError('"scripts_jinja" has unsupported path format')
 
         return v
 
@@ -645,7 +619,7 @@ class TaskJinjaSchema(_BaseTaskSchema):
 ACTIONS_TYPE: TypeAlias = Annotated[
     dict[NAME, JobSchema | TaskPlainSchema | TaskJinjaSchema] | None,
     Field(default=None),
-    BeforeValidator(check_forbidden_mm_action_fields),
+    BeforeValidator(forbidden_mm_actions),
 ]
 
 
@@ -687,11 +661,9 @@ class ImportSchema(_BaseModel):
     default: Annotated[list[str] | None, Field(default=None)]
 
     @model_validator(mode="after")
-    def check_required_without_default(self):
+    def exclusive_default_and_required(self):
         if self.required and self.default:
-            raise BundleParsingError(
-                code="INVALID_OBJECT_DEFINITION", msg="Import can't have default and be required in the same time"
-            )
+            raise ValueError("Import can't have default and be required in the same time")
 
         return self
 
@@ -713,7 +685,7 @@ class _BaseObjectSchema(_BaseModel):
     @model_validator(mode="after")
     def check_license_allowed(self):
         if self.license is not None:
-            check_license_allowed(self.type)
+            license_allowed_for_type(self.type)
 
         return self
 
@@ -721,7 +693,7 @@ class _BaseObjectSchema(_BaseModel):
     @classmethod
     def check_license_path_is_correct(cls, v: str | None):
         if isinstance(v, str) and not is_path_correct(v):
-            raise BundleParsingError(code="INVALID_OBJECT_DEFINITION", msg=f"Unsupported path format for license: {v}")
+            raise ValueError(f"Unsupported path format for license: {v}")
 
         return v
 
@@ -760,7 +732,7 @@ class ComponentSchema(_BaseModel):
             return data
 
         if "license" in data:
-            check_license_allowed("component")
+            license_allowed_for_type("component")
 
         return data
 
@@ -798,36 +770,27 @@ TYPE_SCHEMA_MAP = {
 }
 
 
-def retrieve_bundle_schema(
-    *paths: Path,
-) -> list[ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema]:
-    schemas = []
+@contextmanager
+def _validation_to_bundle_error():
+    try:
+        yield
+    except ValidationError as e:
+        message = "Errors found in definition of bundle entity:"
+        # implement
+        details = str(e)
 
-    for path in paths:
-        with path.open(encoding="utf-8") as config_yaml:
-            definitions = yaml.safe_load(stream=config_yaml)
+        message = f"{message}\n{details}"
 
-        schemas.extend(parse(definitions))
-
-    return schemas
+        raise BundleParsingError(message) from e
 
 
 def parse(
-    entities: dict | list[dict],
-) -> Iterable[ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema]:
-    entries = [entities] if isinstance(entities, dict) else entities
-
-    for entry in entries:
-        parsed = TYPE_SCHEMA_MAP[entry["type"]].model_validate(entry, strict=True)
-        yield parsed
-
-
-def parse_raw_definition(
     definition: dict,
 ) -> ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema:
     try:
         def_type = definition["type"]
     except KeyError as e:
-        raise BundleParsingError(code="INVALID_OBJECT_DEFINITION", msg="type is missing") from e
+        raise BundleParsingError("Field `type` is missing: can't parse definition") from e
 
-    return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
+    with _validation_to_bundle_error():
+        return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
