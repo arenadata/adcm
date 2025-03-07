@@ -16,9 +16,9 @@ from unittest.mock import patch
 
 import yaml
 
+from core.bundle_alt.errors import BundleParsingError
 from core.bundle_alt.process import retrieve_bundle_definitions
 from core.bundle_alt.schema import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
-from core.errors import BundleParsingError
 
 
 def fake_get_config_files(*_):
@@ -36,6 +36,9 @@ class TestBundleProcessingErrors(TestCase):
 
     def test_min_version_checked_before_parsing(self):
         bundle = """
+        - name: service
+          type: service
+          field_not_exist: 4
         - name: cluster
           type: cluster
           adcm_min_version: 40000
@@ -45,8 +48,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "BUNDLE_VERSION_ERROR")
-        self.assertEqual(err.exception.msg, "This bundle required ADCM version equal to 40000 or newer.")
+        self.assertEqual(err.exception.message, "This bundle required ADCM version equal to 40000 or newer.")
 
     def test_duplicated_definition(self):
         bundle = """
@@ -61,8 +63,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-        self.assertIn("Duplicate definition", err.exception.msg)
+        self.assertIn("Duplicate definition", err.exception.message)
 
     def test_mm_actions_forbidden_properties(self):
         for name in ADCM_SERVICE_ACTION_NAMES_SET:
@@ -83,8 +84,7 @@ class TestBundleProcessingErrors(TestCase):
                 with self.assertRaises(BundleParsingError) as err:
                     self.parse(bundle)
 
-                self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-                self.assertIn("Maintenance mode actions shouldn't have ", err.exception.msg)
+                self.assertIn("Maintenance mode actions shouldn't have ", err.exception.message)
 
     def test_scripts_jinja(self):
         with self.subTest("mutualy exclusive with scripts"):
@@ -105,8 +105,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn('"scripts" and "scripts_jinja" are mutually exclusive', err.exception.msg)
+            self.assertIn('"scripts" and "scripts_jinja" are mutually exclusive', err.exception.message)
 
         with self.subTest("incorrect path format"):
             bundle = """
@@ -122,8 +121,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn('"scripts_jinja" has unsupported path format', err.exception.msg)
+            self.assertIn('"scripts_jinja" has unsupported path format', err.exception.message)
 
         # todo add incorrect template test
 
@@ -145,8 +143,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn('"config" and "config_jinja" are mutually exclusive', err.exception.msg)
+            self.assertIn('"config" and "config_jinja" are mutually exclusive', err.exception.message)
 
         with self.subTest("incorrect path format"):
             bundle = """
@@ -164,8 +161,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn('"config_jinja" has unsupported path format', err.exception.msg)
+            self.assertIn('"config_jinja" has unsupported path format', err.exception.message)
 
         # todo add incorrect template test
 
@@ -181,8 +177,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn("License can be placed in cluster, service or provider", err.exception.msg)
+            self.assertIn("License can be placed in cluster, service or provider", err.exception.message)
 
         with self.subTest("component"):
             bundle = """
@@ -197,8 +192,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn("License can be placed in cluster, service or provider", err.exception.msg)
+            self.assertIn("License can be placed in cluster, service or provider", err.exception.message)
 
     def test_license_incorrect_path(self):
         bundle = """
@@ -211,8 +205,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-        self.assertIn("Unsupported path format for license: /path.txt", err.exception.msg)
+        self.assertIn("Unsupported path format for license: /path.txt", err.exception.message)
 
     def test_mutually_exclusive_host_action_and_action_host_group(self):
         bundle = """
@@ -231,9 +224,8 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_ACTION_DEFINITION")
         self.assertIn(
-            "The allow_for_action_host_group and host_action attributes are mutually exclusive.", err.exception.msg
+            "The allow_for_action_host_group and host_action attributes are mutually exclusive.", err.exception.message
         )
 
     def test_mutually_exclusive_masking_states(self):
@@ -253,8 +245,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-        self.assertIn('uses both mutual excluding states "states" and "masking"', err.exception.msg)
+        self.assertIn('uses both mutual excluding states "states" and "masking"', err.exception.message)
 
     def test_mutually_exclusive_states_on_success_on_fail(self):
         for key in ("on_success", "on_fail"):
@@ -278,8 +269,7 @@ class TestBundleProcessingErrors(TestCase):
                 with self.assertRaises(BundleParsingError) as err:
                     self.parse(bundle)
 
-                self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-                self.assertIn('uses "on_success/on_fail" states without "masking"', err.exception.msg)
+                self.assertIn('uses "on_success/on_fail" states without "masking"', err.exception.message)
 
     def test_script_path_correctness(self):
         bundle = """
@@ -296,8 +286,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-        self.assertIn("has unsupported path format: /aa.yaml", err.exception.msg)
+        self.assertIn("has unsupported path format: /aa.yaml", err.exception.message)
 
     def test_config_entries_duplication(self):
         with self.subTest("root config"):
@@ -315,10 +304,9 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_CONFIG_DEFINITION")
-            self.assertIn("Duplicate config for key x", err.exception.msg)
+            self.assertIn("Duplicate config for key x", err.exception.message)
             # todo try to adopt to this one
-            # self.assertIn('Duplicate config on service', err.exception.msg)
+            # self.assertIn('Duplicate config on service', err.exception.message)
 
         with self.subTest("child config"):
             bundle = """
@@ -338,10 +326,9 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_CONFIG_DEFINITION")
-            self.assertIn("Duplicate config for key x", err.exception.msg)
+            self.assertIn("Duplicate config for key x", err.exception.message)
             # todo try to adopt to this one
-            # self.assertIn('Duplicate config on service', err.exception.msg)
+            # self.assertIn('Duplicate config on service', err.exception.message)
 
     def test_incorrect_pattern(self):
         bundle = """
@@ -357,8 +344,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_CONFIG_DEFINITION")
-        self.assertIn("is not valid regular expression", err.exception.msg)
+        self.assertIn("is not valid regular expression", err.exception.message)
 
     def test_mutually_exclusive_read_only_and_writable(self):
         bundle = """
@@ -375,8 +361,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_CONFIG_DEFINITION")
-        self.assertIn('can not have "read_only" and "writable" simultaneously', err.exception.msg)
+        self.assertIn('can not have "read_only" and "writable" simultaneously', err.exception.message)
 
     def test_upgrade_versions(self):
         with self.subTest("mutualy exclusive mins"):
@@ -394,8 +379,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_VERSION_DEFINITION")
-            self.assertIn("min and min_strict can not be used simultaneously in versions", err.exception.msg)
+            self.assertIn("min and min_strict can not be used simultaneously in versions", err.exception.message)
 
         with self.subTest("either of mins should be present"):
             bundle = """
@@ -411,8 +395,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_VERSION_DEFINITION")
-            self.assertIn("min or min_strict should be present in versions", err.exception.msg)
+            self.assertIn("min or min_strict should be present in versions", err.exception.message)
 
         with self.subTest("mutualy exclusive maxs"):
             bundle = """
@@ -429,8 +412,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_VERSION_DEFINITION")
-            self.assertIn("max and max_strict can not be used simultaneously in versions", err.exception.msg)
+            self.assertIn("max and max_strict can not be used simultaneously in versions", err.exception.message)
 
         with self.subTest("either of maxs should be present"):
             bundle = """
@@ -446,8 +428,7 @@ class TestBundleProcessingErrors(TestCase):
             with self.assertRaises(BundleParsingError) as err:
                 self.parse(bundle)
 
-            self.assertEqual(err.exception.code, "INVALID_VERSION_DEFINITION")
-            self.assertIn("max or max_strict should be present in versions", err.exception.msg)
+            self.assertIn("max or max_strict should be present in versions", err.exception.message)
 
     def test_masking_without_scripts(self):
         for section in ("masking", "on_fail", "on_success"):
@@ -467,9 +448,9 @@ class TestBundleProcessingErrors(TestCase):
                 with self.assertRaises(BundleParsingError) as err:
                     self.parse(bundle)
 
-                self.assertEqual(err.exception.code, "INVALID_UPGRADE_DEFINITION")
                 self.assertIn(
-                    "couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block", err.exception.msg
+                    "couldn't contain `masking`, `on_success` or `on_fail` without `scripts` block",
+                    err.exception.message,
                 )
 
     def test_import_required_and_default(self):
@@ -486,8 +467,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_OBJECT_DEFINITION")
-        self.assertIn("Import can't have default and be required in the same time", err.exception.msg)
+        self.assertIn("Import can't have default and be required in the same time", err.exception.message)
 
     def test_import_max_less_min(self):
         bundle = """
@@ -504,5 +484,4 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.code, "INVALID_VERSION_DEFINITION")
-        self.assertIn("Min version should be less or equal max version", err.exception.msg)
+        self.assertIn("Min version should be less or equal max version", err.exception.message)

@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Type, TypeAlias
 import json
 import hashlib
+import functools
 
+from adcm_version import compare_prototype_versions
 from core.bundle_alt.types import (
     ActionDefinition,
     BundleDefinitionKey,
@@ -30,6 +32,7 @@ from cm.bundle import get_hash_safe
 from cm.models import (
     Action,
     Bundle,
+    ProductCategory,
     Prototype,
     PrototypeConfig,
     PrototypeExport,
@@ -38,10 +41,49 @@ from cm.models import (
     Upgrade,
 )
 
+
+def find_bundle_by_hash(hash_: str) -> Bundle | None:
+    return Bundle.objects.filter(hash=hash_).first()
+
+
+def order_versions():
+    # COPIED FROM cm.bundle
+    _order_model_versions(Prototype)
+    _order_model_versions(Bundle)
+
+
+def _order_model_versions(model):
+    # COPIED FROM cm.bundle
+    items = []
+    for obj in model.objects.order_by("id"):
+        items.append(obj)
+    ver = ""
+    count = 0
+    for obj in sorted(
+        items,
+        key=functools.cmp_to_key(lambda obj1, obj2: compare_prototype_versions(obj1.version, obj2.version)),
+    ):
+        if ver != obj.version:
+            count += 1
+        obj.version_order = count
+        ver = obj.version
+    # Update all table in one time. That is much faster than one by one method
+    model.objects.bulk_update(items, ["version_order"])
+
+
+def recollect_categories():
+    ProductCategory.re_collect()
+
+
+# save bundle
+
+
 PrototypeParentName: TypeAlias = str | None
 
 
-def save_definitions(bundle_definitions: DefinitionsMap, bundle_path: Path, verification_status: SignatureStatus):
+def save_definitions(
+    bundle_definitions: DefinitionsMap, bundle_path: Path, verification_status: SignatureStatus
+) -> Bundle:
     prototype_dict = {}
     prototype_config_dicts = defaultdict(list)
     action_dict = defaultdict(list)
@@ -86,6 +128,8 @@ def save_definitions(bundle_definitions: DefinitionsMap, bundle_path: Path, veri
         prototype_import_dict,
         prototype_export_dict,
     )
+
+    return bundle
 
 
 def _save_definitions_in_db(
@@ -259,9 +303,9 @@ def _build_stage_prototype_import(
 
 def _build_prototype_config(
     definition_key: BundleDefinitionKey,
-    definition: ConfigDefinition,
+    definition: ConfigDefinition | None,
     prototype_config_dict: dict[BundleDefinitionKey, list[PrototypeConfig]],
-    action: Action = None,
+    action: Action | None = None,
 ) -> None:
     if not definition:
         return
