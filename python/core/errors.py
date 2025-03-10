@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreError, ADCMMessageError
+from contextlib import contextmanager
+
+from core.types import ADCMComposableError, ADCMCoreError, ADCMMessageError
 
 
 class NotFoundError(ADCMMessageError):
@@ -27,3 +29,13 @@ class ConfigValueError(ADCMCoreError):
         super().__init__(msg)
         self.code = code
         self.msg = msg
+
+
+@contextmanager
+def localize_error(*locations: str):
+    try:
+        yield
+    except ADCMComposableError as e:
+        for location in reversed(locations):
+            e.add_prefix(location)
+        raise

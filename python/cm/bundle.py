@@ -188,7 +188,6 @@ def check_absence_of_cyclic_dependencies():
 
 def load_bundle(bundle_file: str) -> Bundle:
     logger.info('loading bundle file "%s" ...', bundle_file)
-    logger.critical(f"{bundle_file=}")
     bundle_hash, path = process_file(bundle_file=bundle_file)
 
     bundle_archive, signature_file = get_bundle_and_signature_paths(path=path)
@@ -261,7 +260,6 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
 def upload_file(file) -> Path:
     # save to tempdir
     tmp_path = Path(gettempdir(), file.name)
-    logger.critical(f"{tmp_path=}")
     with tmp_path.open(mode="wb+") as f:
         for chunk in file.chunks():
             f.write(chunk)
@@ -281,7 +279,6 @@ def upload_file(file) -> Path:
 
             # move to downloads
             new_path = settings.DOWNLOAD_DIR / file.name
-            logger.critical(f"{new_path=}")
             shutil.move(src=tmp_path, dst=new_path)
 
             return new_path
@@ -339,10 +336,8 @@ def order_versions():
 
 def process_file(bundle_file: str) -> tuple[str, Path]:
     path = Path(settings.DOWNLOAD_DIR, bundle_file)
-    logger.critical(f"process file {path=}")
     bundle_hash = get_hash_safe(path=str(path))
     dir_path = untar_safe(bundle_hash=bundle_hash, path=path)
-    logger.critical(f"after untar {dir_path=}")
 
     return bundle_hash, dir_path
 
@@ -360,7 +355,6 @@ def untar_safe(bundle_hash: str, path: Path) -> Path:
 
 def untar(bundle_hash: str, bundle: Path) -> Path:
     path = Path(settings.BUNDLE_DIR, bundle_hash)
-    logger.critical(f"untar: {path=}")
     if path.is_dir():
         try:
             existed = Bundle.objects.get(hash=bundle_hash)
@@ -393,7 +387,6 @@ def get_hash_safe(path: str) -> str:
         raise_adcm_ex(code="BUNDLE_ERROR", msg=f"Can't find bundle file: {path}")
     except PermissionError:
         raise_adcm_ex(code="BUNDLE_ERROR", msg=f"Can't open bundle file: {path}")
-    logger.critical(f"hash for {path}: {bundle_hash}")
     return bundle_hash
 
 

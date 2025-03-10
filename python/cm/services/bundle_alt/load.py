@@ -115,7 +115,8 @@ def process_bundle_from_archive(archive: Path, bundles_dir: Path, files_dir: Pat
         with atomic():
             bundle = repo.save_definitions(
                 bundle_definitions=definitions,
-                bundle_path=unpacking_info.root,
+                bundle_root=unpacking_info.root,
+                bundle_hash=unpacking_info.hash,
                 verification_status=unpacking_info.signature,
             )
             repo.order_versions()

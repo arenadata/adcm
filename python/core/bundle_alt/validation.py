@@ -21,6 +21,7 @@ from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
 from core.bundle_alt.representation import dependency_entry_to_key
 from core.bundle_alt.types import ActionDefinition, BundleDefinitionKey, Definition, DefinitionsMap, UpgradeDefinition
+from core.errors import localize_error
 
 # This section should be in sort of global consts module
 ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
@@ -35,16 +36,17 @@ def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, 
     check_requires(definitions)
 
     for key, definition in definitions.items():
-        check_import_defaults_exist_in_config(definition)
-        check_exported_values_exists_in_config(definition)
-        check_upgrades(definition, definitions)
+        with localize_error("->".join(map(str, key))):
+            check_import_defaults_exist_in_config(definition)
+            check_exported_values_exists_in_config(definition)
+            check_upgrades(definition, definitions)
 
-        check_config(definition, bundle_root, yspec_schema)
-        check_actions(definition, definitions, bundle_root)
+            check_config(definition, bundle_root, yspec_schema)
+            check_actions(definition, definitions, bundle_root)
 
-        # unify check arguments and make it a map for each type?
-        if is_component_key(key):
-            check_bound_to(key, definition)
+            # unify check arguments and make it a map for each type?
+            if is_component_key(key):
+                check_bound_to(key, definition)
 
 
 def check_requires(definitions: DefinitionsMap) -> None:
@@ -210,7 +212,7 @@ def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) ->
 
 def check_exported_values_exists_in_config(definition: Definition) -> None:
     for value in definition.exports or ():
-        key = f"/{value}"
+        key = (value,)
         if not definition.config or key not in definition.config.parameters or {}:
             message = f"Group specified for export is missing in configuration: {value}"
             raise BundleValidationError(message)

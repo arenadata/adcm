@@ -20,7 +20,7 @@ import yaml
 from core.bundle_alt.bundle_load import get_config_files
 from core.bundle_alt.convertion import schema_entry_to_definition
 from core.bundle_alt.errors import BundleParsingAdcmExLikeError, BundleParsingError
-from core.bundle_alt.representation import build_parent_key_safe, find_parent
+from core.bundle_alt.representation import build_parent_key_safe
 from core.bundle_alt.schema import (
     ADCMSchema,
     ClusterSchema,
@@ -32,6 +32,7 @@ from core.bundle_alt.schema import (
 )
 from core.bundle_alt.types import BundleDefinitionKey, Definition
 from core.bundle_alt.validation import check_definitions_are_valid
+from core.errors import localize_error
 
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
@@ -72,6 +73,12 @@ def _normalize_definitions(
     }
 
 
+def _repr_from_raw(d) -> str:
+    name = d.get("name", "-")
+    type_ = d.get("type", "unknown")
+    return f'Object of type "{type_}" named "{name}"'
+
+
 def _parse_bundle_definitions(
     definition_path_pairs: Iterable[tuple[dict, Path]], bundle_root: Path, adcm_version: str
 ) -> tuple[dict[BundleDefinitionKey, _ParsedDefinition], dict[BundleDefinitionKey, _RelativePath]]:
@@ -83,14 +90,18 @@ def _parse_bundle_definitions(
 
     # need to check all versions first
     for raw_definition, _ in pairs:
-        check_adcm_min_version(current=adcm_version, required=str(raw_definition.get("adcm_min_version", "0")))
+        # todo add convertion func for localize_error
+        with localize_error(_repr_from_raw(raw_definition)):
+            check_adcm_min_version(current=adcm_version, required=str(raw_definition.get("adcm_min_version", "0")))
 
     for raw_definition, path_to_source in pairs:
-        root_level_definition = parse(raw_definition)
-        for key, parsed_definition in _flatten_definitions(root_level_definition):
-            _check_is_not_duplicate(key, definitions_map)
-            definitions_map[key] = parsed_definition
-            paths_map[key] = str(path_to_source.relative_to(bundle_root))
+        # todo add convertion func for localize_error
+        with localize_error(f"In file: {path_to_source}", _repr_from_raw(raw_definition)):
+            root_level_definition = parse(raw_definition)
+            for key, parsed_definition in _flatten_definitions(root_level_definition):
+                _check_is_not_duplicate(key, definitions_map)
+                definitions_map[key] = parsed_definition
+                paths_map[key] = str(path_to_source.relative_to(bundle_root).parent)
 
     return definitions_map, paths_map
 
@@ -125,7 +136,7 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
         if not parent_key:
             continue
 
-        parent = find_parent(parent_key, definitions)
+        parent = definitions[parent_key]
 
         if definition.flag_autogeneration is None:
             definition.flag_autogeneration = parent.flag_autogeneration
@@ -143,7 +154,7 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
         service_from = parent if isinstance(definition, ComponentSchema) else definition
 
         for action in (definition.actions or {}).values():
-            for entry in getattr(action, "hc_acl", ()):
+            for entry in action.hc_acl or ():
                 if not entry.get("service"):
                     entry["service"] = service_from.name
 

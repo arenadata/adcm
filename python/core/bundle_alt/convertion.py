@@ -116,6 +116,10 @@ def schema_entry_to_definition(
     return definition
 
 
+def extract_scripts(scripts: list[dict], path_resolution_root: Path) -> list[JobSpec] | None:
+    return _extract_scripts(entity={"scripts": scripts}, context={"path": path_resolution_root})
+
+
 def _convert(entity: dict, context: dict):
     result = {
         "name": entity["name"],
@@ -202,6 +206,7 @@ def _extract_action(entity, context):
     _fill_value(result, entity, "allow_in_maintenance_mode")
     _fill_value(result, entity, "venv")
     _fill_value(result, entity, "partial_execution")
+    _fill_value(result, entity, "is_host_action", source_keys=("host_action",))
     _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
     _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
     _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
@@ -297,7 +302,6 @@ def _ensure_list(result: list | Any) -> list:
 
 
 def _normalize_path(result: str, context: dict) -> str:
-    # todo add check for "correct form" in parsing stage
     path_from_root = detect_relative_path_to_bundle_root(context["path"], result)
     return str(path_from_root)
 
@@ -349,7 +353,7 @@ def _extract_license(result: dict, context: dict) -> License | None:
     if not license_path:
         return None
 
-    return License(status="unaccepted", path=_normalize_path(context["path"], license_path))
+    return License(status="unaccepted", path=_normalize_path(license_path, context=context))
 
 
 def _universalise_action_types(result: dict):
@@ -380,14 +384,14 @@ def _states_to_masking(result: dict):
                 # action isn't available in any states
                 "available": states.get("available", [])
             }
-        }
+        },
     }
 
     if on_success := states.get("on_success"):
-        extra["on_success"] = on_success
+        extra["on_success"] = {"state": on_success}
 
     if on_fail := states.get("on_fail"):
-        extra["on_fail"] = on_fail
+        extra["on_fail"] = {"state": on_fail}
 
     return result | extra
 
@@ -438,15 +442,15 @@ def _extract_action_availability(entity: dict, x: Literal["available", "unavaila
 
 
 def _extract_action_completion(entity: dict, outcome: Literal["on_success", "on_fail"]):
-    masking = entity.get("masking")
-    if masking is None:
+    on_outcome = entity.get(outcome)
+    if on_outcome is None:
         return None
 
     result = {}
 
-    _fill_value(result, masking, "set_state", source_keys=(outcome, "state"))
-    _fill_value(result, masking, "set_multi_state", source_keys=(outcome, "multi_state", "set"))
-    _fill_value(result, masking, "unset_multi_state", source_keys=(outcome, "multi_state", "unset"))
+    _fill_value(result, on_outcome, "set_state", source_keys=("state",))
+    _fill_value(result, on_outcome, "set_multi_state", source_keys=("multi_state", "set"))
+    _fill_value(result, on_outcome, "unset_multi_state", source_keys=("multi_state", "unset"))
 
     return OnCompletion(**_drop_unset(result))
 
@@ -504,6 +508,8 @@ def _extract_spec(entity: dict, context: dict) -> ConfigParamPlainSpec:
             "activatable": entity.get("activatable"),
         }
     )
+    _fill_value(limits, entity, "read_only")
+    _fill_value(limits, entity, "writable")
     if limits:
         result["limits"] = limits
 
@@ -512,8 +518,6 @@ def _extract_spec(entity: dict, context: dict) -> ConfigParamPlainSpec:
     _fill_value(result, entity, "required")
     _fill_value(result, entity, "ui_options")
     _fill_value(result, entity, "default")
-    _fill_value(result, entity, "read_only")
-    _fill_value(result, entity, "writable")
 
     result["group_customization"] = entity.get(
         "group_customization", context["object"].get("config_group_customization")

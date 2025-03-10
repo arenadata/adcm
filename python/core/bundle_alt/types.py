@@ -46,7 +46,8 @@ class ConfigParamPlainSpec:
 
     # Properties
     required: bool = True
-    group_customization: bool = False
+    # it feels wrong to set it to None, yet it's the "default" value
+    group_customization: bool | None = None
     limits: dict = field(default_factory=dict)
     ui_options: dict = field(default_factory=dict)
 
@@ -170,9 +171,8 @@ class UpgradeDefinition:
 
 class License(NamedTuple):
     status: Literal["absent", "accepted", "unaccepted"] = "absent"
-    path: str = ""
-    # looks like hash is not required for anything than storing in db?
-    # hash: str = ""
+    # if no license, path expected to be None
+    path: str | None = None
 
 
 @dataclass(slots=True)
@@ -191,13 +191,13 @@ class Definition(GeneralObjectDescription):
     monitoring: Literal["active", "passive"] = "active"
     allow_maintenance_mode: bool = False
     config_group_customization: bool = False
-    flag_autogeneration: dict = field(default_factory=partial(dict, adcm_outdated_config=False))
+    flag_autogeneration: dict = field(default_factory=partial(dict, enable_outdated_config=False))
 
     # Dependencies
     required: bool = False
     requires: list[dict] = field(default_factory=list)
     bound_to: dict = field(default_factory=dict)
-    constraint: list = field(default_factory=list)
+    constraint: list = field(default_factory=partial(list, (0, "+")))
     exports: list[str] = field(default_factory=list)
     imports: list[dict] = field(default_factory=list)
 
@@ -208,7 +208,7 @@ class Definition(GeneralObjectDescription):
 
     # Misc
     path: str = "."
-    adcm_min_version: str = ""
+    adcm_min_version: str | None = None
     venv: Literal["default", "2.9"] = "default"
     shared: bool = False
 
