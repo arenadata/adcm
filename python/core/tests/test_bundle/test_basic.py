@@ -349,7 +349,7 @@ class TestBundleValidation(TestCase):
                 self.assertIn(err_message, err.exception.message)
 
     def test_check_exported_values_exists_in_config_success(self) -> None:
-        config = {"/a": ..., "/b": ...}
+        config = {("a",): ..., ("b",): ...}
         definition = make_def((CLUSTER,), config=config, exports=[])
 
         check_exported_values_exists_in_config(definition)
@@ -358,7 +358,7 @@ class TestBundleValidation(TestCase):
         check_exported_values_exists_in_config(definition)
 
     def test_check_exported_values_exists_in_config_fail(self) -> None:
-        config = {"/a": ..., "/b": ..., "/c/k": ...}
+        config = {("a",): ..., ("b",): ..., ("c", "k"): ...}
         definition = make_def((CLUSTER,), config=config, exports=["k"])
 
         with self.assertRaises(BundleValidationError) as err:

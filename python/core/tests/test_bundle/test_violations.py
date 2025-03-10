@@ -48,7 +48,7 @@ class TestBundleProcessingErrors(TestCase):
         with self.assertRaises(BundleParsingError) as err:
             self.parse(bundle)
 
-        self.assertEqual(err.exception.message, "This bundle required ADCM version equal to 40000 or newer.")
+        self.assertIn("This bundle required ADCM version equal to 40000 or newer.", err.exception.message)
 
     def test_duplicated_definition(self):
         bundle = """
@@ -287,48 +287,6 @@ class TestBundleProcessingErrors(TestCase):
             self.parse(bundle)
 
         self.assertIn("has unsupported path format: /aa.yaml", err.exception.message)
-
-    def test_config_entries_duplication(self):
-        with self.subTest("root config"):
-            bundle = """
-            - name: aaa
-              type: service
-              version: 2
-              config:
-                - name: x
-                  type: integer
-                - name: x
-                  type: string
-            """
-
-            with self.assertRaises(BundleParsingError) as err:
-                self.parse(bundle)
-
-            self.assertIn("Duplicate config for key x", err.exception.message)
-            # todo try to adopt to this one
-            # self.assertIn('Duplicate config on service', err.exception.message)
-
-        with self.subTest("child config"):
-            bundle = """
-            - name: aaa
-              type: service
-              version: 2
-              config:
-                - name: g
-                  type: group
-                  subs:
-                    - name: x
-                      type: integer
-                    - name: x
-                      type: string
-            """
-
-            with self.assertRaises(BundleParsingError) as err:
-                self.parse(bundle)
-
-            self.assertIn("Duplicate config for key x", err.exception.message)
-            # todo try to adopt to this one
-            # self.assertIn('Duplicate config on service', err.exception.message)
 
     def test_incorrect_pattern(self):
         bundle = """

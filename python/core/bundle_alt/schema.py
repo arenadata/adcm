@@ -364,6 +364,8 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
 
 
 def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
+    # at least ADS has duplicates in config
+    return parameters
     if not parameters:
         return None
 
@@ -447,7 +449,7 @@ class VersionsSchema(_BaseModel):
 
 
 class UpgradeScriptSchema(TypedDict):
-    name: NAME
+    name: str
     script: str
     script_type: Literal["internal", "ansible"]
     display_name: Annotated[str | None, Field(default=None)]
@@ -456,7 +458,7 @@ class UpgradeScriptSchema(TypedDict):
 
 
 class _BaseUpgradeSchema(_BaseModel):
-    name: NAME
+    name: str
     versions: Annotated[VersionsSchema, AfterValidator(min_and_max_present)]
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]

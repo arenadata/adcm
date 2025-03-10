@@ -51,7 +51,9 @@ class ADCMMessageError(ADCMCoreError):
 
 class ADCMComposableError(ADCMMessageError):
     def add_prefix(self, prefix: str) -> None:
-        self.message = f"{prefix}\n{self.message}"
+        # todo make it a list of locations
+        # self.message = f"{prefix}\n{self.message}"
+        self.__init__(f"{prefix}\n{self.message}")
 
 
 class ADCMCoreType(Enum):

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
-from typing import Type, TypeAlias
+from typing import Generator, Type, TypeAlias
 import json
 import hashlib
 import functools
@@ -28,7 +28,6 @@ from core.bundle_alt.types import (
 )
 
 from cm.adcm_config.config import reraise_file_errors_as_adcm_ex
-from cm.bundle import get_hash_safe
 from cm.models import (
     Action,
     Bundle,
@@ -68,7 +67,7 @@ def _order_model_versions(model):
         obj.version_order = count
         ver = obj.version
     # Update all table in one time. That is much faster than one by one method
-    model.objects.bulk_update(items, ["version_order"])
+    model.objects.bulk_update(items, fields=["version_order"])
 
 
 def recollect_categories():
@@ -82,7 +81,7 @@ PrototypeParentName: TypeAlias = str | None
 
 
 def save_definitions(
-    bundle_definitions: DefinitionsMap, bundle_path: Path, verification_status: SignatureStatus
+    bundle_definitions: DefinitionsMap, bundle_root: Path, bundle_hash: str, verification_status: SignatureStatus
 ) -> Bundle:
     prototype_dict = {}
     prototype_config_dicts = defaultdict(list)
@@ -97,10 +96,10 @@ def save_definitions(
         or bundle_definitions.get(("adcm",))
     )
 
-    bundle = _build_bundle(bundle_definition, get_hash_safe(str(bundle_path)), verification_status)
+    bundle = _build_bundle(bundle_definition, bundle_hash, verification_status)
 
     for key, definition in bundle_definitions.items():
-        _build_prototype(key, definition, prototype_dict, bundle_path)
+        _build_prototype(key, definition, prototype_dict, bundle_root)
         _build_prototype_config(key, definition.config, prototype_config_dicts)
 
         for action_def in definition.actions:
@@ -130,6 +129,30 @@ def save_definitions(
     )
 
     return bundle
+
+
+def convert_config_definition_to_orm_model(
+    definition: ConfigDefinition, action: Action | None
+) -> Generator[PrototypeConfig, None, None]:
+    for param_key, param_spec in definition.parameters.items():
+        name = param_spec.key[0]
+        subname = param_spec.name if len(param_key) != 1 else ""
+        raw_default = definition.default_values.get(param_key, "")
+
+        yield PrototypeConfig(
+            action=action,
+            name=name,
+            subname=subname,
+            type=param_spec.type,
+            display_name=param_spec.display_name,
+            description=param_spec.description,
+            required=param_spec.required,
+            limits=param_spec.limits,
+            group_customization=param_spec.group_customization,
+            ui_options=param_spec.ui_options,
+            # should we dump all or just STACK_COMPLEX_FIELD_TYPES?
+            default=json.dumps(raw_default),
+        )
 
 
 def _save_definitions_in_db(
@@ -166,13 +189,19 @@ def _fill_bundle(
 def _create_prototype_objects(
     prototype_dict: dict[BundleDefinitionKey, Prototype],
 ) -> dict[BundleDefinitionKey, Prototype]:
-    Prototype.objects.bulk_create(list(prototype_dict.values()))
+    Prototype.objects.bulk_create(prototype_dict.values())
+
+    for_update = deque()
 
     for definition_key, prototype in prototype_dict.items():
         parent_name = definition_key[1] if len(definition_key) == 3 else None
         if parent_name:
             parent_key = ("service", definition_key[1])
             prototype.parent = prototype_dict[parent_key]
+            for_update.append(prototype)
+
+    if for_update:
+        Prototype.objects.bulk_update(for_update, fields=["parent"])
 
     return prototype_dict
 
@@ -310,31 +339,7 @@ def _build_prototype_config(
     if not definition:
         return
 
-    prototype_config_params = {}
-
-    for param_key, param_spec in definition.parameters.items():
-        name = param_spec.key[0]
-        subname = param_spec.name if len(param_key) != 1 else ""
-        raw_default = definition.default_values.get(param_key)
-
-        prototype_config_params[param_key] = PrototypeConfig(
-            action=action,
-            name=name,
-            subname=subname,
-            type=param_spec.type,
-            display_name=param_spec.display_name,
-            description=param_spec.description,
-            required=param_spec.required,
-            limits=param_spec.limits,
-            group_customization=param_spec.group_customization,
-            ui_options=param_spec.ui_options,
-            default=json.dumps(raw_default) if raw_default else "",
-        )
-
-    for default_param, default_param_value in definition.default_values.items():
-        prototype_config_params[default_param].default = default_param_value
-
-    prototype_config_dict[definition_key].extend(list(prototype_config_params.values()))
+    prototype_config_dict[definition_key].extend(convert_config_definition_to_orm_model(definition, action))
 
 
 def _build_upgrade(
@@ -359,8 +364,8 @@ def _build_upgrade(
     upgrade_config_dict[definition_key].append(upgrade)
 
 
-def _get_license_hash(bundle_path: Path, license_path: str) -> str | None:
-    if license_path == "":
+def _get_license_hash(bundle_path: Path, license_path: str | None) -> str | None:
+    if not license_path:
         return None
 
     with reraise_file_errors_as_adcm_ex(filepath=license_path, reference="license file"):
