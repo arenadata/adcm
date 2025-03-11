@@ -50,6 +50,9 @@ class StatusServerInteractor(Protocol):
     def reset_objects_in_mm(self) -> Any:
         ...
 
+    def reset_hc_map(self) -> Any:
+        ...
+
 
 class JobSequenceRunner(TaskRunner):
     _notifier: EventNotifier
@@ -123,10 +126,7 @@ class JobSequenceRunner(TaskRunner):
             else:
                 self._runtime.status = last_job_result
 
-        self._finish(
-            task=task,
-            last_job=last_processed_job,
-        )
+        self._finish(task=task, last_job=last_processed_job)
 
     def _configure(self, task_id: int) -> tuple[Task, tuple[ExecutionTarget, ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
@@ -272,6 +272,11 @@ class JobSequenceRunner(TaskRunner):
             self._status_server.reset_objects_in_mm()
         except:  # noqa: E722
             self._logger.exception("Error loading mm objects on task finish")
+
+        try:
+            self._status_server.reset_hc_map()
+        except:  # noqa: E722
+            self._logger.exception("Error loading host-component map on task finish")
 
     def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, last_job: Job | None):
         """Task should be re-read before calling this method, because some flags need to be updated"""
