@@ -181,13 +181,48 @@ def load_bundle(bundle_file: str) -> Bundle:
     bundle_hash, path = process_file(bundle_file=bundle_file)
 
     bundle_archive, signature_file = get_bundle_and_signature_paths(path=path)
-    verification_status = get_verification_status(bundle_archive=bundle_archive, signature_file=signature_file)
+    verification_status = get_verification_status(
+        bundle_archive=bundle_archive,
+        signature_file=signature_file,
+    )
     untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
+
+    if verification_status != SignatureStatus.VALID and is_accept_only_verified_bundles_enabled():
+        # all this stuff should be cleaned in a unified style later
+        if bundle_archive:
+            bundle_archive.unlink(missing_ok=True)
+
+        raise AdcmEx(
+            code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",
+            msg=(
+                f"Bundle '{bundle_file}' has signature status '{verification_status.value}', "
+                "but 'accept_only_verified_bundles' is enabled. Upload rejected."
+            ),
+        )
 
     with atomic():
         return prepare_bundle(
-            bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
+            bundle_file=bundle_file,
+            bundle_hash=bundle_hash,
+            path=path,
+            verification_status=verification_status,
         )
+
+
+def is_accept_only_verified_bundles_enabled() -> bool:
+    """
+    Return True if enabled accept_only_verified_bundles
+    False otherwise
+    """
+    adcm_obj = ADCM.objects.first()
+    if not adcm_obj or not adcm_obj.config:
+        return False
+
+    config_log = ConfigLog.objects.filter(obj_ref=adcm_obj.config, id=adcm_obj.config.current).first()
+    if not config_log:
+        return False
+
+    return config_log.config.get("global", {}).get("accept_only_verified_bundles", False)
 
 
 def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
