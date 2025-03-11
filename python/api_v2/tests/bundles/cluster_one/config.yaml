@@ -6,6 +6,8 @@
   config_group_customization: true
   license: EULA.txt
   allow_maintenance_mode: true
+  flag_autogeneration:
+    enable_outdated_config: true
   config:
     - name: boolean
       type: boolean

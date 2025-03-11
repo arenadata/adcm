@@ -302,7 +302,7 @@ class TestConcernsResponse(BaseAPITestCase):
         }
 
         response = self.client.v2[cluster, "configs"].post(
-            data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
+            data={"config": {"string": "new_string 2"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -330,6 +330,55 @@ class TestConcernsResponse(BaseAPITestCase):
             concern, *_ = data["concerns"]
             self.assertEqual(concern["type"], "flag")
             self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+    def test_raise_outdated_config_if_configs_differ_only_success(self):
+        cluster = self.cluster_1
+        cluster.state = "notcreated"
+        cluster.save(update_fields=["state"])
+        initial_config = {
+            "activatable_group": {"integer": 10},
+            "boolean": True,
+            "group": {"float": 0.1},
+            "list": ["value1", "value2", "value3"],
+            "variant_not_strict": "value1",
+        }
+        initial_attrs = {"/activatable_group": {"isActive": True}}
+
+        with self.subTest("No outdated flag - configs are same"):
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs, "description": "init"},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 0)
+
+        with self.subTest("Outdated flag - new config content differs"):
+            initial_config["boolean"] = False
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs, "description": "init"},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns.first().cause, "config")
+
+        lower_flag(
+            BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
+            on_objects=[CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)],
+        )
+
+        with self.subTest("Outdated flag - new config adcm Meta differs"):
+            initial_attrs = {"/activatable_group": {"isActive": False}}
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns.first().cause, "config")
 
     def test_service_requirements(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
