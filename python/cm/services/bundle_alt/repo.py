@@ -10,22 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict, deque
+from collections import deque
+from operator import itemgetter
 from pathlib import Path
-from typing import Generator, Type, TypeAlias
+from typing import Generator, Iterable, TypeAlias
 import json
 import hashlib
 import functools
 
 from adcm_version import compare_prototype_versions
+from core.bundle_alt._config import STACK_COMPLEX_FIELD_TYPES
+from core.bundle_alt.predicates import is_component_key
+from core.bundle_alt.representation import build_parent_key_safe
 from core.bundle_alt.types import (
     ActionDefinition,
     BundleDefinitionKey,
     ConfigDefinition,
     Definition,
     DefinitionsMap,
+    ImportDefinition,
     UpgradeDefinition,
 )
+from core.job.types import JobSpec
 
 from cm.adcm_config.config import reraise_file_errors_as_adcm_ex
 from cm.models import (
@@ -37,6 +43,7 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     SignatureStatus,
+    SubAction,
     Upgrade,
 )
 
@@ -83,64 +90,98 @@ PrototypeParentName: TypeAlias = str | None
 def save_definitions(
     bundle_definitions: DefinitionsMap, bundle_root: Path, bundle_hash: str, verification_status: SignatureStatus
 ) -> Bundle:
-    prototype_dict = {}
-    prototype_config_dicts = defaultdict(list)
-    action_dict = defaultdict(list)
-    upgrade_dict = defaultdict(list)
-    prototype_import_dict = defaultdict(list)
-    prototype_export_dict = defaultdict(list)
-
     bundle_definition = (
-        bundle_definitions.get(("cluster",))
-        or bundle_definitions.get(("provider",))
-        or bundle_definitions.get(("adcm",))
+        bundle_definitions.get(("cluster",)) or bundle_definitions.get(("provider",)) or bundle_definitions[("adcm",)]
     )
 
-    bundle = _build_bundle(bundle_definition, bundle_hash, verification_status)
+    bundle = _create_bundle(bundle_definition, bundle_hash, verification_status)
+
+    prototypes_without_parent: dict[BundleDefinitionKey, Prototype] = {}
+    prototypes_with_parent: deque[tuple[Prototype, BundleDefinitionKey]] = deque()
+
+    configs = deque()
+    actions = deque()
+    sub_actions = deque()
+    upgrades = deque()
+    exports = deque()
+    imports = deque()
 
     for key, definition in bundle_definitions.items():
-        _build_prototype(key, definition, prototype_dict, bundle_root)
-        _build_prototype_config(key, definition.config, prototype_config_dicts)
+        prototype = _definition_to_model(
+            definition=definition, bundle=bundle, license_hash=_get_license_hash(bundle_root, definition.license.path)
+        )
+
+        if is_component_key(key):
+            parent_key = build_parent_key_safe(key)
+            prototypes_with_parent.append((prototype, parent_key))
+        else:
+            prototypes_without_parent[key] = prototype
+
+        if definition.config:
+            configs.extend(
+                convert_config_definition_to_orm_model(definition=definition.config, prototype=prototype, action=None)
+            )
 
         for action_def in definition.actions:
-            action = _build_action(key, action_def, action_dict)
-            _build_prototype_config(key, action_def.config, prototype_config_dicts, action)
+            action, configs_, sub_actions_ = _prepare_action_related_models(definition=action_def, prototype=prototype)
+            actions.append(action)
+            sub_actions.extend(sub_actions_)
+            configs.extend(configs_)
 
         for upgrade_def in definition.upgrades:
-            action = _build_action(key, upgrade_def.action, action_dict) if upgrade_def.action else None
-            _build_upgrade(key, upgrade_def, upgrade_dict, action)
-            if action:
-                _build_prototype_config(key, upgrade_def.action.config, prototype_config_dicts, action)
+            action = None
+            if upgrade_def.action:
+                action, configs_, sub_actions_ = _prepare_action_related_models(
+                    definition=upgrade_def.action, prototype=prototype
+                )
+                actions.append(action)
+                sub_actions.extend(sub_actions_)
+                configs.extend(configs_)
 
-        for definition_export in definition.exports:
-            prototype_export_dict[key].append(PrototypeExport(name=definition_export))
+            upgrade = _upgrade_definition_to_model(definition=upgrade_def, bundle=bundle, action=action)
+            upgrades.append(upgrade)
 
-        for definition_import in definition.imports:
-            _build_stage_prototype_import(key, definition_import, prototype_import_dict)
+        exports.extend(PrototypeExport(name=export, prototype=prototype) for export in definition.exports)
 
-    _save_definitions_in_db(
-        bundle,
-        prototype_dict,
-        prototype_config_dicts,
-        action_dict,
-        upgrade_dict,
-        prototype_import_dict,
-        prototype_export_dict,
-    )
+        imports.extend(
+            _import_definition_to_model(definition=import_, prototype=prototype) for import_ in definition.imports
+        )
+
+    Prototype.objects.bulk_create(objs=prototypes_without_parent.values())
+
+    for proto, parent_key in prototypes_with_parent:
+        proto.parent = prototypes_without_parent[parent_key]
+
+    Prototype.objects.bulk_create(objs=map(itemgetter(0), prototypes_with_parent))
+    Action.objects.bulk_create(objs=actions)
+    SubAction.objects.bulk_create(objs=sub_actions)
+    Upgrade.objects.bulk_create(objs=upgrades)
+    PrototypeConfig.objects.bulk_create(objs=configs)
+    PrototypeImport.objects.bulk_create(objs=imports)
+    PrototypeExport.objects.bulk_create(objs=exports)
 
     return bundle
 
 
 def convert_config_definition_to_orm_model(
-    definition: ConfigDefinition, action: Action | None
+    definition: ConfigDefinition, prototype: Prototype | None, action: Action | None
 ) -> Generator[PrototypeConfig, None, None]:
+    # prototype is optional for the sake of jinja-config generation
+    # should be made mandatory after its refactoring
     for param_key, param_spec in definition.parameters.items():
         name = param_spec.key[0]
         subname = param_spec.name if len(param_key) != 1 else ""
-        raw_default = definition.default_values.get(param_key, "")
+
+        default = ""
+        if (value := definition.default_values.get(param_key, None)) is not None:
+            default = value
+
+            if param_spec.type in STACK_COMPLEX_FIELD_TYPES:
+                default = json.dumps(default)
 
         yield PrototypeConfig(
             action=action,
+            prototype=prototype,
             name=name,
             subname=subname,
             type=param_spec.type,
@@ -150,92 +191,28 @@ def convert_config_definition_to_orm_model(
             limits=param_spec.limits,
             group_customization=param_spec.group_customization,
             ui_options=param_spec.ui_options,
-            # should we dump all or just STACK_COMPLEX_FIELD_TYPES?
-            default=json.dumps(raw_default),
+            default=default,
         )
 
 
-def _save_definitions_in_db(
-    bundle: Bundle,
-    prototype_dict: dict[BundleDefinitionKey, Prototype],
-    prototype_config_dicts: dict[BundleDefinitionKey, list[PrototypeConfig]],
-    action_dict: dict[BundleDefinitionKey, list[Action]],
-    upgrade_dict: dict[BundleDefinitionKey, list[Upgrade]],
-    prototype_import_dict: dict[BundleDefinitionKey, list[PrototypeImport]],
-    prototype_export_dict: dict[BundleDefinitionKey, list[PrototypeExport]],
-) -> None:
-    _fill_bundle(prototype_dict, upgrade_dict, bundle)
+def _prepare_action_related_models(
+    definition: ActionDefinition, prototype: Prototype
+) -> tuple[Action, Iterable[PrototypeConfig], Iterable[SubAction]]:
+    action = _action_definition_to_model(definition=definition, prototype=prototype)
 
-    created_prototype_dict = _create_prototype_objects(prototype_dict)
-    _create_prototype_depending_objects(PrototypeExport, prototype_export_dict, created_prototype_dict)
-    _create_prototype_depending_objects(PrototypeImport, prototype_import_dict, created_prototype_dict)
-    _create_prototype_depending_objects(Action, action_dict, created_prototype_dict)
+    configs = ()
 
-    Upgrade.objects.bulk_create([upgrade for sublist in upgrade_dict.values() for upgrade in sublist])
+    sub_actions = tuple(
+        _sub_action_to_definition_to_model(definition=script, action=action) for script in definition.scripts
+    )
 
-    _create_prototype_config_objects(prototype_config_dicts, created_prototype_dict)
+    if definition.config:
+        configs = tuple(convert_config_definition_to_orm_model(definition.config, prototype=prototype, action=action))
+
+    return action, configs, sub_actions
 
 
-def _fill_bundle(
-    prototype_dict: dict[BundleDefinitionKey, Prototype],
-    upgrade_dict: dict[BundleDefinitionKey, list[Upgrade]],
-    bundle: Bundle,
-) -> None:
-    all_upgrades = [upgrade for sublist in upgrade_dict.values() for upgrade in sublist]
-    for obj in list(prototype_dict.values()) + all_upgrades:
-        obj.bundle = bundle
-
-
-def _create_prototype_objects(
-    prototype_dict: dict[BundleDefinitionKey, Prototype],
-) -> dict[BundleDefinitionKey, Prototype]:
-    Prototype.objects.bulk_create(prototype_dict.values())
-
-    for_update = deque()
-
-    for definition_key, prototype in prototype_dict.items():
-        parent_name = definition_key[1] if len(definition_key) == 3 else None
-        if parent_name:
-            parent_key = ("service", definition_key[1])
-            prototype.parent = prototype_dict[parent_key]
-            for_update.append(prototype)
-
-    if for_update:
-        Prototype.objects.bulk_update(for_update, fields=["parent"])
-
-    return prototype_dict
-
-
-def _create_prototype_depending_objects(
-    obj_type: Type[PrototypeExport] | Type[PrototypeImport] | Type[Action],
-    object_dict: dict[BundleDefinitionKey, list[PrototypeExport | PrototypeImport | Action]],
-    prototypes_dict: dict[BundleDefinitionKey, Prototype],
-) -> None:
-    if not object_dict:
-        return
-
-    for definition_key, definition_data in object_dict.items():
-        for definition_object in definition_data:
-            definition_object.prototype = prototypes_dict[definition_key]
-
-    obj_type.objects.bulk_create([item for sublist in object_dict.values() for item in sublist])
-
-
-def _create_prototype_config_objects(
-    prototype_config_dicts: dict[BundleDefinitionKey, list[PrototypeConfig]],
-    created_prototype_dict: dict[BundleDefinitionKey, Prototype],
-) -> None:
-    for key, configs in prototype_config_dicts.items():
-        for config in configs:
-            if config.action:
-                config.prototype = config.action.prototype
-            else:
-                config.prototype = created_prototype_dict[key]
-
-    PrototypeConfig.objects.bulk_create([item for sublist in prototype_config_dicts.values() for item in sublist])
-
-
-def _build_bundle(definition: Definition, bundle_hash: str, verification_status: SignatureStatus) -> Bundle:
+def _create_bundle(definition: Definition, bundle_hash: str, verification_status: SignatureStatus) -> Bundle:
     return Bundle.objects.create(
         name=definition.name,
         version=definition.version,
@@ -248,13 +225,13 @@ def _build_bundle(definition: Definition, bundle_hash: str, verification_status:
     )
 
 
-def _build_prototype(
-    definition_key: BundleDefinitionKey,
+def _definition_to_model(
     definition: Definition,
-    prototype_dict: dict[BundleDefinitionKey, Prototype],
-    bundle_path: Path,
-) -> None:
-    prototype_dict[definition_key] = Prototype(
+    bundle: Bundle,
+    license_hash: str | None,
+) -> Prototype:
+    return Prototype(
+        bundle=bundle,
         name=definition.name,
         type=definition.type,
         version=definition.version,
@@ -262,7 +239,7 @@ def _build_prototype(
         path=definition.path,
         license=definition.license.status,
         license_path=definition.license.path,
-        license_hash=_get_license_hash(bundle_path, definition.license.path),
+        license_hash=license_hash,
         display_name=definition.display_name,
         required=definition.required,
         shared=definition.shared,
@@ -278,17 +255,15 @@ def _build_prototype(
     )
 
 
-def _build_action(
-    definition_key: BundleDefinitionKey,
-    definition: ActionDefinition,
-    action_dict: dict[BundleDefinitionKey, list[Action]],
-) -> Action:
-    action = Action(
+def _action_definition_to_model(definition: ActionDefinition, prototype: Prototype) -> Action:
+    return Action(
         name=definition.name,
+        prototype=prototype,
         description=definition.description,
         display_name=definition.display_name,
         ui_options=definition.ui_options,
         type=definition.type,
+        venv=definition.venv,
         state_available=definition.available_at.states,
         state_unavailable=definition.unavailable_at.states,
         state_on_success=definition.on_success.set_state if definition.on_success.set_state else "",
@@ -308,48 +283,41 @@ def _build_action(
         config_jinja=definition.config_jinja,
         scripts_jinja=definition.scripts_jinja if definition.scripts_jinja else "",
     )
-    action_dict[definition_key].append(action)
-    return action
 
 
-def _build_stage_prototype_import(
-    definition_key: BundleDefinitionKey,
-    import_dict: dict,
-    prototype_import_dict: dict[BundleDefinitionKey, list[PrototypeImport]],
-) -> None:
-    prototype_import = PrototypeImport(
-        name=import_dict["name"],
-        min_version=import_dict.get("min_version", ""),
-        max_version=import_dict.get("max_version", ""),
-        min_strict=import_dict.get("min_strict", False),
-        max_strict=import_dict.get("max_strict", False),
-        default=import_dict.get("default", None),
-        required=import_dict.get("required", False),
-        multibind=import_dict.get("multibind", False),
-    )
-    prototype_import_dict[definition_key].append(prototype_import)
-
-
-def _build_prototype_config(
-    definition_key: BundleDefinitionKey,
-    definition: ConfigDefinition | None,
-    prototype_config_dict: dict[BundleDefinitionKey, list[PrototypeConfig]],
-    action: Action | None = None,
-) -> None:
-    if not definition:
-        return
-
-    prototype_config_dict[definition_key].extend(convert_config_definition_to_orm_model(definition, action))
-
-
-def _build_upgrade(
-    definition_key: BundleDefinitionKey,
-    definition: UpgradeDefinition,
-    upgrade_config_dict: dict[BundleDefinitionKey, list[Upgrade]],
-    action: Action | None,
-) -> None:
-    upgrade = Upgrade(
+def _sub_action_to_definition_to_model(definition: JobSpec, action: Action) -> SubAction:
+    return SubAction(
+        action=action,
         name=definition.name,
+        display_name=definition.display_name,
+        script=definition.script,
+        script_type=definition.script_type.value,
+        state_on_fail=definition.state_on_fail,
+        multi_state_on_fail_set=definition.multi_state_on_fail_set,
+        multi_state_on_fail_unset=definition.multi_state_on_fail_unset,
+        params=definition.params,
+        allow_to_terminate=definition.allow_to_terminate,
+    )
+
+
+def _import_definition_to_model(definition: ImportDefinition, prototype: Prototype) -> None:
+    return PrototypeImport(
+        name=definition.name,
+        prototype=prototype,
+        min_version=definition.min_version.value,
+        max_version=definition.max_version.value,
+        min_strict=definition.min_version.is_strict,
+        max_strict=definition.max_version.is_strict,
+        default=definition.default,
+        required=definition.is_required,
+        multibind=definition.is_multibind_allowed,
+    )
+
+
+def _upgrade_definition_to_model(definition: UpgradeDefinition, bundle: Bundle, action: Action | None) -> None:
+    return Upgrade(
+        name=definition.name,
+        bundle=bundle,
         action=action,
         display_name=definition.display_name,
         description=definition.description,
@@ -361,7 +329,6 @@ def _build_upgrade(
         state_available=definition.state_available,
         state_on_success=definition.state_on_success,
     )
-    upgrade_config_dict[definition_key].append(upgrade)
 
 
 def _get_license_hash(bundle_path: Path, license_path: str | None) -> str | None:

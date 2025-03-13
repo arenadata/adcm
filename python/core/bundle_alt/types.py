@@ -144,9 +144,19 @@ class VersionBound(NamedTuple):
 
 
 @dataclass(slots=True)
+class ImportDefinition:
+    name: str
+    is_required: bool = False
+    is_multibind_allowed: bool = False
+    min_version: VersionBound = VersionBound(value="", is_strict=False)
+    max_version: VersionBound = VersionBound(value="", is_strict=False)
+    default: list[str] | None = None
+
+
+@dataclass(slots=True)
 class UpgradeRestrictions:
-    min_version: VersionBound = VersionBound(value="0", is_strict=False)
-    max_version: VersionBound = VersionBound(value="0", is_strict=False)
+    min_version: VersionBound = VersionBound(value="", is_strict=False)
+    max_version: VersionBound = VersionBound(value="", is_strict=False)
     from_editions: list[str] = field(default_factory=partial(list, ("community",)))
 
 
@@ -199,7 +209,7 @@ class Definition(GeneralObjectDescription):
     bound_to: dict = field(default_factory=dict)
     constraint: list = field(default_factory=partial(list, (0, "+")))
     exports: list[str] = field(default_factory=list)
-    imports: list[dict] = field(default_factory=list)
+    imports: list[ImportDefinition] = field(default_factory=list)
 
     # Related Objects
     config: ConfigDefinition | None = None

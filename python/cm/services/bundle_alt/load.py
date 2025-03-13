@@ -35,6 +35,7 @@ import ruyaml
 from cm.errors import AdcmEx
 from cm.models import ADCM, Bundle, SignatureStatus
 from cm.services.bundle_alt import repo
+from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 
 logger = logging.getLogger("adcm")
 
@@ -57,6 +58,7 @@ class Directories(NamedTuple):
     files: Path
 
 
+@convert_bundle_errors_to_adcm_ex
 def parse_bundle_from_request_to_db(file_from_request: File, *, directories: Directories, adcm_version: str) -> Bundle:
     archive_in_tmp = write_bundle_archive_to_tempdir(file_from_request)
     archive_in_downloads = safe_copy_to_downloads(archive_in_tmp, downloads_dir=directories.downloads)

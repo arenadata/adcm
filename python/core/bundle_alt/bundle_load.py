@@ -14,7 +14,7 @@ from pathlib import Path
 import hashlib
 import tarfile
 
-from core.bundle_alt.errors import BundleUnpackingError
+from core.bundle_alt.errors import BundleProcessingError, BundleValidationError
 
 
 def get_config_files(path: Path) -> list[tuple[Path, Path]]:
@@ -26,7 +26,7 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
             conf_list.append((item.relative_to(path), item))
 
     if not conf_list:
-        raise BundleUnpackingError(code="STACK_LOAD_ERROR", msg=f'No config files in stack directory "{path}"')
+        raise BundleValidationError(f'No config files in stack directory "{path}"')
 
     return conf_list
 
@@ -36,25 +36,13 @@ def untar_safe(to: Path, tar_from: Path) -> None:
         with tarfile.open(tar_from) as tar:
             tar.extractall(path=to)
 
-    except tarfile.ReadError:
-        raise BundleUnpackingError(code="BUNDLE_ERROR", msg=f"Can't open bundle tar file: {tar_from}") from None
+    except tarfile.ReadError as e:
+        raise BundleProcessingError(f"Can't open bundle tar file: {tar_from}") from e
 
 
 def get_hash_safe(path: Path) -> str:
-    bundle_hash = None
-
-    try:
-        bundle_hash = _get_hash(path)
-    except FileNotFoundError:
-        raise BundleUnpackingError(code="BUNDLE_ERROR", msg=f"Can't find bundle file: {path}") from None
-    except PermissionError:
-        raise BundleUnpackingError(code="BUNDLE_ERROR", msg=f"Can't open bundle file: {path}") from None
-    return bundle_hash
-
-
-def _get_hash(bundle_file: Path) -> str:
     sha1 = hashlib.sha1()  # noqa: S324
-    with open(bundle_file, "rb") as f:
+    with open(path, mode="rb") as f:
         for data in iter(lambda: f.read(16384), b""):
             sha1.update(data)
 
