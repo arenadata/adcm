@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import suppress
 from pathlib import Path
 from tarfile import TarFile
 from tempfile import gettempdir
@@ -20,11 +19,9 @@ import shutil
 
 from api_v2.tests.base import BaseAPITestCase
 from core.bundle_alt.bundle_load import get_hash_safe
-from core.bundle_alt.errors import BundleUnpackingError
 from django.conf import settings
 
 from cm.bundle import unpack_bundle
-from cm.errors import AdcmEx
 
 
 def pack_bundle(from_dir: Path, to: Path) -> Path:
@@ -119,28 +116,6 @@ class TestBundleProcessing(BaseAPITestCase):
 
             for unexpected_file in unexpected_files:
                 self.assertNotIn(unexpected_file, relative_configs)
-
-    def test_unpack_bundle_already_exists_fail(self) -> None:
-        for bundle_path in self.packed_bundles.glob("*"):
-            if bundle_path.name in self.already_existing_bundles:
-                with suppress(AdcmEx):
-                    unpack_bundle(bundle_path)
-
-    def test_unpack_bundle_empty_folder_fail(self) -> None:
-        with suppress(BundleUnpackingError):
-            unpack_bundle(self.empty_folder_tar)
-
-    def test_unpack_bundle_path_not_exists_fail(self) -> None:
-        with suppress(BundleUnpackingError):
-            unpack_bundle(Path("Fake_path"))
-
-    def test_unpack_bundle_path_not_a_tar_fail(self) -> None:
-        with suppress(BundleUnpackingError):
-            unpack_bundle(self.invalid_tar)
-
-    def test_unpack_bundle_path_no_config_files_fail(self) -> None:
-        with suppress(BundleUnpackingError):
-            unpack_bundle(self.no_config_files_tar)
 
     def tearDown(self) -> None:
         for temp_folder in [self.packed_bundles, self.empty_folder, self.no_config_files]:

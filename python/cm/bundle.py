@@ -31,7 +31,7 @@ from core.bundle_alt.bundle_load import (
 from core.bundle_alt.bundle_load import (
     untar_safe as untar_safe_alt,
 )
-from core.bundle_alt.errors import BundleUnpackingError
+from core.bundle_alt.errors import BundleProcessingError
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.transaction import atomic
@@ -1450,9 +1450,8 @@ def unpack_bundle(bundle_path: Path) -> list[tuple[Path, Path]]:
     """
 
     if not bundle_path.is_file():
-        raise BundleUnpackingError(
-            code="BUNDLE_ERROR", msg=f"The bundle path provided does not exist or is not a file: {bundle_path}"
-        )
+        message = f"The bundle path provided does not exist or is not a file: {bundle_path}"
+        raise BundleProcessingError(message)
 
     bundle_hash = get_hash_safe_alt(path=bundle_path)
 

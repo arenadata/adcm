@@ -20,6 +20,7 @@ from core.bundle_alt.types import (
     ActionAvailability,
     ConfigDefinition,
     ConfigParamPlainSpec,
+    ImportDefinition,
     UpgradeRestrictions,
     VersionBound,
 )
@@ -370,12 +371,12 @@ class TestBundleValidation(TestCase):
         config = {"/a": make_config(name="a", type="group"), "/b": make_config(name="b"), "/c/k": make_config(name="c")}
 
         with self.subTest("Import with no default"):
-            definition = make_def((CLUSTER,), config=config, imports=[{}])
+            definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(name="hoho")])
 
             check_import_defaults_exist_in_config(definition)
 
         with self.subTest("Import with existing default"):
-            definition = make_def((CLUSTER,), config=config, imports=[{"default": "a"}])
+            definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(name="haha", default="a")])
 
             check_import_defaults_exist_in_config(definition)
 
@@ -387,7 +388,7 @@ class TestBundleValidation(TestCase):
             ("Import default not existing field", [{"name": "a", "default": "p"}]),
         ]:
             with self.subTest(case):
-                definition = make_def((CLUSTER,), config=config, imports=imports)
+                definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(**i) for i in imports])
 
                 with self.assertRaises(BundleValidationError) as err:
                     check_import_defaults_exist_in_config(definition)
@@ -741,7 +742,7 @@ class TestBundleDefinitionConvertion(TestCase):
         schema = ClusterSchema.model_validate(raw)
 
         upgrade_action_name = (
-            "strange_aa.fb_community_action-like_12.2.eee_strict_true-43.3_strict_false_"
+            "strange_aa.fb_community_upgrade_action-like_12.2.eee_strict_true-43.3_strict_true_"
             "editions-yet_custom_state_available-a_n_y_state_on_success-"
         )
 

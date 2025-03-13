@@ -10,16 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import suppress
 from operator import itemgetter
 from pathlib import Path
 from typing import Any, Iterable, TypeAlias
+import warnings
 
 from adcm_version import compare_adcm_versions
-import yaml
+from ruyaml.composer import ComposerError
+from ruyaml.constructor import DuplicateKeyError
+from ruyaml.error import ReusedAnchorWarning
+from ruyaml.parser import ParserError as RuYamlParserError
+from ruyaml.scanner import ScannerError as RuYamlScannerError
+import ruyaml
 
 from core.bundle_alt.bundle_load import get_config_files
 from core.bundle_alt.convertion import schema_entry_to_definition
-from core.bundle_alt.errors import BundleParsingAdcmExLikeError, BundleParsingError
+from core.bundle_alt.errors import BundleParsingError, BundleProcessingError, BundleValidationError
 from core.bundle_alt.representation import build_parent_key_safe
 from core.bundle_alt.schema import (
     ADCMSchema,
@@ -37,6 +44,32 @@ from core.errors import localize_error
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
 _RelativePath: TypeAlias = str
+
+
+# COPIED FROM cm.checker DURING ADCM-6411
+#
+# This tases much more time than regular load,
+# but some bundles contain duplicates in dict keys and stuff,
+# when it's required to keep first element (at least for studied case),
+# so we were forced to return this until the better solution is found.
+def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_keys=False):
+    """
+    Parse the first YAML document in a stream and produce the corresponding Python object.
+
+    This is a replace for ruyaml.round_trip_load() function which can switch off
+    duplicate YAML keys error
+    """
+
+    loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
+    loader._constructor.allow_duplicate_keys = allow_duplicate_keys
+    try:
+        return loader._constructor.get_single_data()
+    finally:
+        loader._parser.dispose()
+        with suppress(AttributeError):
+            loader._reader.reset_reader()
+        with suppress(AttributeError):
+            loader._scanner.reset_scanner()
 
 
 def retrieve_bundle_definitions(
@@ -122,16 +155,27 @@ def _check_no_definition_type_conflicts(keys: Iterable[BundleDefinitionKey]) -> 
             "Definitions in bundle doesn't fit cluster, provider or ADCM format: "
             f"{', '.join(sorted(definition_types))}"
         )
-        raise BundleParsingAdcmExLikeError(code="BUNDLE_ERROR", msg=message)
-
-    if is_cluster_bundle and not definition_types.issuperset({"cluster", "service"}):
-        raise BundleParsingAdcmExLikeError(
-            code="BUNDLE_ERROR", msg="Both cluster and service definitions should be present in cluster bundle"
-        )
+        raise BundleValidationError(message)
 
 
 def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefinition]) -> None:
     for key, definition in definitions.items():
+        for action in (definition.actions or {}).values():
+            if action.venv is None:
+                action.venv = definition.venv
+
+            if hasattr(action, "scripts"):
+                for script in action.scripts or ():
+                    if script.get("allow_to_terminate") is None:
+                        script["allow_to_terminate"] = action.allow_to_terminate
+                    if script.get("params") is None:
+                        script["params"] = action.params
+
+        if hasattr(definition, "upgrade"):
+            for upgrade in definition.upgrade or ():
+                if upgrade.venv is None:
+                    upgrade.venv = definition.venv
+
         parent_key = build_parent_key_safe(key)
         if not parent_key:
             continue
@@ -193,8 +237,21 @@ def read_raw_bundle_definitions(bundle_root: Path) -> Iterable[tuple[dict, Path]
 
 
 def _read_config_file(path: Path) -> Any:
-    text_content = path.read_text(encoding="utf-8")
-    return yaml.safe_load(stream=text_content)
+    warnings.simplefilter(action="error", category=ReusedAnchorWarning)
+    content = path.read_text(encoding="utf-8")
+
+    try:
+        return round_trip_load(content, version="1.1", allow_duplicate_keys=True)
+    except (
+        RuYamlParserError,
+        RuYamlScannerError,
+        NotImplementedError,
+        ReusedAnchorWarning,
+        DuplicateKeyError,
+        ComposerError,
+    ) as e:
+        message = f'Error during parsing yaml file at "{path}": {e}'
+        raise BundleProcessingError(message) from e
 
 
 def _config_content_to_list(config_file_content: Any) -> list[dict]:

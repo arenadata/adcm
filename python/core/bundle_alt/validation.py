@@ -223,11 +223,11 @@ def check_import_defaults_exist_in_config(definition: Definition) -> None:
     if definition.config:
         group_names_in_config = {entry.name for entry in definition.config.parameters.values() if entry.type == "group"}
 
-    for entry in definition.imports or ():
-        for default_name in entry.get("default", ()):
+    for entry in definition.imports:
+        for default_name in entry.default or ():
             if default_name not in group_names_in_config:
                 message = (
-                    f"Group specified as default for import {entry.get('name')} "
+                    f"Group specified as default for import {entry.name} "
                     f"is missing in configuration: {default_name}"
                 )
                 raise BundleValidationError(message)

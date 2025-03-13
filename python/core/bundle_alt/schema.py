@@ -50,7 +50,12 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 NAME_REGEX = re.compile(pattern=r"[0-9a-zA-Z_\.-]+")
 
 VERSION: TypeAlias = int | float | str
-VENV: TypeAlias = Annotated[Literal["default", "2.9"] | None, Field(default=None)]
+VENV: TypeAlias = Annotated[
+    Literal["default", "2.8", "2.9"] | None,
+    Field(default=None),
+    # fixme cast is too broad, but required since round trip load
+    BeforeValidator(lambda x: str(x) if x is not None else x),
+]
 MONITORING: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(default=None)]
 ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
 
@@ -672,7 +677,7 @@ class ImportSchema(_BaseModel):
 
 class _BaseObjectSchema(_BaseModel):
     type: Literal["cluster", "service", "provider", "host", "adcm"]
-    name: NAME
+    name: str
     version: VERSION
     adcm_min_version: Annotated[VERSION | None, Field(default=None)]
     display_name: Annotated[str | None, Field(default=None)]

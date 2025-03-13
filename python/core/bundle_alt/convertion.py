@@ -27,6 +27,7 @@ from core.bundle_alt.types import (
     ConfigDefinition,
     ConfigParamPlainSpec,
     Definition,
+    ImportDefinition,
     License,
     OnCompletion,
     ParameterKey,
@@ -140,7 +141,7 @@ def _convert(entity: dict, context: dict):
     _fill_value(result, entity, "flag_autogeneration")
     _fill_value(result, entity, "venv")
     _fill_value(result, entity, "shared")
-    _fill_value(result, entity, "requried")
+    _fill_value(result, entity, "required")
     _fill_value(result, entity, "monitoring")
     _fill_value(result, entity, "config_group_customization")
     _fill_value(result, entity, "allow_maintenance_mode")
@@ -161,7 +162,20 @@ def _extract_imports(entity: dict) -> list[dict] | None:
     if imports is None:
         return None
 
-    return _to_named_list(imports)
+    return list(map(_extract_import, _to_named_list(imports)))
+
+
+def _extract_import(entity: dict) -> ImportDefinition:
+    result = {
+        "name": entity["name"],
+        "min_version": _extract_version_bound(entity, "min"),
+        "max_version": _extract_version_bound(entity, "max"),
+        "is_required": entity.get("required"),
+        "is_multibind_allowed": entity.get("multibind"),
+        "default": entity.get("default"),
+    }
+
+    return ImportDefinition(**_drop_unset(result))
 
 
 def _extract_exports(entity: dict) -> list | None:
@@ -322,7 +336,10 @@ def _patch_upgrade_action_names(result: Definition) -> Definition:
         min_ = upgrade.restrictions.min_version
         max_ = upgrade.restrictions.max_version
 
-        versions = f"{min_.value}_strict_{min_.is_strict}-" f"{max_.value}_strict_{max_.is_strict}"
+        # ! second strict is taken from min_ too,
+        # ! because this error was in old code
+        # ! => fixing it requires migrations
+        versions = f"{min_.value}_strict_{min_.is_strict}-" f"{max_.value}_strict_{min_.is_strict}"
         editions = f"editions-{'_'.join(upgrade.restrictions.from_editions)}"
         available = f"state_available-{'_'.join(upgrade.state_available)}"
         on_success = f"state_on_success-{upgrade.state_on_success}"
@@ -331,6 +348,7 @@ def _patch_upgrade_action_names(result: Definition) -> Definition:
             owner.name,
             owner.version,
             owner.edition,
+            "upgrade",
             upgrade.name,
             versions,
             editions,
