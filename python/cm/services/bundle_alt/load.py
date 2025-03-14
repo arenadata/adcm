@@ -59,7 +59,9 @@ class Directories(NamedTuple):
 
 
 @convert_bundle_errors_to_adcm_ex
-def parse_bundle_from_request_to_db(file_from_request: File, *, directories: Directories, adcm_version: str) -> Bundle:
+def parse_bundle_from_request_to_db(
+    file_from_request: File, *, directories: Directories, adcm_version: str, verified_signature_only: bool
+) -> Bundle:
     archive_in_tmp = write_bundle_archive_to_tempdir(file_from_request)
     archive_in_downloads = safe_copy_to_downloads(archive_in_tmp, downloads_dir=directories.downloads)
     with _cleanup_on_fail(archive_in_downloads):
@@ -68,6 +70,7 @@ def parse_bundle_from_request_to_db(file_from_request: File, *, directories: Dir
             bundles_dir=directories.bundles,
             files_dir=directories.files,
             adcm_version=adcm_version,
+            verified_signature_only=verified_signature_only,
         )
 
 
@@ -101,7 +104,9 @@ def safe_copy_to_downloads(archive: Path, downloads_dir: Path) -> Path:
         return target_path
 
 
-def process_bundle_from_archive(archive: Path, bundles_dir: Path, files_dir: Path, adcm_version: str) -> Bundle:
+def process_bundle_from_archive(
+    archive: Path, bundles_dir: Path, files_dir: Path, adcm_version: str, verified_signature_only: bool
+) -> Bundle:
     """Unpack bundle to bundles dir, read definitions, create bundle"""
     bundle_hash = get_hash_safe(archive)
     unpacking_info = _unpack_bundle(
@@ -109,6 +114,7 @@ def process_bundle_from_archive(archive: Path, bundles_dir: Path, files_dir: Pat
     )
 
     with _cleanup_on_fail(unpacking_info.root):
+        _verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
         definitions = retrieve_bundle_definitions(
             bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
@@ -268,3 +274,11 @@ def _cleanup_on_fail(*paths: Path):
                 logger.warning(f"Path assigned for cleanup on error, but it's neither existing file or dir: {path}")
 
         raise
+
+
+def _verify_signature(bundle_signature: SignatureStatus, verified_signature_only: bool) -> None:
+    if bundle_signature != SignatureStatus.VALID and verified_signature_only:
+        raise AdcmEx(
+            code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",
+            msg=(f"Upload rejected due to failed bundle verification: bundle's signature is '{bundle_signature}'"),
+        )

@@ -38,7 +38,11 @@ class TestADCMAudit(BaseAPITestCase):
         self.adcm = ADCM.objects.first()
         self.data = {
             "config": {
-                "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                },
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
                 "audit_data_retention": {
@@ -82,6 +86,7 @@ class TestADCMAudit(BaseAPITestCase):
         Action.objects.filter(name="test_ldap_connection")
 
     def test_adcm_config_change_success(self):
+        self.data["config"]["global"]["accept_only_verified_bundles"] = False
         response = self.client.v2["adcm", CONFIGS].post(data=self.data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_last_audit_record(

@@ -2303,6 +2303,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
         self.adcm = ADCM.objects.first()
         self.adcm_current_config = ConfigLog.objects.get(id=self.adcm.config.current)
+        self.maxDiff = None
 
     def test_list_success(self):
         response = (self.client.v2 / "adcm" / CONFIGS).get()
@@ -2332,7 +2333,11 @@ class TestADCMConfig(BaseAPITestCase):
     def test_create_success(self):
         data = {
             "config": {
-                "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                },
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
                 "audit_data_retention": {
@@ -2394,7 +2399,13 @@ class TestADCMConfig(BaseAPITestCase):
     def test_filtering_success(self):
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="filtering test config",
         )
         filter_name = "description"
@@ -2418,12 +2429,24 @@ class TestADCMConfig(BaseAPITestCase):
         }
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="filtering test config",
         )
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="second filtering test config",
         )
 
