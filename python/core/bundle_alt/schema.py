@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Annotated, Any, Literal, TypeAlias
+from pathlib import Path
+from typing import Annotated, Any, Generator, Literal, TypeAlias
 import re
 
 from adcm_version import compare_prototype_versions
@@ -29,6 +30,7 @@ from typing_extensions import TypedDict
 
 from core.bundle_alt._pattern import Pattern
 from core.bundle_alt.errors import BundleParsingError
+from core.job.types import JobSpec
 
 # Should be moved to consts section
 ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
@@ -597,7 +599,7 @@ class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
 
 
-class ScriptsSchema(TypedDict):
+class ScriptSchema(TypedDict):
     name: str
     script: Annotated[str, AfterValidator(script_is_correct_path)]
     script_type: ACTION_SCRIPT_TYPE
@@ -608,7 +610,7 @@ class ScriptsSchema(TypedDict):
 
 
 class TaskPlainSchema(_BaseTaskSchema):
-    scripts: list[ScriptsSchema]
+    scripts: list[ScriptSchema]
 
 
 class TaskJinjaSchema(_BaseTaskSchema):
@@ -768,6 +770,11 @@ class ProviderSchema(_BaseObjectSchema):
     config_group_customization: Annotated[bool | None, Field(default=None)]
 
 
+################
+# Bundle parsing
+################
+
+
 TYPE_SCHEMA_MAP = {
     "cluster": ClusterSchema,
     "service": ServiceSchema,
@@ -801,3 +808,30 @@ def parse(
 
     with _validation_to_bundle_error():
         return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
+
+
+#######################
+# scripts_jinja parsing
+#######################
+
+
+class ScriptsJinjaSchema(_BaseModel):
+    scripts: Annotated[list[ScriptSchema], Field(min_length=1)]
+
+
+class ScriptJinjaContext(TypedDict):
+    source_dir: Path
+    action_allow_to_terminate: bool
+
+
+def parse_scripts_jinja(data: list[dict], context: ScriptJinjaContext) -> Generator[JobSpec, None, None]:
+    from core.bundle_alt.convertion import extract_scripts  # TODO: circular imports
+
+    scripts = ScriptsJinjaSchema.model_validate({"scripts": data}, strict=True)
+    scripts = scripts.model_dump(exclude_none=True, exclude_unset=True, exclude_defaults=True)["scripts"]
+
+    for script in scripts:  # propagate `allow_to_terminate` attr from action if not set
+        if not script.get("allow_to_terminate"):
+            script["allow_to_terminate"] = context["action_allow_to_terminate"]
+
+    yield from extract_scripts(scripts=scripts, path_resolution_root=context["source_dir"])

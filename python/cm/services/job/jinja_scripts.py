@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 from typing import Annotated, Generator, TypedDict
 
+from core.bundle_alt.schema import ScriptJinjaContext, parse_scripts_jinja
 from core.job.types import JobSpec
 from core.types import HostID, HostName, ServiceName, TaskID
 
@@ -101,7 +103,9 @@ def get_env(task: TaskLog, delta: TaskMappingDelta | None = None) -> JinjaScript
     )
 
 
-def get_job_specs_from_template(task_id: TaskID, delta: TaskMappingDelta | None) -> Generator[JobSpec, None, None]:
+def get_job_specs_from_template(
+    task_id: TaskID, delta: TaskMappingDelta | None, feature_scripts_jinja: bool = False
+) -> Generator[JobSpec, None, None]:
     task = TaskLog.objects.select_related("action", "action__prototype__bundle").get(pk=task_id)
 
     path_resolver = BundlePathResolver(bundle_hash=task.action.prototype.bundle.hash)
@@ -118,15 +122,30 @@ def get_job_specs_from_template(task_id: TaskID, delta: TaskMappingDelta | None)
 
     dir_with_jinja = scripts_jinja_file.parent.relative_to(path_resolver.bundle_root)
 
-    for job in template_builder.data:
-        state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset = get_on_fail_states(config=job)
+    if feature_scripts_jinja:
+        context = ScriptJinjaContext(
+            source_dir=dir_with_jinja, action_allow_to_terminate=task.action.allow_to_terminate
+        )
+        yield from parse_scripts_jinja(data=template_builder.data, context=context)
+    else:
+        yield from _get_job_specs(
+            data=template_builder.data,
+            template_dir=dir_with_jinja,
+            action_allow_to_terminate=task.action.allow_to_terminate,
+        )
 
+
+def _get_job_specs(
+    data: list[dict], template_dir: Path, action_allow_to_terminate: bool
+) -> Generator[JobSpec, None, None]:
+    for job in data:
+        state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset = get_on_fail_states(config=job)
         yield JobSpec(
             name=job["name"],
             display_name=job.get("display_name", ""),
-            script=str(detect_relative_path_to_bundle_root(source_file_dir=dir_with_jinja, raw_path=job["script"])),
+            script=str(detect_relative_path_to_bundle_root(source_file_dir=template_dir, raw_path=job["script"])),
             script_type=job["script_type"],
-            allow_to_terminate=job.get("allow_to_terminate", task.action.allow_to_terminate),
+            allow_to_terminate=job.get("allow_to_terminate", action_allow_to_terminate),
             state_on_fail=state_on_fail,
             multi_state_on_fail_set=multi_state_on_fail_set,
             multi_state_on_fail_unset=multi_state_on_fail_unset,

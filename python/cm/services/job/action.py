@@ -72,7 +72,11 @@ class ActionRunPayload:
 
 
 def run_action(
-    action: Action, obj: ActionTarget, payload: ActionRunPayload, post_upgrade_hc: list[dict] | None = None
+    action: Action,
+    obj: ActionTarget,
+    payload: ActionRunPayload,
+    post_upgrade_hc: list[dict] | None = None,
+    feature_scripts_jinja: bool = False,
 ) -> TaskLog:
     task_payload = TaskPayloadDTO(
         conf=payload.conf,
@@ -120,7 +124,12 @@ def run_action(
             id=action_objects.target.pk, type=orm_object_to_action_target_type(action_objects.target)
         )
         task = prepare_task_for_action(
-            target=target, orm_owner=action_objects.owner, action=action.pk, payload=task_payload, delta=delta
+            target=target,
+            orm_owner=action_objects.owner,
+            action=action.pk,
+            payload=task_payload,
+            delta=delta,
+            feature_scripts_jinja=feature_scripts_jinja,
         )
 
         orm_task = TaskLog.objects.get(id=task.id)
@@ -150,6 +159,7 @@ def prepare_task_for_action(
     action: ActionID,
     payload: TaskPayloadDTO,
     delta: TaskMappingDelta | None = None,
+    feature_scripts_jinja: bool = False,
 ) -> Task:
     """
     Prepare task based on action, target object and task payload.
@@ -212,7 +222,9 @@ def prepare_task_for_action(
         task = job_repo.get_task(id=task.id)
 
     if action_info.scripts_jinja:
-        job_specifications = tuple(get_job_specs_from_template(task_id=task.id, delta=delta))
+        job_specifications = tuple(
+            get_job_specs_from_template(task_id=task.id, delta=delta, feature_scripts_jinja=feature_scripts_jinja)
+        )
     else:
         job_specifications = tuple(action_repo.get_job_specs(id=action))
 

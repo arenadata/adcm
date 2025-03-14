@@ -13,3 +13,7 @@
 
 def use_new_bundle_processing(request) -> bool:
     return request.headers.get("feature-bundle-upload", "old").lower() == "new"
+
+
+def use_new_jinja_scripts_processing(request) -> bool:
+    return request.headers.get("feature-scripts-jinja", "old").lower() == "new"
