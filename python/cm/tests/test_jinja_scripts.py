@@ -135,41 +135,81 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
         self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
 
     def test_jobs_generation(self):
-        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+        with self.subTest("Old scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
 
-        self.assertListEqual(
-            list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
-            ["job1", "job2", "job3", "job4"],
-        )
-        self.assertEqual(
-            dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
-            {
-                "job1": "playbook.yaml",
-                "job2": "jinja/playbook.yaml",
-                "job3": "inner/playbook.yaml",
-                "job4": "jinja/inner/playbook.yaml",
-            },
-        )
+            self.assertListEqual(
+                list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
+                ["job1", "job2", "job3", "job4"],
+            )
+            self.assertEqual(
+                dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
+                {
+                    "job1": "playbook.yaml",
+                    "job2": "jinja/playbook.yaml",
+                    "job3": "inner/playbook.yaml",
+                    "job4": "jinja/inner/playbook.yaml",
+                },
+            )
+        with self.subTest("New scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action", feature_scripts_jinja=True).id
+
+            self.assertListEqual(
+                list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
+                ["job1", "job2", "job3", "job4"],
+            )
+            self.assertEqual(
+                dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
+                {
+                    "job1": "playbook.yaml",
+                    "job2": "jinja/playbook.yaml",
+                    "job3": "inner/playbook.yaml",
+                    "job4": "jinja/inner/playbook.yaml",
+                },
+            )
 
         self.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
-        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
 
-        self.assertSetEqual(
-            set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
-            {"job_if_component_1_group_exists", "job3", "job4"},
-        )
+        with self.subTest("[With hc] Old scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+
+            self.assertSetEqual(
+                set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
+                {"job_if_component_1_group_exists", "job3", "job4"},
+            )
+
+        with self.subTest("[With hc] New scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action", feature_scripts_jinja=True).id
+
+            self.assertSetEqual(
+                set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
+                {"job_if_component_1_group_exists", "job3", "job4"},
+            )
 
     def test_unprocessable_template(self):
         initial_jobs_count = JobLog.objects.count()
 
-        with self.assertRaises(expected_exception=AdcmEx) as err:
-            self.prepare_task(owner=self.cluster, name="unprocessable_jinja_scripts_action")
+        with self.subTest("Old scripts processing"):
+            with self.assertRaises(expected_exception=AdcmEx) as err:
+                self.prepare_task(owner=self.cluster, name="unprocessable_jinja_scripts_action")
 
-        self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
-        self.assertEqual(err.exception.level, "error")
-        self.assertEqual(err.exception.msg, "Can't render jinja template")
-        self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
-        self.assertEqual(JobLog.objects.count(), initial_jobs_count)
+            self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
+            self.assertEqual(err.exception.level, "error")
+            self.assertEqual(err.exception.msg, "Can't render jinja template")
+            self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
+            self.assertEqual(JobLog.objects.count(), initial_jobs_count)
+
+        with self.subTest("New scripts processing"):
+            with self.assertRaises(expected_exception=AdcmEx) as err:
+                self.prepare_task(
+                    owner=self.cluster, name="unprocessable_jinja_scripts_action", feature_scripts_jinja=True
+                )
+
+            self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
+            self.assertEqual(err.exception.level, "error")
+            self.assertEqual(err.exception.msg, "Can't render jinja template")
+            self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
+            self.assertEqual(JobLog.objects.count(), initial_jobs_count)
 
     def test_adcm_6012_task_config_processing(self) -> None:
         action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_activatable_group_jinja")
