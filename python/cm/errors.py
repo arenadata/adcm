@@ -248,6 +248,7 @@ ERRORS = {
     "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
     "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
+    "BUNDLE_SIGNATURE_VERIFICATION_ERROR": ("Bundle signature verification error", HTTP_409_CONFLICT, ERR),
 }
 
 

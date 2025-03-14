@@ -16,6 +16,7 @@ from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
+from cm.services.adcm import adcm_config, get_adcm_config_id
 from cm.services.bundle_alt.load import Directories, parse_bundle_from_request_to_db
 from django.conf import settings
 from django.db.models import F
@@ -136,12 +137,14 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         return load_bundle(bundle_file=str(file_path))
 
     def _new_create(self, file) -> Bundle:
+        verified_signature_only = adcm_config(get_adcm_config_id()).config["global"]["accept_only_verified_bundles"]
         return parse_bundle_from_request_to_db(
             file_from_request=file,
             directories=Directories(
                 downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR
             ),
             adcm_version=settings.ADCM_VERSION,
+            verified_signature_only=verified_signature_only,
         )
 
     @extend_schema(
