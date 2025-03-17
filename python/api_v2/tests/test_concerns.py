@@ -128,6 +128,83 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
+    def test_adcm_6354_hostprovider_action_concern_locks_all_related_clusters_success(self):
+        cluster_1 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_1")
+        cluster_2 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_2")
+        cluster_3 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_3")
+        second_provider = self.add_provider(Bundle.objects.get(name="provider"), "Second Provider")
+
+        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_1)
+        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_2)
+        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_3)
+
+        hosts = []
+
+        for host_n in range(1, 4):
+            cluster = cluster_1 if host_n % 2 == 0 else cluster_2
+            hosts.append(self.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
+            hostcomponent_entry = (
+                Host.objects.get(fqdn=f"host_{host_n}"),
+                Component.objects.get(cluster=cluster, prototype__name="first_component"),
+            )
+            self.set_hostcomponent(cluster=cluster, entries=[hostcomponent_entry])
+
+        host_from_second_provider = self.add_host(provider=second_provider, fqdn="host_5", cluster=cluster_3)
+        hostcomponent_entry = (
+            host_from_second_provider,
+            Component.objects.get(cluster=cluster_3, prototype__name="first_component"),
+        )
+        self.set_hostcomponent(cluster=cluster_3, entries=[hostcomponent_entry])
+
+        objects_to_be_locked_by_action = sorted(
+            [(cluster.pk, cluster.prototype_id) for cluster in [cluster_1, cluster_2]]
+            + list(
+                Service.objects.filter(prototype__name="first_service")
+                .exclude(cluster__name="cluster_with_dependencies_3")
+                .values_list("pk", "prototype_id")
+            )
+            + list(
+                Component.objects.filter(prototype__name="first_component")
+                .exclude(cluster__name="cluster_with_dependencies_3")
+                .values_list("pk", "prototype_id")
+            )
+            + [(host.pk, host.prototype_id) for host in hosts]
+            + [(self.provider.pk, self.provider.prototype_id)]
+        )
+
+        free_objects = sorted(
+            [(cluster.pk, cluster.prototype_id) for cluster in [cluster_3]]
+            + list(
+                Service.objects.filter(
+                    prototype__name="first_service", cluster__name="cluster_with_dependencies_3"
+                ).values_list("pk", "prototype_id")
+            )
+            + list(
+                Component.objects.filter(
+                    prototype__name="first_component", cluster__name="cluster_with_dependencies_3"
+                ).values_list("pk", "prototype_id")
+            )
+            + [(host_from_second_provider.pk, host_from_second_provider.prototype_id)]
+            + [(second_provider.pk, second_provider.prototype_id)]
+        )
+
+        def run_action(_object, object_action) -> list[tuple[int, int]]:
+            response = self.client.v2[_object, "actions", object_action, "run"].post()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            concern = ConcernItem.objects.filter(name="job_lock").first()
+            related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
+            concern.delete()
+
+            return related_objects
+
+        provider_action = Action.objects.filter(prototype=self.provider.prototype).first()
+        related_objects = run_action(self.provider, provider_action)
+        self.assertEqual(related_objects, objects_to_be_locked_by_action)
+
+        for obj in free_objects:
+            self.assertNotIn(obj, related_objects)
+
     def test_adcm_6275_concern_propagation_success(self):
         cluster = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies")
         self.add_services_to_cluster(
@@ -225,7 +302,7 @@ class TestConcernsResponse(BaseAPITestCase):
         }
 
         response = self.client.v2[cluster, "configs"].post(
-            data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
+            data={"config": {"string": "new_string 2"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -253,6 +330,55 @@ class TestConcernsResponse(BaseAPITestCase):
             concern, *_ = data["concerns"]
             self.assertEqual(concern["type"], "flag")
             self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+    def test_raise_outdated_config_if_configs_differ_only_success(self):
+        cluster = self.cluster_1
+        cluster.state = "notcreated"
+        cluster.save(update_fields=["state"])
+        initial_config = {
+            "activatable_group": {"integer": 10},
+            "boolean": True,
+            "group": {"float": 0.1},
+            "list": ["value1", "value2", "value3"],
+            "variant_not_strict": "value1",
+        }
+        initial_attrs = {"/activatable_group": {"isActive": True}}
+
+        with self.subTest("No outdated flag - configs are same"):
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs, "description": "init"},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 0)
+
+        with self.subTest("Outdated flag - new config content differs"):
+            initial_config["boolean"] = False
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs, "description": "init"},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns.first().cause, "config")
+
+        lower_flag(
+            BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
+            on_objects=[CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)],
+        )
+
+        with self.subTest("Outdated flag - new config adcm Meta differs"):
+            initial_attrs = {"/activatable_group": {"isActive": False}}
+            response = self.client.v2[cluster, "configs"].post(
+                data={"config": initial_config, "adcmMeta": initial_attrs},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns.first().cause, "config")
 
     def test_service_requirements(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")

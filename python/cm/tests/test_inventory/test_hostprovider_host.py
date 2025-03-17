@@ -33,13 +33,13 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
             "PROVIDER": [self.host_1.fqdn, self.host_2.fqdn],
         }
         expected_data = {
-            ("PROVIDER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("PROVIDER", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -66,7 +66,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
             "HOST": [self.host_1.fqdn],
         }
         expected_data = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -100,7 +100,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
             "PROVIDER": [self.host_1.fqdn, self.host_2.fqdn],
         }
         expected_data = {
-            ("PROVIDER", "hosts", f"{self.host_1.fqdn}"): (
+            ("hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_provider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -109,7 +109,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                     "provider_id": self.provider.pk,
                 },
             ),
-            ("PROVIDER", "hosts", f"{self.host_2.fqdn}"): (
+            ("hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -143,7 +143,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
             "HOST": [self.host_1.fqdn],
         }
         expected_data = {
-            ("HOST", "hosts", f"{self.host_1.fqdn}"): (
+            ("hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_provider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -180,7 +180,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
             "HOST": [self.host_2.fqdn],
         }
         expected_data = {
-            ("HOST", "hosts", f"{self.host_2.fqdn}"): (
+            ("hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,

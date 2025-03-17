@@ -96,7 +96,7 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", f"{self.host_2.fqdn}"): (
+            ("hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -107,76 +107,18 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                     "component_2_id": self.component_2.pk,
                 },
             ),
-            ("CLUSTER", "hosts", f"{self.host_3.fqdn}"): (
+            ("hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {"adcm_hostid": self.host_3.pk},
             ),
-            ("CLUSTER", "hosts", f"{self.host_4.fqdn}"): (
+            ("hosts", f"{self.host_4.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {"adcm_hostid": self.host_4.pk},
             ),
-            ("CLUSTER.maintenance_mode", "hosts", f"{self.host_1.fqdn}"): (
+            ("hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
-                    "cluster_id": self.cluster.pk,
-                    "cluster_config_integer": 101,
-                    "service_id": self.service.pk,
-                    "component_1_id": self.component_1.pk,
-                    "component_2_id": self.component_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}", "hosts", f"{self.host_3.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_3.pk,
-                },
-            ),
-            (f"{self.service.name}", "hosts", f"{self.host_3.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_3.pk,
-                },
-            ),
-            (f"{self.service.name}", "hosts", f"{self.host_4.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_4.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}", "hosts", f"{self.host_4.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_4.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}.add", "hosts", f"{self.host_3.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_3.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.add", "hosts", f"{self.host_4.fqdn}"): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_4.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}.remove.maintenance_mode", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_two_components.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                    "cluster_id": self.cluster.pk,
-                    "cluster_config_integer": 101,
-                    "service_id": self.service.pk,
-                    "component_1_id": self.component_1.pk,
-                    "component_2_id": self.component_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.remove", "hosts", f"{self.host_2.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_two_components.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
                     "cluster_id": self.cluster.pk,
                     "cluster_config_integer": 101,
                     "service_id": self.service.pk,

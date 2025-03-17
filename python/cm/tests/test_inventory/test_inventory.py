@@ -71,9 +71,8 @@ class TestInventory(BaseTestCase):
 
         cluster_inv = {
             "all": {
-                "children": {
-                    "CLUSTER": {"hosts": {host2.fqdn: {"adcm_hostid": host2.pk, "state": "created", "multi_state": []}}}
-                },
+                "children": {"CLUSTER": {"hosts": {host2.fqdn: {}}}},
+                "hosts": {host2.fqdn: {"adcm_hostid": host2.pk, "state": "created", "multi_state": []}},
                 "vars": {
                     "cluster": {
                         "config": {},
@@ -91,11 +90,8 @@ class TestInventory(BaseTestCase):
         }
         host_inv = {
             "all": {
-                "children": {
-                    "HOST": {
-                        "hosts": {self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []}}
-                    }
-                },
+                "children": {"HOST": {"hosts": {self.host.fqdn: {}}}},
+                "hosts": {self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []}},
                 "vars": {
                     "provider": {
                         "config": {},
@@ -114,10 +110,14 @@ class TestInventory(BaseTestCase):
                 "children": {
                     "PROVIDER": {
                         "hosts": {
-                            self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []},
-                            "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
+                            self.host.fqdn: {},
+                            "h2": {},
                         },
                     },
+                },
+                "hosts": {
+                    self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []},
+                    "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
                 },
                 "vars": {
                     "provider": {
@@ -261,7 +261,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
 
         return hc_request_data
 
-    def get_children_from_inventory(self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload) -> dict:
+    def get_all_from_inventory(self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload) -> dict:
         from cm.services.job.run._target_factories import prepare_ansible_inventory
         from cm.services.job.run.repo import JobRepoImpl
 
@@ -272,7 +272,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
             run_action(action=action, obj=object_, payload=payload)
 
         inventory = prepare_ansible_inventory(task=JobRepoImpl.get_task(run_task.target_task.id))
-        return inventory["all"]["children"]
+        return inventory["all"]
 
     def test_groups_remove_host_not_in_mm_success(self):
         self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
@@ -281,7 +281,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         # remove: hc_c1_h2
         hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
 
-        inventory_data = self.get_children_from_inventory(
+        inventory_data = self.get_all_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
             payload=ActionRunPayload(
@@ -291,7 +291,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
                 },
                 verbose=False,
             ),
-        )
+        )["children"]
 
         target_key_remove = (
             f"{Service.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
@@ -329,7 +329,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         # remove: hc_c1_h3
         hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h2, self.hc_c2_h1, self.hc_c2_h2)
 
-        inventory_data = self.get_children_from_inventory(
+        inventory_data = self.get_all_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
             payload=ActionRunPayload(
@@ -339,7 +339,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
                 },
                 verbose=False,
             ),
-        )
+        )["children"]
 
         target_key_remove = (
             f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
@@ -378,28 +378,24 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
                 attr={"group_keys": {"some_string": True, "float": False}},
             )
 
-        inventory_data = self.get_children_from_inventory(
+        inventory_data = self.get_all_from_inventory(
             action=Action.objects.get(name="not_host_action"),
             object_=self.cluster_target_group,
             payload=ActionRunPayload(verbose=False),
-        )
+        )["hosts"]
 
         self.assertDictEqual(
-            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
-                "host_target_group_1"
-            ]["cluster"]["config"],
+            inventory_data["host_target_group_1"]["cluster"]["config"],
             {"some_string": "cluster", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
-                "host_target_group_1"
-            ]["services"]["service_1_target_group"]["config"],
+            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["config"],
             {"some_string": "service_1", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["service_1_target_group.component_1_target_group.maintenance_mode"]["hosts"][
-                "host_target_group_1"
-            ]["services"]["service_1_target_group"]["component_1_target_group"]["config"],
+            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["component_1_target_group"][
+                "config"
+            ],
             {"some_string": "some_string", "float": 0.1},
         )
 
@@ -407,9 +403,9 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
         self.host_target_group_1.save()
 
-        target_hosts_data = self.get_children_from_inventory(
+        target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group, object_=self.host_target_group_1, payload=ActionRunPayload(verbose=False)
-        )["target"]["hosts"]
+        )["children"]["target"]["hosts"]
 
         self.assertIn(self.host_target_group_1.fqdn, target_hosts_data)
 
@@ -417,8 +413,8 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.host_target_group_2.maintenance_mode = MaintenanceMode.OFF
         self.host_target_group_2.save()
 
-        target_hosts_data = self.get_children_from_inventory(
+        target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group, object_=self.host_target_group_2, payload=ActionRunPayload(verbose=False)
-        )["target"]["hosts"]
+        )["children"]["target"]["hosts"]
 
         self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)

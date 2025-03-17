@@ -22,6 +22,7 @@ type AdcmEntityConfigurationState = {
   configVersions: AdcmConfigShortView[];
   isVersionsLoading: boolean;
   accessCheckStatus: RequestState;
+  accessConfigCheckStatus: RequestState;
 };
 
 const createConfiguration = createAsyncThunk(
@@ -110,6 +111,7 @@ const createInitialState = (): AdcmEntityConfigurationState => ({
   loadedConfiguration: null,
   configVersions: [],
   accessCheckStatus: RequestState.NotRequested,
+  accessConfigCheckStatus: RequestState.NotRequested,
 });
 
 const entityConfigurationSlice = createSlice({
@@ -143,13 +145,13 @@ const entityConfigurationSlice = createSlice({
       };
 
       state.isConfigurationLoading = false;
-      state.accessCheckStatus = RequestState.Completed;
+      state.accessConfigCheckStatus = RequestState.Completed;
     });
     builder.addCase(getConfiguration.pending, (state) => {
-      state.accessCheckStatus = RequestState.Pending;
+      state.accessConfigCheckStatus = RequestState.Pending;
     });
     builder.addCase(getConfiguration.rejected, (state, action) => {
-      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
+      state.accessConfigCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.loadedConfiguration = null;
     });
     builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {

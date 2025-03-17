@@ -48,8 +48,8 @@ azure = ["azure-cli-core (==2.0.35)", "azure-cli-nspkg (==3.0.2)", "azure-common
 [package.source]
 type = "git"
 url = "https://github.com/arenadata/ansible.git"
-reference = "v2.8.8-p6"
-resolved_reference = "300b13168002d3fb83fe5a19c1fd091e3d496b59"
+reference = "v2.8.8-p7"
+resolved_reference = "8c62daf26068a7b2c6570ab01c335c1adff82e0a"
 
 [[package]]
 name = "apache-libcloud"
@@ -2267,4 +2267,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.10"
-content-hash = "791565659b47e8c82fa371fa5bcbf90761d41bdfb0189804d3d57200bb5bd712"
+content-hash = "45faade8bf1418d7be8b452bd5c0db3593248bd4a2b5a2f6432a1d6a92ccaae0"
