@@ -13,15 +13,13 @@
 from contextlib import suppress
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Iterable, TypeAlias
+from typing import Any, Hashable, Iterable, TypeAlias
 import warnings
+import collections.abc
 
 from adcm_version import compare_adcm_versions
-from ruyaml.composer import ComposerError
-from ruyaml.constructor import DuplicateKeyError
 from ruyaml.error import ReusedAnchorWarning
-from ruyaml.parser import ParserError as RuYamlParserError
-from ruyaml.scanner import ScannerError as RuYamlScannerError
+import yaml
 import ruyaml
 
 from core.bundle_alt.bundle_load import get_config_files
@@ -70,6 +68,85 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
             loader._reader.reset_reader()
         with suppress(AttributeError):
             loader._scanner.reset_scanner()
+
+
+class FirstExplicitKeyLoader(yaml.SafeLoader):
+    """
+    Alternative Safe Loader that imitates ruyaml behavior
+    in terms of overwritting keys, (when it's important for us)
+
+    Code is copied from SafeLoader implementation with minor changes to ensure:
+    1. First unique key in map stays, others are dropped silently
+    2. Entries in mapping that came from anchors (<<: * syntax)
+       have lower priority than "explicitly" defined.
+       They are processed after "explicitly" defined
+       => if they duplicate some key, they will be dropped.
+    """
+
+    def construct_mapping(self, node, deep: bool = False) -> dict[Hashable, Any]:
+        if not isinstance(node, yaml.MappingNode):
+            raise yaml.constructor.ConstructorError(
+                None, None, "expected a mapping node, but found %s" % node.id, node.start_mark
+            )
+
+        self.flatten_mapping(node)
+
+        mapping = {}
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if not isinstance(key, collections.abc.Hashable):
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping", node.start_mark, "found unhashable key", key_node.start_mark
+                )
+
+            if key in mapping:
+                continue
+
+            value = self.construct_object(value_node, deep=deep)
+            mapping[key] = value
+
+        return mapping
+
+    def flatten_mapping(self, node):
+        merge = []
+        index = 0
+        while index < len(node.value):
+            key_node, value_node = node.value[index]
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                del node.value[index]
+                if isinstance(value_node, yaml.MappingNode):
+                    self.flatten_mapping(value_node)
+                    merge.extend(value_node.value)
+                elif isinstance(value_node, yaml.SequenceNode):
+                    submerge = []
+                    for subnode in value_node.value:
+                        if not isinstance(subnode, yaml.MappingNode):
+                            raise yaml.constructor.ConstructorError(
+                                "while constructing a mapping",
+                                node.start_mark,
+                                "expected a mapping for merging, but found %s" % subnode.id,
+                                subnode.start_mark,
+                            )
+                        self.flatten_mapping(subnode)
+                        submerge.append(subnode.value)
+                    submerge.reverse()
+                    for value in submerge:
+                        merge.extend(value)
+                else:
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        "expected a mapping or list of mappings for merging, but found %s" % value_node.id,
+                        value_node.start_mark,
+                    )
+            elif key_node.tag == "tag:yaml.org,2002:value":
+                key_node.tag = "tag:yaml.org,2002:str"
+                index += 1
+            else:
+                index += 1
+        if merge:
+            # the only changed line to change priority of anchors
+            node.value += merge
 
 
 def retrieve_bundle_definitions(
@@ -239,17 +316,11 @@ def read_raw_bundle_definitions(bundle_root: Path) -> Iterable[tuple[dict, Path]
 def _read_config_file(path: Path) -> Any:
     warnings.simplefilter(action="error", category=ReusedAnchorWarning)
     content = path.read_text(encoding="utf-8")
-
     try:
-        return round_trip_load(content, version="1.1", allow_duplicate_keys=True)
-    except (
-        RuYamlParserError,
-        RuYamlScannerError,
-        NotImplementedError,
-        ReusedAnchorWarning,
-        DuplicateKeyError,
-        ComposerError,
-    ) as e:
+        # Check is silenced, because Loader inherits from SafeLoader
+        # and doesn't override important safe-related stuff
+        return yaml.load(content, Loader=FirstExplicitKeyLoader)  # noqa: S506
+    except yaml.error.YAMLError as e:
         message = f'Error during parsing yaml file at "{path}": {e}'
         raise BundleProcessingError(message) from e
 

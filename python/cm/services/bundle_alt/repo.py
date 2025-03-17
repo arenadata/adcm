@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import deque
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 from pathlib import Path
 from typing import Generator, Iterable, TypeAlias
 import json
@@ -106,6 +106,8 @@ def save_definitions(
     exports = deque()
     imports = deque()
 
+    sort_by_name = functools.partial(sorted, key=attrgetter("name"))
+
     for key, definition in bundle_definitions.items():
         prototype = _definition_to_model(
             definition=definition, bundle=bundle, license_hash=_get_license_hash(bundle_root, definition.license.path)
@@ -122,7 +124,7 @@ def save_definitions(
                 convert_config_definition_to_orm_model(definition=definition.config, prototype=prototype, action=None)
             )
 
-        for action_def in definition.actions:
+        for action_def in sort_by_name(definition.actions):
             action, configs_, sub_actions_ = _prepare_action_related_models(definition=action_def, prototype=prototype)
             actions.append(action)
             sub_actions.extend(sub_actions_)

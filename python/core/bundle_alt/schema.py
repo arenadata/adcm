@@ -120,7 +120,7 @@ def convert_config(config: list | dict) -> list:
         extra = {}
 
         if "type" not in value or not isinstance(value["type"], str):  # it is a group
-            extra = {"type": "group"}
+            extra = {"type": "group", "required": False}
             subs = convert_config(value)
 
         new_value = {"name": key, "subs": subs, **extra} if subs is not None else {"name": key, **value, **extra}
@@ -465,7 +465,7 @@ class UpgradeScriptSchema(TypedDict):
 
 
 class _BaseUpgradeSchema(_BaseModel):
-    name: str
+    name: VERSION
     versions: Annotated[VersionsSchema, AfterValidator(min_and_max_present)]
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
