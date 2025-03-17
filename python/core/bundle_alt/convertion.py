@@ -276,7 +276,7 @@ def _extract_upgrades(entity: dict, context: dict) -> list[UpgradeDefinition] | 
     for upgrade in upgrades:
         result = {}
 
-        _fill_value(result, upgrade, "name")
+        _fill_value(result, upgrade, "name", cast=str)
         _fill_value(result, upgrade, "description")
         _fill_value(result, upgrade, "state_available", source_keys=("states", "available"))
         _fill_value(result, upgrade, "state_on_success", source_keys=("states", "on_success"))
