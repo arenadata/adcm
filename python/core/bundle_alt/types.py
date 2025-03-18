@@ -50,6 +50,7 @@ class ConfigParamPlainSpec:
     group_customization: bool | None = None
     limits: dict = field(default_factory=dict)
     ui_options: dict = field(default_factory=dict)
+    ansible_options: dict = field(default_factory=partial(dict, unsafe=False))
 
     # the problem is that here default is anything at all
     # yet after save-load to/from db it's str / None
