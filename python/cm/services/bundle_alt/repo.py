@@ -194,6 +194,7 @@ def convert_config_definition_to_orm_model(
             group_customization=param_spec.group_customization,
             ui_options=param_spec.ui_options,
             default=default,
+            ansible_options=param_spec.ansible_options,
         )
 
 

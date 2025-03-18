@@ -539,6 +539,7 @@ def _extract_spec(entity: dict, context: dict) -> ConfigParamPlainSpec:
     _fill_value(result, entity, "description")
     _fill_value(result, entity, "required")
     _fill_value(result, entity, "ui_options")
+    _fill_value(result, entity, "ansible_options")
     _fill_value(result, entity, "default")
 
     result["group_customization"] = entity.get(

@@ -1030,6 +1030,7 @@ class TestBundleSchema(TestCase):
                 "description": None,
                 "ui_options": None,
                 "group_customization": None,
+                "ansible_options": None,
                 "default": None,
             }
             expected_config = [
@@ -1089,6 +1090,7 @@ class TestBundleSchema(TestCase):
                     "description": None,
                     "ui_options": None,
                     "group_customization": None,
+                    "ansible_options": None,
                     "subs": [
                         {"type": "boolean", "name": "bool_field", **common_config_fields},
                         {"type": "integer", "name": "int_field", "min": None, "max": None, **common_config_fields},
