@@ -121,6 +121,10 @@ def extract_scripts(scripts: list[dict], path_resolution_root: Path) -> list[Job
     return _extract_scripts(entity={"scripts": scripts}, context={"path": path_resolution_root})
 
 
+def extract_config(config: list[dict], context: dict) -> ConfigDefinition | None:
+    return _extract_config(entity={"config": config}, context=context)
+
+
 def _convert(entity: dict, context: dict):
     result = {
         "name": entity["name"],

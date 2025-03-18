@@ -13,40 +13,55 @@
 from contextlib import suppress
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Hashable, Iterable, TypeAlias
+from typing import Any, Generator, Hashable, Iterable, TypeAlias
 import warnings
 import collections.abc
 
 from adcm_version import compare_adcm_versions
 from ruyaml.error import ReusedAnchorWarning
+from typing_extensions import TypedDict
 import yaml
 import ruyaml
 
 from core.bundle_alt.bundle_load import get_config_files
-from core.bundle_alt.convertion import schema_entry_to_definition
+from core.bundle_alt.convertion import extract_config, extract_scripts, schema_entry_to_definition
 from core.bundle_alt.errors import BundleParsingError, BundleProcessingError, BundleValidationError
 from core.bundle_alt.representation import build_parent_key_safe
 from core.bundle_alt.schema import (
     ADCMSchema,
     ClusterSchema,
     ComponentSchema,
+    ConfigJinjaSchema,
     HostSchema,
     ProviderSchema,
+    ScriptsJinjaSchema,
     ServiceSchema,
     parse,
 )
-from core.bundle_alt.types import BundleDefinitionKey, Definition
+from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.bundle_alt.validation import check_definitions_are_valid
 from core.errors import localize_error
+from core.job.types import JobSpec
 
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
 _RelativePath: TypeAlias = str
 
 
+class ScriptJinjaContext(TypedDict):
+    source_dir: Path
+    action_allow_to_terminate: bool
+
+
+class ConfigJinjaContext(TypedDict):
+    bundle_root: Path
+    path: str  # dir with jinja template, relative to bundle root
+    object: dict
+
+
 # COPIED FROM cm.checker DURING ADCM-6411
 #
-# This tases much more time than regular load,
+# This takes much more time than regular load,
 # but some bundles contain duplicates in dict keys and stuff,
 # when it's required to keep first element (at least for studied case),
 # so we were forced to return this until the better solution is found.
@@ -163,6 +178,24 @@ def retrieve_bundle_definitions(
     )
     check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
     return normalized_definitions
+
+
+def parse_scripts_jinja(data: list[dict], context: ScriptJinjaContext) -> Generator[JobSpec, None, None]:
+    scripts = ScriptsJinjaSchema.model_validate({"scripts": data}, strict=True)
+    scripts = scripts.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
+
+    for script in scripts:  # propagate `allow_to_terminate` attr from action if not set
+        if not script.get("allow_to_terminate"):
+            script["allow_to_terminate"] = context["action_allow_to_terminate"]
+
+    yield from extract_scripts(scripts=scripts, path_resolution_root=context["source_dir"])
+
+
+def parse_config_jinja(data: list[dict], context: ConfigJinjaContext) -> ConfigDefinition | None:
+    config = ConfigJinjaSchema.model_validate({"config": data}, strict=True)
+    config = config.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
+
+    return extract_config(config=config, context=context)
 
 
 def _normalize_definitions(

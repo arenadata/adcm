@@ -13,7 +13,7 @@
 from pathlib import Path
 from typing import Annotated, Generator, TypedDict
 
-from core.bundle_alt.schema import ScriptJinjaContext, parse_scripts_jinja
+from core.bundle_alt.process import ScriptJinjaContext, parse_scripts_jinja
 from core.job.types import JobSpec
 from core.types import HostID, HostName, ServiceName, TaskID
 

@@ -13,6 +13,7 @@
 from pathlib import Path
 import json
 
+from adcm.feature_flags import use_new_jinja_config_processing
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.models import (
     ADCM,
@@ -28,6 +29,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.utils import update_env
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
@@ -2995,7 +2997,16 @@ class TestPatternInConfig(BaseAPITestCase):
                         f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
                     )
 
-    def test_jinja_config(self) -> None:
+    def test_jinja_config_old_processing(self) -> None:
+        self.assertFalse(use_new_jinja_config_processing())
+        self._test_jinja_config()
+
+    def test_jinja_config_new_processing(self) -> None:
+        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
+            self.assertTrue(use_new_jinja_config_processing())
+            self._test_jinja_config()
+
+    def _test_jinja_config(self) -> None:
         ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
 
