@@ -12,10 +12,12 @@
 
 from pathlib import Path
 
+from adcm.feature_flags import use_new_jinja_config_processing
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 
 from cm.models import Action
 from cm.services.config.jinja import get_jinja_config
+from cm.tests.utils import update_env
 
 
 class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
@@ -26,7 +28,16 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         self.bugs_bundle_dir = Path(__file__).parent / "bundles" / "bugs"
 
-    def test_adcm_5556_incorrect_path_bug(self) -> None:
+    def test_adcm_5556_incorrect_path_bug_old_processing(self):
+        self.assertFalse(use_new_jinja_config_processing())
+        self._test_adcm_5556_incorrect_path_bug()
+
+    def test_adcm_5556_incorrect_path_bug_new_processing(self):
+        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
+            self.assertTrue(use_new_jinja_config_processing())
+            self._test_adcm_5556_incorrect_path_bug()
+
+    def _test_adcm_5556_incorrect_path_bug(self) -> None:
         expected_full_limits = {
             "root": {
                 "match": "dict_key_selection",

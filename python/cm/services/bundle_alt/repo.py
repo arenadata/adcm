@@ -33,7 +33,7 @@ from core.bundle_alt.types import (
 )
 from core.job.types import JobSpec
 
-from cm.adcm_config.config import reraise_file_errors_as_adcm_ex
+from cm.errors import AdcmEx
 from cm.models import (
     Action,
     Bundle,
@@ -337,7 +337,13 @@ def _get_license_hash(bundle_path: Path, license_path: str | None) -> str | None
     if not license_path:
         return None
 
-    with reraise_file_errors_as_adcm_ex(filepath=license_path, reference="license file"):
+    try:
         license_content = (bundle_path / license_path).read_bytes()
+    except FileNotFoundError as err:
+        msg = f'"{license_path}" is not found (license file)'
+        raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=msg) from err
+    except PermissionError as err:
+        msg = f'"{license_path}" can not be open (license file)'
+        raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=msg) from err
 
     return hashlib.sha256(license_content).hexdigest()

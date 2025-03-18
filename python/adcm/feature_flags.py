@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 
 def use_new_bundle_processing(request) -> bool:
     return request.headers.get("feature-bundle-upload", "old").lower() == "new"
@@ -17,3 +19,7 @@ def use_new_bundle_processing(request) -> bool:
 
 def use_new_jinja_scripts_processing(request) -> bool:
     return request.headers.get("feature-scripts-jinja", "old").lower() == "new"
+
+
+def use_new_jinja_config_processing() -> bool:
+    return os.environ.get("FEATURE_CONFIG_JINJA", "old").lower() == "new"

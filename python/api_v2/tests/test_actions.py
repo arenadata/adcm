@@ -15,6 +15,7 @@ from operator import itemgetter
 from typing import TypeAlias
 import json
 
+from adcm.feature_flags import use_new_jinja_config_processing
 from cm.models import (
     Action,
     Cluster,
@@ -30,6 +31,7 @@ from cm.models import (
 )
 from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.utils import update_env
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -526,7 +528,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
         self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
-    def test_retrieve_jinja_config(self):
+    def test_retrieve_jinja_config_old_processing(self):
+        self.assertFalse(use_new_jinja_config_processing())
+        self._test_retrieve_jinja_config()
+
+    def test_retrieve_jinja_config_new_processing(self):
+        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
+            self.assertTrue(use_new_jinja_config_processing())
+            self._test_retrieve_jinja_config()
+
+    def _test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -546,7 +557,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
-    def test_adcm_6013_jinja_config_with_min_max(self):
+    def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
+        self.assertFalse(use_new_jinja_config_processing())
+        self._test_adcm_6013_jinja_config_with_min_max()
+
+    def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
+        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
+            self.assertTrue(use_new_jinja_config_processing())
+            self._test_adcm_6013_jinja_config_with_min_max()
+
+    def _test_adcm_6013_jinja_config_with_min_max(self):
         action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -575,7 +595,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         expected_response["id"] = action.id
         self.assertDictEqual(response.json(), expected_response)
 
-    def test_adcm_4703_action_retrieve_returns_500(self) -> None:
+    def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
+        self.assertFalse(use_new_jinja_config_processing())
+        self._test_adcm_4703_action_retrieve_returns_500()
+
+    def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
+        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
+            self.assertTrue(use_new_jinja_config_processing())
+            self._test_adcm_4703_action_retrieve_returns_500()
+
+    def _test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
                 response = self.client.v2[object_, "actions"].get()

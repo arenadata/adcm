@@ -11,8 +11,12 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
+from adcm.feature_flags import use_new_jinja_config_processing
+from core.bundle_alt._config import check_default_values
+from core.bundle_alt.process import ConfigJinjaContext, parse_config_jinja
+from core.bundle_alt.types import GeneralObjectDescription, ShortDefinitionDescription
 from django.conf import settings
 from yaml import safe_load
 
@@ -25,6 +29,7 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
+from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.config.patterns import Pattern
 from cm.services.job.inventory import get_cluster_vars
@@ -49,11 +54,52 @@ def get_jinja_config(
         bundle_path=resolver.bundle_root,
     )
 
+    if use_new_jinja_config_processing():
+        context = ConfigJinjaContext(
+            bundle_root=resolver.bundle_root,
+            path=str(jinja_conf_file.parent.relative_to(resolver.bundle_root)),
+            object={"config_group_customization": cluster_relative_object.prototype.config_group_customization},
+        )
+        object_ = ShortDefinitionDescription(
+            type=cluster_relative_object.prototype.type,
+            name=cluster_relative_object.prototype.name,
+            version=cluster_relative_object.prototype.version,
+        )
+        return (
+            list(_get_jinja_config_new(data=template_builder.data, object_=object_, action=action, context=context)),
+            {},  # TODO: attrs used in api v1 only; remove together with api v1
+        )
+    else:
+        return _get_jinja_config_old(
+            data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
+        )
+
+
+def _get_jinja_config_new(
+    data: list[dict], object_: GeneralObjectDescription, action: Action, context: ConfigJinjaContext
+) -> Generator[PrototypeConfig, None, None]:
+    if not (definition := parse_config_jinja(data=data, context=context)):
+        return
+
+    check_default_values(
+        parameters=definition.parameters,
+        values=definition.default_values,
+        attributes=definition.default_attrs,
+        object_=object_,
+    )
+
+    yield from convert_config_definition_to_orm_model(definition=definition, prototype=action.prototype, action=action)
+
+
+def _get_jinja_config_old(
+    data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver
+) -> tuple[list[PrototypeConfig], dict]:
     configs = []
     attr = {}
-    for field in template_builder.data:
+
+    for field in data:
         for normalized_field in _normalize_field(
-            field=field, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
+            field=field, dir_with_config=config_file.parent.relative_to(resolver.bundle_root), resolver=resolver
         ):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_field))
 

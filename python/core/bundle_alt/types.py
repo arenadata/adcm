@@ -32,6 +32,13 @@ class GeneralObjectDescription(Protocol):
 ParameterKey: TypeAlias = tuple[str, ...]
 
 
+@dataclass(slots=True)
+class ShortDefinitionDescription:  # TODO: remove in ADCM-6372
+    type: str
+    name: str
+    version: str
+
+
 # copied from cm.services.config.spec for ADCM-6355
 # should be removed later
 @dataclass(slots=True)
