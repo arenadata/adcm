@@ -18,11 +18,14 @@ import warnings
 import collections.abc
 
 from adcm_version import compare_adcm_versions
+from cm.models import PrototypeConfig
+from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
 from ruyaml.error import ReusedAnchorWarning
 from typing_extensions import TypedDict
 import yaml
 import ruyaml
 
+from core.bundle_alt._config import check_default_values
 from core.bundle_alt.bundle_load import get_config_files
 from core.bundle_alt.convertion import extract_config, extract_scripts, schema_entry_to_definition
 from core.bundle_alt.errors import BundleParsingError, BundleProcessingError, BundleValidationError
@@ -38,7 +41,7 @@ from core.bundle_alt.schema import (
     ServiceSchema,
     parse,
 )
-from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
+from core.bundle_alt.types import BundleDefinitionKey, Definition, GeneralObjectDescription
 from core.bundle_alt.validation import check_definitions_are_valid
 from core.errors import localize_error
 from core.job.types import JobSpec
@@ -191,11 +194,27 @@ def parse_scripts_jinja(data: list[dict], context: ScriptJinjaContext) -> Genera
     yield from extract_scripts(scripts=scripts, path_resolution_root=context["source_dir"])
 
 
-def parse_config_jinja(data: list[dict], context: ConfigJinjaContext) -> ConfigDefinition | None:
+def parse_config_jinja(
+    data: list[dict], context: ConfigJinjaContext, *, object_: GeneralObjectDescription, action, prototype
+) -> list[PrototypeConfig]:
     config = ConfigJinjaSchema.model_validate({"config": data}, strict=True)
     config = config.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
 
-    return extract_config(config=config, context=context)
+    definition = extract_config(config=config, context=context)
+
+    if not definition:
+        return []
+
+    check_default_values(
+        parameters=definition.parameters,
+        values=definition.default_values,
+        attributes=definition.default_attrs,
+        object_=object_,
+    )
+
+    orm_entries = convert_config_definition_to_orm_model(definition=definition, prototype=prototype, action=action)
+
+    return list(orm_entries)
 
 
 def _normalize_definitions(

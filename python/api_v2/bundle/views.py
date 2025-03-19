@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_bundle_processing
+import os
+
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.bundle import delete_bundle, load_bundle, upload_file
@@ -123,7 +125,8 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        func = self._new_create if use_new_bundle_processing(request) else self._old_create
+        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+        func = self._new_create if use_new_approach else self._old_create
 
         bundle = func(request.data["file"])
 

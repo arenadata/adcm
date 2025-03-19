@@ -10,9 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
 from uuid import uuid4
-import os
 
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -275,16 +273,3 @@ def gen_group(name, object_id, model_name):
         object_type=ContentType.objects.get(model=model_name),
         name=name,
     )
-
-
-@contextmanager
-def update_env(entries: dict[str, str], allow_overwrite: bool = False):
-    if not allow_overwrite and (duplicates := set(os.environ).intersection(entries)):
-        raise RuntimeError(f"Can't overwrite env keys: {duplicates}")
-
-    os.environ.update(entries)
-
-    yield
-
-    for key in entries:
-        os.environ.pop(key)

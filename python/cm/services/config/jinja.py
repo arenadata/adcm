@@ -11,12 +11,12 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
+import os
 
-from adcm.feature_flags import use_new_jinja_config_processing
-from core.bundle_alt._config import check_default_values
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from core.bundle_alt.process import ConfigJinjaContext, parse_config_jinja
-from core.bundle_alt.types import GeneralObjectDescription, ShortDefinitionDescription
+from core.bundle_alt.types import ShortDefinitionDescription
 from django.conf import settings
 from yaml import safe_load
 
@@ -29,7 +29,6 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.config.patterns import Pattern
 from cm.services.job.inventory import get_cluster_vars
@@ -46,49 +45,44 @@ def get_jinja_config(
     template_builder = TemplateBuilder(
         template_path=jinja_conf_file,
         context={
-            **get_cluster_vars(topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object)).dict(
-                by_alias=True, exclude_defaults=True
-            ),
+            **get_cluster_vars(
+                topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object)
+            ).model_dump(by_alias=True, exclude_defaults=True),
             "action": get_action_info(action=action),
         },
         bundle_path=resolver.bundle_root,
     )
 
-    if use_new_jinja_config_processing():
-        context = ConfigJinjaContext(
-            bundle_root=resolver.bundle_root,
-            path=str(jinja_conf_file.parent.relative_to(resolver.bundle_root)),
-            object={"config_group_customization": cluster_relative_object.prototype.config_group_customization},
-        )
-        object_ = ShortDefinitionDescription(
-            type=cluster_relative_object.prototype.type,
-            name=cluster_relative_object.prototype.name,
-            version=cluster_relative_object.prototype.version,
-        )
-        return (
-            list(_get_jinja_config_new(data=template_builder.data, object_=object_, action=action, context=context)),
-            {},  # TODO: attrs used in api v1 only; remove together with api v1
-        )
-    else:
+    # too difficult for now to pass headers from all usages
+    use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
+
+    if not use_new_approach:
         return _get_jinja_config_old(
             data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
         )
 
-
-def _get_jinja_config_new(
-    data: list[dict], object_: GeneralObjectDescription, action: Action, context: ConfigJinjaContext
-) -> Generator[PrototypeConfig, None, None]:
-    if not (definition := parse_config_jinja(data=data, context=context)):
-        return
-
-    check_default_values(
-        parameters=definition.parameters,
-        values=definition.default_values,
-        attributes=definition.default_attrs,
-        object_=object_,
+    return _get_jinja_config_new(
+        data=template_builder.data,
+        action=action,
+        config_file=jinja_conf_file,
+        resolver=resolver,
+        object_=cluster_relative_object,
     )
 
-    yield from convert_config_definition_to_orm_model(definition=definition, prototype=action.prototype, action=action)
+
+def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
+    context = ConfigJinjaContext(
+        bundle_root=resolver.bundle_root,
+        path=str(config_file.parent.relative_to(resolver.bundle_root)),
+        object={"config_group_customization": False},
+    )
+    object_ = ShortDefinitionDescription(
+        type=object_.prototype.type,
+        name=object_.prototype.name,
+        version=object_.prototype.version,
+    )
+    configs = parse_config_jinja(data=data, context=context, object_=object_, prototype=action.prototype, action=action)
+    return configs, {}
 
 
 def _get_jinja_config_old(

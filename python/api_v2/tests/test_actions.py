@@ -13,9 +13,9 @@
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
+from unittest.mock import patch
 import json
 
-from adcm.feature_flags import use_new_jinja_config_processing
 from cm.models import (
     Action,
     Cluster,
@@ -31,7 +31,6 @@ from cm.models import (
 )
 from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.tests.utils import update_env
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -529,13 +528,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
     def test_retrieve_jinja_config_old_processing(self):
-        self.assertFalse(use_new_jinja_config_processing())
-        self._test_retrieve_jinja_config()
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_retrieve_jinja_config()
+
+        patched.assert_called()
 
     def test_retrieve_jinja_config_new_processing(self):
-        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
-            self.assertTrue(use_new_jinja_config_processing())
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_retrieve_jinja_config()
+
+        patched.assert_called()
 
     def _test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
@@ -558,13 +560,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
     def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
-        self.assertFalse(use_new_jinja_config_processing())
-        self._test_adcm_6013_jinja_config_with_min_max()
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_adcm_6013_jinja_config_with_min_max()
+
+        patched.assert_called()
 
     def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
-        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
-            self.assertTrue(use_new_jinja_config_processing())
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_6013_jinja_config_with_min_max()
+
+        patched.assert_called()
 
     def _test_adcm_6013_jinja_config_with_min_max(self):
         action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
@@ -596,13 +601,16 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.assertDictEqual(response.json(), expected_response)
 
     def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
-        self.assertFalse(use_new_jinja_config_processing())
-        self._test_adcm_4703_action_retrieve_returns_500()
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_adcm_4703_action_retrieve_returns_500()
+
+        patched.assert_called()
 
     def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
-        with update_env({"FEATURE_CONFIG_JINJA": "new"}):
-            self.assertTrue(use_new_jinja_config_processing())
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_4703_action_retrieve_returns_500()
+
+        patched.assert_called()
 
     def _test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
