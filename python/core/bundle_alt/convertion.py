@@ -99,7 +99,7 @@ def schema_entry_to_definition(
     source_relative_path: str,
     bundle_root: Path,
 ) -> Definition:
-    plain_entity = entry.model_dump(exclude_unset=True, exclude_none=True, exclude_defaults=True)
+    plain_entity = entry.model_dump(exclude_unset=True, exclude_defaults=True)
     context = {"bundle_root": bundle_root, "path": source_relative_path, "key": key, "object": plain_entity}
 
     if is_component_key(key):
@@ -201,7 +201,7 @@ def _extract_actions(entity: dict, context: dict) -> list[ActionDefinition] | No
 def _extract_action(entity, context):
     # thou we rely on default from definition classes,
     # specifics of availability states detection force to duplicate default in here
-    defaults_for_available_at = {"states": [], "multi_states": "any"}
+    defaults_for_available_at = {"states": "any", "multi_states": "any"}
     defaults_for_unavailable_at = {"states": [], "multi_states": []}
 
     entity = _states_to_masking(_universalise_action_types(entity))

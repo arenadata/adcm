@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from typing import Iterable
 
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
@@ -22,6 +23,7 @@ from core.bundle_alt.predicates import has_requires, is_component, is_component_
 from core.bundle_alt.representation import dependency_entry_to_key
 from core.bundle_alt.types import ActionDefinition, BundleDefinitionKey, Definition, DefinitionsMap, UpgradeDefinition
 from core.errors import localize_error
+from core.job.types import JobSpec, ScriptType
 
 # This section should be in sort of global consts module
 ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
@@ -133,6 +135,7 @@ def check_config(definition: Definition, bundle_root: Path, yspec_schema: dict) 
 
 def check_actions(definition: Definition, definitions: DefinitionsMap, bundle_root: Path) -> None:
     for action in definition.actions:
+        check_no_bundle_switch(action.scripts)
         check_mm_host_action_is_allowed(action, definition)
         check_action_hc_acl_rules(action.hostcomponentmap, definitions)
         check_jinja_templates_are_correct(action, bundle_root)
@@ -156,6 +159,13 @@ def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Pat
 
 
 # Atomic checks
+
+
+def check_no_bundle_switch(scripts: Iterable[JobSpec]) -> None:
+    for script in scripts:
+        if script.script_type == ScriptType.INTERNAL and script.script == "bundle_switch":
+            message = f"bundle_switch is disallowed for {script.name} script"
+            raise BundleValidationError(message)
 
 
 def check_mm_host_action_is_allowed(action: ActionDefinition, definition: Definition) -> None:

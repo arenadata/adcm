@@ -119,7 +119,9 @@ class ActionDefinition:
     allow_in_maintenance_mode: bool = False
 
     # Availability
-    available_at: ActionAvailability = field(default_factory=lambda: ActionAvailability(states=[], multi_states="any"))
+    available_at: ActionAvailability = field(
+        default_factory=lambda: ActionAvailability(states="any", multi_states="any")
+    )
     unavailable_at: ActionAvailability = field(default_factory=lambda: ActionAvailability(states=[], multi_states=[]))
 
     # Task settings
