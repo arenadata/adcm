@@ -14,6 +14,7 @@ from functools import wraps
 from typing import Callable, TypeVar
 
 from core.bundle_alt.errors import BundleParsingError, BundleProcessingError, BundleValidationError
+from core.errors import ConfigValueError
 from core.types import ADCMComposableError
 
 from cm.errors import AdcmEx
@@ -40,6 +41,11 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
             http_code = 409
             error_code = "BUNDLE_VALIDATION_ERROR"
             message = _prepare_message_from_composable(e)
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except ConfigValueError as e:
+            http_code = 409
+            error_code = e.code
+            message = e.msg
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
 
     return wrapped

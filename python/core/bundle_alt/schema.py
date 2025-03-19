@@ -184,10 +184,6 @@ def forbidden_mm_actions(actions: Any):
     return actions
 
 
-class AnsibleOptionsSchema(_BaseModel):
-    unsafe: bool = False
-
-
 class _BaseConfigItemSchema(_BaseModel):
     type: str
     name: NAME
@@ -198,7 +194,6 @@ class _BaseConfigItemSchema(_BaseModel):
     description: Annotated[str | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
     group_customization: Annotated[bool | None, Field(default=None)]
-    ansible_options: Annotated[AnsibleOptionsSchema | None, Field(default=None)]
 
     @model_validator(mode="after")
     def exclusive_editable_options(self):
@@ -237,10 +232,36 @@ class ConfigItemFileSchema(_BaseConfigItemSchema):
     default: Annotated[str | None, Field(default=None)]
 
 
-class ConfigItemStringWithPatternSchema(_BaseConfigItemSchema):
-    type: Literal["string", "password", "secrettext", "text"]
-    default: Annotated[str | None, Field(default=None)]
+class AnsibleOptionsSchema(TypedDict):
+    unsafe: bool
+
+
+class _WithAnsibleOptions:
+    ansible_options: Annotated[AnsibleOptionsSchema | None, Field(default=None)]
+
+
+class _WithPattern:
     pattern: Annotated[str | None, Field(default=None), AfterValidator(is_correct_pattern)]
+
+
+class _WithStringDefault:
+    default: Annotated[str | None, Field(default=None)]
+
+
+class ConfigItemStringSchema(_WithStringDefault, _WithAnsibleOptions, _WithPattern, _BaseConfigItemSchema):
+    type: Literal["string"]
+
+
+class ConfigItemPasswordSchema(_WithStringDefault, _WithPattern, _BaseConfigItemSchema):
+    type: Literal["password"]
+
+
+class ConfigItemSecretTextSchema(_WithStringDefault, _WithPattern, _BaseConfigItemSchema):
+    type: Literal["secrettext"]
+
+
+class ConfigItemTextSchema(_WithStringDefault, _WithAnsibleOptions, _WithPattern, _BaseConfigItemSchema):
+    type: Literal["text"]
 
 
 class ConfigItemListSchema(_BaseConfigItemSchema):
@@ -356,7 +377,10 @@ CONFIG_ITEMS: TypeAlias = (
     | ConfigItemIntegerSchema
     | ConfigItemFloatSchema
     | ConfigItemFileSchema
-    | ConfigItemStringWithPatternSchema
+    | ConfigItemStringSchema
+    | ConfigItemPasswordSchema
+    | ConfigItemTextSchema
+    | ConfigItemSecretTextSchema
     | ConfigItemListSchema
     | ConfigItemMapSchema
     | ConfigItemStructureSchema

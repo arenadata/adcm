@@ -20,6 +20,7 @@ import functools
 
 from adcm_version import compare_prototype_versions
 from core.bundle_alt._config import STACK_COMPLEX_FIELD_TYPES
+from core.bundle_alt.errors import BundleProcessingError
 from core.bundle_alt.predicates import is_component_key
 from core.bundle_alt.representation import build_parent_key_safe
 from core.bundle_alt.types import (
@@ -32,6 +33,7 @@ from core.bundle_alt.types import (
     UpgradeDefinition,
 )
 from core.job.types import JobSpec
+from django.db import IntegrityError
 
 from cm.errors import AdcmEx
 from cm.models import (
@@ -94,7 +96,16 @@ def save_definitions(
         bundle_definitions.get(("cluster",)) or bundle_definitions.get(("provider",)) or bundle_definitions[("adcm",)]
     )
 
-    bundle = _create_bundle(bundle_definition, bundle_hash, verification_status)
+    try:
+        bundle = _create_bundle(bundle_definition, bundle_hash, verification_status)
+    except IntegrityError as e:
+        is_constraint_violation = "duplicate key value violates unique constraint" in str(e)
+        if not is_constraint_violation:
+            raise
+
+        definition = bundle_definition
+        message = f'Bundle "{definition.name}" {definition.version} already installed'
+        raise BundleProcessingError(message) from e
 
     prototypes_without_parent: dict[BundleDefinitionKey, Prototype] = {}
     prototypes_with_parent: deque[tuple[Prototype, BundleDefinitionKey]] = deque()

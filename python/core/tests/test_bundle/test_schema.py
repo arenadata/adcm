@@ -21,6 +21,8 @@ from core.bundle_alt.schema import TYPE_SCHEMA_MAP
 class TestBundleSchema(TestCase):
     """Here we're testing schemas retrieval on minimal definitions"""
 
+    maxDiff = None
+
     @staticmethod
     def validate_schema(entries: list[dict] | dict) -> list[dict]:
         schemas = []
@@ -1030,7 +1032,6 @@ class TestBundleSchema(TestCase):
                 "description": None,
                 "ui_options": None,
                 "group_customization": None,
-                "ansible_options": None,
                 "default": None,
             }
             expected_config = [
@@ -1039,10 +1040,22 @@ class TestBundleSchema(TestCase):
                 {"type": "float", "name": "float_field", "min": None, "max": None, **common_config_fields},
                 {"type": "file", "name": "file_field", **common_config_fields},
                 {"type": "secretfile", "name": "secretfile_field", **common_config_fields},
-                {"type": "string", "name": "string_field", "pattern": None, **common_config_fields},
+                {
+                    "type": "string",
+                    "name": "string_field",
+                    "ansible_options": None,
+                    "pattern": None,
+                    **common_config_fields,
+                },
                 {"type": "password", "name": "password_field", "pattern": None, **common_config_fields},
                 {"type": "secrettext", "name": "secrettext_field", "pattern": None, **common_config_fields},
-                {"type": "text", "name": "text_field", "pattern": None, **common_config_fields},
+                {
+                    "type": "text",
+                    "name": "text_field",
+                    "ansible_options": None,
+                    "pattern": None,
+                    **common_config_fields,
+                },
                 {"type": "list", "name": "list_field", **common_config_fields},
                 {"type": "map", "name": "map_field", **common_config_fields},
                 {"type": "secretmap", "name": "secretmap_field", **common_config_fields},
@@ -1090,17 +1103,28 @@ class TestBundleSchema(TestCase):
                     "description": None,
                     "ui_options": None,
                     "group_customization": None,
-                    "ansible_options": None,
                     "subs": [
                         {"type": "boolean", "name": "bool_field", **common_config_fields},
                         {"type": "integer", "name": "int_field", "min": None, "max": None, **common_config_fields},
                         {"type": "float", "name": "float_field", "min": None, "max": None, **common_config_fields},
                         {"type": "file", "name": "file_field", **common_config_fields},
                         {"type": "secretfile", "name": "secretfile_field", **common_config_fields},
-                        {"type": "string", "name": "string_field", "pattern": None, **common_config_fields},
+                        {
+                            "type": "string",
+                            "name": "string_field",
+                            "ansible_options": None,
+                            "pattern": None,
+                            **common_config_fields,
+                        },
                         {"type": "password", "name": "password_field", "pattern": None, **common_config_fields},
                         {"type": "secrettext", "name": "secrettext_field", "pattern": None, **common_config_fields},
-                        {"type": "text", "name": "text_field", "pattern": None, **common_config_fields},
+                        {
+                            "type": "text",
+                            "name": "text_field",
+                            "ansible_options": None,
+                            "pattern": None,
+                            **common_config_fields,
+                        },
                         {"type": "list", "name": "list_field", **common_config_fields},
                         {"type": "map", "name": "map_field", **common_config_fields},
                         {"type": "secretmap", "name": "secretmap_field", **common_config_fields},
