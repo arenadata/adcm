@@ -11,6 +11,9 @@
 # limitations under the License.
 
 
+import os
+
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 from audit.utils import audit
 from cm.api import accept_license, get_license
@@ -24,7 +27,10 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
+from cm.services.adcm import adcm_config, get_adcm_config_id
+from cm.services.bundle_alt.load import Directories, parse_bundle_archive
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
+from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -143,8 +149,26 @@ class LoadBundleView(CreateModelMixin, GenericUIViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-        return Response(
-            BundleSerializer(load_bundle(serializer.validated_data["bundle_file"]), context={"request": request}).data,
+        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+        func = self._new_create if use_new_approach else self._old_create
+
+        result = func(serializer.validated_data["bundle_file"])
+
+        return Response(BundleSerializer(result, context={"request": request}).data)
+
+    def _old_create(self, file_path) -> Bundle:
+        return load_bundle(bundle_file=str(file_path))
+
+    def _new_create(self, file_path) -> Bundle:
+        archive_in_downloads = settings.DOWNLOAD_DIR / file_path
+        verified_signature_only = adcm_config(get_adcm_config_id()).config["global"]["accept_only_verified_bundles"]
+        directories = Directories(downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR)
+
+        return parse_bundle_archive(
+            archive=archive_in_downloads,
+            directories=directories,
+            adcm_version=settings.ADCM_VERSION,
+            verified_signature_only=verified_signature_only,
         )
 
 

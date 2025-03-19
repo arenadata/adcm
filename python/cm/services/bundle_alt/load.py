@@ -64,9 +64,22 @@ def parse_bundle_from_request_to_db(
 ) -> Bundle:
     archive_in_tmp = write_bundle_archive_to_tempdir(file_from_request)
     archive_in_downloads = safe_copy_to_downloads(archive_in_tmp, downloads_dir=directories.downloads)
-    with _cleanup_on_fail(archive_in_downloads):
+    return parse_bundle_archive(
+        archive=archive_in_downloads,
+        directories=directories,
+        adcm_version=adcm_version,
+        verified_signature_only=verified_signature_only,
+    )
+
+
+@convert_bundle_errors_to_adcm_ex
+def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: str, verified_signature_only: bool):
+    # Thou it's bit of strange to remove archive in here,
+    # but it's the original process,
+    # required by upload-load separation in v1
+    with _cleanup_on_fail(archive):
         return process_bundle_from_archive(
-            archive=archive_in_downloads,
+            archive=archive,
             bundles_dir=directories.bundles,
             files_dir=directories.files,
             adcm_version=adcm_version,

@@ -10,16 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+
+class _Flag:
+    __slots__ = ("header", "env")
+
+    def __init__(self, flag: str) -> None:
+        self.header = flag
+        self.env = flag.replace("-", "_").upper()
 
 
-def use_new_bundle_processing(request) -> bool:
-    return request.headers.get("feature-bundle-upload", "old").lower() == "new"
+FLAG_BUNDLE_UPLOAD = _Flag("feature-bundle-upload")
 
 
-def use_new_jinja_scripts_processing(request) -> bool:
-    return request.headers.get("feature-scripts-jinja", "old").lower() == "new"
-
-
-def use_new_jinja_config_processing() -> bool:
-    return os.environ.get("FEATURE_CONFIG_JINJA", "old").lower() == "new"
+def use_new_bundle_parsing_approach(env: dict, headers: dict) -> bool:
+    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env)
+    return flag == "new"
