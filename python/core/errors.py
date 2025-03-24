@@ -12,30 +12,25 @@
 
 from contextlib import contextmanager
 
-from core.types import ADCMComposableError, ADCMCoreError, ADCMMessageError
+from core.types import ADCMLocalizedError, ADCMMessageError
 
 
 class NotFoundError(ADCMMessageError):
     ...
 
 
-class ConfigValueError(ADCMCoreError):
+class ConfigValueError(ADCMLocalizedError):
     """
     Added as part of ADCM-6355.
     May be removed/reworked later.
     """
-
-    def __init__(self, code: str, msg: str) -> None:
-        super().__init__(msg)
-        self.code = code
-        self.msg = msg
 
 
 @contextmanager
 def localize_error(*locations: str):
     try:
         yield
-    except ADCMComposableError as e:
-        for location in reversed(locations):
-            e.add_prefix(location)
+    except ADCMLocalizedError as e:
+        for location in locations:
+            e.localize(location)
         raise

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import deque
 from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, NamedTuple, TypeAlias
@@ -49,11 +50,25 @@ class ADCMMessageError(ADCMCoreError):
         self.message = message
 
 
-class ADCMComposableError(ADCMMessageError):
-    def add_prefix(self, prefix: str) -> None:
-        # todo make it a list of locations
-        # self.message = f"{prefix}\n{self.message}"
-        self.__init__(f"{prefix}\n{self.message}")
+class ADCMLocalizedError(ADCMCoreError):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+        self.error = message
+        self.locations = deque()
+
+    @property
+    def message(self) -> str:
+        if not self.locations:
+            return self.error
+
+        # reversing locations, because they are added bottom->up the stack
+        location = "\n-> ".join(reversed(self.locations))
+
+        return f"Error at:\n{location}\n{self.error}"
+
+    def localize(self, location: str) -> None:
+        self.locations.append(location)
 
 
 class ADCMCoreType(Enum):

@@ -45,3 +45,21 @@ def dependency_entry_to_key(entry: dict) -> BundleDefinitionKey:
         return ("component", entry["service"], entry["component"])
 
     return ("service", entry["service"])
+
+
+def repr_from_key(k: BundleDefinitionKey) -> str:
+    type_ = k[0]
+    result = f'Object of type "{type_}"'
+    if type_ == "service":
+        return f'{result} named "{k[1]}"'
+
+    if type_ == "component":
+        return f'{result} named "{k[1]}.{k[2]}"'
+
+    return result
+
+
+def repr_from_raw(d: dict) -> str:
+    name = d.get("name", "-")
+    type_ = d.get("type", "unknown")
+    return f'Object of type "{type_}" named "{name}"'

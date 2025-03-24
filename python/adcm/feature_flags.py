@@ -11,6 +11,9 @@
 # limitations under the License.
 
 
+from typing import Mapping
+
+
 class _Flag:
     __slots__ = ("header", "env")
 
@@ -22,6 +25,6 @@ class _Flag:
 FLAG_BUNDLE_UPLOAD = _Flag("feature-bundle-upload")
 
 
-def use_new_bundle_parsing_approach(env: dict, headers: dict) -> bool:
+def use_new_bundle_parsing_approach(env: Mapping[str, str], headers: Mapping[str, str]) -> bool:
     flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env)
     return flag == "new"

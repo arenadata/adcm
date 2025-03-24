@@ -15,8 +15,8 @@ from typing import Any
 import os
 
 from adcm.feature_flags import use_new_bundle_parsing_approach
-from core.bundle_alt.process import ConfigJinjaContext, parse_config_jinja
-from core.bundle_alt.types import ShortDefinitionDescription
+from core.bundle_alt.process import ConfigJinjaContext
+from core.errors import localize_error
 from django.conf import settings
 from yaml import safe_load
 
@@ -29,6 +29,7 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
+from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.config.patterns import Pattern
 from cm.services.job.inventory import get_cluster_vars
@@ -76,12 +77,11 @@ def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, r
         path=str(config_file.parent.relative_to(resolver.bundle_root)),
         object={"config_group_customization": False},
     )
-    object_ = ShortDefinitionDescription(
-        type=object_.prototype.type,
-        name=object_.prototype.name,
-        version=object_.prototype.version,
-    )
-    configs = parse_config_jinja(data=data, context=context, object_=object_, prototype=action.prototype, action=action)
+
+    proto = object_.prototype
+    with localize_error(f'Object of type {proto.type} named "{proto.name}", version {proto.version}'):
+        configs = parse_config_jinja(data=data, context=context, prototype=action.prototype, action=action)
+
     return configs, {}
 
 
