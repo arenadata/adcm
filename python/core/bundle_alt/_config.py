@@ -24,9 +24,8 @@ from typing import Any, Callable, TypeAlias
 
 from core.bundle_alt._pattern import Pattern
 from core.bundle_alt._yspec import FormatError, SchemaError, process_rule
-from core.bundle_alt.representation import make_ref
-from core.bundle_alt.types import ConfigParamPlainSpec, GeneralObjectDescription, ParameterKey
-from core.errors import ConfigValueError
+from core.bundle_alt.types import ConfigParamPlainSpec, ParameterKey
+from core.errors import ConfigValueError, localize_error
 
 STACK_COMPLEX_FIELD_TYPES = frozenset(("json", "structure", "list", "map", "secretmap"))
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -82,8 +81,6 @@ def check_default_values(
     parameters: dict[ParameterKey, ConfigParamPlainSpec],
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
-    *,
-    object_: GeneralObjectDescription,
 ):
     extra_checks = {
         "file": (_check_file_path_length,),
@@ -92,7 +89,7 @@ def check_default_values(
     value_checks = _generate_value_checks_map(extra=extra_checks)
 
     # object_ must be passed positionaly
-    error_converter = partial(_build_config_value_error, object_, prefix="default value")
+    error_converter = partial(_build_config_value_error, prefix="default value")
 
     _check_config_values(parameters, values, attributes, convert_err=error_converter, value_checks=value_checks)
 
@@ -101,13 +98,11 @@ def check_values(
     parameters: dict[ParameterKey, ConfigParamPlainSpec],
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
-    *,
-    object_: GeneralObjectDescription,
 ):
     extra_checks = {"variant": (_check_variant_for_non_default,)}
     value_checks = _generate_value_checks_map(extra=extra_checks)
 
-    error_converter = partial(_build_config_value_error, object_)
+    error_converter = _build_config_value_error
 
     _check_config_values(parameters, values, attributes, convert_err=error_converter, value_checks=value_checks)
 
@@ -129,37 +124,38 @@ def _check_config_values(
     # iterate over values to allow specifying subset of values to check
     # (e.g. changes, defaults in bundle, etc.)
     for key, value in values.items():
-        parameter = parameters[key]
-        type_ = parameter.type
+        with localize_error(f"Value of parameter {key_to_str(key)}"):
+            parameter = parameters[key]
+            type_ = parameter.type
 
-        try:
-            empty_values = (None, *(consider_empty.get(type_, ())))
-            if value in empty_values:
-                # expected to get normalized spec
-                is_required = parameter.required
-                is_in_deactivated_group = _is_part_of_deactivated_group(key, attributes)
-                if is_required and not is_in_deactivated_group:
-                    raise _ValueCheckFailedError("is required")
+            try:
+                empty_values = (None, *(consider_empty.get(type_, ())))
+                if value in empty_values:
+                    # expected to get normalized spec
+                    is_required = parameter.required
+                    is_in_deactivated_group = _is_part_of_deactivated_group(key, attributes)
+                    if is_required and not is_in_deactivated_group:
+                        raise _ValueCheckFailedError("is required")
 
-                continue
+                    continue
 
-            # check unsuitable for type based check,
-            # left for backward compatibility
-            if type_ not in STACK_COMPLEX_FIELD_TYPES and isinstance(value, (list, dict)):
-                raise _ValueCheckFailedError("should be flat")
+                # check unsuitable for type based check,
+                # left for backward compatibility
+                if type_ not in STACK_COMPLEX_FIELD_TYPES and isinstance(value, (list, dict)):
+                    raise _ValueCheckFailedError("should be flat")
 
-            checks_for_type = value_checks.get(type_, ())
-            for check in checks_for_type:
-                check(value, parameter)
+                checks_for_type = value_checks.get(type_, ())
+                for check in checks_for_type:
+                    check(value, parameter)
 
-        except _ValueCheckFailedError as err:
-            error = convert_err(key, err)
-            raise error from err.parent
+            except _ValueCheckFailedError as err:
+                error = convert_err(key, err)
+                raise error from err.parent
 
-        except _ValueViolatesPatternError as err:
-            key_repr = key_to_str(key)
-            message = err.message.format(key=key_repr)
-            raise ConfigValueError(code="CONFIG_VALUE_ERROR", msg=message) from None
+            except _ValueViolatesPatternError as err:
+                key_repr = key_to_str(key)
+                message = err.message.format(key=key_repr)
+                raise ConfigValueError(message) from None
 
 
 def _generate_value_checks_map(extra: dict) -> dict[_ParamType, tuple[Callable, ...]]:
@@ -205,9 +201,7 @@ def _is_part_of_deactivated_group(key: ParameterKey, attributes: dict[ParameterK
     return not not_in_deactivated_group
 
 
-def _build_config_value_error(
-    object_: GeneralObjectDescription, key: ParameterKey, details: _ValueCheckFailedError, prefix="value"
-) -> ConfigValueError:
+def _build_config_value_error(key: ParameterKey, details: _ValueCheckFailedError, prefix="value") -> ConfigValueError:
     prefix_part = prefix.capitalize()
 
     value_part = ""
@@ -216,13 +210,9 @@ def _build_config_value_error(
 
     key_part = f"of config key {key_to_str(key)}"
 
-    object_part = f"({make_ref(object_)})"
+    message = " ".join(filter(bool, (prefix_part, value_part, details.pre_key_message, key_part, details.reason)))
 
-    message = " ".join(
-        filter(bool, (prefix_part, value_part, details.pre_key_message, key_part, details.reason, object_part))
-    )
-
-    return ConfigValueError(code="CONFIG_VALUE_ERROR", msg=message)
+    return ConfigValueError(message)
 
 
 # Type-specifics checks

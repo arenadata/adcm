@@ -18,18 +18,18 @@ from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.schema import ClusterSchema, HostSchema, ProviderSchema, ServiceSchema
 from core.bundle_alt.types import (
     ActionAvailability,
+    ActionDefinition,
     ConfigDefinition,
     ConfigParamPlainSpec,
+    Definition,
     ImportDefinition,
+    UpgradeDefinition,
     UpgradeRestrictions,
     VersionBound,
 )
 from core.bundle_alt.validation import (
     ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
     ADCM_HOST_TURN_ON_MM_ACTION_NAME,
-    ActionDefinition,
-    Definition,
-    UpgradeDefinition,
     check_action_hc_acl_rules,
     check_bound_to,
     check_bundle_switch_amount_for_upgrade_action,
@@ -143,9 +143,9 @@ class TestBundleValidation(TestCase):
                 definition = Definition(type="cluster", name="aaa", version="1")
 
                 with self.assertRaises(BundleValidationError) as err:
-                    check_mm_host_action_is_allowed(action, definition)
+                    check_mm_host_action_is_allowed(action, definition.type)
 
-                self.assertEqual(err.exception.message, f'Action named "{name}" should be "host action"')
+                self.assertEqual(err.exception.error, f'Action named "{name}" should be "host action"')
 
     def test_check_mm_on_host_not_host_action_type_success(self) -> None:
         for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
@@ -153,7 +153,7 @@ class TestBundleValidation(TestCase):
                 action = ActionDefinition(type="task", name=name, is_host_action=True)
                 definition = Definition(type="cluster", name="aaa", version="1")
 
-                check_mm_host_action_is_allowed(action, definition)
+                check_mm_host_action_is_allowed(action, definition.type)
 
     def test_check_requires_success(self) -> None:
         for case_name, key, requires in [
@@ -252,14 +252,14 @@ class TestBundleValidation(TestCase):
         key = (COMPONENT, "s2", "c3")
         with_bound_to = make_def(key, bound_to={"service": "s1", "component": "c1"})
 
-        check_bound_to(key, with_bound_to)
+        check_bound_to(owner_key=key, bound_to=with_bound_to.bound_to)
 
     def test_check_bound_to_fail(self) -> None:
         key = (COMPONENT, "s2", "c3")
         with_bound_to = make_def(key, bound_to={"service": "s2", "component": "c3"})
 
         with self.assertRaises(BundleValidationError) as err:
-            check_bound_to(key, with_bound_to)
+            check_bound_to(owner_key=key, bound_to=with_bound_to.bound_to)
 
         self.assertEqual(err.exception.message, 'Component can not require themself in "bound_to"')
 
@@ -353,17 +353,17 @@ class TestBundleValidation(TestCase):
         config = {("a",): ..., ("b",): ...}
         definition = make_def((CLUSTER,), config=config, exports=[])
 
-        check_exported_values_exists_in_config(definition)
+        check_exported_values_exists_in_config(exports=definition.exports, config=definition.config)
 
         definition = make_def((CLUSTER,), config=config, exports=["a"])
-        check_exported_values_exists_in_config(definition)
+        check_exported_values_exists_in_config(exports=definition.exports, config=definition.config)
 
     def test_check_exported_values_exists_in_config_fail(self) -> None:
         config = {("a",): ..., ("b",): ..., ("c", "k"): ...}
         definition = make_def((CLUSTER,), config=config, exports=["k"])
 
         with self.assertRaises(BundleValidationError) as err:
-            check_exported_values_exists_in_config(definition)
+            check_exported_values_exists_in_config(exports=definition.exports, config=definition.config)
 
         self.assertIn("Group specified for export is missing in configuration: k", err.exception.message)
 
@@ -373,12 +373,12 @@ class TestBundleValidation(TestCase):
         with self.subTest("Import with no default"):
             definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(name="hoho")])
 
-            check_import_defaults_exist_in_config(definition)
+            check_import_defaults_exist_in_config(imports=definition.imports, config=definition.config)
 
         with self.subTest("Import with existing default"):
             definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(name="haha", default="a")])
 
-            check_import_defaults_exist_in_config(definition)
+            check_import_defaults_exist_in_config(imports=definition.imports, config=definition.config)
 
     def test_check_import_defaults_exist_in_config_fail(self) -> None:
         config = {"/a": make_config(name="a", type="group"), "/b": make_config(name="b"), "/c/k": make_config(name="c")}
@@ -391,7 +391,7 @@ class TestBundleValidation(TestCase):
                 definition = make_def((CLUSTER,), config=config, imports=[ImportDefinition(**i) for i in imports])
 
                 with self.assertRaises(BundleValidationError) as err:
-                    check_import_defaults_exist_in_config(definition)
+                    check_import_defaults_exist_in_config(imports=definition.imports, config=definition.config)
 
                 self.assertIn(
                     "Group specified as default for import a is missing in configuration: ", err.exception.message

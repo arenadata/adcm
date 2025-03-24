@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
 from typing import Annotated, Any, Literal, TypeAlias
 import re
 
@@ -21,14 +20,13 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
-    ValidationError,
     field_validator,
     model_validator,
 )
 from typing_extensions import TypedDict
 
 from core.bundle_alt._pattern import Pattern
-from core.bundle_alt.errors import BundleParsingError
+from core.bundle_alt.errors import BundleParsingError, convert_validation_to_bundle_error
 
 # Should be moved to consts section
 ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
@@ -812,20 +810,7 @@ TYPE_SCHEMA_MAP = {
 }
 
 
-@contextmanager
-def _validation_to_bundle_error():
-    try:
-        yield
-    except ValidationError as e:
-        message = "Errors found in definition of bundle entity:"
-        # implement
-        details = str(e)
-
-        message = f"{message}\n{details}"
-
-        raise BundleParsingError(message) from e
-
-
+@convert_validation_to_bundle_error
 def parse(
     definition: dict,
 ) -> ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema:
@@ -834,8 +819,7 @@ def parse(
     except KeyError as e:
         raise BundleParsingError("Field `type` is missing: can't parse definition") from e
 
-    with _validation_to_bundle_error():
-        return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
+    return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
 
 
 ###############
