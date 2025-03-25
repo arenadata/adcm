@@ -19,7 +19,7 @@ const ClusterAnsibleSettings: React.FC = () => {
     onSave,
     onReset,
     isConfigurationLoading,
-    accessCheckStatus,
+    accessConfigCheckStatus,
   } = useClusterAnsibleSettings();
 
   useEffect(() => {
@@ -36,7 +36,7 @@ const ClusterAnsibleSettings: React.FC = () => {
   }, [cluster, dispatch]);
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
+    <PermissionsChecker requestState={accessConfigCheckStatus}>
       <ConfigurationFormContextProvider>
         <ClusterAnsibleSettingsToolbar onSave={onSave} onRevert={onReset} isConfigChanged={!!draftConfiguration} />
         <ConfigurationMain
