@@ -13,6 +13,7 @@
 
 from pathlib import Path
 from secrets import token_hex
+import os
 import json
 import logging
 
@@ -20,6 +21,7 @@ from django.utils import timezone
 
 import adcm.init_django  # noqa: F401, isort:skip
 
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -35,6 +37,7 @@ from cm.models import (
     Provider,
     TaskLog,
 )
+from cm.services.bundle_alt.adcm import process_adcm_bundle
 from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from django.conf import settings
 from rbac.models import User
@@ -145,7 +148,10 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
 
     abort_all()
     clear_temp_tables()
-    load_adcm(adcm_conf_file)
+
+    adcm_parser = process_adcm_bundle if use_new_bundle_parsing_approach(env=os.environ, headers={}) else load_adcm
+    adcm_parser(adcm_conf_file)
+
     drop_locks()
     recheck_issues()
     logger.info("ADCM DB is initialized")

@@ -10,27 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
 
-from core.types import ADCMLocalizedError, ADCMMessageError
-
-
-class NotFoundError(ADCMMessageError):
-    ...
+from typing import Mapping
 
 
-class ConfigValueError(ADCMLocalizedError):
-    """
-    Added as part of ADCM-6355.
-    May be removed/reworked later.
-    """
+class _Flag:
+    __slots__ = ("header", "env")
+
+    def __init__(self, flag: str) -> None:
+        self.header = flag
+        self.env = flag.replace("-", "_").upper()
 
 
-@contextmanager
-def localize_error(*locations: str):
-    try:
-        yield
-    except ADCMLocalizedError as e:
-        for location in locations:
-            e.localize(location)
-        raise
+FLAG_BUNDLE_UPLOAD = _Flag("feature-bundle-upload")
+
+
+def use_new_bundle_parsing_approach(env: Mapping[str, str], headers: Mapping[str, str]) -> bool:
+    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env)
+    return flag == "new"

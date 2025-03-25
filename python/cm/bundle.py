@@ -22,6 +22,16 @@ import tarfile
 import functools
 
 from adcm_version import compare_adcm_versions, compare_prototype_versions
+from core.bundle_alt.bundle_load import (
+    get_config_files as get_config_files_alt,
+)
+from core.bundle_alt.bundle_load import (
+    get_hash_safe as get_hash_safe_alt,
+)
+from core.bundle_alt.bundle_load import (
+    untar_safe as untar_safe_alt,
+)
+from core.bundle_alt.errors import BundleProcessingError
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.transaction import atomic
@@ -1440,3 +1450,52 @@ def get_stage_bundle(bundle_file: str) -> StagePrototype:
         )
 
     return bundle
+
+
+def check_bundle_exists(**kwargs):
+    try:
+        existed = Bundle.objects.get(**kwargs)
+        raise_adcm_ex(
+            code="BUNDLE_ERROR",
+            msg=f"Bundle already exists. Name: {existed.name}, "
+            f"version: {existed.version}, edition: {existed.edition}",
+        )
+    except Bundle.DoesNotExist:
+        logger.warning(
+            (
+                f"There is no bundle with {kwargs} in DB, ",
+                "but there is a dir on disk with this hash. Dir will be overwritten.",
+            ),
+        )
+
+
+def unpack_bundle(bundle_path: Path) -> list[tuple[Path, Path]]:
+    """
+    Processes a bundle archive by unpacking it, calculating its hash, and retrieving paths to all config files.
+
+    Args:
+        bundle_path: Path to the bundle archive file.
+
+    Returns:
+        A list of tuples of absolute and relative Paths to all `config.yaml`
+         (or `config.yml`) files found in the unpacked bundle.
+
+    Raises:
+        BundleUnpackingError: If there are errors during unpacking,
+        hash calculation, or no config files are found.
+    """
+
+    if not bundle_path.is_file():
+        message = f"The bundle path provided does not exist or is not a file: {bundle_path}"
+        raise BundleProcessingError(message)
+
+    bundle_hash = get_hash_safe_alt(path=bundle_path)
+
+    extract_to = settings.BUNDLE_DIR / bundle_hash
+
+    if extract_to.is_dir():
+        check_bundle_exists(hash=bundle_hash)
+
+    untar_safe_alt(to=extract_to, tar_from=bundle_path)
+
+    return get_config_files_alt(extract_to)

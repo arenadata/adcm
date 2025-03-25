@@ -95,6 +95,8 @@ ERRORS = {
     "INVALID_OBJECT_UPDATE": ("invalid update of object definition", HTTP_409_CONFLICT, ERR),
     "INVALID_CONFIG_UPDATE": ("invalid update of config definition", HTTP_409_CONFLICT, ERR),
     "BUNDLE_ERROR": ("bundle error", HTTP_409_CONFLICT, ERR),
+    "BUNDLE_DEFINITION_ERROR": ("incorrect definition of bundle object", HTTP_409_CONFLICT, ERR),
+    "BUNDLE_VALIDATION_ERROR": ("bundle definitions won't work", HTTP_409_CONFLICT, ERR),
     "BUNDLE_VERSION_ERROR": ("bundle version error", HTTP_409_CONFLICT, ERR),
     "BUNDLE_UPLOAD_ERROR": ("bundle upload error", HTTP_409_CONFLICT, ERR),
     "LICENSE_ERROR": ("license error", HTTP_409_CONFLICT, ERR),

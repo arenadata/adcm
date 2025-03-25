@@ -10,27 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
-
-from core.types import ADCMLocalizedError, ADCMMessageError
+from core.bundle_alt.types import BundleDefinitionKey, Definition
 
 
-class NotFoundError(ADCMMessageError):
-    ...
+def is_service(definition: Definition) -> bool:
+    return definition.type == "service"
 
 
-class ConfigValueError(ADCMLocalizedError):
-    """
-    Added as part of ADCM-6355.
-    May be removed/reworked later.
-    """
+def is_component(definition: Definition) -> bool:
+    return definition.type == "component"
 
 
-@contextmanager
-def localize_error(*locations: str):
-    try:
-        yield
-    except ADCMLocalizedError as e:
-        for location in locations:
-            e.localize(location)
-        raise
+def is_component_key(key: BundleDefinitionKey) -> bool:
+    return key[0] == "component"
+
+
+def is_service_key(key: BundleDefinitionKey) -> bool:
+    return key[0] == "service"
+
+
+def has_requires(definition: Definition) -> bool:
+    return bool(definition.requires)
