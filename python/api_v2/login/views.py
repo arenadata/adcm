@@ -54,7 +54,7 @@ class BaseLoginView(GenericAPIView):
 
 
 @extend_schema_view(
-    perform_login=extend_schema(
+    post=extend_schema(
         operation_id="postLogin",
         description="Perform authorization in ADCM.",
         summary="POST login",

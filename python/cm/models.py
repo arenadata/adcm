@@ -503,7 +503,7 @@ class Provider(ADCMEntity):
         return self.prototype.license
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.name
 
     @property
@@ -539,11 +539,11 @@ class Host(ADCMEntity):
         return self.prototype.monitoring
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.fqdn
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.fqdn
 
     @property
@@ -593,15 +593,15 @@ class Service(ADCMEntity):
         return self.prototype.version
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.prototype.name
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.prototype.display_name
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self.prototype.description
 
     @property
@@ -687,11 +687,11 @@ class Component(ADCMEntity):
     __error_code__ = "COMPONENT_NOT_FOUND"
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.prototype.name
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self.prototype.display_name
 
     @property
@@ -1266,6 +1266,7 @@ class PrototypeConfig(ADCMModel):
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
     group_customization = models.BooleanField(null=True)
+    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
 
     class Meta:
         ordering = ["id"]
@@ -1561,6 +1562,7 @@ class StagePrototypeConfig(ADCMModel):
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
     group_customization = models.BooleanField(null=True)
+    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
 
     class Meta:
         ordering = ["id"]

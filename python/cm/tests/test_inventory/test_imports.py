@@ -390,9 +390,5 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         }
 
         self.assertDictEqual(result["vars"]["cluster"]["imports"], expected_vars_imports)
-        for node in ("CLUSTER", "imports_with_defaults", "imports_with_defaults.just_component"):
-            # note that imports ignore group configs
-            self.assertDictEqual(
-                result["children"][node]["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports
-            )
-            self.assertNotIn("cluster", result["children"][node]["hosts"]["host-4"])
+        self.assertDictEqual(result["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports)
+        self.assertNotIn("cluster", result["hosts"]["host-4"])

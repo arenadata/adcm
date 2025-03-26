@@ -28,6 +28,7 @@ class ConfigParamPlainSpec(NamedTuple):
     limits: dict
     ui_options: dict
     required: bool
+    ansible_options: dict
 
     group_customization: bool | None
 
@@ -72,6 +73,7 @@ def convert_to_flat_spec_from_proto_flat_spec(
             ui_options=config_proto.ui_options or {},
             required=config_proto.required,
             group_customization=config_proto.group_customization,
+            ansible_options=config_proto.ansible_options,
         )
 
     return flat_config_specification

@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.6
+  version: 3.7
 
   actions:
     run_ldap_sync:
@@ -40,6 +40,12 @@
             Bundle verification GPG public key to verify the signature of the bundle (*.sig file) when uploading the bundle to ADCM.
           type: file
           default: "gpg_key.pub"
+        - name: "accept_only_verified_bundles"
+          display_name: "Accept only verified bundles"
+          description: |
+            If enabled, any bundle that does not have a valid signature will be rejected upon upload.
+          type: boolean
+          default: false
     - name: "statistics_collection"
       display_name: "Statistics Collection"
       type: "group"

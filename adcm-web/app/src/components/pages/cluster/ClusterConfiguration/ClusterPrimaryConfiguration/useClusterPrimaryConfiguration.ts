@@ -16,6 +16,7 @@ export const useClusterPrimaryConfiguration = () => {
   const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
   const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
   const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
+  const accessConfigCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessConfigCheckStatus);
 
   useEffect(() => {
     if (cluster?.id) {
@@ -72,5 +73,6 @@ export const useClusterPrimaryConfiguration = () => {
     isVersionsLoading,
     cluster,
     accessCheckStatus,
+    accessConfigCheckStatus,
   };
 };

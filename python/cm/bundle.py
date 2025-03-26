@@ -22,6 +22,16 @@ import tarfile
 import functools
 
 from adcm_version import compare_adcm_versions, compare_prototype_versions
+from core.bundle_alt.bundle_load import (
+    get_config_files as get_config_files_alt,
+)
+from core.bundle_alt.bundle_load import (
+    get_hash_safe as get_hash_safe_alt,
+)
+from core.bundle_alt.bundle_load import (
+    untar_safe as untar_safe_alt,
+)
+from core.bundle_alt.errors import BundleProcessingError
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.transaction import atomic
@@ -181,13 +191,48 @@ def load_bundle(bundle_file: str) -> Bundle:
     bundle_hash, path = process_file(bundle_file=bundle_file)
 
     bundle_archive, signature_file = get_bundle_and_signature_paths(path=path)
-    verification_status = get_verification_status(bundle_archive=bundle_archive, signature_file=signature_file)
+    verification_status = get_verification_status(
+        bundle_archive=bundle_archive,
+        signature_file=signature_file,
+    )
     untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
+
+    if verification_status != SignatureStatus.VALID and is_accept_only_verified_bundles_enabled():
+        # all this stuff should be cleaned in a unified style later
+        if bundle_archive:
+            bundle_archive.unlink(missing_ok=True)
+
+        raise AdcmEx(
+            code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",
+            msg=(
+                f"Bundle '{bundle_file}' has signature status '{verification_status.value}', "
+                "but 'accept_only_verified_bundles' is enabled. Upload rejected."
+            ),
+        )
 
     with atomic():
         return prepare_bundle(
-            bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
+            bundle_file=bundle_file,
+            bundle_hash=bundle_hash,
+            path=path,
+            verification_status=verification_status,
         )
+
+
+def is_accept_only_verified_bundles_enabled() -> bool:
+    """
+    Return True if enabled accept_only_verified_bundles
+    False otherwise
+    """
+    adcm_obj = ADCM.objects.first()
+    if not adcm_obj or not adcm_obj.config:
+        return False
+
+    config_log = ConfigLog.objects.filter(obj_ref=adcm_obj.config, id=adcm_obj.config.current).first()
+    if not config_log:
+        return False
+
+    return config_log.config.get("global", {}).get("accept_only_verified_bundles", False)
 
 
 def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
@@ -1007,6 +1052,7 @@ def copy_stage_config(stage_configs, prototype):
                 "required",
                 "ui_options",
                 "group_customization",
+                "ansible_options",
             ),
         )
         if stage_config.action:
@@ -1404,3 +1450,52 @@ def get_stage_bundle(bundle_file: str) -> StagePrototype:
         )
 
     return bundle
+
+
+def check_bundle_exists(**kwargs):
+    try:
+        existed = Bundle.objects.get(**kwargs)
+        raise_adcm_ex(
+            code="BUNDLE_ERROR",
+            msg=f"Bundle already exists. Name: {existed.name}, "
+            f"version: {existed.version}, edition: {existed.edition}",
+        )
+    except Bundle.DoesNotExist:
+        logger.warning(
+            (
+                f"There is no bundle with {kwargs} in DB, ",
+                "but there is a dir on disk with this hash. Dir will be overwritten.",
+            ),
+        )
+
+
+def unpack_bundle(bundle_path: Path) -> list[tuple[Path, Path]]:
+    """
+    Processes a bundle archive by unpacking it, calculating its hash, and retrieving paths to all config files.
+
+    Args:
+        bundle_path: Path to the bundle archive file.
+
+    Returns:
+        A list of tuples of absolute and relative Paths to all `config.yaml`
+         (or `config.yml`) files found in the unpacked bundle.
+
+    Raises:
+        BundleUnpackingError: If there are errors during unpacking,
+        hash calculation, or no config files are found.
+    """
+
+    if not bundle_path.is_file():
+        message = f"The bundle path provided does not exist or is not a file: {bundle_path}"
+        raise BundleProcessingError(message)
+
+    bundle_hash = get_hash_safe_alt(path=bundle_path)
+
+    extract_to = settings.BUNDLE_DIR / bundle_hash
+
+    if extract_to.is_dir():
+        check_bundle_exists(hash=bundle_hash)
+
+    untar_safe_alt(to=extract_to, tar_from=bundle_path)
+
+    return get_config_files_alt(extract_to)

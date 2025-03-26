@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TypedDict
+
 from adcm.serializers import EmptySerializer
 from cm.models import ConcernItem
 from cm.utils import get_obj_type
-from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
+from drf_spectacular.utils import OpenApiExample, extend_schema_field, extend_schema_serializer
 from rest_framework.fields import CharField, DictField, SerializerMethodField
 from rest_framework.serializers import BooleanField, ModelSerializer
 
@@ -34,6 +36,11 @@ class ReasonSerializer(EmptySerializer):
     placeholder = DictField()
 
 
+class _ConcernOwner(TypedDict):
+    id: int
+    type: str | None
+
+
 class ConcernSerializer(ModelSerializer):
     is_blocking = BooleanField(source="blocking")
     owner = SerializerMethodField()
@@ -43,6 +50,7 @@ class ConcernSerializer(ModelSerializer):
         model = ConcernItem
         fields = ("id", "type", "reason", "is_blocking", "cause", "owner")
 
+    @extend_schema_field(_ConcernOwner)
     def get_owner(self, obj):
         return {
             "id": obj.owner_id,

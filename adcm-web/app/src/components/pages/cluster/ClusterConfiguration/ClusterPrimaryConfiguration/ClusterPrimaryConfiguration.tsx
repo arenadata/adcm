@@ -24,6 +24,7 @@ const ClusterPrimaryConfiguration: React.FC = () => {
     setDraftConfiguration,
     isConfigurationLoading,
     accessCheckStatus,
+    accessConfigCheckStatus,
   } = useClusterPrimaryConfiguration();
 
   const compareOptions = useClusterPrimaryConfigurationsCompare();
@@ -42,8 +43,8 @@ const ClusterPrimaryConfiguration: React.FC = () => {
   }, [cluster, dispatch]);
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
-      <div>
+    <div>
+      <PermissionsChecker requestState={accessCheckStatus}>
         <ConfigurationHeader
           configVersions={configVersions}
           selectedConfigId={selectedConfigId}
@@ -51,17 +52,18 @@ const ClusterPrimaryConfiguration: React.FC = () => {
           draftConfiguration={draftConfiguration}
           compareOptions={compareOptions}
         />
-
-        <ConfigurationFormContextProvider>
-          <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-          <ConfigurationMain
-            isLoading={isConfigurationLoading}
-            configuration={selectedConfiguration}
-            onChangeConfiguration={setDraftConfiguration}
-          />
-        </ConfigurationFormContextProvider>
-      </div>
-    </PermissionsChecker>
+        <PermissionsChecker requestState={accessConfigCheckStatus}>
+          <ConfigurationFormContextProvider>
+            <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+            <ConfigurationMain
+              isLoading={isConfigurationLoading}
+              configuration={selectedConfiguration}
+              onChangeConfiguration={setDraftConfiguration}
+            />
+          </ConfigurationFormContextProvider>
+        </PermissionsChecker>
+      </PermissionsChecker>
+    </div>
   );
 };
 

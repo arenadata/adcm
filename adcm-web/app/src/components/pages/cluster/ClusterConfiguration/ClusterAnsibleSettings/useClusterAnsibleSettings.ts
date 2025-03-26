@@ -12,7 +12,7 @@ export const useClusterAnsibleSettings = () => {
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
   const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
-  const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
+  const accessConfigCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessConfigCheckStatus);
 
   const [draftConfiguration, setDraftConfiguration] = useState<AdcmConfiguration | null>(null);
 
@@ -65,6 +65,6 @@ export const useClusterAnsibleSettings = () => {
     selectedConfiguration,
     isConfigurationLoading,
     cluster,
-    accessCheckStatus,
+    accessConfigCheckStatus,
   };
 };

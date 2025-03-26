@@ -42,7 +42,7 @@ export class AdcmClusterServicesConfigsApi {
 
   public static async getConfig(args: GetClusterServiceConfigArgs) {
     const response = await httpClient.get<AdcmConfig>(
-      `/api/v2/clusters/${args.clusterId}/services/${args.serviceId}/configs/${args.configId}`,
+      `/api/v2/clusters/${args.clusterId}/services/${args.serviceId}/configs/${args.configId}/`,
     );
     return response.data;
   }

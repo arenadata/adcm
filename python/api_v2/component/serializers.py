@@ -76,7 +76,7 @@ class ComponentMaintenanceModeSerializer(ModelSerializer):
         fields = ["maintenance_mode"]
 
 
-class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
+class RelatedHostComponentsHostStatusSerializer(WithStatusSerializer):
     id = IntegerField(source="host.id")
     name = CharField(source="host.name")
 
@@ -86,7 +86,7 @@ class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
 
 
 class ComponentStatusSerializer(ModelSerializer):
-    host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
+    host_components = RelatedHostComponentsHostStatusSerializer(many=True, source="hostcomponent_set")
 
     class Meta:
         model = Component
@@ -94,6 +94,8 @@ class ComponentStatusSerializer(ModelSerializer):
 
 
 class HostComponentSerializer(WithStatusSerializer):
+    name = CharField()  # schema warning helper
+    display_name = CharField()  # schema warning helper
     concerns = ConcernSerializer(read_only=True, many=True)
     cluster = ClusterRelatedSerializer(read_only=True)
     service = ServiceRelatedSerializer(read_only=True)

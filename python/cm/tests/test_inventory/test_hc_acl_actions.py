@@ -68,43 +68,13 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD.value}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -166,31 +136,13 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE.value}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -248,61 +200,13 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}.{HcAclAction.ADD.value}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD.value}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE.value}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE.value}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,

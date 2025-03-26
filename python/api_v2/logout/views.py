@@ -30,7 +30,7 @@ from rest_framework.status import HTTP_200_OK
 
 
 @extend_schema_view(
-    perform_login=extend_schema(
+    post=extend_schema(
         operation_id="postLogout",
         description="Perform logout from ADCM.",
         summary="POST logout",

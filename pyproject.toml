@@ -10,7 +10,7 @@ python = "~3.10"
 
 Django = "5.1.1"
 adcm-version = "1.0.3"
-ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p6" }
+ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p7" }
 apache-libcloud = "3.8.0"
 attr = "0.3.2"
 casestyle = "0.0.4"
@@ -39,7 +39,7 @@ markupsafe = "1.1.1"
 multipledispatch = "1.0.0"
 psycopg2-binary = "2.9.9"
 pycryptodome = "3.18.0"
-pydantic = "2.7.0"
+pydantic = "2.10.6"
 python-gnupg = "0.5.2"
 requests-toolbelt = "1.0.0"
 rstr = "3.2.2"

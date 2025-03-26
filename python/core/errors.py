@@ -10,8 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMMessageError
+from contextlib import contextmanager
+
+from core.types import ADCMLocalizedError, ADCMMessageError
 
 
 class NotFoundError(ADCMMessageError):
     ...
+
+
+class ConfigValueError(ADCMLocalizedError):
+    """
+    Added as part of ADCM-6355.
+    May be removed/reworked later.
+    """
+
+
+@contextmanager
+def localize_error(*locations: str):
+    try:
+        yield
+    except ADCMLocalizedError as e:
+        for location in locations:
+            e.localize(location)
+        raise

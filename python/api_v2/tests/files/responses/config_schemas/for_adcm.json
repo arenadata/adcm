@@ -69,11 +69,28 @@
             "enumExtra": null
           },
           "minLength": 1
+        },
+        "accept_only_verified_bundles": {
+          "title": "Accept only verified bundles",
+          "type": "boolean",
+          "description": "If enabled, any bundle that does not have a valid signature will be rejected upon upload.\n",
+          "default": false,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
         }
       },
       "required": [
         "adcm_url",
-        "verification_public_key"
+        "verification_public_key",
+        "accept_only_verified_bundles"
       ]
     },
     "statistics_collection": {

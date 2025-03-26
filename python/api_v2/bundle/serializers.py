@@ -39,7 +39,7 @@ class MainPrototypeLicenseSerializer(EmptySerializer):
     text = SerializerMethodField(allow_null=True)
 
     @staticmethod
-    def get_text(bundle: Bundle):
+    def get_text(bundle: Bundle) -> str | None:
         return get_license_text(
             license_path=bundle.main_prototype_license_path,  # This is the magic of annotations, see queryset
             bundle_hash=bundle.hash,

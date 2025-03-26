@@ -57,6 +57,49 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(Bundle.objects.filter(name="cluster_two").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def test_upload_cluster_with_ansible_options_success(self):
+        new_bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "cluster_with_ansible_options", target_dir=settings.TMP_DIR
+        )
+        new_bundle_file_old_style = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "cluster_with_ansible_options_dict_style", target_dir=settings.TMP_DIR
+        )
+        with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        with open(settings.TMP_DIR / new_bundle_file_old_style, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        for bundle in Bundle.objects.filter(name__contains="cluster_ansible_options"):
+            prototype_configs = bundle.prototype_set.first().prototypeconfig_set.all()
+            for config in prototype_configs:
+                if (
+                    config.name == "group"
+                    and config.subname in ("string", "text")
+                    or config.name in ("my_string", "my_text", "structure")
+                ):
+                    self.assertTrue(config.ansible_options["unsafe"])
+                else:
+                    self.assertFalse(config.ansible_options["unsafe"])
+
+    def test_upload_wrong_type_of_options_fail(self):
+        new_bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "cluster_ansible_options_wrong_type",
+            target_dir=settings.TMP_DIR,
+        )
+        with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertIn(
+            'Map key "ansible_options" is not allowed here (rule "config_list_integer")', response.json()["desc"]
+        )
+
     def test_upload_duplicate_fail(self):
         with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f_duplicate:

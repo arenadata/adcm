@@ -117,7 +117,7 @@ from api_v2.generic.action_host_group.views import (
 )
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.generic.config_host_group.api_schema import (
     document_config_host_group_viewset,
@@ -303,12 +303,13 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
     ansible_config_schema=extend_schema(
         methods=["get"],
-        operation_id="getClusterAnsibleConfigs",
-        summary="GET cluster ansible configuration",
-        description="Get information about cluster ansible config.",
+        operation_id="getClusterAnsibleConfigsSchema",
+        summary="GET cluster ansible configuration schema",
+        description="Get information about cluster ansible config schema.",
         examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
         responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
     ),
+    config_schema=extend_config_schema("cluster"),
 )
 class ClusterViewSet(
     PermissionListMixin,
