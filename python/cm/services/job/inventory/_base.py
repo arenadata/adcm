@@ -82,7 +82,7 @@ def get_inventory_data(
         return _get_inventory_for_action_from_cluster_bundle(
             cluster_id=group.object.id if isinstance(group.object, Cluster) else group.object.cluster_id,
             delta=delta or TaskMappingDelta(),
-            target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.all()),
+            target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.order_by("id").all()),
         )
 
     if target.type == ADCMCoreType.PROVIDER or (target.type == ADCMCoreType.HOST and not is_host_action):
@@ -218,10 +218,10 @@ def _get_inventory_for_action_from_cluster_bundle(
                     "hosts": {
                         host_name: basic_nodes[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
                         | alternative_host_nodes.get(host_name, {})
-                        for host_id, host_name in sorted(host_tuples, key=itemgetter(0))
+                        for host_id, host_name in host_tuples
                     }
                 }
-                for group_name, host_tuples in host_groups.items()
+                for group_name, host_tuples in sort_hosts_within_groups(host_groups).items()
             },
             "vars": cluster_vars_dict,
         }
@@ -320,7 +320,7 @@ def _get_objects_basic_info(
                 # it should be placed in basic_nodes already, see comment for function that retrieves those
                 **objects_configuration[ADCMCoreType.HOST, host_info["id"]],
             )
-            for host_info in Host.objects.filter(id__in=hosts).values(*basic_fields, **basic_spec_fields)
+            for host_info in Host.objects.filter(id__in=hosts).order_by("id").values(*basic_fields, **basic_spec_fields)
         }
 
     if providers := objects_in_inventory.get(ADCMCoreType.PROVIDER):
@@ -404,3 +404,9 @@ def get_basic_info_for_hosts(hosts: set[HostID]) -> dict[HostID, HostNode]:
     )
 
     return {host_id: host_node for (_, host_id), host_node in hosts_info.items()}
+
+
+def sort_hosts_within_groups(
+    host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]],
+) -> dict[HostGroupName, list[tuple[HostID, HostName]]]:
+    return {group_name: sorted(host_tuples, key=itemgetter(0)) for group_name, host_tuples in host_groups.items()}
