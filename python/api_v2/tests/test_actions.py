@@ -530,31 +530,58 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
         cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions 2")
 
-        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
-        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=cluster)
-        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=cluster)
+        hosts = [self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=cluster) for i in range(1, 15)]
 
         service = self.add_services_to_cluster(service_names=["service_name"], cluster=cluster)[0]
 
         component = service.components.get(prototype__name="server")
-        self.set_hostcomponent(cluster=cluster, entries=((host_1, component), (host_3, component)))
-
-        response = (self.client.v2 / "hosts" / host_2.pk / "maintenance-mode").post(
-            data={"maintenanceMode": "on"},
+        self.set_hostcomponent(
+            cluster=cluster,
+            entries=(
+                (hosts[10], component),
+                (hosts[9], component),
+                (hosts[8], component),
+                (hosts[7], component),
+                (hosts[6], component),
+                (hosts[5], component),
+                (hosts[4], component),
+                (hosts[3], component),
+                (hosts[2], component),
+                (hosts[1], component),
+                (hosts[1], component),
+            ),
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        for host in hosts[8:12][::-1]:
+            response = (self.client.v2 / "hosts" / host.pk / "maintenance-mode").post(
+                data={"maintenanceMode": "on"},
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
         action = Action.objects.get(name="test_action_group")
         response = self.client.v2[cluster, "actions", action.pk].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(
-            {k: sorted(v) for k, v in response.json()["configuration"]["config"]["group"].items()},
+            response.json()["configuration"]["config"]["group"],
             {
-                "CLUSTER": ["host-1", "host-3"],
-                "CLUSTER.maintenance_mode": ["host-2"],
-                "service_name": ["host-1", "host-3"],
-                "service_name.server": ["host-1", "host-3"],
+                "CLUSTER": [
+                    "host-1",
+                    "host-2",
+                    "host-3",
+                    "host-4",
+                    "host-5",
+                    "host-6",
+                    "host-7",
+                    "host-8",
+                    "host-13",
+                    "host-14",
+                ],
+                "CLUSTER.maintenance_mode": ["host-9", "host-10", "host-11", "host-12"],
+                "service_name": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
+                "service_name.server": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
+                "service_name.server.maintenance_mode": ["host-9", "host-10", "host-11"],
+                "service_name.maintenance_mode": ["host-9", "host-10", "host-11"],
             },
         )
 

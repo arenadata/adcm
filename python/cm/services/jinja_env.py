@@ -34,6 +34,7 @@ from cm.services.job.inventory import (
     detect_host_groups_for_cluster_bundle_action,
     get_cluster_vars,
 )
+from cm.services.job.inventory._base import sort_hosts_within_groups
 from cm.services.job.inventory._types import HostGroupName
 from cm.services.job.types import TaskMappingDelta
 
@@ -111,7 +112,7 @@ def get_env_for_jinja_config(
 
 
 def _get_host_group_names_only(
-    host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]],
+    host_groups: dict[HostGroupName, list[tuple[HostID, HostName]]],
 ) -> dict[HostGroupName, list[HostName]]:
     return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
 
@@ -138,10 +139,11 @@ def _get_host_group_names_for_cluster(
             "id", flat=True
         )
     )
-    return _get_host_group_names_only(
-        host_groups=detect_host_groups_for_cluster_bundle_action(
+    host_groups = sort_hosts_within_groups(
+        detect_host_groups_for_cluster_bundle_action(
             cluster_topology=cluster_topology,
             hosts_in_maintenance_mode=hosts_in_maintenance_mode,
             hc_delta=hc_delta or TaskMappingDelta(),
         )
     )
+    return _get_host_group_names_only(host_groups=host_groups)
