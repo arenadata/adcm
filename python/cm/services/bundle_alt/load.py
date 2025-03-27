@@ -62,12 +62,10 @@ class Directories(NamedTuple):
     files: Path
 
 
-@convert_bundle_errors_to_adcm_ex
 def parse_bundle_from_request_to_db(
     file_from_request: File, *, directories: Directories, adcm_version: str, verified_signature_only: bool
 ) -> Bundle:
-    archive_in_tmp = write_bundle_archive_to_tempdir(file_from_request)
-    archive_in_downloads = safe_copy_to_downloads(archive_in_tmp, downloads_dir=directories.downloads)
+    archive_in_downloads = save_bundle_file_from_request_to_downloads(file_from_request=file_from_request)
     return parse_bundle_archive(
         archive=archive_in_downloads,
         directories=directories,
@@ -78,7 +76,7 @@ def parse_bundle_from_request_to_db(
 
 @convert_bundle_errors_to_adcm_ex
 def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: str, verified_signature_only: bool):
-    # Thou it's bit of strange to remove archive in here,
+    # Thou it's a bit of strange to remove archive in here,
     # but it's the original process,
     # required by upload-load separation in v1
     with _cleanup_on_fail(archive):
@@ -113,31 +111,10 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
 # Public
 
 
-def write_bundle_archive_to_tempdir(file_from_request: File) -> Path:
-    """Save file from request to tempdir so it can be processed further"""
-    tmp_path = Path(gettempdir(), str(file_from_request.name))
-
-    with tmp_path.open(mode="wb+") as f:
-        for chunk in file_from_request.chunks():
-            f.write(chunk)
-
-    return tmp_path
-
-
-def safe_copy_to_downloads(archive: Path, downloads_dir: Path) -> Path:
-    """Copy file to downloads dir if there isn't already archive with such content"""
-    target_path = downloads_dir / archive.name
-
-    with _upload_fs_lock():
-        existing_file = _find_duplicate(archive, in_=downloads_dir)
-        if existing_file:
-            message = f"Bundle already exists: Bundle with the same content is already uploaded {existing_file}"
-            raise AdcmEx(code="BUNDLE_ERROR", msg=message)
-
-        # move to downloads
-        shutil.move(src=archive, dst=target_path)
-
-        return target_path
+@convert_bundle_errors_to_adcm_ex
+def save_bundle_file_from_request_to_downloads(file_from_request: File) -> Path:
+    archive_in_tmp = _write_bundle_archive_to_tempdir(file_from_request=file_from_request)
+    return _safe_copy_to_downloads(archive=archive_in_tmp)
 
 
 def process_bundle_from_archive(
@@ -318,3 +295,30 @@ def _verify_signature(bundle_signature: SignatureStatus, verified_signature_only
             code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",
             msg=(f"Upload rejected due to failed bundle verification: bundle's signature is '{bundle_signature}'"),
         )
+
+
+def _write_bundle_archive_to_tempdir(file_from_request: File) -> Path:
+    """Save file from request to tempdir, so it can be processed further"""
+    tmp_path = Path(gettempdir(), str(file_from_request.name))
+
+    with tmp_path.open(mode="wb+") as f:
+        for chunk in file_from_request.chunks():
+            f.write(chunk)
+
+    return tmp_path
+
+
+def _safe_copy_to_downloads(archive: Path, downloads_dir: Path = settings.DOWNLOAD_DIR) -> Path:
+    """Copy file to downloads dir if there isn't already archive with such content"""
+    target_path = downloads_dir / archive.name
+
+    with _upload_fs_lock():
+        existing_file = _find_duplicate(archive, in_=downloads_dir)
+        if existing_file:
+            message = f"Bundle already exists: Bundle with the same content is already uploaded {existing_file}"
+            raise AdcmEx(code="BUNDLE_ERROR", msg=message)
+
+        # move to downloads
+        shutil.move(src=archive, dst=target_path)
+
+        return target_path

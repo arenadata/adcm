@@ -28,7 +28,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.services.adcm import adcm_config, get_adcm_config_id
-from cm.services.bundle_alt.load import Directories, parse_bundle_archive
+from cm.services.bundle_alt.load import Directories, parse_bundle_archive, save_bundle_file_from_request_to_downloads
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from django.conf import settings
 from django.http import HttpResponse
@@ -133,7 +133,10 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-        upload_file(file=request.data["file"])
+        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+        func = save_bundle_file_from_request_to_downloads if use_new_approach else upload_file
+        func(request.data["file"])
+
         return Response(status=HTTP_201_CREATED)
 
 
