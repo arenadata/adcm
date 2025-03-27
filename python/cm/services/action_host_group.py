@@ -93,7 +93,8 @@ class ActionHostGroupRepo(HostGroupRepoMixin):
 
         hosts_qs = group.hosts.values_list("id", flat=True)
         hosts = tuple(
-            ShortObjectInfo(*entry) for entry in Host.objects.values_list("id", "fqdn").filter(id__in=hosts_qs)
+            ShortObjectInfo(*entry)
+            for entry in Host.objects.values_list("id", "fqdn").filter(id__in=hosts_qs).order_by("id")
         )
 
         return ActionTargetHostGroup(id=group.id, name=group.name, owner=owner, hosts=hosts)

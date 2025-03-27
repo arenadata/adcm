@@ -112,7 +112,7 @@ class TestBundleProcessing(BaseAPITestCase):
                 self.assertEqual(config_yaml, abs_path_name)
 
             for abs_config in abs_configs:
-                self.assertTrue(str(abs_config.absolute()).startswith("/tmp/"))  # noqa: S108
+                self.assertTrue(abs_config.is_absolute())
 
             for unexpected_file in unexpected_files:
                 self.assertNotIn(unexpected_file, relative_configs)

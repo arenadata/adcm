@@ -18,8 +18,8 @@ from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from cm.errors import AdcmEx
 from cm.models import Action, Component, ConcernItem, ConfigLog, JobLog, MaintenanceMode, TaskLog
+from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.job.jinja_scripts import get_env
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
 
 
@@ -92,12 +92,12 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         }
 
     def test_env_for_cluster(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.cluster_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id)))
         expected_env = {**self.expected_env_part, "action": {"name": "action_on_cluster", "owner_group": "CLUSTER"}}
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_service(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.service_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.service_task_id)))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_service", "owner_group": "service_one_component"},
@@ -105,7 +105,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_component(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.component_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.component_task_id)))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_component", "owner_group": "service_one_component.component_1"},
@@ -113,7 +113,9 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_host(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.component_host_task_id)))
+        env = decrypt_secrets(
+            source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.component_host_task_id))
+        )
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "host_action_on_component", "owner_group": "service_one_component.component_1"},

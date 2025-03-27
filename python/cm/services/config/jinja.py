@@ -30,10 +30,8 @@ from cm.models import (
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.bundle_alt.load import parse_config_jinja
-from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.config.patterns import Pattern
-from cm.services.job.inventory import get_cluster_vars
-from cm.services.job.jinja_scripts import get_action_info
+from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.template import TemplateBuilder
 
 
@@ -45,12 +43,7 @@ def get_jinja_config(
 
     template_builder = TemplateBuilder(
         template_path=jinja_conf_file,
-        context={
-            **get_cluster_vars(
-                topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object)
-            ).model_dump(by_alias=True, exclude_defaults=True),
-            "action": get_action_info(action=action),
-        },
+        context=get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object),
         bundle_path=resolver.bundle_root,
     )
 
