@@ -175,7 +175,7 @@ class TestBundle(BaseAPITestCase):
         filters = {
             "id": (bundle.pk, None, 0),
             "display_name": (prototype.display_name, prototype.display_name[2:-1].upper(), "wrong"),
-            "product": (prototype.display_name, None, "wrong"),
+            "product": (prototype.name, None, "wrong"),
         }
         exact_items_found, partial_items_found = 1, 1
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
