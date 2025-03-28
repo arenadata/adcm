@@ -66,6 +66,7 @@ RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
         bash \
+        gnupg \
         nginx \
         openldap \
         openssh-client \
