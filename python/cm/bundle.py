@@ -199,6 +199,7 @@ def load_bundle(bundle_file: str) -> Bundle:
 
     if verification_status != SignatureStatus.VALID and is_accept_only_verified_bundles_enabled():
         # all this stuff should be cleaned in a unified style later
+        Path(bundle_file).unlink()
         if bundle_archive:
             bundle_archive.unlink(missing_ok=True)
 
