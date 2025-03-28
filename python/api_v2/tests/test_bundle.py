@@ -13,7 +13,7 @@
 from datetime import datetime
 
 from cm.bundle import _get_file_hashes
-from cm.models import Action, Bundle, ObjectType, Prototype
+from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
 from django.conf import settings
 from django.db.models import F
 from rest_framework.status import (
@@ -116,6 +116,23 @@ class TestBundle(BaseAPITestCase):
                 "level": "error",
             },
         )
+
+    def test_adcm_6455_upload_sig_fail_and_cleanup(self):
+        adcm_config = ConfigLog.objects.get(obj_ref=ADCM.objects.first().config)
+        adcm_config.config["global"]["accept_only_verified_bundles"] = True
+        adcm_config.save()
+        with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            for _ in range(2):
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+                f.seek(0)
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "BUNDLE_SIGNATURE_VERIFICATION_ERROR")
+                self.assertIn(
+                    "has signature status 'absent', but 'accept_only_verified_bundles' is enabled. " "Upload rejected.",
+                    response.json()["desc"],
+                )
+        self.assertIsNone(Bundle.objects.filter(name="cluster_two").first())
 
     def test_upload_fail(self):
         with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
