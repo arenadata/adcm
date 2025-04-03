@@ -15,7 +15,7 @@ export interface NumberControlProps {
 const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: NumberControlProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value === '') {
-      onChange('');
+      onChange(null);
     } else {
       onChange(e.target.valueAsNumber);
     }
