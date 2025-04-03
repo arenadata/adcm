@@ -25,7 +25,7 @@ class BundleFilter(
     number_fields=("id",),
 ):
     display_name = CharFilter(label="Display name", field_name="prototype__display_name", method="filter_display_name")
-    product = CharFilter(label="Product name", field_name="prototype__display_name", method="filter_product")
+    product = CharFilter(label="Product name", field_name="prototype__name", method="filter_product")
     ordering = OrderingFilter(
         fields={"prototype__display_name": "displayName", "date": "uploadTime"},
         field_labels={
