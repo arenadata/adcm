@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, TypeVar
+from typing import Callable, Literal, TypedDict, TypeVar
 
-from adcm.serializers import EmptySerializer
 from cm.models import (
-    LICENSE_STATE,
     ADCMEntityStatus,
     ADCMModel,
     Cluster,
@@ -30,7 +28,7 @@ from cm.services.status.convert import (
     convert_to_host_component_status,
     convert_to_service_status,
 )
-from rest_framework.fields import CharField, ChoiceField, IntegerField, SerializerMethodField
+from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 T = TypeVar("T")
@@ -83,25 +81,25 @@ class WithStatusSerializer(ModelSerializer):
         return convert_to_entity_status(raw_status=status)
 
 
-class LicenseSerializer(EmptySerializer):
-    status = ChoiceField(choices=LICENSE_STATE)
-    text = SerializerMethodField(allow_null=True)
+class LicenseDict(TypedDict):
+    status: Literal["absent", "accepted", "unaccepted"]
+    text: str | None
 
 
-class DependsComponentPrototypeSerializer(EmptySerializer):
-    id = IntegerField()
-    name = CharField()
-    display_name = CharField()
-    version = CharField()
+class DependsComponentPrototypeDict(TypedDict):
+    id: int
+    name: str
+    display_name: str
+    version: str
 
 
-class DependsServicePrototypeSerializer(EmptySerializer):
-    id = IntegerField()
-    name = CharField()
-    display_name = CharField()
-    license = LicenseSerializer()
-    component_prototypes = DependsComponentPrototypeSerializer(many=True)
+class DependsServicePrototypeDict(TypedDict):
+    id: int
+    name: str
+    display_name: str
+    license: LicenseDict
+    component_prototypes: DependsComponentPrototypeDict
 
 
-class DependOnSerializer(EmptySerializer):
-    service_prototype = DependsServicePrototypeSerializer()
+class DependOnDict(TypedDict):
+    service_prototype: DependsServicePrototypeDict

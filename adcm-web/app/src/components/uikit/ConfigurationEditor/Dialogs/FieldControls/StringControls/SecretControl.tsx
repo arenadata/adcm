@@ -17,8 +17,8 @@ export interface StringControlProps {
 }
 
 const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: StringControlProps) => {
-  const [secret, setSecret] = useState(value as string);
-  const [confirm, setConfirm] = useState(value as string);
+  const [secret, setSecret] = useState((value as string) ?? '');
+  const [confirm, setConfirm] = useState((value as string) ?? '');
   const [secretError, setSecretError] = useState<string | undefined>(undefined);
   const [confirmError, setConfirmError] = useState<string | undefined>(undefined);
 
@@ -40,8 +40,8 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, on
 
   const handleResetToDefault = (defaultValue: JSONPrimitive) => {
     onChange(defaultValue, true);
-    setSecret(defaultValue as string);
-    setConfirm(defaultValue as string);
+    setSecret((defaultValue as string) ?? '');
+    setConfirm((defaultValue as string) ?? '');
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {

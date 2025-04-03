@@ -19,6 +19,7 @@ export const useComponentPrimaryConfiguration = () => {
   const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
   const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
   const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
+  const accessConfigCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessConfigCheckStatus);
 
   useEffect(() => {
     if (componentId) {
@@ -99,5 +100,6 @@ export const useComponentPrimaryConfiguration = () => {
     isVersionsLoading,
     component,
     accessCheckStatus,
+    accessConfigCheckStatus,
   };
 };

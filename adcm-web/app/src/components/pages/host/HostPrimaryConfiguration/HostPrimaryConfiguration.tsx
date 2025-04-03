@@ -19,29 +19,33 @@ const HostPrimaryConfiguration: React.FC = () => {
     setDraftConfiguration,
     isConfigurationLoading,
     accessCheckStatus,
+    accessConfigCheckStatus,
   } = useHostsPrimaryConfiguration();
 
   const compareOptions = useHostsPrimaryConfigurationsCompare();
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
-      <ConfigurationHeader
-        configVersions={configVersions}
-        selectedConfigId={selectedConfigId}
-        setSelectedConfigId={setSelectedConfigId}
-        draftConfiguration={draftConfiguration}
-        compareOptions={compareOptions}
-      />
-
-      <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
+    <>
+      <PermissionsChecker requestState={accessCheckStatus}>
+        <ConfigurationHeader
+          configVersions={configVersions}
+          selectedConfigId={selectedConfigId}
+          setSelectedConfigId={setSelectedConfigId}
+          draftConfiguration={draftConfiguration}
+          compareOptions={compareOptions}
         />
-      </ConfigurationFormContextProvider>
-    </PermissionsChecker>
+        <PermissionsChecker requestState={accessConfigCheckStatus}>
+          <ConfigurationFormContextProvider>
+            <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+            <ConfigurationMain
+              isLoading={isConfigurationLoading}
+              configuration={selectedConfiguration}
+              onChangeConfiguration={setDraftConfiguration}
+            />
+          </ConfigurationFormContextProvider>
+        </PermissionsChecker>
+      </PermissionsChecker>
+    </>
   );
 };
 

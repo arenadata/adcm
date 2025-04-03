@@ -1,0 +1,27 @@
+:root {
+  --error-color: var(--color-red);
+  --warning-color: var(--color-orangex);
+}
+
+.monacoCodeEditorProblems {
+  margin: 12px 0;
+}
+
+.monacoCodeEditorProblemRecord {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  padding-top: 12px;
+
+  &__icon {
+    line-height: 18px !important;
+
+    &_error {
+      color: var(--error-color)
+    }
+    &_warning {
+      color: var(--warning-color)
+    }
+  }
+}
+

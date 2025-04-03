@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 
@@ -26,7 +27,19 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         self.bugs_bundle_dir = Path(__file__).parent / "bundles" / "bugs"
 
-    def test_adcm_5556_incorrect_path_bug(self) -> None:
+    def test_adcm_5556_incorrect_path_bug_old_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_adcm_5556_incorrect_path_bug()
+
+        patched.assert_called_once()
+
+    def test_adcm_5556_incorrect_path_bug_new_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+            self._test_adcm_5556_incorrect_path_bug()
+
+        patched.assert_called_once()
+
+    def _test_adcm_5556_incorrect_path_bug(self) -> None:
         expected_full_limits = {
             "root": {
                 "match": "dict_key_selection",

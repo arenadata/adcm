@@ -1,0 +1,7 @@
+---
+- hosts: 127.0.0.1
+  any_errors_fatal: true
+  gather_facts: no
+  tasks:
+
+    - debug: msg="{{ job.config.group }}"

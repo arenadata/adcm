@@ -18,8 +18,8 @@ from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from cm.errors import AdcmEx
 from cm.models import Action, Component, ConcernItem, ConfigLog, JobLog, MaintenanceMode, TaskLog
+from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.job.jinja_scripts import get_env
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
 
 
@@ -92,12 +92,12 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         }
 
     def test_env_for_cluster(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.cluster_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id)))
         expected_env = {**self.expected_env_part, "action": {"name": "action_on_cluster", "owner_group": "CLUSTER"}}
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_service(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.service_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.service_task_id)))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_service", "owner_group": "service_one_component"},
@@ -105,7 +105,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_component(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.component_task_id)))
+        env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.component_task_id)))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_component", "owner_group": "service_one_component.component_1"},
@@ -113,7 +113,9 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_host(self):
-        env = decrypt_secrets(source=get_env(task=TaskLog.objects.get(pk=self.component_host_task_id)))
+        env = decrypt_secrets(
+            source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.component_host_task_id))
+        )
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "host_action_on_component", "owner_group": "service_one_component.component_1"},
@@ -135,41 +137,81 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
         self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
 
     def test_jobs_generation(self):
-        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+        with self.subTest("Old scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
 
-        self.assertListEqual(
-            list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
-            ["job1", "job2", "job3", "job4"],
-        )
-        self.assertEqual(
-            dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
-            {
-                "job1": "playbook.yaml",
-                "job2": "jinja/playbook.yaml",
-                "job3": "inner/playbook.yaml",
-                "job4": "jinja/inner/playbook.yaml",
-            },
-        )
+            self.assertListEqual(
+                list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
+                ["job1", "job2", "job3", "job4"],
+            )
+            self.assertEqual(
+                dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
+                {
+                    "job1": "playbook.yaml",
+                    "job2": "jinja/playbook.yaml",
+                    "job3": "inner/playbook.yaml",
+                    "job4": "jinja/inner/playbook.yaml",
+                },
+            )
+        with self.subTest("New scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action", feature_scripts_jinja=True).id
+
+            self.assertListEqual(
+                list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
+                ["job1", "job2", "job3", "job4"],
+            )
+            self.assertEqual(
+                dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
+                {
+                    "job1": "playbook.yaml",
+                    "job2": "jinja/playbook.yaml",
+                    "job3": "inner/playbook.yaml",
+                    "job4": "jinja/inner/playbook.yaml",
+                },
+            )
 
         self.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
-        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
 
-        self.assertSetEqual(
-            set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
-            {"job_if_component_1_group_exists", "job3", "job4"},
-        )
+        with self.subTest("[With hc] Old scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+
+            self.assertSetEqual(
+                set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
+                {"job_if_component_1_group_exists", "job3", "job4"},
+            )
+
+        with self.subTest("[With hc] New scripts processing"):
+            task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action", feature_scripts_jinja=True).id
+
+            self.assertSetEqual(
+                set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
+                {"job_if_component_1_group_exists", "job3", "job4"},
+            )
 
     def test_unprocessable_template(self):
         initial_jobs_count = JobLog.objects.count()
 
-        with self.assertRaises(expected_exception=AdcmEx) as err:
-            self.prepare_task(owner=self.cluster, name="unprocessable_jinja_scripts_action")
+        with self.subTest("Old scripts processing"):
+            with self.assertRaises(expected_exception=AdcmEx) as err:
+                self.prepare_task(owner=self.cluster, name="unprocessable_jinja_scripts_action")
 
-        self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
-        self.assertEqual(err.exception.level, "error")
-        self.assertEqual(err.exception.msg, "Can't render jinja template")
-        self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
-        self.assertEqual(JobLog.objects.count(), initial_jobs_count)
+            self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
+            self.assertEqual(err.exception.level, "error")
+            self.assertEqual(err.exception.msg, "Can't render jinja template")
+            self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
+            self.assertEqual(JobLog.objects.count(), initial_jobs_count)
+
+        with self.subTest("New scripts processing"):
+            with self.assertRaises(expected_exception=AdcmEx) as err:
+                self.prepare_task(
+                    owner=self.cluster, name="unprocessable_jinja_scripts_action", feature_scripts_jinja=True
+                )
+
+            self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
+            self.assertEqual(err.exception.level, "error")
+            self.assertEqual(err.exception.msg, "Can't render jinja template")
+            self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
+            self.assertEqual(JobLog.objects.count(), initial_jobs_count)
 
     def test_adcm_6012_task_config_processing(self) -> None:
         action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_activatable_group_jinja")

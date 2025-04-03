@@ -487,7 +487,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
             cause=ConcernCause.CONFIG,
         )
         # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
-        if not isinstance(obj, ADCM):
+        if not isinstance(obj, ADCM) and not are_configlogs_equal(old_conf, config_log):
             concern_id, related_objects = raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
@@ -914,3 +914,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
     return host
+
+
+def are_configlogs_equal(old: ConfigLog, new: ConfigLog) -> bool:
+    return old.config == new.config and old.attr == new.attr

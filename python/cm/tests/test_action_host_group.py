@@ -20,9 +20,9 @@ from django.conf import settings
 from cm.errors import AdcmEx
 from cm.models import Action, ActionHostGroup, Component
 from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.inventory import get_inventory_data
-from cm.services.job.jinja_scripts import get_env
 from cm.services.job.run._target_factories import prepare_ansible_job_config
 from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -123,7 +123,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         with RunTaskMock() as run_task:
             run_action(action=action, obj=action_group, payload=ActionRunPayload())
 
-        result_env = get_env(task=run_task.target_task)
+        result_env = get_env_for_jinja_scripts(task=run_task.target_task)
 
         self.assertSetEqual(
             set(result_env["groups"]),

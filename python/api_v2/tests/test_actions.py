@@ -13,6 +13,7 @@
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
+from unittest.mock import patch
 import json
 
 from cm.models import (
@@ -28,7 +29,7 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.job.jinja_scripts import get_action_info
+from cm.services.jinja_env import _get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -526,7 +527,78 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
         self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
-    def test_retrieve_jinja_config(self):
+    def test_group_jinja_config(self):
+        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
+        cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions 2")
+
+        hosts = [self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=cluster) for i in range(1, 15)]
+
+        service = self.add_services_to_cluster(service_names=["service_name"], cluster=cluster)[0]
+
+        component = service.components.get(prototype__name="server")
+        self.set_hostcomponent(
+            cluster=cluster,
+            entries=(
+                (hosts[10], component),
+                (hosts[9], component),
+                (hosts[8], component),
+                (hosts[7], component),
+                (hosts[6], component),
+                (hosts[5], component),
+                (hosts[4], component),
+                (hosts[3], component),
+                (hosts[2], component),
+                (hosts[1], component),
+                (hosts[1], component),
+            ),
+        )
+
+        for host in hosts[8:12][::-1]:
+            response = (self.client.v2 / "hosts" / host.pk / "maintenance-mode").post(
+                data={"maintenanceMode": "on"},
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        action = Action.objects.get(name="test_action_group")
+        response = self.client.v2[cluster, "actions", action.pk].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(
+            response.json()["configuration"]["config"]["group"],
+            {
+                "CLUSTER": [
+                    "host-1",
+                    "host-2",
+                    "host-3",
+                    "host-4",
+                    "host-5",
+                    "host-6",
+                    "host-7",
+                    "host-8",
+                    "host-13",
+                    "host-14",
+                ],
+                "CLUSTER.maintenance_mode": ["host-9", "host-10", "host-11", "host-12"],
+                "service_name": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
+                "service_name.server": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
+                "service_name.server.maintenance_mode": ["host-9", "host-10", "host-11"],
+                "service_name.maintenance_mode": ["host-9", "host-10", "host-11"],
+            },
+        )
+
+    def test_retrieve_jinja_config_old_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_retrieve_jinja_config()
+
+        patched.assert_called()
+
+    def test_retrieve_jinja_config_new_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+            self._test_retrieve_jinja_config()
+
+        patched.assert_called()
+
+    def _test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -546,7 +618,19 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
-    def test_adcm_6013_jinja_config_with_min_max(self):
+    def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_adcm_6013_jinja_config_with_min_max()
+
+        patched.assert_called()
+
+    def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+            self._test_adcm_6013_jinja_config_with_min_max()
+
+        patched.assert_called()
+
+    def _test_adcm_6013_jinja_config_with_min_max(self):
         action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -575,7 +659,19 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         expected_response["id"] = action.id
         self.assertDictEqual(response.json(), expected_response)
 
-    def test_adcm_4703_action_retrieve_returns_500(self) -> None:
+    def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_adcm_4703_action_retrieve_returns_500()
+
+        patched.assert_called()
+
+    def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+            self._test_adcm_4703_action_retrieve_returns_500()
+
+        patched.assert_called()
+
+    def _test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
                 response = self.client.v2[object_, "actions"].get()
@@ -592,7 +688,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
         ):
             action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
-            self.assertDictEqual(get_action_info(action=action), {"name": "check_state", "owner_group": group})
+            self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
 
 class TestAction(BaseAPITestCase):

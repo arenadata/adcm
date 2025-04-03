@@ -30,7 +30,7 @@ const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, on
   return (
     <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       <InputNumber
-        value={value as number}
+        value={(value as number) ?? ''}
         disabled={isReadonly}
         min={fieldSchema.minimum}
         max={fieldSchema.maximum}

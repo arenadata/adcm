@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Provider
+from cm.models import Action, ConfigHostGroup, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.status import (
     HTTP_200_OK,
@@ -90,6 +90,19 @@ class TestProvider(BaseAPITestCase):
         response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=Provider))).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_adcm_6146_delete_generic_relations_on_provider_deletion(self):
+        response = self.client.v2[self.host_provider, "config-groups"].post(data={"name": "Provider CHG"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        chg_id = response.json()["id"]
+        self.assertTrue(ConfigHostGroup.objects.filter(pk=chg_id).exists())
+
+        response = self.client.v2[self.host_provider].delete()
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertFalse(Provider.objects.filter(pk=self.host_provider.pk).exists())
+
+        self.assertFalse(ConfigHostGroup.objects.filter(pk=chg_id).exists())
 
     def test_filtering_success(self):
         self.add_provider(self.host_provider_bundle, "second test host provider")

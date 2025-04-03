@@ -209,7 +209,20 @@ class TestUpgrade(BaseAPITestCase):
                 data={
                     "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
                     "configuration": {
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "value3",
+                        },
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -257,7 +270,20 @@ class TestUpgrade(BaseAPITestCase):
                         {"hostId": host_2.pk, "componentId": component_1.pk},
                     ],
                     "configuration": {
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "value3",
+                        },
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -286,7 +312,20 @@ class TestUpgrade(BaseAPITestCase):
                 data={
                     "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
                     "configuration": {
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "value3",
+                        },
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -317,7 +356,9 @@ class TestUpgrade(BaseAPITestCase):
         self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_cluster_upgrade_run_complex_duplicated_hc_success(self):
-        # fixme was incorrect test, probably should fix a validation? see action run
+        # The test captures the behavior in which duplicates are ignored.
+        # Passing duplicates to the `hostComponentMap` does not break the behavior,
+        # as duplicates are deleted in the `unique_hc_entries()` function.
         accept_license(
             prototype=Prototype.objects.filter(
                 bundle=self.upgrade_cluster_via_action_simple.bundle,
@@ -340,7 +381,20 @@ class TestUpgrade(BaseAPITestCase):
                         {"hostId": host.pk, "componentId": component_1.pk},
                     ],
                     "configuration": {
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "value3",
+                        },
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -383,7 +437,20 @@ class TestUpgrade(BaseAPITestCase):
                         {"hostId": host_2.pk, "componentId": component_1.pk},
                     ],
                     "configuration": {
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "value3",
+                        },
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -487,7 +554,28 @@ class TestUpgrade(BaseAPITestCase):
         endpoint = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"]
         for hc_data in ([{"hostId": 1}], [{"componentId": 4}], [{}]):
             with self.subTest(f"Pass host_component_map as {hc_data}"):
-                response = endpoint.post(data={"hostComponentMap": hc_data})
+                response = endpoint.post(
+                    data={
+                        "hostComponentMap": hc_data,
+                        "configuration": {
+                            "config": {
+                                "simple": "val",
+                                "file": "content",
+                                "grouped": {
+                                    "simple": 5,
+                                    "second": 4.3,
+                                    "structure": {
+                                        "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                        "quantity": 122,
+                                    },
+                                },
+                                "after": ["x", "y"],
+                                "variant_config_type_strict": "value3",
+                            },
+                            "adcmMeta": {},
+                        },
+                    }
+                )
 
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
@@ -612,6 +700,41 @@ class TestUpgrade(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
+
+    def test_cluster_upgrade_retrieve_complex_invalid_config_variant_value_fail(self):
+        with RunTaskMock():
+            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+                data={
+                    "configuration": {
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
+                            },
+                            "after": ["x", "y"],
+                            "variant_config_type_strict": "incorrect value",
+                        },
+                        "adcmMeta": {},
+                    },
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        data = response.json()
+        self.assertEqual(data["code"], "CONFIG_VALUE_ERROR")
+        self.assertEqual(
+            data["desc"],
+            (
+                """Value ("incorrect value") of config key "variant_config_type_strict/" not in variant list: """
+                """"['value1', 'value2', 'value3']" (cluster "cluster_one" 2.0)"""
+            ),
+        )
 
 
 class TestAdcmUpgrade(APITestCase):

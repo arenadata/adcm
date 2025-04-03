@@ -48,7 +48,7 @@ from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.host.filters import HostFilter
 from api_v2.host.permissions import (
@@ -193,6 +193,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
             },
         },
     ),
+    config_schema=extend_config_schema("host"),
 )
 class HostViewSet(
     PermissionListMixin,

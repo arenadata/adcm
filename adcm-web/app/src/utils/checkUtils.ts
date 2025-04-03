@@ -12,3 +12,6 @@ export const orElseGet = <T, R = T>(
 
 export const isValueUnset = <T>(value: T | undefined | null): value is T =>
   typeof value === 'undefined' || value === null;
+
+export const isValidData = <T>(data: T | undefined | null): data is T =>
+  !(Number.isNaN(data) || typeof data === 'undefined' || data === null);

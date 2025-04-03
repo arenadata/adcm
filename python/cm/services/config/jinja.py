@@ -12,7 +12,11 @@
 
 from pathlib import Path
 from typing import Any
+import os
 
+from adcm.feature_flags import use_new_bundle_parsing_approach
+from core.bundle_alt.process import ConfigJinjaContext
+from core.errors import localize_error
 from django.conf import settings
 from yaml import safe_load
 
@@ -25,10 +29,9 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.services.cluster import retrieve_related_cluster_topology
+from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.config.patterns import Pattern
-from cm.services.job.inventory import get_cluster_vars
-from cm.services.job.jinja_scripts import get_action_info
+from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.template import TemplateBuilder
 
 
@@ -40,20 +43,50 @@ def get_jinja_config(
 
     template_builder = TemplateBuilder(
         template_path=jinja_conf_file,
-        context={
-            **get_cluster_vars(topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object)).dict(
-                by_alias=True, exclude_defaults=True
-            ),
-            "action": get_action_info(action=action),
-        },
+        context=get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object),
         bundle_path=resolver.bundle_root,
     )
 
+    # too difficult for now to pass headers from all usages
+    use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
+
+    if not use_new_approach:
+        return _get_jinja_config_old(
+            data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
+        )
+
+    return _get_jinja_config_new(
+        data=template_builder.data,
+        action=action,
+        config_file=jinja_conf_file,
+        resolver=resolver,
+        object_=cluster_relative_object,
+    )
+
+
+def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
+    context = ConfigJinjaContext(
+        bundle_root=resolver.bundle_root,
+        path=str(config_file.parent.relative_to(resolver.bundle_root)),
+        object={"config_group_customization": False},
+    )
+
+    proto = object_.prototype
+    with localize_error(f'Object of type {proto.type} named "{proto.name}", version {proto.version}'):
+        configs = parse_config_jinja(data=data, context=context, prototype=action.prototype, action=action)
+
+    return configs, {}
+
+
+def _get_jinja_config_old(
+    data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver
+) -> tuple[list[PrototypeConfig], dict]:
     configs = []
     attr = {}
-    for field in template_builder.data:
+
+    for field in data:
         for normalized_field in _normalize_field(
-            field=field, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
+            field=field, dir_with_config=config_file.parent.relative_to(resolver.bundle_root), resolver=resolver
         ):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_field))
 
@@ -102,6 +135,7 @@ def _normalize_field(
     normalized_field["group_customization"] = field.get("group_customization", None)
     normalized_field["required"] = field.get("required", True)
     normalized_field["ui_options"] = field.get("ui_options", {})
+    normalized_field["ansible_options"] = field.get("ansible_options", {})
 
     if "subs" in field:
         for sub in field["subs"]:

@@ -49,7 +49,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -68,18 +68,6 @@ class TestInventoryComponents(BaseInventoryTestCase):
                     "component_id": component.pk,
                 },
             ),
-            (service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
         }
 
         expected_topology_for_host = {
@@ -87,7 +75,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -152,52 +140,13 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                    "multi_state": '["bac", "osscc"]',
-                },
-            ),
-            (service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                    "multi_state": '["bac", "osscc"]',
-                },
-            ),
-            (f"{service.name}.{component_1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_1.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                    "multi_state": '["bac", "osscc"]',
-                },
-            ),
-            (f"{service.name}.{component_2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_2.name}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -225,7 +174,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             "HOST": [self.host_1.fqdn],
         }
         expected_data_for_host_1 = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -244,7 +193,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             "HOST": [self.host_2.fqdn],
         }
         expected_data_for_host_2 = {
-            ("HOST", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -300,37 +249,13 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{service.name}.{component_1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_2.name}", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -357,7 +282,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host_1 = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -377,7 +302,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host_2 = {
-            ("HOST", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -449,7 +374,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -472,42 +397,6 @@ class TestInventoryComponents(BaseInventoryTestCase):
                     "component_2_s2_id": component_2_s2.pk,
                 },
             ),
-            (service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_1_s1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_2_s1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (another_service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{another_service.name}.{component_1_s2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{another_service.name}.{component_2_s2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
         }
 
         expected_topology_for_host = {
@@ -515,7 +404,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -591,13 +480,13 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -620,54 +509,6 @@ class TestInventoryComponents(BaseInventoryTestCase):
                     "component_2_s2_id": component_2_s2.pk,
                 },
             ),
-            (service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{service.name}.{component_1_s1.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{service.name}.{component_2_s1.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (another_service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (another_service.name, "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
-            (f"{another_service.name}.{component_1_s2.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_1.pk,
-                },
-            ),
-            (f"{another_service.name}.{component_2_s2.name}", "hosts", self.host_2.fqdn): (
-                self.templates_dir / "host.json.j2",
-                {
-                    "adcm_hostid": self.host_2.pk,
-                },
-            ),
         }
 
         expected_topology_for_host_1 = {
@@ -675,7 +516,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host_1 = {
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -695,7 +536,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         }
 
         expected_data_for_host_2 = {
-            ("HOST", "hosts", self.host_2.fqdn): (
+            ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,

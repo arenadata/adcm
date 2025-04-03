@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from itertools import compress
+import os
 
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from adcm.mixins import GetParentObjectMixin
 from cm.errors import AdcmEx
 from cm.models import (
@@ -64,7 +66,13 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
     pagination_class = None
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
-        if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+        # Using getattr here for schema generation purposes.
+        # There's no `parent_object` attr during that process,
+        # so assuming it's absent is a correct path generally speaking.
+        if (
+            getattr(self, "parent_object", None) is None
+            or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists()
+        ):
             return Action.objects.none()
 
         self.prototype_objects = {}
@@ -183,6 +191,8 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
+        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+
         task = run_action(
             action=target_action,
             obj=self.parent_object,
@@ -196,6 +206,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
                 verbose=serializer.validated_data["is_verbose"],
                 is_blocking=serializer.validated_data["should_block_object"],
             ),
+            feature_scripts_jinja=use_new_approach,
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

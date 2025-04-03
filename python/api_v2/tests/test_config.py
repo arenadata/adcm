@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from unittest.mock import patch
 import json
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
@@ -690,6 +691,15 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_adcm_6258_check_init_config_success(self):
+        # has initial config by ansible
+        self.assertIsNotNone(self.service_1.config)
+        self.assertEqual(self.service_1.config.current, self.service_1_initial_config.pk)
+
+        # has no initial config
+        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        self.assertIsNone(service_3.config)
+
     def test_schema(self):
         response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1171,6 +1181,18 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_adcm_6258_check_init_config_success(self):
+        # has initial config by ansible
+        self.assertIsNotNone(self.component_1.config)
+        self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
+
+        # has no initial config
+        service_3 = self.add_services_to_cluster(service_names=["service_with_bound_to"], cluster=self.cluster_1).get()
+        component_3 = Component.objects.get(
+            cluster=self.cluster_1, service=service_3, prototype__name="will_have_bound_to"
+        )
+        self.assertIsNone(component_3.config)
 
     def test_schema(self):
         response = self.client.v2[self.component_1, CONFIG_SCHEMA].get()
@@ -2282,6 +2304,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
         self.adcm = ADCM.objects.first()
         self.adcm_current_config = ConfigLog.objects.get(id=self.adcm.config.current)
+        self.maxDiff = None
 
     def test_list_success(self):
         response = (self.client.v2 / "adcm" / CONFIGS).get()
@@ -2311,7 +2334,11 @@ class TestADCMConfig(BaseAPITestCase):
     def test_create_success(self):
         data = {
             "config": {
-                "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                },
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
                 "audit_data_retention": {
@@ -2373,7 +2400,13 @@ class TestADCMConfig(BaseAPITestCase):
     def test_filtering_success(self):
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="filtering test config",
         )
         filter_name = "description"
@@ -2397,12 +2430,24 @@ class TestADCMConfig(BaseAPITestCase):
         }
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="filtering test config",
         )
         ConfigLog.objects.create(
             obj_ref=self.adcm.config,
-            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            config={
+                "global": {
+                    "adcm_url": "http://127.0.0.1:8000",
+                    "verification_public_key": "\n",
+                    "accept_only_verified_bundles": False,
+                }
+            },
             description="second filtering test config",
         )
 
@@ -2951,7 +2996,19 @@ class TestPatternInConfig(BaseAPITestCase):
                         f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
                     )
 
-    def test_jinja_config(self) -> None:
+    def test_jinja_config_old_processing(self) -> None:
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+            self._test_jinja_config()
+
+        patched.assert_called()
+
+    def test_jinja_config_new_processing(self) -> None:
+        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+            self._test_jinja_config()
+
+        patched.assert_called()
+
+    def _test_jinja_config(self) -> None:
         ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
 

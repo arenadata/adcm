@@ -579,11 +579,16 @@ class TaskTestMixin:
         owner: ADCM | Cluster | Service | Component | Provider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
+        feature_scripts_jinja: bool = False,
         **action_search_kwargs,
     ) -> Task:
         owner_descriptor = CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner))
         action = Action.objects.get(prototype_id=owner.prototype_id, **action_search_kwargs)
         target = owner_descriptor if not host else CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
         return prepare_task_for_action(
-            target=target, orm_owner=owner, action=action.id, payload=payload or TaskPayloadDTO()
+            target=target,
+            orm_owner=owner,
+            action=action.id,
+            payload=payload or TaskPayloadDTO(),
+            feature_scripts_jinja=feature_scripts_jinja,
         )

@@ -36,7 +36,7 @@ from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.generic.config_host_group.api_schema import (
     document_config_host_group_viewset,
@@ -121,6 +121,7 @@ from api_v2.views import ADCMGenericViewSet
             HTTP_409_CONFLICT: ErrorSerializer,
         },
     ),
+    config_schema=extend_config_schema("provider"),
 )
 class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet):
     queryset = Provider.objects.select_related("prototype").order_by("name")

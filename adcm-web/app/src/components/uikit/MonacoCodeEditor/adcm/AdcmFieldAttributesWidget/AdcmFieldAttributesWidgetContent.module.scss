@@ -1,0 +1,16 @@
+.adcmFieldAttributesWidgetContent {
+  background-color: var(--color-xdark-new);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+
+  .buttons {
+    padding-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+
+    > *:not(:last-child) {
+      margin-right: 8px;
+    }
+  }
+}

@@ -24,6 +24,7 @@ const HostProviderPrimaryConfiguration: React.FC = () => {
     setDraftConfiguration,
     isConfigurationLoading,
     accessCheckStatus,
+    accessConfigCheckStatus,
   } = useHostProviderPrimaryConfiguration();
 
   const compareOptions = useHostProviderPrimaryConfigurationsCompare();
@@ -41,24 +42,27 @@ const HostProviderPrimaryConfiguration: React.FC = () => {
   }, [hostProvider, dispatch]);
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
-      <ConfigurationHeader
-        configVersions={configVersions}
-        selectedConfigId={selectedConfigId}
-        setSelectedConfigId={setSelectedConfigId}
-        draftConfiguration={draftConfiguration}
-        compareOptions={compareOptions}
-      />
-
-      <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
+    <>
+      <PermissionsChecker requestState={accessCheckStatus}>
+        <ConfigurationHeader
+          configVersions={configVersions}
+          selectedConfigId={selectedConfigId}
+          setSelectedConfigId={setSelectedConfigId}
+          draftConfiguration={draftConfiguration}
+          compareOptions={compareOptions}
         />
-      </ConfigurationFormContextProvider>
-    </PermissionsChecker>
+        <PermissionsChecker requestState={accessConfigCheckStatus}>
+          <ConfigurationFormContextProvider>
+            <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+            <ConfigurationMain
+              isLoading={isConfigurationLoading}
+              configuration={selectedConfiguration}
+              onChangeConfiguration={setDraftConfiguration}
+            />
+          </ConfigurationFormContextProvider>
+        </PermissionsChecker>
+      </PermissionsChecker>
+    </>
   );
 };
 

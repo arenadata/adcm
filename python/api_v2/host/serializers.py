@@ -29,7 +29,7 @@ from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from api_v2.serializers import WithStatusSerializer
 
 
-class ProviderSerializer(ModelSerializer):
+class ProviderParentSerializer(ModelSerializer):
     class Meta:
         model = Provider
         fields = ["id", "name", "display_name"]
@@ -42,13 +42,16 @@ class HostClusterSerializer(ModelSerializer):
 
 
 class HCComponentNameSerializer(ModelSerializer):
+    name = CharField()  # schema warning helper
+    display_name = CharField()  # schema warning helper
+
     class Meta:
         model = Component
         fields = ["id", "name", "display_name"]
 
 
 class HostSerializer(WithStatusSerializer):
-    hostprovider = ProviderSerializer(source="provider")
+    hostprovider = ProviderParentSerializer(source="provider")
     prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True)
     name = CharField(
