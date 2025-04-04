@@ -73,3 +73,13 @@ class AnsibleSecrets:
             return decrypted
 
         return decrypted.decode("utf-8")
+
+    def encrypt(self, value: str) -> str:
+        """
+        Encrypt string value if it's not encrypted yet, otherwise return value itself
+        """
+        if self._encrypted_header in value:
+            return value
+
+        encrypted = self._vault.encrypt(b_plaintext=bytes(value, "utf-8"), secret=self._secret)
+        return f"{self._encrypted_header}\n{encrypted.decode('utf-8')}"
