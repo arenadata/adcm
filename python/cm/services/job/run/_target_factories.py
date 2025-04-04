@@ -27,6 +27,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
+from cm.logger import logger
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -38,6 +39,7 @@ from cm.services.cluster import retrieve_cluster_topology, retrieve_host_compone
 from cm.services.job._utils import construct_delta_for_task
 from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
+from cm.services.job.run._task_finalizers import set_hostcomponent
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -154,9 +156,8 @@ def internal_script_bundle_revert(task: Task) -> int:
     return 0
 
 
-@atomic()
 def internal_script_hc_apply(task: Task) -> int:
-    TaskLog.objects.filter(id=task.id).update(restore_hc_on_fail=False)
+    set_hostcomponent(task=task, logger=logger)
 
     return 0
 
