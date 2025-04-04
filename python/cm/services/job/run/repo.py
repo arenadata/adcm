@@ -142,9 +142,13 @@ class JobRepoImpl(JobRepoInterface):
                 post_upgrade=task_record.post_upgrade_hc_map,
                 restore_on_fail=task_record.restore_hc_on_fail,
                 mapping_delta=MappingDelta(
-                    add=task_record.hostcomponentmap.get("add", {}),
-                    remove=task_record.hostcomponentmap.get("remove", {}),
+                    add=dict(task_record.hostcomponentmap).get("add", {}),
+                    remove=dict(task_record.hostcomponentmap).get("remove", {}),
                 ),
+            ),
+            mapping_delta=MappingDelta(
+                add=dict(task_record.hostcomponentmap).get("add", {}),
+                remove=dict(task_record.hostcomponentmap).get("remove", {}),
             ),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
@@ -168,8 +172,8 @@ class JobRepoImpl(JobRepoInterface):
                 post_upgrade=task_row["post_upgrade_hc_map"],
                 restore_on_fail=task_row["restore_hc_on_fail"],
                 mapping_delta=MappingDelta(
-                    add=task_row["hostcomponentmap"].get("add", {}),
-                    remove=task_row["hostcomponentmap"].get("remove", {}),
+                    add=dict(task_row["hostcomponentmap"]).get("add", {}),
+                    remove=dict(task_row["hostcomponentmap"]).get("remove", {}),
                 ),
             )
         )
@@ -212,7 +216,7 @@ class JobRepoImpl(JobRepoInterface):
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap=payload.mapping_delta,
+            hostcomponentmap=payload.mapping_delta if payload.mapping_delta else {},
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,

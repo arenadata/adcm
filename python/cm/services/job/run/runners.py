@@ -283,11 +283,7 @@ class JobSequenceRunner(TaskRunner):
         if last_job:
             self._update_owner_state(task=finished_task, job=last_job, owner=owner)
 
-        if (
-            self._runtime.status in {ExecutionStatus.FAILED, ExecutionStatus.ABORTED, ExecutionStatus.BROKEN}
-            and finished_task.action.hc_acl
-            and finished_task.hostcomponent.restore_on_fail
-        ):
+        if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
             set_hostcomponent(task=finished_task, logger=self._logger)
 
     def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
