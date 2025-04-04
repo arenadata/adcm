@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Literal, TypeAlias, TypedDict
 
+from core.job.types import MappingDelta
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
 
@@ -124,6 +125,16 @@ class TaskMappingDelta:
     @property
     def is_empty(self) -> bool:
         return not (self.add or self.remove)
+
+    def to_db_json(self) -> MappingDelta:
+        data = asdict(self)
+        for key in data:
+            data[key] = {
+                comp_full_name: [host.name for host in set_of_host_info]
+                for comp_full_name, set_of_host_info in data[key].items()
+            }
+
+        return data
 
 
 class ActionHCRule(TypedDict):

@@ -28,6 +28,7 @@ from core.job.types import (
     Job,
     JobParams,
     JobSpec,
+    MappingDelta,
     RelatedObjects,
     ScriptType,
     StateChanges,
@@ -137,9 +138,13 @@ class JobRepoImpl(JobRepoInterface):
             verbose=task_record.verbose,
             config=task_record.config,
             hostcomponent=HostComponentChanges(
-                saved=task_record.hostcomponentmap,
+                saved=[],
                 post_upgrade=task_record.post_upgrade_hc_map,
                 restore_on_fail=task_record.restore_hc_on_fail,
+                mapping_delta=MappingDelta(
+                    add=task_record.hostcomponentmap.get("add", {}),
+                    remove=task_record.hostcomponentmap.get("remove", {}),
+                ),
             ),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
@@ -159,9 +164,13 @@ class JobRepoImpl(JobRepoInterface):
         task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map", "restore_hc_on_fail").get(id=id)
         return TaskMutableFieldsDTO(
             hostcomponent=HostComponentChanges(
-                saved=task_row["hostcomponentmap"],
+                saved=[],
                 post_upgrade=task_row["post_upgrade_hc_map"],
                 restore_on_fail=task_row["restore_hc_on_fail"],
+                mapping_delta=MappingDelta(
+                    add=task_row["hostcomponentmap"].get("add", {}),
+                    remove=task_row["hostcomponentmap"].get("remove", {}),
+                ),
             )
         )
 
@@ -203,11 +212,7 @@ class JobRepoImpl(JobRepoInterface):
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap=[
-                {"host_id": entry.host_id, "component_id": entry.component_id} for entry in payload.hostcomponent
-            ]
-            if payload.hostcomponent is not None
-            else None,
+            hostcomponentmap=payload.mapping_delta,
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,
