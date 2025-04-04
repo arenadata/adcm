@@ -146,10 +146,6 @@ class JobRepoImpl(JobRepoInterface):
                     remove=dict(task_record.hostcomponentmap).get("remove", {}),
                 ),
             ),
-            mapping_delta=MappingDelta(
-                add=dict(task_record.hostcomponentmap).get("add", {}),
-                remove=dict(task_record.hostcomponentmap).get("remove", {}),
-            ),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
                 multi_state_set=tuple(task_record.action.multi_state_on_success_set or ()),

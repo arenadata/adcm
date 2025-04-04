@@ -12,12 +12,12 @@
 
 from configparser import ConfigParser
 from functools import partial
+from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
 import json
 
 from ansible_plugin.utils import finish_check
-from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import HostComponentEntry
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
@@ -27,7 +27,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.logger import logger
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -35,8 +34,7 @@ from cm.models import (
     LogStorage,
     TaskLog,
 )
-from cm.services.cluster import retrieve_cluster_topology, retrieve_host_component_entries
-from cm.services.job._utils import construct_delta_for_task
+from cm.services.cluster import retrieve_host_component_entries
 from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
 from cm.services.job.run._task_finalizers import set_hostcomponent
@@ -55,10 +53,13 @@ from cm.services.job.types import (
     JobEnv,
     ProviderActionType,
     ServiceActionType,
+    TaskMappingDelta,
 )
 from cm.services.mapping import change_host_component_mapping, check_only_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
+
+logger = getLogger("adcm")
 
 
 class ExecutionTargetFactory:
@@ -234,19 +235,7 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
             raise RuntimeError(message)
 
-        current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
-        previous_topology = create_topology_with_new_mapping(
-            topology=current_topology,
-            new_mapping=(
-                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-                for entry in task.hostcomponent.saved
-            ),
-        )
-        delta = construct_delta_for_task(
-            topology=current_topology,
-            host_difference=find_hosts_difference(new_topology=current_topology, old_topology=previous_topology),
-        )
-        # todo need check_delta_is_allowed?
+        delta = TaskMappingDelta.from_db_json(data=task.hostcomponent.mapping_delta)
 
     return get_inventory_data(
         target=task.target,

@@ -61,8 +61,8 @@ class StateChanges(NamedTuple):
 class MappingDelta(TypedDict):
     """JSON serializable DB format of hc mapping delta"""
 
-    add: dict[str, list[str]]
-    remove: dict[str, list[str]]
+    add: dict[str, list[list[int | str]]]
+    remove: dict[str, list[list[int | str]]]
 
 
 class HostComponentChanges(NamedTuple):
