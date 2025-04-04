@@ -23,7 +23,6 @@ from django.db.models import Q
 from cm.converters import core_type_to_model
 from cm.models import (
     Component,
-    Host,
     MaintenanceMode,
     TaskLog,
     get_object_cluster,
@@ -75,16 +74,15 @@ def retrieve_mapping_hc_delta(topology: ClusterTopology, mapping_delta: dict) ->
         # Group all hosts by component key for bulk processing
         all_component_keys = list(mapping_delta[operation].keys())
         all_hosts_by_component = defaultdict(list)
-        all_hosts = set()
 
         # Collect all hosts for bulk querying
+        host_map = {}
         for component_key, hosts in mapping_delta[operation].items():
-            host_names = [name for _, name in hosts]
+            host_names = []
+            for host in hosts:
+                host_names.append(host[1])
+                host_map[host[1]] = host[0]
             all_hosts_by_component[component_key] = host_names
-            all_hosts.update(host_names)
-
-        # Batch query hosts
-        host_map = {host["fqdn"]: host["id"] for host in Host.objects.filter(fqdn__in=all_hosts).values("id", "fqdn")}
 
         # Build component queries
         component_queries = []
