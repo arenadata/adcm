@@ -17,6 +17,7 @@ from typing import Any, Literal, TypeAlias, TypedDict
 from core.job.types import MappingDelta
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
+from typing_extensions import Self
 
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
 ComponentComposedKey: TypeAlias = str
@@ -127,14 +128,27 @@ class TaskMappingDelta:
         return not (self.add or self.remove)
 
     def to_db_json(self) -> MappingDelta:
+        # TODO [feature/ADCM-6478]: Define the `delta` format: https://tracker.yandex.ru/ADCM-6484
         data = asdict(self)
         for key in data:
             data[key] = {
-                comp_full_name: [host.name for host in set_of_host_info]
+                comp_full_name: [[host.id, host.name] for host in set_of_host_info]
                 for comp_full_name, set_of_host_info in data[key].items()
             }
 
         return data
+
+    @classmethod
+    def from_db_json(cls, data: MappingDelta) -> Self:
+        delta = cls()
+        for key in data:
+            value = {
+                comp_full_name: {ShortHostInfo(id=host[0], name=host[1]) for host in hosts_list}
+                for comp_full_name, hosts_list in data[key].items()
+            }
+            setattr(delta, key, value)
+
+        return delta
 
 
 class ActionHCRule(TypedDict):

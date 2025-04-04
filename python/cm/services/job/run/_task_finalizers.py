@@ -79,8 +79,9 @@ def retrieve_mapping_hc_delta(topology: ClusterTopology, mapping_delta: dict) ->
 
         # Collect all hosts for bulk querying
         for component_key, hosts in mapping_delta[operation].items():
-            all_hosts_by_component[component_key] = hosts
-            all_hosts.update(hosts)
+            host_names = [name for _, name in hosts]
+            all_hosts_by_component[component_key] = host_names
+            all_hosts.update(host_names)
 
         # Batch query hosts
         host_map = {host["fqdn"]: host["id"] for host in Host.objects.filter(fqdn__in=all_hosts).values("id", "fqdn")}

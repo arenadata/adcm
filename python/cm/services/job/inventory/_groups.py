@@ -43,6 +43,21 @@ def detect_host_groups_for_cluster_bundle_action(
 
             component_name = component.info.name
 
+            # [feature/ADCM-6478]: now delta is not applied to HC mapping immediately,
+            # so we need to imitate this behavior
+            delta_to_add = {
+                (host.id, host.name) for host in hc_delta.add.get(f"{service_name}.{component_name}", set())
+            }
+            delta_to_remove = {
+                (host.id, host.name) for host in hc_delta.remove.get(f"{service_name}.{component_name}", set())
+            }
+            hosts_not_in_mm = hosts_not_in_mm.union(
+                set(filter(lambda x: x[0] not in hosts_in_maintenance_mode, delta_to_add))
+            ).difference(set(filter(lambda x: x[0] not in hosts_in_maintenance_mode, delta_to_remove)))
+            hosts_in_mm = hosts_in_mm.union(
+                set(filter(lambda x: x[0] in hosts_in_maintenance_mode, delta_to_add))
+            ).difference(set(filter(lambda x: x[0] in hosts_in_maintenance_mode, delta_to_remove)))
+
             if hosts_not_in_mm:  # we don't need empty groups
                 groups[f"{service_name}.{component_name}"] = hosts_not_in_mm
                 groups[service_name] |= hosts_not_in_mm
