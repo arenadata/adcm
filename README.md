@@ -104,6 +104,7 @@ _PostgreSQL must be version 13 or newer - JSONB field used_
    ```
    Use `-v /opt/adcm:/adcm/data:Z` for SELinux
    Target PostgreSQL DB must not have DB with name `DATABASE_NAME`
+   Note that DB_PORT is optional and has default value 5432
 
 ## Migrate SQLite -> client PostgreSQL
 >__NOTE__: `adcm` is the ADCM's container name. 
