@@ -15,14 +15,15 @@ from typing import Iterable, Protocol
 from core.bundle.types import BundleRestrictions
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
-from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
+from core.types import ADCMCoreType, BundleID, ClusterID, ComponentID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.db.transaction import atomic
 from rbac.models import Policy
 from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernCause, Host, HostComponent, MaintenanceMode, Service
+from cm.models import Cluster, Component, ConcernCause, Host, HostComponent, MaintenanceMode, Service
 from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
@@ -40,6 +41,8 @@ from cm.services.concern.distribution import (
 )
 from cm.services.concern.locks import retrieve_lock_on_object
 from cm.services.config_host_group import ConfigHostGroupRepo
+from cm.services.job._utils import construct_delta_for_task
+from cm.services.job.types import TaskMappingDelta
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 
@@ -89,6 +92,9 @@ def change_host_component_mapping(
     new_mapping_entries = set(flat_mapping)
 
     with atomic():
+        # Lock rows related to cluster (queryset evaluation is mandatory)
+        list(HostComponent.objects.select_for_update().filter(cluster_id=cluster_id))
+
         # prepare
         current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
         new_topology = _construct_new_topology_or_raise_on_invalid_input(
@@ -97,12 +103,20 @@ def change_host_component_mapping(
         host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
         bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
 
-        # business checks
+        delta = construct_delta_for_task(topology=current_topology, host_difference=host_difference)
 
+        # business checks
         checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
 
         # save
-        _recreate_mapping_in_db(topology=new_topology)
+        delta = _convert_delta_to_new_format(delta=delta, topology=current_topology)  # TODO: remove func
+        to_add = (
+            (host_id, component_id) for component_id, host_ids_set in delta.add.items() for host_id in host_ids_set
+        )
+        to_remove = (
+            (host_id, component_id) for component_id, host_ids_set in delta.remove.items() for host_id in host_ids_set
+        )
+        _apply_mapping_delta_in_db(cluster_id=cluster_id, to_add=to_add, to_remove=to_remove)
 
         # updates of related entities
         added, removed = _update_concerns(
@@ -119,6 +133,32 @@ def change_host_component_mapping(
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
+
+
+def _convert_delta_to_new_format(delta: TaskMappingDelta, topology: ClusterTopology):
+    from dataclasses import dataclass
+
+    @dataclass
+    class NewDelta:
+        add: dict[ComponentID, set[HostID]]
+        remove: dict[ComponentID, set[HostID]]
+
+    name_ids_map = {
+        f"{service.info.name}.{component.info.name}": component.info.id
+        for service in topology.services.values()
+        for component in service.components.values()
+    }
+
+    add = {
+        name_ids_map[component_composed_key]: {host.id for host in host_info_set}
+        for component_composed_key, host_info_set in delta.add.items()
+    }
+    remove = {
+        name_ids_map[component_composed_key]: {host.id for host in host_info_set}
+        for component_composed_key, host_info_set in delta.remove.items()
+    }
+
+    return NewDelta(add=add, remove=remove)
 
 
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
@@ -154,17 +194,36 @@ def _construct_new_topology_or_raise_on_invalid_input(
     return create_topology_with_new_mapping(topology=base_topology, new_mapping=new_entries)
 
 
-def _recreate_mapping_in_db(topology: ClusterTopology) -> None:
-    cluster_id = topology.cluster_id
-    HostComponent.objects.filter(cluster_id=cluster_id).delete()
-    HostComponent.objects.bulk_create(
-        (
-            HostComponent(cluster_id=cluster_id, service_id=service_id, component_id=component_id, host_id=host_id)
-            for service_id, service in topology.services.items()
-            for component_id, component in service.components.items()
-            for host_id in component.hosts
+def _apply_mapping_delta_in_db(
+    cluster_id: ClusterID,
+    to_add: Iterable[tuple[HostID, ComponentID]],
+    to_remove: Iterable[tuple[HostID, ComponentID]],
+) -> None:
+    to_add = list(to_add)  # ensure value can be reused if it is a generator
+
+    remove_condition = Q()
+    for host_id, component_id in to_remove:
+        remove_condition |= Q(host_id=host_id, component_id=component_id)
+
+    if remove_condition:
+        HostComponent.objects.filter(remove_condition).delete()
+
+    comp_service_ids_map = {
+        component.id: component.service_id
+        for component in Component.objects.filter(id__in=(item[1] for item in to_add))
+    }
+
+    hc_create = []
+    for host_id, component_id in to_add:
+        hc_create.append(
+            HostComponent(
+                cluster_id=cluster_id,
+                host_id=host_id,
+                component_id=component_id,
+                service_id=comp_service_ids_map[component_id],
+            )
         )
-    )
+    HostComponent.objects.bulk_create(objs=hc_create, ignore_conflicts=True)
 
 
 def _update_concerns(
