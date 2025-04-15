@@ -13,9 +13,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from cm.services.job.types import TaskMappingDelta
 from pydantic import BaseModel
 
-from core.job.types import ExecutionStatus, HostComponentChanges, MappingDelta
+from core.job.types import ExecutionStatus, HostComponentChanges
 
 
 class TaskUpdateDTO(BaseModel):
@@ -46,7 +47,7 @@ class TaskPayloadDTO:
     conf: dict | None = None
     attr: dict | None = None
 
-    mapping_delta: MappingDelta | None = None
+    mapping_delta: TaskMappingDelta | None = None
     post_upgrade_hostcomponent: list[dict] | None = None
 
     is_blocking: bool = True

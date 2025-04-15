@@ -26,63 +26,75 @@ def detect_host_groups_for_cluster_bundle_action(
     groups = defaultdict(set)
 
     for host in cluster_topology.hosts.values():
-        group = "CLUSTER" if host.id not in hosts_in_maintenance_mode else f"CLUSTER.{MAINTENANCE_MODE_GROUP_SUFFIX}"
-        groups[group].add((host.id, host.name))
+        _assign_host_to_group(host, "CLUSTER", groups, hosts_in_maintenance_mode)
+
+    delta_by_comp = {}
+    for op, op_dict in (("add", hc_delta.add), ("remove", hc_delta.remove)):
+        for c_id, host_ids in op_dict.items():
+            delta_by_comp.setdefault(c_id, {}).setdefault(op, set()).update(host_ids)
 
     for service in cluster_topology.services.values():
-        service_name = service.info.name
+        s_name = service.info.name
         for component in service.components.values():
-            hosts_in_mm = {
-                (host_id, component.hosts[host_id].name)
-                for host_id in set(component.hosts).intersection(hosts_in_maintenance_mode)
-            }
-            hosts_not_in_mm = {
-                (host_id, component.hosts[host_id].name)
-                for host_id in set(component.hosts).difference(hosts_in_maintenance_mode)
-            }
+            c_name = component.info.name
+            c_id = component.info.id
+            comp_base = f"{s_name}.{c_name}"
 
-            component_name = component.info.name
+            comp_host_ids = set(component.hosts)
+            hosts_mm, hosts_not_mm = _partition_by_maintenance(comp_host_ids, hosts_in_maintenance_mode)
+            hosts_mm_set = _host_id_name_set(hosts_mm, component.hosts)
+            hosts_not_mm_set = _host_id_name_set(hosts_not_mm, component.hosts)
 
-            # [feature/ADCM-6478]: now delta is not applied to HC mapping immediately,
-            # so we need to imitate this behavior
-            delta_to_add = {
-                (host.id, host.name) for host in hc_delta.add.get(f"{service_name}.{component_name}", set())
-            }
-            delta_to_remove = {
-                (host.id, host.name) for host in hc_delta.remove.get(f"{service_name}.{component_name}", set())
-            }
-            hosts_not_in_mm = hosts_not_in_mm.union(
-                set(filter(lambda x: x[0] not in hosts_in_maintenance_mode, delta_to_add))
-            ).difference(set(filter(lambda x: x[0] not in hosts_in_maintenance_mode, delta_to_remove)))
-            hosts_in_mm = hosts_in_mm.union(
-                set(filter(lambda x: x[0] in hosts_in_maintenance_mode, delta_to_add))
-            ).difference(set(filter(lambda x: x[0] in hosts_in_maintenance_mode, delta_to_remove)))
+            comp_delta = delta_by_comp.get(c_id, {})
+            delta_add = _host_id_name_set(comp_delta.get("add", ()), cluster_topology.hosts)
+            delta_remove = _host_id_name_set(comp_delta.get("remove", ()), cluster_topology.hosts)
 
-            if hosts_not_in_mm:  # we don't need empty groups
-                groups[f"{service_name}.{component_name}"] = hosts_not_in_mm
-                groups[service_name] |= hosts_not_in_mm
+            add_mm = {entry for entry in delta_add if entry[0] in hosts_in_maintenance_mode}
+            add_not_mm = delta_add - add_mm
+            remove_mm = {entry for entry in delta_remove if entry[0] in hosts_in_maintenance_mode}
+            remove_not_mm = delta_remove - remove_mm
 
-            if hosts_in_mm:
-                groups[f"{service_name}.{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
-                groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= hosts_in_mm
+            hosts_not_mm_set = (hosts_not_mm_set | add_not_mm) - remove_not_mm
+            hosts_mm_set = (hosts_mm_set | add_mm) - remove_mm
 
-    if hc_delta.is_empty:
-        return groups
+            if hosts_not_mm_set:
+                groups[comp_base] = hosts_not_mm_set
+                groups[s_name] |= hosts_not_mm_set
+            if hosts_mm_set:
+                comp_mm_group = f"{comp_base}.{MAINTENANCE_MODE_GROUP_SUFFIX}"
+                groups[comp_mm_group] = hosts_mm_set
+                groups[f"{s_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= hosts_mm_set
 
-    for component_key, hosts in hc_delta.add.items():
-        group_full_name = f"{component_key}.add"
-        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
-        if hosts_not_in_mm:
-            groups[group_full_name] = hosts_not_in_mm
-
-    for component_key, hosts in hc_delta.remove.items():
-        group_full_name = f"{component_key}.remove"
-        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
-        if hosts_not_in_mm:
-            groups[group_full_name] = hosts_not_in_mm
-
-        hosts_in_mm = {(host.id, host.name) for host in hosts if host.id in hosts_in_maintenance_mode}
-        if hosts_in_mm:
-            groups[f"{group_full_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
+            if delta_add:
+                delta_add_mm = {entry for entry in delta_add if entry[0] in hosts_in_maintenance_mode}
+                delta_add_not_mm = delta_add - delta_add_mm
+                group_base = f"{comp_base}.add"
+                if delta_add_not_mm:
+                    groups[group_base] = delta_add_not_mm
+            if delta_remove:
+                delta_remove_mm = {entry for entry in delta_remove if entry[0] in hosts_in_maintenance_mode}
+                delta_remove_not_mm = delta_remove - delta_remove_mm
+                group_base = f"{comp_base}.remove"
+                if delta_remove_not_mm:
+                    groups[group_base] = delta_remove_not_mm
+                if delta_remove_mm:
+                    groups[f"{group_base}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = delta_remove_mm
 
     return groups
+
+
+def _partition_by_maintenance(host_ids, hosts_in_maintenance_mode):
+    in_mm = set()
+    not_in_mm = set()
+    for hid in host_ids:
+        (in_mm if hid in hosts_in_maintenance_mode else not_in_mm).add(hid)
+    return in_mm, not_in_mm
+
+
+def _host_id_name_set(host_ids, host_map):
+    return {(hid, host_map[hid].name) for hid in host_ids}
+
+
+def _assign_host_to_group(host, group_base, groups, hosts_in_maintenance_mode):
+    group = group_base if host.id not in hosts_in_maintenance_mode else f"{group_base}.{MAINTENANCE_MODE_GROUP_SUFFIX}"
+    groups[group].add((host.id, host.name))

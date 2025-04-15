@@ -28,6 +28,7 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.services.cluster import retrieve_cluster_topology, retrieve_host_component_entries
+from cm.services.job.types import TaskMappingDelta
 from cm.services.mapping import change_host_component_mapping, check_nothing
 from cm.status_api import send_object_update_event
 
@@ -50,6 +51,9 @@ def set_hostcomponent(task: Task, logger: Logger):
 
         return
 
+    if not task.hostcomponent.mapping_delta:
+        return
+
     cluster_topology = retrieve_cluster_topology(cluster.id)
     logger.warning("task #%s is failed, restore old hc", task.id)
 
@@ -63,7 +67,7 @@ def set_hostcomponent(task: Task, logger: Logger):
     )
 
 
-def retrieve_mapping_hc_delta(topology: ClusterTopology, mapping_delta: dict) -> set[HostComponentEntry]:
+def retrieve_mapping_hc_delta(topology: ClusterTopology, mapping_delta: TaskMappingDelta) -> set[HostComponentEntry]:
     current_entries = retrieve_host_component_entries(cluster_id=topology.cluster_id)
 
     # Process both additions and removals efficiently

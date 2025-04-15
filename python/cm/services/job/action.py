@@ -78,15 +78,6 @@ def run_action(
     post_upgrade_hc: list[dict] | None = None,
     feature_scripts_jinja: bool = False,
 ) -> TaskLog:
-    task_payload = TaskPayloadDTO(
-        conf=payload.conf,
-        attr=payload.attr,
-        verbose=payload.verbose,
-        mapping_delta=None,
-        post_upgrade_hostcomponent=post_upgrade_hc,
-        is_blocking=payload.is_blocking,
-    )
-
     action_objects = _ActionLaunchObjects(target=obj, action=action)
 
     is_upgrade_action = hasattr(action, "upgrade")
@@ -100,7 +91,7 @@ def run_action(
     _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action.pk)
     _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
-    delta = TaskMappingDelta()
+    delta = None
     if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
         topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
         delta = _check_hostcomponent_and_get_delta(
@@ -110,9 +101,15 @@ def run_action(
             hc_rules=action.hostcomponentmap,
             mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE if is_upgrade_action else "{}",
         )
-        if action_has_hc_acl and delta is not None:
-            # mapping delta should be saved
-            task_payload.mapping_delta = delta.to_db_json()
+
+    task_payload = TaskPayloadDTO(
+        conf=payload.conf,
+        attr=payload.attr,
+        verbose=payload.verbose,
+        mapping_delta=delta,
+        post_upgrade_hostcomponent=post_upgrade_hc,
+        is_blocking=payload.is_blocking,
+    )
 
     with atomic():
         target = ActionTargetDescriptor(
@@ -178,6 +175,7 @@ def prepare_task_for_action(
         raise AdcmEx("TASK_ERROR", "action config is required")
 
     action_info = action_repo.get_action(id=action)
+
     task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     if payload.conf:
@@ -376,7 +374,7 @@ def _check_hostcomponent_and_get_delta(
     _check_no_blocking_concerns_on_hosts(host_difference.mapped.all)
 
     if with_hc_acl:
-        delta = construct_delta_for_task(topology=new_topology, host_difference=host_difference)
+        delta = construct_delta_for_task(host_difference=host_difference)
         check_delta_is_allowed(delta=delta, rules=hc_rules)
         return delta
 

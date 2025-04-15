@@ -131,7 +131,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         )
 
         return construct_delta_for_task(
-            topology=new_topology,
             host_difference=find_hosts_difference(new_topology=new_topology, old_topology=topology),
         )
 
