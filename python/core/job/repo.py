@@ -57,6 +57,10 @@ class JobRepoInterface(Protocol):
     ) -> None:
         ...
 
+    @staticmethod
+    def close_old_connections() -> None:
+        ...
+
 
 class ActionRepoInterface(Protocol):
     def get_action(self, id: ActionID) -> ActionInfo:  # noqa: A002

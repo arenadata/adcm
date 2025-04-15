@@ -187,6 +187,8 @@ if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
         "HOST": DB_HOST,
         "PORT": DB_PORT,
         "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,  # Improves the reliability of connection reuse
+        # and prevents errors when the connection was closed by the database server.
         "OPTIONS": get_db_options(),
     }
 else:
