@@ -195,6 +195,9 @@ class JobSequenceRunner(TaskRunner):
             update_task_flag_concern(job_id=target.job.id)
 
         result = target.executor.wait_finished().result
+        # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,
+        # you must explicitly close old and unusable connections.
+        self._repo.close_old_connections()
 
         if result.code == -15:
             job_status = ExecutionStatus.ABORTED

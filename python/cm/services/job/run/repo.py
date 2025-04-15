@@ -48,6 +48,7 @@ from core.types import (
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import close_old_connections
 from django.db.models import F, QuerySet, Value
 
 from cm.converters import (
@@ -461,6 +462,10 @@ class JobRepoImpl(JobRepoInterface):
             case _:
                 message = f"Can't detect owner of type {owner_type}"
                 raise NotImplementedError(message)
+
+    @staticmethod
+    def close_old_connections() -> None:
+        close_old_connections()
 
 
 class ActionRepoImpl(ActionRepoInterface):
