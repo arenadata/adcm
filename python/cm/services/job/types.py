@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Literal, TypeAlias, TypedDict
+from typing import Any, Iterator, Literal, TypeAlias, TypedDict
+import dataclasses
 
-from core.job.types import MappingDelta
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
-from typing_extensions import Self
 
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
 ComponentComposedKey: TypeAlias = str
@@ -120,35 +119,18 @@ class HcAclAction(Enum):
 
 @dataclass(slots=True)
 class TaskMappingDelta:
-    add: dict[ComponentComposedKey, set[ShortHostInfo]] = field(default_factory=dict)
-    remove: dict[ComponentComposedKey, set[ShortHostInfo]] = field(default_factory=dict)
+    add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+    remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
 
-    @property
-    def is_empty(self) -> bool:
-        return not (self.add or self.remove)
+    def __iter__(self) -> Iterator[str]:
+        for f in dataclasses.fields(self.__class__):
+            yield f.name
 
-    def to_db_json(self) -> MappingDelta:
-        # TODO [feature/ADCM-6478]: Define the `delta` format: https://tracker.yandex.ru/ADCM-6484
-        data = asdict(self)
-        for key in data:
-            data[key] = {
-                comp_full_name: [[host.id, host.name] for host in set_of_host_info]
-                for comp_full_name, set_of_host_info in data[key].items()
-            }
+    def __getitem__(self, key: str) -> dict[ComponentComposedKey, set[ShortHostInfo]]:
+        return getattr(self, key)
 
-        return data
-
-    @classmethod
-    def from_db_json(cls, data: MappingDelta) -> Self:
-        delta = cls()
-        for key in data:
-            value = {
-                comp_full_name: {ShortHostInfo(id=host[0], name=host[1]) for host in hosts_list}
-                for comp_full_name, hosts_list in data[key].items()
-            }
-            setattr(delta, key, value)
-
-        return delta
+    def __contains__(self, key: str) -> bool:
+        return hasattr(self, key)
 
 
 class ActionHCRule(TypedDict):

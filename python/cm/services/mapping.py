@@ -42,7 +42,6 @@ from cm.services.concern.distribution import (
 from cm.services.concern.locks import retrieve_lock_on_object
 from cm.services.config_host_group import ConfigHostGroupRepo
 from cm.services.job._utils import construct_delta_for_task
-from cm.services.job.types import TaskMappingDelta
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 
@@ -103,20 +102,15 @@ def change_host_component_mapping(
         host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
         bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
 
-        delta = construct_delta_for_task(topology=current_topology, host_difference=host_difference)
+        delta = construct_delta_for_task(host_difference=host_difference)
 
         # business checks
         checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
 
-        # save
-        delta = _convert_delta_to_new_format(delta=delta, topology=current_topology)  # TODO: remove func
-        to_add = (
-            (host_id, component_id) for component_id, host_ids_set in delta.add.items() for host_id in host_ids_set
-        )
-        to_remove = (
-            (host_id, component_id) for component_id, host_ids_set in delta.remove.items() for host_id in host_ids_set
-        )
-        _apply_mapping_delta_in_db(cluster_id=cluster_id, to_add=to_add, to_remove=to_remove)
+        to_add = ((host_id, component_id) for component_id, host_ids in delta.add.items() for host_id in host_ids)
+        to_remove = ((host_id, component_id) for component_id, host_ids in delta.remove.items() for host_id in host_ids)
+
+        _apply_mapping_delta_in_db(cluster_id, to_add, to_remove)
 
         # updates of related entities
         added, removed = _update_concerns(
@@ -133,32 +127,6 @@ def change_host_component_mapping(
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
-
-
-def _convert_delta_to_new_format(delta: TaskMappingDelta, topology: ClusterTopology):
-    from dataclasses import dataclass
-
-    @dataclass
-    class NewDelta:
-        add: dict[ComponentID, set[HostID]]
-        remove: dict[ComponentID, set[HostID]]
-
-    name_ids_map = {
-        f"{service.info.name}.{component.info.name}": component.info.id
-        for service in topology.services.values()
-        for component in service.components.values()
-    }
-
-    add = {
-        name_ids_map[component_composed_key]: {host.id for host in host_info_set}
-        for component_composed_key, host_info_set in delta.add.items()
-    }
-    remove = {
-        name_ids_map[component_composed_key]: {host.id for host in host_info_set}
-        for component_composed_key, host_info_set in delta.remove.items()
-    }
-
-    return NewDelta(add=add, remove=remove)
 
 
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:

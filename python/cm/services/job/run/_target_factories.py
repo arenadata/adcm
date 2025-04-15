@@ -53,7 +53,6 @@ from cm.services.job.types import (
     JobEnv,
     ProviderActionType,
     ServiceActionType,
-    TaskMappingDelta,
 )
 from cm.services.mapping import change_host_component_mapping, check_only_mapping
 from cm.status_api import send_prototype_and_state_update_event
@@ -235,7 +234,7 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
             raise RuntimeError(message)
 
-        delta = TaskMappingDelta.from_db_json(data=task.hostcomponent.mapping_delta)
+        delta = task.hostcomponent.mapping_delta
 
     return get_inventory_data(
         target=task.target,

@@ -12,6 +12,7 @@
 
 from contextlib import suppress
 from copy import deepcopy
+from dataclasses import asdict
 from functools import reduce
 from pathlib import Path
 from typing import Collection, Iterable
@@ -28,7 +29,6 @@ from core.job.types import (
     Job,
     JobParams,
     JobSpec,
-    MappingDelta,
     RelatedObjects,
     ScriptType,
     StateChanges,
@@ -72,6 +72,7 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+from cm.services.job.types import TaskMappingDelta
 
 
 class JobRepoImpl(JobRepoInterface):
@@ -121,6 +122,10 @@ class JobRepoImpl(JobRepoInterface):
                     root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
                 )
 
+        mapping_delta = (
+            cls._get_mapping_delta(task_record=task_record) if isinstance(task_record.hostcomponentmap, dict) else None
+        )
+
         return Task(
             id=id,
             target=target_,
@@ -138,13 +143,9 @@ class JobRepoImpl(JobRepoInterface):
             verbose=task_record.verbose,
             config=task_record.config,
             hostcomponent=HostComponentChanges(
-                saved=[],
                 post_upgrade=task_record.post_upgrade_hc_map,
                 restore_on_fail=task_record.restore_hc_on_fail,
-                mapping_delta=MappingDelta(
-                    add=dict(task_record.hostcomponentmap).get("add", {}),
-                    remove=dict(task_record.hostcomponentmap).get("remove", {}),
-                ),
+                mapping_delta=mapping_delta,
             ),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
@@ -160,17 +161,24 @@ class JobRepoImpl(JobRepoInterface):
         )
 
     @staticmethod
+    def _get_mapping_delta(task_record: TaskLog) -> TaskMappingDelta:
+        # as json keys are stored as strings but should be integers
+        for key, val in task_record.hostcomponentmap.items():
+            if isinstance(val, dict):
+                task_record.hostcomponentmap[key] = {int(k): v for k, v in val.items()}
+
+        return TaskMappingDelta(**task_record.hostcomponentmap)
+
+    @staticmethod
     def get_task_mutable_fields(id: int) -> TaskMutableFieldsDTO:  # noqa: A002
         task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map", "restore_hc_on_fail").get(id=id)
         return TaskMutableFieldsDTO(
             hostcomponent=HostComponentChanges(
-                saved=[],
                 post_upgrade=task_row["post_upgrade_hc_map"],
                 restore_on_fail=task_row["restore_hc_on_fail"],
-                mapping_delta=MappingDelta(
-                    add=dict(task_row["hostcomponentmap"]).get("add", {}),
-                    remove=dict(task_row["hostcomponentmap"]).get("remove", {}),
-                ),
+                mapping_delta=TaskMappingDelta(**task_row["hostcomponentmap"])
+                if isinstance(task_row["hostcomponentmap"], dict)
+                else None,
             )
         )
 
@@ -212,7 +220,11 @@ class JobRepoImpl(JobRepoInterface):
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap=payload.mapping_delta if payload.mapping_delta else {},
+            hostcomponentmap={
+                key: {k: list(v) for k, v in value.items()} for key, value in asdict(payload.mapping_delta).items()
+            }
+            if payload.mapping_delta
+            else {},
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,

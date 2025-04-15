@@ -12,10 +12,10 @@
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, NamedTuple
+from typing import NamedTuple
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict
-from typing_extensions import TypedDict
+from cm.services.job.types import TaskMappingDelta
+from pydantic import BaseModel, ConfigDict
 
 from core.types import (
     ActionID,
@@ -58,18 +58,10 @@ class StateChanges(NamedTuple):
     multi_state_unset: tuple[str, ...]
 
 
-class MappingDelta(TypedDict):
-    """JSON serializable DB format of hc mapping delta"""
-
-    add: dict[str, list[list[int | str]]]
-    remove: dict[str, list[list[int | str]]]
-
-
 class HostComponentChanges(NamedTuple):
-    saved: Annotated[list[dict] | None, BeforeValidator(lambda x: [])]  # TODO [feature/ADCM-6478]: remove field
     post_upgrade: list[dict] | None
     restore_on_fail: bool
-    mapping_delta: MappingDelta | None
+    mapping_delta: TaskMappingDelta | None
 
 
 class BundleInfo(NamedTuple):

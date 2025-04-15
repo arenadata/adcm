@@ -10,32 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from core.cluster.types import ClusterTopology, TopologyHostDiff
+from core.cluster.types import TopologyHostDiff
 
 from cm.errors import AdcmEx
+from cm.models import Component
 from cm.services.job.types import ActionHCRule, TaskMappingDelta
 
 
-def construct_delta_for_task(topology: ClusterTopology, host_difference: TopologyHostDiff) -> TaskMappingDelta:
+def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDelta:
     delta = TaskMappingDelta()
-
-    if not (host_difference.mapped or host_difference.unmapped):
-        return delta
-
-    component_keys = {
-        component_id: f"{service_topology.info.name}.{component_topology.info.name}"
-        for service_id, service_topology in topology.services.items()
-        for component_id, component_topology in service_topology.components.items()
-    }
-
-    for component_id, added_hosts in host_difference.mapped.components.items():
-        key = component_keys[component_id]
-        delta.add[key] = {topology.hosts[host_id] for host_id in added_hosts}
-
-    for component_id, removed_hosts in host_difference.unmapped.components.items():
-        key = component_keys[component_id]
-        delta.remove[key] = {topology.hosts[host_id] for host_id in removed_hosts}
+    delta.add = dict(host_difference.mapped.components)
+    delta.remove = dict(host_difference.unmapped.components)
 
     return delta
 
@@ -45,9 +30,18 @@ def check_delta_is_allowed(delta: TaskMappingDelta, rules: list[ActionHCRule]) -
         return
 
     allowed = {"add": set(), "remove": set()}
+    components_lookup = {
+        f"{service_name}.{component_name}": pk
+        for service_name, component_name, pk in Component.objects.values_list(
+            "service__prototype__name", "prototype__name", "pk"
+        )
+    }
+
     for rule in rules:
-        component_key = f"{rule['service']}.{rule['component']}"
-        allowed[rule["action"]].add(component_key)
+        component_key = f"{rule['service']}.{rule['component']}"  # Create the service.component key
+        component_id = components_lookup.get(component_key)
+        if component_id:
+            allowed[rule["action"]].add(component_id)
 
     disallowed_add = set(delta.add.keys()).difference(allowed["add"])
     if disallowed_add:
