@@ -110,6 +110,9 @@ def _get_error_on_service_deletion(
 
 
 def delete_service_from_api(service: Service) -> Response:
+    # Technical debt: in some cases service deletion comes with updating hc mapping (ansible plugin adcm_delete_service)
+    #                 Here we rely only on CASCADE deletion of HostComponent entries (if not deleting by action)
+
     delete_action = Action.objects.filter(
         prototype_id=service.prototype_id,
         name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,

@@ -45,7 +45,7 @@ from cm.models import (
     Service,
 )
 from cm.services.job.action import prepare_task_for_action
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 from cm.utils import deep_merge
 from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
@@ -490,12 +490,10 @@ class BusinessLogicMixin(BundleLogicMixin):
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
-        change_host_component_mapping(
+        set_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=host.id, component_id=component.id) for host, component in entries
-            ),
+            new_mapping=(HostComponentEntry(host_id=host.id, component_id=component.id) for host, component in entries),
         )
         return list(HostComponent.objects.filter(cluster_id=cluster.id))
 
