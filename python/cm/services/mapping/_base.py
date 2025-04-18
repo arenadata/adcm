@@ -10,20 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+from itertools import chain
 from typing import Iterable, Protocol
 
 from core.bundle.types import BundleRestrictions
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
-from core.types import ADCMCoreType, BundleID, ClusterID, ComponentID, CoreObjectDescriptor, HostID
+from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 from django.db.transaction import atomic
 from rbac.models import Policy
 from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.errors import AdcmEx
-from cm.models import Cluster, Component, ConcernCause, Host, HostComponent, MaintenanceMode, Service
+from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
 from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
@@ -41,7 +42,8 @@ from cm.services.concern.distribution import (
 )
 from cm.services.concern.locks import retrieve_lock_on_object
 from cm.services.config_host_group import ConfigHostGroupRepo
-from cm.services.job._utils import construct_delta_for_task
+from cm.services.job.types import TaskMappingDelta
+from cm.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 
@@ -81,44 +83,84 @@ def check_all(
     check_no_host_in_mm(host_difference.mapped.all)
 
 
+def set_host_component_mapping(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    new_mapping: Iterable[HostComponentEntry],
+    checks_func: PerformMappingChecks = check_all,
+) -> None:
+    with atomic():
+        lock_cluster_mapping(cluster_id=cluster_id)
+        set_host_component_mapping_no_lock(
+            cluster_id=cluster_id,
+            bundle_id=bundle_id,
+            new_mapping=new_mapping,
+            checks_func=checks_func,
+        )
+
+
+def set_host_component_mapping_no_lock(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    new_mapping: Iterable[HostComponentEntry],
+    checks_func: PerformMappingChecks = check_all,
+) -> None:
+    new_mapping = tuple(new_mapping)
+    mapping_delta = _retrieve_delta_from_new_mapping(cluster_id=cluster_id, new_mapping=new_mapping)
+    _change_host_component_mapping(
+        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+    )
+
+
 def change_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
-    flat_mapping: Iterable[HostComponentEntry],
+    mapping_delta: TaskMappingDelta,
+    checks_func: PerformMappingChecks = check_all,
+) -> None:
+    with atomic():
+        lock_cluster_mapping(cluster_id=cluster_id)
+        _change_host_component_mapping(
+            cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+        )
+
+
+def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
+    if Host.objects.filter(id__in=hosts).exclude(maintenance_mode=MaintenanceMode.OFF).exists():
+        raise AdcmEx("INVALID_HC_HOST_IN_MM")
+
+
+def _change_host_component_mapping(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    mapping_delta: TaskMappingDelta,
     checks_func: PerformMappingChecks = check_all,
 ) -> ClusterTopology:
-    # force remove duplicates
-    new_mapping_entries = set(flat_mapping)
+    # prepare
+    current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    new_topology = _construct_new_topology_or_raise_on_invalid_input(
+        base_topology=current_topology, mapping_delta=mapping_delta
+    )
+    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
 
-    with atomic():
-        # Lock rows related to cluster (queryset evaluation is mandatory)
-        list(HostComponent.objects.select_for_update().filter(cluster_id=cluster_id))
+    # business checks
+    checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
 
-        # prepare
-        current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
-        new_topology = _construct_new_topology_or_raise_on_invalid_input(
-            base_topology=current_topology, new_entries=new_mapping_entries
-        )
-        host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
-        bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
+    # save mapping changes to db
+    to_add = ((host_id, component_id) for component_id, host_ids in mapping_delta.add.items() for host_id in host_ids)
+    to_remove = (
+        (host_id, component_id) for component_id, host_ids in mapping_delta.remove.items() for host_id in host_ids
+    )
+    _apply_mapping_delta_in_db(cluster_id, to_add, to_remove)
 
-        delta = construct_delta_for_task(host_difference=host_difference)
-
-        # business checks
-        checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
-
-        to_add = ((host_id, component_id) for component_id, host_ids in delta.add.items() for host_id in host_ids)
-        to_remove = ((host_id, component_id) for component_id, host_ids in delta.remove.items() for host_id in host_ids)
-
-        _apply_mapping_delta_in_db(cluster_id, to_add, to_remove)
-
-        # updates of related entities
-        added, removed = _update_concerns(
-            old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
-        )
-        ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
-        ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
-        _update_policies(topology=new_topology)
+    # updates of related entities
+    added, removed = _update_concerns(
+        old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
+    )
+    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
+    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
+    _update_policies(topology=new_topology)
 
     # update info in statistics service
     reset_hc_map()
@@ -129,17 +171,14 @@ def change_host_component_mapping(
     return new_topology
 
 
-def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
-    if Host.objects.filter(id__in=hosts).exclude(maintenance_mode=MaintenanceMode.OFF).exists():
-        raise AdcmEx("INVALID_HC_HOST_IN_MM")
-
-
 def _construct_new_topology_or_raise_on_invalid_input(
-    base_topology: ClusterTopology, new_entries: set[HostComponentEntry]
+    base_topology: ClusterTopology,
+    mapping_delta: TaskMappingDelta,
 ) -> ClusterTopology:
     cluster_id = base_topology.cluster_id
 
-    unrelated_components = {entry.component_id for entry in new_entries}.difference(base_topology.component_ids)
+    components_in_delta = set(mapping_delta.add.keys()) | set(mapping_delta.remove.keys())
+    unrelated_components = components_in_delta.difference(base_topology.component_ids)
     if unrelated_components:
         cluster_name = Cluster.objects.values_list("name", flat=True).get(id=cluster_id)
         ids_repr = ", ".join(f'"{component_id}"' for component_id in unrelated_components)
@@ -149,7 +188,10 @@ def _construct_new_topology_or_raise_on_invalid_input(
             msg=f'Component(s) {ids_repr} do not belong to cluster "{cluster_name}"',
         ) from None
 
-    unbound_hosts = {entry.host_id for entry in new_entries}.difference(base_topology.hosts)
+    hosts_in_delta = set(chain.from_iterable(mapping_delta.add.values())) | set(
+        chain.from_iterable(mapping_delta.remove.values())
+    )
+    unbound_hosts = hosts_in_delta.difference(base_topology.hosts)
     if unbound_hosts:
         cluster_name = Cluster.objects.values_list("name", flat=True).get(id=cluster_id)
         ids_repr = ", ".join(f'"{host_id}"' for host_id in sorted(unbound_hosts))
@@ -159,39 +201,60 @@ def _construct_new_topology_or_raise_on_invalid_input(
             msg=f'Host(s) {ids_repr} do not belong to cluster "{cluster_name}"',
         )
 
-    return create_topology_with_new_mapping(topology=base_topology, new_mapping=new_entries)
+    new_mapping = _construct_mapping_from_delta(topology=base_topology, mapping_delta=mapping_delta)
+
+    return create_topology_with_new_mapping(topology=base_topology, new_mapping=new_mapping)
 
 
-def _apply_mapping_delta_in_db(
-    cluster_id: ClusterID,
-    to_add: Iterable[tuple[HostID, ComponentID]],
-    to_remove: Iterable[tuple[HostID, ComponentID]],
-) -> None:
-    to_add = list(to_add)  # ensure value can be reused if it is a generator
+def _retrieve_delta_from_new_mapping(
+    cluster_id: ClusterID, new_mapping: Iterable[HostComponentEntry]
+) -> TaskMappingDelta:
+    new_mapping = set(new_mapping)
 
-    remove_condition = Q()
-    for host_id, component_id in to_remove:
-        remove_condition |= Q(host_id=host_id, component_id=component_id)
-
-    if remove_condition:
-        HostComponent.objects.filter(remove_condition).delete()
-
-    comp_service_ids_map = {
-        component.id: component.service_id
-        for component in Component.objects.filter(id__in=(item[1] for item in to_add))
+    current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    current_mapping = {
+        HostComponentEntry(host_id=host_id, component_id=component.info.id)
+        for service in current_topology.services.values()
+        for component in service.components.values()
+        for host_id in component.hosts
     }
 
-    hc_create = []
-    for host_id, component_id in to_add:
-        hc_create.append(
-            HostComponent(
-                cluster_id=cluster_id,
-                host_id=host_id,
-                component_id=component_id,
-                service_id=comp_service_ids_map[component_id],
-            )
-        )
-    HostComponent.objects.bulk_create(objs=hc_create, ignore_conflicts=True)
+    to_add_flat = new_mapping - current_mapping
+    to_remove_flat = current_mapping - new_mapping
+
+    to_add, to_remove = defaultdict(set), defaultdict(set)
+    for entry in to_add_flat:
+        to_add[entry.component_id].add(entry.host_id)
+    for entry in to_remove_flat:
+        to_remove[entry.component_id].add(entry.host_id)
+
+    return TaskMappingDelta(add=to_add, remove=to_remove)
+
+
+def _construct_mapping_from_delta(
+    topology: ClusterTopology, mapping_delta: TaskMappingDelta | None
+) -> Iterable[HostComponentEntry]:
+    current_entries = {
+        HostComponentEntry(host_id=host_id, component_id=component.info.id)
+        for service in topology.services.values()
+        for component in service.components.values()
+        for host_id in component.hosts
+    }
+
+    to_add, to_remove = set(), set()
+    if mapping_delta is not None:
+        to_add = {
+            HostComponentEntry(host_id=host_id, component_id=component_id)
+            for component_id, host_ids in mapping_delta.add.items()
+            for host_id in host_ids
+        }
+        to_remove = {
+            HostComponentEntry(host_id=host_id, component_id=component_id)
+            for component_id, host_ids in mapping_delta.remove.items()
+            for host_id in host_ids
+        }
+
+    return (current_entries - to_remove) | to_add
 
 
 def _update_concerns(

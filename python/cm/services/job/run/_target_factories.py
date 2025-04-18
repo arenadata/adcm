@@ -54,7 +54,7 @@ from cm.services.job.types import (
     ProviderActionType,
     ServiceActionType,
 )
-from cm.services.mapping import change_host_component_mapping, check_only_mapping
+from cm.services.mapping import check_only_mapping, set_host_component_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
 
@@ -191,13 +191,12 @@ def _switch_hc_if_required(task: TaskLog):
     task.post_upgrade_hc_map = None
     task.save(update_fields=["hostcomponentmap", "post_upgrade_hc_map"])
 
-    after_upgrade_hostcomponent = current_topology_entries | newly_added_entries
-
     if task.action.hostcomponentmap:
-        change_host_component_mapping(
+        after_upgrade_hostcomponent = current_topology_entries | newly_added_entries
+        set_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.bundle_id,
-            flat_mapping=after_upgrade_hostcomponent,
+            new_mapping=after_upgrade_hostcomponent,
             checks_func=partial(check_only_mapping, error_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE),
         )
 

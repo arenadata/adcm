@@ -25,7 +25,7 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 
 
 class TestComponent(BaseTestCase):
@@ -78,10 +78,10 @@ class TestComponent(BaseTestCase):
         with self.assertRaisesRegex(
             AdcmEx, 'Services required for component "component_1_1" of service "service_1" are missing: service_2'
         ):
-            change_host_component_mapping(
+            set_host_component_mapping(
                 cluster_id=self.cluster.id,
                 bundle_id=self.cluster.bundle_id,
-                flat_mapping=(HostComponentEntry(host_id=host.id, component_id=component_1.id),),
+                new_mapping=(HostComponentEntry(host_id=host.id, component_id=component_1.id),),
             )
 
     def test_service_requires_issue(self):

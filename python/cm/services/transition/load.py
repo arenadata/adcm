@@ -44,7 +44,7 @@ from cm.models import (
     Service,
 )
 from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 from cm.services.status import notify
 from cm.services.transition.types import (
     BundleHash,
@@ -215,7 +215,7 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
                 )
             )
 
-        change_host_component_mapping(cluster_id=cluster_object.id, bundle_id=bundle_id, flat_mapping=mapping)
+        set_host_component_mapping(cluster_id=cluster_object.id, bundle_id=bundle_id, new_mapping=mapping)
 
     if config_host_groups:
         for owner, group in config_host_groups:

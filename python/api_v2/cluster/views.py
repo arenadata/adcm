@@ -49,7 +49,7 @@ from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
 )
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 from cm.services.status import notify
 from core.bundle.operations import build_requires_dependencies_map
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
@@ -573,7 +573,7 @@ class ClusterViewSet(
         cluster_id = cluster.id
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster.prototype_id)
 
-        change_host_component_mapping(cluster_id=cluster_id, bundle_id=bundle_id, flat_mapping=new_mapping_entries)
+        set_host_component_mapping(cluster_id=cluster_id, bundle_id=bundle_id, new_mapping=new_mapping_entries)
 
         return Response(
             data=self.get_serializer(instance=HostComponent.objects.filter(cluster_id=cluster_id), many=True).data,

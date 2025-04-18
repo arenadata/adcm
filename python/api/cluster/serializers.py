@@ -17,7 +17,7 @@ from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import Action, Cluster, Component, Host, HostComponent, Prototype
 from cm.schemas import RequiresUISchema
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
@@ -334,14 +334,14 @@ class HostComponentSaveSerializer(EmptySerializer):
 
     def create(self, validated_data):
         hostcomponent = validated_data.get("hc")
-        new_mapping_entries = tuple(
+        new_mapping_entries = {
             HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"]) for entry in hostcomponent
-        )
+        }
 
         cluster = self.context.get("cluster")
 
-        change_host_component_mapping(
-            cluster_id=cluster.id, bundle_id=cluster.prototype.bundle_id, flat_mapping=new_mapping_entries
+        set_host_component_mapping(
+            cluster_id=cluster.id, bundle_id=cluster.prototype.bundle_id, new_mapping=new_mapping_entries
         )
 
         return HostComponent.objects.filter(cluster_id=cluster.id)

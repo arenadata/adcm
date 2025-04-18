@@ -61,7 +61,7 @@ class StateChanges(NamedTuple):
 class HostComponentChanges(NamedTuple):
     post_upgrade: list[dict] | None
     restore_on_fail: bool
-    mapping_delta: TaskMappingDelta | None
+    mapping_delta: TaskMappingDelta
 
 
 class BundleInfo(NamedTuple):
@@ -118,7 +118,7 @@ class Task(BaseModel):
     action: TaskActionInfo
 
     verbose: bool
-    hostcomponent: HostComponentChanges  # TODO [feature/ADCM-6478]: refactor, considering mapping_delta
+    hostcomponent: HostComponentChanges
     config: dict | None
 
     on_success: StateChanges
