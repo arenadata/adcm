@@ -141,7 +141,6 @@ class JobRepoImpl(JobRepoInterface):
             config=task_record.config,
             hostcomponent=HostComponentChanges(
                 post_upgrade=task_record.post_upgrade_hc_map,
-                restore_on_fail=task_record.restore_hc_on_fail,
                 mapping_delta=cls._restore_delta_from_db_format(task_delta=task_record.hostcomponentmap),
             ),
             on_success=StateChanges(
@@ -159,11 +158,10 @@ class JobRepoImpl(JobRepoInterface):
 
     @classmethod
     def get_task_mutable_fields(cls, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
-        task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map", "restore_hc_on_fail").get(id=id)
+        task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map").get(id=id)
         return TaskMutableFieldsDTO(
             hostcomponent=HostComponentChanges(
                 post_upgrade=task_row["post_upgrade_hc_map"],
-                restore_on_fail=task_row["restore_hc_on_fail"],
                 mapping_delta=cls._restore_delta_from_db_format(task_delta=task_row["hostcomponentmap"]),
             )
         )
@@ -207,10 +205,10 @@ class JobRepoImpl(JobRepoInterface):
             config=payload.conf,
             attr=payload.attr or {},
             hostcomponentmap={
-                key: {k: list(v) for k, v in value.items()} for key, value in asdict(payload.mapping_delta).items()
+                key: {k: sorted(v) for k, v in value.items()} for key, value in asdict(payload.mapping_delta).items()
             }
             if payload.mapping_delta
-            else {},
+            else None,
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,
@@ -284,10 +282,9 @@ class JobRepoImpl(JobRepoInterface):
         core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
 
     @staticmethod
-    def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta:
-        # Convert db json to TaskMappingDelta
-        if not isinstance(task_delta, dict):
-            return TaskMappingDelta()
+    def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta | None:
+        if task_delta is None:
+            return None
 
         to_add, to_remove = defaultdict(set), defaultdict(set)
         for component_id, host_ids in task_delta.get("add", {}).items():

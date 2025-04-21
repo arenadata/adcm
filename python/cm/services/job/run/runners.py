@@ -167,7 +167,7 @@ class JobSequenceRunner(TaskRunner):
         if task.hostcomponent == new_fields.hostcomponent:
             return task
 
-        return Task(**(task.dict() | {"hostcomponent": new_fields.hostcomponent}))
+        return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
     def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
         (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)

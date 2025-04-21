@@ -184,7 +184,7 @@ def _switch_hc_if_required(task: TaskLog):
             newly_added_entries.add(HostComponentEntry(component_id=component_id, host_id=new_entry["host_id"]))
 
     current_topology_entries = retrieve_host_component_entries(cluster_id=cluster.id)
-
+    # FIXME: Fix the mechanism for changing HC after the upgrade.
     task.hostcomponentmap = [
         {"host_id": entry.host_id, "component_id": entry.component_id} for entry in current_topology_entries
     ]

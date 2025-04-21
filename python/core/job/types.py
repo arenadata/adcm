@@ -60,8 +60,7 @@ class StateChanges(NamedTuple):
 
 class HostComponentChanges(NamedTuple):
     post_upgrade: list[dict] | None
-    restore_on_fail: bool
-    mapping_delta: TaskMappingDelta
+    mapping_delta: TaskMappingDelta | None
 
 
 class BundleInfo(NamedTuple):

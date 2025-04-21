@@ -12,8 +12,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Iterator, Literal, TypeAlias, TypedDict
-import dataclasses
+from typing import Any, Literal, TypeAlias, TypedDict
 
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
@@ -122,15 +121,9 @@ class TaskMappingDelta:
     add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
     remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
 
-    def __iter__(self) -> Iterator[str]:
-        for f in dataclasses.fields(self.__class__):
-            yield f.name
-
-    def __getitem__(self, key: str) -> dict[ComponentComposedKey, set[ShortHostInfo]]:
-        return getattr(self, key)
-
-    def __contains__(self, key: str) -> bool:
-        return hasattr(self, key)
+    @property
+    def is_empty(self) -> bool:
+        return not (self.add or self.remove)
 
 
 class ActionHCRule(TypedDict):

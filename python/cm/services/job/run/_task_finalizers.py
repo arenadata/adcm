@@ -45,7 +45,7 @@ def set_hostcomponent(task: Task, logger: Logger):
 
         return
 
-    if not task.hostcomponent.mapping_delta:
+    if task.hostcomponent.mapping_delta is None or task.hostcomponent.mapping_delta.is_empty:
         return
 
     logger.warning("task #%s is failed, restore old hc", task.id)
