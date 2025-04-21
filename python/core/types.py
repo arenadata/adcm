@@ -118,7 +118,8 @@ class GeneralEntityDescriptor(_Descriptor[str]):
 
 @dataclass(slots=True, frozen=True)
 class HostGroupDescriptor(_Descriptor[ADCMHostGroupType]):
-    ...
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
 
 
 @dataclass(slots=True, frozen=True)
@@ -131,7 +132,8 @@ class ActionTargetDescriptor(_Descriptor[ADCMCoreType | ExtraActionTargetType]):
 # because `CoreObjectDescriptor` is just a bit stricter than `ActionTargetDescriptor`
 @dataclass(slots=True, frozen=True)
 class CoreObjectDescriptor(_Descriptor[ADCMCoreType]):
-    ...
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
 
 
 class HostGroupOfObject:
