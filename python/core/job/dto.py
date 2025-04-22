@@ -24,6 +24,8 @@ class TaskUpdateDTO(BaseModel):
     start_date: datetime | None = None
     finish_date: datetime | None = None
     status: ExecutionStatus | None = None
+    post_upgrade_hc_map: list[dict] | None = None
+    hostcomponentmap: TaskMappingDelta | None = None
 
 
 class JobUpdateDTO(BaseModel):

@@ -27,7 +27,8 @@ class JobRepoInterface(Protocol):
     ) -> Task:
         ...
 
-    def update_task(self, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
+    @classmethod
+    def update_task(cls, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
         ...
 
     def get_task_jobs(self, task_id: int) -> Iterable[Job]:
@@ -36,17 +37,20 @@ class JobRepoInterface(Protocol):
     def get_task_mutable_fields(self, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
         ...
 
-    def create_jobs(self, task_id: int, jobs: Iterable[JobSpec]) -> None:
+    @staticmethod
+    def create_jobs(task_id: int, jobs: Iterable[JobSpec]) -> None:
         ...
 
     def get_job(self, id: int) -> Job:  # noqa: A002
         """Should raise `NotFoundError` on fail"""
         ...
 
-    def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
+    @staticmethod
+    def update_job(id: int, data: JobUpdateDTO) -> None:  # noqa: A002
         ...
 
-    def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
+    @staticmethod
+    def create_logs(logs: Iterable[LogCreateDTO]) -> None:
         ...
 
     def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None:

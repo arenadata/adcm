@@ -13,7 +13,7 @@
 from collections import defaultdict
 from contextlib import suppress
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
 from typing import Collection, Iterable
@@ -204,11 +204,7 @@ class JobRepoImpl(JobRepoInterface):
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap={
-                key: {k: sorted(v) for k, v in value.items()} for key, value in asdict(payload.mapping_delta).items()
-            }
-            if payload.mapping_delta
-            else None,
+            hostcomponentmap=cls._convert_delta_to_db_format(payload.mapping_delta),
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,
@@ -230,11 +226,13 @@ class JobRepoImpl(JobRepoInterface):
         message = f"Can't find job with id {id}"
         raise NotFoundError(message)
 
-    @staticmethod
-    def update_task(id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
+    @classmethod
+    def update_task(cls, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
         fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
+        if "hostcomponentmap" in fields_to_change:
+            fields_to_change["hostcomponentmap"] = cls._convert_delta_to_db_format(fields_to_change["hostcomponentmap"])
 
         TaskLog.objects.filter(id=id).update(**fields_to_change)
 
@@ -293,6 +291,17 @@ class JobRepoImpl(JobRepoInterface):
             to_remove[int(component_id)].update(host_ids)
 
         return TaskMappingDelta(add=to_add, remove=to_remove)
+
+    @staticmethod
+    def _convert_delta_to_db_format(
+        mapping_delta: TaskMappingDelta | dict[str, dict[int, set[int]]] | None,
+    ) -> dict[str, dict[int, list[int]]] | None:
+        if mapping_delta is None:
+            return None
+
+        delta = asdict(mapping_delta) if is_dataclass(mapping_delta) else mapping_delta
+
+        return {key: {k: sorted(v) for k, v in value.items()} for key, value in delta.items()}
 
     @staticmethod
     def _job_from_job_log(job: JobLog) -> Job:
