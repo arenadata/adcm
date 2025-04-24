@@ -54,7 +54,11 @@ def detect_host_groups_for_cluster_bundle_action(
             groups[f"{component_name}.remove"] = keep_not_in_mm(hosts_to_remove)
             groups[f"{component_name}.remove.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = keep_in_mm(hosts_to_remove)
 
-            # For backward compatibility
+            # ---
+            # patch_for_hc_apply
+            # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
+            # For backward compatibility, you must leave the inventory.json file in the "future" state.
+            # You must add and remove hosts from the corresponding groups.
             # add hosts to:
             # <service>.<component> and <service>.<component>.maintenance_mode
             groups[component_name] |= keep_not_in_mm(hosts_to_add)
@@ -64,6 +68,7 @@ def detect_host_groups_for_cluster_bundle_action(
             # <service>.<component> and <service>.<component>.maintenance_mode
             groups[component_name] -= keep_not_in_mm(hosts_to_remove)
             groups[f"{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] -= keep_in_mm(hosts_to_remove)
+            # ---
 
             groups[service_name] |= groups[component_name]
             groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= groups[

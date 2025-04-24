@@ -44,7 +44,11 @@ from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
 )
-from cm.services.config_host_group import ConfigHostGroupName, retrieve_config_host_groups_for_hosts
+from cm.services.config_host_group import (
+    ConfigHostGroupName,
+    patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups,
+    retrieve_config_host_groups_for_hosts,
+)
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
     get_config_host_group_alternatives_for_hosts_in_cluster_groups,
@@ -188,6 +192,14 @@ def _get_inventory_for_action_from_cluster_bundle(
         hosts=objects_in_inventory[ADCMCoreType.HOST],
         restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
     )
+
+    # patch_for_hc_apply
+    # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
+    # For backward compatibility, you must leave the inventory.json file in the "future" state.
+    config_host_groups = patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups(
+        cluster_id=cluster_id, delta=delta, config_host_groups=config_host_groups
+    )
+
     objects_before_upgrades = get_before_upgrades(
         before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
         config_host_groups=config_host_groups.values(),
