@@ -15,8 +15,13 @@ from itertools import chain
 from typing import Iterable, Protocol
 
 from core.bundle.types import BundleRestrictions
-from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.operations import (
+    construct_mapping_from_delta,
+    create_topology_with_new_mapping,
+    find_hosts_difference,
+)
 from core.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
+from core.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
@@ -42,7 +47,6 @@ from cm.services.concern.distribution import (
 )
 from cm.services.concern.locks import retrieve_lock_on_object
 from cm.services.config_host_group import ConfigHostGroupRepo
-from cm.services.job.types import TaskMappingDelta
 from cm.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
@@ -201,7 +205,7 @@ def _construct_new_topology_or_raise_on_invalid_input(
             msg=f'Host(s) {ids_repr} do not belong to cluster "{cluster_name}"',
         )
 
-    new_mapping = _construct_mapping_from_delta(topology=base_topology, mapping_delta=mapping_delta)
+    new_mapping = construct_mapping_from_delta(topology=base_topology, mapping_delta=mapping_delta)
 
     return create_topology_with_new_mapping(topology=base_topology, new_mapping=new_mapping)
 
@@ -229,32 +233,6 @@ def _retrieve_delta_from_new_mapping(
         to_remove[entry.component_id].add(entry.host_id)
 
     return TaskMappingDelta(add=to_add, remove=to_remove)
-
-
-def _construct_mapping_from_delta(
-    topology: ClusterTopology, mapping_delta: TaskMappingDelta | None
-) -> Iterable[HostComponentEntry]:
-    current_entries = {
-        HostComponentEntry(host_id=host_id, component_id=component.info.id)
-        for service in topology.services.values()
-        for component in service.components.values()
-        for host_id in component.hosts
-    }
-
-    to_add, to_remove = set(), set()
-    if mapping_delta is not None:
-        to_add = {
-            HostComponentEntry(host_id=host_id, component_id=component_id)
-            for component_id, host_ids in mapping_delta.add.items()
-            for host_id in host_ids
-        }
-        to_remove = {
-            HostComponentEntry(host_id=host_id, component_id=component_id)
-            for component_id, host_ids in mapping_delta.remove.items()
-            for host_id in host_ids
-        }
-
-    return (current_entries - to_remove) | to_add
 
 
 def _update_concerns(

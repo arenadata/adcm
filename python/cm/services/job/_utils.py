@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from core.cluster.types import TopologyHostDiff
+from core.job.types import TaskMappingDelta
 
 from cm.errors import AdcmEx
 from cm.models import Component
-from cm.services.job.types import ActionHCRule, TaskMappingDelta
+from cm.services.job.types import ActionHCRule
 
 
 def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDelta:

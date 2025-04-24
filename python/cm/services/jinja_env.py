@@ -13,6 +13,7 @@
 from typing import Annotated, TypedDict
 
 from core.cluster.types import ClusterTopology
+from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
 
 from cm.models import (
@@ -36,7 +37,6 @@ from cm.services.job.inventory import (
 )
 from cm.services.job.inventory._base import sort_hosts_within_groups
 from cm.services.job.inventory._types import HostGroupName
-from cm.services.job.types import TaskMappingDelta
 
 
 class ActionContext(TypedDict):

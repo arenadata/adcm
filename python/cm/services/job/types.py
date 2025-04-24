@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Literal, TypeAlias, TypedDict
 
@@ -114,16 +113,6 @@ class JobConfig(BaseModel):
 class HcAclAction(Enum):
     ADD = "add"
     REMOVE = "remove"
-
-
-@dataclass(slots=True)
-class TaskMappingDelta:
-    add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
-    remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
-
-    @property
-    def is_empty(self) -> bool:
-        return not (self.add or self.remove)
 
 
 class ActionHCRule(TypedDict):

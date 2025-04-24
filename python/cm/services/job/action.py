@@ -17,7 +17,7 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import Task
+from core.job.types import Task, TaskMappingDelta
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -53,7 +53,7 @@ from cm.services.job.inventory._config import update_configuration_for_inventory
 from cm.services.job.jinja_scripts import get_job_specs_from_template
 from cm.services.job.run import run_task
 from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
-from cm.services.job.types import ActionHCRule, TaskMappingDelta
+from cm.services.job.types import ActionHCRule
 from cm.services.mapping import check_no_host_in_mm
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant

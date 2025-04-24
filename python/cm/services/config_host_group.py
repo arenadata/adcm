@@ -13,16 +13,15 @@
 from collections import defaultdict
 from typing import Collection, Iterable, NamedTuple, TypeAlias
 
-from core.cluster.operations import create_topology_with_new_mapping
-from core.cluster.types import ClusterTopology, HostComponentEntry
+from core.cluster.operations import construct_mapping_from_delta, create_topology_with_new_mapping
+from core.cluster.types import ClusterTopology
+from core.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
 from django.db.models import F
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import ConfigHostGroup
-from cm.services.cluster import retrieve_cluster_topology
 from cm.services.host_group_common import HostGroupRepoMixin
-from cm.services.job.types import TaskMappingDelta
 
 ConfigHostGroupName: TypeAlias = str
 
@@ -81,61 +80,32 @@ class ConfigHostGroupRepo(HostGroupRepoMixin):
     group_hosts_field_name = "confighostgroup"
 
 
-# This function is a copy of `cm.services.mapping._base._construct_mapping_from_delta`.
-# It was copied to avoid solving the problem of cyclic imports, because of `ConfigHostGroupRepo`.
-# TODO: Fix it by packing modules `config_host_group` and `action_host_group` to one package
-def _construct_mapping_from_delta(
-    topology: ClusterTopology, mapping_delta: TaskMappingDelta | None
-) -> Iterable[HostComponentEntry]:
-    current_entries = {
-        HostComponentEntry(host_id=host_id, component_id=component.info.id)
-        for service in topology.services.values()
-        for component in service.components.values()
-        for host_id in component.hosts
-    }
-
-    to_add, to_remove = set(), set()
-    if mapping_delta is not None:
-        to_add = {
-            HostComponentEntry(host_id=host_id, component_id=component_id)
-            for component_id, host_ids in mapping_delta.add.items()
-            for host_id in host_ids
-        }
-        to_remove = {
-            HostComponentEntry(host_id=host_id, component_id=component_id)
-            for component_id, host_ids in mapping_delta.remove.items()
-            for host_id in host_ids
-        }
-
-    return (current_entries - to_remove) | to_add
-
-
 def patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups(
-    cluster_id: int, delta: TaskMappingDelta, config_host_groups: dict[ObjectID, ConfigHostGroupInfo]
+    cluster_topology: ClusterTopology, delta: TaskMappingDelta, config_host_groups: dict[ObjectID, ConfigHostGroupInfo]
 ) -> dict[ObjectID, ConfigHostGroupInfo]:
-    # The function updates `config_host_groups` on the fly.
     # You must delete the unmapped hosts from the existing config host groups.
 
-    topology = retrieve_cluster_topology(cluster_id=cluster_id)
-    new_mapping = _construct_mapping_from_delta(topology=topology, mapping_delta=delta)
-    new_topology = create_topology_with_new_mapping(topology=topology, new_mapping=new_mapping)
+    if delta.is_empty:
+        return config_host_groups
+
+    new_mapping = construct_mapping_from_delta(topology=cluster_topology, mapping_delta=delta)
+    new_topology = create_topology_with_new_mapping(topology=cluster_topology, new_mapping=new_mapping)
 
     hosts_map = defaultdict(set)
 
     for service in new_topology.services.values():
         for component in service.components.values():
             hosts = set(component.hosts.values())
-            hosts_map[(component.info.id, ADCMCoreType.COMPONENT)] |= hosts
-            hosts_map[(service.info.id, ADCMCoreType.SERVICE)] |= hosts
+            hosts_map[CoreObjectDescriptor(id=component.info.id, type=ADCMCoreType.COMPONENT)] = hosts
+            hosts_map[CoreObjectDescriptor(id=service.info.id, type=ADCMCoreType.SERVICE)] |= hosts
 
     new_config_host_groups = {}
 
     for chg_id, chg_info in config_host_groups.items():
         hosts = chg_info.hosts
 
-        key = (chg_info.owner.id, chg_info.owner.type)
-        if key in hosts_map:
-            hosts = chg_info.hosts & hosts_map[key]
+        if chg_info.owner in hosts_map:
+            hosts = chg_info.hosts & hosts_map[chg_info.owner]
 
         new_config_host_groups[chg_id] = ConfigHostGroupInfo(
             id=chg_id,

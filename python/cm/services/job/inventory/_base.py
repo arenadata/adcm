@@ -16,7 +16,7 @@ from typing import Iterable
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.job.types import RelatedObjects
+from core.job.types import RelatedObjects, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -67,7 +67,6 @@ from cm.services.job.inventory._types import (
     ProviderNode,
     ServiceNode,
 )
-from cm.services.job.types import TaskMappingDelta
 
 
 def get_inventory_data(
@@ -197,7 +196,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
     # For backward compatibility, you must leave the inventory.json file in the "future" state.
     config_host_groups = patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups(
-        cluster_id=cluster_id, delta=delta, config_host_groups=config_host_groups
+        cluster_topology=cluster_topology, delta=delta, config_host_groups=config_host_groups
     )
 
     objects_before_upgrades = get_before_upgrades(

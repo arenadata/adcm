@@ -35,6 +35,7 @@ from core.job.types import (
     StateChanges,
     Task,
     TaskActionInfo,
+    TaskMappingDelta,
     TaskOwner,
 )
 from core.types import (
@@ -73,7 +74,6 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
-from cm.services.job.types import TaskMappingDelta
 
 
 class JobRepoImpl(JobRepoInterface):

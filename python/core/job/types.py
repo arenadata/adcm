@@ -10,16 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
 
-from cm.services.job.types import TaskMappingDelta
 from pydantic import BaseModel, ConfigDict
 
 from core.types import (
     ActionID,
     ADCMCoreType,
+    ComponentID,
+    HostID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     ObjectID,
@@ -56,6 +58,16 @@ class StateChanges(NamedTuple):
     state: str | None
     multi_state_set: tuple[str, ...]
     multi_state_unset: tuple[str, ...]
+
+
+@dataclass(slots=True)
+class TaskMappingDelta:
+    add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+    remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.add or self.remove)
 
 
 class HostComponentChanges(NamedTuple):

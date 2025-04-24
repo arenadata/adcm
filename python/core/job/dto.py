@@ -13,10 +13,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from cm.services.job.types import TaskMappingDelta
 from pydantic import BaseModel
 
-from core.job.types import ExecutionStatus, HostComponentChanges
+from core.job.types import ExecutionStatus, HostComponentChanges, TaskMappingDelta
 
 
 class TaskUpdateDTO(BaseModel):
