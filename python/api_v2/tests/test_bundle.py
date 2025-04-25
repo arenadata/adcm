@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from datetime import datetime
+import os
 
+from adcm.feature_flags import use_new_bundle_parsing_approach
 from cm.bundle import _get_file_hashes
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
 from django.conf import settings
@@ -354,3 +356,48 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertSetEqual(set(Action.objects.values_list("scripts_jinja", flat=True)), {"", "scripts.j2"})
+
+    def test_upload_hc_apply_scripts(self):
+        bundle_file_for_right_hc_apply = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "bundle_hc_apply", target_dir=settings.TMP_DIR
+        )
+        bundle_file_for_wrong_hc_apply = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "bundle_hc_apply_wrong_definition", target_dir=settings.TMP_DIR
+        )
+
+        with self.subTest("hc_apply internal script: correct definition"):
+            with open(settings.TMP_DIR / bundle_file_for_right_hc_apply, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            bundle = Bundle.objects.get(name="hc_apply_scripts_cluster")
+            prototype = Prototype.objects.get(bundle=bundle, type="cluster")
+
+            subaction = Action.objects.filter(prototype__name=prototype.name)[0].subaction_set.first()
+
+            self.assertEqual("script_1", subaction.name)
+            self.assertEqual("hc_apply", subaction.script)
+            self.assertListEqual(
+                [
+                    {"action": "add", "component": "component_1", "service": "service_1"},
+                    {"action": "remove", "component": "component_2", "service": "service_2"},
+                    {"action": "add", "component": "component_3", "service": "service_2"},
+                ],
+                subaction.params["hc_apply"],
+            )
+
+        with self.subTest("hc_apply internal script: wrong definition"):
+            with open(settings.TMP_DIR / bundle_file_for_wrong_hc_apply, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            if use_new_bundle_parsing_approach(os.environ, self.client.headers if self.client.headers else {}):
+                self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+                self.assertIn("Errors found in definition of bundle entity:", response.data["desc"])
+            else:
+                self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+                self.assertIn(
+                    "Script script_1 of install must have parameters: service, component, action", response.data["desc"]
+                )

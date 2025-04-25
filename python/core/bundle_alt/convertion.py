@@ -244,6 +244,13 @@ def _extract_scripts(entity: dict, context: dict) -> list[JobSpec] | None:
     for script in map(_flatten_on_fail, scripts):
         result = {}
 
+        if (
+            isinstance(script.get("params"), list)
+            and script.get("script") == "hc_apply"
+            and script.get("script_type") == "internal"
+        ):
+            script["params"] = {"hc_apply": script["params"]}
+
         _fill_value(result, script, "name")
         _fill_value(result, script, "params")
         _fill_value(result, script, "state_on_fail")
