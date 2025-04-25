@@ -14,9 +14,13 @@ from itertools import chain
 from operator import itemgetter
 from typing import Iterable
 
-from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.cluster.operations import (
+    calculate_maintenance_mode_for_cluster_objects,
+    construct_mapping_from_delta,
+    create_topology_with_new_mapping,
+)
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.job.types import RelatedObjects
+from core.job.types import RelatedObjects, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -44,7 +48,11 @@ from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
 )
-from cm.services.config_host_group import ConfigHostGroupName, retrieve_config_host_groups_for_hosts
+from cm.services.config_host_group import (
+    ConfigHostGroupName,
+    patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups,
+    retrieve_config_host_groups_for_hosts,
+)
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
     get_config_host_group_alternatives_for_hosts_in_cluster_groups,
@@ -63,7 +71,6 @@ from cm.services.job.inventory._types import (
     ProviderNode,
     ServiceNode,
 )
-from cm.services.job.types import TaskMappingDelta
 
 
 def get_inventory_data(
@@ -178,9 +185,14 @@ def _get_inventory_for_action_from_cluster_bundle(
         ADCMCoreType.COMPONENT: set(cluster_topology.component_ids),
         ADCMCoreType.HOST: set(map(itemgetter(0), chain.from_iterable(host_groups.values()))),
     }
-
+    # patch_for_hc_apply
+    # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
+    # For backward compatibility, you need to calculate the future cluster topology in order to correctly calculate
+    # the maintenance mode for services and components whose connections to hosts have changed.
+    new_mapping = construct_mapping_from_delta(topology=cluster_topology, mapping_delta=delta)
+    future_topology = create_topology_with_new_mapping(topology=cluster_topology, new_mapping=new_mapping)
     objects_in_maintenance_mode = calculate_maintenance_mode_for_cluster_objects(
-        topology=cluster_topology,
+        topology=future_topology,
         own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[cluster_topology.cluster_id]),
     )
 
@@ -188,6 +200,14 @@ def _get_inventory_for_action_from_cluster_bundle(
         hosts=objects_in_inventory[ADCMCoreType.HOST],
         restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
     )
+
+    # patch_for_hc_apply
+    # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
+    # For backward compatibility, you must leave the inventory.json file in the "future" state.
+    config_host_groups = patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups(
+        cluster_topology=cluster_topology, delta=delta, config_host_groups=config_host_groups
+    )
+
     objects_before_upgrades = get_before_upgrades(
         before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
         config_host_groups=config_host_groups.values(),

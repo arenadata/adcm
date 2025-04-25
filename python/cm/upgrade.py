@@ -72,7 +72,7 @@ from cm.services.concern.distribution import (
 )
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.types import HcAclAction
-from cm.services.mapping import change_host_component_mapping, check_nothing
+from cm.services.mapping import check_nothing, set_host_component_mapping
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
@@ -280,14 +280,11 @@ def bundle_revert(obj: Cluster | Provider) -> None:
             )
             host_comp_list.append((service, host, component))
 
-        change_host_component_mapping(
-            cluster_id=obj.id,
-            bundle_id=old_proto.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=host.id, component_id=component.id)
-                for (_, host, component) in host_comp_list
-            ),
-            checks_func=check_nothing,
+        new_mapping = (
+            HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in host_comp_list
+        )
+        set_host_component_mapping(
+            cluster_id=obj.id, bundle_id=old_proto.bundle_id, new_mapping=new_mapping, checks_func=check_nothing
         )
 
     if isinstance(obj, Provider):

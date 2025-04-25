@@ -167,7 +167,7 @@ class JobSequenceRunner(TaskRunner):
         if task.hostcomponent == new_fields.hostcomponent:
             return task
 
-        return Task(**(task.dict() | {"hostcomponent": new_fields.hostcomponent}))
+        return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
     def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
         (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
@@ -286,11 +286,7 @@ class JobSequenceRunner(TaskRunner):
         if last_job:
             self._update_owner_state(task=finished_task, job=last_job, owner=owner)
 
-        if (
-            self._runtime.status in {ExecutionStatus.FAILED, ExecutionStatus.ABORTED, ExecutionStatus.BROKEN}
-            and finished_task.action.hc_acl
-            and finished_task.hostcomponent.restore_on_fail
-        ):
+        if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
             set_hostcomponent(task=finished_task, logger=self._logger)
 
     def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:

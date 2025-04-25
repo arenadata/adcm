@@ -13,7 +13,6 @@
 from logging import Logger
 from typing import Protocol
 
-from core.cluster.types import HostComponentEntry
 from core.job.types import Task
 from core.types import ADCMCoreType
 from django.conf import settings
@@ -46,15 +45,15 @@ def set_hostcomponent(task: Task, logger: Logger):
 
         return
 
+    if task.hostcomponent.mapping_delta is None or task.hostcomponent.mapping_delta.is_empty:
+        return
+
     logger.warning("task #%s is failed, restore old hc", task.id)
 
     change_host_component_mapping(
         cluster_id=cluster.id,
         bundle_id=cluster.prototype.bundle_id,
-        flat_mapping=(
-            HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-            for entry in task.hostcomponent.saved
-        ),
+        mapping_delta=task.hostcomponent.mapping_delta,
         checks_func=check_nothing,
     )
 

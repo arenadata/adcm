@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from typing import Any, Collection, Literal
 
 from cm.api import get_hc
 from cm.models import Cluster, Component, Host, JobLog
 from cm.services.mapping import change_host_component_mapping
-from core.cluster.types import HostComponentEntry
+from core.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
 
@@ -89,6 +90,7 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
         cluster = Cluster.objects.get(id=runtime.vars.context.cluster_id)
 
         hostcomponent = get_hc(cluster)
+        mapping_add, mapping_remove = defaultdict(set), defaultdict(set)
         for operation in arguments.operations:
             component_id, service_id = Component.objects.values_list("id", "service_id").get(
                 cluster=cluster, service__prototype__name=operation.service, prototype__name=operation.component
@@ -108,8 +110,8 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
                             message=f'There is already component "{operation.component}" on host "{operation.host}"'
                         ),
                     )
-
                 hostcomponent.append(item)
+                mapping_add[component_id].add(host_id)
 
             else:
                 if item not in hostcomponent:
@@ -122,14 +124,12 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
                     )
 
                 hostcomponent.remove(item)
+                mapping_remove[component_id].add(host_id)
 
         change_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.prototype.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-                for entry in hostcomponent
-            ),
+            mapping_delta=TaskMappingDelta(add=mapping_add, remove=mapping_remove),
         )
 
         return CallResult(value=None, changed=True, error=None)

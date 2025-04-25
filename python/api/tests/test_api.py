@@ -29,7 +29,7 @@ from cm.models import (
 )
 from cm.services.concern.distribution import distribute_concern_on_related_objects
 from cm.services.concern.locks import create_task_lock_concern
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import set_host_component_mapping
 from cm.tests.utils import (
     gen_adcm,
     gen_component,
@@ -891,16 +891,13 @@ class TestAPI2(BaseTestCase):
         )
 
     def save_hc(self, cluster: Cluster, hc_list: Iterable[tuple[Service, Host, Component]]) -> list[HostComponent]:
-        change_host_component_mapping(
-            cluster_id=cluster.id,
-            bundle_id=cluster.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in hc_list
-            ),
+        new_mapping = (
+            HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in hc_list
         )
+        set_host_component_mapping(cluster_id=cluster.id, bundle_id=cluster.bundle_id, new_mapping=new_mapping)
         return list(HostComponent.objects.filter(cluster=cluster))
 
-    @patch("cm.services.mapping.reset_hc_map")
+    @patch("cm.services.mapping._base.reset_hc_map")
     def test_save_hc(self, mock_reset_hc_map):
         cluster_object = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)

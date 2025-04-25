@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from contextlib import suppress
 from copy import deepcopy
+from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
 from typing import Collection, Iterable
@@ -33,6 +35,7 @@ from core.job.types import (
     StateChanges,
     Task,
     TaskActionInfo,
+    TaskMappingDelta,
     TaskOwner,
 )
 from core.types import (
@@ -138,9 +141,8 @@ class JobRepoImpl(JobRepoInterface):
             verbose=task_record.verbose,
             config=task_record.config,
             hostcomponent=HostComponentChanges(
-                saved=task_record.hostcomponentmap,
                 post_upgrade=task_record.post_upgrade_hc_map,
-                restore_on_fail=task_record.restore_hc_on_fail,
+                mapping_delta=cls._restore_delta_from_db_format(task_delta=task_record.hostcomponentmap),
             ),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
@@ -155,14 +157,13 @@ class JobRepoImpl(JobRepoInterface):
             is_blocking=task_record.is_blocking,
         )
 
-    @staticmethod
-    def get_task_mutable_fields(id: int) -> TaskMutableFieldsDTO:  # noqa: A002
-        task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map", "restore_hc_on_fail").get(id=id)
+    @classmethod
+    def get_task_mutable_fields(cls, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
+        task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map").get(id=id)
         return TaskMutableFieldsDTO(
             hostcomponent=HostComponentChanges(
-                saved=task_row["hostcomponentmap"],
                 post_upgrade=task_row["post_upgrade_hc_map"],
-                restore_on_fail=task_row["restore_hc_on_fail"],
+                mapping_delta=cls._restore_delta_from_db_format(task_delta=task_row["hostcomponentmap"]),
             )
         )
 
@@ -204,11 +205,7 @@ class JobRepoImpl(JobRepoInterface):
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap=[
-                {"host_id": entry.host_id, "component_id": entry.component_id} for entry in payload.hostcomponent
-            ]
-            if payload.hostcomponent is not None
-            else None,
+            hostcomponentmap=cls._convert_delta_to_db_format(payload.mapping_delta),
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,
@@ -230,11 +227,13 @@ class JobRepoImpl(JobRepoInterface):
         message = f"Can't find job with id {id}"
         raise NotFoundError(message)
 
-    @staticmethod
-    def update_task(id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
+    @classmethod
+    def update_task(cls, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
         fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
+        if "hostcomponentmap" in fields_to_change:
+            fields_to_change["hostcomponentmap"] = cls._convert_delta_to_db_format(fields_to_change["hostcomponentmap"])
 
         TaskLog.objects.filter(id=id).update(**fields_to_change)
 
@@ -280,6 +279,30 @@ class JobRepoImpl(JobRepoInterface):
             current_multi_state.pop(remove_key, None)
 
         core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
+
+    @staticmethod
+    def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta | None:
+        if task_delta is None:
+            return None
+
+        to_add, to_remove = defaultdict(set), defaultdict(set)
+        for component_id, host_ids in task_delta.get("add", {}).items():
+            to_add[int(component_id)].update(host_ids)
+        for component_id, host_ids in task_delta.get("remove", {}).items():
+            to_remove[int(component_id)].update(host_ids)
+
+        return TaskMappingDelta(add=to_add, remove=to_remove)
+
+    @staticmethod
+    def _convert_delta_to_db_format(
+        mapping_delta: TaskMappingDelta | dict[str, dict[int, set[int]]] | None,
+    ) -> dict[str, dict[int, list[int]]] | None:
+        if mapping_delta is None:
+            return None
+
+        delta = asdict(mapping_delta) if is_dataclass(mapping_delta) else mapping_delta
+
+        return {key: {k: sorted(v) for k, v in value.items()} for key, value in delta.items()}
 
     @staticmethod
     def _job_from_job_log(job: JobLog) -> Job:

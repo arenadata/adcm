@@ -10,8 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from typing import Collection, Iterable, NamedTuple, TypeAlias
 
+from core.cluster.operations import construct_mapping_from_delta, create_topology_with_new_mapping
+from core.cluster.types import ClusterTopology
+from core.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
 from django.db.models import F
 
@@ -74,3 +78,41 @@ def retrieve_config_host_groups_for_hosts(
 class ConfigHostGroupRepo(HostGroupRepoMixin):
     group_hosts_model = ConfigHostGroup.hosts.through
     group_hosts_field_name = "confighostgroup"
+
+
+def patch_for_hc_apply_clear_host_config_after_remove_from_config_host_groups(
+    cluster_topology: ClusterTopology, delta: TaskMappingDelta, config_host_groups: dict[ObjectID, ConfigHostGroupInfo]
+) -> dict[ObjectID, ConfigHostGroupInfo]:
+    # You must delete the unmapped hosts from the existing config host groups.
+
+    if delta.is_empty:
+        return config_host_groups
+
+    new_mapping = construct_mapping_from_delta(topology=cluster_topology, mapping_delta=delta)
+    new_topology = create_topology_with_new_mapping(topology=cluster_topology, new_mapping=new_mapping)
+
+    hosts_map = defaultdict(set)
+
+    for service in new_topology.services.values():
+        for component in service.components.values():
+            hosts = set(component.hosts.values())
+            hosts_map[CoreObjectDescriptor(id=component.info.id, type=ADCMCoreType.COMPONENT)] = hosts
+            hosts_map[CoreObjectDescriptor(id=service.info.id, type=ADCMCoreType.SERVICE)] |= hosts
+
+    new_config_host_groups = {}
+
+    for chg_id, chg_info in config_host_groups.items():
+        hosts = chg_info.hosts
+
+        if chg_info.owner in hosts_map:
+            hosts = chg_info.hosts & hosts_map[chg_info.owner]
+
+        new_config_host_groups[chg_id] = ConfigHostGroupInfo(
+            id=chg_id,
+            name=chg_info.name,
+            current_config_id=chg_info.current_config_id,
+            owner=chg_info.owner,
+            hosts=hosts,
+        )
+
+    return new_config_host_groups

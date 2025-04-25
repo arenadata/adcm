@@ -17,7 +17,7 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import Task
+from core.job.types import Task, TaskMappingDelta
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -53,8 +53,8 @@ from cm.services.job.inventory._config import update_configuration_for_inventory
 from cm.services.job.jinja_scripts import get_job_specs_from_template
 from cm.services.job.run import run_task
 from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
-from cm.services.job.types import ActionHCRule, TaskMappingDelta
-from cm.services.mapping import change_host_component_mapping, check_no_host_in_mm, check_nothing
+from cm.services.job.types import ActionHCRule
+from cm.services.mapping import check_no_host_in_mm
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
@@ -78,15 +78,6 @@ def run_action(
     post_upgrade_hc: list[dict] | None = None,
     feature_scripts_jinja: bool = False,
 ) -> TaskLog:
-    task_payload = TaskPayloadDTO(
-        conf=payload.conf,
-        attr=payload.attr,
-        verbose=payload.verbose,
-        hostcomponent=None,
-        post_upgrade_hostcomponent=post_upgrade_hc,
-        is_blocking=payload.is_blocking,
-    )
-
     action_objects = _ActionLaunchObjects(target=obj, action=action)
 
     is_upgrade_action = hasattr(action, "upgrade")
@@ -100,7 +91,7 @@ def run_action(
     _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action.pk)
     _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
-    delta = TaskMappingDelta()
+    delta = None
     if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
         topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
         delta = _check_hostcomponent_and_get_delta(
@@ -110,14 +101,15 @@ def run_action(
             hc_rules=action.hostcomponentmap,
             mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE if is_upgrade_action else "{}",
         )
-        if action_has_hc_acl:
-            # current topology should be saved
-            task_payload.hostcomponent = [
-                HostComponentEntry(host_id=host_id, component_id=component_id)
-                for service in topology.services.values()
-                for component_id, component in service.components.items()
-                for host_id in component.hosts
-            ]
+
+    task_payload = TaskPayloadDTO(
+        conf=payload.conf,
+        attr=payload.attr,
+        verbose=payload.verbose,
+        mapping_delta=delta,
+        post_upgrade_hostcomponent=post_upgrade_hc,
+        is_blocking=payload.is_blocking,
+    )
 
     with atomic():
         target = ActionTargetDescriptor(
@@ -133,17 +125,6 @@ def run_action(
         )
 
         orm_task = TaskLog.objects.get(id=task.id)
-
-        # Original check: `if host_map or (is_upgrade_action and host_map is not None)`.
-        # I believe second condition is the same as "is cluster action with hc"
-        if action_objects.cluster and (payload.hostcomponent or (is_upgrade_action and action_has_hc_acl)):
-            change_host_component_mapping(
-                cluster_id=action_objects.cluster.pk,
-                bundle_id=int(action_objects.cluster.prototype.bundle_id),
-                flat_mapping=payload.hostcomponent,
-                checks_func=check_nothing,
-            )
-
         re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
     run_task(orm_task)
@@ -194,6 +175,7 @@ def prepare_task_for_action(
         raise AdcmEx("TASK_ERROR", "action config is required")
 
     action_info = action_repo.get_action(id=action)
+
     task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     if payload.conf:
@@ -392,7 +374,7 @@ def _check_hostcomponent_and_get_delta(
     _check_no_blocking_concerns_on_hosts(host_difference.mapped.all)
 
     if with_hc_acl:
-        delta = construct_delta_for_task(topology=new_topology, host_difference=host_difference)
+        delta = construct_delta_for_task(host_difference=host_difference)
         check_delta_is_allowed(delta=delta, rules=hc_rules)
         return delta
 

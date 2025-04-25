@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
@@ -19,6 +20,8 @@ from pydantic import BaseModel, ConfigDict
 from core.types import (
     ActionID,
     ADCMCoreType,
+    ComponentID,
+    HostID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     ObjectID,
@@ -57,10 +60,19 @@ class StateChanges(NamedTuple):
     multi_state_unset: tuple[str, ...]
 
 
+@dataclass(slots=True)
+class TaskMappingDelta:
+    add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+    remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.add or self.remove)
+
+
 class HostComponentChanges(NamedTuple):
-    saved: list[dict] | None
     post_upgrade: list[dict] | None
-    restore_on_fail: bool
+    mapping_delta: TaskMappingDelta | None
 
 
 class BundleInfo(NamedTuple):

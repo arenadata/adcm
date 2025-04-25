@@ -15,8 +15,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from core.cluster.types import HostComponentEntry
-from core.job.types import ExecutionStatus, HostComponentChanges
+from core.job.types import ExecutionStatus, HostComponentChanges, TaskMappingDelta
 
 
 class TaskUpdateDTO(BaseModel):
@@ -24,6 +23,8 @@ class TaskUpdateDTO(BaseModel):
     start_date: datetime | None = None
     finish_date: datetime | None = None
     status: ExecutionStatus | None = None
+    post_upgrade_hc_map: list[dict] | None = None
+    hostcomponentmap: TaskMappingDelta | None = None
 
 
 class JobUpdateDTO(BaseModel):
@@ -47,7 +48,7 @@ class TaskPayloadDTO:
     conf: dict | None = None
     attr: dict | None = None
 
-    hostcomponent: list[HostComponentEntry] | None = None
+    mapping_delta: TaskMappingDelta | None = None
     post_upgrade_hostcomponent: list[dict] | None = None
 
     is_blocking: bool = True

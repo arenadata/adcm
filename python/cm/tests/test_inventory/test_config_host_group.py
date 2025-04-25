@@ -69,7 +69,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                 (self.host_1, self.component_not_simple),
                 (self.host_1, self.component_another_not_simple),
                 (self.host_1, self.component_thesame),
-                (self.host_1, self.component_another_thesame),
+                (self.host_2, self.component_another_thesame),
                 (self.host_2, self.component_not_simple),
                 (self.host_2, self.component_another_not_simple),
                 (self.host_3, self.component_not_simple),
@@ -83,9 +83,9 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             self.service_not_simple.name: host_names,
             f"{self.service_not_simple.name}.{self.component_another_not_simple.name}": [host_names[0], host_names[1]],
             f"{self.service_not_simple.name}.{self.component_not_simple.name}": host_names,
-            self.service_thesame.name: [host_names[0], host_names[2]],
+            self.service_thesame.name: host_names,
             f"{self.service_thesame.name}.{self.component_thesame.name}": [host_names[0], host_names[2]],
-            f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[0]],
+            f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[1]],
         }
 
         context = {

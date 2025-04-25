@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Generator
 
 from core.bundle_alt.process import ScriptJinjaContext, parse_scripts_jinja
-from core.job.types import JobSpec
+from core.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
 
 from cm.errors import AdcmEx
@@ -23,7 +23,6 @@ from cm.models import (
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.jinja_env import get_env_for_jinja_scripts
-from cm.services.job.types import TaskMappingDelta
 from cm.services.template import TemplateBuilder
 from cm.utils import get_on_fail_states
 
