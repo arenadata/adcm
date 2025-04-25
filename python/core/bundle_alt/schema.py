@@ -464,6 +464,12 @@ class HcAclSchema(TypedDict):
     service: Annotated[str | None, Field(default=None)]
 
 
+class HcApplySchema(BaseModel):
+    service: str
+    component: str | None
+    action: Literal["add", "remove"]
+
+
 class VersionsSchema(_BaseModel):
     min: Annotated[VERSION | None, Field(default=None)]
     max: Annotated[VERSION | None, Field(default=None)]
@@ -630,7 +636,7 @@ class ScriptSchema(TypedDict):
     script: Annotated[str, AfterValidator(script_is_correct_path)]
     script_type: ACTION_SCRIPT_TYPE
     display_name: Annotated[str | None, Field(default=None)]
-    params: Annotated[dict | None, Field(default=None)]
+    params: Annotated[dict | None | list[HcApplySchema], Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
     allow_to_terminate: Annotated[bool | None, Field(default=None)]
 

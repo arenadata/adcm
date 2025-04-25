@@ -605,6 +605,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             name=action.name,
             allow_to_terminate=action.allow_to_terminate,
         )
+
         if sub_action.script_type != ScriptType.INTERNAL:
             if not is_path_correct(sub_action.script):
                 raise AdcmEx(
@@ -615,6 +616,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             sub_action.script = str(
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
+
         sub_action.display_name = action.display_name
 
         dict_to_obj(conf, "params", sub_action)
@@ -644,6 +646,26 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             sub_action.script = str(
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
+
+        elif sub_action.script == "hc_apply" and sub_action.script_type == ScriptType.INTERNAL and "hc_acl" not in conf:
+            for param_set in sub.get("params", ()):
+                if (
+                    not isinstance(param_set, dict)
+                    or not {"service", "component", "action"}.issubset(param_set.keys())
+                    or param_set["action"]
+                    not in (
+                        "add",
+                        "remove",
+                    )
+                ):
+                    raise AdcmEx(
+                        code="INVALID_OBJECT_DEFINITION",
+                        msg=f"Script {sub_action.name} of {action.name} must have parameters: "
+                        f"service, component, action",
+                    )
+
+            sub["params"] = {"hc_apply": [dict(d) for d in sub.get("params", ())]}
+
         sub_action.display_name = sub["name"]
 
         if "display_name" in sub:
@@ -709,7 +731,11 @@ def check_internal_script(
             msg=f"{obj_ref}: only `{allowed_scripts}` internal scripts allowed here, got `{config['script']}`",
         )
 
-    if config["script"] == hc_apply and not is_hc_acl_present:
+    if (
+        config["script"] == hc_apply
+        and not is_hc_acl_present
+        and (config.get("type") == "job" or err_code == "INVALID_UPGRADE_DEFINITION")
+    ):
         raise AdcmEx(
             code=err_code,
             msg=f"{obj_ref}: `{hc_apply}` requires `hc_acl` declaration",
