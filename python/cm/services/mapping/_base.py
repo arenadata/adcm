@@ -124,9 +124,20 @@ def change_host_component_mapping(
 ) -> None:
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
-        _change_host_component_mapping(
+        change_host_component_mapping_no_lock(
             cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
         )
+
+
+def change_host_component_mapping_no_lock(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    mapping_delta: TaskMappingDelta,
+    checks_func: PerformMappingChecks = check_all,
+) -> None:
+    _change_host_component_mapping(
+        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+    )
 
 
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:

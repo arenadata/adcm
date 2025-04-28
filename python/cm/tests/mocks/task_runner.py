@@ -66,7 +66,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
 
             if job.type == ScriptType.INTERNAL:
                 internal_script_func = self._supported_internal_scripts[job.script]
-                script = partial(internal_script_func, task=task)
+                script = partial(internal_script_func, task=task, job=job)
                 executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
 
             else:

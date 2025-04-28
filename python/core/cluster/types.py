@@ -68,6 +68,14 @@ class ClusterTopology(NamedTuple):
 
         return set(self.hosts).difference(mapped_hosts)
 
+    @property
+    def component_full_name_id_mapping(self) -> dict[tuple[ServiceName, ComponentName], ComponentID]:
+        return {
+            (service.info.name, component.info.name): component.info.id
+            for service in self.services.values()
+            for component in service.components.values()
+        }
+
 
 class NoEmptyValuesDict(UserDict):
     def __setitem__(self, key, value):

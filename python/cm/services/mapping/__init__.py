@@ -12,6 +12,7 @@
 
 from cm.services.mapping._base import (
     change_host_component_mapping,
+    change_host_component_mapping_no_lock,
     check_all,
     check_no_host_in_mm,
     check_nothing,
@@ -28,6 +29,7 @@ __all__ = [
     "set_host_component_mapping",
     "set_host_component_mapping_no_lock",
     "change_host_component_mapping",
+    "change_host_component_mapping_no_lock",
     "check_no_host_in_mm",
     "lock_cluster_mapping",
 ]
