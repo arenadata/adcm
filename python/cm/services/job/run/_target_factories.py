@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from configparser import ConfigParser
 from functools import partial
 from logging import getLogger
@@ -21,21 +22,16 @@ from ansible_plugin.utils import finish_check
 from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
-from core.job.types import Job, ScriptType, Task
-from core.types import ADCMCoreType
+from core.job.types import HcApply, Job, ScriptType, Task, TaskMappingDelta
+from core.types import ADCMCoreType, ClusterID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.models import (
-    AnsibleConfig,
-    Cluster,
-    Component,
-    LogStorage,
-    TaskLog,
-)
+from cm.errors import AdcmEx
+from cm.models import AnsibleConfig, Cluster, Component, LogStorage, Prototype, TaskLog
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
-from cm.services.job.run._task_finalizers import set_hostcomponent
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -53,6 +49,7 @@ from cm.services.job.types import (
     ProviderActionType,
     ServiceActionType,
 )
+from cm.services.mapping import change_host_component_mapping_no_lock, check_nothing, lock_cluster_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
 
@@ -107,7 +104,7 @@ class ExecutionTargetFactory:
                         message = f"Unknown internal script {job_info.type}, can't build runner for it"
                         raise NotImplementedError(message)
 
-                    script = partial(internal_script_func, task=task)
+                    script = partial(internal_script_func, task=task, job=job_info)
                     executor = InternalExecutor(config=ExecutorConfig(work_dir=work_dir), script=script)
                     environment_builders = ()
                 case _:
@@ -123,8 +120,10 @@ class ExecutionTargetFactory:
 
 
 @atomic()
-def internal_script_bundle_switch(task: Task) -> int:
+def internal_script_bundle_switch(task: Task, job: Job) -> int:
     from cm.upgrade import bundle_switch
+
+    _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
@@ -137,8 +136,10 @@ def internal_script_bundle_switch(task: Task) -> int:
 
 
 @atomic()
-def internal_script_bundle_revert(task: Task) -> int:
+def internal_script_bundle_revert(task: Task, job: Job) -> int:
     from cm.upgrade import bundle_revert
+
+    _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
@@ -154,10 +155,53 @@ def internal_script_bundle_revert(task: Task) -> int:
     return 0
 
 
-def internal_script_hc_apply(task: Task) -> int:
-    set_hostcomponent(task=task, logger=logger)
+def internal_script_hc_apply(task: Task, job: Job) -> int:
+    if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+        raise AdcmEx(
+            code="WRONG_OWNER",
+            msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
+        )
+
+    hc_apply = job.params.hc_apply
+    if not hc_apply:
+        return 0
+
+    if not (related_cluster := task.owner.related_objects.cluster):
+        raise AdcmEx(code="CLUSTER_NOT_FOUND", msg="Can't detect related cluster")
+
+    bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=related_cluster.prototype_id)
+
+    with atomic():
+        lock_cluster_mapping(cluster_id=related_cluster.id)
+        delta_part = _extract_mapping_delta_part(
+            cluster_id=related_cluster.id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply=hc_apply
+        )
+        change_host_component_mapping_no_lock(
+            cluster_id=related_cluster.id,
+            bundle_id=bundle_id,
+            mapping_delta=delta_part,
+            checks_func=check_nothing,
+        )
 
     return 0
+
+
+def _extract_mapping_delta_part(
+    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply: list[HcApply]
+) -> TaskMappingDelta:
+    topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    components_map = topology.component_full_name_id_mapping
+
+    delta_data = defaultdict(lambda: defaultdict(set))
+    for hc_rule in hc_apply:
+        component_id = components_map.get((hc_rule.service, hc_rule.component))
+        if component_id is None:
+            continue
+        delta_data[hc_rule.action][component_id].update(
+            getattr(mapping_delta, hc_rule.action, {}).get(component_id, ())
+        )
+
+    return TaskMappingDelta(**delta_data)
 
 
 def _switch_hc_if_required(task: Task) -> None:

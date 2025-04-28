@@ -13,9 +13,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import NamedTuple
+from typing import Annotated, Literal, NamedTuple
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.types import (
     ActionID,
@@ -155,10 +155,18 @@ class JobSpec(BaseModel):
     params: dict
 
 
+class HcApply(NamedTuple):
+    component: str
+    service: str
+    action: Literal["add", "remove"]
+
+
 # it is validated, because we want to fail here on incorrect data
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
+    hc_apply: Annotated[list[HcApply], Field(default_factory=list)]
+
     model_config = ConfigDict(extra="allow")
 
 

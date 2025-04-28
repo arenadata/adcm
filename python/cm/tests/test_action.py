@@ -16,14 +16,18 @@ import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings
+from core.job.types import HcApply, TaskMappingDelta
 from django.conf import settings
+from django.db.models import Model
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_service_to_cluster
-from cm.models import Action, Component, MaintenanceMode, Prototype
-from cm.services.job.run._target_factories import prepare_ansible_environment
+from cm.converters import orm_object_to_core_type
+from cm.errors import AdcmEx
+from cm.models import Action, Component, HostComponent, MaintenanceMode, Prototype, get_object_cluster
+from cm.services.job.run._target_factories import internal_script_hc_apply, prepare_ansible_environment
 from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.utils import (
     gen_action,
@@ -142,6 +146,10 @@ expected_results = {
         "hidden_by_unavailable_multi_state": False,
     },
 }
+
+
+class DummyObject:
+    pass
 
 
 class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
@@ -494,6 +502,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
+            "hc_apply": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(action_pk=self.action_full.pk)
@@ -511,6 +520,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": False,
+            "hc_apply": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -529,6 +539,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_list": [1, "two", 3.0],
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
+            "hc_apply": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -547,6 +558,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
+            "hc_apply": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -569,7 +581,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
 
     def test_params_custom_fields_absent(self):
-        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True}
+        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True, "hc_apply": []}
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
             action_pk=self.action_custom_fields_absent.pk,
@@ -588,3 +600,124 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
         )
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+
+class TestActionLogic(BaseTestCase, BusinessLogicMixin):
+    def setUp(self) -> None:
+        super().setUp()
+        bundles_dir = self.base_dir / "python" / "cm" / "tests" / "bundles"
+
+        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+
+        self.provider = self.add_provider(bundle=provider_bundle, name="Test provider")
+        self.cluster = self.add_cluster(bundle=cluster_bundle, name="Test cluster")
+
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
+        self.host_3 = self.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
+        self.host_4 = self.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
+
+        self.service = self.add_services_to_cluster(
+            cluster=self.cluster, service_names=["service_two_components"]
+        ).get()
+        self.component_1 = self.service.components.get(prototype__name="component_1")
+        self.component_2 = self.service.components.get(prototype__name="component_2")
+
+    def get_dummy_task_job(
+        self, owner: Model | None, delta: TaskMappingDelta, hc_apply: list[HcApply]
+    ) -> tuple[object, object]:
+        task, job = DummyObject(), DummyObject()
+
+        owner_ = None
+        if owner:
+            owner_ = DummyObject()
+            owner_.type = orm_object_to_core_type(owner)
+
+            related_objects = DummyObject()
+
+            cluster = get_object_cluster(owner)
+            cluster_ = None
+            if cluster:
+                cluster_ = DummyObject()
+                cluster_.id = cluster.id
+                cluster_.prototype_id = cluster.prototype_id
+
+            related_objects.cluster = cluster_
+            owner_.related_objects = related_objects
+
+        task.owner = owner_
+
+        hostcomponent = DummyObject()
+        hostcomponent.mapping_delta = delta
+        task.hostcomponent = hostcomponent
+
+        params = DummyObject()
+        params.hc_apply = hc_apply
+        job.params = params
+
+        return task, job
+
+    def test_internal_hc_apply(self):
+        service_name = self.service.prototype.name
+        c1_name = self.component_1.prototype.name
+        c2_name = self.component_2.prototype.name
+
+        # h1-c1, h2-c1, h3-c2
+        initial_hc = ((self.host_1, self.component_1), (self.host_2, self.component_1), (self.host_3, self.component_2))
+        self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
+
+        # Case 1. hc_apply specifies changes not present in mapping_delta
+        mapping_delta = TaskMappingDelta(
+            add={self.component_2.pk: {self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk, self.host_2.pk}}
+        )
+        hc_apply = [HcApply(service=service_name, component=c1_name, action="add")]
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+
+        internal_script_hc_apply(task=task, job=job)
+        actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
+        expected_hc = {(host.pk, component.pk) for host, component in initial_hc}
+        self.assertSetEqual(actual_hc, expected_hc)
+
+        # Case 2. hc_apply specifies changes partially present in mapping_delta
+        mapping_delta = TaskMappingDelta(
+            remove={self.component_1.pk: {self.host_1.pk}, self.component_2.pk: {self.host_3.pk}}
+        )
+        hc_apply = [
+            HcApply(service=service_name, component=c1_name, action="remove"),  # in delta
+            HcApply(service=service_name, component=c2_name, action="add"),  # not in delta
+        ]
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+
+        internal_script_hc_apply(task=task, job=job)
+        actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
+        expected_hc = {(self.host_2.pk, self.component_1.pk), (self.host_3.pk, self.component_2.pk)}
+        self.assertSetEqual(actual_hc, expected_hc)
+
+        # restore HC
+        self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
+
+        # Case 3. mapping_delta is partially specified in hc_apply
+        mapping_delta = TaskMappingDelta(
+            add={self.component_2.pk: {self.host_1.pk, self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk}}
+        )
+        hc_apply = [
+            HcApply(service=service_name, component=c2_name, action="add"),
+            HcApply(service=service_name, component="nonexistent_component", action="add"),
+        ]
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+
+        internal_script_hc_apply(task=task, job=job)
+        actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
+        expected_hc = {
+            (self.host_1.pk, self.component_1.pk),
+            (self.host_2.pk, self.component_1.pk),
+            (self.host_1.pk, self.component_2.pk),
+            (self.host_3.pk, self.component_2.pk),
+            (self.host_4.pk, self.component_2.pk),
+        }
+        self.assertSetEqual(actual_hc, expected_hc)
+
+        task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, hc_apply=hc_apply)
+        with self.assertRaises(AdcmEx):
+            internal_script_hc_apply(task=task, job=job)
