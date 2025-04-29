@@ -14,7 +14,7 @@ import ClusterServiceComponentsDynamicActionsIcon from '../ServiceComponentsDyna
 import { usePersistServiceComponentsTableSettings } from '../usePersistServiceComponentsTableSettings';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import ServiceComponentsTableExpandedContent from './ServiceComponentsTableExpandedContent/ServiceComponentsTableExpandedContent';
-import ExpandDetailsCell from '@commonComponents/ExpandDetailsCell/ExpandDetailsCell.tsx';
+import ExpandDetailsCell from '@commonComponents/ExpandDetailsCell/ExpandDetailsCell';
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
