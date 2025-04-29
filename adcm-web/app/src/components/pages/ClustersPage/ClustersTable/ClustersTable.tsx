@@ -13,7 +13,7 @@ import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/Cluster
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
-import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();

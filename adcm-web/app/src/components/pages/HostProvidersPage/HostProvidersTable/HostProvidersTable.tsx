@@ -12,7 +12,7 @@ import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/
 import type { AdcmHostProvider } from '@models/adcm';
 import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
-import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
