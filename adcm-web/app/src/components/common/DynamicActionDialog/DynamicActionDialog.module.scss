@@ -7,6 +7,11 @@
     margin-bottom: 24px;
   }
 
+  &__componentWrapper {
+    overflow: auto;
+    height: 460px;
+  }
+
   &__footer {
     margin-top: 24px;
   }

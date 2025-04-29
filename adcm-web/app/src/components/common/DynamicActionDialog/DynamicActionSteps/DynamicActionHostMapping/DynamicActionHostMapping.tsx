@@ -90,7 +90,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
       {loadState === LoadState.Loading && <SpinnerPanel />}
 
       {loadState === LoadState.Loaded && (
-        <div>
+        <div className={s.dynamicActionDialog__componentWrapper}>
           {isServicesMappingEmpty && (
             <div>
               Add services on the{' '}
