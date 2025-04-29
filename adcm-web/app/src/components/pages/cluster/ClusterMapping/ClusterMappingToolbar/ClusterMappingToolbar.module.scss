@@ -1,16 +1,19 @@
 :global {
   body.theme-dark {
-    --cluster-mapping-toolbar-background: var(--color-xdark-new-20);
+    --cluster-mapping-input-background: var(--color-xblack);
   }
 
   body.theme-light {
-    --cluster-mapping-toolbar-background: var(--color-xgray-alt-30);
+    --cluster-mapping-input-background: var(--color-xwhite);
   }
 }
 
 .clusterMappingToolbar {
   gap: 40px;
   margin-bottom: 24px;
+  top: 0;
+  position: sticky;
+  backdrop-filter: blur(7px);
 
   &__inputAndSwitches {
     width: 100%;
@@ -19,6 +22,7 @@
   }
 
   &__searchInput {
+    background: var(--cluster-mapping-input-background);
     flex: 1;
   }
 
