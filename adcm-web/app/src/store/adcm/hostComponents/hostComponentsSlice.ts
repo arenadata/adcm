@@ -2,7 +2,7 @@ import type { RequestError } from '@api';
 import { AdcmClusterHostsApi } from '@api';
 import { defaultSpinnerDelay } from '@constants';
 import type { AdcmServiceComponent } from '@models/adcm';
-import { LoadState } from '@models/loadState';
+import { LoadState, RequestState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
@@ -15,6 +15,7 @@ interface AdcmHostComponentsState {
   loadState: LoadState;
   hostComponents: AdcmServiceComponent[];
   totalCount: number;
+  accessCheckStatus: RequestState;
 }
 
 interface ClusterHostComponentsPayload {
@@ -76,6 +77,7 @@ const createInitialState = (): AdcmHostComponentsState => ({
   loadState: LoadState.NotLoaded,
   hostComponents: [],
   totalCount: 0,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const hostComponentsSlice = createSlice({
@@ -91,8 +93,12 @@ const hostComponentsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadHostComponents.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.hostComponents = action.payload.results;
       state.totalCount = action.payload.count;
+    });
+    builder.addCase(loadHostComponents.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
     });
     builder.addCase(loadHostComponents.rejected, (state) => {
       state.hostComponents = [];
