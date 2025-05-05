@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
 import os
 
 from adcm.feature_flags import use_new_bundle_parsing_approach
@@ -58,6 +59,46 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(Bundle.objects.filter(name="cluster_two").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_adcm_6555_upload_parsing_errors_fail(self):
+        if not use_new_bundle_parsing_approach(env=os.environ, headers=self.client.headers or {}):
+            return
+
+        with self.subTest("Too long path for config"):
+            new_bundle_file = self.prepare_bundle_file(
+                source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "config_wrong_default_file_long_path"),
+                target_dir=settings.TMP_DIR,
+            )
+            with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
+            self.assertIn("can't exceed 4096 bytes in path and 255 bytes in file name", response.json()["desc"])
+
+        with self.subTest("Incorrect path for config"):
+            new_bundle_file = self.prepare_bundle_file(
+                source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "config_wrong_default_file_incorrect_path"),
+                target_dir=settings.TMP_DIR,
+            )
+            with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
+            self.assertIn("No such file or directory", response.json()["desc"])
+
+        with self.subTest("Mutually exclusive checks for scripts/scripts_jinja."):
+            new_bundle_file = self.prepare_bundle_file(
+                source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "mutually_exclusive_scripts"),
+                target_dir=settings.TMP_DIR,
+            )
+            with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertIn('Value error, "scripts" and "scripts_jinja" are mutually exclusive', response.json()["desc"])
 
     def test_upload_cluster_with_ansible_options_success(self):
         new_bundle_file = self.prepare_bundle_file(
