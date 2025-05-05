@@ -112,9 +112,8 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
         with localize_error(f"Configuration parameter: {key_to_str(key)}"):
             if parameter.type in ("file", "secretfile"):
                 default = config.default_values.get(key)
-                if default and not (bundle_root / default).is_file():
-                    message = f"Default file is missing for {'.'.join(key)}: {default}"
-                    raise BundleValidationError(message)
+                if default:
+                    check_file_path_in_config(bundle_root, default, key)
 
             if parameter.type == "structure":
                 param_schema = parameter.limits["yspec"]
@@ -136,6 +135,26 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
                         raise BundleValidationError(message)
 
     check_default_values(parameters=config.parameters, values=config.default_values, attributes=config.default_attrs)
+
+
+def check_file_path_in_config(bundle_root: Path, default: str, key: Iterable[str]):
+    path = bundle_root / default
+
+    full_path_bytes = str(path).encode("utf-8")
+    file_name_bytes = (bundle_root / default).name.encode("utf-8")
+    if len(full_path_bytes) > 4096 or len(file_name_bytes) > 255:
+        message = f"Default file for {'.'.join(key)}: {path} can't exceed 4096 bytes in path and 255 bytes in file name"
+        raise BundleValidationError(message)
+
+    try:
+        path.resolve(strict=True)
+    except (OSError, PermissionError, FileNotFoundError) as e:
+        message = f"Error in resolving default file for {'.'.join(key)}: {default}: {e}"
+        raise BundleValidationError(message) from e
+
+    if not path.is_file():
+        message = f"Default file is missing for {'.'.join(key)}: {default}"
+        raise BundleValidationError(message)
 
 
 def check_actions(

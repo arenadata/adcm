@@ -753,6 +753,7 @@ class TestBundleSchema(TestCase):
                 },
                 "task_plain": {
                     "type": "task",
+                    "scripts_jinja": None,
                     "scripts": [
                         {
                             "name": "job_1",
@@ -785,6 +786,7 @@ class TestBundleSchema(TestCase):
                 },
                 "task_jinja": {
                     "type": "task",
+                    "scripts": None,
                     "scripts_jinja": "path/to/script_jinja.j2",
                     "display_name": None,
                     "description": None,

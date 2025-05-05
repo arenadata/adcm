@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, Optional, TypeAlias
 import re
 
 from adcm_version import compare_prototype_versions
@@ -641,24 +641,26 @@ class ScriptSchema(TypedDict):
     allow_to_terminate: Annotated[bool | None, Field(default=None)]
 
 
-class TaskPlainSchema(_BaseTaskSchema):
-    scripts: list[ScriptSchema]
-
-
-class TaskJinjaSchema(_BaseTaskSchema):
-    scripts_jinja: str
+class TaskSchema(_BaseTaskSchema):
+    scripts: Optional[list[ScriptSchema]] = None
+    scripts_jinja: Optional[str] = None
 
     @field_validator("scripts_jinja")
     @classmethod
     def scripts_jinja_path_format(cls, v: str):
         if not is_path_correct(v):
             raise ValueError('"scripts_jinja" has unsupported path format')
-
         return v
+
+    @model_validator(mode="after")
+    def validate_only_one_set(self):
+        if bool(self.scripts) == bool(self.scripts_jinja):
+            raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
+        return self
 
 
 ACTIONS_TYPE: TypeAlias = Annotated[
-    dict[NAME, JobSchema | TaskPlainSchema | TaskJinjaSchema] | None,
+    dict[NAME, JobSchema | TaskSchema] | None,
     Field(default=None),
     BeforeValidator(forbidden_mm_actions),
 ]
