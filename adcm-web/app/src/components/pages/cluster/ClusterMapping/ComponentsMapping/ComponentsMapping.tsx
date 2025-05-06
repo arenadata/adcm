@@ -35,11 +35,12 @@ const ComponentsMapping = ({ servicesMapping, ...restProps }: ComponentsMappingP
   return (
     <div className={s.componentsMapping}>
       <div data-test="mapping-container">
-        {servicesMapping.map(({ service, componentsMapping }) => (
+        {servicesMapping.map(({ service, componentsMapping, hasErrors }) => (
           <Service
             key={service.id}
             service={service}
             componentsMapping={componentsMapping}
+            hasErrors={hasErrors}
             anchorId={buildServiceAnchorId(service.id)}
             {...restProps}
           />

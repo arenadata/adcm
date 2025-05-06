@@ -62,7 +62,6 @@ export const useClusterMapping = (
 
   const servicesMapping: ServiceMapping[] = useMemo(() => {
     const result = isLoaded ? getServicesMapping(componentsMapping) : [];
-    result.sort((a, b) => a.service.name.localeCompare(b.service.name));
     if (mappingSortDirection === 'desc') {
       result.reverse();
     }
@@ -75,12 +74,17 @@ export const useClusterMapping = (
   );
 
   const mappingErrors = useMemo(() => {
-    return validate(componentsMapping, {
+    const errors = validate(componentsMapping, {
       servicesMappingDictionary,
       notAddedServicesDictionary,
       allHostsCount: hosts.length,
     });
-  }, [componentsMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
+    for (const mapping of servicesMapping) {
+      mapping.hasErrors = mapping.componentsMapping.some((componentMapping) => !!errors[componentMapping.component.id]);
+    }
+    servicesMapping.sort((a, b) => (a.hasErrors === b.hasErrors ? 0 : a.hasErrors ? 1 : -1));
+    return errors;
+  }, [componentsMapping, servicesMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
   const handleMapHostsToComponent = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {

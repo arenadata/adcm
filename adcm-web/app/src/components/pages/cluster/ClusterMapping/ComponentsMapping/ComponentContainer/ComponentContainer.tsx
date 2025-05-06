@@ -67,19 +67,21 @@ const ComponentContainer = ({
 
   const hostsOptions = useMemo<SelectOption<AdcmHostShortView>[]>(
     () =>
-      allHosts.map((host) => {
-        const isEnabled = Boolean(
-          (hostsErrors[host.id].allowMapError === undefined && !hostsSets.has(host.id)) ||
-            (hostsErrors[host.id].allowUnmapError === undefined && hostsSets.has(host.id)),
-        );
+      allHosts
+        .map((host) => {
+          const isEnabled = Boolean(
+            (hostsErrors[host.id].allowMapError === undefined && !hostsSets.has(host.id)) ||
+              (hostsErrors[host.id].allowUnmapError === undefined && hostsSets.has(host.id)),
+          );
 
-        return {
-          label: host.name,
-          value: host,
-          disabled: !isEnabled,
-          title: hostsErrors[host.id].allowMapError ?? hostsErrors[host.id].allowUnmapError,
-        };
-      }),
+          return {
+            label: host.name,
+            value: host,
+            disabled: !isEnabled,
+            title: hostsErrors[host.id].allowMapError ?? hostsErrors[host.id].allowUnmapError,
+          };
+        })
+        .sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1)),
     [allHosts, hostsErrors],
   );
 
@@ -111,10 +113,12 @@ const ComponentContainer = ({
 
   const isMappingValid = mappingErrors === undefined;
   const isNotRequired = isMappingValid && hosts.length === 0;
+  const isOptional = component.constraints[0] === 0 && hosts.length === 0;
 
   const containerClassName = cn(s.componentContainer, {
     [s.componentContainer_error]: !isMappingValid,
     [s.componentContainer_notRequired]: isNotRequired,
+    [s.componentContainer_optional]: isOptional,
     [s.componentContainer_disabled]: componentNotAvailableError,
   });
 

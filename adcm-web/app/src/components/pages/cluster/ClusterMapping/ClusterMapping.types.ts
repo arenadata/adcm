@@ -68,6 +68,7 @@ export type MappingFilter = {
 export type ServiceMapping = {
   service: AdcmMappingComponentService;
   componentsMapping: ComponentMapping[];
+  hasErrors?: boolean;
 };
 
 export type ComponentMapping = {
