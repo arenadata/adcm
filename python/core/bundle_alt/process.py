@@ -283,7 +283,10 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
             if not parent_key:
                 continue
 
-            parent = definitions[parent_key]
+            try:
+                parent = definitions[parent_key]
+            except KeyError as e:
+                raise BundleParsingError("There isn't any cluster or host provider definition in bundle") from e
 
             if definition.flag_autogeneration is None:
                 definition.flag_autogeneration = parent.flag_autogeneration

@@ -177,7 +177,10 @@ def _unpack_bundle(archive: Path, bundles_dir: Path, bundle_hash: str, files_dir
 
     untar_safe(to=info.root, tar_from=archive)
 
-    inner_bundle_archive = _find_inner_archive(info.root)
+    try:
+        inner_bundle_archive = _find_inner_archive(info.root)
+    except FileNotFoundError as e:
+        raise AdcmEx(code="BUNDLE_DEFINITION_ERROR", msg="Bundle archive is empty") from e
 
     signature_file = _find_signature_file(info.root)
     if signature_file:

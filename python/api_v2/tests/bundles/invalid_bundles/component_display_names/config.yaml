@@ -1,0 +1,13 @@
+---
+- type: cluster
+  name: cluster
+  version: 1
+
+- type: service
+  name: service
+  version: 1
+  components:
+    component_1:
+      display_name: Best Component
+    component_2:
+      display_name: Best Component
