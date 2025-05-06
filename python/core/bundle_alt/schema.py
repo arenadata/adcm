@@ -397,7 +397,6 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
 
 def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
     # at least ADS has duplicates in config
-    return parameters
     if not parameters:
         return None
 
@@ -420,8 +419,8 @@ CONFIG_TYPE: TypeAlias = Annotated[
     CONFIG_LIST | None,
     Field(default=None),
     BeforeValidator(convert_config),
-    AfterValidator(config_duplicates),
 ]
+ACTION_CONFIG_TYPE: TypeAlias = Annotated[CONFIG_TYPE, AfterValidator(config_duplicates)]
 
 
 ##########
@@ -509,7 +508,7 @@ class _BaseUpgradeSchema(_BaseModel):
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     venv: VENV
     ui_options: Annotated[dict | None, Field(default=None)]
-    config: CONFIG_TYPE
+    config: ACTION_CONFIG_TYPE
 
     @model_validator(mode="after")
     def exclusive_masking_and_scripts(self):
@@ -563,7 +562,7 @@ class _BaseActionSchema(_BaseModel):
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
     venv: VENV
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
-    config: CONFIG_TYPE
+    config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
 
     @model_validator(mode="before")
@@ -593,7 +592,7 @@ class _BaseActionSchema(_BaseModel):
             raise ValueError('Action uses both mutual excluding states "states" and "masking"')
 
         on_fail_success_specified = self.on_fail is not None or self.on_success is not None
-        if states_specified and on_fail_success_specified:
+        if not masking_specified and on_fail_success_specified:
             raise ValueError('Action uses "on_success/on_fail" states without "masking"')
 
         return self

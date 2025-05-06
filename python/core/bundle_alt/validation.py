@@ -43,6 +43,7 @@ ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
 def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, yspec_schema: dict) -> None:
     # special, require too much context to include it in main loop
     check_requires(definitions)
+    check_display_names_are_unique(definitions)
 
     for key, definition in definitions.items():
         with localize_error(repr_from_key(key)):
@@ -98,6 +99,20 @@ def check_requires(definitions: DefinitionsMap) -> None:
         requires_tree.prepare()
     except CycleError as err:
         raise BundleValidationError(f"Requires should not be cyclic: {err.args[1]}") from err
+
+
+def check_display_names_are_unique(definitions: DefinitionsMap) -> None:
+    service_keys = [s for s, s_def in definitions.items() if is_service(s_def)]
+
+    for key in service_keys:
+        components_keys = [c for c in definitions if key[1] in c and is_component_key(c)]
+        current_display_names = [definitions[c].display_name for c in components_keys]
+
+        if len(set(current_display_names)) != len(current_display_names):
+            raise BundleValidationError(
+                f"Display name for component within one service must be unique. "
+                f"Incorrect definition of component '{key[-1]}'"
+            )
 
 
 def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
@@ -166,6 +181,19 @@ def check_actions(
             check_mm_host_action_is_allowed(action=action, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action.hostcomponentmap, definitions=definitions)
             check_jinja_templates_are_correct(action=action, bundle_root=bundle_root)
+            check_action_scripts(action=action, bundle_root=bundle_root)
+
+
+def check_action_scripts(action: ActionDefinition, bundle_root: Path):
+    for script in action.scripts:
+        if (
+            script.script_type == "internal"
+            and script.script != "hc_apply"
+            and not (bundle_root / script.script).is_file()
+        ):
+            raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
+        if script.script_type == "internal" and script.script == "hc_apply" and not action.hostcomponentmap:
+            raise BundleValidationError(f"Action {action.name} of cluster: `hc_apply` requires `hc_acl` declaration")
 
 
 def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap) -> None:
@@ -211,7 +239,11 @@ def check_mm_host_action_is_allowed(action: ActionDefinition, definition_type: s
 
 def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[BundleDefinitionKey]) -> None:
     for hc_entry in hostcomponentmap:
-        hc_entry_key = dependency_entry_to_key(hc_entry)
+        try:
+            hc_entry_key = dependency_entry_to_key(hc_entry)
+        except KeyError as e:
+            raise BundleValidationError('"service" field is required in hc_acl for component') from e
+
         if hc_entry_key not in definitions:
             _, service_name, component_name = hc_entry_key
             message = f'Unknown component "{component_name}" of service "{service_name}"'

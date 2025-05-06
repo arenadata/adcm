@@ -1,0 +1,14 @@
+---
+- type: cluster
+  name: cluster
+  version: 1
+  actions:
+    action:
+      type: job
+      script_type: ansible
+      script: ./playbook.yaml
+      config:
+        - name: str1
+          type: string
+        - name: str1
+          type: string
