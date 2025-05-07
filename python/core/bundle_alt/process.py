@@ -24,7 +24,7 @@ import yaml
 import ruyaml
 
 from core.bundle_alt.bundle_load import get_config_files
-from core.bundle_alt.convertion import extract_scripts, schema_entry_to_definition
+from core.bundle_alt.convertion import detect_relative_path_to_bundle_root, extract_scripts, schema_entry_to_definition
 from core.bundle_alt.errors import (
     BundleParsingError,
     BundleProcessingError,
@@ -171,18 +171,17 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
 def retrieve_bundle_definitions(
     bundle_dir: Path, *, adcm_version: str, yspec_schema: dict
 ) -> dict[BundleDefinitionKey, Definition]:
-    with localize_error(f"Bundle at {bundle_dir}"):
-        definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
-        parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
-            definition_path_pairs, bundle_root=bundle_dir, adcm_version=adcm_version
-        )
-        _check_no_definition_type_conflicts(parsed_definitions_map)
-        _propagate_attributes(parsed_definitions_map)
-        normalized_definitions = _normalize_definitions(
-            definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
-        )
-        check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
-        return normalized_definitions
+    definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
+    parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
+        definition_path_pairs, bundle_root=bundle_dir, adcm_version=adcm_version
+    )
+    _check_no_definition_type_conflicts(parsed_definitions_map)
+    _propagate_attributes(parsed_definitions_map)
+    normalized_definitions = _normalize_definitions(
+        definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
+    )
+    check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
+    return normalized_definitions
 
 
 @convert_validation_to_bundle_error
@@ -231,7 +230,10 @@ def _parse_bundle_definitions(
 
     for raw_definition, path_to_source in pairs:
         # todo add convertion func for localize_error
-        with localize_error(f"In file: {path_to_source}", repr_from_raw(raw_definition)):
+        with localize_error(
+            f"In file: {detect_relative_path_to_bundle_root(bundle_root, path_to_source.name)}",
+            repr_from_raw(raw_definition),
+        ):
             root_level_definition = parse(raw_definition)
             for key, parsed_definition in _flatten_definitions(root_level_definition):
                 _check_is_not_duplicate(key, definitions_map)

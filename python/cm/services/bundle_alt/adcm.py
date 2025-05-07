@@ -84,7 +84,9 @@ def _retrieve_adcm_definition(
     adcm_config_file: Path, current_version: str
 ) -> dict[BundleDefinitionKey, Definition] | None:
     definitions = retrieve_bundle_definitions(
-        bundle_dir=adcm_config_file.parent, adcm_version="0", yspec_schema=_get_rules_for_yspec_schema()
+        bundle_dir=adcm_config_file.parent,
+        adcm_version="0",
+        yspec_schema=_get_rules_for_yspec_schema(),
     )
 
     definition_version = str(definitions[("adcm",)].version)
