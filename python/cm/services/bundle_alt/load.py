@@ -29,6 +29,7 @@ from core.bundle_alt.convertion import extract_config
 from core.bundle_alt.errors import convert_validation_to_bundle_error
 from core.bundle_alt.process import ConfigJinjaContext, retrieve_bundle_definitions
 from core.bundle_alt.schema import ConfigJinjaSchema
+from core.errors import localize_error
 from django.conf import settings
 from django.core.files import File
 from django.db.transaction import atomic
@@ -129,9 +130,10 @@ def process_bundle_from_archive(
     with _cleanup_on_fail(unpacking_info.root):
         _verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
-        definitions = retrieve_bundle_definitions(
-            bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
-        )
+        with localize_error(f"Bundle from {unpacking_info.archive}"):
+            definitions = retrieve_bundle_definitions(
+                bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
+            )
 
         with atomic():
             bundle = repo.save_definitions(
