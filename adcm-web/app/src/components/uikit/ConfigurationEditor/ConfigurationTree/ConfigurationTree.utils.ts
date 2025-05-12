@@ -133,6 +133,9 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
 export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
+export const getDefaultValue = (keyName: string, node: SingleSchemaDefinition, parentNode: SingleSchemaDefinition) =>
+  node.default !== undefined ? node.default : parentNode.default?.[keyName as keyof typeof parentNode.default];
+
 const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
   const fieldSchema: SingleSchemaDefinition = {
     type: 'string',
@@ -309,7 +312,6 @@ const buildObjectNode = (
     fieldAttributes,
     parentNode,
   );
-
   const node: ConfigurationNode = {
     key,
     data: {
@@ -323,6 +325,7 @@ const buildObjectNode = (
       isDeletable,
       isReadonly,
       objectType: 'map',
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: fieldValue,
       fieldAttributes,
     },
@@ -401,6 +404,7 @@ const buildFieldNode = (
       parentNode,
       fieldSchema,
       isNullable,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: fieldValue as JSONPrimitive,
       isCleanable,
       isDeletable,
@@ -482,6 +486,7 @@ const buildArrayNode = (
       isReadonly,
       isCleanable,
       isDeletable,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: array,
       fieldAttributes,
     },
@@ -535,6 +540,7 @@ const buildUnknownNode = (
       fieldSchema,
       isNullable: false,
       value: 'some value',
+      defaultValue: 'some default value',
       isCleanable: false,
       isDeletable: false,
       isReadonly: true,

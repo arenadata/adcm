@@ -9,13 +9,22 @@ import { validate } from './StringControls.utils';
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
+  defaultValue: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
 }
 
-const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, onApply }: StringControlProps) => {
+const StringControl = ({
+  fieldName,
+  value,
+  fieldSchema,
+  defaultValue,
+  isReadonly,
+  onChange,
+  onApply,
+}: StringControlProps) => {
   const [error, setError] = useState<string | undefined>(undefined);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +46,7 @@ const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, on
     <ConfigurationField
       label={fieldName}
       fieldSchema={fieldSchema}
+      defaultValue={defaultValue}
       disabled={isReadonly}
       onResetToDefault={onChange}
       error={error}

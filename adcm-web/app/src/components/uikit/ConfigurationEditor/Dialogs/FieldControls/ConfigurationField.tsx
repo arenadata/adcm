@@ -9,6 +9,7 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   error?: string;
   children: React.ReactElement<{ hasError?: boolean }>;
   fieldSchema: SingleSchemaDefinition;
+  defaultValue: JSONPrimitive;
   disabled: boolean;
   onResetToDefault: (value: JSONPrimitive) => void;
 }
@@ -17,12 +18,13 @@ const ConfigurationField = ({
   label,
   error,
   fieldSchema,
+  defaultValue,
   children,
   disabled,
   onResetToDefault,
 }: ConfigurationFieldProps) => {
   const handleResetToDefaultClick = () => {
-    onResetToDefault(fieldSchema.default as JSONPrimitive);
+    onResetToDefault(defaultValue);
   };
 
   return (

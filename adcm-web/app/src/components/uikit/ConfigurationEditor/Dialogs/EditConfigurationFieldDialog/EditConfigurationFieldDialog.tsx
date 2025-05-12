@@ -112,6 +112,7 @@ const EditConfigurationFieldDialog = ({
         <Control
           fieldName={fieldNode.data.title}
           fieldSchema={fieldNode.data.fieldSchema}
+          defaultValue={fieldNode.data.defaultValue}
           value={value}
           isReadonly={fieldNode.data.isReadonly}
           onChange={handleValueChange}
