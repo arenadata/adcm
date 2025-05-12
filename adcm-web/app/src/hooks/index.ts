@@ -21,3 +21,4 @@ export { useSelectedItems } from './useSelectedItems';
 export { usePrevious } from './usePrevious';
 export { useOutsideClick } from './useOutsideClick';
 export { useClipboardCopy } from './useClipboardCopy/useClipboardCopy';
+export { useContextHelper } from './useContextHelper';

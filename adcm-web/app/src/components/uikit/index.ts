@@ -14,6 +14,9 @@ import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
+import DialogV2 from '@uikit/DialogV2/Dialog';
+import DialogDefaultControlsV2 from '@uikit/DialogV2/DialogDefaultControls';
+import type { DialogDefaultControlsPropsV2 } from '@uikit/DialogV2/DialogDefaultControls';
 import Input from '@uikit/Input/Input';
 import InputNumber from '@uikit/InputNumber/InputNumber';
 import InputPassword from './InputPassword/InputPassword';
@@ -79,6 +82,9 @@ export {
   Dialog,
   DialogDefaultControls,
   type DialogDefaultControlsProps,
+  DialogV2,
+  DialogDefaultControlsV2,
+  type DialogDefaultControlsPropsV2,
   ExpandableRowComponent,
   type FieldProps,
   FormField,
