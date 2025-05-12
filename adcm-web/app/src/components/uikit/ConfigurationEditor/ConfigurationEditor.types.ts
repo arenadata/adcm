@@ -12,6 +12,7 @@ export type ConfigurationField = {
   isNullable: boolean;
   fieldAttributes?: FieldAttributes;
   parentNode: ConfigurationNode;
+  defaultValue?: JSONPrimitive;
   value: JSONPrimitive;
   path: ConfigurationNodePath;
   isDeletable: boolean;
@@ -40,6 +41,7 @@ export type ConfigurationObject = {
   isReadonly: boolean;
   isCleanable: boolean;
   objectType: 'map' | 'structure';
+  defaultValue?: JSONPrimitive;
   value: JSONValue;
 };
 
@@ -63,6 +65,7 @@ export type ConfigurationArray = {
   isReadonly: boolean;
   isDeletable: boolean;
   isCleanable: boolean;
+  defaultValue?: JSONPrimitive;
   value: JSONValue;
 };
 

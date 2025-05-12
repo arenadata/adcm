@@ -10,13 +10,22 @@ const mismatchErrorText = 'Please, make sure your secrets match';
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
+  defaultValue: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
 }
 
-const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: StringControlProps) => {
+const SecretControl = ({
+  fieldName,
+  fieldSchema,
+  defaultValue,
+  value,
+  isReadonly,
+  onChange,
+  onApply,
+}: StringControlProps) => {
   const [secret, setSecret] = useState((value as string) ?? '');
   const [confirm, setConfirm] = useState((value as string) ?? '');
   const [secretError, setSecretError] = useState<string | undefined>(undefined);
@@ -56,6 +65,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, on
       <ConfigurationField
         label={fieldName}
         fieldSchema={fieldSchema}
+        defaultValue={defaultValue}
         error={secretError}
         disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
@@ -72,6 +82,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, on
         <ConfigurationField
           label="Confirm"
           fieldSchema={fieldSchema}
+          defaultValue={defaultValue}
           error={confirmError}
           disabled={isReadonly}
           onResetToDefault={handleResetToDefault}

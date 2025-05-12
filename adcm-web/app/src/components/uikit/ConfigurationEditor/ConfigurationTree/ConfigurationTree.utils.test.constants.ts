@@ -166,7 +166,7 @@ const defaultAdcmMeta = {
   stringExtra: null,
 };
 
-const defaultProps = {
+export const defaultProps = {
   readOnly: false,
   adcmMeta: { ...defaultAdcmMeta },
 };

@@ -7,12 +7,13 @@ import { getEnumOptions } from './EnumControl.utils';
 export interface EnumControlProps {
   fieldName: string;
   value: JSONPrimitive;
+  defaultValue: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: EnumControlProps) => {
+const EnumControl = ({ fieldName, value, fieldSchema, defaultValue, isReadonly, onChange }: EnumControlProps) => {
   const options = getEnumOptions(fieldSchema);
 
   const handleSelectChange = (newValue: unknown) => {
@@ -20,7 +21,13 @@ const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: En
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField
+      label={fieldName}
+      fieldSchema={fieldSchema}
+      defaultValue={defaultValue}
+      disabled={isReadonly}
+      onResetToDefault={onChange}
+    >
       <Select
         value={value}
         onChange={handleSelectChange}

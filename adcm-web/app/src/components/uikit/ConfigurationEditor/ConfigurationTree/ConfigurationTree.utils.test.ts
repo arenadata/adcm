@@ -24,16 +24,18 @@ import {
   // validate schemas
   validateInactiveGroupSchema,
   emptyFilter,
+  defaultProps,
 } from './ConfigurationTree.utils.test.constants';
 import {
   buildConfigurationNodes,
   buildConfigurationTree,
   validate,
   fillParentPathParts,
+  getDefaultValue,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import { rootNodeKey } from './ConfigurationTree.constants';
-import type { ConfigurationErrors, FieldErrors } from '@models/adcm';
+import type { ConfigurationErrors, FieldErrors, SingleSchemaDefinition } from '@models/adcm';
 
 describe('structure node tests', () => {
   test('structure', () => {
@@ -76,6 +78,20 @@ describe('structure node tests', () => {
     const structureNodeWithDefaultTitle = tree2.children?.[0]!;
 
     expect(structureNodeWithDefaultTitle.data.title).toBe('structure');
+  });
+
+  test('default value', () => {
+    const node: SingleSchemaDefinition = { ...defaultProps, default: 'someValue' };
+    const parentNode: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    expect(getDefaultValue('keyName', node, parentNode)).toBe('someValue');
+
+    const node2: SingleSchemaDefinition = { ...defaultProps, default: null };
+    const parentNode2: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    expect(getDefaultValue('keyName', node2, parentNode2)).toBe(null);
+
+    const node3: SingleSchemaDefinition = defaultProps;
+    const parentNode3: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    expect(getDefaultValue('keyName', node3, parentNode3)).toBe('parentValue');
   });
 
   test('structure fields', () => {
