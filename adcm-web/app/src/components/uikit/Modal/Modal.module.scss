@@ -12,6 +12,7 @@
   background: var(--modal-overlay-background);
   display: flex;
   padding: 20px;
+  z-index: var(--z-index-dialog);
 }
 
 .modal {
