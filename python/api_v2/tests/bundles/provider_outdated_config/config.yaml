@@ -1,0 +1,24 @@
+
+
+- type: provider
+  version: 10.20
+  name: provider_pattern
+  config_group_customization: true
+  flag_autogeneration:
+    enable_outdated_config: true
+
+  config: &config
+    - name: string_param
+      type: string
+      default: some_default_value
+
+    - name: int_param
+      type: integer
+      display_name: Some Int
+      default: 12
+
+- type: host
+  version: 2.2
+  name: simple_host
+
+  config: *config
