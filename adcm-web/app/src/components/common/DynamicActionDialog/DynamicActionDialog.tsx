@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useMemo } from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import DynamicActionSteps from './DynamicActionSteps/DynamicActionSteps';
 import { getDynamicActionSteps } from './DynamicActionDialog.utils';
 import type { AdcmActionHostGroup, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
@@ -25,23 +25,26 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({
   }, [actionDetails, actionHostGroup]);
 
   const commonDialogOptions = {
-    isOpen: true,
     title: `Run an action: ${actionDetails.displayName}`,
-    onOpenChange: onCancel,
     onCancel: onCancel,
   };
 
   return (
-    <Dialog {...commonDialogOptions} dialogControls={false} width="100%" maxWidth="980px">
+    <DialogV2
+      {...commonDialogOptions}
+      dialogControls={false}
+      isNeedConfirmationOnCancel={true}
+      width="100%"
+      maxWidth="980px"
+    >
       <DynamicActionSteps
         actionSteps={dynamicActionTypes}
         clusterId={clusterId}
         actionDetails={actionDetails}
         actionHostGroup={actionHostGroup}
         onSubmit={onSubmit}
-        onCancel={onCancel}
       />
-    </Dialog>
+    </DialogV2>
   );
 };
 export default DynamicActionDialog;

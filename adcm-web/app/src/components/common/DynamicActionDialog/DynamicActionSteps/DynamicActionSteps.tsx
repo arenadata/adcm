@@ -10,6 +10,7 @@ import DynamicActionRaisingConcerns from './DynamicActionRaisingConcerns/Dynamic
 import DynamicActionConfirm from './DynamicActionConfirm/DynamicActionConfirm';
 import { getDefaultRunConfig } from '../DynamicActionDialog.utils';
 import s from '../DynamicActionDialog.module.scss';
+import { useDialogContext } from '@uikit/DialogV2/Dialog.context';
 
 const stepsTitles: Record<DynamicActionStep, string> = {
   [DynamicActionStep.AgreeActionHostsGroup]: 'Hosts group',
@@ -25,17 +26,17 @@ interface DynamicActionsStepsProps {
   actionHostGroup?: AdcmActionHostGroup;
   actionSteps: DynamicActionStep[];
   onSubmit: (runConfig: AdcmDynamicActionRunConfig) => void;
-  onCancel: () => void;
 }
 
 const DynamicActionSteps = ({
   actionDetails,
   actionHostGroup,
   onSubmit,
-  onCancel,
   clusterId,
   actionSteps,
 }: DynamicActionsStepsProps) => {
+  const { onCancel } = useDialogContext();
+
   const [localActionRunConfig, setLocalActionRunConfig] = useState<AdcmDynamicActionRunConfig>(() =>
     getDefaultRunConfig(),
   );

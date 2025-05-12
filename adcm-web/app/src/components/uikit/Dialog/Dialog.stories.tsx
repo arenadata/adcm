@@ -190,7 +190,6 @@ const DialogWithPopoverChildExample: React.FC<DialogProps> = ({ title, width }) 
     </div>
   );
 };
-
 export const DialogWithPopoverChild: Story = {
   args: {
     title: 'Try open Popover in Dialog',
@@ -198,5 +197,38 @@ export const DialogWithPopoverChild: Story = {
   },
   render: (args) => {
     return <DialogWithPopoverChildExample {...args} />;
+  },
+};
+
+const DialogWithCancelConfirmationExample: React.FC<DialogProps> = (props) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const handleAction = () => {
+    props.onAction?.();
+    setIsOpen(false);
+  };
+  return (
+    <>
+      <Button onClick={() => setIsOpen((prev) => !prev)}>Click for open dialog</Button>
+      <Dialog {...props} isOpen={isOpen} onOpenChange={setIsOpen} onAction={handleAction}>
+        <div>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam commodo dui vel turpis mollis dignissim.
+          Aliquam semper risus sollicitudin, consectetur risus aliquam, fringilla neque. Sed cursus elit eu sem bibendum
+          euismod sit amet in erat. Sed id congue libero. Maecenas in commodo nisl, et eleifend lacus. Ut convallis eros
+          eget justo sollicitudin pulvinar. Sed eu tellus quis erat auctor tincidunt sit amet eu augue. In fermentum
+          egestas mauris vitae porttitor. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi. Sed
+          odio nunc, feugiat vel finibus dapibus, molestie a ipsum. Aenean scelerisque eget ipsum eget luctus.
+        </div>
+      </Dialog>
+    </>
+  );
+};
+export const DialogWithCancelConfirmation: Story = {
+  args: {
+    title: 'Lorem ipsum',
+    width: '584px',
+    isNeedConfirmationOnCancel: true,
+  },
+  render: (args) => {
+    return <DialogWithCancelConfirmationExample {...args} />;
   },
 };

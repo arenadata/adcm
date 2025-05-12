@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useState } from 'react';
 import Modal from '@uikit/Modal/Modal';
 import type { ModalOptions } from '@uikit/Modal/Modal.types';
 import IconButton from '@uikit/IconButton/IconButton';
@@ -8,6 +9,7 @@ import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import Panel from '@uikit/Panel/Panel';
 import s from './Dialog.module.scss';
 import cn from 'classnames';
+import DialogCancelConfirmation from '@uikit/Dialog/DialogCancelConfirmation';
 
 export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
@@ -36,6 +38,7 @@ const Dialog: React.FC<DialogProps> = ({
   actionButtonLabel,
   isActionButtonLoaderShown,
   isActionDisabled,
+  isNeedConfirmationOnCancel = false,
   onAction,
   onCancel,
   width = '584px',
@@ -45,9 +48,15 @@ const Dialog: React.FC<DialogProps> = ({
   className,
   dataTest = 'dialog-container',
 }) => {
+  const [isOpenConfirmationDialog, setIsOpenConfirmationDialog] = useState(false);
+
   const handleClose = () => {
-    onOpenChange(false);
-    onCancel?.();
+    if (isNeedConfirmationOnCancel) {
+      setIsOpenConfirmationDialog(true);
+    } else {
+      onOpenChange(false);
+      onCancel?.();
+    }
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -55,6 +64,16 @@ const Dialog: React.FC<DialogProps> = ({
     if (!isOpen) {
       handleClose();
     }
+  };
+
+  const handleConfirmationCancel = () => {
+    setIsOpenConfirmationDialog(false);
+  };
+
+  const handleConfirmationAction = () => {
+    setIsOpenConfirmationDialog(false);
+    onOpenChange(false);
+    onCancel?.();
   };
 
   const dialogControlsComponent = dialogControls ?? (
@@ -66,6 +85,7 @@ const Dialog: React.FC<DialogProps> = ({
       onAction={onAction}
       onCancel={handleClose}
       isActionButtonDefaultFocus={isActionButtonDefaultFocus}
+      isNeedConfirmationOnCancel={isNeedConfirmationOnCancel}
     />
   );
 
@@ -99,6 +119,14 @@ const Dialog: React.FC<DialogProps> = ({
       )}
       <div className={s.dialog__body}>{children}</div>
       {!isDialogControlsOnTop && dialogControlsComponent}
+      {isNeedConfirmationOnCancel && (
+        <DialogCancelConfirmation
+          isOpen={isOpenConfirmationDialog}
+          onOpenChange={handleConfirmationCancel}
+          onAction={handleConfirmationAction}
+          onCancel={handleConfirmationCancel}
+        />
+      )}
     </Modal>
   );
 };
