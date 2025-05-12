@@ -52,7 +52,12 @@ const Popover: React.FC<PopoverProps> = ({
 
   const popoverPanel = React.Children.only(children);
   const ref = useForwardRef(refs.setFloating, children.ref);
-  const panelStyle = { ...(children.props.style ?? {}), maxWidth: '100vw', ...floatingStyles };
+  const panelStyle = {
+    ...(children.props.style ?? {}),
+    maxWidth: '100vw',
+    zIndex: 'var(--z-index-popover)',
+    ...floatingStyles,
+  };
   if (dependencyWidth) {
     Object.entries(getWidthStyles(dependencyWidth, triggerRef)).forEach(([cssProperty, value]) => {
       panelStyle[cssProperty] = value;
