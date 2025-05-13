@@ -68,6 +68,9 @@ class TestConcernsResponse(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "cluster_concerns_with_dependencies"
         self.complex_dependencies = self.add_bundle(source_dir=bundle_dir)
 
+        bundle_dir = self.test_bundles_dir / "provider_outdated_config"
+        self.provider_changed_state = self.add_bundle(source_dir=bundle_dir)
+
     def test_required_service_concern(self):
         cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
@@ -377,6 +380,20 @@ class TestConcernsResponse(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
             concerns = ConcernItem.objects.filter(owner_id=cluster.pk, owner_type=cluster.content_type)
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns.first().cause, "config")
+
+        with self.subTest("Adcm-6562 raise outdated_config for provider"):
+            provider = self.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
+            provider.state = "notcreated"
+            provider.save(update_fields=["state"])
+
+            response = self.client.v2[provider, "configs"].post(
+                data={"config": {"int_param": 13, "string_param": "new_string"}, "adcmMeta": {}, "description": "init"},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            concerns = ConcernItem.objects.filter(owner_id=provider.pk, owner_type=provider.content_type)
             self.assertEqual(len(concerns), 1)
             self.assertEqual(concerns.first().cause, "config")
 
