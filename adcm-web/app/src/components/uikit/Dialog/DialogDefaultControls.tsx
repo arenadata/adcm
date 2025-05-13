@@ -1,9 +1,7 @@
 import type React from 'react';
-import { useState } from 'react';
+import s from './Dialog.module.scss';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
-import s from './Dialog.module.scss';
-import DialogCancelConfirmation from '@uikit/Dialog/DialogCancelConfirmation';
 
 export interface DialogDefaultControlsProps {
   cancelButtonLabel?: string;
@@ -24,25 +22,9 @@ const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
   isActionDisabled = false,
   isActionButtonLoaderShown = false,
   isActionButtonDefaultFocus = false,
-  isNeedConfirmationOnCancel = false,
 }) => {
-  const [isOpenConfirmationDialog, setIsOpenConfirmationDialog] = useState(false);
-
   const handleCancel = () => {
-    if (isNeedConfirmationOnCancel) {
-      setIsOpenConfirmationDialog(true);
-    } else {
-      onCancel?.();
-    }
-  };
-
-  const handleConfirmationAction = () => {
-    setIsOpenConfirmationDialog(false);
     onCancel?.();
-  };
-
-  const handleConfirmationCancel = () => {
-    setIsOpenConfirmationDialog(false);
   };
 
   return (
@@ -61,14 +43,6 @@ const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
           {actionButtonLabel}
         </Button>
       </ButtonGroup>
-      {isNeedConfirmationOnCancel && (
-        <DialogCancelConfirmation
-          isOpen={isOpenConfirmationDialog}
-          onOpenChange={handleConfirmationCancel}
-          onAction={handleConfirmationAction}
-          onCancel={handleConfirmationCancel}
-        />
-      )}
     </>
   );
 };
