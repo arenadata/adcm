@@ -24,7 +24,7 @@ import yaml
 import ruyaml
 
 from core.bundle_alt.bundle_load import get_config_files
-from core.bundle_alt.convertion import detect_relative_path_to_bundle_root, extract_scripts, schema_entry_to_definition
+from core.bundle_alt.convertion import extract_scripts, schema_entry_to_definition
 from core.bundle_alt.errors import (
     BundleParsingError,
     BundleProcessingError,
@@ -225,15 +225,12 @@ def _parse_bundle_definitions(
 
     # need to check all versions first
     for raw_definition, path_to_source in pairs:
-        with localize_error(f"In file {path_to_source}", repr_from_raw(raw_definition)):
+        with localize_error(f"In file {path_to_source.relative_to(bundle_root)}", repr_from_raw(raw_definition)):
             check_adcm_min_version(current=adcm_version, required=str(raw_definition.get("adcm_min_version", "0")))
 
     for raw_definition, path_to_source in pairs:
         # todo add convertion func for localize_error
-        with localize_error(
-            f"In file: {detect_relative_path_to_bundle_root(bundle_root, path_to_source.name)}",
-            repr_from_raw(raw_definition),
-        ):
+        with localize_error(f"In file: {path_to_source.relative_to(bundle_root)}", repr_from_raw(raw_definition)):
             root_level_definition = parse(raw_definition)
             for key, parsed_definition in _flatten_definitions(root_level_definition):
                 _check_is_not_duplicate(key, definitions_map)
