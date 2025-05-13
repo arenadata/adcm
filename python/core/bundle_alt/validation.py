@@ -208,10 +208,9 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
     if action.config_jinja:
-        check_file_is_correct_template(bundle_root / action.config_jinja)
-
+        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
     if action.scripts_jinja:
-        check_file_is_correct_template(bundle_root / action.scripts_jinja)
+        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
 
 
 # Atomic checks
@@ -250,12 +249,14 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
             raise BundleValidationError(message)
 
 
-def check_file_is_correct_template(path: Path) -> None:
+def check_file_is_correct_template(bundle_root: Path, relative_template_path: str) -> None:
+    path = bundle_root / relative_template_path
+
     try:
         content = path.read_text(encoding="utf-8")
         Template(source=content)
     except (FileNotFoundError, TemplateError) as e:
-        message = f"Incorrect template for jinja_* template at {path}: {e}"
+        message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
         raise BundleValidationError(message) from e
 
 
