@@ -64,6 +64,8 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
                 "view_logstorage",
                 "view_joblog",
                 "view_tasklog",
+                "view_concernitem",
+                "delete_concernitem",
             },
         )
 

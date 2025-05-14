@@ -1,6 +1,6 @@
 ---
 
-version: 14
+version: 15
 
 roles:
   - name: Add host
@@ -1486,6 +1486,7 @@ roles:
       - View host config
       - View host-components hidden
       - View service config
+      - Remove concern
 
   - name: Edit cluster
     description: The ability to change cluster name, description
@@ -1553,6 +1554,7 @@ roles:
       - View host config
       - View host-components hidden
       - View service config
+      - Remove concern
 
   - name: Provider Administrator
     type: role
@@ -1578,6 +1580,7 @@ roles:
       - Upgrade provider bundle
       - View host config
       - View provider config
+      - Remove concern
 
   - name: Manage cluster Maintenance mode
     description: the ability to enable / disable the "MM"
@@ -1854,3 +1857,19 @@ roles:
       - Edit action host groups of cluster
       - Edit action host groups of service
       - Edit action host groups of component
+
+  - name: Remove concern
+    description: Remove concern
+    type: hidden
+    module_name: rbac.roles
+    class_name: ModelRole
+    init_params:
+      app_name: cm
+      model: ConcernItem
+    apps:
+      - label: cm
+        models:
+          - name: concernitem
+            codenames:
+              - view
+              - delete
