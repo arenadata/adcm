@@ -81,6 +81,7 @@ export const allowIconsNames = [
   'marker-check',
   'marker-info',
   'triangle-alert',
+  'drag-handle',
 ] as const;
 
 export type IconsNames = (typeof allowIconsNames)[number];

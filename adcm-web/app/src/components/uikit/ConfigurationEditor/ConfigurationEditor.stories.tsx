@@ -187,3 +187,13 @@ export const ConfigurationEditorAttributesStory: Story = {
     />
   ),
 };
+
+export const ConfigurationEditorDragNDropStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={clusterConfigurationSchema}
+      initialConfigurationData={initialClusterConfiguration}
+      initialAttributes={attributes}
+    />
+  ),
+};
