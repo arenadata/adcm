@@ -102,6 +102,8 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_logstorage",
                 "view_joblog",
                 "view_tasklog",
+                "view_concernitem",
+                "delete_concernitem",
             },
         )
 
@@ -476,6 +478,8 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_logstorage",
                 "view_joblog",
                 "view_tasklog",
+                "view_concernitem",
+                "delete_concernitem",
             },
         )
 
@@ -555,5 +559,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_logstorage",
                 "view_joblog",
                 "view_tasklog",
+                "view_concernitem",
+                "delete_concernitem",
             },
         )
