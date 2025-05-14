@@ -27,6 +27,7 @@
     --node-content-label-color-disabled: var(--color-all-new-black);
     --node-content-value-color-disabled: var(--color-all-new-black);
 
+    --drop-placeholder-border-color: var(--color-xgray-lighter);
   }
   body.theme-light {
     // default
@@ -55,6 +56,8 @@
     // disabled
     --node-content-label-color-disabled: var(--color-xgray-lighter);
     --node-content-value-color-disabled: var(--color-xgray-lighter);
+
+    --drop-placeholder-border-color: var(--color-xgray-new-darker);
   }
 }
 
@@ -78,6 +81,10 @@
     --node-content-label-color: var(--node-content-label-color-hover);
   }
 
+  &__dragHandle {
+    cursor: grab;
+  }
+
   &__title {
     color: var(--node-content-label-color);
     transition: color 250ms;
@@ -96,6 +103,7 @@
   &:not(:global(.is-open)) &__arrow {
     transform: rotate(-90deg);
   }
+
   &__arrow {
     margin-left: 4px;
     cursor: pointer;
@@ -165,4 +173,16 @@
     gap: 8px;
     align-items: center;
   }
+}
+
+.dropPlaceHolderMode {
+  & > div:before { 
+    --collapse-node-child-border-color: var(--drop-placeholder-border-color);
+  }
+}
+
+.dropPlaceholderContent {
+  width: 180px;
+  border-style: dashed;
+  --node-content-border: var(--drop-placeholder-border-color);
 }

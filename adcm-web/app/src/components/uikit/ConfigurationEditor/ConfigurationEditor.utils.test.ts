@@ -6,6 +6,7 @@ import {
   addArrayItem,
   deleteArrayItem,
   removeEmpty,
+  moveArrayItem,
 } from './ConfigurationEditor.utils';
 
 describe('modify configuration', () => {
@@ -17,6 +18,23 @@ describe('modify configuration', () => {
           shard: [
             { internal_replica: 11, weight: 11 },
             { internal_replica: 12, weight: 12 },
+          ],
+        },
+      },
+    },
+  };
+
+  const object5 = {
+    clusterConfiguration: {
+      cluster_config: {
+        cluster: {
+          cluster_name: 'cluster',
+          shard: [
+            { internal_replica: 11, weight: 11 },
+            { internal_replica: 12, weight: 12 },
+            { internal_replica: 13, weight: 13 },
+            { internal_replica: 14, weight: 14 },
+            { internal_replica: 15, weight: 15 },
           ],
         },
       },
@@ -178,6 +196,56 @@ describe('modify configuration', () => {
           cluster: {
             cluster_name: 'cluster',
             shard: [{ internal_replica: 12, weight: 12 }],
+          },
+        },
+      },
+    });
+  });
+
+  test('moveArrayItem: move backward array item', () => {
+    const result = moveArrayItem(
+      object5,
+      ['clusterConfiguration', 'cluster_config', 'cluster', 'shard', 3],
+      ['clusterConfiguration', 'cluster_config', 'cluster', 'shard', 0],
+    );
+
+    expect(result).toStrictEqual({
+      clusterConfiguration: {
+        cluster_config: {
+          cluster: {
+            cluster_name: 'cluster',
+            shard: [
+              { internal_replica: 14, weight: 14 },
+              { internal_replica: 11, weight: 11 },
+              { internal_replica: 12, weight: 12 },
+              { internal_replica: 13, weight: 13 },
+              { internal_replica: 15, weight: 15 },
+            ],
+          },
+        },
+      },
+    });
+  });
+
+  test('moveArrayItem: move forward array item', () => {
+    const result = moveArrayItem(
+      object5,
+      ['clusterConfiguration', 'cluster_config', 'cluster', 'shard', 2],
+      ['clusterConfiguration', 'cluster_config', 'cluster', 'shard', 4],
+    );
+
+    expect(result).toStrictEqual({
+      clusterConfiguration: {
+        cluster_config: {
+          cluster: {
+            cluster_name: 'cluster',
+            shard: [
+              { internal_replica: 11, weight: 11 },
+              { internal_replica: 12, weight: 12 },
+              { internal_replica: 14, weight: 14 },
+              { internal_replica: 15, weight: 15 },
+              { internal_replica: 13, weight: 13 },
+            ],
           },
         },
       },

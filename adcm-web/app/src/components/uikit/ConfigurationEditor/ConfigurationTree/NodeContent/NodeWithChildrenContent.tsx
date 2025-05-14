@@ -12,6 +12,7 @@ import type { FieldErrors } from '@models/adcm';
 import IconButton from '@uikit/IconButton/IconButton';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
+import Icon from '@uikit/Icon/Icon';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;
@@ -21,6 +22,8 @@ interface NodeWithChildrenContentProps {
   onDelete: ChangeConfigurationNodeHandler;
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
+  onDragStart?: (node: ConfigurationNodeView) => void;
+  onDragEnd?: (node: ConfigurationNodeView) => void;
 }
 
 const NodeWithChildrenContent = ({
@@ -31,6 +34,8 @@ const NodeWithChildrenContent = ({
   onDelete,
   onExpand,
   onFieldAttributeChange,
+  onDragStart,
+  onDragEnd,
 }: NodeWithChildrenContentProps) => {
   const ref = useRef(null);
   const fieldNodeData = node.data as ConfigurationObject | ConfigurationArray;
@@ -39,6 +44,7 @@ const NodeWithChildrenContent = ({
   const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
 
   const [initialIsActive] = useState(fieldAttributes?.isActive);
+  const [isOverDragHandle, setIsOverDragHandle] = useState(false);
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -76,6 +82,22 @@ const NodeWithChildrenContent = ({
     onExpand(!isExpanded);
   };
 
+  const handleDragHandleMouseEnter = () => {
+    setIsOverDragHandle(true);
+  };
+
+  const handleDragHandleMouseLeave = () => {
+    setIsOverDragHandle(false);
+  };
+
+  const handleDragStart = () => {
+    onDragStart?.(node);
+  };
+
+  const handleDragEnd = () => {
+    onDragEnd?.(node);
+  };
+
   const className = cn(s.nodeContent, {
     'is-open': isExpanded,
     'is-failed': errors !== undefined,
@@ -85,7 +107,21 @@ const NodeWithChildrenContent = ({
   const isExpandable = hasChildren && (fieldAttributes?.isActive === undefined ? true : fieldAttributes.isActive);
 
   return (
-    <div className={className} ref={ref}>
+    <div
+      ref={ref}
+      className={className}
+      draggable={isOverDragHandle}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {fieldNodeData.isDraggable && (
+        <Icon
+          className={s.nodeContent__dragHandle}
+          name="drag-handle"
+          onMouseEnter={handleDragHandleMouseEnter}
+          onMouseLeave={handleDragHandleMouseLeave}
+        />
+      )}
       {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
         <ActivationAttribute
           isActive={fieldAttributes.isActive}

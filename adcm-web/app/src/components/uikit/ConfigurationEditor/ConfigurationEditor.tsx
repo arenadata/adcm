@@ -3,7 +3,14 @@ import ConfigurationTree from '@uikit/ConfigurationEditor/ConfigurationTree/Conf
 import AddConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
 import EditConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
 import type { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
-import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
+import {
+  editField,
+  addField,
+  deleteField,
+  addArrayItem,
+  deleteArrayItem,
+  moveArrayItem,
+} from './ConfigurationEditor.utils';
 import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import type { JSONPrimitive, JSONValue } from '@models/json';
 
@@ -133,6 +140,15 @@ const ConfigurationEditor = ({
     [attributes, onAttributesChange],
   );
 
+  const handleMoveArrayItem = useCallback(
+    (node: ConfigurationNodeView, dropPlaceHolderNode: ConfigurationNodeView) => {
+      const newNodePath = dropPlaceHolderNode.data.path;
+      const newConfiguration = moveArrayItem(configuration, node.data.path, newNodePath);
+      onConfigurationChange(newConfiguration);
+    },
+    [configuration, onConfigurationChange],
+  );
+
   return (
     <>
       <ConfigurationTree
@@ -144,6 +160,7 @@ const ConfigurationEditor = ({
         onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
         onAddField={handleOpenAddFieldDialog}
+        onMoveArrayItem={handleMoveArrayItem}
         onClear={handleClearField}
         onDelete={handleDeleteField}
         onAddArrayItem={handleAddArrayItem}

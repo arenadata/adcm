@@ -13,6 +13,7 @@ import { isWhiteSpaceOnly } from '@utils/validationsUtils';
 import IconButton from '@uikit/IconButton/IconButton';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
+import Icon from '@uikit/Icon/Icon';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
@@ -21,6 +22,8 @@ interface FieldNodeContentProps {
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
+  onDragStart?: (node: ConfigurationNodeView) => void;
+  onDragEnd?: (node: ConfigurationNodeView) => void;
 }
 
 const FieldNodeContent = ({
@@ -30,6 +33,8 @@ const FieldNodeContent = ({
   onClear,
   onDelete,
   onFieldAttributeChange,
+  onDragStart,
+  onDragEnd,
 }: FieldNodeContentProps) => {
   const ref = useRef(null);
   const fieldNodeData = node.data as ConfigurationField;
@@ -37,6 +42,7 @@ const FieldNodeContent = ({
   const fieldAttributes = node.data.fieldAttributes;
 
   const [initialIsActive] = useState(fieldAttributes?.isActive);
+  const [isOverDragHandle, setIsOverDragHandle] = useState(false);
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -70,6 +76,22 @@ const FieldNodeContent = ({
 
   const handleDeleteClick = () => {
     onDelete(node, ref);
+  };
+
+  const handleDragHandleMouseEnter = () => {
+    setIsOverDragHandle(true);
+  };
+
+  const handleDragHandleMouseLeave = () => {
+    setIsOverDragHandle(false);
+  };
+
+  const handleDragStart = () => {
+    onDragStart?.(node);
+  };
+
+  const handleDragEnd = () => {
+    onDragEnd?.(node);
   };
 
   const className = cn(s.nodeContent, {
@@ -111,7 +133,21 @@ const FieldNodeContent = ({
   ]);
 
   return (
-    <div ref={ref} className={className}>
+    <div
+      ref={ref}
+      className={className}
+      draggable={isOverDragHandle}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {fieldNodeData.isDraggable && (
+        <Icon
+          name="drag-handle"
+          className={s.nodeContent__dragHandle}
+          onMouseEnter={handleDragHandleMouseEnter}
+          onMouseLeave={handleDragHandleMouseLeave}
+        />
+      )}
       {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
         <ActivationAttribute
           isActive={fieldAttributes.isActive}
