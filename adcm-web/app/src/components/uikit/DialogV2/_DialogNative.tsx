@@ -1,12 +1,12 @@
 import type React from 'react';
 import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import s from '@uikit/DialogV2/Dialog.module.scss';
 import cn from 'classnames';
 import { DialogContext } from './Dialog.context';
 import IconButton from '@uikit/IconButton/IconButton';
 import DialogDefaultControlsV2 from './DialogDefaultControls';
 import Text from '@uikit/Text/Text';
-import Modal from '@uikit/Modal/Modal';
 
 export interface DialogV2Props {
   children: React.ReactNode;
@@ -29,6 +29,7 @@ export interface DialogV2Props {
   onCancel: () => void;
 }
 
+// Сomponent is preserved until the Popover issues are resolved.
 const DialogV2: React.FC<DialogV2Props> = ({
   children,
   title,
@@ -49,13 +50,28 @@ const DialogV2: React.FC<DialogV2Props> = ({
   onAction,
   onCancel,
 }) => {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
 
   // cancel button on Dialog
   const handleCancel = () => {
     if (isNeedConfirmationOnCancel) {
       setIsConfirmationDialogOpen(true);
     } else {
+      dialogRef.current?.close();
       onCancel();
     }
   };
@@ -63,6 +79,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
   // action button on dialog
   const handleAction = () => {
     onAction?.();
+    dialogRef.current?.close();
   };
 
   // cancel button on confirm dialog
@@ -73,6 +90,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
   // action button on confirm dialog
   const handleConfirmCancel = () => {
     setIsConfirmationDialogOpen(false);
+    dialogRef.current?.close();
     onCancel();
   };
 
@@ -90,13 +108,12 @@ const DialogV2: React.FC<DialogV2Props> = ({
         onAction: handleAction,
       }}
     >
-      <Modal
-        isOpen={true}
-        onOpenChange={handleCancel}
-        isDismissDisabled={false}
+      <dialog
+        ref={dialogRef}
         className={cn(s.dialog, className)}
         style={{ width, height, maxWidth, minWidth }}
         data-test={dataTest}
+        onClick={handleCancel}
       >
         <div className={s.dialogContentWrapper} onClick={(e) => e.stopPropagation()}>
           <IconButton
@@ -116,7 +133,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
           <div className={s.dialog__body}>{children}</div>
           {!isDialogControlsOnTop && dialogControlsComponent}
         </div>
-      </Modal>
+      </dialog>
       {isConfirmationDialogOpen && (
         <DialogV2
           title="Cancel action"
