@@ -113,10 +113,13 @@ const ConfigurationTree = ({
     if (treeState.dragNode) {
       onMoveArrayItem(treeState.dragNode, dropPlaceHolderNode);
     }
+    setTreeState({ ...treeState, dragNode: null });
   };
 
-  const handleDragEnd = () => {
-    setTreeState({ ...treeState, dragNode: null });
+  const handleDragEnd = (_node: ConfigurationNodeView, isDropped: boolean) => {
+    if (!isDropped) {
+      setTreeState({ ...treeState, dragNode: null });
+    }
   };
 
   const handleRenderNodeContent = (

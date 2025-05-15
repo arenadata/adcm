@@ -23,7 +23,7 @@ interface FieldNodeContentProps {
   onDelete: ChangeConfigurationNodeHandler;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
-  onDragEnd?: (node: ConfigurationNodeView) => void;
+  onDragEnd?: (node: ConfigurationNodeView, isDropped: boolean) => void;
 }
 
 const FieldNodeContent = ({
@@ -90,8 +90,9 @@ const FieldNodeContent = ({
     onDragStart?.(node);
   };
 
-  const handleDragEnd = () => {
-    onDragEnd?.(node);
+  const handleDragEnd = (event: React.DragEvent<HTMLDivElement>) => {
+    const isDropped = event.dataTransfer.dropEffect !== 'none';
+    onDragEnd?.(node, isDropped);
   };
 
   const className = cn(s.nodeContent, {

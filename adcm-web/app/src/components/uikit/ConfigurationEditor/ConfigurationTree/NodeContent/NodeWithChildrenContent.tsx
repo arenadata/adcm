@@ -23,7 +23,7 @@ interface NodeWithChildrenContentProps {
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
-  onDragEnd?: (node: ConfigurationNodeView) => void;
+  onDragEnd?: (node: ConfigurationNodeView, isDropped: boolean) => void;
 }
 
 const NodeWithChildrenContent = ({
@@ -94,8 +94,9 @@ const NodeWithChildrenContent = ({
     onDragStart?.(node);
   };
 
-  const handleDragEnd = () => {
-    onDragEnd?.(node);
+  const handleDragEnd = (event: React.DragEvent<HTMLDivElement>) => {
+    const isDropped = event.dataTransfer.dropEffect !== 'none';
+    onDragEnd?.(node, isDropped);
   };
 
   const className = cn(s.nodeContent, {
