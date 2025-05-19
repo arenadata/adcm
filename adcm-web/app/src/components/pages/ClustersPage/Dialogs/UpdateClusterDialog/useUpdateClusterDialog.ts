@@ -61,7 +61,7 @@ export const useUpdateClusterDialog = () => {
   };
 
   return {
-    isOpen: !!updatedCluster,
+    hasClusterForUpdate: !!updatedCluster,
     isValid: isValid && isNameChanged,
     formData,
     errors,

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { deleteService } from '@store/adcm/services/serviceSlice';
 import { useNavigate } from 'react-router-dom';
@@ -43,15 +43,16 @@ const DeleteServiceButton: React.FC = () => {
       <Button iconLeft="g1-delete" variant="secondary" onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={handleCloseDialog}
-        title={`Delete ${service?.displayName} service`}
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        All service information will be deleted
-      </Dialog>
+      {isDeleteDialogOpen && (
+        <DialogV2
+          title={`Delete ${service?.displayName} service`}
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Delete"
+        >
+          All service information will be deleted
+        </DialogV2>
+      )}
     </>
   );
 };

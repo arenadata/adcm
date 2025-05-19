@@ -10,7 +10,9 @@ import type { PopoverOptions } from '@uikit/Popover/Popover.types';
 
 export type SelectProps<T> = SingleSelectOptions<T> &
   PopoverOptions &
-  Omit<InputProps, 'endAdornment' | 'startAdornment' | 'readOnly' | 'onChange' | 'value'> & { dataTest?: string };
+  Omit<InputProps, 'endAdornment' | 'startAdornment' | 'readOnly' | 'onChange' | 'value'> & {
+    dataTest?: string;
+  };
 
 function SelectComponent<T>(
   {
