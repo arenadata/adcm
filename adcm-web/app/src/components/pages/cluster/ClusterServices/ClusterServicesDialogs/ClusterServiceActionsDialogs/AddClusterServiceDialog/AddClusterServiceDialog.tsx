@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { AddServiceStepKey } from './AddClusterServiceDialog.types';
 import SelectServicesStep from './SelectServicesStep/SelectServicesStep';
 import { useAddClusterServiceDialog } from './useAddClusterServiceDialog';
@@ -25,31 +25,31 @@ const AddClusterServiceDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      title="Add services"
-      onOpenChange={onClose}
-      onCancel={onClose}
-      onAction={handleAction}
-      actionButtonLabel={isNextLicenseStep ? 'Next' : 'Add'}
-      isActionDisabled={!isValid}
-    >
-      {currentStep === AddServiceStepKey.SelectServices && (
-        <SelectServicesStep
-          formData={formData}
-          onChange={handleChangeFormData}
-          unacceptedSelectedServices={unacceptedSelectedServices}
-        />
-      )}
+    isOpen && (
+      <DialogV2
+        title="Add services"
+        onCancel={onClose}
+        onAction={handleAction}
+        actionButtonLabel={isNextLicenseStep ? 'Next' : 'Add'}
+        isActionDisabled={!isValid}
+      >
+        {currentStep === AddServiceStepKey.SelectServices && (
+          <SelectServicesStep
+            formData={formData}
+            onChange={handleChangeFormData}
+            unacceptedSelectedServices={unacceptedSelectedServices}
+          />
+        )}
 
-      {currentStep === AddServiceStepKey.ServicesLicenses && (
-        <ServicesLicensesStep
-          formData={formData}
-          onChange={handleChangeFormData}
-          unacceptedSelectedServices={unacceptedSelectedServices}
-        />
-      )}
-    </Dialog>
+        {currentStep === AddServiceStepKey.ServicesLicenses && (
+          <ServicesLicensesStep
+            formData={formData}
+            onChange={handleChangeFormData}
+            unacceptedSelectedServices={unacceptedSelectedServices}
+          />
+        )}
+      </DialogV2>
+    )
   );
 };
 export default AddClusterServiceDialog;

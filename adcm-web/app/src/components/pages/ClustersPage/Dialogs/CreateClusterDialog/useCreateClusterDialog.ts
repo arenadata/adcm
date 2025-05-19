@@ -32,11 +32,9 @@ export const useCreateClusterDialog = () => {
     useForm<CreateClusterFormData>(initialFormData);
 
   const clusters = useStore((s) => s.adcm.clusters.clusters);
-  const {
-    createDialog: { isOpen },
-    relatedData,
-    relatedData: { isLoaded: isRelatedDataLoaded },
-  } = useStore((s) => s.adcm.clustersActions);
+  const isOpen = useStore((s) => s.adcm.clustersActions.createDialog.isOpen);
+  const relatedData = useStore((s) => s.adcm.clustersActions.relatedData);
+  const isRelatedDataLoaded = useStore((s) => s.adcm.clustersActions.relatedData.isLoaded);
 
   useEffect(() => {
     if (isOpen) {
