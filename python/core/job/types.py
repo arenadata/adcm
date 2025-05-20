@@ -102,12 +102,18 @@ class TaskOwner(NamedTuple):
     related_objects: RelatedObjects
 
 
+class HcAclRule(NamedTuple):
+    component: str
+    service: str
+    action: Literal["add", "remove"]
+
+
 class TaskActionInfo(NamedTuple):
     name: str
     display_name: str
 
     venv: str
-    hc_acl: list[dict]
+    hc_acl: list[HcAclRule]
 
     is_upgrade: bool
     is_host_action: bool
@@ -155,17 +161,11 @@ class JobSpec(BaseModel):
     params: dict
 
 
-class HcApply(NamedTuple):
-    component: str
-    service: str
-    action: Literal["add", "remove"]
-
-
 # it is validated, because we want to fail here on incorrect data
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
-    hc_apply: Annotated[list[HcApply], Field(default_factory=list)]
+    hc_apply: Annotated[list[HcAclRule], Field(default_factory=list)]
 
     model_config = ConfigDict(extra="allow")
 

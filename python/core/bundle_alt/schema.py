@@ -625,6 +625,13 @@ class JobSchema(_BaseActionSchema):
     script_type: ACTION_SCRIPT_TYPE
     script: Annotated[str, AfterValidator(script_is_correct_path)]
 
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.script_type == "internal" and self.script == "hc_apply" and self.hc_acl is None:
+            raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
+        return self
+
 
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
@@ -655,6 +662,17 @@ class TaskSchema(_BaseTaskSchema):
     def validate_only_one_set(self):
         if bool(self.scripts) == bool(self.scripts_jinja):
             raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
+        return self
+
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.scripts is None:
+            return self
+
+        for script in self.scripts:
+            if script["script_type"] == "internal" and script["script"] == "hc_apply" and self.hc_acl is None:
+                raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
         return self
 
 
