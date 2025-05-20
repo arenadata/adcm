@@ -16,7 +16,7 @@ import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings
-from core.job.types import HcApply, TaskMappingDelta
+from core.job.types import HcAclRule, TaskMappingDelta
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
@@ -625,14 +625,16 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         self.component_2 = self.service.components.get(prototype__name="component_2")
 
     def get_dummy_task_job(
-        self, owner: Model | None, delta: TaskMappingDelta, hc_apply: list[HcApply]
+        self, owner: Model | None, delta: TaskMappingDelta, hc_apply: list[HcAclRule]
     ) -> tuple[object, object]:
         task, job = DummyObject(), DummyObject()
 
         owner_ = None
         if owner:
             owner_ = DummyObject()
+            owner_.id = owner.id
             owner_.type = orm_object_to_core_type(owner)
+            owner_.prototype_id = owner.prototype_id
 
             related_objects = DummyObject()
 
@@ -671,7 +673,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         mapping_delta = TaskMappingDelta(
             add={self.component_2.pk: {self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk, self.host_2.pk}}
         )
-        hc_apply = [HcApply(service=service_name, component=c1_name, action="add")]
+        hc_apply = [HcAclRule(service=service_name, component=c1_name, action="add")]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
 
         internal_script_hc_apply(task=task, job=job)
@@ -684,8 +686,8 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
             remove={self.component_1.pk: {self.host_1.pk}, self.component_2.pk: {self.host_3.pk}}
         )
         hc_apply = [
-            HcApply(service=service_name, component=c1_name, action="remove"),  # in delta
-            HcApply(service=service_name, component=c2_name, action="add"),  # not in delta
+            HcAclRule(service=service_name, component=c1_name, action="remove"),  # in delta
+            HcAclRule(service=service_name, component=c2_name, action="add"),  # not in delta
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
 
@@ -702,8 +704,8 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
             add={self.component_2.pk: {self.host_1.pk, self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk}}
         )
         hc_apply = [
-            HcApply(service=service_name, component=c2_name, action="add"),
-            HcApply(service=service_name, component="nonexistent_component", action="add"),
+            HcAclRule(service=service_name, component=c2_name, action="add"),
+            HcAclRule(service=service_name, component="nonexistent_component", action="add"),
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
 

@@ -22,7 +22,7 @@ from ansible_plugin.utils import finish_check
 from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
-from core.job.types import HcApply, Job, ScriptType, Task, TaskMappingDelta
+from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.types import ADCMCoreType, ClusterID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
@@ -163,21 +163,26 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
         )
 
     hc_apply = job.params.hc_apply
+
     if not hc_apply:
-        return 0
+        hc_apply = task.action.hc_acl
 
-    if not (related_cluster := task.owner.related_objects.cluster):
-        raise AdcmEx(code="CLUSTER_NOT_FOUND", msg="Can't detect related cluster")
+    if task.owner.type == ADCMCoreType.CLUSTER:
+        cluster_id = task.owner.id
+        cluster_prototype_id = task.owner.prototype_id
+    else:
+        cluster_id = task.owner.related_objects.cluster.id
+        cluster_prototype_id = task.owner.related_objects.cluster.prototype_id
 
-    bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=related_cluster.prototype_id)
+    bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
 
     with atomic():
-        lock_cluster_mapping(cluster_id=related_cluster.id)
+        lock_cluster_mapping(cluster_id=cluster_id)
         delta_part = _extract_mapping_delta_part(
-            cluster_id=related_cluster.id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply=hc_apply
+            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply=hc_apply
         )
         change_host_component_mapping_no_lock(
-            cluster_id=related_cluster.id,
+            cluster_id=cluster_id,
             bundle_id=bundle_id,
             mapping_delta=delta_part,
             checks_func=check_nothing,
@@ -187,7 +192,7 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
 
 def _extract_mapping_delta_part(
-    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply: list[HcApply]
+    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply: list[HcAclRule]
 ) -> TaskMappingDelta:
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
     components_map = topology.component_full_name_id_mapping
