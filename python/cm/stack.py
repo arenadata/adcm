@@ -647,7 +647,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
 
-        params = sub.get("params", {})
+        params = sub.get("params") or {}
 
         if (
             sub_action.script == "hc_apply"
