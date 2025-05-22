@@ -677,7 +677,7 @@ class TaskSchema(_BaseTaskSchema):
 
 
 ACTIONS_TYPE: TypeAlias = Annotated[
-    dict[NAME, JobSchema | TaskSchema] | None,
+    dict[NAME, Annotated[JobSchema | TaskSchema, Field(discriminator="type")]] | None,
     Field(default=None),
     BeforeValidator(forbidden_mm_actions),
 ]
