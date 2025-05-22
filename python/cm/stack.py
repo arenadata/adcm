@@ -673,6 +673,28 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
 
             params = {"hc_apply": params}
 
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in params["hc_apply"]}
+            action_rules = {
+                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
+            }
+
+            extra_rules = apply_rules - action_rules
+            if extra_rules:
+                extra_rules_repr = ", ".join(
+                    map(
+                        str,
+                        (
+                            {"action": action, "service": service, "component": component}
+                            for action, service, component in extra_rules
+                        ),
+                    )
+                )
+                message = (
+                    "HC rules in hc_apply script should follow action's hc_acl rules, "
+                    f"but following are missing in action's definition: {extra_rules_repr}"
+                )
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=message)
+
         sub_action.display_name = sub["name"]
 
         if "display_name" in sub:
