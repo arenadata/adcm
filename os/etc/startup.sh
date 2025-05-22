@@ -11,6 +11,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
+missing_vars=""
+
+# Collect all missing variables
+for var in $mandatory_vars; do
+  eval "value=\"\${$var}\""
+  if [ -z "$value" ]; then
+    missing_vars="$missing_vars $var"
+  fi
+done
+
+# Report and exit if any missing
+if [ -n "$missing_vars" ]; then
+  echo "ERROR: The following environment variables must be specified:" >&2
+  for var in $missing_vars; do
+    echo "  $var" >&2
+  done
+  exit 1
+fi
+
 . /etc/adcmenv
 cleanupwaitstatus
 
@@ -23,4 +43,4 @@ sv_stop() {
 trap "sv_stop; exit" TERM
 trap "" CHLD
 runsvdir -P /etc/sv &
-while (true); do wait; done;
+wait
