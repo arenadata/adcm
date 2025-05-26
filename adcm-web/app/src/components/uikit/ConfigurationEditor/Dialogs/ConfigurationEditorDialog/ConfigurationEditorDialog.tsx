@@ -25,6 +25,7 @@ const ConfigurationEditorDialog = ({
       onCancel={onCancel}
       onAction={onApply}
       isActionDisabled={isApplyDisabled}
+      buttonInControlWithFocus={null}
       cancelButtonLabel="Cancel"
       actionButtonLabel="Apply"
     >

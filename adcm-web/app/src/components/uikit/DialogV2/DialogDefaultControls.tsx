@@ -15,14 +15,20 @@ const DialogDefaultControlsV2: React.FC<DialogDefaultControlsPropsV2> = ({ onAct
     actionButtonLabel,
     isActionDisabled,
     isActionButtonLoaderShown,
-    isActionButtonDefaultFocus,
+    buttonInControlWithFocus,
     onCancel: handleCancel,
     onAction: handleAction,
   } = useDialogContext();
 
   return (
     <ButtonGroup className={s.dialog__defaultControls} data-test="dialog-control">
-      <Button variant="secondary" onClick={onCancel ?? handleCancel} tabIndex={1} data-test="btn-reject">
+      <Button
+        //
+        variant="secondary"
+        onClick={onCancel ?? handleCancel}
+        tabIndex={buttonInControlWithFocus === 'cancel' ? 1 : 0}
+        data-test="btn-reject"
+      >
         {cancelButtonLabel}
       </Button>
       <Button
@@ -30,7 +36,7 @@ const DialogDefaultControlsV2: React.FC<DialogDefaultControlsPropsV2> = ({ onAct
         onClick={onAction ?? handleAction}
         data-test="btn-accept"
         iconLeft={isActionButtonLoaderShown ? { name: 'g1-load', className: 'spin' } : undefined}
-        autoFocus={isActionButtonDefaultFocus}
+        autoFocus={buttonInControlWithFocus === 'action'}
       >
         {actionButtonLabel}
       </Button>
