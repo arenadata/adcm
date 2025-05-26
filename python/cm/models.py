@@ -1315,7 +1315,10 @@ class ClusterBind(ADCMModel):
 
 
 class JobStatus(models.TextChoices):
+    REVOKED = "revoked", "revoked"
     CREATED = "created", "created"
+    SCHEDULED = "scheduled", "scheduled"
+    QUEUED = "queued", "queued"
     SUCCESS = "success", "success"
     FAILED = "failed", "failed"
     RUNNING = "running", "running"
