@@ -61,7 +61,7 @@ export const useUpdateHostDialog = () => {
   };
 
   return {
-    isOpen: !!updatedHost,
+    hasHostForUpdate: !!updatedHost,
     isValid: isValid && isNameChanged,
     formData,
     errors,

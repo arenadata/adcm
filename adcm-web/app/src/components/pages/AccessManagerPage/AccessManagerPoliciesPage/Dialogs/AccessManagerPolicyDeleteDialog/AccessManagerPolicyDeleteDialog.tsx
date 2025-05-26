@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeDeleteDialog, deletePolicyWithUpdate } from '@store/adcm/policies/policiesActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerPolicyDeleteDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerPolicyDeleteDialog: React.FC = () => {
 
   const policy = useStore(({ adcm }) => adcm.policiesActions.deleteDialog?.policy);
 
-  const isOpen = policy !== null;
+  if (policy === null) return;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
@@ -21,16 +21,15 @@ const AccessManagerPolicyDeleteDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <DialogV2
       //
-      isOpen={isOpen}
-      onOpenChange={handleCloseConfirm}
       title={`Delete "${policy?.name}" policy`}
       onAction={handleConfirmDialog}
+      onCancel={handleCloseConfirm}
       actionButtonLabel="Delete"
     >
       The policy will be deleted.
-    </Dialog>
+    </DialogV2>
   );
 };
 

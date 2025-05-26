@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
 import { deleteHostProvider } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
@@ -38,15 +38,16 @@ const HostProviderDeleteButton: React.FC = () => {
       <Button iconLeft="g1-delete" variant="secondary" onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={handleCloseDialog}
-        title={`Delete ${hostProvider?.name} hostprovider`}
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        All hostprovider information will be deleted
-      </Dialog>
+      {isDeleteDialogOpen && (
+        <DialogV2
+          title={`Delete ${hostProvider?.name} hostprovider`}
+          onCancel={handleCloseDialog}
+          onAction={handleConfirmDialog}
+          actionButtonLabel="Delete"
+        >
+          All hostprovider information will be deleted
+        </DialogV2>
+      )}
     </>
   );
 };

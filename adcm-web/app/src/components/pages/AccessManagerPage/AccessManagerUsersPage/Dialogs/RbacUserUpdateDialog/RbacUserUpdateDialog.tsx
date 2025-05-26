@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { useRbacUserUpdateDialog } from './useRbacUserUpdateDialog';
 import RbacUserForm from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm';
 
@@ -18,24 +18,24 @@ const RbacUserUpdateDialog: React.FC = () => {
   } = useRbacUserUpdateDialog();
 
   return (
-    <Dialog
-      title="Edit user"
-      isOpen={isOpen}
-      onOpenChange={onClose}
-      onAction={onSubmit}
-      onCancel={onClose}
-      isActionDisabled={!isValid}
-      actionButtonLabel="Save"
-    >
-      <RbacUserForm
-        isPersonalDataEditForbidden={isPersonalDataEditForbidden}
-        isCurrentUserSuperUser={isCurrentUserSuperUser}
-        onChangeFormData={onChangeFormData}
-        formData={formData}
-        groups={groups}
-        errors={errors}
-      />
-    </Dialog>
+    isOpen && (
+      <DialogV2
+        title="Edit user"
+        onAction={onSubmit}
+        onCancel={onClose}
+        isActionDisabled={!isValid}
+        actionButtonLabel="Save"
+      >
+        <RbacUserForm
+          isPersonalDataEditForbidden={isPersonalDataEditForbidden}
+          isCurrentUserSuperUser={isCurrentUserSuperUser}
+          onChangeFormData={onChangeFormData}
+          formData={formData}
+          groups={groups}
+          errors={errors}
+        />
+      </DialogV2>
+    )
   );
 };
 export default RbacUserUpdateDialog;

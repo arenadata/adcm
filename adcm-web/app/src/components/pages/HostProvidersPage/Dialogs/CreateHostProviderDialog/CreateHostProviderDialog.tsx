@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Dialog, FormFieldsContainer, FormField, Input, Select, Checkbox } from '@uikit';
+import { FormFieldsContainer, FormField, Input, Select, Checkbox, DialogV2 } from '@uikit';
 import type { AdcmPrototypeVersions, AdcmPrototypeVersion } from '@models/adcm';
 import { AdcmLicenseStatus } from '@models/adcm';
 import { useCreateHostProviderDialog } from './useCreateHostProviderDialog';
@@ -46,7 +46,7 @@ const CreateHostProviderDialog = () => {
   };
 
   const dialogControls = (
-    <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
+    <CustomDialogControls>
       {formData.prototypeVersion && formData.prototypeVersion.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label={
@@ -63,43 +63,52 @@ const CreateHostProviderDialog = () => {
   );
 
   return (
-    <Dialog title="Create hostprovider" isOpen={isOpen} onOpenChange={onClose} dialogControls={dialogControls}>
-      <FormFieldsContainer>
-        <FormField label="Type">
-          <Select
-            placeholder="Select pre-downloaded bundle"
-            value={formData.prototype}
-            onChange={handlePrototypeChange}
-            options={prototypeOptions}
-          />
-        </FormField>
-        <FormField label="Version">
-          <Select
-            placeholder="Select available"
-            disabled={formData.prototype === null}
-            value={formData.prototypeVersion}
-            onChange={handlePrototypeVersionChange}
-            options={prototypeVersionsOptions}
-          />
-        </FormField>
-        <FormField label="Name" error={errors.name}>
-          <Input
-            value={formData.name}
-            type="text"
-            onChange={handleHostProviderNameChange}
-            placeholder="Enter unique hostprovider name"
-          />
-        </FormField>
-        <FormField label="Description">
-          <Input
-            value={formData.description}
-            type="text"
-            onChange={handleDescriptionChange}
-            placeholder="Description"
-          />
-        </FormField>
-      </FormFieldsContainer>
-    </Dialog>
+    isOpen && (
+      <DialogV2
+        title="Create hostprovider"
+        actionButtonLabel="Create"
+        onCancel={onClose}
+        onAction={onCreate}
+        isActionDisabled={!isValid}
+        dialogControls={dialogControls}
+      >
+        <FormFieldsContainer>
+          <FormField label="Type">
+            <Select
+              placeholder="Select pre-downloaded bundle"
+              value={formData.prototype}
+              onChange={handlePrototypeChange}
+              options={prototypeOptions}
+            />
+          </FormField>
+          <FormField label="Version">
+            <Select
+              placeholder="Select available"
+              disabled={formData.prototype === null}
+              value={formData.prototypeVersion}
+              onChange={handlePrototypeVersionChange}
+              options={prototypeVersionsOptions}
+            />
+          </FormField>
+          <FormField label="Name" error={errors.name}>
+            <Input
+              value={formData.name}
+              type="text"
+              onChange={handleHostProviderNameChange}
+              placeholder="Enter unique hostprovider name"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={formData.description}
+              type="text"
+              onChange={handleDescriptionChange}
+              placeholder="Description"
+            />
+          </FormField>
+        </FormFieldsContainer>
+      </DialogV2>
+    )
   );
 };
 

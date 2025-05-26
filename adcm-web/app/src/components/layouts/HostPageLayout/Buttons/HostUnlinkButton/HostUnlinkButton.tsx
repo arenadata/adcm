@@ -1,6 +1,6 @@
 import { useStore, useDispatch } from '@hooks';
 import { unlinkHostWithUpdate } from '@store/adcm/host/hostSlice';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import type React from 'react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -32,15 +32,16 @@ const HostUnlinkButton: React.FC = () => {
       <Button variant="secondary" iconLeft={'g1-unlink'} onClick={handleClick}>
         Unlink
       </Button>
-      <Dialog
-        isOpen={isOpen}
-        onOpenChange={handleCloseDialog}
-        title="Unlink host"
-        onAction={handleUnlinkHost}
-        actionButtonLabel="Unlink"
-      >
-        The host will be unlinked from the cluster
-      </Dialog>
+      {isOpen && (
+        <DialogV2
+          title="Unlink host"
+          onAction={handleUnlinkHost}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Unlink"
+        >
+          The host will be unlinked from the cluster
+        </DialogV2>
+      )}
     </>
   );
 };

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { Dialog, FormFieldsContainer, FormField, Input } from '@uikit';
+import { FormFieldsContainer, FormField, Input, DialogV2 } from '@uikit';
 import { useUpdateGroupForm } from './useUpdateGroupForm';
 import { useDispatch, useStore } from '@hooks';
 import { closeUpdateDialog } from '@store/adcm/groups/groupsActionsSlice';
@@ -46,44 +46,45 @@ const AccessManagerGroupsUpdateGroupDialog = () => {
   };
 
   return (
-    <Dialog
-      title="Edit users group"
-      isOpen={isOpenDialog}
-      onOpenChange={handleCloseDialog}
-      onAction={submitForm}
-      isActionDisabled={!isValid}
-      actionButtonLabel="Save"
-    >
-      <FormFieldsContainer>
-        <FormField label="Group name" error={errors.name}>
-          <Input
-            //
-            value={formData.name}
-            type="text"
-            onChange={handleGroupNameChange}
-            placeholder="Enter unique name"
-          />
-        </FormField>
-        <FormField label="Description">
-          <Input
-            value={formData.description}
-            type="text"
-            onChange={handleGroupDescriptionChange}
-            placeholder="Enter description"
-          />
-        </FormField>
-        <FormField label="Users">
-          <MultiSelect
-            checkAllLabel="All users"
-            value={formData.usersIds}
-            onChange={handleGroupUsersChange}
-            options={usersOptions}
-            maxHeight={400}
-            placeholder="Select"
-          />
-        </FormField>
-      </FormFieldsContainer>
-    </Dialog>
+    isOpenDialog && (
+      <DialogV2
+        title="Edit users group"
+        onAction={submitForm}
+        onCancel={handleCloseDialog}
+        isActionDisabled={!isValid}
+        actionButtonLabel="Save"
+      >
+        <FormFieldsContainer>
+          <FormField label="Group name" error={errors.name}>
+            <Input
+              //
+              value={formData.name}
+              type="text"
+              onChange={handleGroupNameChange}
+              placeholder="Enter unique name"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={formData.description}
+              type="text"
+              onChange={handleGroupDescriptionChange}
+              placeholder="Enter description"
+            />
+          </FormField>
+          <FormField label="Users">
+            <MultiSelect
+              checkAllLabel="All users"
+              value={formData.usersIds}
+              onChange={handleGroupUsersChange}
+              options={usersOptions}
+              maxHeight={400}
+              placeholder="Select"
+            />
+          </FormField>
+        </FormFieldsContainer>
+      </DialogV2>
+    )
   );
 };
 

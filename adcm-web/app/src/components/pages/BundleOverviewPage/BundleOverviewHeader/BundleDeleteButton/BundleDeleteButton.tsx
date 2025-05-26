@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { deleteBundle } from '@store/adcm/bundle/bundleSlice';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,15 +35,16 @@ const BundleDeleteButton = () => {
       <Button variant="secondary" iconLeft={'g1-delete'} onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isOpenDeleteConfirm}
-        onOpenChange={handleCloseDialog}
-        title="Delete bundle"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        The "{bundle?.name}" bundle will be deleted.
-      </Dialog>
+      {isOpenDeleteConfirm && (
+        <DialogV2
+          title="Delete bundle"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Delete"
+        >
+          The "{bundle?.name}" bundle will be deleted.
+        </DialogV2>
+      )}
     </>
   );
 };

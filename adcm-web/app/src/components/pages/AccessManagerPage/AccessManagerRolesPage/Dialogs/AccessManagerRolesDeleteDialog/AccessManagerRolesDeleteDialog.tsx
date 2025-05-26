@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeDeleteDialog, deleteRoleWithUpdate } from '@store/adcm/roles/rolesActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerRolesDeleteDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerRolesDeleteDialog: React.FC = () => {
 
   const role = useStore(({ adcm }) => adcm.rolesActions.deleteDialog.role);
 
-  const isOpenDeleteDialog = !!role;
+  if (!role) return null;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
@@ -21,17 +21,14 @@ const AccessManagerRolesDeleteDialog: React.FC = () => {
   };
 
   return (
-    <>
-      <Dialog
-        isOpen={isOpenDeleteDialog}
-        onOpenChange={handleCloseConfirm}
-        title={`Delete role "${role?.name}"`}
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        Role will be deleted.
-      </Dialog>
-    </>
+    <DialogV2
+      title={`Delete role "${role?.name}"`}
+      onAction={handleConfirmDialog}
+      onCancel={handleCloseConfirm}
+      actionButtonLabel="Delete"
+    >
+      Role will be deleted.
+    </DialogV2>
   );
 };
 
