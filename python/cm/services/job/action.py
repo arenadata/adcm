@@ -13,6 +13,7 @@
 from dataclasses import dataclass, field
 from typing import Iterable, TypeAlias
 
+from adcm.feature_flags import use_new_job_scheduler
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
@@ -127,7 +128,8 @@ def run_action(
         orm_task = TaskLog.objects.get(id=task.id)
         re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
-    run_task(orm_task)
+    if not use_new_job_scheduler():
+        run_task(orm_task)
 
     send_task_status_update_event(task_id=task.id, status=JobStatus.CREATED.value)
 
