@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
 
@@ -30,15 +30,16 @@ const AccessManagerUsersDeleteButton: React.FC = () => {
       <Button variant="secondary" disabled={!areSomeRowsSelected} onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isOpenDeleteConfirm}
-        onOpenChange={handleCloseDialog}
-        title="Delete users"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        All selected users will be deleted.
-      </Dialog>
+      {isOpenDeleteConfirm && (
+        <DialogV2
+          title="Delete users"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Delete"
+        >
+          All selected users will be deleted.
+        </DialogV2>
+      )}
     </>
   );
 };

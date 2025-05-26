@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { deleteWithUpdateBundles } from '@store/adcm/bundles/bundlesActionsSlice';
 
@@ -29,15 +29,16 @@ const BundlesDeleteButton: React.FC = () => {
       <Button variant="secondary" disabled={!isSelectedSomeRows} onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isOpenDeleteConfirm}
-        onOpenChange={handleCloseDialog}
-        title="Delete bundles"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        All selected bundles will be deleted.
-      </Dialog>
+      {isOpenDeleteConfirm && (
+        <DialogV2
+          title="Delete bundles"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Delete"
+        >
+          All selected bundles will be deleted.
+        </DialogV2>
+      )}
     </>
   );
 };

@@ -34,10 +34,6 @@ const EditConfigurationFieldDialog = ({
   const [isValueValid, setIsValueValid] = useState(true);
   const [isValueBeingEdited, setIsValueBeingEdited] = useState(false);
 
-  const handleOpenChange = (isOpen: boolean) => {
-    onOpenChange(isOpen);
-  };
-
   const handleValueChange = useCallback(
     (value: JSONPrimitive, isValid = true) => {
       setValue(value as JSONPrimitive);
@@ -99,27 +95,27 @@ const EditConfigurationFieldDialog = ({
   const widthProps = adcmMeta.stringExtra?.isMultiline ? multilineWidthProps : undefined;
 
   return (
-    <ConfigurationEditorDialog
-      {...widthProps}
-      triggerRef={triggerRef}
-      isOpen={isOpen}
-      onCancel={handleCancel}
-      onApply={handleApply}
-      isApplyDisabled={!isValueValid || fieldNode.data.isReadonly || !isValueBeingEdited}
-      onOpenChange={handleOpenChange}
-    >
-      {Control && (
-        <Control
-          fieldName={fieldNode.data.title}
-          fieldSchema={fieldNode.data.fieldSchema}
-          defaultValue={fieldNode.data.defaultValue}
-          value={value}
-          isReadonly={fieldNode.data.isReadonly}
-          onChange={handleValueChange}
-          onApply={handleApply}
-        />
-      )}
-    </ConfigurationEditorDialog>
+    isOpen && (
+      <ConfigurationEditorDialog
+        {...widthProps}
+        triggerRef={triggerRef}
+        onCancel={handleCancel}
+        onApply={handleApply}
+        isApplyDisabled={!isValueValid || fieldNode.data.isReadonly || !isValueBeingEdited}
+      >
+        {Control && (
+          <Control
+            fieldName={fieldNode.data.title}
+            fieldSchema={fieldNode.data.fieldSchema}
+            defaultValue={fieldNode.data.defaultValue}
+            value={value}
+            isReadonly={fieldNode.data.isReadonly}
+            onChange={handleValueChange}
+            onApply={handleApply}
+          />
+        )}
+      </ConfigurationEditorDialog>
+    )
   );
 };
 

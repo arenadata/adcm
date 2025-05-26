@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { useAccessManagerPolicyUpdateDialog } from './useAccessManagerPolicyUpdateDialog';
 import type { ChangeFormDataPayload } from '../common/AccessManagerPolicyFormDialog.types';
 import { isValidSecondStep } from '../common/AccessManagerPolicyFormDialog.utils';
@@ -36,27 +36,27 @@ const AccessManagerPolicyUpdateDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={onClose}
-      title="Update policy"
-      actionButtonLabel={isCurrentStepMainInfo ? 'Next' : 'Update'}
-      isActionDisabled={isCurrentStepMainInfo ? !isValid : !isValidSecondStep(formData)}
-      onAction={isCurrentStepMainInfo ? handleSwitchStep : onSubmit}
-      onCancel={onClose}
-    >
-      <PolicyFormDialogWizard isValid={isValid} onChangeStep={setCurrentStep} currentStep={currentStep} />
-      {isCurrentStepMainInfo && (
-        <AccessManagerPolicyFormDialogWizardStepOne
-          formData={formData}
-          errors={errors}
-          changeFormData={changeFormData}
-        />
-      )}
-      {isCurrentStepObject && (
-        <AccessManagerPolicyFormDialogWizardStepTwo formData={formData} changeFormData={changeFormData} />
-      )}
-    </Dialog>
+    isOpen && (
+      <DialogV2
+        title="Update policy"
+        actionButtonLabel={isCurrentStepMainInfo ? 'Next' : 'Update'}
+        isActionDisabled={isCurrentStepMainInfo ? !isValid : !isValidSecondStep(formData)}
+        onAction={isCurrentStepMainInfo ? handleSwitchStep : onSubmit}
+        onCancel={onClose}
+      >
+        <PolicyFormDialogWizard isValid={isValid} onChangeStep={setCurrentStep} currentStep={currentStep} />
+        {isCurrentStepMainInfo && (
+          <AccessManagerPolicyFormDialogWizardStepOne
+            formData={formData}
+            errors={errors}
+            changeFormData={changeFormData}
+          />
+        )}
+        {isCurrentStepObject && (
+          <AccessManagerPolicyFormDialogWizardStepTwo formData={formData} changeFormData={changeFormData} />
+        )}
+      </DialogV2>
+    )
   );
 };
 export default AccessManagerPolicyUpdateDialog;

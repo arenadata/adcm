@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { useRbacUserCreateDialog } from './useRbacUserCreateDialog';
 import RbacUserForm from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm';
 
@@ -18,26 +18,26 @@ const RbacUserCreateDialog: React.FC = () => {
   } = useRbacUserCreateDialog();
 
   return (
-    <Dialog
-      title="Create new user"
-      isOpen={isOpen}
-      onOpenChange={onClose}
-      onAction={onSubmit}
-      onCancel={onClose}
-      actionButtonLabel="Create"
-      isActionDisabled={!isValid}
-    >
-      <form>
-        <RbacUserForm
-          onChangeFormData={onChangeFormData}
-          isCurrentUserSuperUser={isCurrentUserSuperUser}
-          formData={formData}
-          groups={groups}
-          errors={errors}
-          isCreate={true}
-        />
-      </form>
-    </Dialog>
+    isOpen && (
+      <DialogV2
+        title="Create new user"
+        onAction={onSubmit}
+        onCancel={onClose}
+        actionButtonLabel="Create"
+        isActionDisabled={!isValid}
+      >
+        <form>
+          <RbacUserForm
+            onChangeFormData={onChangeFormData}
+            isCurrentUserSuperUser={isCurrentUserSuperUser}
+            formData={formData}
+            groups={groups}
+            errors={errors}
+            isCreate={true}
+          />
+        </form>
+      </DialogV2>
+    )
   );
 };
 export default RbacUserCreateDialog;

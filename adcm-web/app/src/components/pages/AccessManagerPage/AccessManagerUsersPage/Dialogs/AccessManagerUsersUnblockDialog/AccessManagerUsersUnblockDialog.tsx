@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeUnblockDialog, unblockUsers } from '@store/adcm/users/usersActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerUsersUnblockDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
 
   const userToUnblock = useStore((s) => s.adcm.usersActions.unblockDialog.user);
 
-  const isOpenDialog = !!userToUnblock;
+  if (!userToUnblock) return null;
 
   const handleCloseConfirm = () => {
     dispatch(closeUnblockDialog());
@@ -21,17 +21,14 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
   };
 
   return (
-    <>
-      <Dialog
-        isOpen={isOpenDialog}
-        onOpenChange={handleCloseConfirm}
-        title="Unblock user"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Unblock"
-      >
-        Selected user will be unblocked and able to access their account
-      </Dialog>
-    </>
+    <DialogV2
+      title="Unblock user"
+      onAction={handleConfirmDialog}
+      onCancel={handleCloseConfirm}
+      actionButtonLabel="Unblock"
+    >
+      Selected user will be unblocked and able to access their account
+    </DialogV2>
   );
 };
 

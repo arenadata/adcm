@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { unblockUsers } from '@store/adcm/users/usersActionsSlice';
 import { AdcmUserStatus } from '@models/adcm';
@@ -34,15 +34,16 @@ const AccessManagerUsersUnblockButton: React.FC = () => {
       <Button variant="secondary" disabled={!areSomeBlockedUsersSelected} onClick={handleUnblockClick}>
         Unblock
       </Button>
-      <Dialog
-        isOpen={isUnblockDialogOpen}
-        onOpenChange={handleCloseDialog}
-        title="Unblock users"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Unblock"
-      >
-        All selected users will be unblocked and able to access their account.
-      </Dialog>
+      {isUnblockDialogOpen && (
+        <DialogV2
+          title="Unblock users"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Unblock"
+        >
+          All selected users will be unblocked and able to access their account.
+        </DialogV2>
+      )}
     </>
   );
 };

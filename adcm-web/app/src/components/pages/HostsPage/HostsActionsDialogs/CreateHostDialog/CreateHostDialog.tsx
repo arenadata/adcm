@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { Dialog, FormFieldsContainer, FormField, Input, Select } from '@uikit';
+import { FormFieldsContainer, FormField, Input, Select, DialogV2 } from '@uikit';
 import { useCreateHostForm } from './useCreateHostForm';
 import { useDispatch, useStore } from '@hooks';
 import { closeCreateDialog } from '@store/adcm/hosts/hostsActionsSlice';
@@ -46,42 +46,43 @@ const CreateHostDialog = () => {
   };
 
   return (
-    <Dialog
-      title="Create host"
-      isOpen={isOpenDialog}
-      onOpenChange={handleCloseDialog}
-      onAction={submit}
-      isActionDisabled={!isValid || isCreating}
-      actionButtonLabel="Create"
-      isActionButtonLoaderShown={isCreating}
-    >
-      <FormFieldsContainer>
-        <FormField label="Hostprovider">
-          <Select
-            placeholder="Select hostprovider"
-            value={formData.hostproviderId}
-            onChange={handleHostProviderChange}
-            options={hostProvidersOptions}
-          />
-        </FormField>
-        <FormField label="Name" error={errors.hostName}>
-          <Input
-            value={formData.hostName}
-            type="text"
-            onChange={handleHostNameChange}
-            placeholder="Enter unique host name"
-          />
-        </FormField>
-        <FormField label="Cluster">
-          <Select
-            placeholder="Select cluster"
-            value={formData.clusterId}
-            onChange={handleClusterNameChange}
-            options={clustersOptions}
-          />
-        </FormField>
-      </FormFieldsContainer>
-    </Dialog>
+    isOpenDialog && (
+      <DialogV2
+        title="Create host"
+        onAction={submit}
+        onCancel={handleCloseDialog}
+        isActionDisabled={!isValid || isCreating}
+        actionButtonLabel="Create"
+        isActionButtonLoaderShown={isCreating}
+      >
+        <FormFieldsContainer>
+          <FormField label="Hostprovider">
+            <Select
+              placeholder="Select hostprovider"
+              value={formData.hostproviderId}
+              onChange={handleHostProviderChange}
+              options={hostProvidersOptions}
+            />
+          </FormField>
+          <FormField label="Name" error={errors.hostName}>
+            <Input
+              value={formData.hostName}
+              type="text"
+              onChange={handleHostNameChange}
+              placeholder="Enter unique host name"
+            />
+          </FormField>
+          <FormField label="Cluster">
+            <Select
+              placeholder="Select cluster"
+              value={formData.clusterId}
+              onChange={handleClusterNameChange}
+              options={clustersOptions}
+            />
+          </FormField>
+        </FormFieldsContainer>
+      </DialogV2>
+    )
   );
 };
 

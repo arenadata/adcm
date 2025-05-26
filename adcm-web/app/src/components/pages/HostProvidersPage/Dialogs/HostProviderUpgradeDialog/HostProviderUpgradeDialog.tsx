@@ -4,7 +4,7 @@ import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { Checkbox, Dialog } from '@uikit';
+import { Checkbox, DialogV2 } from '@uikit';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 import SelectUpgradeStep from './SelectUpgradeStep/SelectUpgradeStep';
 
@@ -43,7 +43,7 @@ const HostProviderUpgradeDialog: React.FC = () => {
   const upgradeBundle = upgradeDetails?.bundle;
 
   const dialogControls = (
-    <CustomDialogControls actionButtonLabel="Upgrade" onCancel={onClose} onAction={onNext} isActionDisabled={!isValid}>
+    <CustomDialogControls>
       {upgradeBundle && upgradeBundle.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label={
@@ -63,16 +63,18 @@ const HostProviderUpgradeDialog: React.FC = () => {
   );
 
   return (
-    <Dialog
+    <DialogV2
       width="auto"
       minWidth="584px"
       title="Upgrade Hostprovider"
-      isOpen={true}
-      onOpenChange={onClose}
+      actionButtonLabel="Upgrade"
+      onCancel={onClose}
+      onAction={onNext}
+      isActionDisabled={!isValid}
       dialogControls={dialogControls}
     >
       <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
-    </Dialog>
+    </DialogV2>
   );
 };
 

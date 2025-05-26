@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeBlockDialog, blockUsers } from '@store/adcm/users/usersActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerUsersBlockDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerUsersBlockDialog: React.FC = () => {
 
   const userToBlock = useStore(({ adcm }) => adcm.usersActions.blockDialog?.user);
 
-  const isOpenDialog = !!userToBlock;
+  if (!userToBlock) return null;
 
   const handleCloseConfirm = () => {
     dispatch(closeBlockDialog());
@@ -21,17 +21,15 @@ const AccessManagerUsersBlockDialog: React.FC = () => {
   };
 
   return (
-    <>
-      <Dialog
-        isOpen={isOpenDialog}
-        onOpenChange={handleCloseConfirm}
-        title="Block user"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Block"
-      >
-        Selected user will be blocked and unable to access their account.
-      </Dialog>
-    </>
+    <DialogV2
+      //
+      title="Block user"
+      onAction={handleConfirmDialog}
+      onCancel={handleCloseConfirm}
+      actionButtonLabel="Block"
+    >
+      Selected user will be blocked and unable to access their account.
+    </DialogV2>
   );
 };
 
