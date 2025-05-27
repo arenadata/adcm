@@ -22,16 +22,17 @@
           script: hc_apply
           script_type: internal
           params:
-            - service: service_1
-              component: component_1
-              action: add
-            - service: service_2
-              component: component_2
-              action: remove
-            - service: service_2
-              component: component_3
-              action: add
-            - ansible_tags: ansible_tag1, ansible_tag2
+            rules:
+              - service: service_1
+                component: component_1
+                action: add
+              - service: service_2
+                component: component_2
+                action: remove
+              - service: service_2
+                component: component_3
+                action: add
+              - ansible_tags: ansible_tag1, ansible_tag2
 
 
 - name: service_1

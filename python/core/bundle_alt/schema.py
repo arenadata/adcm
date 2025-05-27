@@ -463,10 +463,14 @@ class HcAclSchema(TypedDict):
     service: Annotated[str | None, Field(default=None)]
 
 
-class HcApplySchema(BaseModel):
+class HcApplyRule(BaseModel):
     service: str
-    component: str | None
+    component: str
     action: Literal["add", "remove"]
+
+
+class HcApplySchema(BaseModel):
+    rules: list[HcApplyRule]
 
 
 class VersionsSchema(_BaseModel):
@@ -642,7 +646,7 @@ class ScriptSchema(TypedDict):
     script: Annotated[str, AfterValidator(script_is_correct_path)]
     script_type: ACTION_SCRIPT_TYPE
     display_name: Annotated[str | None, Field(default=None)]
-    params: Annotated[dict | None | list[HcApplySchema], Field(default=None)]
+    params: Annotated[HcApplySchema | dict | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
     allow_to_terminate: Annotated[bool | None, Field(default=None)]
 

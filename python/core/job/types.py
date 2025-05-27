@@ -165,7 +165,7 @@ class JobSpec(BaseModel):
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
-    hc_apply: Annotated[list[HcAclRule], Field(default_factory=list)]
+    rules: Annotated[list[HcAclRule], Field(default_factory=list)]
 
     model_config = ConfigDict(extra="allow")
 
