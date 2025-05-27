@@ -534,7 +534,7 @@ class TestBundle(BaseAPITestCase):
                     {"action": "remove", "component": "component_2", "service": "service_2"},
                     {"action": "add", "component": "component_3", "service": "service_2"},
                 ],
-                subaction.params["hc_apply"],
+                subaction.params["rules"],
             )
 
         with self.subTest("hc_apply internal script: wrong definition"):
@@ -544,10 +544,11 @@ class TestBundle(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
             if use_new_bundle_parsing_approach(os.environ, self.client.headers if self.client.headers else {}):
-                self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+                self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
                 self.assertIn("Errors found in definition of bundle entity:", response.data["desc"])
             else:
                 self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
                 self.assertIn(
-                    "Script script_1 of install must have parameters: service, component, action", response.data["desc"]
+                    "Script script_1 of install must have parameters: service, component, action",
+                    response.data["desc"],
                 )

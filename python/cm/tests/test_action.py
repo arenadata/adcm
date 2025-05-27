@@ -502,7 +502,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
-            "hc_apply": [],
+            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(action_pk=self.action_full.pk)
@@ -520,7 +520,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": False,
-            "hc_apply": [],
+            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -539,7 +539,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_list": [1, "two", 3.0],
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
-            "hc_apply": [],
+            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -558,7 +558,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
-            "hc_apply": [],
+            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -581,7 +581,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
 
     def test_params_custom_fields_absent(self):
-        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True, "hc_apply": []}
+        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True, "rules": []}
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
             action_pk=self.action_custom_fields_absent.pk,
@@ -625,7 +625,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         self.component_2 = self.service.components.get(prototype__name="component_2")
 
     def get_dummy_task_job(
-        self, owner: Model | None, delta: TaskMappingDelta, hc_apply: list[HcAclRule]
+        self, owner: Model | None, delta: TaskMappingDelta, rules: list[HcAclRule]
     ) -> tuple[object, object]:
         task, job = DummyObject(), DummyObject()
 
@@ -655,7 +655,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         task.hostcomponent = hostcomponent
 
         params = DummyObject()
-        params.hc_apply = hc_apply
+        params.rules = rules
         job.params = params
 
         return task, job
@@ -669,27 +669,27 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         initial_hc = ((self.host_1, self.component_1), (self.host_2, self.component_1), (self.host_3, self.component_2))
         self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
 
-        # Case 1. hc_apply specifies changes not present in mapping_delta
+        # Case 1. rules specifies changes not present in mapping_delta
         mapping_delta = TaskMappingDelta(
             add={self.component_2.pk: {self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk, self.host_2.pk}}
         )
-        hc_apply = [HcAclRule(service=service_name, component=c1_name, action="add")]
-        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+        rules = [HcAclRule(service=service_name, component=c1_name, action="add")]
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
         internal_script_hc_apply(task=task, job=job)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(host.pk, component.pk) for host, component in initial_hc}
         self.assertSetEqual(actual_hc, expected_hc)
 
-        # Case 2. hc_apply specifies changes partially present in mapping_delta
+        # Case 2. rules specifies changes partially present in mapping_delta
         mapping_delta = TaskMappingDelta(
             remove={self.component_1.pk: {self.host_1.pk}, self.component_2.pk: {self.host_3.pk}}
         )
-        hc_apply = [
+        rules = [
             HcAclRule(service=service_name, component=c1_name, action="remove"),  # in delta
             HcAclRule(service=service_name, component=c2_name, action="add"),  # not in delta
         ]
-        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
         internal_script_hc_apply(task=task, job=job)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
@@ -699,15 +699,15 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         # restore HC
         self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
 
-        # Case 3. mapping_delta is partially specified in hc_apply
+        # Case 3. mapping_delta is partially specified in rules
         mapping_delta = TaskMappingDelta(
             add={self.component_2.pk: {self.host_1.pk, self.host_4.pk}}, remove={self.component_1.pk: {self.host_1.pk}}
         )
-        hc_apply = [
+        rules = [
             HcAclRule(service=service_name, component=c2_name, action="add"),
             HcAclRule(service=service_name, component="nonexistent_component", action="add"),
         ]
-        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, hc_apply=hc_apply)
+        task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
         internal_script_hc_apply(task=task, job=job)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
@@ -720,6 +720,6 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin):
         }
         self.assertSetEqual(actual_hc, expected_hc)
 
-        task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, hc_apply=hc_apply)
+        task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, rules=rules)
         with self.assertRaises(AdcmEx):
             internal_script_hc_apply(task=task, job=job)

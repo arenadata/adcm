@@ -162,10 +162,10 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
             msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
         )
 
-    hc_apply = job.params.hc_apply
+    hc_apply_rules = job.params.rules
 
-    if not hc_apply:
-        hc_apply = task.action.hc_acl
+    if not hc_apply_rules:
+        hc_apply_rules = task.action.hc_acl
 
     if task.owner.type == ADCMCoreType.CLUSTER:
         cluster_id = task.owner.id
@@ -179,7 +179,7 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
         delta_part = _extract_mapping_delta_part(
-            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply=hc_apply
+            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply_rules=hc_apply_rules
         )
         change_host_component_mapping_no_lock(
             cluster_id=cluster_id,
@@ -192,13 +192,13 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
 
 def _extract_mapping_delta_part(
-    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply: list[HcAclRule]
+    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply_rules: list[HcAclRule]
 ) -> TaskMappingDelta:
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
     components_map = topology.component_full_name_id_mapping
 
     delta_data = defaultdict(lambda: defaultdict(set))
-    for hc_rule in hc_apply:
+    for hc_rule in hc_apply_rules:
         component_id = components_map.get((hc_rule.service, hc_rule.component))
         if component_id is None:
             continue

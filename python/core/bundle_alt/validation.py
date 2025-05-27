@@ -190,10 +190,8 @@ def check_action_scripts(action: ActionDefinition, bundle_root: Path):
         if script.script_type != "internal" and not (bundle_root / script.script).is_file():
             raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
 
-        if script.script_type == "internal" and script.script == "hc_apply":
-            apply_rules = {
-                (entry["action"], entry["service"], entry["component"]) for entry in script.params["hc_apply"]
-            }
+        if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
             action_rules = {
                 (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
             }

@@ -655,7 +655,11 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             and "hc_acl" in conf
             and params
         ):
-            for hc_rule in params:
+            message = f"Script {sub_action.name} of {action.name} must have parameters:"
+            if "rules" not in params:
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=f"{message} rules")
+
+            for hc_rule in params["rules"]:
                 if (
                     not isinstance(hc_rule, dict)
                     or not {"service", "component", "action"}.issubset(hc_rule.keys())
@@ -667,13 +671,10 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
                 ):
                     raise AdcmEx(
                         code="INVALID_OBJECT_DEFINITION",
-                        msg=f"Script {sub_action.name} of {action.name} must have parameters: "
-                        f"service, component, action",
+                        msg=f"{message} service, component, action",
                     )
 
-            params = {"hc_apply": params}
-
-            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in params["hc_apply"]}
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in params["rules"]}
             action_rules = {
                 (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
             }
