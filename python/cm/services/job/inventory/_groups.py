@@ -58,6 +58,14 @@ def detect_host_groups_for_cluster_bundle_action(
             # patch_for_hc_apply
             # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
             # For backward compatibility, you must leave the inventory.json file in the "future" state.
+            # 1. Changing inventory groups
+            # 2. Calculating maintenance_mode for services and components
+            # 3. Service and component configurations after removing
+
+            # As part of the ADCM-6563 task, after discussion with the Bundle development team,
+            # it was decided not to return the behavior for scenarios 2 and 3, since this functionality
+            # is not currently used.
+
             # You must add and remove hosts from the corresponding groups.
             # add hosts to:
             # <service>.<component> and <service>.<component>.maintenance_mode

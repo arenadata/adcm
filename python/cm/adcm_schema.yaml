@@ -223,7 +223,8 @@ cluster_upgrade_obj:
   <<: *common_upgrade_object
   items:
     <<: *common_upgrade_object_items
-    hc_acl: action_hc_acl_list
+    # As part of the ADCM-6563 task, it was decided to drop support for upgrades with `hc_acl`.
+    # hc_acl: action_hc_acl_list
 
 upgrade_task_list:
   match: list
