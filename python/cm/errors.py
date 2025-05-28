@@ -61,6 +61,7 @@ ERRORS = {
     "UPGRADE_NOT_FOUND": ("upgrade is not found", HTTP_404_NOT_FOUND, ERR),
     "USER_NOT_FOUND": ("user profile is not found", HTTP_404_NOT_FOUND, ERR),
     "CONCERNITEM_NOT_FOUND": ("concern item doesn't exist", HTTP_404_NOT_FOUND, ERR),
+    "CONCERNITEM_NOT_REMOVED": ("concern item can't be removed", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_NOT_FOUND": ("group config doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "OBJ_TYPE_ERROR": ("wrong object type", HTTP_409_CONFLICT, ERR),
     "SERVICE_CONFLICT": ("service already exists in specified cluster", HTTP_409_CONFLICT, ERR),
