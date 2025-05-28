@@ -53,6 +53,7 @@ VIEW_USER_PERMISSION = "rbac.view_user"
 VIEW_GROUP_PERMISSION = "rbac.view_group"
 VIEW_ROLE_PERMISSION = "rbac.view_role"
 VIEW_POLICY_PERMISSION = "rbac.view_policy"
+DELETE_CONCERN_PERMISSION = "cm.delete_concernitem"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
