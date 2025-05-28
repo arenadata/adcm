@@ -526,7 +526,9 @@ class _BaseUpgradeSchema(_BaseModel):
 
 
 class ClusterUpgradeSchema(_BaseUpgradeSchema):
-    hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    # As part of the ADCM-6563 task, it was decided to drop support for upgrades with `hc_acl`.
+    # hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    pass
 
 
 class ProviderUpgradeSchema(_BaseUpgradeSchema):
