@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Checkbox, Dialog, FormField, FormFieldsContainer, Input, Select } from '@uikit';
-import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
+import { Checkbox, DialogV2, FormField, FormFieldsContainer, Input, Select } from '@uikit';
 import type { AdcmPrototypeVersion, AdcmPrototypeVersions } from '@models/adcm';
 import { AdcmLicenseStatus } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
+import CustomDialogControlsV2 from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControlsV2';
 
 const CreateClusterDialog = () => {
   const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData, errors } =
@@ -49,7 +49,7 @@ const CreateClusterDialog = () => {
   };
 
   const dialogControls = (
-    <CustomDialogControls actionButtonLabel="Create" onCancel={onClose} onAction={onCreate} isActionDisabled={!isValid}>
+    <CustomDialogControlsV2>
       {formData.productVersion && formData.productVersion.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label={
@@ -62,48 +62,57 @@ const CreateClusterDialog = () => {
           onChange={handleTermsOfAgreementChange}
         />
       )}
-    </CustomDialogControls>
+    </CustomDialogControlsV2>
   );
 
   return (
-    <Dialog title="Create cluster" isOpen={isOpen} onOpenChange={onClose} dialogControls={dialogControls}>
-      <FormFieldsContainer>
-        <FormField label="Product">
-          <Select
-            placeholder="Select pre-downloaded bundle"
-            value={formData.product}
-            onChange={handleProductChange}
-            options={productsOptions}
-          />
-        </FormField>
-        <FormField label="Product version">
-          <Select
-            placeholder="Select available"
-            disabled={formData.product === null}
-            value={formData.productVersion}
-            onChange={handleProductVersionChange}
-            options={productVersionsOptions}
-            maxHeight={200}
-          />
-        </FormField>
-        <FormField label="Cluster name" error={errors.name}>
-          <Input
-            value={formData.name}
-            type="text"
-            onChange={handleClusterNameChange}
-            placeholder="Enter unique cluster name"
-          />
-        </FormField>
-        <FormField label="Description">
-          <Input
-            value={formData.description}
-            type="text"
-            onChange={handleDescriptionChange}
-            placeholder="Description"
-          />
-        </FormField>
-      </FormFieldsContainer>
-    </Dialog>
+    isOpen && (
+      <DialogV2
+        title="Create cluster"
+        onAction={onCreate}
+        onCancel={onClose}
+        dialogControls={dialogControls}
+        actionButtonLabel="Create"
+        isActionDisabled={!isValid}
+      >
+        <FormFieldsContainer>
+          <FormField label="Product">
+            <Select
+              placeholder="Select pre-downloaded bundle"
+              value={formData.product}
+              onChange={handleProductChange}
+              options={productsOptions}
+            />
+          </FormField>
+          <FormField label="Product version">
+            <Select
+              placeholder="Select available"
+              disabled={formData.product === null}
+              value={formData.productVersion}
+              onChange={handleProductVersionChange}
+              options={productVersionsOptions}
+              maxHeight={200}
+            />
+          </FormField>
+          <FormField label="Cluster name" error={errors.name}>
+            <Input
+              value={formData.name}
+              type="text"
+              onChange={handleClusterNameChange}
+              placeholder="Enter unique cluster name"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={formData.description}
+              type="text"
+              onChange={handleDescriptionChange}
+              placeholder="Description"
+            />
+          </FormField>
+        </FormFieldsContainer>
+      </DialogV2>
+    )
   );
 };
 

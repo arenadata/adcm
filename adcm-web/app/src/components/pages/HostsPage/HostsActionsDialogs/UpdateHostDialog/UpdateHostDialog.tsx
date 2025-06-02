@@ -1,19 +1,20 @@
-import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
+import { DialogV2, FormField, FormFieldsContainer, Input } from '@uikit';
 import { useUpdateHostDialog } from './useUpdateHostDialog';
 
 const RenameHostDialog = () => {
-  const { isOpen, formData, isValid, onRename, onClose, onChangeFormData, errors } = useUpdateHostDialog();
+  const { hasHostForUpdate, formData, isValid, onRename, onClose, onChangeFormData, errors } = useUpdateHostDialog();
+
+  if (!hasHostForUpdate) return null;
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChangeFormData({ name: event.target.value });
   };
 
   return (
-    <Dialog
+    <DialogV2
       title="Rename host"
-      isOpen={isOpen}
-      onOpenChange={onClose}
       onAction={onRename}
+      onCancel={onClose}
       isActionDisabled={!isValid}
       actionButtonLabel="Save"
     >
@@ -22,7 +23,7 @@ const RenameHostDialog = () => {
           <Input value={formData.name} type="text" onChange={handleNameChange} placeholder="Enter unique host name" />
         </FormField>
       </FormFieldsContainer>
-    </Dialog>
+    </DialogV2>
   );
 };
 

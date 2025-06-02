@@ -463,10 +463,14 @@ class HcAclSchema(TypedDict):
     service: Annotated[str | None, Field(default=None)]
 
 
-class HcApplySchema(BaseModel):
+class HcApplyRule(BaseModel):
     service: str
-    component: str | None
+    component: str
     action: Literal["add", "remove"]
+
+
+class HcApplySchema(BaseModel):
+    rules: list[HcApplyRule]
 
 
 class VersionsSchema(_BaseModel):
@@ -526,7 +530,9 @@ class _BaseUpgradeSchema(_BaseModel):
 
 
 class ClusterUpgradeSchema(_BaseUpgradeSchema):
-    hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    # As part of the ADCM-6563 task, it was decided to drop support for upgrades with `hc_acl`.
+    # hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    pass
 
 
 class ProviderUpgradeSchema(_BaseUpgradeSchema):
@@ -625,6 +631,13 @@ class JobSchema(_BaseActionSchema):
     script_type: ACTION_SCRIPT_TYPE
     script: Annotated[str, AfterValidator(script_is_correct_path)]
 
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.script_type == "internal" and self.script == "hc_apply" and self.hc_acl is None:
+            raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
+        return self
+
 
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
@@ -635,7 +648,7 @@ class ScriptSchema(TypedDict):
     script: Annotated[str, AfterValidator(script_is_correct_path)]
     script_type: ACTION_SCRIPT_TYPE
     display_name: Annotated[str | None, Field(default=None)]
-    params: Annotated[dict | None | list[HcApplySchema], Field(default=None)]
+    params: Annotated[HcApplySchema | dict | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
     allow_to_terminate: Annotated[bool | None, Field(default=None)]
 
@@ -657,9 +670,20 @@ class TaskSchema(_BaseTaskSchema):
             raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
         return self
 
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.scripts is None:
+            return self
+
+        for script in self.scripts:
+            if script["script_type"] == "internal" and script["script"] == "hc_apply" and self.hc_acl is None:
+                raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
+        return self
+
 
 ACTIONS_TYPE: TypeAlias = Annotated[
-    dict[NAME, JobSchema | TaskSchema] | None,
+    dict[NAME, Annotated[JobSchema | TaskSchema, Field(discriminator="type")]] | None,
     Field(default=None),
     BeforeValidator(forbidden_mm_actions),
 ]

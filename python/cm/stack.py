@@ -647,12 +647,23 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
 
-        elif sub_action.script == "hc_apply" and sub_action.script_type == ScriptType.INTERNAL and "hc_acl" not in conf:
-            for param_set in sub.get("params", ()):
+        params = sub.get("params") or {}
+
+        if (
+            sub_action.script == "hc_apply"
+            and sub_action.script_type == ScriptType.INTERNAL
+            and "hc_acl" in conf
+            and params
+        ):
+            message = f"Script {sub_action.name} of {action.name} must have parameters:"
+            if "rules" not in params:
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=f"{message} rules")
+
+            for hc_rule in params["rules"]:
                 if (
-                    not isinstance(param_set, dict)
-                    or not {"service", "component", "action"}.issubset(param_set.keys())
-                    or param_set["action"]
+                    not isinstance(hc_rule, dict)
+                    or not {"service", "component", "action"}.issubset(hc_rule.keys())
+                    or hc_rule["action"]
                     not in (
                         "add",
                         "remove",
@@ -660,18 +671,38 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
                 ):
                     raise AdcmEx(
                         code="INVALID_OBJECT_DEFINITION",
-                        msg=f"Script {sub_action.name} of {action.name} must have parameters: "
-                        f"service, component, action",
+                        msg=f"{message} service, component, action",
                     )
 
-            sub["params"] = {"hc_apply": [dict(d) for d in sub.get("params", ())]}
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in params["rules"]}
+            action_rules = {
+                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
+            }
+
+            extra_rules = apply_rules - action_rules
+            if extra_rules:
+                extra_rules_repr = ", ".join(
+                    map(
+                        str,
+                        (
+                            {"action": action, "service": service, "component": component}
+                            for action, service, component in extra_rules
+                        ),
+                    )
+                )
+                message = (
+                    "HC rules in hc_apply script should follow action's hc_acl rules, "
+                    f"but following are missing in action's definition: {extra_rules_repr}"
+                )
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=message)
 
         sub_action.display_name = sub["name"]
 
         if "display_name" in sub:
             sub_action.display_name = sub["display_name"]
 
-        dict_to_obj(sub, "params", sub_action)
+        sub_action.params = params
+
         if not sub_action.params and action_wide_params:
             sub_action.params = action_wide_params
 
@@ -731,11 +762,7 @@ def check_internal_script(
             msg=f"{obj_ref}: only `{allowed_scripts}` internal scripts allowed here, got `{config['script']}`",
         )
 
-    if (
-        config["script"] == hc_apply
-        and not is_hc_acl_present
-        and (config.get("type") == "job" or err_code == "INVALID_UPGRADE_DEFINITION")
-    ):
+    if config["script"] == hc_apply and not is_hc_acl_present:
         raise AdcmEx(
             code=err_code,
             msg=f"{obj_ref}: `{hc_apply}` requires `hc_acl` declaration",

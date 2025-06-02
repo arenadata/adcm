@@ -1,4 +1,4 @@
-import { Dialog, FormField, FormFieldsContainer, Select } from '@uikit';
+import { DialogV2, FormField, FormFieldsContainer, Select } from '@uikit';
 import { useLinkHostForm } from './useLinkHostForm';
 import { useDispatch, useStore } from '@hooks';
 import { useEffect } from 'react';
@@ -27,7 +27,7 @@ const LinkHostDialog = () => {
     }
   }, [host, reset, loadRelatedData, onChangeFormData]);
 
-  const isOpenLink = !!host;
+  if (!host) return null;
 
   const handleCloseDialog = () => {
     dispatch(closeLinkDialog());
@@ -38,11 +38,10 @@ const LinkHostDialog = () => {
   };
 
   return (
-    <Dialog
+    <DialogV2
       title="Link host"
-      isOpen={isOpenLink}
-      onOpenChange={handleCloseDialog}
       onAction={submit}
+      onCancel={handleCloseDialog}
       isActionDisabled={!isValid}
       actionButtonLabel="Link"
     >
@@ -56,7 +55,7 @@ const LinkHostDialog = () => {
           />
         </FormField>
       </FormFieldsContainer>
-    </Dialog>
+    </DialogV2>
   );
 };
 

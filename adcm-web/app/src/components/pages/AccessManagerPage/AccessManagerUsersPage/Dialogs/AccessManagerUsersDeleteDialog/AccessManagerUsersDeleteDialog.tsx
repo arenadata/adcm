@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeDeleteDialog, deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerUsersDeleteDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
 
   const user = useStore(({ adcm }) => adcm.usersActions.deleteDialog.user);
 
-  const isOpenDeleteDialog = !!user;
+  if (!user) return null;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
@@ -21,17 +21,14 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
   };
 
   return (
-    <>
-      <Dialog
-        isOpen={isOpenDeleteDialog}
-        onOpenChange={handleCloseConfirm}
-        title="Delete user"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        Selected user will be deleted
-      </Dialog>
-    </>
+    <DialogV2
+      title="Delete user"
+      onAction={handleConfirmDialog}
+      onCancel={handleCloseConfirm}
+      actionButtonLabel="Delete"
+    >
+      Selected user will be deleted
+    </DialogV2>
   );
 };
 

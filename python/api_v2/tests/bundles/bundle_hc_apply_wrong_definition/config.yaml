@@ -1,17 +1,28 @@
 - type: cluster
-  name: hc_apply_scripts_cluster
+  name: hc_apply_scripts_cluster_wrong
   version: &version '1.0'
   edition: community
 
   actions:
     install:
       type: task
+      hc_acl:
+        - service: service_1
+          component: component_1
+          action: add
+        - service: service_2
+          component: component_2
+          action: remove
+        - service: service_2
+          component: component_3
+          action: add
       scripts:
         - name: script_1
           display_name: Script 1
           script: hc_apply
           script_type: internal
           params:
+            rules:
               - service: service_1
                 component: component_1
                 action: add
@@ -29,13 +40,13 @@
   version: *version
   components:
     component_1:
-      constraint: [1, +]
+      constraint: [ 1, + ]
 
 - name: service_2
   type: service
   version: *version
   components:
     component_2:
-      constraint: [1, +]
+      constraint: [ 1, + ]
     component_3:
       constraint: [ 1, + ]

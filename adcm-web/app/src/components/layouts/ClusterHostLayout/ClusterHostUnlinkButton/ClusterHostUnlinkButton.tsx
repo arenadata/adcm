@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { unlinkClusterHost } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -36,15 +36,16 @@ const ClusterHostUnlinkButton = () => {
       <Button variant="secondary" iconLeft={'g1-unlink'} onClick={handleClick}>
         Unlink
       </Button>
-      <Dialog
-        isOpen={isOpenUnlinkConfirm}
-        onOpenChange={handleCloseDialog}
-        title="Unlink host"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Unlink"
-      >
-        The {clusterHost?.name} will be unlinked.
-      </Dialog>
+      {isOpenUnlinkConfirm && (
+        <DialogV2
+          title="Unlink host"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Unlink"
+        >
+          The {clusterHost?.name} will be unlinked.
+        </DialogV2>
+      )}
     </>
   );
 };

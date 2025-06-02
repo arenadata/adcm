@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { AdcmMaintenanceMode } from '@models/adcm';
 import type { EntityWithMaintenanceModeType } from './MaintenanceModeDialog.utils';
 import { getEntityDisplayName, getRevertedMaintenanceModeStatus } from './MaintenanceModeDialog.utils';
@@ -23,16 +23,15 @@ const MaintenanceModeDialog: React.FC<MaintenanceModeDialogProps> = ({ entity, o
 
   return (
     <>
-      <Dialog
+      <DialogV2
         //
-        isOpen={true}
-        onOpenChange={onCloseDialog}
         title={`${statusLabels[newMaintenanceMode]} maintenance mode`}
+        onCancel={onCloseDialog}
         onAction={onConfirmDialog}
         actionButtonLabel={statusLabels[newMaintenanceMode]}
       >
         The maintenance mode will be turned {newMaintenanceMode} on {entityDisplayName}
-      </Dialog>
+      </DialogV2>
     </>
   );
 };

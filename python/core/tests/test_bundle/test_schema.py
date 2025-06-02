@@ -478,10 +478,6 @@ class TestBundleSchema(TestCase):
                       unavailable: any
                     multi_state:
                       available: any
-                  hc_acl:
-                    - component: component_1
-                      action: add
-                      service: service_1
             """
             raw = yaml.safe_load(yaml_schema)
             schemas = self.validate_schema(raw)
@@ -503,7 +499,6 @@ class TestBundleSchema(TestCase):
                     }
                 ],
                 "masking": {"state": {"unavailable": "any"}, "multi_state": {"available": "any"}},
-                "hc_acl": [{"component": "component_1", "action": "add", "service": "service_1"}],
                 "display_name": None,
                 "description": None,
                 "from_edition": None,
@@ -677,26 +672,6 @@ class TestBundleSchema(TestCase):
                       unavailable: any
                     multi_state:
                       available: any
-                      field: value
-            """
-            raw = yaml.safe_load(yaml_schema)
-            with self.assertRaises(ValidationError):
-                self.validate_schema(raw)
-
-            # hc_acl
-            yaml_schema = """
-            - type: cluster
-              name: some_cluster
-              version: 3
-              upgrade:
-                - name: some_upgrade
-                  versions:
-                      min: 1
-                      max: 5
-                  hc_acl:
-                    - component: component_1
-                      action: add
-                      service: service_1
                       field: value
             """
             raw = yaml.safe_load(yaml_schema)

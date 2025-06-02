@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { closeStopDialog, stopJobWithUpdate } from '@store/adcm/jobs/jobsActionsSlice';
 
@@ -20,6 +20,8 @@ const StopJobDialog: React.FC = () => {
     },
   );
 
+  if (!stopJob) return null;
+
   const name = stopJob?.displayName;
 
   const handleClose = () => {
@@ -33,16 +35,15 @@ const StopJobDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <DialogV2
       //
       title={`Terminate the job "${name}"`}
-      isOpen={!!stopJob}
       actionButtonLabel="Stop"
       onAction={handleConfirm}
-      onOpenChange={handleClose}
+      onCancel={handleClose}
     >
       Selected job will be terminated
-    </Dialog>
+    </DialogV2>
   );
 };
 

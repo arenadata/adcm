@@ -1,18 +1,20 @@
-import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
+import { DialogV2, FormField, FormFieldsContainer, Input } from '@uikit';
 import { useUpdateClusterDialog } from './useUpdateClusterDialog';
 
 const UpdateClusterDialog = () => {
-  const { isOpen, formData, isValid, onRename, onClose, onChangeFormData, errors } = useUpdateClusterDialog();
+  const { hasClusterForUpdate, formData, isValid, onRename, onClose, onChangeFormData, errors } =
+    useUpdateClusterDialog();
+
+  if (!hasClusterForUpdate) return null;
 
   const handleClusterNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChangeFormData({ name: event.target.value });
   };
 
   return (
-    <Dialog
+    <DialogV2
       title="Rename cluster"
-      isOpen={isOpen}
-      onOpenChange={onClose}
+      onCancel={onClose}
       onAction={onRename}
       isActionDisabled={!isValid}
       actionButtonLabel="Save"
@@ -27,7 +29,7 @@ const UpdateClusterDialog = () => {
           />
         </FormField>
       </FormFieldsContainer>
-    </Dialog>
+    </DialogV2>
   );
 };
 

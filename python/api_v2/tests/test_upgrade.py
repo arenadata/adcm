@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+import unittest
 
 from cm.models import (
     ADCM,
@@ -139,6 +140,7 @@ class TestUpgrade(BaseAPITestCase):
             },
         )
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_cluster_upgrade_retrieve_complex_success(self):
         response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -188,6 +190,7 @@ class TestUpgrade(BaseAPITestCase):
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_cluster_upgrade_run_complex_success(self):
         accept_license(
             prototype=Prototype.objects.filter(
@@ -242,6 +245,7 @@ class TestUpgrade(BaseAPITestCase):
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_5246_cluster_upgrade_other_constraints_run_success(self):
         accept_license(
             prototype=Prototype.objects.filter(
@@ -303,6 +307,7 @@ class TestUpgrade(BaseAPITestCase):
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
@@ -336,6 +341,7 @@ class TestUpgrade(BaseAPITestCase):
         self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
         self.assertIsNone(run_task.target_task)
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_no_host_fail(self):
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
@@ -355,6 +361,7 @@ class TestUpgrade(BaseAPITestCase):
         self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
         self.assertIsNone(run_task.target_task)
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_duplicated_hc_success(self):
         # The test captures the behavior in which duplicates are ignored.
         # Passing duplicates to the `hostComponentMap` does not break the behavior,
@@ -411,6 +418,7 @@ class TestUpgrade(BaseAPITestCase):
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_several_entries_hc_success(self):
         accept_license(
             prototype=Prototype.objects.filter(
@@ -550,6 +558,7 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_cluster_upgrade_hostcomponent_validation_fail(self):
         endpoint = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"]
         for hc_data in ([{"hostId": 1}], [{"componentId": 4}], [{}]):
@@ -672,6 +681,7 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_5965_no_constraints_check(self) -> None:
         bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "old")
         new_bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "new")

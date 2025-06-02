@@ -1,6 +1,5 @@
 import type React from 'react';
-import { Checkbox, Dialog } from '@uikit';
-import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
+import { Checkbox, DialogV2 } from '@uikit';
 import { AdcmLicenseStatus } from '@models/adcm';
 import { useUpgradeClusterDialog } from './useUpgradeClusterDialog';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
@@ -8,6 +7,7 @@ import SelectUpgradeStep from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/
 import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 import ServicesLicensesStep from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/ServicesLicensesStep/ServicesLicensesStep';
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
+import CustomDialogControlsV2 from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControlsV2';
 
 const UpgradeClusterDialog = () => {
   const { cluster, isValid, upgradeDetails, formData, handleChangeFormData, onSubmit, onNext, onClose, currentStep } =
@@ -34,7 +34,7 @@ const UpgradeClusterDialog = () => {
   const upgradeBundle = upgradeDetails?.bundle;
 
   const dialogControls = (
-    <CustomDialogControls actionButtonLabel="Upgrade" onCancel={onClose} onAction={onNext} isActionDisabled={!isValid}>
+    <CustomDialogControlsV2>
       {upgradeBundle && upgradeBundle.licenseStatus !== AdcmLicenseStatus.Absent && (
         <Checkbox
           label={
@@ -50,17 +50,18 @@ const UpgradeClusterDialog = () => {
           onChange={handleChangeAcceptedUpgradeLicense}
         />
       )}
-    </CustomDialogControls>
+    </CustomDialogControlsV2>
   );
 
   return (
-    <Dialog
-      width="auto"
+    <DialogV2
       minWidth="584px"
       title="Upgrade Cluster"
-      isOpen={true}
-      onOpenChange={onClose}
+      onAction={onNext}
+      onCancel={onClose}
       dialogControls={dialogControls}
+      actionButtonLabel="Upgrade"
+      isActionDisabled={!isValid}
     >
       {currentStep === UpgradeStepKey.SelectUpgrade && (
         <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
@@ -68,7 +69,7 @@ const UpgradeClusterDialog = () => {
       {currentStep === UpgradeStepKey.ServicesLicenses && (
         <ServicesLicensesStep formData={formData} onChange={handleChangeFormData} />
       )}
-    </Dialog>
+    </DialogV2>
   );
 };
 

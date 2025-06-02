@@ -8,11 +8,12 @@ import DialogDefaultControlsV2 from './DialogDefaultControls';
 import Text from '@uikit/Text/Text';
 import Modal from '@uikit/Modal/Modal';
 
+export type ButtonsInControl = null | 'action' | 'cancel';
+
 export interface DialogV2Props {
   children: React.ReactNode;
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
-  isActionButtonDefaultFocus?: boolean;
   isDialogControlsOnTop?: boolean;
   width?: string;
   height?: string;
@@ -25,6 +26,7 @@ export interface DialogV2Props {
   isActionDisabled?: boolean;
   isActionButtonLoaderShown?: boolean;
   isNeedConfirmationOnCancel?: boolean;
+  buttonInControlWithFocus?: ButtonsInControl;
   onAction?: () => void;
   onCancel: () => void;
 }
@@ -33,7 +35,6 @@ const DialogV2: React.FC<DialogV2Props> = ({
   children,
   title,
   dialogControls,
-  isActionButtonDefaultFocus = false,
   isDialogControlsOnTop = false,
   width = '584px',
   height,
@@ -46,6 +47,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
   isActionDisabled = false,
   isActionButtonLoaderShown = false,
   isNeedConfirmationOnCancel = false,
+  buttonInControlWithFocus = 'cancel',
   onAction,
   onCancel,
 }) => {
@@ -85,7 +87,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
         actionButtonLabel,
         isActionDisabled,
         isActionButtonLoaderShown,
-        isActionButtonDefaultFocus,
+        buttonInControlWithFocus,
         onCancel: handleCancel,
         onAction: handleAction,
       }}

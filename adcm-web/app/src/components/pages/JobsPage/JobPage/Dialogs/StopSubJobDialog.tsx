@@ -2,7 +2,7 @@ import type React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { closeStopDialog, stopSubJobWithUpdate } from '@store/adcm/jobs/subJobsActionsSlice';
 import { useParams } from 'react-router-dom';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 
 const StopSubJobDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -19,6 +19,8 @@ const StopSubJobDialog: React.FC = () => {
     return adcm.job.job?.childJobs.find(({ id }) => id === adcm.subJobsActions.stopDialog.id) ?? null;
   });
 
+  if (!subJob) return null;
+
   const handleClose = () => {
     dispatch(closeStopDialog());
   };
@@ -30,16 +32,15 @@ const StopSubJobDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <DialogV2
       //
-      isOpen={!!subJob}
       title={`Terminate the subjob "${subJob?.displayName}"`}
       actionButtonLabel="Stop"
       onAction={handleConfirm}
-      onOpenChange={handleClose}
+      onCancel={handleClose}
     >
       Selected subjob will be terminated
-    </Dialog>
+    </DialogV2>
   );
 };
 

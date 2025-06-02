@@ -12,6 +12,7 @@
 
 from pathlib import Path
 from unittest.mock import patch
+import unittest
 
 from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Prototype
@@ -289,6 +290,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_upload_hc_apply_upgrade_success(self):
         bundle_filename = "upgrade_hc_apply_success.tar"
         self.upload_bundle(path=Path(self.test_files_dir, bundle_filename))
@@ -310,6 +312,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "INVALID_UPGRADE_DEFINITION")
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_upload_hc_apply_upgrade_wrong_script_fail(self):
         bundle_filename = "upgrade_hc_apply_wrong_script.tar"
         self.upload_bundle(path=Path(self.test_files_dir, bundle_filename))

@@ -186,14 +186,32 @@ def check_actions(
 
 def check_action_scripts(action: ActionDefinition, bundle_root: Path):
     for script in action.scripts:
-        if (
-            script.script_type == "internal"
-            and script.script != "hc_apply"
-            and not (bundle_root / script.script).is_file()
-        ):
+        # should it even be here?
+        if script.script_type != "internal" and not (bundle_root / script.script).is_file():
             raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
-        if script.script_type == "internal" and script.script == "hc_apply" and not action.hostcomponentmap:
-            raise BundleValidationError(f"Action {action.name} of cluster: `hc_apply` requires `hc_acl` declaration")
+
+        if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
+            action_rules = {
+                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
+            }
+
+            extra_rules = apply_rules - action_rules
+            if extra_rules:
+                extra_rules_repr = ", ".join(
+                    map(
+                        str,
+                        (
+                            {"action": action, "service": service, "component": component}
+                            for action, service, component in extra_rules
+                        ),
+                    )
+                )
+                message = (
+                    "HC rules in hc_apply script should follow action's hc_acl rules, "
+                    f"but following are missing in action's definition: {extra_rules_repr}"
+                )
+                raise BundleValidationError(message)
 
 
 def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap) -> None:
