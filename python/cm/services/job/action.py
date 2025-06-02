@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Iterable, TypeAlias
+from typing import Iterable, Sequence, TypeAlias
 
 from adcm.feature_flags import use_new_job_scheduler
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
@@ -52,7 +52,7 @@ from cm.services.job._utils import check_delta_is_allowed, construct_delta_for_t
 from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.jinja_scripts import get_job_specs_from_template
-from cm.services.job.run import run_task
+from cm.services.job.run import start_task
 from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.services.job.types import ActionHCRule
 from cm.services.mapping import check_no_host_in_mm
@@ -88,14 +88,14 @@ def run_action(
         raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
     _check_no_target_conflict(target=action_objects.target, action=action)
-    _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
+    check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
     _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action.pk)
     _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
     delta = None
     if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
         topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
-        delta = _check_hostcomponent_and_get_delta(
+        delta = check_hostcomponent_and_get_delta(
             bundle_id=int(action.prototype.bundle_id),
             topology=topology,
             hc_payload=payload.hostcomponent,
@@ -129,7 +129,7 @@ def run_action(
         re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
     if not use_new_job_scheduler():
-        run_task(orm_task)
+        start_task(orm_task)
 
     send_task_status_update_event(task_id=task.id, status=JobStatus.CREATED.value)
 
@@ -288,7 +288,7 @@ def _check_no_target_conflict(target: ActionTarget, action: Action) -> None:
         raise AdcmEx(code="TASK_ERROR", msg=message)
 
 
-def _check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) -> None:
+def check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) -> None:
     object_locks = lock_owner.concerns.filter(type=ConcernType.LOCK)
 
     if action_name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
@@ -340,10 +340,10 @@ def _process_run_config(
     process_config_spec(obj=task, spec=spec, new_config=conf)
 
 
-def _check_hostcomponent_and_get_delta(
+def check_hostcomponent_and_get_delta(
     bundle_id: BundleID,
     topology: ClusterTopology,
-    hc_payload: set[HostComponentEntry],
+    hc_payload: Sequence[HostComponentEntry],
     hc_rules: list[ActionHCRule],
     mapping_restriction_err_template: str,
 ) -> TaskMappingDelta | None:

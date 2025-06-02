@@ -10,7 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import restart_task, start_task
+# The file is named this way to avoid circular imports.
 
-__all__ = ["get_default_runner", "get_restart_runner", "start_task", "restart_task"]
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Literal, TypeAlias, TypedDict
+
+from core.types import TaskID
+
+WorkerID: TypeAlias = int
+
+
+class TaskRunnerEnvironment(str, Enum):
+    LOCAL = "local"
+    CELERY = "celery"
+
+
+class WorkerInfo(TypedDict):
+    environment: Literal["local", "celery"]
+    worker_id: WorkerID
+
+
+class TaskQueuer(ABC):
+    env: TaskRunnerEnvironment
+
+    @abstractmethod
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        ...

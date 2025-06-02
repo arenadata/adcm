@@ -22,7 +22,7 @@ from django.utils import timezone
 from typing_extensions import Self
 
 from cm.models import TaskLog
-from cm.services.job.run import get_default_runner, run_task
+from cm.services.job.run import get_default_runner, start_task
 from cm.services.job.run._target_factories import ExecutionTargetFactory
 
 
@@ -184,8 +184,8 @@ class RunTaskMock:
 
     def __call__(self, task: TaskLog) -> None:
         self.target_task = task
-        with patch("cm.services.job.run._task.subprocess.Popen", return_value=FakePopen(pid=101)):
-            run_task(task)
+        with patch("jobs.services.task.subprocess.Popen", return_value=FakePopen(pid=101)):
+            start_task(task)
 
         with patch("cm.services.job.run._impl._factory", new=self._execution_target_factory), patch(
             "cm.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
@@ -193,7 +193,7 @@ class RunTaskMock:
             self.runner = get_default_runner()
 
     def __enter__(self):
-        self._run_patch = patch("cm.services.job.action.run_task", new=self)
+        self._run_patch = patch("cm.services.job.action.start_task", new=self)
         return self._run_patch.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

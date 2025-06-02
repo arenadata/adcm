@@ -19,7 +19,7 @@ from adcm.permissions import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
-from cm.services.job.run import restart_task, run_task
+from cm.services.job.run import restart_task, start_task
 from cm.utils import str_remove_non_alnum
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -226,7 +226,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
             raise AdcmEx(code="TASK_ERROR", msg=f"task #{task.pk} is running")
 
         if task.status == JobStatus.SUCCESS:
-            run_task(task)
+            start_task(task)
         elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
             restart_task(task)
         else:
