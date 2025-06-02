@@ -21,7 +21,7 @@ import logging
 import logging.config
 
 sys.path.append("/adcm/python")
-from jobs.scheduler.launcher import Launcher
+from jobs.scheduler.launcher import run_launcher_in_loop
 from jobs.scheduler.monitor import Monitor
 
 LOG_DIR = Path(__file__).absolute().parent.parent.parent.parent / "data" / "log"
@@ -58,12 +58,10 @@ logger = logging.getLogger("job_scheduler")
 def main() -> None:
     logger.info(f"Scheduler started (pid: {os.getpid()})")
 
-    launcher = Launcher()
-    monitor = Monitor()
-
-    proc = Process(target=launcher, args=())
+    proc = Process(target=run_launcher_in_loop, args=())
     proc.start()
 
+    monitor = Monitor()
     proc = Process(target=monitor, args=())
     proc.start()
 

@@ -32,7 +32,10 @@ from core.types import (
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
 class ExecutionStatus(str, Enum):
+    REVOKED = "revoked"
     CREATED = "created"
+    SCHEDULED = "scheduled"
+    QUEUED = "queued"
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
@@ -103,6 +106,7 @@ class TaskOwner(NamedTuple):
 
 
 class TaskActionInfo(NamedTuple):
+    id: ObjectID
     name: str
     display_name: str
 

@@ -11,12 +11,12 @@
 # limitations under the License.
 
 from collections import defaultdict
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Collection, Iterable
+from typing import Collection, ContextManager, Iterable, TypeAlias
 import operator
 
 from core.errors import NotFoundError
@@ -47,6 +47,7 @@ from core.types import (
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     PrototypeDescriptor,
+    TaskID,
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -68,6 +69,7 @@ from cm.models import (
     Component,
     Host,
     JobLog,
+    JobStatus,
     LogStorage,
     Provider,
     Service,
@@ -75,6 +77,8 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+
+TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 
 
 class JobRepoImpl(JobRepoInterface):
@@ -130,6 +134,7 @@ class JobRepoImpl(JobRepoInterface):
             owner=cls._get_task_owner(task_record=task_record),
             selector=task_record.selector,
             action=TaskActionInfo(
+                id=int(task_record.action_id),
                 name=task_record.action.name,
                 display_name=task_record.action.display_name,
                 venv=task_record.action.venv,
@@ -279,6 +284,26 @@ class JobRepoImpl(JobRepoInterface):
             current_multi_state.pop(remove_key, None)
 
         core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
+
+    @classmethod
+    @contextmanager
+    def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
+        yield (
+            TaskLog.objects.select_for_update(skip_locked=True)
+            .filter(status=JobStatus.CREATED)
+            .order_by("id")
+            .values_list("id", flat=True)
+            .first()
+        )
+
+    @classmethod
+    def get_target_orm(cls, task_id: TaskID) -> TaskTargetCoreObject:
+        target = TaskLog.objects.get(id=task_id).task_object
+
+        if isinstance(target, ActionHostGroup):
+            return ActionHostGroup.objects.get(id=target.id).object
+
+        return target
 
     @staticmethod
     def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta | None:

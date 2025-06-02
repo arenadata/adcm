@@ -10,7 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import restart_task, start_task
+from cm.models import Action, TaskLog
+from core.types import ActionID, TaskID
 
-__all__ = ["get_default_runner", "get_restart_runner", "start_task", "restart_task"]
+
+def retrieve_task_orm(task_id: TaskID) -> TaskLog:
+    return TaskLog.objects.get(id=task_id)
+
+
+def retrieve_action_orm(action_id: ActionID) -> Action:
+    return Action.objects.get(id=action_id)
