@@ -94,6 +94,7 @@ def run_action(
     delta = None
     if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
         topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
+
         delta = _check_hostcomponent_and_get_delta(
             bundle_id=int(action.prototype.bundle_id),
             topology=topology,
@@ -375,7 +376,7 @@ def _check_hostcomponent_and_get_delta(
 
     if with_hc_acl:
         delta = construct_delta_for_task(host_difference=host_difference)
-        check_delta_is_allowed(delta=delta, rules=hc_rules)
+        check_delta_is_allowed(delta=delta, rules=hc_rules, full_name_mapping=topology.component_full_name_id_mapping)
         return delta
 
     return None

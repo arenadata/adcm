@@ -66,7 +66,9 @@ class Directories(NamedTuple):
 def parse_bundle_from_request_to_db(
     file_from_request: File, *, directories: Directories, adcm_version: str, verified_signature_only: bool
 ) -> Bundle:
-    archive_in_downloads = save_bundle_file_from_request_to_downloads(file_from_request=file_from_request)
+    archive_in_downloads = save_bundle_file_from_request_to_downloads(
+        file_from_request=file_from_request, downloads_dir=directories.downloads
+    )
     return parse_bundle_archive(
         archive=archive_in_downloads,
         directories=directories,
@@ -113,9 +115,9 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
 
 
 @convert_bundle_errors_to_adcm_ex
-def save_bundle_file_from_request_to_downloads(file_from_request: File) -> Path:
+def save_bundle_file_from_request_to_downloads(file_from_request: File, downloads_dir: Path) -> Path:
     archive_in_tmp = _write_bundle_archive_to_tempdir(file_from_request=file_from_request)
-    return _safe_copy_to_downloads(archive=archive_in_tmp)
+    return _safe_copy_to_downloads(archive=archive_in_tmp, downloads_dir=downloads_dir)
 
 
 def process_bundle_from_archive(
@@ -210,7 +212,7 @@ def _calculate_bundle_verification_status(
     #  ALSO find a way to avoid requesting ADCM ID
     #  MAYBE make it a cached function?
     adcm_id = ADCM.objects.values_list("id", flat=True).get()
-    key_filepath = files_dir / "adcm" / str(adcm_id) / "global" / "verification_public_key"
+    key_filepath = files_dir / f"adcm.{adcm_id}.global.verification_public_key"
 
     try:
         res: ImportResult = gpg.import_keys_file(key_path=key_filepath)
@@ -313,7 +315,7 @@ def _write_bundle_archive_to_tempdir(file_from_request: File) -> Path:
     return tmp_path
 
 
-def _safe_copy_to_downloads(archive: Path, downloads_dir: Path = settings.DOWNLOAD_DIR) -> Path:
+def _safe_copy_to_downloads(archive: Path, downloads_dir: Path) -> Path:
     """Copy file to downloads dir if there isn't already archive with such content"""
     target_path = downloads_dir / archive.name
 

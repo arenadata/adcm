@@ -509,7 +509,9 @@ def _to_config_definition(result: dict[ParameterKey, dict], context: dict) -> Co
         elif spec.type == "variant":
             spec.limits["source"] = check_variant(param)
 
-        if param.get("activatable"):
+        # it's very strange, but some stuff is bound to "active"
+        # being present whenever "activatable" is MENTIONED even when it's not true
+        if "activatable" in param:
             active = param.get("active", False)
             attrs[key] = {"active": active}
             spec.limits["active"] = active

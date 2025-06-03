@@ -12,9 +12,9 @@
 
 from core.cluster.types import TopologyHostDiff
 from core.job.types import TaskMappingDelta
+from core.types import ComponentID, ComponentNameKey
 
 from cm.errors import AdcmEx
-from cm.models import Component
 from cm.services.job.types import ActionHCRule
 
 
@@ -26,32 +26,32 @@ def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDe
     return delta
 
 
-def check_delta_is_allowed(delta: TaskMappingDelta, rules: list[ActionHCRule]) -> None:
+def check_delta_is_allowed(
+    delta: TaskMappingDelta, rules: list[ActionHCRule], full_name_mapping: dict[ComponentNameKey, ComponentID]
+) -> None:
     if not rules:
         return
 
     allowed = {"add": set(), "remove": set()}
-    components_lookup = {
-        f"{service_name}.{component_name}": pk
-        for service_name, component_name, pk in Component.objects.values_list(
-            "service__prototype__name", "prototype__name", "pk"
-        )
-    }
 
     for rule in rules:
-        component_key = f"{rule['service']}.{rule['component']}"  # Create the service.component key
-        component_id = components_lookup.get(component_key)
+        component_key = ComponentNameKey(service=rule["service"], component=rule["component"])
+        component_id = full_name_mapping.get(component_key)
         if component_id:
             allowed[rule["action"]].add(component_id)
 
     disallowed_add = set(delta.add.keys()).difference(allowed["add"])
     if disallowed_add:
-        disallowed = next(iter(disallowed_add))
-        message = f'no permission to "add" component {disallowed} to cluster mapping'
+        disallowed_id = next(iter(disallowed_add))
+        reversed_mapping = {val: key for key, val in full_name_mapping.items()}
+        disallowed_name = reversed_mapping[disallowed_id]
+        message = f'no permission to "add" component {disallowed_name} to cluster mapping'
         raise AdcmEx(code="WRONG_ACTION_HC", msg=message)
 
     disallowed_remove = set(delta.remove.keys()).difference(allowed["remove"])
     if disallowed_remove:
-        disallowed = next(iter(disallowed_remove))
-        message = f'no permission to "remove" component {disallowed} from cluster mapping'
+        disallowed_id = next(iter(disallowed_remove))
+        reversed_mapping = {val: key for key, val in full_name_mapping.items()}
+        disallowed_name = reversed_mapping[disallowed_id]
+        message = f'no permission to "remove" component {disallowed_name} from cluster mapping'
         raise AdcmEx(code="WRONG_ACTION_HC", msg=message)
