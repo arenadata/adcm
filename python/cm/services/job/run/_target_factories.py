@@ -23,7 +23,7 @@ from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
-from core.types import ADCMCoreType, ClusterID
+from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
@@ -199,7 +199,7 @@ def _extract_mapping_delta_part(
 
     delta_data = defaultdict(lambda: defaultdict(set))
     for hc_rule in hc_apply_rules:
-        component_id = components_map.get((hc_rule.service, hc_rule.component))
+        component_id = components_map.get(ComponentNameKey(service=hc_rule.service, component=hc_rule.component))
         if component_id is None:
             continue
         delta_data[hc_rule.action][component_id].update(
