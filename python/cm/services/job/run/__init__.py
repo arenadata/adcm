@@ -11,6 +11,13 @@
 # limitations under the License.
 
 from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import restart_task, start_task
+from cm.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
 
-__all__ = ["get_default_runner", "get_restart_runner", "start_task", "restart_task"]
+__all__ = [
+    "get_default_runner",
+    "get_restart_runner",
+    "start_task",
+    "restart_task",
+    "distribute_concerns",
+    "run_task_in_local_subprocess",
+]

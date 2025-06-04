@@ -13,46 +13,16 @@
 # limitations under the License.
 
 from multiprocessing import Process
-from pathlib import Path
 from time import sleep
 import os
 import sys
-import logging
-import logging.config
 
 sys.path.append("/adcm/python")
+from jobs.scheduler._logger import logger
 from jobs.scheduler.launcher import run_launcher_in_loop
-from jobs.scheduler.monitor import Monitor
+from jobs.scheduler.monitor import MONITOR_REGISTRY
 
-LOG_DIR = Path(__file__).absolute().parent.parent.parent.parent / "data" / "log"
-DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
-LOGGER_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "adcm": {
-            "format": "{asctime} {levelname} {module} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "job_scheduler_file_handler": {
-            "class": "logging.handlers.WatchedFileHandler",
-            "formatter": "adcm",
-            "filename": LOG_DIR / "scheduler.log",
-        },
-    },
-    "loggers": {
-        "job_scheduler": {
-            "handlers": ["job_scheduler_file_handler"],
-            "level": DEFAULT_LOG_LEVEL,
-            "propagate": True,
-        },
-    },
-}
-logging.config.dictConfig(LOGGER_CONFIG)
-
-logger = logging.getLogger("job_scheduler")
+JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
 
 
 def main() -> None:
@@ -61,7 +31,7 @@ def main() -> None:
     proc = Process(target=run_launcher_in_loop, args=())
     proc.start()
 
-    monitor = Monitor()
+    monitor = MONITOR_REGISTRY[JOB_EXECUTION_ENVIRONMENT]()
     proc = Process(target=monitor, args=())
     proc.start()
 

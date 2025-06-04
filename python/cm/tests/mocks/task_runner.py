@@ -184,7 +184,7 @@ class RunTaskMock:
 
     def __call__(self, task: TaskLog) -> None:
         self.target_task = task
-        with patch("jobs.services.task.subprocess.Popen", return_value=FakePopen(pid=101)):
+        with patch("cm.services.job.run._task.subprocess.Popen", return_value=FakePopen(pid=101)):
             start_task(task)
 
         with patch("cm.services.job.run._impl._factory", new=self._execution_target_factory), patch(

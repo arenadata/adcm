@@ -13,10 +13,12 @@
 # The file is named this way to avoid circular imports.
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, TypeAlias, TypedDict
+from typing import Literal, NamedTuple, TypeAlias, TypedDict
 
-from core.types import TaskID
+from core.job.types import ExecutionStatus
+from core.types import ConcernID, TaskID
 
 WorkerID: TypeAlias = int
 
@@ -31,9 +33,28 @@ class WorkerInfo(TypedDict):
     worker_id: WorkerID
 
 
+@dataclass(slots=True, frozen=True)
+class TaskShortInfo:
+    id: TaskID
+    worker: WorkerInfo
+    status: ExecutionStatus
+    lock_id: ConcernID | None
+
+
+class LiveCheckResult(NamedTuple):
+    is_dead: bool
+    status: ExecutionStatus | None = None
+
+
 class TaskQueuer(ABC):
     env: TaskRunnerEnvironment
 
     @abstractmethod
     def queue(self, task_id: TaskID) -> WorkerInfo:
+        ...
+
+
+class Monitor(ABC):
+    @abstractmethod
+    def run(self) -> None:
         ...
