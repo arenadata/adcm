@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.services.job.run import run_task_in_local_subprocess
 from core.types import TaskID
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment, WorkerInfo
 from jobs.scheduler.repo import retrieve_task_orm
-from jobs.services.task import run_task_in_local_subprocess
 
 
 class LocalTaskQueuer(TaskQueuer):

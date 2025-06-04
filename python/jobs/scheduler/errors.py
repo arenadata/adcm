@@ -11,5 +11,13 @@
 # limitations under the License.
 
 
-class LauncherError(Exception):
+class SchedulerError(Exception):
+    pass
+
+
+class LauncherError(SchedulerError):
+    pass
+
+
+class RecoveryError(SchedulerError):
     pass

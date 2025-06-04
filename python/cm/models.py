@@ -1327,7 +1327,7 @@ class JobStatus(models.TextChoices):
     BROKEN = "broken", "broken"
 
 
-UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.RUNNING)
+UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.SCHEDULED, JobStatus.QUEUED, JobStatus.RUNNING)
 
 
 class UserProfile(ADCMModel):

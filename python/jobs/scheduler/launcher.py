@@ -13,7 +13,6 @@
 from types import ModuleType
 import os
 import time
-import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
@@ -21,6 +20,7 @@ from cm.errors import AdcmEx
 from cm.models import Cluster
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
+from cm.services.job.run import distribute_concerns
 from cm.services.job.run.repo import JobRepoImpl, JobRepoInterface, TaskTargetCoreObject
 from core.cluster.operations import construct_mapping_from_delta
 from core.job.dto import TaskUpdateDTO
@@ -28,19 +28,17 @@ from core.job.types import ExecutionStatus, Task
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
 from jobs.scheduler import repo as SchedulerRepo  # noqa: N812
+from jobs.scheduler._logger import logger
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
 from jobs.scheduler.queuers import LocalTaskQueuer
 from jobs.scheduler.task_status import set_status_on_fail, set_status_on_success
-from jobs.services.concerns import distribute_concerns
 
 DEFAULT_JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
 EXECUTOR_REGISTRY = {
     TaskRunnerEnvironment.LOCAL: LocalTaskQueuer,
     TaskRunnerEnvironment.CELERY: ...,  # TODO
 }
-
-logger = logging.getLogger("job_scheduler")
 
 
 def run_launcher_in_loop() -> None:

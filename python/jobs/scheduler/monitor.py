@@ -12,18 +12,24 @@
 
 import os
 import time
-import logging
 
-logger = logging.getLogger("job_scheduler")
+from jobs.scheduler._logger import logger
+from jobs.scheduler._types import Monitor, TaskRunnerEnvironment
 
 
-class Monitor:
+class LocalMonitor(Monitor):
     def __call__(self, *args, **kwargs):
         _ = args, kwargs
-        logger.info(f"Monitor started (pid: {os.getpid()})")
+        logger.info(f"LocalMonitor started (pid: {os.getpid()})")
         self.run()
 
     def run(self):
         while True:
-            logger.info("Monitor.run")
+            logger.info("LocalMonitor.run")
             time.sleep(500)
+
+
+MONITOR_REGISTRY = {
+    TaskRunnerEnvironment.LOCAL: LocalMonitor,
+    TaskRunnerEnvironment.CELERY: ...,  # TODO
+}
