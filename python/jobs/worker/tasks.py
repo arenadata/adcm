@@ -10,14 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
+from cm.models import TaskLog
+from django.db.transaction import atomic
 
-__all__ = [
-    "get_default_runner",
-    "get_restart_runner",
-    "start_task",
-    "restart_task",
-    "distribute_concerns",
-    "run_task_in_local_subprocess",
-]
+from jobs.services.task import run_task_in_local_subprocess
+from jobs.worker.app import app
+
+
+@app.task()
+def run_job(job_id: int) -> None:
+    # name and arguments are new, but in function naming is old
+    # `job_id` is `tasklog_id`
+    with atomic():
+        task = TaskLog.objects.get(id=job_id)
+        run_task_in_local_subprocess(task=task, command="start")

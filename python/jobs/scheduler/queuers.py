@@ -10,14 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
+from cm.services.job.run import run_task_in_local_subprocess
+from core.types import TaskID
+from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment, WorkerInfo
+from jobs.scheduler.repo import retrieve_task_orm
 
-__all__ = [
-    "get_default_runner",
-    "get_restart_runner",
-    "start_task",
-    "restart_task",
-    "distribute_concerns",
-    "run_task_in_local_subprocess",
-]
+
+class LocalTaskQueuer(TaskQueuer):
+    env = TaskRunnerEnvironment.LOCAL
+
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        pid = run_task_in_local_subprocess(task=retrieve_task_orm(task_id=task_id), command="start")
+
+        return WorkerInfo(environment=self.env.value, worker_id=pid)

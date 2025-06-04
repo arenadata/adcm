@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable, Protocol
+from typing import Any, Collection, ContextManager, Iterable, Protocol
 
 from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
 from core.job.types import ActionInfo, Job, JobSpec, Task
-from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, TaskID
 
 
 class JobRepoInterface(Protocol):
@@ -63,6 +63,14 @@ class JobRepoInterface(Protocol):
 
     @staticmethod
     def close_old_connections() -> None:
+        ...
+
+    @classmethod
+    def get_target_orm(cls, task_id: TaskID) -> Any:
+        ...
+
+    @classmethod
+    def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
         ...
 
 

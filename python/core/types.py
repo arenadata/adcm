@@ -26,6 +26,8 @@ BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
+JobID: TypeAlias = int
+PID: TypeAlias = int
 
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int

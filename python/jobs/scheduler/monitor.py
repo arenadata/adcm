@@ -10,14 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
+import os
+import time
 
-__all__ = [
-    "get_default_runner",
-    "get_restart_runner",
-    "start_task",
-    "restart_task",
-    "distribute_concerns",
-    "run_task_in_local_subprocess",
-]
+from jobs.scheduler._logger import logger
+from jobs.scheduler._types import Monitor, TaskRunnerEnvironment
+
+
+class LocalMonitor(Monitor):
+    def __call__(self, *args, **kwargs):
+        _ = args, kwargs
+        logger.info(f"LocalMonitor started (pid: {os.getpid()})")
+        self.run()
+
+    def run(self):
+        while True:
+            logger.info("LocalMonitor.run")
+            time.sleep(500)
+
+
+MONITOR_REGISTRY = {
+    TaskRunnerEnvironment.LOCAL: LocalMonitor,
+    TaskRunnerEnvironment.CELERY: ...,  # TODO
+}

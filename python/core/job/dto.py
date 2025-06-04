@@ -25,6 +25,7 @@ class TaskUpdateDTO(BaseModel):
     status: ExecutionStatus | None = None
     post_upgrade_hc_map: list[dict] | None = None
     hostcomponentmap: TaskMappingDelta | None = None
+    executor: dict | None = None
 
 
 class JobUpdateDTO(BaseModel):

@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run._impl import get_default_runner, get_restart_runner
-from cm.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
+from django.conf import settings
 
-__all__ = [
-    "get_default_runner",
-    "get_restart_runner",
-    "start_task",
-    "restart_task",
-    "distribute_concerns",
-    "run_task_in_local_subprocess",
-]
+# todo make configurable and independent from django
+
+_db_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASS}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+
+
+broker_url = f"sqla+{_db_url}"
+result_backend = f"db+{_db_url}"
+result_extended = True
+timezone = "UTC"

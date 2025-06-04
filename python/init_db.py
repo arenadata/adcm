@@ -17,8 +17,6 @@ import os
 import json
 import logging
 
-from django.utils import timezone
-
 import adcm.init_django  # noqa: F401, isort:skip
 
 from adcm.feature_flags import use_new_bundle_parsing_approach
@@ -26,20 +24,16 @@ from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
-    UNFINISHED_STATUS,
     CheckLog,
     Cluster,
     ConcernItem,
     ConcernType,
     GroupCheckLog,
-    JobLog,
-    JobStatus,
     Provider,
-    TaskLog,
 )
 from cm.services.bundle_alt.adcm import process_adcm_bundle
-from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from django.conf import settings
+from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
 
 TOKEN_LENGTH = 20
@@ -124,20 +118,6 @@ def recheck_issues():
             update_hierarchy_issues(obj)
 
 
-def abort_all():
-    for task in TaskLog.objects.filter(status__in=UNFINISHED_STATUS):
-        task.status = JobStatus.ABORTED
-        task.finish_date = timezone.now()
-        task.save(update_fields=["status", "finish_date"])
-
-        if task.is_blocking:
-            delete_task_lock_concern(task_id=task.pk)
-        else:
-            delete_task_flag_concern(task_id=task.pk)
-
-    JobLog.objects.filter(status__in=UNFINISHED_STATUS).update(status=JobStatus.ABORTED, finish_date=timezone.now())
-
-
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     logger.info("Start initializing ADCM DB...")
 
@@ -146,7 +126,7 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     prepare_secrets_json(status_user_username, status_user_password)
     _create_system_user()
 
-    abort_all()
+    recover_statuses()
     clear_temp_tables()
 
     adcm_parser = process_adcm_bundle if use_new_bundle_parsing_approach(env=os.environ, headers={}) else load_adcm
