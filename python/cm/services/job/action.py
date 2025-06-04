@@ -377,7 +377,7 @@ def check_hostcomponent_and_get_delta(
 
     if with_hc_acl:
         delta = construct_delta_for_task(host_difference=host_difference)
-        check_delta_is_allowed(delta=delta, rules=hc_rules)
+        check_delta_is_allowed(delta=delta, rules=hc_rules, full_name_mapping=topology.component_full_name_id_mapping)
         return delta
 
     return None

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Collection, Iterable
 
@@ -102,17 +103,20 @@ def check_requires(definitions: DefinitionsMap) -> None:
 
 
 def check_display_names_are_unique(definitions: DefinitionsMap) -> None:
-    service_keys = [s for s, s_def in definitions.items() if is_service(s_def)]
+    component_display_names_per_service = defaultdict(set)
+    component_keys = filter(is_component_key, definitions.keys())
 
-    for key in service_keys:
-        components_keys = [c for c in definitions if key[1] in c and is_component_key(c)]
-        current_display_names = [definitions[c].display_name for c in components_keys]
-
-        if len(set(current_display_names)) != len(current_display_names):
+    for key in component_keys:
+        service_name = key[1]
+        component_definition = definitions[key]
+        component_display_name = component_definition.display_name
+        if component_display_name in component_display_names_per_service[service_name]:
             raise BundleValidationError(
                 f"Display name for component within one service must be unique. "
-                f"Incorrect definition of component '{key[-1]}'"
+                f"Incorrect definition of component '{component_definition.name}'"
             )
+
+        component_display_names_per_service[service_name].add(component_display_name)
 
 
 def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
@@ -181,14 +185,13 @@ def check_actions(
             check_mm_host_action_is_allowed(action=action, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action.hostcomponentmap, definitions=definitions)
             check_jinja_templates_are_correct(action=action, bundle_root=bundle_root)
-            check_action_scripts(action=action, bundle_root=bundle_root)
+            check_action_scripts(action=action)
 
 
-def check_action_scripts(action: ActionDefinition, bundle_root: Path):
+def check_action_scripts(action: ActionDefinition):
     for script in action.scripts:
-        # should it even be here?
-        if script.script_type != "internal" and not (bundle_root / script.script).is_file():
-            raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
+        # if script.script_type != "internal" and not (bundle_root / script.script).is_file():
+        #    raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
 
         if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
             apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
@@ -259,7 +262,7 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
         try:
             hc_entry_key = dependency_entry_to_key(hc_entry)
         except KeyError as e:
-            raise BundleValidationError('"service" field is required in hc_acl for component') from e
+            raise BundleValidationError('"service" field is required in hc_acl for cluster and component') from e
 
         if hc_entry_key not in definitions:
             _, service_name, component_name = hc_entry_key

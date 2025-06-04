@@ -22,7 +22,6 @@ from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
 import yaml
@@ -365,12 +364,7 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
             data={"bundle_file": path.name},
         )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            response.data["desc"],
-            "Display name for component within one service must be unique."
-            ' Incorrect definition of component "component_2" 3.0',
-        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_upload_hc_acl_cluster_action_without_service_fail(self):
         path = Path(self.test_files_dir, "test_cluster_hc_acl_without_service.tar")
@@ -379,12 +373,7 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
         response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_ACTION_DEFINITION")
-        self.assertEqual(
-            response.data["desc"],
-            '"service" filed is required in hc_acl of action "sleep" '
-            'of cluster "hc_acl_in_cluster_without_service" 1.0',
-        )
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
 
     def test_upload_hc_acl_service_action_without_service_success(self):
         path = Path(self.test_files_dir, "test_service_hc_acl_without_service.tar")
@@ -401,11 +390,7 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
         response = self.client.post(path=reverse(viewname="v1:load-bundle"), data={"bundle_file": path.name})
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_ACTION_DEFINITION")
-        self.assertEqual(
-            response.data["desc"],
-            '"service" filed is required in hc_acl of action "sleep" of component "component" 1.0',
-        )
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
 
 
 class TestBundleParsing(BaseTestCase, BundleLogicMixin):

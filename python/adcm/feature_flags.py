@@ -29,7 +29,7 @@ FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
 
 
 def use_new_bundle_parsing_approach(env: Mapping[str, str], headers: Mapping[str, str]) -> bool:
-    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env)
+    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env) or "new"
     return flag == "new"
 
 
