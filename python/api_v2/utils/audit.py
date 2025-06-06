@@ -113,6 +113,23 @@ bundle_from_lookup = GeneralAuditObjectRetriever(
     extract_id=ExtractID(field="pk").from_lookup_kwargs,
 )
 
+
+class ExtractBundleIDFromPrototypeID(ExtractID):
+    def from_lookup_kwargs(self, call_arguments: AuditedCallArguments, result: Response | None):
+        prototype_id = super().from_lookup_kwargs(call_arguments=call_arguments, result=result)
+
+        try:
+            return Prototype.objects.filter(id=prototype_id).values_list("bundle_id", flat=True).get()
+        except Prototype.DoesNotExist:
+            return None
+
+
+bundle_from_prototype_lookup = GeneralAuditObjectRetriever(
+    audit_object_type=AuditObjectType.BUNDLE,
+    create_new=IDBasedAuditObjectCreator(model=Bundle),
+    extract_id=ExtractBundleIDFromPrototypeID(field="pk").from_lookup_kwargs,
+)
+
 _extract_cluster_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.CLUSTER, create_new=create_audit_cluster_object
 )

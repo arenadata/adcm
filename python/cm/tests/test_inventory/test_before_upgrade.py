@@ -286,16 +286,28 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         expected_hosts_cluster = (
             cluster_file,
-            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer},
+            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer, "cluster": self.cluster_1},
         )
         expected_host_1_services = (
             # list is pre-defined in template, so just True is ok
             services_file,
-            {"config_list": True, "before_upgrade_list": True},
+            {
+                "config_list": True,
+                "before_upgrade_list": True,
+                "service": self.service_two_components,
+                "component_1": self.component_1,
+                "component_2": self.component_2,
+            },
         )
         expected_host_2_services = (
             services_file,
-            {"config_string": changed_string, "before_upgrade_string": changed_string},
+            {
+                "config_string": changed_string,
+                "before_upgrade_string": changed_string,
+                "service": self.service_two_components,
+                "component_1": self.component_1,
+                "component_2": self.component_2,
+            },
         )
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
 
@@ -307,8 +319,15 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("vars", "cluster"): (cluster_file, {}),
-            ("vars", "services"): (services_file, {}),
+            ("vars", "cluster"): (cluster_file, {"cluster": self.cluster_1}),
+            ("vars", "services"): (
+                services_file,
+                {
+                    "service": self.service_two_components,
+                    "component_1": self.component_1,
+                    "component_2": self.component_2,
+                },
+            ),
             ("hosts", "host_1", "cluster"): expected_hosts_cluster,
             ("hosts", "host_1", "services"): expected_host_1_services,
             ("hosts", "host_2", "services"): expected_host_2_services,
@@ -331,20 +350,39 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         expected_hosts_cluster = (
             cluster_file,
-            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer},
+            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer, "cluster": self.cluster_1},
         )
         expected_host_1_services = (
             # group is removed, data is retrieved from "regular" config
             services_file,
-            {"config_list": False, "before_upgrade_list": False},
+            {
+                "config_list": False,
+                "before_upgrade_list": False,
+                "service": self.service_two_components,
+                "component_1": self.component_1,
+                "component_2": self.component_2,
+            },
         )
         expected_host_2_services = (
             services_file,
-            {"config_string": new_string, "before_upgrade_string": changed_string},
+            {
+                "config_string": new_string,
+                "before_upgrade_string": changed_string,
+                "service": self.service_two_components,
+                "component_1": self.component_1,
+                "component_2": self.component_2,
+            },
         )
         expected_data = {
-            ("vars", "cluster"): (cluster_file, {}),
-            ("vars", "services"): (services_file, {}),
+            ("vars", "cluster"): (cluster_file, {"cluster": self.cluster_1}),
+            ("vars", "services"): (
+                services_file,
+                {
+                    "service": self.service_two_components,
+                    "component_1": self.component_1,
+                    "component_2": self.component_2,
+                },
+            ),
             ("hosts", "host_1", "cluster"): expected_hosts_cluster,
             ("hosts", "host_1", "services"): expected_host_1_services,
             ("hosts", "host_2", "services"): expected_host_2_services,

@@ -544,7 +544,7 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
-            self.assertListEqual(response.json(), [{"id": 1, "name": "host-0"}])
+            self.assertListEqual(response.json(), [{"id": self.hosts[0].id, "name": "host-0"}])
 
     def test_adcm_5931_duplicates_when_filtering_by_has_host(self) -> None:
         host_1, host_2, *_ = self.hosts

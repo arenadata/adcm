@@ -18,7 +18,7 @@
     "k1": "v1",
     "k2": "v2"
   },
-  "secretfile": "{{ filedir }}/cluster.1.group.1.secretfile.",
+  "secretfile": "{{ filedir }}/cluster.{{ cluster.id }}.group.{{ cluster_group.id }}.secretfile.",
   "nullist": [],
   "plain_group": {
     "simple": "ingroup",
@@ -26,7 +26,7 @@
       "gk1": "gv1",
       "gk2": "gv2"
     },
-    "secretfile": "{{ filedir }}/cluster.1.group.1.plain_group.secretfile",
+    "secretfile": "{{ filedir }}/cluster.{{ cluster.id }}.group.{{ cluster_group.id }}.plain_group.secretfile",
     "list_of_dicts": null,
     "listofstuff": [
       "hello"

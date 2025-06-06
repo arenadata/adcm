@@ -584,7 +584,8 @@ class ADCMAnsiblePlugin(ActionBase):
         # it looks like a way of preventing parallel execution of plugins(check out `flock` man for more info).
         # For example, parallel execution may be invoked when `run_once` isn't used in playbook
         # and target ansible host group isn't `localhost`.
-        # It's also likely that such lock was somehow required for SQLite support,
+        # It's also likely that such lock was somehow required for SQLite support
+        # (SQLite support ended in release 2.7.0.),
         # when we can rely on transactions correctness using PostgreSQL.
         #
         # Ergo this behavior and its motivation should be revisioned, alternative solutions discovered.

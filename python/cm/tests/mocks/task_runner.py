@@ -24,6 +24,7 @@ from typing_extensions import Self
 from cm.models import TaskLog
 from cm.services.job.run import get_default_runner, start_task
 from cm.services.job.run._target_factories import ExecutionTargetFactory
+from cm.services.job.run.repo import JobRepoImpl
 
 
 def do_nothing(*_, **__):
@@ -172,6 +173,12 @@ class SubprocessRunnerMockEnvironment:
         return timezone.now()
 
 
+class JobImplRunnerMock(JobRepoImpl):
+    @staticmethod
+    def close_old_connections() -> None:
+        return
+
+
 _DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
 
 
@@ -189,7 +196,7 @@ class RunTaskMock:
 
         with patch("cm.services.job.run._impl._factory", new=self._execution_target_factory), patch(
             "cm.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
-        ):
+        ), patch("cm.services.job.run._impl.JobRepoImpl", new=JobImplRunnerMock):
             self.runner = get_default_runner()
 
     def __enter__(self):
