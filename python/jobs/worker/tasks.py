@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from cm.models import TaskLog
+from cm.services.job.run import run_task_in_local_subprocess
 from django.db.transaction import atomic
 
-from jobs.services.task import run_task_in_local_subprocess
 from jobs.worker.app import app
 
 
