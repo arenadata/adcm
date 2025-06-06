@@ -21,15 +21,16 @@ const AccessManagerUsersBlockDialog: React.FC = () => {
   };
 
   return (
-    <DialogV2
-      //
-      title="Block user"
-      onAction={handleConfirmDialog}
-      onCancel={handleCloseConfirm}
-      actionButtonLabel="Block"
-    >
-      Selected user will be blocked and unable to access their account.
-    </DialogV2>
+    <>
+      <DialogV2
+        title="Block user"
+        onAction={handleConfirmDialog}
+        onCancel={handleCloseConfirm}
+        actionButtonLabel="Block"
+      >
+        Selected user will be blocked and unable to access their account.
+      </DialogV2>
+    </>
   );
 };
 

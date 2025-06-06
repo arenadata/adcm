@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { Dialog, Input } from '@uikit';
+import { DialogV2, Input } from '@uikit';
 
 interface ConfigurationDescriptionDialogProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ const ConfigurationDescriptionDialog: React.FC<ConfigurationDescriptionDialogPro
   onSave,
 }) => {
   const [description, setDescription] = useState('');
+
   useEffect(() => {
     if (!isOpen) {
       setDescription('');
@@ -23,22 +24,19 @@ const ConfigurationDescriptionDialog: React.FC<ConfigurationDescriptionDialogPro
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDescription(event.target.value);
   };
+
   const handleSave = () => {
     onSave(description);
     onCancel();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      title="Configuration description"
-      isOpen={isOpen}
-      onOpenChange={onCancel}
-      actionButtonLabel="Create"
-      onAction={handleSave}
-    >
+    <DialogV2 title="Configuration description" actionButtonLabel="Create" onAction={handleSave} onCancel={onCancel}>
       <p>You can add short description for this config version. But it's not required</p>
       <Input value={description} onChange={handleChange} placeholder="Configuration description..." />
-    </Dialog>
+    </DialogV2>
   );
 };
 

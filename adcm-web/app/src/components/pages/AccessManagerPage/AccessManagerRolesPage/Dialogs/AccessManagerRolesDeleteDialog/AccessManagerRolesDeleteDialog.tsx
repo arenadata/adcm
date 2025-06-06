@@ -21,14 +21,16 @@ const AccessManagerRolesDeleteDialog: React.FC = () => {
   };
 
   return (
-    <DialogV2
-      title={`Delete role "${role?.name}"`}
-      onAction={handleConfirmDialog}
-      onCancel={handleCloseConfirm}
-      actionButtonLabel="Delete"
-    >
-      Role will be deleted.
-    </DialogV2>
+    <>
+      <DialogV2
+        title={`Delete role "${role?.name}"`}
+        onAction={handleConfirmDialog}
+        onCancel={handleCloseConfirm}
+        actionButtonLabel="Delete"
+      >
+        Role will be deleted.
+      </DialogV2>
+    </>
   );
 };
 
