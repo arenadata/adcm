@@ -1,4 +1,4 @@
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import ActionHostGroupDialogForm from '../ActionHostGroupDialogForm/ActionHostGroupDialogForm';
 import {
   type AdcmActionHostGroupFormData,
@@ -33,13 +33,14 @@ const CreateActionHostGroupDialog = ({
     onCreate(formData);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
+    <DialogV2
       title="Create action host group"
       actionButtonLabel="Create"
-      isOpen={isOpen}
-      onOpenChange={onClose}
       onAction={handleAction}
+      onCancel={onClose}
       isActionDisabled={!isValid}
       isDialogControlsOnTop
       width="100%"
@@ -53,7 +54,7 @@ const CreateActionHostGroupDialog = ({
         onChangeFormData={onChangeFormData}
         isCreateNew={true}
       />
-    </Dialog>
+    </DialogV2>
   );
 };
 

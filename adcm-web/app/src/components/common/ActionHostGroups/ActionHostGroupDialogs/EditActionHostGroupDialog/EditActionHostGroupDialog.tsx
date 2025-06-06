@@ -1,4 +1,4 @@
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import ActionHostGroupDialogForm from '../ActionHostGroupDialogForm/ActionHostGroupDialogForm';
 import {
   type AdcmActionHostGroupFormData,
@@ -28,13 +28,14 @@ const EditActionHostGroupDialog = ({
     onEdit(formData);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
+    <DialogV2
       title="Edit action host group"
       actionButtonLabel="Save"
-      isOpen={isOpen}
-      onOpenChange={onClose}
       onAction={handleAction}
+      onCancel={onClose}
       isActionDisabled={!isValid}
       isDialogControlsOnTop
       width="100%"
@@ -47,7 +48,7 @@ const EditActionHostGroupDialog = ({
         hostCandidates={hostCandidates}
         onChangeFormData={onChangeFormData}
       />
-    </Dialog>
+    </DialogV2>
   );
 };
 
