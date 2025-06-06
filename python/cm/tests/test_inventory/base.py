@@ -26,6 +26,7 @@ from jinja2 import Template
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
 from cm.models import (
+    ADCM,
     Action,
     ADCMEntity,
     ADCMModel,
@@ -68,6 +69,8 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
         self.bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"
+
+        self.adcm_id = ADCM.objects.values_list("id", flat=True).get()
 
     @staticmethod
     def render_template(file: Path, context: dict) -> str:

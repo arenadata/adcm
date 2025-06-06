@@ -48,7 +48,6 @@ if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" 
 
 fi
 
-"${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
 
 if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then

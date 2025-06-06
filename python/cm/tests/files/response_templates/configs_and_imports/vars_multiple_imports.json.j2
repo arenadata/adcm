@@ -7,7 +7,7 @@
           "k": "v",
           "key": "val"
         },
-        "file": "{{ filedir }}/cluster.1.plain_group.file",
+        "file": "{{ filedir }}/cluster.{{ cluster.id }}.plain_group.file",
         "listofstuff": []
       },
       "activatable_group": null,
@@ -91,7 +91,7 @@
               "gk1": "gv1",
               "gk2": "gv2"
             },
-            "secretfile": "{{ filedir }}/cluster.3.plain_group.secretfile",
+            "secretfile": "{{ filedir }}/cluster.{{ export_cluster_2.id }}.plain_group.secretfile",
             "list_of_dicts": null,
             "listofstuff": [
               "x",
@@ -116,7 +116,7 @@
             "k": "v",
             "key": "val"
           },
-          "file": "{{ filedir }}/service.1.plain_group.file",
+          "file": "{{ filedir }}/service.{{ service.id }}.plain_group.file",
           "listofstuff": []
         },
         "activatable_group": {
@@ -147,8 +147,8 @@
           "5",
           "baset"
         ],
-        "file": "{{ filedir }}/service.1.file.",
-        "secretfile": "{{ filedir }}/service.1.secretfile.",
+        "file": "{{ filedir }}/service.{{ service.id }}.file.",
+        "secretfile": "{{ filedir }}/service.{{ service.id }}.secretfile.",
         "source_list": [
           "ok",
           "fail"

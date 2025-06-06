@@ -24,6 +24,7 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from django.db.models import F
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -70,7 +71,12 @@ class TestMapping(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
-        self.assertDictEqual(response.json()[0], {"componentId": 1, "hostId": 1, "id": 1})
+        self.assertDictEqual(
+            response.json()[0],
+            HostComponent.objects.filter(cluster_id=self.cluster_1.id).values(
+                "id", componentId=F("component_id"), hostId=F("host_id")
+            )[0],
+        )
 
     def test_create_mapping_success(self):
         host_4 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_4")

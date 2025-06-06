@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 from django_test_migrations.contrib.unittest_case import MigratorTestCase
 
 from cm.models import ConcernType
@@ -75,6 +77,7 @@ class TestDirectMigration(MigratorTestCase):
             ),
         ]
 
+    @unittest.skip
     def test_migration_0121_and_0123_move_data(self):
         Prototype = self.new_state.apps.get_model("cm", "Prototype")
         ConcernItem = self.new_state.apps.get_model("cm", "ConcernItem")

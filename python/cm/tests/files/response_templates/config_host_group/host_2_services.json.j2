@@ -11,7 +11,7 @@
           "gk1": "gv1",
           "gk2": "gv2"
         },
-        "secretfile": "{{ filedir }}/service.1.plain_group.secretfile",
+        "secretfile": "{{ filedir }}/service.{{ not_simple.id }}.plain_group.secretfile",
         "list_of_dicts": null,
         "listofstuff": [
           "x",
@@ -38,7 +38,7 @@
         "k1": "v1",
         "k2": "v2"
       },
-      "secretfile": "{{ filedir }}/service.1.secretfile.",
+      "secretfile": "{{ filedir }}/service.{{ not_simple.id }}.secretfile.",
       "nullist": [],
       "list_of_dicts": [
         {
@@ -76,7 +76,7 @@
             "gk1": "gv1",
             "gk2": "gv2"
           },
-          "secretfile": "{{ filedir }}/component.1.plain_group.secretfile",
+          "secretfile": "{{ filedir }}/component.{{ not_simple_component.id }}.plain_group.secretfile",
           "list_of_dicts": null,
           "listofstuff": [
             "x",
@@ -103,7 +103,7 @@
           "k1": "v1",
           "k2": "v2"
         },
-        "secretfile": "{{ filedir }}/component.1.secretfile.",
+        "secretfile": "{{ filedir }}/component.{{ not_simple_component.id }}.secretfile.",
         "nullist": [],
         "list_of_dicts": [
           {
@@ -144,7 +144,7 @@
             "gk1": "gv1",
             "gk2": "gv2"
           },
-          "secretfile": "{{ filedir }}/component.2.plain_group.secretfile",
+          "secretfile": "{{ filedir }}/component.{{ another_not_simple_component.id }}.plain_group.secretfile",
           "list_of_dicts": null,
           "listofstuff": [
             "x",
@@ -171,7 +171,7 @@
           "k1": "v1",
           "k2": "v2"
         },
-        "secretfile": "{{ filedir }}/component.2.secretfile.",
+        "secretfile": "{{ filedir }}/component.{{ another_not_simple_component.id }}.secretfile.",
         "nullist": [],
         "list_of_dicts": [
           {
@@ -216,7 +216,7 @@
           "gk1": "gv1",
           "gk2": "gv2"
         },
-        "secretfile": "{{ filedir }}/service.2.plain_group.secretfile",
+        "secretfile": "{{ filedir }}/service.{{ thesame.id }}.plain_group.secretfile",
         "list_of_dicts": null,
         "listofstuff": [
           "x",
@@ -229,7 +229,7 @@
           "agk1": "agv1",
           "agk2": "agv2"
         },
-        "secretfile": "{{ filedir }}/service.2.activatable_group.secretfile"
+        "secretfile": "{{ filedir }}/service.{{ thesame.id }}.activatable_group.secretfile"
       },
       "just_bool": null,
       "just_integer": 4,
@@ -250,7 +250,7 @@
         "k1": "v1",
         "k2": "v2"
       },
-      "secretfile": "{{ filedir }}/service.2.secretfile.",
+      "secretfile": "{{ filedir }}/service.{{ thesame.id }}.secretfile.",
       "nullist": [],
       "list_of_dicts": [
         {
@@ -284,7 +284,7 @@
             "gk1": "gv1",
             "gk2": "gv2"
           },
-          "secretfile": "{{ filedir }}/component.3.plain_group.secretfile",
+          "secretfile": "{{ filedir }}/component.{{ thesame_component.id }}.plain_group.secretfile",
           "list_of_dicts": null,
           "listofstuff": [
             "x",
@@ -311,7 +311,7 @@
           "k1": "v1",
           "k2": "v2"
         },
-        "secretfile": "{{ filedir }}/component.3.secretfile.",
+        "secretfile": "{{ filedir }}/component.{{ thesame_component.id }}.secretfile.",
         "nullist": [],
         "list_of_dicts": [
           {
@@ -365,7 +365,7 @@
           "k1": "v1",
           "k2": "v2"
         },
-        "secretfile": "{{ filedir }}/component.4.group.3.secretfile.",
+        "secretfile": "{{ filedir }}/component.{{ another_thesame_component.id }}.group.{{ component_another_thesame_group.id }}.secretfile.",
         "nullist": [],
         "plain_group": {
           "simple": "ingroup",
@@ -375,7 +375,7 @@
             "donot": "know",
             "m": "e"
           },
-          "secretfile": "{{ filedir }}/component.4.group.3.plain_group.secretfile",
+          "secretfile": "{{ filedir }}/component.{{ another_thesame_component.id }}.group.{{ component_another_thesame_group.id }}.plain_group.secretfile",
           "list_of_dicts": null,
           "listofstuff": [
             "wind",
@@ -389,7 +389,7 @@
             "agk1": "agv1",
             "agk2": "agv2"
           },
-          "secretfile": "{{ filedir }}/component.4.group.3.activatable_group.secretfile"
+          "secretfile": "{{ filedir }}/component.{{ another_thesame_component.id }}.group.{{ component_another_thesame_group.id }}.activatable_group.secretfile"
         },
         "list_of_dicts": [
           {

@@ -29,7 +29,7 @@ from api_v2.prototype.serializers import (
     PrototypeVersionsSerializer,
 )
 from api_v2.prototype.utils import accept_license
-from api_v2.utils.audit import bundle_from_lookup
+from api_v2.utils.audit import bundle_from_prototype_lookup
 from api_v2.views import ADCMReadOnlyModelViewSet
 
 
@@ -117,7 +117,7 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
             HTTP_409_CONFLICT: ErrorSerializer,
         },
     )
-    @audit_update(name="Bundle license accepted", object_=bundle_from_lookup)
+    @audit_update(name="Bundle license accepted", object_=bundle_from_prototype_lookup)
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
     def accept(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         prototype = self.get_object()

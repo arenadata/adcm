@@ -372,7 +372,7 @@ class TestActionsFiltering(BaseAPITestCase):
             response.json(),
             {
                 "code": "JOB_TERMINATION_ERROR",
-                "desc": "Can't terminate job #1, pid: 0 with status created",
+                "desc": f"Can't terminate job #{job.id}, pid: 0 with status created",
                 "level": "error",
             },
         )

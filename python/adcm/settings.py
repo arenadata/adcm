@@ -49,7 +49,6 @@ PYTHON_SITE_PACKAGES = Path(
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 
-
 ADCM_TOKEN = get_adcm_token(ADCM_TOKEN_FILE)
 if SECRETS_FILE.is_file():
     with open(SECRETS_FILE, encoding=ENCODING_UTF_8) as f:
@@ -172,35 +171,20 @@ def get_db_options() -> dict:
     return parsed
 
 
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", default="5432")
-
-if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
-    DB_DEFAULT = {
+DATABASES = {
+    "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": DB_NAME,
-        "USER": DB_USER,
-        "PASSWORD": DB_PASS,
-        "HOST": DB_HOST,
-        "PORT": DB_PORT,
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASS"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT", default="5432"),
         "CONN_MAX_AGE": 60,
         "CONN_HEALTH_CHECKS": True,  # Improves the reliability of connection reuse
         # and prevents errors when the connection was closed by the database server.
         "OPTIONS": get_db_options(),
     }
-else:
-    DB_DEFAULT = {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "data/var/cluster.db",
-        "OPTIONS": {
-            "timeout": 20,
-        },
-    }
-
-DATABASES = {"default": DB_DEFAULT}
+}
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
