@@ -201,6 +201,7 @@ class Policy(Model):
     def remove_permissions(self, keep_objects: dict | None = None):
         # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
         # to use placeholder for list of multiple values for SQLite so used string formatting
+        # SQLite support ended in release 2.7.0. We need to review this code.
         group_pks = self.group.values_list("pk", flat=True)
 
         cursor = connection.cursor()

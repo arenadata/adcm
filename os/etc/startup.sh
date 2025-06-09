@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+. /etc/adcmenv
+cleanupwaitstatus
+
 mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
 missing_vars=""
 
@@ -31,9 +34,6 @@ if [ -n "$missing_vars" ]; then
   exit 1
 fi
 
-. /etc/adcmenv
-cleanupwaitstatus
-
 sv_stop() {
     for s in nginx wsgi status; do
         /sbin/sv stop $s
@@ -43,4 +43,4 @@ sv_stop() {
 trap "sv_stop; exit" TERM
 trap "" CHLD
 runsvdir -P /etc/sv &
-wait
+while (true); do wait; done;

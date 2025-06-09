@@ -46,5 +46,10 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
             error_code = "CONFIG_VALUE_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except FileNotFoundError as e:
+            http_code = 409
+            error_code = "BUNDLE_ERROR"
+            message = str(e)
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
 
     return wrapped

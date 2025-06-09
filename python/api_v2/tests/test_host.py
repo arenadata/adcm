@@ -53,7 +53,7 @@ class TestHost(BaseAPITestCase):
             "description": "description",
             "state": "created",
             "status": 32,
-            "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
+            "hostprovider": {"id": self.provider.id, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "off",
@@ -81,7 +81,7 @@ class TestHost(BaseAPITestCase):
             "name": "new-test-host",
             "state": "created",
             "status": 32,
-            "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
+            "hostprovider": {"id": self.provider.id, "name": "provider", "display_name": "provider"},
             "concerns": [],
             "is_maintenance_mode_available": False,
             "maintenance_mode": "off",
@@ -258,17 +258,24 @@ class TestHost(BaseAPITestCase):
 
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
-        self.host.state = "active"
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2)
+        test_host_5 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1
+        )
+        test_host_2 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2
+        )
 
-        self.add_host(bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2)
-        self.add_host(bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
+        test_host_7 = self.add_host(
+            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2
+        )
+        test_host_6 = self.add_host(
+            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1
+        )
         self.add_host(
             bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="a_first_host"
         )
-        Host.objects.filter(id__in=range(3)).update(state="running")
-        Host.objects.filter(id__in=range(5, -1)).update(state="active")
+        Host.objects.filter(id__in=[test_host_5.id, test_host_6.id]).update(state="running")
+        Host.objects.filter(id__in=[test_host_2.id, test_host_7.id]).update(state="active")
 
         with self.subTest("Ascending order by default (by fqdn"):
             response = (self.client.v2 / "hosts").get()
@@ -286,8 +293,8 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host", "test_host_5", "test_host_2", "a_first_host", "test_host_7", "test_host_6"],
-                [host["name"] for host in response.json()["results"]],
+                ["provider", "provider", "provider", "provider", "another provider", "another provider"],
+                [host["hostprovider"]["name"] for host in response.json()["results"]],
             )
 
         with self.subTest("Descending order by id"):
@@ -306,8 +313,8 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_2", "test_host_7", "test_host_5", "test_host_6", "test_host", "a_first_host"],
-                [host["name"] for host in response.json()["results"]],
+                [None, None, "cluster_2", "cluster_2", "cluster_1", "cluster_1"],
+                [host["cluster"]["name"] if host["cluster"] else None for host in response.json()["results"]],
             )
 
         with self.subTest("Ascending order by state"):
@@ -316,8 +323,8 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_2", "test_host_7", "test_host_6", "a_first_host", "test_host", "test_host_5"],
-                [host["name"] for host in response.json()["results"]],
+                ["active", "active", "created", "created", "running", "running"],
+                [host["state"] for host in response.json()["results"]],
             )
 
         with self.subTest("Descending order by state, ascending by name and provider name"):
@@ -326,7 +333,7 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["a_first_host", "test_host_6", "test_host_7", "test_host_2", "test_host_5", "test_host"],
+                ["test_host_7", "test_host_2", "a_first_host", "test_host", "test_host_6", "test_host_5"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -527,16 +534,21 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
-        self.host.state = "active"
         self.add_host_to_cluster(self.cluster_1, self.host)
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
+        test_host_5 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1
+        )
         self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2", cluster=self.cluster_1)
 
-        self.add_host(bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1)
-        self.add_host(bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
+        test_host_7 = self.add_host(
+            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1
+        )
+        test_host_6 = self.add_host(
+            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1
+        )
 
-        Host.objects.filter(id__in=range(3)).update(state="running")
-        Host.objects.filter(id__in=range(5, -1)).update(state="active")
+        Host.objects.filter(id__in=[test_host_5.id, test_host_7.id]).update(state="running")
+        Host.objects.filter(id__in=[self.host.id, test_host_6.id]).update(state="active")
 
         with self.subTest("Ascending order by default (by name)"):
             response = self.client.v2[self.cluster_1, "hosts"].get()
@@ -564,8 +576,8 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_7", "test_host_6", "test_host", "bound-to-same-host", "test_host_5", "test_host_2"],
-                [host["name"] for host in response.json()["results"]],
+                ["another provider", "another provider", "provider", "provider", "provider", "provider"],
+                [host["hostprovider"]["name"] for host in response.json()["results"]],
             )
 
         with self.subTest("Ascending order by state"):
@@ -574,8 +586,8 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["bound-to-same-host", "test_host_5", "test_host_2", "test_host_7", "test_host_6", "test_host"],
-                [host["name"] for host in response.json()["results"]],
+                ["active", "active", "created", "created", "running", "running"],
+                [host["state"] for host in response.json()["results"]],
             )
 
         with self.subTest("Descending order by state, ascending by name and provider name"):
@@ -584,7 +596,7 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_6", "test_host_7", "test_host_2", "test_host_5", "bound-to-same-host", "test_host"],
+                ["test_host_6", "test_host", "test_host_2", "bound-to-same-host", "test_host_7", "test_host_5"],
                 [host["name"] for host in response.json()["results"]],
             )
 

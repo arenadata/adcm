@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from django.db.utils import OperationalError
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -21,7 +19,6 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_ENTITY,
-    HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_501_NOT_IMPLEMENTED,
 )
 from rest_framework.views import exception_handler
@@ -207,7 +204,6 @@ ERRORS = {
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
-    "DATABASE_IS_LOCKED": ("SQLite not for production", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
     "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
@@ -274,6 +270,7 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     if isinstance(exc, OverflowError):
         # This is an error with DB mostly. For example SQLite can't handle 64-bit numbers.
         # So we have to handle this right and rise HTTP 400, instead of HTTP 500
+        # SQLite support ended in release 2.7.0. We need to review this code.
 
         return exception_handler(exc=AdcmEx(code="OVERFLOW"), context=context)
 
@@ -291,22 +288,5 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
                     msg = f"{msg}{err_type} - {err[0]};"
 
         return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
-
-    if (
-        isinstance(exc, OperationalError)
-        and settings.DB_DEFAULT["ENGINE"] == "django.db.backends.sqlite3"
-        and str(exc) == "database is locked"
-    ):
-        return exception_handler(
-            exc=AdcmEx(
-                code="DATABASE_IS_LOCKED",
-                msg=(
-                    "Something wrong\n"
-                    '<a href="https://docs.arenadata.io/en/ADCM/current/get-started/external-db.html">'
-                    "SQLite not for production use</a>"
-                ),
-            ),
-            context=context,
-        )
 
     return exception_handler(exc=exc, context=context)

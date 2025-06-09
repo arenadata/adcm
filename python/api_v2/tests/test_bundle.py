@@ -13,12 +13,11 @@
 from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-import os
 import tarfile
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
 from cm.bundle import _get_file_hashes
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
+from cm.services.adcm import adcm_config
 from django.conf import settings
 from django.db.models import F
 from rest_framework.status import (
@@ -49,6 +48,8 @@ class TestBundle(BaseAPITestCase):
         same_names_bundle_path = self.test_bundles_dir / "cluster_identical_cluster_and_service_names"
         self.same_names_bundle = self.add_bundle(source_dir=same_names_bundle_path)
 
+        adcm_config.cache_clear()
+
     def test_list_success(self):
         response = (self.client.v2 / "bundles").get()
 
@@ -63,9 +64,6 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_adcm_6555_upload_parsing_errors_fail(self):
-        if not use_new_bundle_parsing_approach(env=os.environ, headers=self.client.headers or {}):
-            return
-
         with self.subTest("Too long path for config"):
             new_bundle_file = self.prepare_bundle_file(
                 source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "config_wrong_default_file_long_path"),
@@ -131,8 +129,14 @@ class TestBundle(BaseAPITestCase):
                 response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
-            self.assertIn("non_existent_internal_script_name is not found", response.json()["desc"])
+            self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertIn(
+                (
+                    "'non_existent_internal_script_name' found using 'script' does not match any of the expected tags: "
+                    "'bundle_switch', 'bundle_revert', 'hc_apply'"
+                ),
+                response.json()["desc"],
+            )
 
         with self.subTest("hc_apply script requires hc_acl"):
             new_bundle_file = self.prepare_bundle_file(
@@ -143,8 +147,8 @@ class TestBundle(BaseAPITestCase):
                 response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
-            self.assertIn("`hc_apply` requires `hc_acl` declaration", response.json()["desc"])
+            self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertIn('"hc_apply" requires "hc_acl" declaration', response.json()["desc"])
 
         with self.subTest("Duplicate config"):
             new_bundle_file = self.prepare_bundle_file(
@@ -195,7 +199,7 @@ class TestBundle(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
-            self.assertIn('"service" field is required in hc_acl for component', response.json()["desc"])
+            self.assertIn('"service" field is required in hc_acl for cluster and component', response.json()["desc"])
 
         with self.subTest("No root definition in bundle"):
             new_bundle_file = self.prepare_bundle_file(
@@ -247,9 +251,9 @@ class TestBundle(BaseAPITestCase):
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
         self.assertIn(
-            'Map key "ansible_options" is not allowed here (rule "config_list_integer")', response.json()["desc"]
+            "ansible_options\n       | extra_forbidden: Extra inputs are not permitted", response.json()["desc"]
         )
 
     def test_upload_duplicate_fail(self):
@@ -273,15 +277,15 @@ class TestBundle(BaseAPITestCase):
         adcm_config = ConfigLog.objects.get(obj_ref=ADCM.objects.first().config)
         adcm_config.config["global"]["accept_only_verified_bundles"] = True
         adcm_config.save()
-        with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
-            for _ in range(2):
+
+        for _ in range(2):
+            with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
                 response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
-                f.seek(0)
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertEqual(response.json()["code"], "BUNDLE_SIGNATURE_VERIFICATION_ERROR")
                 self.assertIn(
-                    "has signature status 'absent', but 'accept_only_verified_bundles' is enabled. " "Upload rejected.",
+                    "Upload rejected due to failed bundle verification: bundle's signature is 'absent'",
                     response.json()["desc"],
                 )
         self.assertIsNone(Bundle.objects.filter(name="cluster_two").first())
@@ -441,14 +445,8 @@ class TestBundle(BaseAPITestCase):
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "BUNDLE_VERSION_ERROR",
-                "desc": "This bundle required ADCM version equal to 10.0.0 or newer.",
-                "level": "error",
-            },
-        )
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+        self.assertIn("This bundle required ADCM version equal to 10.0.0 or newer.", response.data["desc"])
 
     def test_upload_adcm_min_version_multiple_fail(self):
         bundle_file = self.prepare_bundle_file(
@@ -459,14 +457,8 @@ class TestBundle(BaseAPITestCase):
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "BUNDLE_VERSION_ERROR",
-                "desc": "This bundle required ADCM version equal to 10.0.0 or newer.",
-                "level": "error",
-            },
-        )
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+        self.assertIn("This bundle required ADCM version equal to 10.0.0 or newer.", response.data["desc"])
 
     def test_upload_plain_scripts_and_scripts_jinja_fail(self):
         bundle_file = self.prepare_bundle_file(
@@ -478,9 +470,8 @@ class TestBundle(BaseAPITestCase):
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
-        self.assertIn('Map key "scripts_jinja" is not allowed here', response.data["desc"])
-        self.assertIn('Map key "scripts" is not allowed here', response.data["desc"])
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+        self.assertIn('"scripts" and "scripts_jinja" are mutually exclusive', response.data["desc"])
 
     def test_upload_scripts_jinja_in_job_fail(self):
         bundle_file = self.prepare_bundle_file(
@@ -491,8 +482,8 @@ class TestBundle(BaseAPITestCase):
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
-        self.assertIn('Map key "scripts_jinja" is not allowed here', response.data["desc"])
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+        self.assertIn("scripts_jinja\n     | extra_forbidden: Extra inputs are not permitted", response.data["desc"])
 
     def test_upload_scripts_jinja_success(self):
         bundle_file = self.prepare_bundle_file(
@@ -543,12 +534,17 @@ class TestBundle(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-            if use_new_bundle_parsing_approach(os.environ, self.client.headers if self.client.headers else {}):
-                self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
-                self.assertIn("Errors found in definition of bundle entity:", response.data["desc"])
-            else:
-                self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
-                self.assertIn(
-                    "Script script_1 of install must have parameters: service, component, action",
-                    response.data["desc"],
-                )
+            self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertIn(
+                (
+                    "service\n           "
+                    "| missing: Field required\n           "
+                    "component\n           "
+                    "| missing: Field required\n           "
+                    "action\n           "
+                    "| missing: Field required\n           "
+                    "ansible_tags\n           "
+                    "| extra_forbidden: Extra inputs are not permitted"
+                ),
+                response.data["desc"],
+            )

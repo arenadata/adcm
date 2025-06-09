@@ -1315,7 +1315,10 @@ class ClusterBind(ADCMModel):
 
 
 class JobStatus(models.TextChoices):
+    REVOKED = "revoked", "revoked"
     CREATED = "created", "created"
+    SCHEDULED = "scheduled", "scheduled"
+    QUEUED = "queued", "queued"
     SUCCESS = "success", "success"
     FAILED = "failed", "failed"
     RUNNING = "running", "running"
@@ -1324,7 +1327,7 @@ class JobStatus(models.TextChoices):
     BROKEN = "broken", "broken"
 
 
-UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.RUNNING)
+UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.SCHEDULED, JobStatus.QUEUED, JobStatus.RUNNING)
 
 
 class UserProfile(ADCMModel):
@@ -1355,6 +1358,7 @@ class TaskLog(ADCMModel):
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+    executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
     """
     Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,

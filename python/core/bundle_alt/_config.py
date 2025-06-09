@@ -300,7 +300,11 @@ def _check_pattern_is_correct(value: str, parameter: ConfigParamPlainSpec):
 
     pattern = Pattern(pattern_str)
     if not pattern.matches(value):
-        message = f"The value of {{key}} config parameter does not match pattern: {pattern_str}"
+        # Message will be used for formatting later, so we sanitize possible {}
+        # in pattern to avoid python templating to consider them as keys for formatting.
+        # There are probably better solutions for this, but this one was fast.
+        sanitized_pattern = pattern.raw.replace("{", "{{").replace("}", "}}")
+        message = f"The value of {{key}} config parameter does not match pattern: {sanitized_pattern}"
         # todo here's altering code for "CONFIG_VALUE_ERROR" was happening `http_code=HTTP_409_CONFLICT`
         raise _ValueViolatesPatternError(message)
 

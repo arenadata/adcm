@@ -16,7 +16,7 @@
             "k": "v",
             "key": "val"
           },
-          "file": "{{ filedir }}/host.1.plain_group.file",
+          "file": "{{ filedir }}/host.{{ host_1.id }}.plain_group.file",
           "listofstuff": []
         },
         "activatable_group": null,
@@ -55,7 +55,7 @@
             "k": "v",
             "key": "val"
           },
-          "file": "{{ filedir }}/host.2.plain_group.file",
+          "file": "{{ filedir }}/host.{{ host_2.id }}.plain_group.file",
           "listofstuff": []
         },
         "activatable_group": {
@@ -86,8 +86,8 @@
           "5",
           "baset"
         ],
-        "file": "{{ filedir }}/host.2.file.",
-        "secretfile": "{{ filedir }}/host.2.secretfile.",
+        "file": "{{ filedir }}/host.{{ host_2.id }}.file.",
+        "secretfile": "{{ filedir }}/host.{{ host_2.id }}.secretfile.",
         "source_list": [
           "ok",
           "fail"
@@ -109,7 +109,7 @@
               "k": "v",
               "key": "val"
             },
-            "file": "{{ filedir }}/provider.1.plain_group.file",
+            "file": "{{ filedir }}/provider.{{ hostprovider.id }}.plain_group.file",
             "listofstuff": []
           },
           "activatable_group": null,

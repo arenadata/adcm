@@ -5,7 +5,7 @@
       "gk1": "gv1",
       "gk2": "gv2"
     },
-    "secretfile": "{{ filedir }}/cluster.1.plain_group.secretfile",
+    "secretfile": "{{ filedir }}/cluster.{{ cluster.id }}.plain_group.secretfile",
     "list_of_dicts": null,
     "listofstuff": [
       "x",
@@ -32,7 +32,7 @@
     "k1": "v1",
     "k2": "v2"
   },
-  "secretfile": "{{ filedir }}/cluster.1.secretfile.",
+  "secretfile": "{{ filedir }}/cluster.{{ cluster.id }}.secretfile.",
   "nullist": [],
   "list_of_dicts": [
     {

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
-import { Dialog, TabsBlock } from '@uikit';
+import { DialogV2, TabsBlock } from '@uikit';
 import cn from 'classnames';
 import s from './LicenseAcceptanceDialog.module.scss';
 import TabButton from '@uikit/Tabs/TabButton';
@@ -37,14 +37,10 @@ const LicenseAcceptanceDialog: React.FC<LicenseAcceptanceDialogProps> = ({
     setCurrentStep(stepKey);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      title={dialogTitle}
-      isOpen={isOpen}
-      onOpenChange={handleCloseDialog}
-      width="65%"
-      dialogControls={customControls}
-    >
+    <DialogV2 title={dialogTitle} onCancel={handleCloseDialog} width="65%" dialogControls={customControls}>
       {steps?.length > 0 && (
         <TabsBlock variant="secondary">
           {steps.map((step) => (
@@ -65,7 +61,7 @@ const LicenseAcceptanceDialog: React.FC<LicenseAcceptanceDialogProps> = ({
       {currentLicense && (
         <LicenseAcceptPanel key={currentLicense.key} license={currentLicense} onAcceptLicense={onAcceptLicense} />
       )}
-    </Dialog>
+    </DialogV2>
   );
 };
 export default LicenseAcceptanceDialog;

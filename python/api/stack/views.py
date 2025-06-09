@@ -135,7 +135,7 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
 
         use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
         func = save_bundle_file_from_request_to_downloads if use_new_approach else upload_file
-        func(request.data["file"])
+        func(request.data["file"], settings.DOWNLOAD_DIR)
 
         return Response(status=HTTP_201_CREATED)
 

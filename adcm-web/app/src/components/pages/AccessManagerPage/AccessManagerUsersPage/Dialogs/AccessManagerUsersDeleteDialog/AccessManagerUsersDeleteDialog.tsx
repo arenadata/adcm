@@ -21,14 +21,16 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
   };
 
   return (
-    <DialogV2
-      title="Delete user"
-      onAction={handleConfirmDialog}
-      onCancel={handleCloseConfirm}
-      actionButtonLabel="Delete"
-    >
-      Selected user will be deleted
-    </DialogV2>
+    <>
+      <DialogV2
+        title="Delete user"
+        onAction={handleConfirmDialog}
+        onCancel={handleCloseConfirm}
+        actionButtonLabel="Delete"
+      >
+        Selected user will be deleted
+      </DialogV2>
+    </>
   );
 };
 

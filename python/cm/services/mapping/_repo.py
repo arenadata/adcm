@@ -13,17 +13,13 @@
 from typing import Iterable
 
 from core.types import ClusterID, ComponentID, HostID
-from django.db import transaction
 from django.db.models import Q
 
 from cm.models import Component, HostComponent
 
 
 def lock_cluster_mapping(cluster_id: ClusterID) -> None:
-    if not transaction.get_connection().in_atomic_block:
-        raise RuntimeError("There is no sense in using SELECT FOR UPDATE outside of a transaction")
-
-    tuple(HostComponent.objects.select_for_update().filter(cluster_id=cluster_id).values_list())
+    tuple(HostComponent.objects.select_for_update().filter(cluster_id=cluster_id).values_list("id"))
 
 
 def _apply_mapping_delta_in_db(

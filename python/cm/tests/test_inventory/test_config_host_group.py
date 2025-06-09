@@ -88,32 +88,17 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[1]],
         }
 
-        context = {
-            **{
-                obj_.name: obj_
-                for obj_ in (
-                    self.service_thesame,
-                    self.service_not_simple,
-                    self.component_thesame,
-                    self.component_another_thesame,
-                    self.component_not_simple,
-                    self.component_another_not_simple,
-                )
-            },
-            "filedir": self.directories["FILE_DIR"],
-        }
-        expected_parts = {
-            file.stem.replace(".json", ""): self.render_json_template(file=file, context=context)
-            for file in (self.templates_dir / "config_host_group").iterdir()
-        }
-
-        cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
-        service_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
-        component_group_1 = self.add_config_host_group(parent=self.component_another_thesame, hosts=(self.host_2,))
-        self.add_config_host_group(parent=self.component_thesame, hosts=(self.host_1, self.host_3))
+        self.cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
+        self.service_thesame_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
+        self.component_another_thesame_group = self.add_config_host_group(
+            parent=self.component_another_thesame, hosts=(self.host_2,)
+        )
+        self.component_thesame_group = self.add_config_host_group(
+            parent=self.component_thesame, hosts=(self.host_1, self.host_3)
+        )
 
         self.change_configuration(
-            target=cluster_group,
+            target=self.cluster_group,
             config_diff={
                 "plain_group": {"listofstuff": ["hello"]},
                 "just_bool": True,
@@ -144,7 +129,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             meta_diff={"/activatable_group": {"isActive": True}},
         )
         self.change_configuration(
-            target=service_group,
+            target=self.service_thesame_group,
             config_diff={"list_of_dicts": [], "just_map": {"key": "val"}},
             meta_diff={
                 "/activatable_group": {"isActive": False, "isSynchronized": False},
@@ -156,7 +141,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         )
 
         self.change_configuration(
-            target=component_group_1,
+            target=self.component_another_thesame_group,
             config_diff={"plain_group": {"secretmap": {"donot": "know", "m": "e"}}},
             meta_diff={
                 "/activatable_group": {"isActive": True, "isSynchronized": False},
@@ -171,6 +156,30 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                 "just_float": 1000.304,
             },
         )
+
+        context = {
+            **{
+                obj_.name: obj_
+                for obj_ in (
+                    self.service_thesame,
+                    self.service_not_simple,
+                    self.component_thesame,
+                    self.component_another_thesame,
+                    self.component_not_simple,
+                    self.component_another_not_simple,
+                )
+            },
+            "filedir": self.directories["FILE_DIR"],
+            "cluster": self.cluster,
+            "cluster_group": self.cluster_group,
+            "service_thesame_group": self.service_thesame_group,
+            "component_another_thesame_group": self.component_another_thesame_group,
+            "component_thesame_group": self.component_thesame_group,
+        }
+        expected_parts = {
+            file.stem.replace(".json", ""): self.render_json_template(file=file, context=context)
+            for file in (self.templates_dir / "config_host_group").iterdir()
+        }
 
         for object_ in (
             self.cluster,

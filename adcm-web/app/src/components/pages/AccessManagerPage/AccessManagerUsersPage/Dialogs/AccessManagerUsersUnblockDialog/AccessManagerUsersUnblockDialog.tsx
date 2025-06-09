@@ -21,14 +21,16 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
   };
 
   return (
-    <DialogV2
-      title="Unblock user"
-      onAction={handleConfirmDialog}
-      onCancel={handleCloseConfirm}
-      actionButtonLabel="Unblock"
-    >
-      Selected user will be unblocked and able to access their account
-    </DialogV2>
+    <>
+      <DialogV2
+        title="Unblock user"
+        onAction={handleConfirmDialog}
+        onCancel={handleCloseConfirm}
+        actionButtonLabel="Unblock"
+      >
+        Selected user will be unblocked and able to access their account
+      </DialogV2>
+    </>
   );
 };
 

@@ -268,10 +268,10 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
 
                 if hasattr(action, "scripts"):
                     for script in action.scripts or ():
-                        if script.get("allow_to_terminate") is None:
-                            script["allow_to_terminate"] = action.allow_to_terminate
-                        if script.get("params") is None:
-                            script["params"] = action.params
+                        if script.allow_to_terminate is None:
+                            script.allow_to_terminate = action.allow_to_terminate
+                        if script.params is None:
+                            script.params = action.params
 
             if hasattr(definition, "upgrade"):
                 for upgrade in definition.upgrade or ():
@@ -300,12 +300,11 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
                         requirement["service"] = parent.name
 
             # patch hc_acl entries where can be patched
-            service_from = parent if isinstance(definition, ComponentSchema) else definition
-
-            for action in (definition.actions or {}).values():
-                for entry in action.hc_acl or ():
-                    if not entry.get("service"):
-                        entry["service"] = service_from.name
+            if isinstance(definition, ServiceSchema):
+                for action in (definition.actions or {}).values():
+                    for entry in action.hc_acl or ():
+                        if entry.get("service") is None:
+                            entry["service"] = definition.name
 
 
 def _flatten_definitions(definition: _ParsedRootDefinition) -> Iterable[tuple[BundleDefinitionKey, _ParsedDefinition]]:

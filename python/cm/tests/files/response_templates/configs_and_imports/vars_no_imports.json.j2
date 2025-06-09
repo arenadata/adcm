@@ -7,7 +7,7 @@
           "k": "v",
           "key": "val"
         },
-        "file": "{{ filedir }}/cluster.1.plain_group.file",
+        "file": "{{ filedir }}/cluster.{{ cluster.id }}.plain_group.file",
         "listofstuff": []
       },
       "activatable_group": {
@@ -38,8 +38,8 @@
         "5",
         "baset"
       ],
-      "file": "{{ filedir }}/cluster.1.file.",
-      "secretfile": "{{ filedir }}/cluster.1.secretfile.",
+      "file": "{{ filedir }}/cluster.{{ cluster.id }}.file.",
+      "secretfile": "{{ filedir }}/cluster.{{ cluster.id }}.secretfile.",
       "source_list": [
         "ok",
         "fail"
@@ -107,7 +107,7 @@
               "k": "v",
               "key": "val"
             },
-            "file": "{{ filedir }}/component.1.plain_group.file",
+            "file": "{{ filedir }}/component.{{ component.id }}.plain_group.file",
             "listofstuff": []
           },
           "activatable_group": null,

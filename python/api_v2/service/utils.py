@@ -80,6 +80,7 @@ def bulk_init_config(objects: QuerySet[ADCMEntity]) -> None:
         return
 
     # SQLite support. We need ids of created objects, bulk_create on SQLite does not return ids
+    # SQLite support ended in release 2.7.0. We need to review this code.
     cursor = connection.cursor()
     cursor.execute(
         f"""INSERT INTO "cm_objectconfig" ("current", "previous") VALUES

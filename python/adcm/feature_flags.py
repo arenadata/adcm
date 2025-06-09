@@ -25,12 +25,17 @@ class _Flag:
 
 FLAG_BUNDLE_UPLOAD = _Flag("feature-bundle-upload")
 FLAG_CONFIG_SPEC = _Flag("feature-config-spec")
+FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
 
 
 def use_new_bundle_parsing_approach(env: Mapping[str, str], headers: Mapping[str, str]) -> bool:
-    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env)
+    flag = headers.get(FLAG_BUNDLE_UPLOAD.header) or env.get(FLAG_BUNDLE_UPLOAD.env) or "new"
     return flag == "new"
 
 
 def use_new_spec_format() -> bool:
     return os.environ.get(FLAG_CONFIG_SPEC.env) == "new"
+
+
+def use_new_job_scheduler() -> bool:
+    return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"

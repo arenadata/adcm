@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type { AdcmConfigGroup } from '@models/adcm';
 
 interface ConfigGroupDeleteDialogProps {
@@ -9,22 +9,21 @@ interface ConfigGroupDeleteDialogProps {
 }
 
 const ConfigGroupDeleteDialog: React.FC<ConfigGroupDeleteDialogProps> = ({ configGroup, onSubmit, onClose }) => {
-  const isOpen = configGroup !== null;
+  if (configGroup === null) return;
 
   const handleSubmit = () => {
     configGroup && onSubmit(configGroup.id);
   };
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={onClose}
+    <DialogV2
       title={`Delete "${configGroup?.name}" config-group`}
       onAction={handleSubmit}
+      onCancel={onClose}
       actionButtonLabel="Delete"
     >
       All config group information will be deleted
-    </Dialog>
+    </DialogV2>
   );
 };
 export default ConfigGroupDeleteDialog;

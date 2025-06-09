@@ -24,12 +24,12 @@ from cm.models import (
     ConcernItem,
     ConcernType,
     Host,
-    JobLog,
     ObjectType,
     Prototype,
     PrototypeImport,
     Provider,
     Service,
+    TaskLog,
 )
 from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.concern.messages import ConcernMessage
@@ -450,7 +450,7 @@ class TestConcernsResponse(BaseAPITestCase):
                     "job": {
                         "type": "job",
                         "name": "action",
-                        "params": {"taskId": JobLog.objects.get(name=action.name).pk},
+                        "params": {"taskId": TaskLog.objects.get(action__name=action.name).pk},
                     },
                     "target": {"type": "cluster", "name": "cluster_1", "params": {"clusterId": self.cluster_1.pk}},
                 },

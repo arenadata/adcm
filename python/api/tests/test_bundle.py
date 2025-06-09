@@ -12,6 +12,7 @@
 
 from pathlib import Path
 from unittest.mock import patch
+import unittest
 
 from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Prototype
@@ -73,7 +74,7 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
 
     def test_load_bundle_wrong_cluster_mm_action_false_host_action_prop_fail(self):
         bundle_filename = "bundle_test_cluster_false_host_action.tar"
@@ -92,7 +93,7 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
 
     def test_load_bundle_cluster_mm_action_host_action_true_success(self):
         bundle_filename = "bundle_test_cluster_host_action_true.tar"
@@ -129,7 +130,7 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
 
     def test_load_bundle_cluster_with_host_mm_has_ui_options_fail(self):
         bundle_filename = "bundle_test_cluster_action_with_ui_options.tar"
@@ -148,7 +149,7 @@ class TestBundle(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
 
     def test_load_servicemap(self):
         with patch("cm.services.status.notify.reset_hc_map"):
@@ -265,7 +266,7 @@ class TestBundle(BaseTestCase):
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
 
     def test_upload_hc_apply_without_hc_acl_task_fail(self):
         bundle_filename = "hc_apply_without_hc_acl_task.tar"
@@ -276,7 +277,7 @@ class TestBundle(BaseTestCase):
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
 
     def test_upload_hc_apply_wrong_internal_script_fail(self):
         bundle_filename = "hc_apply_action_wrong_script_bundle_switch.tar"
@@ -287,8 +288,9 @@ class TestBundle(BaseTestCase):
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_upload_hc_apply_upgrade_success(self):
         bundle_filename = "upgrade_hc_apply_success.tar"
         self.upload_bundle(path=Path(self.test_files_dir, bundle_filename))
@@ -299,6 +301,7 @@ class TestBundle(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_upload_hc_apply_upgrade_no_hc_acl_fail(self):
         bundle_filename = "upgrade_hc_apply_no_hc_acl.tar"
         self.upload_bundle(path=Path(self.test_files_dir, bundle_filename))
@@ -310,6 +313,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "INVALID_UPGRADE_DEFINITION")
 
+    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_upload_hc_apply_upgrade_wrong_script_fail(self):
         bundle_filename = "upgrade_hc_apply_wrong_script.tar"
         self.upload_bundle(path=Path(self.test_files_dir, bundle_filename))
@@ -319,4 +323,4 @@ class TestBundle(BaseTestCase):
             data={"bundle_file": bundle_filename},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "INVALID_UPGRADE_DEFINITION")
+        self.assertEqual(response.data["code"], "BUNDLE_VALIDATION_ERROR")

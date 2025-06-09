@@ -22,14 +22,16 @@ const UnlinkHostDialog: React.FC = () => {
   };
 
   return (
-    <DialogV2
-      title="Unlink host"
-      onAction={handleConfirmDialog}
-      onCancel={handleCloseDialog}
-      actionButtonLabel="Unlink"
-    >
-      The host will be unlinked from the cluster
-    </DialogV2>
+    <>
+      <DialogV2
+        title="Unlink host"
+        onAction={handleConfirmDialog}
+        onCancel={handleCloseDialog}
+        actionButtonLabel="Unlink"
+      >
+        The host will be unlinked from the cluster
+      </DialogV2>
+    </>
   );
 };
 

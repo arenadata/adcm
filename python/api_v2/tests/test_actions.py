@@ -372,7 +372,7 @@ class TestActionsFiltering(BaseAPITestCase):
             response.json(),
             {
                 "code": "JOB_TERMINATION_ERROR",
-                "desc": "Can't terminate job #1, pid: 0 with status created",
+                "desc": f"Can't terminate job #{job.id}, pid: 0 with status created",
                 "level": "error",
             },
         )
@@ -563,27 +563,9 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         response = self.client.v2[cluster, "actions", action.pk].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertDictEqual(
+        self.assertListEqual(
             response.json()["configuration"]["config"]["group"],
-            {
-                "CLUSTER": [
-                    "host-1",
-                    "host-2",
-                    "host-3",
-                    "host-4",
-                    "host-5",
-                    "host-6",
-                    "host-7",
-                    "host-8",
-                    "host-13",
-                    "host-14",
-                ],
-                "CLUSTER.maintenance_mode": ["host-9", "host-10", "host-11", "host-12"],
-                "service_name": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
-                "service_name.server": ["host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8"],
-                "service_name.server.maintenance_mode": ["host-9", "host-10", "host-11"],
-                "service_name.maintenance_mode": ["host-9", "host-10", "host-11"],
-            },
+            ["host-1", "host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8", "host-13", "host-14"],
         )
 
     def test_retrieve_jinja_config_old_processing(self):

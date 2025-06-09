@@ -93,6 +93,16 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "filedir": self.directories["FILE_DIR"],
             "token": settings.STATUS_SECRET_KEY,
             "component_type_id": self.component.prototype_id,
+            "service_type_id": self.service.prototype_id,
+            "adcm_id": self.adcm_id,
+            "cluster": self.cluster,
+            "service": self.service,
+            "component": self.component,
+            "provider": self.provider,
+            "host_1": self.host_1,
+            "host_2": self.host_2,
+            "host_3": self.host_3,
+            "host_1_type_id": self.host_1.prototype_id,
         }
 
         self.configuration = ExternalSettings(
@@ -266,6 +276,10 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],
             "token": settings.STATUS_SECRET_KEY,
+            "adcm_id": self.adcm_id,
+            "cluster": self.cluster,
+            "service": self.service_1,
+            "service_type_id": self.service_1.prototype.id,
         }
 
         self.configuration = ExternalSettings(
