@@ -12,6 +12,7 @@
 
 import datetime
 
+from celery.result import AsyncResult
 from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
@@ -24,15 +25,41 @@ import zoneinfo
 UTC = zoneinfo.ZoneInfo("UTC")
 
 
+CELERY_ADCM_TASK_STATUS_MAP = {  # {celery_state: (is_dead, new_state)}
+    "PENDING": (False, ExecutionStatus.RUNNING),
+    "STARTED": (False, ExecutionStatus.RUNNING),
+    "RETRY": (False, ExecutionStatus.RUNNING),
+    "FAILURE": (True, ExecutionStatus.BROKEN),
+    "SUCCESS": (True, ExecutionStatus.SUCCESS),
+}
+
+
 def _is_alive_local(task: TaskShortInfo) -> LiveCheckResult:
     _ = task
     # tasks in local environment are always considered dead on ADCM restart
     return LiveCheckResult(is_dead=True, status=ExecutionStatus.ABORTED)
 
 
+def _is_alive_celery(task: TaskShortInfo) -> LiveCheckResult:
+    if task.status == ExecutionStatus.SCHEDULED:
+        return LiveCheckResult(is_dead=True, status=ExecutionStatus.REVOKED)
+
+    result = AsyncResult(task.worker["worker_id"])
+    try:
+        celery_task_state = result.state
+    except AttributeError:
+        logger.exception(f"Can't check task #{task.id} status ({task.worker}). Considering broken.")
+
+        return LiveCheckResult(is_dead=True, status=ExecutionStatus.BROKEN)
+
+    is_dead, new_status = CELERY_ADCM_TASK_STATUS_MAP[celery_task_state]
+
+    return LiveCheckResult(is_dead=is_dead, status=new_status)
+
+
 LIVE_CHECKERS = {
     TaskRunnerEnvironment.LOCAL: _is_alive_local,
-    TaskRunnerEnvironment.CELERY: ...,  # TODO
+    TaskRunnerEnvironment.CELERY: _is_alive_celery,
 }
 
 
@@ -45,13 +72,14 @@ def recover_statuses() -> None:
 
     for task in scheduler_repo.retrieve_unfinished_tasks():
         env = task.worker.get("environment")
+
         if not env:
             logger.debug(f"Task #{task.id} skipped, worker environment is not specified")
             continue
 
         live_check_result: LiveCheckResult = LIVE_CHECKERS[env](task)
 
-        if live_check_result.is_dead:
+        if live_check_result.is_dead and live_check_result.status:
             job_repo.update_task(id=task.id, data=TaskUpdateDTO(status=live_check_result.status, finish_date=now))
 
             for job_id in scheduler_repo.retrieve_unfinished_task_jobs(task_id=task.id):

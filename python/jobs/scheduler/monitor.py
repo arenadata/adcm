@@ -29,7 +29,19 @@ class LocalMonitor(Monitor):
             time.sleep(500)
 
 
+class CeleryMonitor(Monitor):
+    def __call__(self, *args, **kwargs):
+        _ = args, kwargs
+        logger.info(f"CeleryMonitor started (pid: {os.getpid()})")
+        self.run()
+
+    def run(self):
+        while True:
+            logger.info("CeleryMonitor.run")
+            time.sleep(500)
+
+
 MONITOR_REGISTRY = {
     TaskRunnerEnvironment.LOCAL: LocalMonitor,
-    TaskRunnerEnvironment.CELERY: ...,  # TODO
+    TaskRunnerEnvironment.CELERY: CeleryMonitor,
 }
