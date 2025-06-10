@@ -20,7 +20,7 @@ from typing import Literal, NamedTuple, TypeAlias, TypedDict
 from core.job.types import ExecutionStatus
 from core.types import ConcernID, TaskID
 
-WorkerID: TypeAlias = int
+WorkerID: TypeAlias = int | str
 
 
 class TaskRunnerEnvironment(str, Enum):

@@ -30,8 +30,11 @@ def set_status_on_success(status: ExecutionStatus):
 
             res = func(*args, **kwargs)
             job_repo.update_task(id=task_id, data=TaskUpdateDTO(status=status))
+            logger.info(f"Task #{task_id} is {status}")
+
             with suppress(Exception):
                 send_task_status_update_event(task_id=task_id, status=status.value)
+
             return res
 
         return wrapper
@@ -55,9 +58,11 @@ def set_status_on_fail(
                 return func(*args, **kwargs)
             except errors:
                 job_repo.update_task(id=task_id, data=TaskUpdateDTO(status=status))
+                logger.exception(f"Task #{task_id} is {status}")
+
                 with suppress(Exception):
                     send_task_status_update_event(task_id=task_id, status=status.value)
-                logger.exception(f"Task #{task_id} is {status}")
+
                 return return_
 
         return wrapper

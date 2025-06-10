@@ -10,14 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
+from typing import Generator
+import os
 
-# todo make configurable and independent from django
 
-_db_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASS}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+def _get_env_variables(*args) -> Generator[str | None, None, None]:
+    for arg in args:
+        yield os.environ.get(arg.upper())
 
+
+DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME = _get_env_variables("DB_USER", "DB_PASS", "DB_HOST", "DB_PORT", "DB_NAME")
+_db_url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 broker_url = f"sqla+{_db_url}"
 result_backend = f"db+{_db_url}"
 result_extended = True
+broker_connection_retry_on_startup = True
 timezone = "UTC"
