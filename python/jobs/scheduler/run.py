@@ -20,9 +20,7 @@ import sys
 sys.path.append("/adcm/python")
 from jobs.scheduler._logger import logger
 from jobs.scheduler.launcher import run_launcher_in_loop
-from jobs.scheduler.monitor import MONITOR_REGISTRY
-
-JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
+from jobs.scheduler.monitor import run_monitor_in_loop
 
 
 def main() -> None:
@@ -31,8 +29,7 @@ def main() -> None:
     proc = Process(target=run_launcher_in_loop, args=())
     proc.start()
 
-    monitor = MONITOR_REGISTRY[JOB_EXECUTION_ENVIRONMENT]()
-    proc = Process(target=monitor, args=())
+    proc = Process(target=run_monitor_in_loop, args=())
     proc.start()
 
     while True:

@@ -52,9 +52,3 @@ class TaskQueuer(ABC):
     @abstractmethod
     def queue(self, task_id: TaskID) -> WorkerInfo:
         ...
-
-
-class Monitor(ABC):
-    @abstractmethod
-    def run(self) -> None:
-        ...
