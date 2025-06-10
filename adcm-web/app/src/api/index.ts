@@ -37,3 +37,4 @@ export { AdcmClusterAnsibleSettingsApi } from './adcm/clusterAnsibleSettings';
 export { AdcmClusterActionHostGroupsApi } from './adcm/clusterActionHostGroups';
 export { AdcmClusterServiceActionHostGroupsApi } from './adcm/clusterServiceActionHostGroups';
 export { AdcmClusterServiceComponentActionHostGroupsApi } from './adcm/clusterServiceComponentActionHostGroups';
+export { AdcmConcernsApi } from './adcm/concerns';
