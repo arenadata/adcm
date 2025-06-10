@@ -1,12 +1,12 @@
 :global {
   body.theme-dark {
     --concern-icon-error: var(--color-xred);
-    --concern-icon-warning: var(--color-yellow-light);
+    --concern-icon-warning: var(--color-yellow-lighter);
   }
 
   body.theme-light {
     --concern-icon-error: var(--color-xred-light);
-    --concern-icon-warning: var(--color-json-orange);
+    --concern-icon-warning: var(--color-warning-orange);
   }
 }
 

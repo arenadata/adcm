@@ -28,16 +28,27 @@ const concernPlaceholderTypeUrlDict: Record<string, string> = {
   [AdcmConcernPlaceholderType.Provider]: '/hostproviders/:providerId/',
 };
 
-export const getConcernLinkObjectPathsDataArray = (
-  concerns: AdcmConcerns[] | undefined,
-): Array<ConcernObjectPathsData[]> => {
+interface ConcernObjectData {
+  concernId: number;
+  isDeletable: boolean;
+  concernData: ConcernObjectPathsData[];
+}
+
+export const getConcernLinkObjectPathsDataArray = (concerns?: AdcmConcerns[]): Array<ConcernObjectData> => {
   if (!concerns?.length) return [];
+
   const keyRegexp = /\${([^}]+)}/;
 
   return concerns.map((concern) => {
-    if (!concern.reason || !concern.reason.placeholder) return [];
-    const linksDataMap = new Map<string, ConcernObjectPathsData>();
+    const concernId = concern.id;
+    const isDeletable = !concern.isBlocking;
 
+    // If there is no reason or placeholder, return an object with an empty concernData
+    if (!concern.reason?.placeholder) {
+      return { concernId, isDeletable, concernData: [] };
+    }
+
+    const linksDataMap = new Map<string, ConcernObjectPathsData>();
     const separatedMessage = concern.reason.message.split(keyRegexp);
 
     Object.entries(concern.reason.placeholder).forEach(([key, placeholderItem]) => {
@@ -52,18 +63,21 @@ export const getConcernLinkObjectPathsDataArray = (
         text: placeholderItem.name,
       });
     });
-    const initialLinksData: ConcernObjectPathsData[] = [];
 
-    return separatedMessage.reduce((concernLinksData, text) => {
-      if (text === '') return concernLinksData;
-      if (linksDataMap.has(text)) {
+    const concernData = separatedMessage.reduce((accPathsData: ConcernObjectPathsData[], text: string) => {
+      if (text !== '') {
         const linkData = linksDataMap.get(text);
-        // biome-ignore lint/performance/noAccumulatingSpread: TODO: refactor the thing
-        return [...concernLinksData, { path: linkData?.path || '', text: linkData?.text || '' }];
+        if (linkData) {
+          const { path = '', text: textValue = '' } = linkData;
+          accPathsData.push({ path, text: textValue });
+        } else {
+          accPathsData.push({ text });
+        }
       }
-      // biome-ignore lint/performance/noAccumulatingSpread: TODO: refactor the thing
-      return [...concernLinksData, { text }];
-    }, initialLinksData);
+      return accPathsData;
+    }, [] as ConcernObjectPathsData[]);
+
+    return { concernId, isDeletable, concernData };
   });
 };
 
