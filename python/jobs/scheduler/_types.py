@@ -20,7 +20,7 @@ from typing import Literal, NamedTuple, TypeAlias, TypedDict
 from core.job.types import ExecutionStatus
 from core.types import ConcernID, TaskID
 
-WorkerID: TypeAlias = int
+WorkerID: TypeAlias = int | str
 
 
 class TaskRunnerEnvironment(str, Enum):
@@ -51,10 +51,4 @@ class TaskQueuer(ABC):
 
     @abstractmethod
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        ...
-
-
-class Monitor(ABC):
-    @abstractmethod
-    def run(self) -> None:
         ...

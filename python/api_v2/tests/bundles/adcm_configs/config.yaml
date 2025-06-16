@@ -212,6 +212,7 @@
             Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.
           type: integer
           default: 60
+          min: 0
         - name: "tls_ca_cert_file"
           display_name: "TLS CA certificate file path"
           description: |

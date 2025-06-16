@@ -144,6 +144,7 @@ def process_bundle_from_archive(
                 bundle_hash=unpacking_info.hash,
                 verification_status=unpacking_info.signature,
             )
+            repo.update_prototype_licenses(bundle=bundle)
             repo.order_versions()
             repo.recollect_categories()
             bundle.refresh_from_db()

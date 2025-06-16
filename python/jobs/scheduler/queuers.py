@@ -12,14 +12,27 @@
 
 from cm.services.job.run import run_task_in_local_subprocess
 from core.types import TaskID
+from jobs.scheduler import repo as SchedulerRepo  # noqa: N812
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment, WorkerInfo
-from jobs.scheduler.repo import retrieve_task_orm
+from jobs.worker.tasks import run_task
+
+# TODO: restart
 
 
 class LocalTaskQueuer(TaskQueuer):
     env = TaskRunnerEnvironment.LOCAL
+    scheduler_repo = SchedulerRepo
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        pid = run_task_in_local_subprocess(task=retrieve_task_orm(task_id=task_id), command="start")
+        pid = run_task_in_local_subprocess(task=self.scheduler_repo.retrieve_task_orm(task_id=task_id), command="start")
 
         return WorkerInfo(environment=self.env.value, worker_id=pid)
+
+
+class CeleryTaskQueuer(TaskQueuer):
+    env = TaskRunnerEnvironment.CELERY
+
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        result = run_task.delay(task_id=task_id)  # pyright: ignore [reportFunctionMemberAccess]
+
+        return WorkerInfo(environment=self.env.value, worker_id=result.id)

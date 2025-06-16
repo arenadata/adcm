@@ -661,6 +661,7 @@
           "type": "integer",
           "description": "Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.\n",
           "default": 60,
+          "minimum": 0,
           "readOnly": false,
           "adcmMeta": {
             "isAdvanced": false,

@@ -1,0 +1,15 @@
+- type: cluster
+  name: cluster_with_unfilling_config_field
+  version: '1.0'
+  config:
+  actions:
+    action_with_empty_config:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      config:
+    action_with_empty_config_jinja:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      config_jinja:

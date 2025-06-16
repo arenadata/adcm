@@ -24,7 +24,6 @@ from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
-from cm.bundle import prepare_bundle, process_file
 from cm.converters import orm_object_to_core_type
 from cm.models import (
     ADCM,
@@ -44,6 +43,7 @@ from cm.models import (
     Provider,
     Service,
 )
+from cm.services.bundle_alt.load import Directories, parse_bundle_archive
 from cm.services.job.action import prepare_task_for_action
 from cm.services.mapping import set_host_component_mapping
 from cm.utils import deep_merge
@@ -122,9 +122,14 @@ class BundleLogicMixin:
 
     @atomic()
     def add_bundle(self, source_dir: Path) -> Bundle:
-        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
-        bundle_hash, path = process_file(bundle_file=bundle_file)
-        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
+        return parse_bundle_archive(
+            archive=settings.DOWNLOAD_DIR / self.prepare_bundle_file(source_dir=source_dir),
+            directories=Directories(
+                downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR
+            ),
+            adcm_version=settings.ADCM_VERSION,
+            verified_signature_only=False,
+        )
 
 
 class TestCaseWithCommonSetUpTearDown(TestCase):

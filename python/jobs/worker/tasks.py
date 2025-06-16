@@ -10,17 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import TaskLog
-from cm.services.job.run import run_task_in_local_subprocess
-from django.db.transaction import atomic
+
+from cm.services.job.run import get_default_runner
+from core.types import TaskID
 
 from jobs.worker.app import app
 
 
-@app.task()
-def run_job(job_id: int) -> None:
-    # name and arguments are new, but in function naming is old
-    # `job_id` is `tasklog_id`
-    with atomic():
-        task = TaskLog.objects.get(id=job_id)
-        run_task_in_local_subprocess(task=task, command="start")
+@app.task(track_started=True)
+def run_task(*, task_id: TaskID) -> None:
+    runner = get_default_runner()
+    runner.run(task_id=task_id)

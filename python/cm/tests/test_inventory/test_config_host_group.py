@@ -48,7 +48,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         self.service_not_simple, self.service_thesame = bulk_add_services_to_cluster(
             cluster=self.cluster,
             prototypes=Prototype.objects.filter(type=ObjectType.SERVICE, name__in=["not_simple", "thesame"]),
-        )
+        ).order_by("prototype__name")
         self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"
         )

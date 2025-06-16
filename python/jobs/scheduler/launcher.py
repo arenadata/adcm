@@ -31,13 +31,13 @@ from jobs.scheduler import repo as SchedulerRepo  # noqa: N812
 from jobs.scheduler._logger import logger
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
-from jobs.scheduler.queuers import LocalTaskQueuer
+from jobs.scheduler.queuers import CeleryTaskQueuer, LocalTaskQueuer
 from jobs.scheduler.task_status import set_status_on_fail, set_status_on_success
 
 DEFAULT_JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
 EXECUTOR_REGISTRY = {
     TaskRunnerEnvironment.LOCAL: LocalTaskQueuer,
-    TaskRunnerEnvironment.CELERY: ...,  # TODO
+    TaskRunnerEnvironment.CELERY: CeleryTaskQueuer,
 }
 
 
