@@ -548,3 +548,15 @@ class TestBundle(BaseAPITestCase):
                 ),
                 response.data["desc"],
             )
+
+    def test_upload_unfilled_config_field(self):
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "cluster_with_unfilled_config_field",
+            target_dir=settings.TMP_DIR,
+        )
+
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 3)

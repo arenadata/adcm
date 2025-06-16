@@ -271,6 +271,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 actual_vars = decrypt_secrets(
                     get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
                 )
+                actual_vars["cluster"]["imports"]["for_export"] = sorted(
+                    actual_vars["cluster"]["imports"]["for_export"], key=lambda i: i["just_integer"]
+                )
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_imports_have_default_no_import_success(self) -> None:
@@ -352,6 +355,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ],
         }
         result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
+
+        # sorted for test, in this case, the order is not important
+        result["for_export"] = sorted(result["for_export"], key=lambda i: i["just_integer"])
         self.assertDictEqual(result, expected)
 
     def test_config_host_group_effect_on_import_with_default(self) -> None:

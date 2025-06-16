@@ -278,6 +278,9 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
                     if upgrade.venv is None:
                         upgrade.venv = definition.venv
 
+            if isinstance(definition, HostSchema) and definition.flag_autogeneration is None:
+                definition.flag_autogeneration = definitions[("provider",)].flag_autogeneration
+
             parent_key = build_parent_key_safe(key)
             if not parent_key:
                 continue

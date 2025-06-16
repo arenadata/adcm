@@ -104,8 +104,12 @@ def is_path_correct(raw_path: str) -> bool:
     return raw_path.startswith("./") or not raw_path.startswith(("..", "/"))
 
 
-def convert_config(config: list | dict) -> list:
+def convert_config(config: Any) -> list:
     """Converts old-style dict config to list config"""
+
+    # We expect this validator to be called only if a field is defined in the data.
+    if config is None:
+        raise ValueError("the value cannot be empty")
 
     if not isinstance(config, dict):
         return config
@@ -711,6 +715,14 @@ class _BaseActionSchema(_BaseModel):
             raise ValueError('"config_jinja" has unsupported path format')
 
         return self
+
+    @field_validator("config_jinja", mode="before")
+    @classmethod
+    def config_jinja_definition(cls, value: Any):
+        if value is None:
+            raise ValueError("the value cannot be empty")
+
+        return value
 
 
 class _BaseJobSchema(_BaseActionSchema):
