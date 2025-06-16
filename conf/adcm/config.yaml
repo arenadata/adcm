@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.7
+  version: 3.8
 
   actions:
     run_ldap_sync:
@@ -215,6 +215,7 @@
             Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.
           type: integer
           default: 60
+          min: 0
         - name: "tls_ca_cert_file"
           display_name: "TLS CA certificate file path"
           description: |
