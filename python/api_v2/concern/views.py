@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.errors import AdcmEx
-from cm.issue import remove_concern_from_object
 from cm.models import ConcernItem, get_model_by_type
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -51,7 +50,7 @@ class ConcernViewSet(PermissionListMixin, ADCMGenericViewSet, DestroyModelMixin)
         self.check_permissions_for_owner(instance, owner)
 
         if not instance.blocking:
-            remove_concern_from_object(owner, instance)
+            instance.delete()
         else:
             raise AdcmEx(code="CONCERNITEM_NOT_REMOVED")
         return Response(status=HTTP_204_NO_CONTENT)
