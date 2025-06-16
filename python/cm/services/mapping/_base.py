@@ -196,7 +196,7 @@ def _construct_new_topology_or_raise_on_invalid_input(
     unrelated_components = components_in_delta.difference(base_topology.component_ids)
     if unrelated_components:
         cluster_name = Cluster.objects.values_list("name", flat=True).get(id=cluster_id)
-        ids_repr = ", ".join(f'"{component_id}"' for component_id in unrelated_components)
+        ids_repr = ", ".join(f'"{component_id}"' for component_id in sorted(unrelated_components))
         raise AdcmEx(
             code="COMPONENT_NOT_FOUND",
             http_code=HTTP_409_CONFLICT,

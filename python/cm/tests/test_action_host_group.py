@@ -198,12 +198,18 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
             with self.assertRaises(AdcmEx) as err_context:
                 self.add_bundle(negative_dir / "with_host_action")
 
-            self.assertEqual(err_context.exception.code, "INVALID_ACTION_DEFINITION")
-            self.assertIn("mutually exclusive", err_context.exception.msg)
+            self.assertEqual(err_context.exception.code, "BUNDLE_DEFINITION_ERROR")
+            self.assertIn(
+                "The allow_for_action_host_group and host_action attributes are mutually exclusive",
+                err_context.exception.msg,
+            )
 
         with self.subTest("Action Host Group In Upgrade"):
             with self.assertRaises(AdcmEx) as err_context:
                 self.add_bundle(negative_dir / "in_upgrade")
 
-            self.assertEqual(err_context.exception.code, "INVALID_OBJECT_DEFINITION")
-            self.assertIn('Map key "allow_for_action_host_group" is not allowed here', err_context.exception.msg)
+            self.assertEqual(err_context.exception.code, "BUNDLE_DEFINITION_ERROR")
+            self.assertIn(
+                "allow_for_action_host_group\n   | extra_forbidden: Extra inputs are not permitted",
+                err_context.exception.msg,
+            )

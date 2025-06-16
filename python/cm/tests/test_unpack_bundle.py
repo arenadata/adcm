@@ -38,7 +38,7 @@ def pack_bundles_to_test() -> Path:
     tmp_path = Path(gettempdir(), f"test_bundles_{uuid.uuid4()}")
     tmp_path.mkdir()
     bundles_folder_path = Path("python/api_v2/tests/bundles")
-    for bundle_path in bundles_folder_path.glob("*"):
+    for bundle_path in bundles_folder_path.glob("[!.]*"):
         pack_bundle(bundle_path, tmp_path)
     return tmp_path
 

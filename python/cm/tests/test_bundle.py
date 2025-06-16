@@ -110,8 +110,8 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 with self.assertRaises(AdcmEx) as err:
                     self.add_bundle(source_dir=bundle_path)
 
-                self.assertEqual(err.exception.code, "REQUIRES_ERROR")
-                self.assertIn("requires should not be cyclic", err.exception.msg)
+                self.assertEqual(err.exception.code, "BUNDLE_VALIDATION_ERROR")
+                self.assertIn("Requires should not be cyclic", err.exception.msg)
 
     def test_upload_with_allowed_requires_success(self) -> None:
         self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "various_requires")
@@ -147,9 +147,9 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                     self.add_bundle(bundle_dir)
 
                 self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
-                self.assertEqual(
+                self.assertIn(
+                    "The value of param/ config parameter does not match pattern: [a-z][A-Z][0-9]*?",
                     err_context.exception.msg,
-                    "The default attribute value of param config parameter does not match pattern",
                 )
 
     def test_upload_with_pattern_for_incorrect_types_fail(self) -> None:
@@ -165,7 +165,7 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                     self.add_bundle(bundle_dir)
 
                 self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
-                self.assertIn('Map key "pattern" is not allowed here', err_context.exception.msg)
+                self.assertIn("extra_forbidden: Extra inputs are not permitted", err_context.exception.msg)
 
     def test_upload_with_incorrect_pattern_fail(self) -> None:
         cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
@@ -178,9 +178,9 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
             self.add_bundle(bundle_dir)
 
         self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(
+        self.assertIn(
+            "pattern\n    | value_error: Value error, Pattern is not valid regular expression: *",
             err_context.exception.msg,
-            "The pattern attribute value of BstT config parameter is not valid regular expression",
         )
 
     def test_bundle_upload_duplicate_upgrade_fail(self):

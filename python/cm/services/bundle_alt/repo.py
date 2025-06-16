@@ -359,3 +359,10 @@ def _get_license_hash(bundle_path: Path, license_path: str | None) -> str | None
         raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=msg) from err
 
     return hashlib.sha256(license_content).hexdigest()
+
+
+def update_prototype_licenses(bundle: Bundle) -> None:
+    Prototype.objects.filter(
+        license_hash__in=Prototype.objects.filter(license="accepted").values_list("license_hash", flat=True),
+        bundle_id=bundle.id,
+    ).update(license="accepted")
