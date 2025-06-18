@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import reduce
+from operator import or_
 from typing import Collection, Iterable, NamedTuple, TypeAlias
 
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
-from django.db.models import F
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import F, Q
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import ConfigHostGroup
@@ -35,7 +38,41 @@ class ConfigHostGroupInfo(NamedTuple):
 def retrieve_config_host_groups_for_hosts(
     hosts: Iterable[HostID], restrict_by_owner_type: Collection[ADCMCoreType] = ()
 ) -> dict[ObjectID, ConfigHostGroupInfo]:
-    query = ConfigHostGroup.objects.filter(hosts__in=hosts).values(
+    query = Q(hosts__in=hosts)
+    if restrict_by_owner_type:
+        query &= Q(
+            object_type__model__in=(
+                core_type_to_model(owner_type).__name__.lower() for owner_type in restrict_by_owner_type
+            )
+        )
+
+    return _retrieve_config_host_groups_info(query=query)
+
+
+def retrieve_config_host_groups_for_objects(
+    objects: dict[ADCMCoreType, set[ObjectID]],
+) -> dict[ObjectID, ConfigHostGroupInfo]:
+    types_with_chg = {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT, ADCMCoreType.PROVIDER}
+
+    core_type_content_type_map: dict[ADCMCoreType, int] = {
+        core_type: ContentType.objects.get_for_model(core_type_to_model(core_type)).id
+        for core_type in objects
+        if core_type in types_with_chg
+    }
+    query = reduce(
+        or_,
+        (
+            Q(object_id__in=ids_set, object_type_id=core_type_content_type_map[core_type])
+            for core_type, ids_set in objects.items()
+            if core_type in types_with_chg
+        ),
+    ) or Q(id=-1)
+
+    return _retrieve_config_host_groups_info(query=query)
+
+
+def _retrieve_config_host_groups_info(query: Q) -> dict[ObjectID, ConfigHostGroupInfo]:
+    queryset = ConfigHostGroup.objects.filter(query).values(
         "id",
         "name",
         current_config_id=F("config__current"),
@@ -44,16 +81,9 @@ def retrieve_config_host_groups_for_hosts(
         host_id=F("hosts__id"),
         host_name=F("hosts__fqdn"),
     )
-    if restrict_by_owner_type:
-        query = query.filter(
-            object_type__model__in=(
-                core_type_to_model(owner_type).__name__.lower() for owner_type in restrict_by_owner_type
-            )
-        )
 
     result: dict[ObjectID, ConfigHostGroupInfo] = {}
-
-    for record in query:
+    for record in queryset:
         group = result.setdefault(
             record["id"],
             ConfigHostGroupInfo(

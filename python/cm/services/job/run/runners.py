@@ -18,7 +18,10 @@ import signal
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.job.types import ExecutionStatus, Job, Task
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import (
+    ADCMCoreType,
+    CoreObjectDescriptor,
+)
 
 from cm.services.concern.locks import (
     delete_task_flag_concern,
@@ -26,6 +29,8 @@ from cm.services.concern.locks import (
     update_task_flag_concern,
     update_task_lock_concern,
 )
+from cm.services.config import retrieve_primary_configs
+from cm.services.hierarchy import retrieve_object_hierarchy
 from cm.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -176,6 +181,11 @@ class JobSequenceRunner(TaskRunner):
             prepare_environment(task=task, job=target.job, configuration=self._settings)
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
+        if task.owner:
+            self._update_job_related_configs(
+                job_id=target.job.id, owner=CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
+            )
+
         target.executor.execute()
 
         self._repo.update_job(
@@ -323,3 +333,9 @@ class JobSequenceRunner(TaskRunner):
             self._notifier.send_prototype_update_event(object_=owner)
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
+
+    def _update_job_related_configs(self, job_id: int, owner: CoreObjectDescriptor) -> None:
+        hierarchy = retrieve_object_hierarchy(object_=owner)
+        related_configs = retrieve_primary_configs(objects=hierarchy)
+
+        self._repo.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))

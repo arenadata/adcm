@@ -16,7 +16,14 @@ from functools import reduce
 from typing import Any, Iterable, Literal, NamedTuple
 
 from core.cluster.types import ClusterTopology
-from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, GeneralEntityDescriptor, ObjectID, PrototypeID
+from core.types import (
+    ADCMCoreType,
+    ConfigID,
+    CoreObjectDescriptor,
+    GeneralEntityDescriptor,
+    ObjectID,
+    PrototypeID,
+)
 from django.conf import settings
 from django.db.models import F, QuerySet, Value
 
@@ -50,7 +57,7 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
     for group in groups_with_hosts:
         objects_with_groups[group.owner.type].add(group.owner.id)
 
-    objects_config_info = _get_config_info(objects=objects_with_groups)
+    objects_config_info = get_config_info(objects=objects_with_groups)
 
     specifications_for_prototypes = retrieve_flat_spec_for_objects(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
@@ -119,7 +126,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     for group in groups_of_provider_with_hosts:
         objects_with_groups[group.owner.type].add(group.owner.id)
 
-    objects_config_info = _get_config_info(objects=objects_with_groups)
+    objects_config_info = get_config_info(objects=objects_with_groups)
 
     specifications_for_prototypes = retrieve_flat_spec_for_objects(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
@@ -154,7 +161,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
 def get_objects_configurations(
     objects: ObjectsInInventoryMap,
 ) -> dict[tuple[ADCMCoreType, ObjectID], dict]:
-    objects_config_info = _get_config_info(objects=objects)
+    objects_config_info = get_config_info(objects=objects)
 
     if not objects_config_info:
         return {(type_, object_id): {} for type_, ids in objects.items() for object_id in ids}
@@ -197,7 +204,7 @@ def get_adcm_configuration() -> dict[str, Any]:
     )
 
 
-def _get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]:
+def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]:
     query_for_objects_config_info: QuerySet = reduce(
         lambda left_qs, right_qs: left_qs.union(right_qs),
         (
