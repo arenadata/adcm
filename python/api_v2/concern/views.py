@@ -60,7 +60,7 @@ class ConcernViewSet(PermissionListMixin, ADCMGenericViewSet, DestroyModelMixin)
         owner_view_perm = f"cm.view_{owner.__class__.__name__.lower()}"
         instance_remove_permission = f"cm.delete_{instance.__class__.__name__.lower()}"
 
-        if not self.request.user.has_perm(perm=owner_view_perm, obj=owner):
+        if not (self.request.user.has_perm(owner_view_perm, owner) or self.request.user.has_perm(owner_view_perm)):
             raise NotFound()
         if not self.request.user.has_perm(perm=instance_remove_permission):
             raise PermissionDenied()

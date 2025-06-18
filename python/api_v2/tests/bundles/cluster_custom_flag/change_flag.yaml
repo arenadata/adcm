@@ -1,0 +1,60 @@
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: rise cluster flag
+      adcm_change_flag:
+        name: cluster_flag
+        operation: up
+        msg: "test message for cluster"
+      tags:
+        - up_cluster
+    - name: change_flag
+      adcm_change_flag:
+        name: cluster_flag
+        operation: down
+      tags:
+        - down_cluster
+    - name: rise service flag
+      adcm_change_flag:
+        name: service_flag
+        operation: up
+        msg: "test message for servide"
+        objects:
+          - type: service
+            service_name: master_service
+      tags:
+        - up_service
+    - name: down service
+      adcm_change_flag:
+        name: service_flag
+        operation: down
+        objects:
+          - type: service
+            service_name: master_service
+      tags:
+        - down_service
+    - name: rise component flag
+      adcm_change_flag:
+        name: component_flag
+        operation: up
+        msg: "test message for component"
+        objects:
+          - type: component
+            service_name: master_service
+            component_name: test_component
+      tags:
+        - up_component
+    - name: down component flag
+      adcm_change_flag:
+        name: component_flag
+        operation: down
+        objects:
+          - type: component
+            service_name: master_service
+            component_name: test_component
+      tags:
+        - down_component
+

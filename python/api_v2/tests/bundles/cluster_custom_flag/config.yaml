@@ -1,0 +1,32 @@
+---
+- type: cluster
+  name: cluster_flags
+  version: &version 1.0
+
+  config: &config
+    - name: string_param
+      type: string
+      default: some_default_value
+
+    - name: int_param
+      type: integer
+      display_name: Some Int
+      default: 12
+
+  actions: &actions
+    flag_up_cluster: 
+      type: job
+      script_type: ansible
+      script: ./change_flag.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: up_cluster
+
+- type: service
+  version: *version
+  actions: *actions
+  name: master_service
+  components:
+    test_component:
+      actions: *actions
