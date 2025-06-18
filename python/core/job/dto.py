@@ -33,6 +33,7 @@ class JobUpdateDTO(BaseModel):
     start_date: datetime | None = None
     finish_date: datetime | None = None
     status: ExecutionStatus | None = None
+    objects_related_configs: list | None = None
 
 
 class LogCreateDTO(BaseModel):

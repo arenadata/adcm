@@ -29,6 +29,7 @@ TaskID: TypeAlias = int
 JobID: TypeAlias = int
 PID: TypeAlias = int
 
+ObjectConfigID: TypeAlias = int
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int
 

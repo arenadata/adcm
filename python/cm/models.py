@@ -291,6 +291,14 @@ class ConfigLog(ADCMModel):
     __error_code__ = "CONFIG_NOT_FOUND"
 
 
+class ConfigRevision(models.Model):
+    configlog = models.ForeignKey(ConfigLog, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["configlog"], name="unique_configlog")]
+
+
 class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
@@ -1416,6 +1424,7 @@ class JobLog(AbstractSubAction):
     status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
+    objects_related_configs = models.JSONField(null=True, default=None)
 
     __error_code__ = "JOB_NOT_FOUND"
 

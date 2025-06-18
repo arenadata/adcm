@@ -14,11 +14,14 @@ from typing import Any, Collection, TypeAlias, TypedDict
 
 from cm.api import set_object_config_with_plugin
 from cm.converters import core_type_to_model
-from cm.models import ConfigLog
+from cm.models import ConfigLog, JobLog
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
+from cm.services.config.types import RelatedConfigs
+from cm.services.job.run.repo import JobRepoImpl
 from cm.status_api import send_config_creation_event
-from core.types import CoreObjectDescriptor
+from core.job.dto import JobUpdateDTO
+from core.types import ConfigID, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import model_validator
 from typing_extensions import Self
@@ -139,8 +142,13 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         if not changed:
             return CallResult(value=return_value, changed=False, error=None)
 
-        set_object_config_with_plugin(obj=db_object, config=configuration.config, attr=configuration.attr)
+        new_configlog = set_object_config_with_plugin(
+            obj=db_object, config=configuration.config, attr=configuration.attr
+        )
         send_config_creation_event(object_=db_object)
+        self._update_related_configs(
+            job_id=runtime.vars.job.id, old_config=db_object.config.current, new_config=new_configlog.id
+        )
 
         return CallResult(value=return_value, changed=True, error=None)
 
@@ -158,6 +166,27 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         # putting result under the "value" key, because during result parsing dicts are merged into response,
         # return of this plugin should always have `value` key
         return ChangeConfigReturn(value=config_params)
+
+    @staticmethod
+    def _update_related_configs(job_id: int, old_config: ConfigID, new_config: ConfigID) -> None:
+        related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
+            id=job_id
+        )
+        if not related_configs:
+            return
+
+        index, config = None, None
+        for i, related_config in enumerate(related_configs):
+            if related_config["primary_config_id"] == old_config:
+                index = i
+                config = related_config
+                break
+
+        if index and config:
+            config["primary_config_id"] = new_config
+            related_configs[index] = config
+
+            JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
 
 
 def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:

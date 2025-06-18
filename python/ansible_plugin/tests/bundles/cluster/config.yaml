@@ -2,6 +2,49 @@
   name: simple_cluster
   version: 3
 
+  config: &config
+    - name: integer_field
+      type: integer
+      default: 1
+    - name: string_field
+      type: string
+      default: "string_value"
+    - name: map_field
+      type: map
+      default:
+        integer_key: "2"
+        string_key: "map_string_value"
+    - name: group
+      type: group
+      subs:
+        - name: group_integer_field
+          type: integer
+          default: 11
+        - name: group_string_field
+          type: string
+          default: "group_string_value"
+        - name: group_map_field
+          type: map
+          default:
+            integer_key: "22"
+            string_key: "group_map_string_value"
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: activatable_group_integer_field
+          type: integer
+          default: 111
+        - name: activatable_group_string_field
+          type: string
+          default: "activatable_group_string_value"
+        - name: activatable_group_map_field
+          type: map
+          default:
+            integer_key: "222"
+            string_key: "activatable_group_map_string_value"
+
   actions: &actions
     dummy: &action
       type: job
@@ -25,14 +68,17 @@
   name: service_1
   version: 2
 
+  config: *config
   actions: *actions
 
   components:
     component_1:
       actions: *actions
+      config: *config
 
     component_2:
       actions: *actions
+      config: *config
 
 - <<: *service
   name: service_2
