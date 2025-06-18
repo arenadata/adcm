@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from core.cluster.types import TopologyHostDiff
-from core.job.types import TaskMappingDelta
+from core.job.types import HcAclRule, TaskMappingDelta
 from core.types import ComponentID, ComponentNameKey
 
 from cm.errors import AdcmEx
@@ -27,7 +27,9 @@ def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDe
 
 
 def check_delta_is_allowed(
-    delta: TaskMappingDelta, rules: list[ActionHCRule], full_name_mapping: dict[ComponentNameKey, ComponentID]
+    delta: TaskMappingDelta,
+    rules: list[ActionHCRule | HcAclRule],
+    full_name_mapping: dict[ComponentNameKey, ComponentID],
 ) -> None:
     if not rules:
         return
