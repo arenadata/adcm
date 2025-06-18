@@ -13,6 +13,8 @@
 }
 
 .roleDialogForm {
+  // do not remove, only way to calculate proper list height
+  --list-transfer-list-max-height: calc(100vh - 510px);
   display: grid;
   height: 100%;
   grid-template-rows: min-content 1fr;
