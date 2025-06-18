@@ -27,42 +27,40 @@ from core.job.dto import TaskUpdateDTO
 from core.job.types import ExecutionStatus, Task
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
-from jobs.scheduler import repo as SchedulerRepo  # noqa: N812
-from jobs.scheduler._logger import logger
+
+from jobs.scheduler import repo, settings
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
-from jobs.scheduler.queuers import CeleryTaskQueuer, LocalTaskQueuer
-from jobs.scheduler.task_status import set_status_on_fail, set_status_on_success
-
-DEFAULT_JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
-EXECUTOR_REGISTRY = {
-    TaskRunnerEnvironment.LOCAL: LocalTaskQueuer,
-    TaskRunnerEnvironment.CELERY: CeleryTaskQueuer,
-}
+from jobs.scheduler.logger import logger
+from jobs.scheduler.queuers import QUEUER_REGISTRY
+from jobs.scheduler.utils import set_status_on_fail, set_status_on_success
 
 
 def run_launcher_in_loop() -> None:
     job_repo: JobRepoInterface = JobRepoImpl
-    scheduler_repo: ModuleType = SchedulerRepo
-    queuer = EXECUTOR_REGISTRY[DEFAULT_JOB_EXECUTION_ENVIRONMENT]()
+    scheduler_repo: ModuleType = repo
+    queuer = QUEUER_REGISTRY[settings.DEFAULT_JOB_EXECUTION_ENVIRONMENT]()
 
     logger.info(f"{queuer.env.capitalize()} launcher started (pid: {os.getpid()})")
 
     while True:
-        time.sleep(1)
+        time.sleep(settings.LAUNCHER_ITERATION_INTERVAL)
 
-        scheduled = False
-        with atomic(), job_repo.retrieve_and_lock_first_created_task() as task_id:
-            if task_id is None:
-                continue
+        try:
+            scheduled = False
+            with atomic(), job_repo.retrieve_and_lock_first_created_task() as task_id:
+                if task_id is None:
+                    continue
 
-            scheduled = schedule_task(
-                task_id=task_id, env_type=queuer.env, job_repo=job_repo, scheduler_repo=scheduler_repo
-            )
+                scheduled = schedule_task(
+                    task_id=task_id, env_type=queuer.env, job_repo=job_repo, scheduler_repo=scheduler_repo
+                )
 
-        if scheduled:
-            with atomic():
-                queue_task(queuer=queuer, task_id=task_id, job_repo=job_repo)
+            if scheduled:
+                with atomic():
+                    queue_task(queuer=queuer, task_id=task_id, job_repo=job_repo)
+        except Exception:  # noqa: BLE001
+            logger.exception(f"{queuer.env.capitalize()} launcher encountered an error. Skipping iteration.")
 
 
 @set_status_on_fail(status=ExecutionStatus.BROKEN, errors=Exception)
@@ -97,20 +95,22 @@ def validate(
 ) -> None:
     task = job_repo.get_task(id=task_id)
     if not task.target:
-        raise LauncherError
+        raise LauncherError("Task target is absent.")
 
     action_orm = scheduler_repo.retrieve_action_orm(action_id=task.action.id)
 
     if not action_orm.allowed(obj=target_orm):
-        raise LauncherError
+        raise LauncherError("Action is not allowed.")
 
     try:
         check_no_blocking_concerns(lock_owner=target_orm, action_name=task.action.name)
     except AdcmEx as e:
-        raise LauncherError from e
+        raise LauncherError(e.msg) from e
 
-    if action_orm.get_start_impossible_reason(obj=target_orm):
-        raise LauncherError
+    mm_action = scheduler_repo.retrieve_task(task_id=task_id).action.is_mm_action
+    start_impossible_reason = action_orm.get_start_impossible_reason(obj=target_orm)
+    if not mm_action and start_impossible_reason:
+        raise LauncherError(start_impossible_reason)
 
     if task.hostcomponent.mapping_delta:
         cluster = target_orm if isinstance(target_orm, Cluster) else target_orm.cluster
@@ -119,7 +119,7 @@ def validate(
 
 def _check_hc_acl(task: Task, cluster: Cluster | None, bundle_id: BundleID) -> None:
     if cluster is None:
-        raise LauncherError
+        raise LauncherError("Cluster is absent.")
 
     topology = retrieve_cluster_topology(cluster_id=cluster.id)
     new_mapping = construct_mapping_from_delta(topology=topology, mapping_delta=task.hostcomponent.mapping_delta)
@@ -129,8 +129,8 @@ def _check_hc_acl(task: Task, cluster: Cluster | None, bundle_id: BundleID) -> N
             bundle_id=bundle_id,
             topology=topology,
             hc_payload=new_mapping,
-            hc_rules=task.action.hc_acl,
+            hc_rules=[rule._asdict() for rule in task.action.hc_acl],
             mapping_restriction_err_template="{}",
         )
     except AdcmEx as e:
-        raise LauncherError from e
+        raise LauncherError(e.msg) from e

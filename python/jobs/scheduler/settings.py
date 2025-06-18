@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 from pathlib import Path
 import os
-import logging.config
+import logging
+
+TASK_HEALTHCHECK_INTERVAL = int(os.environ.get("TASK_HEALTHCHECK_INTERVAL", 60))
+DEFAULT_JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
+LAUNCHER_ITERATION_INTERVAL = 1
 
 LOG_DIR = Path(__file__).absolute().parent.parent.parent.parent / "data" / "log"
 DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
@@ -41,6 +44,3 @@ LOGGER_CONFIG = {
         },
     },
 }
-logging.config.dictConfig(LOGGER_CONFIG)
-
-logger = getLogger("job_scheduler")

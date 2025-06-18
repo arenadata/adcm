@@ -15,10 +15,53 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, NamedTuple, TypeAlias, TypedDict
+from typing import NamedTuple, TypeAlias, TypedDict
 
 from core.job.types import ExecutionStatus
-from core.types import ConcernID, TaskID
+from core.types import ActionID, ConcernID, TaskID
+import zoneinfo
+
+###########
+# Constants
+###########
+
+
+UTC = zoneinfo.ZoneInfo("UTC")
+
+
+class CeleryTaskState(str, Enum):
+    PENDING = "PENDING"
+    STARTED = "STARTED"
+    RETRY = "RETRY"
+    FAILURE = "FAILURE"
+    SUCCESS = "SUCCESS"
+    ADCM_UNREACHABLE = "ADCM-UNREACHABLE"
+
+
+class _ADCMStatus(NamedTuple):
+    recover_status: ExecutionStatus | None
+    is_final: bool
+
+
+CELERY_STATE_ADCM_STATUS_MAP = {
+    CeleryTaskState.PENDING: _ADCMStatus(recover_status=None, is_final=False),
+    CeleryTaskState.STARTED: _ADCMStatus(recover_status=None, is_final=False),
+    CeleryTaskState.RETRY: _ADCMStatus(recover_status=None, is_final=False),
+    CeleryTaskState.FAILURE: _ADCMStatus(recover_status=ExecutionStatus.BROKEN, is_final=True),
+    CeleryTaskState.SUCCESS: _ADCMStatus(recover_status=ExecutionStatus.SUCCESS, is_final=True),
+    # TODO: retry getting an actual state before considering final/broken?
+    CeleryTaskState.ADCM_UNREACHABLE: _ADCMStatus(recover_status=ExecutionStatus.BROKEN, is_final=True),
+}
+
+CELERY_RUNNING_STATES = {
+    state for state, adcm_status in CELERY_STATE_ADCM_STATUS_MAP.items() if not adcm_status.is_final
+}
+
+
+#######
+# Types
+#######
+
 
 WorkerID: TypeAlias = int | str
 
@@ -29,8 +72,14 @@ class TaskRunnerEnvironment(str, Enum):
 
 
 class WorkerInfo(TypedDict):
-    environment: Literal["local", "celery"]
+    environment: TaskRunnerEnvironment
     worker_id: WorkerID
+
+
+@dataclass
+class ActionShortInfo:
+    id: ActionID
+    is_mm_action: bool
 
 
 @dataclass(slots=True, frozen=True)
@@ -39,11 +88,17 @@ class TaskShortInfo:
     worker: WorkerInfo
     status: ExecutionStatus
     lock_id: ConcernID | None
+    action: ActionShortInfo
 
 
 class LiveCheckResult(NamedTuple):
     is_dead: bool
     status: ExecutionStatus | None = None
+
+
+######
+# ABCs
+######
 
 
 class TaskQueuer(ABC):

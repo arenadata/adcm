@@ -12,12 +12,25 @@
 
 from typing import Generator, Sequence
 
+from adcm.settings import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_TURN_ON_MM_ACTION_NAME,
+)
 from cm.models import UNFINISHED_STATUS, Action, ConcernItem, JobLog, JobStatus, TaskLog
 from core.job.types import ExecutionStatus
 from core.types import ActionID, ConcernID, JobID, TaskID
-from jobs.scheduler._types import TaskShortInfo
 
-_FIELDS = ("id", "executor", "status", "lock_id")
+from jobs.scheduler._types import ActionShortInfo, TaskShortInfo
+
+_FIELDS = ("id", "executor", "status", "lock_id", "action_id", "action__name")
+MM_ACTION_NAMES = {
+    ADCM_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+}
 
 
 def retrieve_task_orm(task_id: TaskID) -> TaskLog:
@@ -30,21 +43,26 @@ def retrieve_action_orm(action_id: ActionID) -> Action:
 
 def retrieve_task(task_id: TaskID) -> TaskShortInfo:
     task = TaskLog.objects.only(*_FIELDS).get(id=task_id)
+
     return TaskShortInfo(
         id=task.id,
         worker=task.executor,
         status=ExecutionStatus[task.status.upper()],
         lock_id=task.lock_id,
+        action=ActionShortInfo(id=task.action_id, is_mm_action=task.action.name in MM_ACTION_NAMES),
     )
 
 
 def retrieve_unfinished_tasks() -> Generator[TaskShortInfo, None, None]:
-    for id_, executor, status, lock_id in TaskLog.objects.filter(status__in=UNFINISHED_STATUS).values_list(*_FIELDS):
+    for id_, executor, status, lock_id, action_id, action_name in TaskLog.objects.filter(
+        status__in=UNFINISHED_STATUS
+    ).values_list(*_FIELDS):
         yield TaskShortInfo(
             id=id_,
             worker=executor,
             status=ExecutionStatus[status.upper()],
             lock_id=lock_id,
+            action=ActionShortInfo(id=action_id, is_mm_action=action_name in MM_ACTION_NAMES),
         )
 
 
@@ -53,12 +71,15 @@ def retrieve_unfinished_task_jobs(task_id: TaskID) -> set[JobID]:
 
 
 def retrieve_running_tasks() -> Generator[TaskShortInfo, None, None]:
-    for id_, executor, status, lock_id in TaskLog.objects.filter(status=JobStatus.RUNNING).values_list(*_FIELDS):
+    for id_, executor, status, lock_id, action_id, action_name in TaskLog.objects.filter(
+        status=JobStatus.RUNNING
+    ).values_list(*_FIELDS):
         yield TaskShortInfo(
             id=id_,
             worker=executor,
             status=ExecutionStatus[status.upper()],
             lock_id=lock_id,
+            action=ActionShortInfo(id=action_id, is_mm_action=action_name in MM_ACTION_NAMES),
         )
 
 

@@ -10,28 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-
-from celery.result import AsyncResult
-from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.types import ExecutionStatus
-from jobs.scheduler import repo as SchedulerRepo  # noqa: N812
-from jobs.scheduler._logger import logger
-from jobs.scheduler._types import LiveCheckResult, TaskRunnerEnvironment, TaskShortInfo
-import zoneinfo
 
-UTC = zoneinfo.ZoneInfo("UTC")
-
-
-CELERY_ADCM_TASK_STATUS_MAP = {  # {celery_state: (is_dead, new_state)}
-    "PENDING": (False, ExecutionStatus.RUNNING),
-    "STARTED": (False, ExecutionStatus.RUNNING),
-    "RETRY": (False, ExecutionStatus.RUNNING),
-    "FAILURE": (True, ExecutionStatus.BROKEN),
-    "SUCCESS": (True, ExecutionStatus.SUCCESS),
-}
+from jobs.scheduler import repo
+from jobs.scheduler._types import (
+    CELERY_STATE_ADCM_STATUS_MAP,
+    CeleryTaskState,
+    LiveCheckResult,
+    TaskRunnerEnvironment,
+    TaskShortInfo,
+)
+from jobs.scheduler.logger import logger
+from jobs.scheduler.utils import finalize_task, retrieve_celery_task_state
 
 
 def _is_alive_local(task: TaskShortInfo) -> LiveCheckResult:
@@ -44,17 +34,14 @@ def _is_alive_celery(task: TaskShortInfo) -> LiveCheckResult:
     if task.status == ExecutionStatus.SCHEDULED:
         return LiveCheckResult(is_dead=True, status=ExecutionStatus.REVOKED)
 
-    result = AsyncResult(task.worker["worker_id"])
-    try:
-        celery_task_state = result.state
-    except AttributeError:
-        logger.exception(f"Can't check task #{task.id} status ({task.worker}). Considering broken.")
-
+    celery_state = retrieve_celery_task_state(worker_id=task.worker["worker_id"])
+    if celery_state == CeleryTaskState.ADCM_UNREACHABLE:
+        logger.warning(f"Can't check Task #{task.id} status ({task.worker}). Considering broken.")
         return LiveCheckResult(is_dead=True, status=ExecutionStatus.BROKEN)
 
-    is_dead, new_status = CELERY_ADCM_TASK_STATUS_MAP[celery_task_state]
+    adcm_task_status = CELERY_STATE_ADCM_STATUS_MAP[celery_state]
 
-    return LiveCheckResult(is_dead=is_dead, status=new_status)
+    return LiveCheckResult(is_dead=adcm_task_status.is_final, status=adcm_task_status.recover_status)
 
 
 LIVE_CHECKERS = {
@@ -64,30 +51,17 @@ LIVE_CHECKERS = {
 
 
 def recover_statuses() -> None:
-    scheduler_repo = SchedulerRepo
-    job_repo = JobRepoImpl
-    now = datetime.datetime.now(tz=UTC)
-
     logger.info("Actualizing task statuses...")
 
-    for task in scheduler_repo.retrieve_unfinished_tasks():
+    for task in repo.retrieve_unfinished_tasks():
         env = task.worker.get("environment")
 
         if not env:
-            logger.debug(f"Task #{task.id} skipped, worker environment is not specified")
+            logger.warning(f"Task #{task.id} skipped, worker environment is not specified")
             continue
 
         live_check_result: LiveCheckResult = LIVE_CHECKERS[env](task)
-
-        if live_check_result.is_dead and live_check_result.status:
-            job_repo.update_task(id=task.id, data=TaskUpdateDTO(status=live_check_result.status, finish_date=now))
-
-            for job_id in scheduler_repo.retrieve_unfinished_task_jobs(task_id=task.id):
-                job_repo.update_job(id=job_id, data=JobUpdateDTO(status=live_check_result.status, finish_date=now))
-
-            if task.lock_id:
-                delete_task_lock_concern(task_id=task.id)
-            else:
-                delete_task_flag_concern(task_id=task.id)
+        if live_check_result.is_dead:
+            finalize_task(task=task, status=live_check_result.status)
 
     logger.info("Task statuses updated")

@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from logging import getLogger
+import logging.config
 
-class SchedulerError(Exception):
-    pass
+from jobs.scheduler import settings
 
-
-class LauncherError(SchedulerError):
-    pass
+logging.config.dictConfig(settings.LOGGER_CONFIG)
+logger = getLogger("job_scheduler")

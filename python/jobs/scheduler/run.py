@@ -13,27 +13,26 @@
 # limitations under the License.
 
 from multiprocessing import Process
-from time import sleep
 import os
 import sys
 
 sys.path.append("/adcm/python")
-from jobs.scheduler._logger import logger
 from jobs.scheduler.launcher import run_launcher_in_loop
+from jobs.scheduler.logger import logger
 from jobs.scheduler.monitor import run_monitor_in_loop
 
 
 def main() -> None:
     logger.info(f"Scheduler started (pid: {os.getpid()})")
 
-    proc = Process(target=run_launcher_in_loop, args=())
-    proc.start()
+    launcher_proc = Process(target=run_launcher_in_loop, args=())
+    launcher_proc.start()
 
-    proc = Process(target=run_monitor_in_loop, args=())
-    proc.start()
+    monitor_proc = Process(target=run_monitor_in_loop, args=())
+    monitor_proc.start()
 
-    while True:
-        sleep(60)
+    for proc in (launcher_proc, monitor_proc):
+        proc.join()
 
 
 if __name__ == "__main__":

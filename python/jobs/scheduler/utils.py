@@ -11,14 +11,24 @@
 # limitations under the License.
 
 from contextlib import suppress
+from datetime import datetime
 from functools import wraps
-import logging
+import os
+import errno
 
+from celery.result import AsyncResult
+from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
+from cm.services.job.run.repo import JobRepoImpl
 from cm.status_api import send_task_status_update_event
-from core.job.dto import TaskUpdateDTO
+from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.types import ExecutionStatus
+from core.types import PID
+from django.db.transaction import atomic
 
-logger = logging.getLogger("job_scheduler")
+from jobs.scheduler import repo
+from jobs.scheduler._types import UTC, CeleryTaskState, TaskShortInfo, WorkerID
+from jobs.scheduler.logger import logger
+from jobs.worker.app import app
 
 
 def set_status_on_success(status: ExecutionStatus):
@@ -68,3 +78,56 @@ def set_status_on_fail(
         return wrapper
 
     return decorator
+
+
+def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
+    async_result = AsyncResult(worker_id, app=app)
+
+    try:
+        return CeleryTaskState(async_result.state.upper())
+    except AttributeError:
+        return CeleryTaskState.ADCM_UNREACHABLE
+
+
+@atomic
+def finalize_task(task: TaskShortInfo, status: ExecutionStatus):
+    """Set `status` to task and all it's unfinished jobs, remove locks/flags"""
+
+    job_repo = JobRepoImpl
+    scheduler_repo = repo
+
+    now = datetime.now(tz=UTC)
+
+    job_repo.update_task(id=task.id, data=TaskUpdateDTO(status=status, finish_date=now))
+
+    for job_id in scheduler_repo.retrieve_unfinished_task_jobs(task_id=task.id):
+        job_repo.update_job(id=job_id, data=JobUpdateDTO(status=status, finish_date=now))
+
+    if task.lock_id:
+        delete_task_lock_concern(task_id=task.id)
+    else:
+        delete_task_flag_concern(task_id=task.id)
+
+    logger.debug(f"Task #{task.id} is finalized with status {status}")
+
+
+def is_pid_exists(pid: PID) -> bool:
+    """
+    Sends a special signal `0` to `pid`.
+    `0` signal is not sends an actual signal, but performs error checking.
+    Possible errors are: EINVAL (invalid signal), EPERM (no permissions), ESRCH (no process)
+        Source: man 2 kill
+    """
+
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:  # No such process
+            return False
+
+        elif err.errno == errno.EPERM:  # Permission error, process exists
+            return True
+
+        raise
+
+    return True
