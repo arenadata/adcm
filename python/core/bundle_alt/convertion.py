@@ -400,10 +400,10 @@ def _universalise_action_types(result: dict):
 
 
 def _states_to_masking(result: dict):
-    if "states" not in result or "masking" in result:
+    if "masking" in result:
         return result
 
-    states = result["states"]
+    states = result.get("states", {})
 
     extra = {
         "masking": {
