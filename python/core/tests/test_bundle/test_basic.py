@@ -541,6 +541,7 @@ class TestBundleDefinitionConvertion(TestCase):
                         **script_defaults,
                     )
                 ],
+                available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
                 type="task",
@@ -562,6 +563,7 @@ class TestBundleDefinitionConvertion(TestCase):
                         **script_defaults,
                     ),
                 ],
+                available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
                 type="job",
@@ -576,6 +578,7 @@ class TestBundleDefinitionConvertion(TestCase):
                         **script_defaults,
                     )
                 ],
+                available_at=ActionAvailability(states=[], multi_states="any"),
                 config_jinja="inner/path/to/file.j2",
             ),
             ActionDefinition(
@@ -584,6 +587,7 @@ class TestBundleDefinitionConvertion(TestCase):
                 display_name="jinja_scripts_task",
                 scripts=[],
                 scripts_jinja="inner/path/to/file.j2",
+                available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
                 type="job",

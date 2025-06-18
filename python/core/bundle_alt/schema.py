@@ -459,10 +459,23 @@ class UnAvailabilitySchema(TypedDict):
     unavailable: Literal["any"] | list[str]
 
 
+def patch_masking(value: dict | None) -> dict:
+    # To make an action available, we can specify the making field without the value.
+    # If a field is specified, but its value is None, we must set an explicit value that differs from the default,
+    # so that after serialization this field remains and the code that patches the default values of the available
+    # field will work.
+    if value is None:
+        return {}
+
+    return value
+
+
 class MaskingSchema(TypedDict):
     state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
     multi_state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
 
+
+MASKING_SCHEMA = Annotated[MaskingSchema | None, Field(default=None), BeforeValidator(patch_masking)]
 
 #######
 # HC_ACL SCHEMAS
@@ -590,7 +603,7 @@ class _BaseUpgradeSchema(_BaseModel):
     states: Annotated[StatesSchema, Field(default=None)]
     from_edition: Annotated[str | list[str] | None, Field(default=None)]
     scripts: Annotated[list[UPGRADE_SCRIPTS_SCHEMA] | None, Field(default=None)]
-    masking: Annotated[MaskingSchema | None, Field(default=None)]
+    masking: MASKING_SCHEMA
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     venv: VENV
@@ -645,7 +658,7 @@ class _BaseActionSchema(_BaseModel):
     allow_for_action_host_group: Annotated[bool, Field(default=None)]
     log_files: Annotated[list[str] | None, Field(default=None, deprecated=True)]
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
-    masking: Annotated[MaskingSchema | None, Field(default=None)]
+    masking: MASKING_SCHEMA
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
