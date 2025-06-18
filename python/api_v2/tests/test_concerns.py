@@ -466,9 +466,11 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster = self.cluster_1
         provider = self.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
 
-        service, service_2 = self.add_services_to_cluster(service_names=["service_1", "service_2"], cluster=cluster)
+        service, service_2 = self.add_services_to_cluster(
+            service_names=["service_1", "service_2"], cluster=cluster
+        ).order_by("prototype__name")
 
-        component = Component.objects.filter(service__prototype__name="service_1").first()
+        component = service.components.filter(prototype__name="component_1").get()
 
         component_initial_config = component.config.configlog_set.last().config
 
