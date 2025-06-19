@@ -683,6 +683,28 @@ class TestClusterActions(BaseAPITestCase):
         self.assertDictEqual(add, {"action": "add", "component": "component_1", "service": "service_1"})
         self.assertDictEqual(remove, {"action": "remove", "component": "component_2", "service": "service_1"})
 
+    def test_adcm_6684_no_perms_remove_flag_success(self):
+        cluster_custom_flag_path = self.test_bundles_dir / "cluster_custom_flag"
+        cluster_custom_flag_bundle = self.add_bundle(source_dir=cluster_custom_flag_path)
+
+        cluster_1 = self.add_cluster(
+            bundle=cluster_custom_flag_bundle, name="cluster_custom_flag_1", description="cluster_1"
+        )
+
+        action = Action.objects.get(name="flag_up_cluster", prototype=cluster_1.prototype)
+        response = self.client.v2[cluster_1, "actions", action, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        concerns = cluster_1.concerns.all()
+        self.assertEqual(len(cluster_1.concerns.all()), 1)
+        self.assertEqual(concerns.first().cause, "job")
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="ADCM User"):
+            response = self.client.v2[concerns.first()].delete()
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
 
 class TestClusterMM(BaseAPITestCase):
     def setUp(self) -> None:
