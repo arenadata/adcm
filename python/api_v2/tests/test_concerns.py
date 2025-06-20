@@ -38,7 +38,14 @@ from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -70,6 +77,9 @@ class TestConcernsResponse(BaseAPITestCase):
 
         bundle_dir = self.test_bundles_dir / "provider_outdated_config"
         self.provider_changed_state = self.add_bundle(source_dir=bundle_dir)
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_required_service_concern(self):
         cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
@@ -451,6 +461,142 @@ class TestConcernsResponse(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(len(response.json()["concerns"]), 1)
             self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
+    def test_permissions_to_delete_concern_item(self):
+        cluster = self.cluster_1
+        provider = self.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
+
+        service, service_2 = self.add_services_to_cluster(
+            service_names=["service_1", "service_2"], cluster=cluster
+        ).order_by("prototype__name")
+
+        component = service.components.filter(prototype__name="component_1").get()
+
+        component_initial_config = component.config.configlog_set.last().config
+
+        initial_attrs = {"/activatable_group": {"isActive": True}}
+
+        for obj in [cluster, service, service_2, component, provider]:
+            obj.state = "notcreated"
+            obj.save(update_fields=["state"])
+
+        self.client.login(**self.test_user_credentials)
+
+        with self.subTest("Outdated flag - No permissions for concern owner"):
+            with self.grant_permissions(to=self.test_user, on=component, role_name="Edit component configurations"):
+                component_initial_config["group"]["file"] = "test"
+                response = self.client.v2[component, "configs"].post(
+                    data={"config": component_initial_config, "adcmMeta": initial_attrs, "description": "init"},
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+            with self.grant_permissions(to=self.test_user, on=service_2, role_name="Service Administrator"):
+                response = self.client.v2[concerns.first()].delete()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+
+        with self.subTest("Outdated flag - No remove concern permissions"):
+            with self.grant_permissions(to=self.test_user, on=component, role_name="Edit component configurations"):
+                component_initial_config["group"]["file"] = "test2"
+                response = self.client.v2[component, "configs"].post(
+                    data={"config": component_initial_config, "adcmMeta": initial_attrs, "description": "init"},
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+                response = self.client.v2[concerns.last()].delete()
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+
+        with self.subTest("Outdated flag - Cluster Administrator permissions"):
+            with self.grant_permissions(to=self.test_user, on=cluster, role_name="Cluster Administrator"):
+                component_initial_config["group"]["file"] = "test3"
+                response = self.client.v2[component, "configs"].post(
+                    data={"config": component_initial_config, "adcmMeta": initial_attrs, "description": "init"},
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+                response = self.client.v2[concerns.last()].delete()
+                self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 0)
+
+        with self.subTest("Outdated flag - Service Administrator permissions"):
+            with self.grant_permissions(to=self.test_user, on=service, role_name="Service Administrator"):
+                component_initial_config["group"]["file"] = "test4"
+                response = self.client.v2[component, "configs"].post(
+                    data={"config": component_initial_config, "adcmMeta": initial_attrs, "description": "init"},
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+                response = self.client.v2[concerns.last()].delete()
+                self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 0)
+
+        with self.subTest("Outdated flag - Provider Administrator permissions"):
+            with self.grant_permissions(to=self.test_user, on=provider, role_name="Provider Administrator"):
+                response = self.client.v2[provider, "configs"].post(
+                    data={
+                        "config": {"string_param": "new_string", "int_param": 2},
+                        "adcmMeta": {},
+                        "description": "init",
+                    },
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = provider.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+                response = self.client.v2[concerns.last()].delete()
+                self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+                concerns = provider.concerns.all()
+                self.assertEqual(len(concerns), 0)
+
+        with self.subTest("Outdated flag - Concern couldn't be deleted due to action"):
+            with self.grant_permissions(to=self.test_user, on=cluster, role_name="Cluster Administrator"):
+                component_initial_config["group"]["file"] = "test5"
+                response = self.client.v2[component, "configs"].post(
+                    data={"config": component_initial_config, "adcmMeta": initial_attrs, "description": "init"},
+                )
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 1)
+                self.assertEqual(concerns.first().cause, "config")
+
+                action = Action.objects.get(name="action_1_comp_1", prototype=component.prototype)
+                response = self.client.v2[component, "actions", action, "run"].post()
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                response = self.client.v2[concerns.last()].delete()
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+                concerns = component.concerns.all()
+                self.assertEqual(len(concerns), 2)
 
 
 class TestConcernsLogic(BaseAPITestCase):

@@ -13,7 +13,7 @@
 from adcm.tests.base import BaseTestCase
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from cm.issue import add_concern_to_object, remove_concern_from_object
+from cm.issue import add_concern_to_object, unlink_concern_from_object
 from cm.models import ConcernCause, ConcernItem, ConcernType
 from cm.services.concern import create_issue
 from cm.tests.utils import gen_concern_item, generate_hierarchy
@@ -79,7 +79,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
-            remove_concern_from_object(object_=obj, concern=nolock)
+            unlink_concern_from_object(object_=obj, concern=nolock)
 
             self.assertTrue(obj.locked)
 
@@ -88,7 +88,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
-            remove_concern_from_object(object_=obj, concern=nolock)
+            unlink_concern_from_object(object_=obj, concern=nolock)
 
             self.assertTrue(obj.locked)
 
