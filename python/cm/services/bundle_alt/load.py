@@ -23,7 +23,7 @@ import shutil
 import logging
 import tarfile
 
-from core.bundle_alt._config import check_default_values
+from core.bundle_alt._config import check_default_values_in_jinja_config
 from core.bundle_alt.bundle_load import get_hash_safe, untar_safe
 from core.bundle_alt.convertion import extract_config
 from core.bundle_alt.errors import convert_validation_to_bundle_error
@@ -102,8 +102,10 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
     if not definition:
         return []
 
-    check_default_values(
-        parameters=definition.parameters, values=definition.default_values, attributes=definition.default_attrs
+    check_default_values_in_jinja_config(
+        parameters=definition.parameters,
+        values=definition.default_values,
+        attributes=definition.default_attrs,
     )
 
     orm_entries = repo.convert_config_definition_to_orm_model(definition=definition, prototype=prototype, action=action)

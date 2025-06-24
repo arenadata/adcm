@@ -3008,6 +3008,16 @@ class TestPatternInConfig(BaseAPITestCase):
 
         patched.assert_called()
 
+    def test_adcm_6686_string_empty_default(self):
+        action = Action.objects.get(prototype=self.cluster.prototype, name="with_empty_string_default")
+        response = self.client.v2[self.cluster, "actions", action].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        for param in {"string", "password", "text", "secrettext"}:
+            self.assertIsNone(response["configuration"]["config"][param])
+
     def _test_jinja_config(self) -> None:
         ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")

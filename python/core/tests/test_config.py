@@ -18,7 +18,7 @@ Initial imports made from bundle_alt, because code was placed there waiting for 
 
 from unittest import TestCase
 
-from core.bundle_alt._config import check_default_values
+from core.bundle_alt._config import check_default_values_in_main_config
 from core.bundle_alt.types import ConfigParamPlainSpec
 from core.errors import ConfigValueError
 
@@ -54,13 +54,13 @@ class TestCheckDefaultValues(TestCase):
         with self.subTest("success"):
             params = {key: make_spec(type="structure", limits={"yspec": param_yspec})}
             values = {key: {"a": 12}}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("fail"):
             params = {key: make_spec(type="structure", limits={"yspec": param_yspec})}
             values = {key: {"b": "k"}}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("yspec error", err.exception.message)
 
@@ -70,13 +70,13 @@ class TestCheckDefaultValues(TestCase):
         with self.subTest("success"):
             params = {key: make_spec(type="option", limits={"option": {"a": "b"}})}
             values = {key: "b"}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("fail"):
             params = {key: make_spec(type="option", limits={"option": {"a": "b"}})}
             values = {key: "a"}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("not in option list:", err.exception.message)
 
@@ -88,14 +88,14 @@ class TestCheckDefaultValues(TestCase):
                 key: make_spec(type="variant", limits={"source": {"strict": True, "type": "inline", "value": [1, 2]}})
             }
             values = {key: 2}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("nonstrict invalid success"):
             params = {
                 key: make_spec(type="variant", limits={"source": {"strict": False, "type": "inline", "value": [1, 2]}})
             }
             values = {key: "wrong"}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("strict invalid fail"):
             params = {
@@ -103,7 +103,7 @@ class TestCheckDefaultValues(TestCase):
             }
             values = {key: "ogogo"}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn('not in variant list: "[1, 2]"', err.exception.message)
             self.assertIn("ogogo", err.exception.message)
@@ -116,18 +116,18 @@ class TestCheckDefaultValues(TestCase):
         with self.subTest("string success"):
             params = {key: make_spec(type="string", limits=pattern)}
             values = {key: "+sldkj"}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("secrettext encrypted incorrect success"):
             params = {key: make_spec(type="secrettext", limits=pattern)}
             values = {key: f"{ansible_header}a"}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("text incorrect fail"):
             params = {key: make_spec(type="text", limits=pattern)}
             values = {key: "ooo"}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertEqual(
                 err.exception.error,
@@ -141,7 +141,7 @@ class TestCheckDefaultValues(TestCase):
         values = {key: "a" * 2049}
 
         with self.assertRaises(ConfigValueError) as err:
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         self.assertIn("is too long", err.exception.message)
 
@@ -151,23 +151,23 @@ class TestCheckDefaultValues(TestCase):
         with self.subTest("ignored for non-number"):
             params = {key: make_spec(type="string", limits={"min": 100, "max": 200})}
             values = {key: "sdlkfj"}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("integer min success"):
             params = {key: make_spec(type="integer", limits={"min": 100})}
             values = {key: 100}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("float max success"):
             params = {key: make_spec(type="float", limits={"max": 100})}
             values = {key: 99}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("integer min fail"):
             params = {key: make_spec(type="integer", limits={"min": 100})}
             values = {key: 99}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("should be more than 100", err.exception.message)
 
@@ -175,7 +175,7 @@ class TestCheckDefaultValues(TestCase):
             params = {key: make_spec(type="float", limits={"max": 100})}
             values = {key: 101}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("should be less than 100", err.exception.message)
 
@@ -185,18 +185,18 @@ class TestCheckDefaultValues(TestCase):
         with self.subTest("list all str success"):
             params = {key: make_spec(type="list")}
             values = {key: ["a", "b", "c", "d"]}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("dict all str success"):
             params = {key: make_spec(type="secretmap")}
             values = {key: {"a": "b", "c": "d"}}
-            check_default_values(parameters=params, values=values, attributes={})
+            check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
         with self.subTest("list not all str fail"):
             params = {key: make_spec(type="list")}
             values = {key: ["a", "b", 1, "d"]}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("should be string", err.exception.message)
             self.assertIn('of element "2" of config key', err.exception.message)
@@ -205,7 +205,7 @@ class TestCheckDefaultValues(TestCase):
             params = {key: make_spec(type="map")}
             values = {key: {"a": "b", "c": 2.3}}
             with self.assertRaises(ConfigValueError) as err:
-                check_default_values(parameters=params, values=values, attributes={})
+                check_default_values_in_main_config(parameters=params, values=values, attributes={})
 
             self.assertIn("should be string", err.exception.message)
             self.assertIn('of element "c" of config key', err.exception.message)
@@ -218,7 +218,7 @@ class TestCheckDefaultValues(TestCase):
         values = {key: None}
         attrs = {group_key: {"active": False}}
 
-        check_default_values(parameters=params, values=values, attributes=attrs)
+        check_default_values_in_main_config(parameters=params, values=values, attributes=attrs)
 
     def test_unset_value_required_raises_error(self):
         key = ("somecool",)
@@ -258,7 +258,7 @@ class TestCheckDefaultValues(TestCase):
 
             with self.subTest(case_name):
                 with self.assertRaises(ConfigValueError) as err:
-                    check_default_values(parameters=params, values=defaults, attributes={})
+                    check_default_values_in_main_config(parameters=params, values=defaults, attributes={})
 
                 err_msg = err.exception.message
 
@@ -280,7 +280,7 @@ class TestCheckDefaultValues(TestCase):
                 defaults = {key: value}
                 with self.subTest(f"{type_}={value}"):
                     with self.assertRaises(ConfigValueError) as err:
-                        check_default_values(parameters=params, values=defaults, attributes={})
+                        check_default_values_in_main_config(parameters=params, values=defaults, attributes={})
 
                     err_msg = err.exception.message
 
@@ -316,7 +316,7 @@ class TestCheckDefaultValues(TestCase):
 
             with self.subTest(case_name):
                 with self.assertRaises(ConfigValueError) as err:
-                    check_default_values(parameters=params, values=defaults, attributes={})
+                    check_default_values_in_main_config(parameters=params, values=defaults, attributes={})
 
                 err_msg = err.exception.message
 

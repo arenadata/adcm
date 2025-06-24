@@ -77,11 +77,40 @@ class _ValueViolatesPatternError(Exception):
         self.message = message
 
 
-def check_default_values(
+def check_default_values_in_main_config(
     parameters: dict[ParameterKey, ConfigParamPlainSpec],
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
 ):
+    empty_values = {
+        "map": ({},),
+        "secretmap": ({},),
+        "list": ([],),
+    } | {str_type: ("",) for str_type in ("string", "password", "text", "secrettext")}
+
+    _check_default_values(parameters=parameters, values=values, attributes=attributes, consider_empty=empty_values)
+
+
+def check_default_values_in_jinja_config(
+    parameters: dict[ParameterKey, ConfigParamPlainSpec],
+    values: dict[ParameterKey, Any],
+    attributes: dict[ParameterKey, dict],
+):
+    empty_values = {
+        "map": ({},),
+        "secretmap": ({},),
+        "list": ([],),
+    }
+
+    _check_default_values(parameters=parameters, values=values, attributes=attributes, consider_empty=empty_values)
+
+
+def _check_default_values(
+    parameters: dict[ParameterKey, ConfigParamPlainSpec],
+    values: dict[ParameterKey, Any],
+    attributes: dict[ParameterKey, dict],
+    consider_empty: dict[_ParamType, tuple[Any]],
+) -> None:
     extra_checks = {
         "file": (_check_file_path_length,),
         "secretfile": (_check_file_path_length,),
@@ -91,20 +120,14 @@ def check_default_values(
     # object_ must be passed positionaly
     error_converter = partial(_build_config_value_error, prefix="default value")
 
-    _check_config_values(parameters, values, attributes, convert_err=error_converter, value_checks=value_checks)
-
-
-def check_values(
-    parameters: dict[ParameterKey, ConfigParamPlainSpec],
-    values: dict[ParameterKey, Any],
-    attributes: dict[ParameterKey, dict],
-):
-    extra_checks = {"variant": (_check_variant_for_non_default,)}
-    value_checks = _generate_value_checks_map(extra=extra_checks)
-
-    error_converter = _build_config_value_error
-
-    _check_config_values(parameters, values, attributes, convert_err=error_converter, value_checks=value_checks)
+    _check_config_values(
+        parameters,
+        values,
+        attributes,
+        convert_err=error_converter,
+        value_checks=value_checks,
+        consider_empty=consider_empty,
+    )
 
 
 def _check_config_values(
@@ -114,13 +137,8 @@ def _check_config_values(
     *,
     convert_err: Callable[[ParameterKey, _ValueCheckFailedError], ConfigValueError],
     value_checks: dict[_ParamType, tuple[Callable, ...]],
+    consider_empty: dict[_ParamType, tuple[Any]],
 ):
-    consider_empty: dict[_ParamType, tuple[Any]] = {
-        "map": ({},),
-        "secretmap": ({},),
-        "list": ([],),
-    } | {str_type: ("",) for str_type in ("string", "password", "text", "secrettext")}
-
     # iterate over values to allow specifying subset of values to check
     # (e.g. changes, defaults in bundle, etc.)
     for key, value in values.items():
