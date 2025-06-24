@@ -17,7 +17,7 @@ from typing import Collection, Iterable
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
 
-from core.bundle_alt._config import check_default_values, key_to_str
+from core.bundle_alt._config import check_default_values_in_main_config, key_to_str
 from core.bundle_alt._yspec import FormatError, check_rule, process_rule
 from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
@@ -153,7 +153,9 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
                         message = f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported"
                         raise BundleValidationError(message)
 
-    check_default_values(parameters=config.parameters, values=config.default_values, attributes=config.default_attrs)
+    check_default_values_in_main_config(
+        parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
+    )
 
 
 def check_file_path_in_config(bundle_root: Path, default: str, key: Iterable[str]):
