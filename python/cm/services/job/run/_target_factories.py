@@ -17,6 +17,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
 import json
+import traceback
 
 from ansible_plugin.utils import finish_check
 from core.job.dto import TaskUpdateDTO
@@ -25,6 +26,7 @@ from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
@@ -145,6 +147,13 @@ def internal_script_bundle_revert(task: Task, job: Job) -> int:
 
     try:
         bundle_revert(obj=task_.task_object)
+    except ObjectDoesNotExist as error:
+        # This is a hack. We can do this, since all AdcmEx are intercepted in the Executer,
+        # and a message is generated in the log there.
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f"The configuration cannot be restored because the record was deleted.\n\n{traceback.format_exc()}",
+        ) from error
     finally:
         send_prototype_and_state_update_event(object_=task_.task_object)
 
