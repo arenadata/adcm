@@ -274,6 +274,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
+        self.cluster_1.refresh_from_db()
         self.service_two_components.refresh_from_db()
         self.component_1.refresh_from_db()
         self.component_2.refresh_from_db()
