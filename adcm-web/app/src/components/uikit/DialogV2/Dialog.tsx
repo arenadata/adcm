@@ -55,6 +55,11 @@ const DialogV2: React.FC<DialogV2Props> = ({
 
   // cancel button on Dialog
   const handleCancel = () => {
+    onCancel();
+  };
+
+  // handler for handling misclick outside the modal window
+  const handleMisclick = () => {
     if (isNeedConfirmationOnCancel) {
       setIsConfirmationDialogOpen(true);
     } else {
@@ -94,7 +99,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
     >
       <Modal
         isOpen={true}
-        onOpenChange={handleCancel}
+        onOpenChange={handleMisclick}
         isDismissDisabled={false}
         className={cn(s.dialog, className)}
         style={{ width, height, maxWidth, minWidth }}
