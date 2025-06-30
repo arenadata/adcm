@@ -15,7 +15,7 @@ from cm.models import ConcernItem, get_model_by_type
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
@@ -47,7 +47,7 @@ class ConcernViewSet(PermissionListMixin, ADCMGenericViewSet, DestroyModelMixin)
         owner_id, owner_type = instance.owner_id, instance.owner_type.model
         owner = get_model_by_type(owner_type).objects.get(pk=owner_id)
 
-        self.check_permissions_for_owner(instance, owner)
+        self.check_delete_concern_permissions(instance, owner)
 
         if not instance.blocking:
             instance.delete()
@@ -55,11 +55,13 @@ class ConcernViewSet(PermissionListMixin, ADCMGenericViewSet, DestroyModelMixin)
             raise AdcmEx(code="CONCERNITEM_NOT_REMOVED")
         return Response(status=HTTP_204_NO_CONTENT)
 
-    def check_permissions_for_owner(self, instance, owner):
+    def check_delete_concern_permissions(self, instance, owner):
         owner_view_perm = f"cm.view_{owner.__class__.__name__.lower()}"
         instance_remove_permission = f"cm.delete_{instance.__class__.__name__.lower()}"
 
-        if not (self.request.user.has_perm(owner_view_perm, owner) or self.request.user.has_perm(owner_view_perm)):
-            raise NotFound()
-        if not self.request.user.has_perm(perm=instance_remove_permission):
+        has_owner_view_object_perms = self.request.user.has_perm(owner_view_perm, owner)
+        has_owner_view_perms = self.request.user.has_perm(owner_view_perm)
+        has_remove_perms = self.request.user.has_perm(perm=instance_remove_permission)
+
+        if not (has_owner_view_object_perms or has_owner_view_perms) or not has_remove_perms:
             raise PermissionDenied()

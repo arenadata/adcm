@@ -43,7 +43,6 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
 
@@ -494,9 +493,9 @@ class TestConcernsResponse(BaseAPITestCase):
                 self.assertEqual(len(concerns), 1)
                 self.assertEqual(concerns.first().cause, "config")
 
-            with self.grant_permissions(to=self.test_user, on=service_2, role_name="Service Administrator"):
+            with self.grant_permissions(to=self.test_user, on=service_2, role_name="View service configurations"):
                 response = self.client.v2[concerns.first()].delete()
-                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
                 concerns = component.concerns.all()
                 self.assertEqual(len(concerns), 1)
