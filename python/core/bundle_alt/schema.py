@@ -20,6 +20,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -215,7 +216,19 @@ class _BaseConfigItemSchema(_BaseModel):
 
 class ConfigItemBooleanSchema(_BaseConfigItemSchema):
     type: Literal["boolean"]
-    default: Annotated[bool | None, Field(default=None)]
+    # We must support specifying bool-like string defaults
+    default: Annotated[bool | str | None, Field(default=None)]
+
+    @field_validator("default", mode="before")
+    @classmethod
+    def validate_default(cls, value: Any, info: ValidationInfo) -> Any:
+        if isinstance(value, str) and isinstance(info.context, dict) and info.context.get("string_to_boolean_cast"):
+            if value.lower() == "false":
+                return False
+            if value.lower() == "true":
+                return True
+
+        return value
 
 
 class ConfigItemIntegerSchema(_BaseConfigItemSchema):
