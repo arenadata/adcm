@@ -848,7 +848,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         response = (self.edit_client.v2 / "rbac" / "users" / self.user.pk / "block").post(data=None)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+        self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
 
         self.admin.refresh_from_db()
         self.assertIsNone(self.user.blocked_at)
@@ -895,7 +895,7 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         response = (self.edit_client.v2 / "rbac" / "users" / self.user.pk / "unblock").post(data=None)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+        self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
 
 
 class TestAdvancedUserFilters(BaseAPITestCase):

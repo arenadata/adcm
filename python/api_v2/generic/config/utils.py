@@ -47,9 +47,9 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 
 ParentObject: TypeAlias = Union[Cluster, Service, Component, Provider, Host, ConfigHostGroup]
 
@@ -700,7 +700,7 @@ def extend_config_schema(type_: str):
         summary=f"GET {type_}'s config schema",
         description=f"Get {type_}'s config schema information.",
         examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
-        responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
     )
 
 

@@ -142,25 +142,25 @@ class TestAPI(BaseTestCase):
             response: Response = self.client.get(url)
 
             self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-            self.assertEqual(response.json()["detail"], "Authentication credentials were not provided.")
+            self.assertEqual(response.json()["desc"], "Authentication credentials were not provided.")
 
         for url in api:
             response: Response = self.client.post(url, data={})
 
             self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-            self.assertEqual(response.json()["detail"], "Authentication credentials were not provided.")
+            self.assertEqual(response.json()["desc"], "Authentication credentials were not provided.")
 
         for url in api:
             response: Response = self.client.put(url, {})
 
             self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-            self.assertEqual(response.json()["detail"], "Authentication credentials were not provided.")
+            self.assertEqual(response.json()["desc"], "Authentication credentials were not provided.")
 
         for url in api:
             response: Response = self.client.delete(url)
 
             self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-            self.assertEqual(response.json()["detail"], "Authentication credentials were not provided.")
+            self.assertEqual(response.json()["desc"], "Authentication credentials were not provided.")
 
     def test_schema(self):
         response: Response = self.client.get("/api/v1/schema/")

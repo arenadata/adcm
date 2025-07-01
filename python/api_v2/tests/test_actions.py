@@ -392,7 +392,9 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
+        self.assertDictEqual(
+            response.json(), {"code": "API_ERROR", "desc": "Components with ids 1000 do not exist", "level": "ERROR"}
+        )
         self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
@@ -410,7 +412,9 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
+        self.assertDictEqual(
+            response.json(), {"code": "API_ERROR", "desc": "Hosts with ids 1000 do not exist", "level": "ERROR"}
+        )
         self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:

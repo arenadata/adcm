@@ -23,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from api_v2.adcm.serializers import AdcmSerializer
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -40,7 +40,7 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getADCMObject",
         summary="GET ADCM object",
         description="GET ADCM object.",
-        responses={HTTP_200_OK: AdcmSerializer},
+        responses=responses(success=(HTTP_200_OK, AdcmSerializer)),
     ),
 )
 class ADCMViewSet(RetrieveModelMixin, ADCMGenericViewSet):

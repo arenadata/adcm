@@ -20,7 +20,7 @@ from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import responses
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.views import ADCMGenericViewSet
 
@@ -28,9 +28,9 @@ from api_v2.views import ADCMGenericViewSet
 @extend_schema_view(
     destroy=extend_schema(
         operation_id="deleteConcern",
-        description="Remove non blocking concern",
+        description="Remove non blocking concern.",
         summary="Remove non-blocking concern",
-        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=(HTTP_204_NO_CONTENT, None), errors=HTTP_404_NOT_FOUND),
     ),
 )
 class ConcernViewSet(PermissionListMixin, ADCMGenericViewSet, DestroyModelMixin):

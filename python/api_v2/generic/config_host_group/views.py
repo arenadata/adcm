@@ -22,6 +22,7 @@ from rbac.models import re_apply_object_policy
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -49,7 +50,7 @@ class CHGViewSet(
 ):
     queryset = ConfigHostGroup.objects.order_by("name")
     serializer_class = CHGSerializer
-    permission_classes = [CHGPermissions]
+    permission_classes = [IsAuthenticated, CHGPermissions]
     permission_required = [VIEW_CONFIG_HOST_GROUP_PERM]
     filterset_class = CHGFilter
 
@@ -226,7 +227,7 @@ class HostCHGViewSet(PermissionListMixin, GetParentObjectMixin, ListModelMixin, 
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
-    permission_classes = [CHGHostsPermissions]
+    permission_classes = [IsAuthenticated, CHGHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostGroupHostFilter
     filter_backends = (DjangoFilterBackend,)

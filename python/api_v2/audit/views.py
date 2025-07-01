@@ -23,9 +23,9 @@ from audit.models import (
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.audit.filters import AuditLogFilter, AuditSessionFilter
 from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api_v2.views import ADCMReadOnlyModelViewSet
@@ -75,13 +75,13 @@ from api_v2.views import ADCMReadOnlyModelViewSet
                 default="-loginTime",
             ),
         ],
-        responses={HTTP_200_OK: AuditSessionSerializer(many=True), HTTP_403_FORBIDDEN: ErrorSerializer},
+        responses=responses(success=(HTTP_200_OK, AuditSessionSerializer(many=True))),
     ),
     retrieve=extend_schema(
         operation_id="getAuditLogin",
         summary="GET audit login",
         description="Get information about a specific user authorization in ADCM.",
-        responses={HTTP_200_OK: AuditSessionSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=(HTTP_200_OK, AuditSessionSerializer), errors=HTTP_404_NOT_FOUND),
     ),
 )
 class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
@@ -164,13 +164,13 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                 default="-time",
             ),
         ],
-        responses={HTTP_200_OK: AuditLogSerializer(many=True), HTTP_403_FORBIDDEN: ErrorSerializer},
+        responses=responses(success=(HTTP_200_OK, AuditLogSerializer(many=True))),
     ),
     retrieve=extend_schema(
         operation_id="getAuditOperation",
         summary="GET audit operation",
         description="Get information about a specific ADCM operation being audited.",
-        responses={HTTP_200_OK: AuditLogSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=(HTTP_200_OK, AuditLogSerializer), errors=HTTP_404_NOT_FOUND),
     ),
 )
 class AuditLogViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):

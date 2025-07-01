@@ -35,7 +35,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from django.db.models import Prefetch
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
 from rbac.services.user import (
@@ -48,6 +48,7 @@ from rbac.services.user import (
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -60,7 +61,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.rbac.user.filters import UserFilterSet
 from api_v2.rbac.user.permissions import UserPermissions
 from api_v2.rbac.user.serializers import (
@@ -98,65 +99,51 @@ from api_v2.views import ADCMGenericViewSet
         ],
         responses={
             HTTP_200_OK: UserSerializer(many=True),
-            HTTP_403_FORBIDDEN: ErrorSerializer,
         },
     ),
     create=extend_schema(
         operation_id="postUsers",
         description="Create a new ADCM user.",
         summary="POST users",
-        responses={
-            HTTP_201_CREATED: UserSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, UserSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getUser",
         description="Get detailed information about a specific user.",
         summary="GET user",
-        responses={
-            HTTP_200_OK: UserSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(success=UserSerializer, errors=HTTP_404_NOT_FOUND),
     ),
     partial_update=extend_schema(
         operation_id="patchUser",
         description="Change information for a specific user.",
         summary="PATCH user",
-        responses={
-            HTTP_200_OK: UserSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-            },
-        },
+        responses=responses(
+            success=UserSerializer,
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     block=extend_schema(
         operation_id="postUsersBlock",
         description="Block users in the ADCM (manual block).",
         summary="POST user block",
-        responses={
-            HTTP_200_OK: OpenApiResponse(),
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)),
     ),
     unblock=extend_schema(
         operation_id="postUsersUnblock",
-        description="Unblock the user in the ADCM",
+        description="Unblock the user in the ADCM.",
         summary="POST user unblock",
-        responses={
-            HTTP_200_OK: OpenApiResponse(),
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)),
     ),
     destroy=extend_schema(
         operation_id="deleteUser",
-        description="Delete user from ADCM",
+        description="Delete user from ADCM.",
         summary="DELETE user",
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
 )
 class UserViewSet(
@@ -179,7 +166,7 @@ class UserViewSet(
     filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet
     permission_required = [VIEW_USER_PERMISSION]
-    permission_classes = (UserPermissions,)
+    permission_classes = (IsAuthenticated, UserPermissions)
 
     def get_serializer_class(
         self,

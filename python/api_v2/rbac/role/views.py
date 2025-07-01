@@ -34,6 +34,7 @@ from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -45,7 +46,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.permissions import RolePermissions
 from api_v2.rbac.role.serializers import (
@@ -69,11 +70,11 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.OFFSET,
             OpenApiParameter(
                 name="categories",
-                description="List of categories in the role.",
+                description="Filter by a comma-separated list of categories in the role.",
             ),
             OpenApiParameter(
                 name="type",
-                description="Type of the role.",
+                description="Filter by type.",
                 enum=("business", "role"),
             ),
             OpenApiParameter(
@@ -83,67 +84,50 @@ from api_v2.views import ADCMGenericViewSet
                 default="displayName",
             ),
         ],
-        responses={
-            HTTP_200_OK: RoleSerializer(many=True),
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-        },
+        responses=responses(success=RoleSerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postRoles",
         description="Create a new user role in ADCM.",
         summary="POST roles",
-        responses={
-            HTTP_201_CREATED: RoleSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, RoleSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getRole",
         description="Get information about a specific ADCM user role.",
         summary="GET role",
-        responses={
-            HTTP_200_OK: RoleSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(success=RoleSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     partial_update=extend_schema(
         operation_id="patchRole",
         description="Change information about the ADCM user role.",
         summary="PATCH role",
-        responses={
-            HTTP_200_OK: RoleCreateSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-            },
-        },
+        responses=responses(
+            success=RoleCreateSerializer, errors=(HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     destroy=extend_schema(
         operation_id="deleteRole",
         description="Delete a specific ADCM user role.",
         summary="DELETE role",
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     object_candidates=extend_schema(
         operation_id="getCandidateobject",
         description="Get information about objects which are might be chosen in policy for concrete role.",
         summary="GET Candidate",
-        responses={
-            HTTP_200_OK: RoleObjectCandidatesSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-        },
+        responses=responses(success=(HTTP_200_OK, RoleObjectCandidatesSerializer), errors=HTTP_404_NOT_FOUND),
     ),
     categories=extend_schema(
         operation_id="getCategories",
         description="Get information about objects which are might be chosen in policy for concrete role.",
-        summary="GET Candidate",
-        responses={
-            HTTP_200_OK: RoleCategoriesSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-        },
+        summary="GET Categories",
+        responses=responses(success=(HTTP_200_OK, RoleCreateSerializer)),
     ),
 )
 class RoleViewSet(
@@ -161,7 +145,7 @@ class RoleViewSet(
         .exclude(type=RoleTypes.HIDDEN)
         .order_by("display_name")
     )
-    permission_classes = (RolePermissions,)
+    permission_classes = (IsAuthenticated, RolePermissions)
     permission_required = [VIEW_ROLE_PERMISSION]
     filterset_class = RoleFilter
 
