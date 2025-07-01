@@ -29,9 +29,9 @@ class ClusterFilter(
     with_object_status=True,
 ):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
-    prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
-    name = CharFilter(label="Cluster name", lookup_expr="icontains")
+    prototype_name = CharFilter(label="Filter by prototype name.", field_name="prototype__name")
+    prototype_display_name = CharFilter(label="Filter by prototype display name.", field_name="prototype__display_name")
+    name = CharFilter(label="Case insensitive and partial filter by cluster name.", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
             "name": "name",

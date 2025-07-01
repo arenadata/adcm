@@ -41,7 +41,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
 from api_v2.utils.audit import bundle_from_lookup
@@ -75,12 +75,12 @@ from api_v2.views import ADCMGenericViewSet
                 default="displayName",
             ),
         ],
-        responses={HTTP_200_OK: BundleSerializer(many=True)},
+        responses=responses(success=(HTTP_200_OK, BundleSerializer(many=True))),
     ),
     retrieve=extend_schema(
         operation_id="getBundle",
         description="Get detail information about a specific bundle.",
-        responses={HTTP_200_OK: BundleSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=(HTTP_200_OK, BundleSerializer), errors=HTTP_404_NOT_FOUND),
     ),
 )
 class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, ADCMGenericViewSet):

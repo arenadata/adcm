@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from api_v2.api_schema import responses
 from api_v2.generic.action.serializers import ActionListSerializer, ActionRetrieveSerializer
@@ -27,8 +27,7 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             summary=f"POST {object_type}'s action",
             description=f"Run {object_type}'s action.",
             responses=responses(
-                success=TaskListSerializer,
-                errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+                success=TaskListSerializer, errors=(HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
             ),
         ),
         list=extend_schema(
@@ -36,24 +35,6 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             summary=f"GET {object_type}'s actions",
             description=f"Get a list of {object_type}'s actions.",
             parameters=[
-                OpenApiParameter(
-                    name="name",
-                    description="Case insensitive and partial filter by name.",
-                ),
-                OpenApiParameter(
-                    name="display_name",
-                    description="Case insensitive and partial filter by display name.",
-                ),
-                OpenApiParameter(
-                    name="is_host_own_action",
-                    description="Filter for host's own actions / actions from another objects",
-                    type=bool,
-                ),
-                OpenApiParameter(
-                    name="prototype_id",
-                    description="Identifier of action's owner",
-                    type=int,
-                ),
                 OpenApiParameter(
                     name="ordering",
                     description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',

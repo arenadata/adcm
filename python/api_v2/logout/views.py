@@ -28,15 +28,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from api_v2.api_schema import responses
+
 
 @extend_schema_view(
     post=extend_schema(
         operation_id="postLogout",
         description="Perform logout from ADCM.",
         summary="POST logout",
-        responses={
-            HTTP_200_OK: EmptySerializer,
-        },
+        responses=responses(success=EmptySerializer),
     ),
 )
 class LogoutView(GenericAPIView):

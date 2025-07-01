@@ -25,18 +25,17 @@ from guardian.mixins import PermissionListMixin
 from rbac.models import Policy
 from rbac.services.policy import policy_create, policy_update
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (
-    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.rbac.policy.filters import PolicyFilter
 from api_v2.rbac.policy.permissions import PolicyPermissions
 from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer, PolicyUpdateSerializer
@@ -65,56 +64,45 @@ from api_v2.views import ADCMGenericViewSet
                 default="name",
             ),
         ],
-        responses={
-            HTTP_200_OK: PolicySerializer(many=True),
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-        },
+        responses=responses(success=PolicySerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postPolicies",
         description="Create a new ADCM policy.",
         summary="POST policies",
-        responses={
-            HTTP_201_CREATED: PolicySerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, PolicySerializer),
+            errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getPolicy",
         description="Get information about a specific ADCM policy.",
         summary="GET policy",
-        responses={
-            HTTP_200_OK: PolicySerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(success=PolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     partial_update=extend_schema(
         operation_id="patchPolicy",
         description="Change information on a specific ADCM policy.",
         summary="PATCH policy",
-        responses={
-            HTTP_200_OK: PolicySerializer(many=False),
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-            },
-        },
+        responses=responses(
+            success=PolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     destroy=extend_schema(
         operation_id="deletePolicy",
         description="Delete specific ADCM policy.",
         summary="DELETE policy",
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
 )
 class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
-    permission_classes = (PolicyPermissions,)
+    permission_classes = (IsAuthenticated, PolicyPermissions)
     permission_required = [VIEW_POLICY_PERMISSION]
 
     def get_serializer_class(self) -> type[PolicySerializer | PolicyCreateSerializer | PolicyUpdateSerializer]:

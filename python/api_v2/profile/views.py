@@ -23,9 +23,8 @@ from rbac.models import User
 from rbac.services.user import UserDB
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import responses
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 from api_v2.utils.audit import profile_of_current_user, retrieve_user_password_groups
 from api_v2.views import ADCMGenericViewSet
@@ -36,19 +35,13 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getCurrentUserInfo",
         description="Get current user information.",
         summary="GET current user information",
-        responses={
-            HTTP_200_OK: ProfileSerializer,
-            HTTP_401_UNAUTHORIZED: ErrorSerializer,
-        },
+        responses=responses(success=ProfileSerializer),
     ),
     partial_update=extend_schema(
         operation_id="patchCurrentUserInfo",
         description="Change current user password.",
         summary="PATCH current user information",
-        responses={
-            HTTP_200_OK: ProfileUpdateSerializer,
-            HTTP_401_UNAUTHORIZED: ErrorSerializer,
-        },
+        responses=responses(success=ProfileUpdateSerializer),
     ),
 )
 class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):

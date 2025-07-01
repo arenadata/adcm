@@ -10,17 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -30,7 +30,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -84,27 +84,21 @@ from api_v2.views import ADCMGenericViewSet
                 default="-id",
             ),
         ],
-        responses={
-            HTTP_200_OK: TaskListSerializer(many=True),
-        },
+        responses=responses(success=(HTTP_200_OK, TaskListSerializer(many=True))),
     ),
     terminate=extend_schema(
         operation_id="postTaskTerminate",
         description="Terminate the execution of a specific task.",
         summary="POST task terminate",
-        responses={
-            HTTP_200_OK: OpenApiResponse(),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
-        },
+        responses=responses(
+            success=(HTTP_200_OK, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getTask",
         description="Get information about a specific ADCM task.",
         summary="GET task",
-        responses={
-            HTTP_200_OK: TaskListSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(success=(HTTP_200_OK, TaskListSerializer), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     download=extend_schema(
         operation_id="getTaskLogsDownload",
@@ -128,7 +122,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
-    permission_classes = [TaskPermissions]
+    permission_classes = [IsAuthenticated, TaskPermissions]
     permission_required = [VIEW_TASKLOG_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):

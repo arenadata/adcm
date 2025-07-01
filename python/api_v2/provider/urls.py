@@ -27,8 +27,6 @@ from api_v2.provider.views import (
     ProviderViewSet,
 )
 
-CONFIG_GROUPS_PREFIX = "config-groups"
-
 
 def extract_urls_from_routers(routers: Iterable[NestedSimpleRouter]) -> tuple[str, ...]:
     return tuple(itertools.chain.from_iterable(router.urls for router in routers))

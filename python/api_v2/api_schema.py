@@ -16,9 +16,7 @@ from adcm.serializers import EmptySerializer
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter
 from rest_framework.fields import CharField
 from rest_framework.serializers import Serializer
-from rest_framework.status import (
-    HTTP_200_OK,
-)
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
 
 class ErrorSerializer(EmptySerializer):
@@ -175,12 +173,27 @@ ResponseOKType: TypeAlias = Serializer | type[Serializer] | type[dict] | type[li
 
 
 def responses(
-    success: ResponseOKType | tuple[int, ResponseOKType], errors: Iterable[int] | int
+    success: ResponseOKType | tuple[int, ResponseOKType] | None = None,
+    errors: Iterable[int] | int = (),
+    auth_required: bool = True,
 ) -> dict[int, Serializer]:
-    if not isinstance(success, tuple):
-        success = (HTTP_200_OK, success)
+    success_response = {}
+    if success is None:
+        pass
+    elif isinstance(success, tuple):
+        success_response = {success[0]: success[1]}
+    else:
+        success_response = {HTTP_200_OK: success}
 
     if isinstance(errors, int):
         errors = (errors,)
 
-    return {success[0]: success[1]} | {status: ErrorSerializer for status in errors}
+    error_response = {code: ErrorSerializer for code in errors}
+    if auth_required:
+        error_response |= {HTTP_401_UNAUTHORIZED: ErrorSerializer}
+
+    return success_response | error_response
+
+
+def exclude_params(names: Iterable[str]) -> list[OpenApiParameter]:
+    return [OpenApiParameter(name=name, exclude=True) for name in names]
