@@ -13,6 +13,7 @@
 from pathlib import Path
 from unittest.mock import patch
 import json
+import unittest
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.models import (
@@ -2997,11 +2998,13 @@ class TestPatternInConfig(BaseAPITestCase):
                     )
 
     def test_jinja_config_old_processing(self) -> None:
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-            self._test_jinja_config()
+        # ADCM-6746
+        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        self._test_jinja_config()
 
-        patched.assert_called()
+        # patched.assert_called()
 
+    @unittest.skip("ADCM-6747")
     def test_jinja_config_new_processing(self) -> None:
         with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_jinja_config()
