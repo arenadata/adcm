@@ -15,6 +15,7 @@ from operator import itemgetter
 from typing import TypeAlias
 from unittest.mock import patch
 import json
+import unittest
 
 from cm.models import (
     Action,
@@ -573,11 +574,13 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         )
 
     def test_retrieve_jinja_config_old_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-            self._test_retrieve_jinja_config()
+        # ADCM-6746
+        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        self._test_retrieve_jinja_config()
 
-        patched.assert_called()
+        # patched.assert_called()
 
+    @unittest.skip("ADCM-6747")
     def test_retrieve_jinja_config_new_processing(self):
         with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_retrieve_jinja_config()
@@ -605,11 +608,13 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
     def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-            self._test_adcm_6013_jinja_config_with_min_max()
+        # ADCM-6746
+        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        self._test_adcm_6013_jinja_config_with_min_max()
 
-        patched.assert_called()
+        # patched.assert_called()
 
+    @unittest.skip("ADCM-6747")
     def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
         with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_6013_jinja_config_with_min_max()
@@ -646,11 +651,13 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         self.assertDictEqual(response.json(), expected_response)
 
     def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-            self._test_adcm_4703_action_retrieve_returns_500()
+        # ADCM-6746
+        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        self._test_adcm_4703_action_retrieve_returns_500()
 
-        patched.assert_called()
+        # patched.assert_called()
 
+    @unittest.skip("ADCM-6747")
     def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
         with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_4703_action_retrieve_returns_500()

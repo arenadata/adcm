@@ -94,7 +94,7 @@ def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: 
 
 @convert_validation_to_bundle_error
 def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action, prototype) -> list[PrototypeConfig]:
-    config = ConfigJinjaSchema.model_validate({"config": data}, strict=True, context={"string_to_boolean_cast": True})
+    config = ConfigJinjaSchema.model_validate({"config": data}, strict=True)
     config = config.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
 
     definition = extract_config(config=config, context=context)

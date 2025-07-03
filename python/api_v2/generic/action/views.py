@@ -11,9 +11,7 @@
 # limitations under the License.
 
 from itertools import compress
-import os
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
 from adcm.mixins import GetParentObjectMixin
 from cm.errors import AdcmEx
 from cm.models import (
@@ -191,7 +189,10 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
-        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+        # As part of the ADCM-6747 task, we are leaving the old mechanism
+        # for preparing the scripts from the jinja file.
+        # use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
+        use_new_approach = False
 
         task = run_action(
             action=target_action,
