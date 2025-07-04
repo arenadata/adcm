@@ -3,7 +3,7 @@
     "config": {
       "global": {
         "adcm_url": null,
-        "verification_public_key": "{{ stackdir }}/data/file/adcm.1.global.verification_public_key",
+        "verification_public_key": "{{ stackdir }}/data/file/adcm.{{ adcm_id }}.global.verification_public_key",
         "accept_only_verified_bundles": false
       },
       "statistics_collection": {
@@ -34,7 +34,7 @@
     }
   },
   "context": {
-    "cluster_id": 1,
+    "cluster_id": {{ cluster.id }},
     "type": "cluster"
   },
   "env": {
@@ -52,7 +52,8 @@
     "script": "scripts/over_there.yaml",
     "verbose": false,
     "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/scripts/over_there.yaml",
-    "cluster_id": 1,
-    "hostgroup": "CLUSTER"
+    "cluster_id": {{ cluster.id }},
+    "hostgroup": "CLUSTER",
+    "params": {"rules": []}
   }
 }

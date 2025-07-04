@@ -10,33 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from configparser import ConfigParser
 from functools import partial
+from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
 import json
+import traceback
 
 from ansible_plugin.utils import finish_check
-from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
-from core.cluster.types import HostComponentEntry
+from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
-from core.job.types import Job, ScriptType, Task
-from core.types import ADCMCoreType
+from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
+from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.models import (
-    AnsibleConfig,
-    Cluster,
-    Component,
-    LogStorage,
-    TaskLog,
-)
-from cm.services.cluster import retrieve_cluster_topology, retrieve_host_component_entries
-from cm.services.job._utils import construct_delta_for_task
-from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
+from cm.errors import AdcmEx
+from cm.models import AnsibleConfig, Cluster, Component, LogStorage, Prototype, TaskLog
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
@@ -44,6 +40,7 @@ from cm.services.job.run.executors import (
     InternalExecutor,
     PythonProcessExecutor,
 )
+from cm.services.job.run.repo import JobRepoImpl
 from cm.services.job.types import (
     ClusterActionType,
     ComponentActionType,
@@ -54,9 +51,11 @@ from cm.services.job.types import (
     ProviderActionType,
     ServiceActionType,
 )
-from cm.services.mapping import change_host_component_mapping, check_only_mapping
+from cm.services.mapping import change_host_component_mapping_no_lock, check_nothing, lock_cluster_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
+
+logger = getLogger("adcm")
 
 
 class ExecutionTargetFactory:
@@ -107,7 +106,7 @@ class ExecutionTargetFactory:
                         message = f"Unknown internal script {job_info.type}, can't build runner for it"
                         raise NotImplementedError(message)
 
-                    script = partial(internal_script_func, task=task)
+                    script = partial(internal_script_func, task=task, job=job_info)
                     executor = InternalExecutor(config=ExecutorConfig(work_dir=work_dir), script=script)
                     environment_builders = ()
                 case _:
@@ -123,13 +122,15 @@ class ExecutionTargetFactory:
 
 
 @atomic()
-def internal_script_bundle_switch(task: Task) -> int:
+def internal_script_bundle_switch(task: Task, job: Job) -> int:
     from cm.upgrade import bundle_switch
+
+    _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
     bundle_switch(obj=task_.task_object, upgrade=task_.action.upgrade)
-    _switch_hc_if_required(task=task_)
+    _switch_hc_if_required(task=task)
 
     re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
 
@@ -137,68 +138,114 @@ def internal_script_bundle_switch(task: Task) -> int:
 
 
 @atomic()
-def internal_script_bundle_revert(task: Task) -> int:
+def internal_script_bundle_revert(task: Task, job: Job) -> int:
     from cm.upgrade import bundle_revert
+
+    _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
     try:
         bundle_revert(obj=task_.task_object)
+    except ObjectDoesNotExist as error:
+        # This is a hack. We can do this, since all AdcmEx are intercepted in the Executer,
+        # and a message is generated in the log there.
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f"The configuration cannot be restored because the record was deleted.\n\n{traceback.format_exc()}",
+        ) from error
     finally:
         send_prototype_and_state_update_event(object_=task_.task_object)
 
-    _switch_hc_if_required(task=task_)
+    _switch_hc_if_required(task=task)
 
     re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
 
     return 0
 
 
-@atomic()
-def internal_script_hc_apply(task: Task) -> int:
-    TaskLog.objects.filter(id=task.id).update(restore_hc_on_fail=False)
+def internal_script_hc_apply(task: Task, job: Job) -> int:
+    if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+        raise AdcmEx(
+            code="WRONG_OWNER",
+            msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
+        )
+
+    hc_apply_rules = job.params.rules
+
+    if not hc_apply_rules:
+        hc_apply_rules = task.action.hc_acl
+
+    if task.owner.type == ADCMCoreType.CLUSTER:
+        cluster_id = task.owner.id
+        cluster_prototype_id = task.owner.prototype_id
+    else:
+        cluster_id = task.owner.related_objects.cluster.id
+        cluster_prototype_id = task.owner.related_objects.cluster.prototype_id
+
+    bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
+
+    with atomic():
+        lock_cluster_mapping(cluster_id=cluster_id)
+        delta_part = _extract_mapping_delta_part(
+            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply_rules=hc_apply_rules
+        )
+        change_host_component_mapping_no_lock(
+            cluster_id=cluster_id,
+            bundle_id=bundle_id,
+            mapping_delta=delta_part,
+            checks_func=check_nothing,
+        )
 
     return 0
 
 
-def _switch_hc_if_required(task: TaskLog):
+def _extract_mapping_delta_part(
+    cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply_rules: list[HcAclRule]
+) -> TaskMappingDelta:
+    topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    components_map = topology.component_full_name_id_mapping
+
+    delta_data = defaultdict(lambda: defaultdict(set))
+    for hc_rule in hc_apply_rules:
+        component_id = components_map.get(ComponentNameKey(service=hc_rule.service, component=hc_rule.component))
+        if component_id is None:
+            continue
+        delta_data[hc_rule.action][component_id].update(
+            getattr(mapping_delta, hc_rule.action, {}).get(component_id, ())
+        )
+
+    return TaskMappingDelta(**delta_data)
+
+
+def _switch_hc_if_required(task: Task) -> None:
     """
     Should be performed during upgrade of cluster, if not cluster, no need in HC update.
     Because it's upgrade, it will be called either on cluster or provider,
     so task object will be one of those too.
     """
-    if task.task_object.prototype.type != "cluster":
+
+    if not task.hostcomponent.post_upgrade:
         return
 
-    cluster = task.task_object
+    if task.target.type != ADCMCoreType.CLUSTER:
+        return
+
+    delta = task.hostcomponent.mapping_delta
 
     # `post_upgrade_hc_map` contains records with "component_prototype_id" which are "extra" to regular hc
-    newly_added_entries = set()
-    for new_entry in task.post_upgrade_hc_map or ():
+    for new_entry in task.hostcomponent.post_upgrade:
         if "component_prototype_id" in new_entry:
             # if optimized to 1 request, it's probably good to filter by prototype__type="component"
             component_id = Component.objects.values_list("id", flat=True).get(
-                cluster=cluster, prototype_id=new_entry["component_prototype_id"]
+                cluster_id=task.target.id, prototype_id=new_entry["component_prototype_id"]
             )
-            newly_added_entries.add(HostComponentEntry(component_id=component_id, host_id=new_entry["host_id"]))
+            if component_id not in delta.add:
+                delta.add[component_id] = {new_entry["host_id"]}
+            else:
+                delta.add[component_id].add(new_entry["host_id"])
 
-    current_topology_entries = retrieve_host_component_entries(cluster_id=cluster.id)
-
-    task.hostcomponentmap = [
-        {"host_id": entry.host_id, "component_id": entry.component_id} for entry in current_topology_entries
-    ]
-    task.post_upgrade_hc_map = None
-    task.save(update_fields=["hostcomponentmap", "post_upgrade_hc_map"])
-
-    after_upgrade_hostcomponent = current_topology_entries | newly_added_entries
-
-    if task.action.hostcomponentmap:
-        change_host_component_mapping(
-            cluster_id=cluster.id,
-            bundle_id=cluster.bundle_id,
-            flat_mapping=after_upgrade_hostcomponent,
-            checks_func=partial(check_only_mapping, error_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE),
-        )
+    JobRepoImpl.update_task(id=task.id, data=TaskUpdateDTO(post_upgrade_hc_map=None, hostcomponentmap=delta))
 
 
 # ENVIRONMENT BUILDERS
@@ -233,19 +280,7 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
             raise RuntimeError(message)
 
-        current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
-        previous_topology = create_topology_with_new_mapping(
-            topology=current_topology,
-            new_mapping=(
-                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-                for entry in task.hostcomponent.saved
-            ),
-        )
-        delta = construct_delta_for_task(
-            topology=current_topology,
-            host_difference=find_hosts_difference(new_topology=current_topology, old_topology=previous_topology),
-        )
-        # todo need check_delta_is_allowed?
+        delta = task.hostcomponent.mapping_delta
 
     return get_inventory_data(
         target=task.target,

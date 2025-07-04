@@ -35,7 +35,7 @@ from cm.converters import orm_object_to_action_target_type, orm_object_to_core_t
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
     add_concern_to_object,
-    remove_concern_from_object,
+    unlink_concern_from_object,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -359,7 +359,7 @@ def remove_host_from_cluster(host: Host) -> Host:
             group.hosts.remove(host)
 
         # if there's no lock on cluster, nothing should be removed
-        remove_concern_from_object(object_=host, concern=get_lock_on_object(object_=cluster))
+        unlink_concern_from_object(object_=host, concern=get_lock_on_object(object_=cluster))
 
         if not cluster_mapping_has_issue_orm_version(cluster):
             delete_issue(

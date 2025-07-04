@@ -3,7 +3,7 @@
     "config": {
       "global": {
         "adcm_url": null,
-        "verification_public_key": "{{ stackdir }}/data/file/adcm.1.global.verification_public_key",
+        "verification_public_key": "{{ stackdir }}/data/file/adcm.{{ adcm_id }}.global.verification_public_key",
         "accept_only_verified_bundles": false
       },
       "statistics_collection": {
@@ -34,10 +34,10 @@
     }
   },
   "context": {
-    "host_id": 1,
-    "component_id": 1,
-    "service_id": 1,
-    "cluster_id": 1,
+    "host_id": {{ host_1.id }},
+    "component_id": {{ component.id }},
+    "service_id": {{ service.id }},
+    "cluster_id": {{ cluster.id }},
     "type": "component"
   },
   "env": {
@@ -55,10 +55,11 @@
     "script": "playbook.yaml",
     "verbose": true,
     "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/playbook.yaml",
-    "cluster_id": 1,
+    "cluster_id": {{ cluster.id }},
     "hostgroup": "all_params.all_params_component",
-    "service_id": 1,
-    "component_id": 1,
-    "component_type_id": {{ component_type_id }}
+    "service_id": {{ service.id }},
+    "component_id": {{ component.id }},
+    "component_type_id": {{ component_type_id }},
+    "params": {"rules": []}
   }
 }

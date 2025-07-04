@@ -19,6 +19,7 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConcernItem,
     ConfigHostGroup,
     Host,
     JobLog,
@@ -116,6 +117,7 @@ class V2RootNode(RootNode):
         "token": "token",
         "audit-login": "audit/logins",
         "audit-operation": "audit/operations",
+        ConcernItem: "concerns",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:

@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf import settings
-from django.db.utils import OperationalError
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -40,15 +38,12 @@ ERRORS = {
         HTTP_404_NOT_FOUND,
         ERR,
     ),
-    "ADCM_NOT_FOUND": ("adcm object doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "BUNDLE_NOT_FOUND": ("bundle doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "CLUSTER_NOT_FOUND": ("cluster doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "SERVICE_NOT_FOUND": ("service doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "BIND_NOT_FOUND": ("bind doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "PROVIDER_NOT_FOUND": ("provider doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "HOST_NOT_FOUND": ("host doesn't exist", HTTP_404_NOT_FOUND, ERR),
-    "HOST_GROUP_CONFIG_NOT_FOUND": ("group config doesn't exist", HTTP_404_NOT_FOUND, ERR),
-    "HOST_TYPE_NOT_FOUND": ("host type doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "PROTOTYPE_NOT_FOUND": ("prototype doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "HOSTSERVICE_NOT_FOUND": ("map host <-> component doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "COMPONENT_NOT_FOUND": ("component doesn't exist", HTTP_404_NOT_FOUND, ERR),
@@ -63,14 +58,9 @@ ERRORS = {
     "LOG_NOT_FOUND": ("log file is not found", HTTP_404_NOT_FOUND, ERR),
     "UPGRADE_NOT_FOUND": ("upgrade is not found", HTTP_404_NOT_FOUND, ERR),
     "USER_NOT_FOUND": ("user profile is not found", HTTP_404_NOT_FOUND, ERR),
-    "GROUP_NOT_FOUND": ("group is not found", HTTP_404_NOT_FOUND, ERR),
-    "ROLE_NOT_FOUND": ("role is not found", HTTP_404_NOT_FOUND, ERR),
-    "PERMISSION_NOT_FOUND": ("permission is not found", HTTP_404_NOT_FOUND, ERR),
-    "MODULE_NOT_FOUND": ("module doesn't exist", HTTP_404_NOT_FOUND, ERR),
-    "FUNCTION_NOT_FOUND": ("function doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "CONCERNITEM_NOT_FOUND": ("concern item doesn't exist", HTTP_404_NOT_FOUND, ERR),
+    "CONCERNITEM_NOT_REMOVED": ("concern item can't be removed", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_NOT_FOUND": ("group config doesn't exist", HTTP_404_NOT_FOUND, ERR),
-    "TASK_GENERATOR_ERROR": ("task generator error", HTTP_409_CONFLICT, ERR),
     "OBJ_TYPE_ERROR": ("wrong object type", HTTP_409_CONFLICT, ERR),
     "SERVICE_CONFLICT": ("service already exists in specified cluster", HTTP_409_CONFLICT, ERR),
     "CLUSTER_CONFLICT": ("duplicate cluster", HTTP_409_CONFLICT, ERR),
@@ -79,47 +69,33 @@ ERRORS = {
     "USER_CONFLICT": ("duplicate user profile", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFLICT": ("duplicate user group", HTTP_409_CONFLICT, ERR),
     "FOREIGN_HOST": ("host is not belong to the cluster", HTTP_409_CONFLICT, ERR),
-    "COMPONENT_CONFLICT": ("duplicate component on host in cluster", HTTP_409_CONFLICT, ERR),
     "COMPONENT_CONSTRAINT_ERROR": ("component constraint error", HTTP_409_CONFLICT, ERR),
     "REQUIRES_ERROR": ("Incorrect requires definition", HTTP_409_CONFLICT, ERR),
-    "BUNDLE_CONFIG_ERROR": ("bundle config error", HTTP_409_CONFLICT, ERR),
     "BUNDLE_CONFLICT": ("bundle conflict error", HTTP_409_CONFLICT, ERR),
     "INVALID_ROLE_SPEC": ("role specification error", HTTP_409_CONFLICT, ERR),
-    "ROLE_ERROR": ("role error", HTTP_409_CONFLICT, ERR),
     "INVALID_OBJECT_DEFINITION": ("invalid object definition", HTTP_409_CONFLICT, ERR),
     "INVALID_CONFIG_DEFINITION": ("invalid config definition", HTTP_409_CONFLICT, ERR),
     "INVALID_COMPONENT_DEFINITION": ("invalid component definition", HTTP_409_CONFLICT, ERR),
     "INVALID_ACTION_DEFINITION": ("invalid action definition", HTTP_409_CONFLICT, ERR),
     "INVALID_UPGRADE_DEFINITION": ("invalid upgrade definition", HTTP_409_CONFLICT, ERR),
     "INVALID_VERSION_DEFINITION": ("invalid version definition", HTTP_409_CONFLICT, ERR),
-    "INVALID_OBJECT_UPDATE": ("invalid update of object definition", HTTP_409_CONFLICT, ERR),
     "INVALID_CONFIG_UPDATE": ("invalid update of config definition", HTTP_409_CONFLICT, ERR),
     "BUNDLE_ERROR": ("bundle error", HTTP_409_CONFLICT, ERR),
     "BUNDLE_DEFINITION_ERROR": ("incorrect definition of bundle object", HTTP_409_CONFLICT, ERR),
     "BUNDLE_VALIDATION_ERROR": ("bundle definitions won't work", HTTP_409_CONFLICT, ERR),
     "BUNDLE_VERSION_ERROR": ("bundle version error", HTTP_409_CONFLICT, ERR),
-    "BUNDLE_UPLOAD_ERROR": ("bundle upload error", HTTP_409_CONFLICT, ERR),
     "LICENSE_ERROR": ("license error", HTTP_409_CONFLICT, ERR),
     "BIND_ERROR": ("bind error", HTTP_409_CONFLICT, ERR),
     "CONFIG_NOT_FOUND": ("config param doesn't exist", HTTP_404_NOT_FOUND, ERR),
-    "SERVICE_CONFIG_ERROR": ("service config parsing error", HTTP_409_CONFLICT, ERR),
     "CONFIG_TYPE_ERROR": ("config type error", HTTP_409_CONFLICT, ERR),
-    "DEFINITION_KEY_ERROR": ("config key error", HTTP_409_CONFLICT, ERR),
-    "DEFINITION_TYPE_ERROR": ("config type error", HTTP_409_CONFLICT, ERR),
     "UPGRADE_ERROR": ("upgrade error", HTTP_409_CONFLICT, ERR),
-    "UPGRADE_NOT_FOUND_ERROR": ("upgrade error", HTTP_404_NOT_FOUND, ERR),
     "ACTION_ERROR": ("action error", HTTP_409_CONFLICT, ERR),
     "TASK_ERROR": ("task error", HTTP_409_CONFLICT, ERR),
     "TASK_IS_FAILED": ("task is failed", HTTP_409_CONFLICT, ERR),
     "TASK_IS_ABORTED": ("task is aborted", HTTP_409_CONFLICT, ERR),
     "TASK_IS_SUCCESS": ("task is success", HTTP_409_CONFLICT, ERR),
     "NOT_ALLOWED_TERMINATION": ("not allowed termination the task", HTTP_409_CONFLICT, ERR),
-    "WRONG_SELECTOR": ("selector error", HTTP_409_CONFLICT, ERR),
-    "WRONG_JOB_TYPE": ("unknown job type", HTTP_409_CONFLICT, ERR),
-    "WRONG_ACTION_CONTEXT": ("unknown action context", HTTP_409_CONFLICT, ERR),
-    "WRONG_ACTION_TYPE": ("config action type error", HTTP_409_CONFLICT, ERR),
     "WRONG_ACTION_HC": ("action hostcomponentmap error", HTTP_409_CONFLICT, ERR),
-    "WRONG_CLUSTER_ID_TYPE": ("cluster id must be integer", HTTP_400_BAD_REQUEST, ERR),
     "OVERFLOW": ("integer or floats in a request cause an overflow", HTTP_400_BAD_REQUEST, ERR),
     "WRONG_NAME": ("wrong name", HTTP_400_BAD_REQUEST, ERR),
     "INVALID_INPUT": ("invalid input", HTTP_400_BAD_REQUEST, ERR),
@@ -129,22 +105,9 @@ ERRORS = {
     "ATTRIBUTE_ERROR": ("error in attribute config", HTTP_400_BAD_REQUEST, ERR),
     "CONFIG_VARIANT_ERROR": ("error in config variant type", HTTP_400_BAD_REQUEST, ERR),
     "TOO_LONG": ("response is too long", HTTP_400_BAD_REQUEST, WARN),
-    "NOT_IMPLEMENTED": ("not implemented yet", HTTP_501_NOT_IMPLEMENTED, ERR),
     "NO_JOBS_RUNNING": ("no jobs running", HTTP_409_CONFLICT, ERR),
     "BAD_QUERY_PARAMS": ("bad query params", HTTP_400_BAD_REQUEST, ERR),
     "WRONG_PASSWORD": ("Incorrect password during loading", HTTP_400_BAD_REQUEST, ERR),
-    "DUMP_LOAD_CLUSTER_ERROR": (
-        "Dumping or loading error with cluster",
-        HTTP_409_CONFLICT,
-        ERR,
-    ),
-    "DUMP_LOAD_BUNDLE_ERROR": ("Dumping or loading error with bundle", HTTP_409_CONFLICT, ERR),
-    "DUMP_LOAD_ADCM_VERSION_ERROR": (
-        "Dumping or loading error. Versions of ADCM didn't match",
-        HTTP_409_CONFLICT,
-        ERR,
-    ),
-    "MESSAGE_TEMPLATING_ERROR": ("Message templating error", HTTP_409_CONFLICT, ERR),
     "ISSUE_INTEGRITY_ERROR": ("Issue object integrity error", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_HOST_ERROR": (
         "host is not available for this object, or host already is a member of another group of this object",
@@ -234,8 +197,6 @@ ERRORS = {
     "USER_PASSWORD_ERROR": ("Password doesn't feet requirements", HTTP_409_CONFLICT, ERR),
     "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
-    "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),
-    "USER_PASSWORD_ENTIRELY_NUMERIC_ERROR": ("This password is entirely numeric", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR": (
         'Field "current_password" should be filled and match user current password',
         HTTP_400_BAD_REQUEST,
@@ -244,11 +205,12 @@ ERRORS = {
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
-    "DATABASE_IS_LOCKED": ("SQLite not for production", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
     "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
     "BUNDLE_SIGNATURE_VERIFICATION_ERROR": ("Bundle signature verification error", HTTP_409_CONFLICT, ERR),
+    "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
+    "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR),
 }
 
 
@@ -310,6 +272,7 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     if isinstance(exc, OverflowError):
         # This is an error with DB mostly. For example SQLite can't handle 64-bit numbers.
         # So we have to handle this right and rise HTTP 400, instead of HTTP 500
+        # SQLite support ended in release 2.7.0. We need to review this code.
 
         return exception_handler(exc=AdcmEx(code="OVERFLOW"), context=context)
 
@@ -328,21 +291,16 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
 
         return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
 
-    if (
-        isinstance(exc, OperationalError)
-        and settings.DB_DEFAULT["ENGINE"] == "django.db.backends.sqlite3"
-        and str(exc) == "database is locked"
-    ):
-        return exception_handler(
-            exc=AdcmEx(
-                code="DATABASE_IS_LOCKED",
-                msg=(
-                    "Something wrong\n"
-                    '<a href="https://docs.arenadata.io/en/ADCM/current/get-started/external-db.html">'
-                    "SQLite not for production use</a>"
-                ),
-            ),
-            context=context,
-        )
+    response = exception_handler(exc=exc, context=context)
 
-    return exception_handler(exc=exc, context=context)
+    if not isinstance(exc, AdcmEx) and response and 400 <= response.status_code <= 499:
+        data = {
+            "code": "API_ERROR",
+            "level": "ERROR",
+            "desc": response.data.get("detail", response.status_code)
+            if isinstance(response.data, dict)
+            else response.status_code,
+        }
+        response.data = data
+
+    return response

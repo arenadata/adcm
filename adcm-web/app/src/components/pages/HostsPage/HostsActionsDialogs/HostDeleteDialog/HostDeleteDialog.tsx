@@ -1,5 +1,5 @@
 import { useDispatch, useStore } from '@hooks';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 import { deleteHostWithUpdate, closeDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
@@ -8,7 +8,7 @@ const HostDeleteDialog: React.FC = () => {
 
   const host = useStore(({ adcm }) => adcm.hostsActions.deleteDialog.host);
 
-  const isOpenDeleteDialog = !!host;
+  if (!host) return null;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
@@ -22,15 +22,14 @@ const HostDeleteDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
-      isOpen={isOpenDeleteDialog}
-      onOpenChange={handleCloseDialog}
+    <DialogV2
       title={`Delete "${host?.name}" host`}
       onAction={handleConfirmDialog}
+      onCancel={handleCloseDialog}
       actionButtonLabel="Delete"
     >
       All host information will be deleted
-    </Dialog>
+    </DialogV2>
   );
 };
 export default HostDeleteDialog;

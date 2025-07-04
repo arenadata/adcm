@@ -131,7 +131,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -167,7 +167,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -203,7 +203,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -239,7 +239,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -275,7 +275,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -311,7 +311,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,
@@ -347,7 +347,7 @@ class TestJob(BaseTestCase):
         if action is None:
             raise AssertionError(f"Can't find '{action_name}' action in cluster '{self.multijob_cluster_name}'")
 
-        with patch("cm.services.job.run.run_task"):
+        with patch("cm.services.job.run.start_task"):
             response, job = self.run_action_get_target_job(
                 action=action,
                 job_display_name=job_display_name,

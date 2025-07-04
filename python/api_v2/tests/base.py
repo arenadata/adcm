@@ -125,6 +125,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         #
         # Check is on equality after retrieve for more clear message
         # and to avoid object changes filtering
+        # SQLite support ended in release 2.7.0. We need to review this code.
         if (model is AuditLog) and expect_object_changes_:
             self.assertDictEqual(expected_record.object_changes, object_changes)
 

@@ -31,10 +31,6 @@ const AddConfigurationFieldDialog = ({
   const [value, setValue] = useState('');
   const [isValueValid, setIsValueValid] = useState(true);
 
-  const handleOpenChange = (isOpen: boolean) => {
-    onOpenChange(isOpen);
-  };
-
   const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFieldName(e.target.value);
   };
@@ -56,40 +52,42 @@ const AddConfigurationFieldDialog = ({
   const inputClassName = s.addConfigurationFieldDialog__input;
 
   return (
-    <ConfigurationEditorDialog
-      triggerRef={triggerRef}
-      isOpen={isOpen}
-      isApplyDisabled={!isValueValid || fieldName === ''}
-      onOpenChange={handleOpenChange}
-      onCancel={handleCancel}
-      onApply={handleApply}
-    >
-      <div className={s.addConfigurationFieldDialog__content}>
-        <FormField label="Enter field name">
-          <Input className={inputClassName} value={fieldName} onChange={handleFieldNameChange} />
-        </FormField>
+    isOpen && (
+      <ConfigurationEditorDialog
+        triggerRef={triggerRef}
+        isApplyDisabled={!isValueValid || fieldName === ''}
+        onCancel={handleCancel}
+        onApply={handleApply}
+      >
+        <div className={s.addConfigurationFieldDialog__content}>
+          <FormField label="Enter field name">
+            <Input className={inputClassName} value={fieldName} onChange={handleFieldNameChange} />
+          </FormField>
 
-        {adcmMeta.isSecret ? (
-          <SecretControl
-            fieldName="Enter secret"
-            value={value}
-            fieldSchema={node.data.fieldSchema}
-            isReadonly={false}
-            onChange={handleValueChange}
-            onApply={handleApply}
-          />
-        ) : (
-          <StringControl
-            fieldName="Enter field value"
-            value={value}
-            fieldSchema={node.data.fieldSchema}
-            isReadonly={false}
-            onChange={handleValueChange}
-            onApply={handleApply}
-          />
-        )}
-      </div>
-    </ConfigurationEditorDialog>
+          {adcmMeta.isSecret ? (
+            <SecretControl
+              fieldName="Enter secret"
+              value={value}
+              fieldSchema={node.data.fieldSchema}
+              defaultValue={fieldNode.data.defaultValue}
+              isReadonly={false}
+              onChange={handleValueChange}
+              onApply={handleApply}
+            />
+          ) : (
+            <StringControl
+              fieldName="Enter field value"
+              value={value}
+              fieldSchema={node.data.fieldSchema}
+              defaultValue={fieldNode.data.defaultValue}
+              isReadonly={false}
+              onChange={handleValueChange}
+              onApply={handleApply}
+            />
+          )}
+        </div>
+      </ConfigurationEditorDialog>
+    )
   );
 };
 

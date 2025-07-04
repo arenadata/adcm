@@ -16,7 +16,7 @@ from typing import Iterable
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.job.types import RelatedObjects
+from core.job.types import RelatedObjects, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -63,7 +63,6 @@ from cm.services.job.inventory._types import (
     ProviderNode,
     ServiceNode,
 )
-from cm.services.job.types import TaskMappingDelta
 
 
 def get_inventory_data(
@@ -188,6 +187,7 @@ def _get_inventory_for_action_from_cluster_bundle(
         hosts=objects_in_inventory[ADCMCoreType.HOST],
         restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
     )
+
     objects_before_upgrades = get_before_upgrades(
         before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
         config_host_groups=config_host_groups.values(),

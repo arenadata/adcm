@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Collection, Iterable
 
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
 
-from core.bundle_alt._config import check_default_values, key_to_str
+from core.bundle_alt._config import check_default_values_in_main_config, key_to_str
 from core.bundle_alt._yspec import FormatError, check_rule, process_rule
 from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
@@ -43,6 +44,7 @@ ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
 def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, yspec_schema: dict) -> None:
     # special, require too much context to include it in main loop
     check_requires(definitions)
+    check_display_names_are_unique(definitions)
 
     for key, definition in definitions.items():
         with localize_error(repr_from_key(key)):
@@ -100,6 +102,23 @@ def check_requires(definitions: DefinitionsMap) -> None:
         raise BundleValidationError(f"Requires should not be cyclic: {err.args[1]}") from err
 
 
+def check_display_names_are_unique(definitions: DefinitionsMap) -> None:
+    component_display_names_per_service = defaultdict(set)
+    component_keys = filter(is_component_key, definitions.keys())
+
+    for key in component_keys:
+        service_name = key[1]
+        component_definition = definitions[key]
+        component_display_name = component_definition.display_name
+        if component_display_name in component_display_names_per_service[service_name]:
+            raise BundleValidationError(
+                f"Display name for component within one service must be unique. "
+                f"Incorrect definition of component '{component_definition.name}'"
+            )
+
+        component_display_names_per_service[service_name].add(component_display_name)
+
+
 def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
     bound_entry_key = dependency_entry_to_key(bound_to)
     if bound_entry_key == owner_key:
@@ -112,9 +131,8 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
         with localize_error(f"Configuration parameter: {key_to_str(key)}"):
             if parameter.type in ("file", "secretfile"):
                 default = config.default_values.get(key)
-                if default and not (bundle_root / default).is_file():
-                    message = f"Default file is missing for {'.'.join(key)}: {default}"
-                    raise BundleValidationError(message)
+                if default:
+                    check_file_path_in_config(bundle_root, default, key)
 
             if parameter.type == "structure":
                 param_schema = parameter.limits["yspec"]
@@ -135,7 +153,29 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
                         message = f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported"
                         raise BundleValidationError(message)
 
-    check_default_values(parameters=config.parameters, values=config.default_values, attributes=config.default_attrs)
+    check_default_values_in_main_config(
+        parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
+    )
+
+
+def check_file_path_in_config(bundle_root: Path, default: str, key: Iterable[str]):
+    path = bundle_root / default
+
+    full_path_bytes = str(path).encode("utf-8")
+    file_name_bytes = (bundle_root / default).name.encode("utf-8")
+    if len(full_path_bytes) > 4096 or len(file_name_bytes) > 255:
+        message = f"Default file for {'.'.join(key)}: {path} can't exceed 4096 bytes in path and 255 bytes in file name"
+        raise BundleValidationError(message)
+
+    try:
+        path.resolve(strict=True)
+    except (OSError, PermissionError, FileNotFoundError) as e:
+        message = f"Error in resolving default file for {'.'.join(key)}: {default}: {e}"
+        raise BundleValidationError(message) from e
+
+    if not path.is_file():
+        message = f"Default file is missing for {'.'.join(key)}: {default}"
+        raise BundleValidationError(message)
 
 
 def check_actions(
@@ -147,6 +187,36 @@ def check_actions(
             check_mm_host_action_is_allowed(action=action, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action.hostcomponentmap, definitions=definitions)
             check_jinja_templates_are_correct(action=action, bundle_root=bundle_root)
+            check_action_scripts(action=action)
+
+
+def check_action_scripts(action: ActionDefinition):
+    for script in action.scripts:
+        # if script.script_type != "internal" and not (bundle_root / script.script).is_file():
+        #    raise BundleValidationError(f"Script {bundle_root / script.script} is not found")
+
+        if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
+            action_rules = {
+                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
+            }
+
+            extra_rules = apply_rules - action_rules
+            if extra_rules:
+                extra_rules_repr = ", ".join(
+                    map(
+                        str,
+                        (
+                            {"action": action, "service": service, "component": component}
+                            for action, service, component in extra_rules
+                        ),
+                    )
+                )
+                message = (
+                    "HC rules in hc_apply script should follow action's hc_acl rules, "
+                    f"but following are missing in action's definition: {extra_rules_repr}"
+                )
+                raise BundleValidationError(message)
 
 
 def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap) -> None:
@@ -161,10 +231,9 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
     if action.config_jinja:
-        check_file_is_correct_template(bundle_root / action.config_jinja)
-
+        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
     if action.scripts_jinja:
-        check_file_is_correct_template(bundle_root / action.scripts_jinja)
+        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
 
 
 # Atomic checks
@@ -192,19 +261,25 @@ def check_mm_host_action_is_allowed(action: ActionDefinition, definition_type: s
 
 def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[BundleDefinitionKey]) -> None:
     for hc_entry in hostcomponentmap:
-        hc_entry_key = dependency_entry_to_key(hc_entry)
+        try:
+            hc_entry_key = dependency_entry_to_key(hc_entry)
+        except KeyError as e:
+            raise BundleValidationError('"service" field is required in hc_acl for cluster and component') from e
+
         if hc_entry_key not in definitions:
             _, service_name, component_name = hc_entry_key
             message = f'Unknown component "{component_name}" of service "{service_name}"'
             raise BundleValidationError(message)
 
 
-def check_file_is_correct_template(path: Path) -> None:
+def check_file_is_correct_template(bundle_root: Path, relative_template_path: str) -> None:
+    path = bundle_root / relative_template_path
+
     try:
         content = path.read_text(encoding="utf-8")
         Template(source=content)
     except (FileNotFoundError, TemplateError) as e:
-        message = f"Incorrect template for jinja_* template at {path}: {e}"
+        message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
         raise BundleValidationError(message) from e
 
 

@@ -1,6 +1,6 @@
 import { useDispatch, useStore } from '@hooks';
 import { deleteGroupsWithUpdate, closeDeleteDialog } from '@store/adcm/groups/groupsActionsSlice';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 
 const AccessManagerGroupsDeleteDialog: React.FC = () => {
@@ -8,7 +8,7 @@ const AccessManagerGroupsDeleteDialog: React.FC = () => {
 
   const group = useStore(({ adcm }) => adcm.groupsActions.deleteDialog.group);
 
-  const isOpen = group !== null;
+  if (group === null) return;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
@@ -22,15 +22,14 @@ const AccessManagerGroupsDeleteDialog: React.FC = () => {
 
   return (
     <>
-      <Dialog
-        isOpen={isOpen}
-        onOpenChange={handleCloseConfirm}
+      <DialogV2
         title={`Delete group "${group?.displayName}"`}
         onAction={handleConfirmDialog}
+        onCancel={handleCloseConfirm}
         actionButtonLabel="Delete"
       >
         Group will be deleted.
-      </Dialog>
+      </DialogV2>
     </>
   );
 };

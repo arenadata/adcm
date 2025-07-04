@@ -63,6 +63,13 @@
       masking:
       config_jinja: ./cfg.j2
 
+    with_empty_string_default:
+      type: job
+      script: ./stuff.yaml
+      script_type: ansible
+      masking:
+      config_jinja: ./cfg_empty_defaults.j2
+
 - type: service
   name: with_patterns
   version: 2

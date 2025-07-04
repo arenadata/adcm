@@ -53,18 +53,22 @@ const linkOptions = [
 const HeaderHelp: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openModal = (value: string | null) => {
+  const handleOpenModal = (value: string | null) => {
     if (value === 'aboutAdcm') {
       setIsOpen(true);
     }
   };
 
+  const handleCloseModal = () => {
+    setIsOpen(false);
+  };
+
   return (
     <>
-      <ActionMenu placement="bottom-end" value={null} onChange={openModal} options={linkOptions}>
+      <ActionMenu placement="bottom-end" value={null} onChange={handleOpenModal} options={linkOptions}>
         <IconButton icon="g2-info" size={28} />
       </ActionMenu>
-      <AboutAdcmModal isOpen={isOpen} onOpenChange={setIsOpen} />
+      <AboutAdcmModal isOpen={isOpen} onCancel={handleCloseModal} />
     </>
   );
 };

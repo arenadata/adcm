@@ -10,15 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import NamedTuple
+from typing import Annotated, Literal, NamedTuple
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.types import (
     ActionID,
     ADCMCoreType,
+    ComponentID,
+    HostID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     ObjectID,
@@ -29,7 +32,10 @@ from core.types import (
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
 class ExecutionStatus(str, Enum):
+    REVOKED = "revoked"
     CREATED = "created"
+    SCHEDULED = "scheduled"
+    QUEUED = "queued"
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
@@ -57,10 +63,19 @@ class StateChanges(NamedTuple):
     multi_state_unset: tuple[str, ...]
 
 
+@dataclass(slots=True)
+class TaskMappingDelta:
+    add: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+    remove: dict[ComponentID, set[HostID]] = field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.add or self.remove)
+
+
 class HostComponentChanges(NamedTuple):
-    saved: list[dict] | None
     post_upgrade: list[dict] | None
-    restore_on_fail: bool
+    mapping_delta: TaskMappingDelta | None
 
 
 class BundleInfo(NamedTuple):
@@ -90,12 +105,19 @@ class TaskOwner(NamedTuple):
     related_objects: RelatedObjects
 
 
+class HcAclRule(NamedTuple):
+    component: str
+    service: str
+    action: Literal["add", "remove"]
+
+
 class TaskActionInfo(NamedTuple):
+    id: ObjectID
     name: str
     display_name: str
 
     venv: str
-    hc_acl: list[dict]
+    hc_acl: list[HcAclRule]
 
     is_upgrade: bool
     is_host_action: bool
@@ -147,6 +169,8 @@ class JobSpec(BaseModel):
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
+    rules: Annotated[list[HcAclRule], Field(default_factory=list)]
+
     model_config = ConfigDict(extra="allow")
 
 

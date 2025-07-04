@@ -23,12 +23,13 @@ import shutil
 import logging
 import tarfile
 
-from core.bundle_alt._config import check_default_values
+from core.bundle_alt._config import check_default_values_in_jinja_config
 from core.bundle_alt.bundle_load import get_hash_safe, untar_safe
 from core.bundle_alt.convertion import extract_config
 from core.bundle_alt.errors import convert_validation_to_bundle_error
 from core.bundle_alt.process import ConfigJinjaContext, retrieve_bundle_definitions
 from core.bundle_alt.schema import ConfigJinjaSchema
+from core.errors import localize_error
 from django.conf import settings
 from django.core.files import File
 from django.db.transaction import atomic
@@ -65,7 +66,9 @@ class Directories(NamedTuple):
 def parse_bundle_from_request_to_db(
     file_from_request: File, *, directories: Directories, adcm_version: str, verified_signature_only: bool
 ) -> Bundle:
-    archive_in_downloads = save_bundle_file_from_request_to_downloads(file_from_request=file_from_request)
+    archive_in_downloads = save_bundle_file_from_request_to_downloads(
+        file_from_request=file_from_request, downloads_dir=directories.downloads
+    )
     return parse_bundle_archive(
         archive=archive_in_downloads,
         directories=directories,
@@ -99,8 +102,10 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
     if not definition:
         return []
 
-    check_default_values(
-        parameters=definition.parameters, values=definition.default_values, attributes=definition.default_attrs
+    check_default_values_in_jinja_config(
+        parameters=definition.parameters,
+        values=definition.default_values,
+        attributes=definition.default_attrs,
     )
 
     orm_entries = repo.convert_config_definition_to_orm_model(definition=definition, prototype=prototype, action=action)
@@ -112,9 +117,9 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
 
 
 @convert_bundle_errors_to_adcm_ex
-def save_bundle_file_from_request_to_downloads(file_from_request: File) -> Path:
+def save_bundle_file_from_request_to_downloads(file_from_request: File, downloads_dir: Path) -> Path:
     archive_in_tmp = _write_bundle_archive_to_tempdir(file_from_request=file_from_request)
-    return _safe_copy_to_downloads(archive=archive_in_tmp)
+    return _safe_copy_to_downloads(archive=archive_in_tmp, downloads_dir=downloads_dir)
 
 
 def process_bundle_from_archive(
@@ -129,9 +134,10 @@ def process_bundle_from_archive(
     with _cleanup_on_fail(unpacking_info.root):
         _verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
-        definitions = retrieve_bundle_definitions(
-            bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
-        )
+        with localize_error(f"Bundle from {archive.name}"):
+            definitions = retrieve_bundle_definitions(
+                bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
+            )
 
         with atomic():
             bundle = repo.save_definitions(
@@ -140,6 +146,7 @@ def process_bundle_from_archive(
                 bundle_hash=unpacking_info.hash,
                 verification_status=unpacking_info.signature,
             )
+            repo.update_prototype_licenses(bundle=bundle)
             repo.order_versions()
             repo.recollect_categories()
             bundle.refresh_from_db()
@@ -177,7 +184,10 @@ def _unpack_bundle(archive: Path, bundles_dir: Path, bundle_hash: str, files_dir
 
     untar_safe(to=info.root, tar_from=archive)
 
-    inner_bundle_archive = _find_inner_archive(info.root)
+    try:
+        inner_bundle_archive = _find_inner_archive(info.root)
+    except FileNotFoundError as e:
+        raise AdcmEx(code="BUNDLE_DEFINITION_ERROR", msg="Bundle archive is empty") from e
 
     signature_file = _find_signature_file(info.root)
     if signature_file:
@@ -205,7 +215,7 @@ def _calculate_bundle_verification_status(
     #  ALSO find a way to avoid requesting ADCM ID
     #  MAYBE make it a cached function?
     adcm_id = ADCM.objects.values_list("id", flat=True).get()
-    key_filepath = files_dir / "adcm" / str(adcm_id) / "global" / "verification_public_key"
+    key_filepath = files_dir / f"adcm.{adcm_id}.global.verification_public_key"
 
     try:
         res: ImportResult = gpg.import_keys_file(key_path=key_filepath)
@@ -308,7 +318,7 @@ def _write_bundle_archive_to_tempdir(file_from_request: File) -> Path:
     return tmp_path
 
 
-def _safe_copy_to_downloads(archive: Path, downloads_dir: Path = settings.DOWNLOAD_DIR) -> Path:
+def _safe_copy_to_downloads(archive: Path, downloads_dir: Path) -> Path:
     """Copy file to downloads dir if there isn't already archive with such content"""
     target_path = downloads_dir / archive.name
 

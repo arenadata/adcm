@@ -28,6 +28,7 @@ from core.cluster.types import (
     ServiceTopology,
     TopologyHostDiff,
 )
+from core.job.types import TaskMappingDelta
 from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
 
 # !===== Cluster Topology =====!
@@ -260,3 +261,29 @@ def add_hosts_to_cluster(cluster_id: int, hosts: Collection[int], db: HostCluste
     db.set_cluster_id_for_hosts(cluster_id, hosts)
 
     return hosts
+
+
+def construct_mapping_from_delta(
+    topology: ClusterTopology, mapping_delta: TaskMappingDelta | None
+) -> Iterable[HostComponentEntry]:
+    current_entries = {
+        HostComponentEntry(host_id=host_id, component_id=component.info.id)
+        for service in topology.services.values()
+        for component in service.components.values()
+        for host_id in component.hosts
+    }
+
+    to_add, to_remove = set(), set()
+    if mapping_delta is not None:
+        to_add = {
+            HostComponentEntry(host_id=host_id, component_id=component_id)
+            for component_id, host_ids in mapping_delta.add.items()
+            for host_id in host_ids
+        }
+        to_remove = {
+            HostComponentEntry(host_id=host_id, component_id=component_id)
+            for component_id, host_ids in mapping_delta.remove.items()
+            for host_id in host_ids
+        }
+
+    return (current_entries - to_remove) | to_add

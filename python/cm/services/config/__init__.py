@@ -13,9 +13,13 @@
 from cm.services.config._base import (
     ConfigAttrPair,
     retrieve_config_attr_pairs,
+    retrieve_configs_with_revision,
+    retrieve_primary_configs,
 )
 
 __all__ = [
     "ConfigAttrPair",
     "retrieve_config_attr_pairs",
+    "retrieve_primary_configs",
+    "retrieve_configs_with_revision",
 ]

@@ -6,6 +6,8 @@
 
     --component-container-notRequired-title-color: var(--color-xwhite-off);
     --component-container-notRequired-border-color: var(--color-xdark);
+
+    --component-container-optional-border-color: var(--color-xblue);
     
     --component-container-restrictionsTitle-color: var(--color-xwhite-off);
     --component-container-mappedHosts-background: var(--color-xblack);
@@ -15,6 +17,8 @@
     --component-container-title-color: var(--color-xdark);
     --component-container-background: var(--color-xgray-alt-30);
     --component-container-default-border-color: var(--color-stroke-light);
+
+    --component-container-optional-border-color: var(--color-xblue);
 
     --component-container-restrictionsTitle-color: var(--color-xblack);
     --component-container-mappedHosts-background: var(--color-xwhite-70);
@@ -41,6 +45,10 @@
 
   &_notRequired {
     border-color: var(--component-container-notRequired-border-color);
+  }
+
+  &_optional {
+    border-color: var(--component-container-optional-border-color);
   }
 
   &_disabled {

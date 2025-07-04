@@ -101,8 +101,8 @@ def extract_objects_before_upgrade(
             else (row["service_name"], row["prototype_name"]),
             bundle_id=raw_before_upgrade.get("bundle_id", row["parent_before_upgrade"].get("bundle_id")),
             config_host_groups_info={
-                group_name: int(group_info["group_config_id"])
-                for group_name, group_info in raw_before_upgrade.get("groups", {}).items()
+                group_name: int(group_info["config_id"])
+                for group_name, group_info in raw_before_upgrade.get("config_host_groups", {}).items()
             },
         )
 

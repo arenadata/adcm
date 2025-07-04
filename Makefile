@@ -3,22 +3,18 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.6.0"
+ADCM_VERSION = "2.7.0"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: build unittests_sqlite unittests_postgresql pretty lint version
+.PHONY: build unittests pretty lint version
 
 build:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
-unittests_sqlite:
-	poetry install --no-root --with unittests
-	poetry run python/manage.py test python -v 2 --parallel
-
-unittests_postgresql:
+unittests:
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
-	export DB_HOST="localhost" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" DB_USER="postgres"
 	poetry install --no-root --with unittests
+	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
 	poetry run python/manage.py test python -v 2 --parallel
 	docker stop postgres
 

@@ -26,6 +26,7 @@ from rbac.services.group import create as create_group
 from rbac.services.group import update as update_group
 from rbac.utils import Empty
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -38,7 +39,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.rbac.group.filters import GroupFilter
 from api_v2.rbac.group.permissions import GroupPermissions
 from api_v2.rbac.group.serializers import (
@@ -74,55 +75,45 @@ from api_v2.views import ADCMGenericViewSet
                 default="displayName",
             ),
         ],
-        responses={
-            HTTP_200_OK: GroupSerializer(many=True),
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-        },
+        responses=responses(success=GroupSerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postGroups",
         description="Create a new ADCM user group.",
         summary="POST groups",
-        responses={
-            HTTP_201_CREATED: GroupSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, GroupSerializer(many=False)),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getGroup",
         description="Get information about a specific ADCM user group.",
         summary="GET group",
-        responses={
-            HTTP_200_OK: GroupSerializer(many=False),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(success=GroupSerializer(many=False), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     partial_update=extend_schema(
         operation_id="patchGroup",
         description="Change user group information.",
         summary="PATCH group",
-        responses={
-            HTTP_200_OK: GroupUpdateSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-            },
-        },
+        responses=responses(
+            success=GroupSerializer(many=False),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     destroy=extend_schema(
         operation_id="deleteGroup",
         description="Delete groups from ADCM.",
         summary="DELETE group",
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
 )
 class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter
-    permission_classes = (GroupPermissions,)
+    permission_classes = (IsAuthenticated, GroupPermissions)
     permission_required = [VIEW_GROUP_PERMISSION]
 
     def get_serializer_class(self) -> type[GroupSerializer | GroupCreateSerializer | GroupUpdateSerializer]:

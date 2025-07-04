@@ -3,7 +3,7 @@
     "config": {
       "global": {
         "adcm_url": null,
-        "verification_public_key": "{{ stackdir }}/data/file/adcm.1.global.verification_public_key",
+        "verification_public_key": "{{ stackdir }}/data/file/adcm.{{ adcm_id }}.global.verification_public_key",
         "accept_only_verified_bundles": false
       },
       "statistics_collection": {
@@ -34,7 +34,7 @@
     }
   },
   "context": {
-    "provider_id": 1,
+    "provider_id": {{ provider.id }},
     "type": "provider"
   },
   "env": {
@@ -53,7 +53,8 @@
     "verbose": false,
     "playbook": "{{ stackdir }}/data/bundle/{{ hostprovider_bundle.hash }}/playbook.yaml",
     "hostgroup": "PROVIDER",
-    "provider_id": 1,
+    "provider_id": {{ provider.id }},
+    "params": {"rules": []},
     "config": {
       "boolean": true,
       "secrettext": "awe\nsopme\n\ttext\n",

@@ -39,6 +39,7 @@ from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import (
+    ActionHostGroup,
     ADCMEntity,
     Bundle,
     Cluster,
@@ -51,6 +52,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    MainObject,
     MaintenanceMode,
     ObjectType,
     Prototype,
@@ -72,8 +74,21 @@ from cm.services.concern.distribution import (
 )
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.types import HcAclAction
-from cm.services.mapping import change_host_component_mapping, check_nothing
+from cm.services.mapping import check_nothing, set_host_component_mapping
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_prototype_and_state_update_event
+from cm.upgrade.before_upgrade_schemas import (
+    ActionHostGroupBeforeUpgrade,
+    BeforeUpgrade,
+    ClusterBeforeUpgrade,
+    ComponentBeforeUpgrade,
+    ConfigHostGroupWithIdConfigBeforeUpgrade,
+    DeletedObjectBeforeUpgrade,
+    DeletedServiceBeforeUpgrade,
+    HostBeforeUpgrade,
+    ProviderBeforeUpgrade,
+    ServiceBeforeUpgrade,
+    ServiceHostComponentMapBeforeUpgrade,
+)
 from cm.utils import obj_ref
 
 
@@ -224,23 +239,21 @@ def bundle_switch(obj: Cluster | Provider, upgrade: Upgrade) -> None:
 
 
 def bundle_revert(obj: Cluster | Provider) -> None:
-    upgraded_bundle = obj.prototype.bundle
-    old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
-    old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
-    before_upgrade_hc = obj.before_upgrade.get("hc")
-    service_names = obj.before_upgrade.get("services")
-
-    _revert_object(obj=obj, old_proto=old_proto)
-
     if isinstance(obj, Cluster):
-        for service_prototype in Prototype.objects.filter(bundle=old_bundle, type="service"):
+        upgraded_bundle = obj.prototype.bundle
+        before_upgrade = ClusterBeforeUpgrade(**obj.before_upgrade)
+        old_bundle = Bundle.objects.get(pk=before_upgrade.bundle_id)
+        old_proto = Prototype.objects.get(bundle=old_bundle, name=old_bundle.name, type=ObjectType.CLUSTER)
+        _revert_object(obj=obj, old_proto=old_proto)
+
+        for service_prototype in Prototype.objects.filter(bundle=old_bundle, type=ObjectType.SERVICE):
             service = Service.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
             if not service:
                 continue
 
             _revert_object(obj=service, old_proto=service_prototype)
             for component_prototype in Prototype.objects.filter(
-                bundle=old_bundle, parent=service_prototype, type="component"
+                bundle=old_bundle, parent=service_prototype, type=ObjectType.COMPONENT
             ):
                 component = Component.objects.filter(
                     cluster=obj,
@@ -259,41 +272,99 @@ def bundle_revert(obj: Cluster | Provider) -> None:
                     obj_conf = init_object_config(proto=component_prototype, obj=component)
                     component.config = obj_conf
                     component.save(update_fields=["config"])
+                    _restore_deleted_objects(
+                        obj=component,
+                        before_upgrade=before_upgrade.service_deleted_components[service_prototype.name][
+                            component_prototype.name
+                        ],
+                    )
 
         Service.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
         Component.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
 
-        for service_name in service_names:
-            prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type="service")
+        for service_name in before_upgrade.services:
+            prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type=ObjectType.SERVICE)
 
             if not Service.objects.filter(prototype=prototype, cluster=obj).exists():
-                add_service_to_cluster(cluster=obj, proto=prototype)
+                service = add_service_to_cluster(cluster=obj, proto=prototype)
+                _restore_deleted_objects(obj=service, before_upgrade=before_upgrade.deleted_services[service.name])
+
+                for component in service.components.all():
+                    _restore_deleted_objects(
+                        obj=component,
+                        before_upgrade=before_upgrade.deleted_services[service_name].components[component.name],
+                    )
 
         host_comp_list = []
-        for hostcomponent in before_upgrade_hc:
-            host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
-            service = Service.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
+        for hostcomponent in before_upgrade.hc:
+            host = Host.objects.get(fqdn=hostcomponent.host, cluster=obj)
+            service = Service.objects.get(prototype__name=hostcomponent.service, cluster=obj)
             component = Component.objects.get(
-                prototype__name=hostcomponent["component"],
+                prototype__name=hostcomponent.component,
                 cluster=obj,
                 service=service,
             )
             host_comp_list.append((service, host, component))
 
-        change_host_component_mapping(
-            cluster_id=obj.id,
-            bundle_id=old_proto.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=host.id, component_id=component.id)
-                for (_, host, component) in host_comp_list
-            ),
-            checks_func=check_nothing,
+        new_mapping = (
+            HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in host_comp_list
+        )
+        set_host_component_mapping(
+            cluster_id=obj.id, bundle_id=old_proto.bundle_id, new_mapping=new_mapping, checks_func=check_nothing
         )
 
     if isinstance(obj, Provider):
+        before_upgrade = ProviderBeforeUpgrade(**obj.before_upgrade)
+        old_bundle = Bundle.objects.get(pk=before_upgrade.bundle_id)
+        old_proto = Prototype.objects.get(bundle=old_bundle, name=old_bundle.name, type=ObjectType.PROVIDER)
+        _revert_object(obj=obj, old_proto=old_proto)
+
         for host in Host.objects.filter(provider=obj):
-            old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
+            old_host_proto = Prototype.objects.get(bundle=old_bundle, type=ObjectType.HOST, name=host.prototype.name)
             _revert_object(obj=host, old_proto=old_host_proto)
+
+
+def _restore_deleted_objects(
+    obj: Service | Component, before_upgrade: DeletedObjectBeforeUpgrade | DeletedServiceBeforeUpgrade
+) -> None:
+    obj.state = before_upgrade.state
+
+    if before_upgrade.config is not None:
+        save_object_config(
+            object_config=obj.config,
+            config=before_upgrade.config.data,
+            attr=before_upgrade.config.attributes,
+            description="revert_upgrade",
+        )
+
+    obj.save(update_fields=["state", "config"])
+
+    for group_name, group in before_upgrade.config_host_groups.items():
+        config_host_group = ConfigHostGroup.objects.create(
+            name=group_name,
+            description="revert_upgrade",
+            object_id=obj.id,
+            object_type=ContentType.objects.get_for_model(obj),
+        )
+        config_host_group.hosts.set(Host.objects.filter(fqdn__in=group.hosts))
+        save_object_config(
+            object_config=config_host_group.config,
+            config=group.config.data,
+            attr=group.config.attributes,
+            description="revert_upgrade",
+        )
+
+    for group_name, group in before_upgrade.action_host_groups.items():
+        # Here you need to use the service layer.
+        # But the current implementation is not ready. Since we have a lot of checks, as well as
+        # the order in which the objects are prepared, it matters.
+        action_host_group = ActionHostGroup.objects.create(
+            name=group_name,
+            description="revert_upgrade",
+            object_id=obj.id,
+            object_type=ContentType.objects.get_for_model(obj),
+        )
+        action_host_group.hosts.set(Host.objects.filter(fqdn__in=group.hosts))
 
 
 def _switch_object(obj: Host | Service, new_prototype: Prototype) -> None:
@@ -306,7 +377,11 @@ def _switch_object(obj: Host | Service, new_prototype: Prototype) -> None:
     switch_config(obj=obj, new_prototype=new_prototype, old_prototype=old_prototype)
 
 
-def _switch_components(cluster: Cluster, service: Service, new_component_prototype: Prototype) -> None:
+def _switch_components(
+    cluster: Cluster, service: Service, new_component_prototype: Prototype
+) -> dict[str, DeletedObjectBeforeUpgrade]:
+    before_upgrade_deleted_components = {}
+
     for component in Component.objects.filter(cluster=cluster, service=service):
         try:
             new_comp_prototype = Prototype.objects.get(
@@ -314,6 +389,9 @@ def _switch_components(cluster: Cluster, service: Service, new_component_prototy
             )
             _switch_object(obj=component, new_prototype=new_comp_prototype)
         except Prototype.DoesNotExist:
+            before_upgrade_deleted_components[component.prototype.name] = _get_before_upgrade_for_deleted_object(
+                object_before_upgrade=component.before_upgrade
+            )
             component.delete()
 
     for component_prototype in Prototype.objects.filter(parent=new_component_prototype, type="component"):
@@ -321,6 +399,8 @@ def _switch_components(cluster: Cluster, service: Service, new_component_prototy
         if not Component.objects.filter(**kwargs).exists():
             component = Component.objects.create(**kwargs)
             make_object_config(obj=component, prototype=component_prototype)
+
+    return before_upgrade_deleted_components
 
 
 def _check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:
@@ -422,13 +502,13 @@ def _check_upgrade_import(obj: Cluster, upgrade: Upgrade) -> tuple[bool, str]:
     return True, ""
 
 
-def _revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
+def _revert_object(obj: MainObject, old_proto: Prototype) -> None:
     if obj.prototype == old_proto:
         return
 
     obj.prototype = old_proto
 
-    if "config_id" in obj.before_upgrade:
+    if "config_id" in obj.before_upgrade and obj.before_upgrade["config_id"]:
         config_log = ConfigLog.objects.get(id=obj.before_upgrade["config_id"])
         obj.config.current = 0
         save_object_config(
@@ -442,46 +522,84 @@ def _revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
     obj.save(update_fields=["prototype", "config", "state", "before_upgrade"])
 
 
-def _set_before_upgrade(obj: ADCMEntity) -> None:
-    obj.before_upgrade["state"] = obj.state
+def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
+    before_upgrade.state = obj.state
+
     if obj.config:
-        obj.before_upgrade["config_id"] = obj.config.current
+        before_upgrade.config_id = obj.config.current
 
-    if groups := ConfigHostGroup.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
-        obj.before_upgrade["groups"] = {}
+    if not isinstance(obj, Host):
+        before_upgrade.config_host_groups = {
+            group.name: ConfigHostGroupWithIdConfigBeforeUpgrade(
+                config_id=group.config.current,
+                hosts=list(group.hosts.values_list("fqdn", flat=True)),
+            )
+            for group in obj.config_host_group.all()
+        }
 
-        for group in groups:
-            obj.before_upgrade["groups"][group.name] = {"group_config_id": group.config.current}
+    if not isinstance(obj, Provider | Host):
+        before_upgrade.action_host_groups = {
+            group.name: ActionHostGroupBeforeUpgrade(hosts=list(group.hosts.values_list("fqdn", flat=True)))
+            for group in obj.action_host_group.all()
+        }
 
     if isinstance(obj, Cluster):
-        hc_map = []
-        for hostcomponent in HostComponent.objects.filter(cluster=obj):
-            hc_map.append(
-                {
-                    "service": hostcomponent.service.name,
-                    "component": hostcomponent.component.name,
-                    "host": hostcomponent.host.name,
-                },
+        before_upgrade.hc = [
+            ServiceHostComponentMapBeforeUpgrade(
+                service=service,
+                component=component,
+                host=host,
             )
+            for service, component, host in obj.hostcomponent_set.values_list(
+                "service__prototype__name", "component__prototype__name", "host__fqdn"
+            )
+        ]
+        before_upgrade.services = list(
+            obj.services.select_related("prototype").values_list("prototype__name", flat=True)
+        )
 
-        obj.before_upgrade["hc"] = hc_map
-        obj.before_upgrade["services"] = [service.prototype.name for service in Service.objects.filter(cluster=obj)]
-
+    obj.before_upgrade = before_upgrade.model_dump()
     obj.save(update_fields=["before_upgrade"])
 
 
 def _update_before_upgrade(obj: Cluster | Provider) -> None:
-    _set_before_upgrade(obj=obj)
-
     if isinstance(obj, Cluster):
+        _set_before_upgrade(obj=obj, before_upgrade=ClusterBeforeUpgrade(**obj.before_upgrade))
+
         for service in Service.objects.filter(cluster=obj):
-            _set_before_upgrade(obj=service)
+            _set_before_upgrade(obj=service, before_upgrade=ServiceBeforeUpgrade())
+
             for component in Component.objects.filter(service=service, cluster=obj):
-                _set_before_upgrade(obj=component)
+                _set_before_upgrade(obj=component, before_upgrade=ComponentBeforeUpgrade())
 
     if isinstance(obj, Provider):
+        _set_before_upgrade(obj=obj, before_upgrade=ProviderBeforeUpgrade(**obj.before_upgrade))
+
         for host in Host.objects.filter(provider=obj):
-            _set_before_upgrade(obj=host)
+            _set_before_upgrade(obj=host, before_upgrade=HostBeforeUpgrade())
+
+
+def _get_before_upgrade_for_deleted_object(object_before_upgrade: dict) -> DeletedObjectBeforeUpgrade:
+    before_upgrade = DeletedObjectBeforeUpgrade(state=object_before_upgrade["state"])
+
+    config = None
+    if object_before_upgrade["config_id"] is not None:
+        config_log = ConfigLog.objects.get(id=object_before_upgrade["config_id"])
+        config = {"data": config_log.config, "attributes": config_log.attr}
+
+    config_host_groups = {}
+    for group_name, group in object_before_upgrade["config_host_groups"].items():
+        config_log = ConfigLog.objects.get(id=group["config_id"])
+        config_host_groups[group_name] = {
+            "config": {"data": config_log.config, "attributes": config_log.attr},
+            "hosts": group["hosts"],
+        }
+
+    before_upgrade.config = config
+    before_upgrade.config_host_groups = config_host_groups
+    before_upgrade.action_host_groups = object_before_upgrade["action_host_groups"]
+
+    return before_upgrade
 
 
 class _BundleSwitch(ABC):
@@ -533,6 +651,9 @@ class _ClusterBundleSwitch(_BundleSwitch):
         super().__init__(target, upgrade)
 
     def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:
+        update_before_upgrade_after_delete_service = False
+        before_upgrade = ClusterBeforeUpgrade(**self._target.before_upgrade)
+
         for service in Service.objects.select_related("prototype").filter(cluster=self._target):
             check_license(prototype=service.prototype)
             try:
@@ -541,9 +662,35 @@ class _ClusterBundleSwitch(_BundleSwitch):
                 )
                 check_license(prototype=new_service_prototype)
                 _switch_object(obj=service, new_prototype=new_service_prototype)
-                _switch_components(cluster=self._target, service=service, new_component_prototype=new_service_prototype)
+                before_upgrade_deleted_components = _switch_components(
+                    cluster=self._target, service=service, new_component_prototype=new_service_prototype
+                )
+
+                if before_upgrade_deleted_components:
+                    update_before_upgrade_after_delete_service = True
+                    before_upgrade.service_deleted_components[
+                        service.prototype.name
+                    ] = before_upgrade_deleted_components
             except Prototype.DoesNotExist:
+                update_before_upgrade_after_delete_service = True
+                delete_service_before_upgrade = DeletedServiceBeforeUpgrade(
+                    **_get_before_upgrade_for_deleted_object(object_before_upgrade=service.before_upgrade).model_dump()
+                )
+
+                for component_name, component_before_upgrade in service.components.select_related(
+                    "prototype"
+                ).values_list("prototype__name", "before_upgrade"):
+                    delete_service_before_upgrade.components[component_name] = _get_before_upgrade_for_deleted_object(
+                        object_before_upgrade=component_before_upgrade
+                    )
+
+                before_upgrade.deleted_services[service.name] = delete_service_before_upgrade
+
                 service.delete()
+
+        if update_before_upgrade_after_delete_service:
+            self._target.before_upgrade = before_upgrade.model_dump()
+            self._target.save(update_fields=["before_upgrade"])
 
         # remove HC entries that which components don't exist anymore
         existing_names: set[tuple[str, str]] = set(

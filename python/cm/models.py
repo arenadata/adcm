@@ -291,6 +291,14 @@ class ConfigLog(ADCMModel):
     __error_code__ = "CONFIG_NOT_FOUND"
 
 
+class ConfigRevision(models.Model):
+    configlog = models.ForeignKey(ConfigLog, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["configlog"], name="unique_configlog")]
+
+
 class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
@@ -1315,7 +1323,10 @@ class ClusterBind(ADCMModel):
 
 
 class JobStatus(models.TextChoices):
+    REVOKED = "revoked", "revoked"
     CREATED = "created", "created"
+    SCHEDULED = "scheduled", "scheduled"
+    QUEUED = "queued", "queued"
     SUCCESS = "success", "success"
     FAILED = "failed", "failed"
     RUNNING = "running", "running"
@@ -1324,7 +1335,7 @@ class JobStatus(models.TextChoices):
     BROKEN = "broken", "broken"
 
 
-UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.RUNNING)
+UNFINISHED_STATUS = (JobStatus.CREATED, JobStatus.SCHEDULED, JobStatus.QUEUED, JobStatus.RUNNING)
 
 
 class UserProfile(ADCMModel):
@@ -1350,12 +1361,12 @@ class TaskLog(ADCMModel):
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
     post_upgrade_hc_map = models.JSONField(null=True, default=None)
-    restore_hc_on_fail = models.BooleanField(default=True)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
+    executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
     """
     Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,
@@ -1413,6 +1424,7 @@ class JobLog(AbstractSubAction):
     status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
+    objects_related_configs = models.JSONField(null=True, default=None)
 
     __error_code__ = "JOB_NOT_FOUND"
 

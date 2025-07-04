@@ -171,18 +171,17 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
 def retrieve_bundle_definitions(
     bundle_dir: Path, *, adcm_version: str, yspec_schema: dict
 ) -> dict[BundleDefinitionKey, Definition]:
-    with localize_error(f"Bundle at {bundle_dir}"):
-        definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
-        parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
-            definition_path_pairs, bundle_root=bundle_dir, adcm_version=adcm_version
-        )
-        _check_no_definition_type_conflicts(parsed_definitions_map)
-        _propagate_attributes(parsed_definitions_map)
-        normalized_definitions = _normalize_definitions(
-            definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
-        )
-        check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
-        return normalized_definitions
+    definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
+    parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
+        definition_path_pairs, bundle_root=bundle_dir, adcm_version=adcm_version
+    )
+    _check_no_definition_type_conflicts(parsed_definitions_map)
+    _propagate_attributes(parsed_definitions_map)
+    normalized_definitions = _normalize_definitions(
+        definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
+    )
+    check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
+    return normalized_definitions
 
 
 @convert_validation_to_bundle_error
@@ -226,12 +225,12 @@ def _parse_bundle_definitions(
 
     # need to check all versions first
     for raw_definition, path_to_source in pairs:
-        with localize_error(f"In file {path_to_source}", repr_from_raw(raw_definition)):
+        with localize_error(f"In file {path_to_source.relative_to(bundle_root)}", repr_from_raw(raw_definition)):
             check_adcm_min_version(current=adcm_version, required=str(raw_definition.get("adcm_min_version", "0")))
 
     for raw_definition, path_to_source in pairs:
         # todo add convertion func for localize_error
-        with localize_error(f"In file: {path_to_source}", repr_from_raw(raw_definition)):
+        with localize_error(f"In file: {path_to_source.relative_to(bundle_root)}", repr_from_raw(raw_definition)):
             root_level_definition = parse(raw_definition)
             for key, parsed_definition in _flatten_definitions(root_level_definition):
                 _check_is_not_duplicate(key, definitions_map)
@@ -269,21 +268,27 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
 
                 if hasattr(action, "scripts"):
                     for script in action.scripts or ():
-                        if script.get("allow_to_terminate") is None:
-                            script["allow_to_terminate"] = action.allow_to_terminate
-                        if script.get("params") is None:
-                            script["params"] = action.params
+                        if script.allow_to_terminate is None:
+                            script.allow_to_terminate = action.allow_to_terminate
+                        if script.params is None:
+                            script.params = action.params
 
             if hasattr(definition, "upgrade"):
                 for upgrade in definition.upgrade or ():
                     if upgrade.venv is None:
                         upgrade.venv = definition.venv
 
+            if isinstance(definition, HostSchema) and definition.flag_autogeneration is None:
+                definition.flag_autogeneration = definitions[("provider",)].flag_autogeneration
+
             parent_key = build_parent_key_safe(key)
             if not parent_key:
                 continue
 
-            parent = definitions[parent_key]
+            try:
+                parent = definitions[parent_key]
+            except KeyError as e:
+                raise BundleParsingError("There isn't any cluster or host provider definition in bundle") from e
 
             if definition.flag_autogeneration is None:
                 definition.flag_autogeneration = parent.flag_autogeneration
@@ -298,12 +303,11 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
                         requirement["service"] = parent.name
 
             # patch hc_acl entries where can be patched
-            service_from = parent if isinstance(definition, ComponentSchema) else definition
-
-            for action in (definition.actions or {}).values():
-                for entry in action.hc_acl or ():
-                    if not entry.get("service"):
-                        entry["service"] = service_from.name
+            if isinstance(definition, ServiceSchema):
+                for action in (definition.actions or {}).values():
+                    for entry in action.hc_acl or ():
+                        if entry.get("service") is None:
+                            entry["service"] = definition.name
 
 
 def _flatten_definitions(definition: _ParsedRootDefinition) -> Iterable[tuple[BundleDefinitionKey, _ParsedDefinition]]:

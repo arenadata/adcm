@@ -293,7 +293,7 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
             return SignatureStatus.INVALID
 
 
-def upload_file(file) -> Path:
+def upload_file(file, _=None) -> Path:
     # save to tempdir
     tmp_path = Path(gettempdir(), file.name)
     with tmp_path.open(mode="wb+") as f:

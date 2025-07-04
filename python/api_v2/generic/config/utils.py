@@ -13,11 +13,13 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Union
 import copy
 import json
 
+from adcm.feature_flags import use_new_spec_format
 from cm.adcm_config.config import get_default
+from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -33,18 +35,23 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import BundlePathResolver, PathResolver
+from cm.services.config.secrets import AnsibleSecrets
+from cm.services.config_alt.convert import retrieve_object_full_spec
+from cm.services.config_alt.schema import spec_to_jsonschema
+from cm.services.config_alt.types import ConfigOwner, ConfigOwnerObjectInfo
 from cm.variant import get_variant
+from django.conf import settings
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 
-ParentObject: TypeAlias = Cluster, Service, Component, Provider, Host, ConfigHostGroup
+ParentObject: TypeAlias = Union[Cluster, Service, Component, Provider, Host, ConfigHostGroup]
 
 
 class Field(ABC):
@@ -693,7 +700,7 @@ def extend_config_schema(type_: str):
         summary=f"GET {type_}'s config schema",
         description=f"Get {type_}'s config schema information.",
         examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
-        responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
     )
 
 
@@ -710,14 +717,38 @@ class ConfigSchemaMixin:
         ):
             raise PermissionDenied
 
+        func = self._new_schema if use_new_spec_format() else self._old_schema
+        schema = func(instance)
+
+        return Response(data=schema, status=HTTP_200_OK)
+
+    def _old_schema(self, instance):
         path_resolver = BundlePathResolver(bundle_hash=instance.prototype.bundle.hash)
-        schema = get_config_schema(
+        return get_config_schema(
             object_=instance,
             prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
             path_resolver=path_resolver,
         )
 
-        return Response(data=schema, status=HTTP_200_OK)
+    def _new_schema(self, instance):
+        host_group_id = None
+        owner_obj = instance
+        if isinstance(owner_obj, ConfigHostGroup):
+            host_group_id = instance.pk
+            owner_obj = instance.object
+
+        owner = ConfigOwner(
+            descriptor=orm_object_to_core_descriptor(owner_obj), info=ConfigOwnerObjectInfo(state=owner_obj.state)
+        )
+
+        secrets = AnsibleSecrets()
+        full_spec, defaults = retrieve_object_full_spec(
+            prototype=owner_obj.prototype_id,
+            encrypt=secrets.encrypt,
+            bundle_root=settings.BUNDLE_DIR / instance.prototype.bundle.hash,
+        )
+
+        return spec_to_jsonschema(spec=full_spec, defaults=defaults, owner=owner, host_group_id=host_group_id)
 
     def _check_parent_permissions_in_config_schema(self, request: Request, parent_object: ParentObject):
         parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"

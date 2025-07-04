@@ -1,13 +1,13 @@
 import type React from 'react';
+import s from './Dialog.module.scss';
+import cn from 'classnames';
 import Modal from '@uikit/Modal/Modal';
 import type { ModalOptions } from '@uikit/Modal/Modal.types';
 import IconButton from '@uikit/IconButton/IconButton';
 import Text from '@uikit/Text/Text';
-import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
-import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import Panel from '@uikit/Panel/Panel';
-import s from './Dialog.module.scss';
-import cn from 'classnames';
+import DialogDefaultControls from './DialogDefaultControls';
+import type { DialogDefaultControlsProps } from './DialogDefaultControls';
 
 export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
@@ -36,6 +36,7 @@ const Dialog: React.FC<DialogProps> = ({
   actionButtonLabel,
   isActionButtonLoaderShown,
   isActionDisabled,
+  isNeedConfirmationOnCancel = false,
   onAction,
   onCancel,
   width = '584px',
@@ -66,6 +67,7 @@ const Dialog: React.FC<DialogProps> = ({
       onAction={onAction}
       onCancel={handleClose}
       isActionButtonDefaultFocus={isActionButtonDefaultFocus}
+      isNeedConfirmationOnCancel={isNeedConfirmationOnCancel}
     />
   );
 

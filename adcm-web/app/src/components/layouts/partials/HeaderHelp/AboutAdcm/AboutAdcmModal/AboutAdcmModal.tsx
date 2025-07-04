@@ -1,16 +1,18 @@
-import { Text, Dialog } from '@uikit';
+import { Text, DialogV2 } from '@uikit';
 import s from './AboutAdcmModal.module.scss';
 import MainLogo from '@layouts/partials/MainLogo/MainLogo';
 import { adcmVersion } from '@constants';
 
 interface AboutAdcmProps {
   isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
+  onCancel: () => void;
 }
 
-const AboutAdcmModal = ({ isOpen, onOpenChange }: AboutAdcmProps) => {
+const AboutAdcmModal = ({ isOpen, onCancel }: AboutAdcmProps) => {
+  if (!isOpen) return null;
+
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} title="About ADCM" width="fit-content" dialogControls={<div />}>
+    <DialogV2 onCancel={onCancel} title="About ADCM" width="fit-content" dialogControls={<div />}>
       <div className={s.aboutAdcmModal}>
         <MainLogo className={s.aboutAdcmModal__logo} onClick={(e) => e.preventDefault()} />
         <div>
@@ -24,7 +26,7 @@ const AboutAdcmModal = ({ isOpen, onOpenChange }: AboutAdcmProps) => {
           <p>All Rights Reserved.</p>
         </div>
       </div>
-    </Dialog>
+    </DialogV2>
   );
 };
 

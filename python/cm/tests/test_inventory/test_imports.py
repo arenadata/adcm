@@ -89,6 +89,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "host_2": self.host_2,
             "hostprovider": self.provider,
             "filedir": self.directories["FILE_DIR"],
+            "export_cluster_1": self.export_cluster_1,
+            "export_cluster_2": self.export_cluster_2,
+            "export_service_1": self.export_service_1,
+            "export_service_2": self.export_service_2,
         }
 
         self.cluster_with_defaults = self.add_cluster(bundle=self.cluster.prototype.bundle, name="With Default Imports")
@@ -267,6 +271,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 actual_vars = decrypt_secrets(
                     get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
                 )
+                actual_vars["cluster"]["imports"]["for_export"] = sorted(
+                    actual_vars["cluster"]["imports"]["for_export"], key=lambda i: i["just_integer"]
+                )
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_imports_have_default_no_import_success(self) -> None:
@@ -296,7 +303,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 "plain_group": {
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
-                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "secretfile": (
+                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                    ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
                 },
@@ -324,7 +333,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 "plain_group": {
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
-                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "secretfile": (
+                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                    ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
                 },
@@ -344,6 +355,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ],
         }
         result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
+
+        # sorted for test, in this case, the order is not important
+        result["for_export"] = sorted(result["for_export"], key=lambda i: i["just_integer"])
         self.assertDictEqual(result, expected)
 
     def test_config_host_group_effect_on_import_with_default(self) -> None:
@@ -380,7 +394,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 "plain_group": {
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
-                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "secretfile": (
+                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                    ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
                 },

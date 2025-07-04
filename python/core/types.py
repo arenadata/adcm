@@ -13,7 +13,7 @@
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, NamedTuple, TypeAlias
+from typing import Generic, Literal, NamedTuple, TypeAlias, TypeVar
 
 ObjectID: TypeAlias = int
 ClusterID: TypeAlias = ObjectID
@@ -26,7 +26,10 @@ BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
+JobID: TypeAlias = int
+PID: TypeAlias = int
 
+ObjectConfigID: TypeAlias = int
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int
 
@@ -37,6 +40,8 @@ ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
 
 MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
+
+T = TypeVar("T")
 
 
 class ADCMCoreError(Exception):
@@ -104,20 +109,24 @@ class PrototypeDescriptor(NamedTuple):
 
 
 @dataclass(slots=True, frozen=True)
-class GeneralEntityDescriptor:
+class _Descriptor(Generic[T]):
     id: ObjectID
-    type: str
+    type: T
 
 
 @dataclass(slots=True, frozen=True)
-class HostGroupDescriptor(GeneralEntityDescriptor):
-    type: ADCMHostGroupType
+class GeneralEntityDescriptor(_Descriptor[str]):
+    ...
 
 
 @dataclass(slots=True, frozen=True)
-class ActionTargetDescriptor(GeneralEntityDescriptor):
-    type: ADCMCoreType | ExtraActionTargetType
+class HostGroupDescriptor(_Descriptor[ADCMHostGroupType]):
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
 
+
+@dataclass(slots=True, frozen=True)
+class ActionTargetDescriptor(_Descriptor[ADCMCoreType | ExtraActionTargetType]):
     def __str__(self) -> str:
         return f"{self.type.value} #{self.id}"
 
@@ -125,8 +134,14 @@ class ActionTargetDescriptor(GeneralEntityDescriptor):
 # inheritance from `ActionTargetDescriptor` is for convenience purposes,
 # because `CoreObjectDescriptor` is just a bit stricter than `ActionTargetDescriptor`
 @dataclass(slots=True, frozen=True)
-class CoreObjectDescriptor(ActionTargetDescriptor):
-    type: ADCMCoreType
+class CoreObjectDescriptor(_Descriptor[ADCMCoreType]):
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
+
+
+class HostGroupOfObject:
+    group: HostGroupDescriptor
+    owner: CoreObjectDescriptor
 
 
 @dataclass(slots=True, frozen=True)

@@ -17,6 +17,7 @@ import type {
   ConfigurationNodePath,
   ConfigurationArray,
   ConfigurationNodeView,
+  ConfigurationTreeState,
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
@@ -133,6 +134,9 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
 export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
+export const getDefaultValue = (keyName: string, node: SingleSchemaDefinition, parentNode: SingleSchemaDefinition) =>
+  node.default !== undefined ? node.default : parentNode.default?.[keyName as keyof typeof parentNode.default];
+
 const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
   const fieldSchema: SingleSchemaDefinition = {
     type: 'string',
@@ -201,6 +205,7 @@ const getNodeProps = (
   const isReadonly = getIsReadonly(fieldSchema, fieldAttributes, parentNode);
   const isCleanable = !isReadonly && isNullable;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
+  const isDraggable = !isReadonly && isArrayItem;
 
   return {
     title,
@@ -209,6 +214,7 @@ const getNodeProps = (
     isReadonly,
     isCleanable,
     isDeletable,
+    isDraggable,
   };
 };
 
@@ -249,6 +255,7 @@ const buildRootNode = (
       isDeletable: false,
       isReadonly: false,
       isCleanable: false,
+      isDraggable: false,
       objectType: 'structure',
       value: configuration,
     },
@@ -302,14 +309,13 @@ const buildObjectNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
     fieldAttributes,
     parentNode,
   );
-
   const node: ConfigurationNode = {
     key,
     data: {
@@ -322,7 +328,9 @@ const buildObjectNode = (
       isCleanable,
       isDeletable,
       isReadonly,
+      isDraggable,
       objectType: 'map',
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: fieldValue,
       fieldAttributes,
     },
@@ -384,7 +392,7 @@ const buildFieldNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -401,10 +409,12 @@ const buildFieldNode = (
       parentNode,
       fieldSchema,
       isNullable,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: fieldValue as JSONPrimitive,
       isCleanable,
       isDeletable,
       isReadonly,
+      isDraggable,
       fieldAttributes,
     },
   };
@@ -462,7 +472,7 @@ const buildArrayNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -482,6 +492,8 @@ const buildArrayNode = (
       isReadonly,
       isCleanable,
       isDeletable,
+      isDraggable,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: array,
       fieldAttributes,
     },
@@ -519,6 +531,25 @@ const buildAddArrayItemNode = (
   return node;
 };
 
+const buildItemDropPlaceholderNode = (
+  path: ConfigurationNodePath,
+  parentNode: ConfigurationNode,
+  fieldSchema: SingleSchemaDefinition,
+) => {
+  const node: ConfigurationNodeView = {
+    key: buildKey([...path, 'itemDropPlaceholder']),
+    data: {
+      type: 'dropPlaceholder',
+      title: '1',
+      path,
+      parentNode,
+      fieldSchema,
+    },
+  };
+
+  return node;
+};
+
 const buildUnknownNode = (
   fieldName: string,
   path: ConfigurationNodePath,
@@ -535,9 +566,11 @@ const buildUnknownNode = (
       fieldSchema,
       isNullable: false,
       value: 'some value',
+      defaultValue: 'some default value',
       isCleanable: false,
       isDeletable: false,
       isReadonly: true,
+      isDraggable: false,
     },
   };
 
@@ -549,11 +582,12 @@ const buildKey = (path: ConfigurationNodePath) => `/${path.join('/')}`;
 export const buildConfigurationTree = (
   rootNode: ConfigurationNode,
   filter: ConfigurationTreeFilter,
+  treeState?: ConfigurationTreeState,
 ): ConfigurationNodeView => {
   if (rootNode.children) {
     const filteredChildren = [];
     for (const child of rootNode.children) {
-      const childNodeView = buildConfigurationTreeRecursively(child, filter, false);
+      const childNodeView = buildConfigurationTreeRecursively(child, filter, false, treeState);
       if (childNodeView) {
         filteredChildren.push(childNodeView);
       }
@@ -569,6 +603,7 @@ const buildConfigurationTreeRecursively = (
   node: ConfigurationNode,
   filter: ConfigurationTreeFilter,
   foundInParent: boolean,
+  treeState?: ConfigurationTreeState,
 ): ConfigurationNodeView | undefined => {
   const treeNode = node as ConfigurationNodeView;
 
@@ -585,7 +620,7 @@ const buildConfigurationTreeRecursively = (
   const filteredChildren = [];
   if (node.children) {
     for (const child of node.children) {
-      const childNodeView = buildConfigurationTreeRecursively(child, filter, foundInTitle);
+      const childNodeView = buildConfigurationTreeRecursively(child, filter, foundInTitle, treeState);
       if (childNodeView) {
         filteredChildren.push(childNodeView);
       }
@@ -622,6 +657,36 @@ const buildConfigurationTreeRecursively = (
     if (treeNode.children === undefined) {
       treeNode.children = [];
     }
+
+    // add drop placeholders on drag
+    if (treeState?.dragNode?.data && treeNode.children.length) {
+      const isDragItemInArray = treeState.dragNode.data.parentNode.key === node.key;
+      if (isDragItemInArray) {
+        const childrenWithDropPlaceholders: ConfigurationNodeView[] = [];
+
+        for (let i = 0; i < treeNode.children.length; i++) {
+          const dragNodeIndex = Number(treeState.dragNode.data.path.at(-1));
+
+          // add drop placeholder at first, but skip when node[0] is draggable node
+          if (i === 0 && dragNodeIndex !== 0) {
+            const dropPlaceholderPath = [...node.data.path, 0];
+            childrenWithDropPlaceholders.push(buildItemDropPlaceholderNode(dropPlaceholderPath, node, itemsSchema));
+          }
+
+          childrenWithDropPlaceholders.push(treeNode.children[i]);
+
+          // add drop placeholder after node, but skip when node is draggable node
+          if (dragNodeIndex !== i && dragNodeIndex !== i + 1) {
+            const placeholderIndex = i < dragNodeIndex ? i + 1 : i;
+            const dropPlaceholderPath = [...node.data.path, placeholderIndex];
+            childrenWithDropPlaceholders.push(buildItemDropPlaceholderNode(dropPlaceholderPath, node, itemsSchema));
+          }
+        }
+
+        treeNode.children = childrenWithDropPlaceholders;
+      }
+    }
+
     treeNode.children.push(buildAddArrayItemNode(nodeData.path, node, itemsSchema));
   }
 

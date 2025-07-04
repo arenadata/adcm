@@ -605,6 +605,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             name=action.name,
             allow_to_terminate=action.allow_to_terminate,
         )
+
         if sub_action.script_type != ScriptType.INTERNAL:
             if not is_path_correct(sub_action.script):
                 raise AdcmEx(
@@ -615,6 +616,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             sub_action.script = str(
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
+
         sub_action.display_name = action.display_name
 
         dict_to_obj(conf, "params", sub_action)
@@ -644,12 +646,63 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             sub_action.script = str(
                 detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=str(sub_action.script))
             )
+
+        params = sub.get("params") or {}
+
+        if (
+            sub_action.script == "hc_apply"
+            and sub_action.script_type == ScriptType.INTERNAL
+            and "hc_acl" in conf
+            and params
+        ):
+            message = f"Script {sub_action.name} of {action.name} must have parameters:"
+            if "rules" not in params:
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=f"{message} rules")
+
+            for hc_rule in params["rules"]:
+                if (
+                    not isinstance(hc_rule, dict)
+                    or not {"service", "component", "action"}.issubset(hc_rule.keys())
+                    or hc_rule["action"]
+                    not in (
+                        "add",
+                        "remove",
+                    )
+                ):
+                    raise AdcmEx(
+                        code="INVALID_OBJECT_DEFINITION",
+                        msg=f"{message} service, component, action",
+                    )
+
+            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in params["rules"]}
+            action_rules = {
+                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
+            }
+
+            extra_rules = apply_rules - action_rules
+            if extra_rules:
+                extra_rules_repr = ", ".join(
+                    map(
+                        str,
+                        (
+                            {"action": action, "service": service, "component": component}
+                            for action, service, component in extra_rules
+                        ),
+                    )
+                )
+                message = (
+                    "HC rules in hc_apply script should follow action's hc_acl rules, "
+                    f"but following are missing in action's definition: {extra_rules_repr}"
+                )
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=message)
+
         sub_action.display_name = sub["name"]
 
         if "display_name" in sub:
             sub_action.display_name = sub["display_name"]
 
-        dict_to_obj(sub, "params", sub_action)
+        sub_action.params = params
+
         if not sub_action.params and action_wide_params:
             sub_action.params = action_wide_params
 

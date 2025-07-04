@@ -16,7 +16,16 @@ from enum import Enum
 from itertools import chain
 from typing import Generator, NamedTuple, TypeAlias
 
-from core.types import ClusterID, ComponentID, ComponentName, HostID, ServiceID, ServiceName, ShortObjectInfo
+from core.types import (
+    ClusterID,
+    ComponentID,
+    ComponentName,
+    ComponentNameKey,
+    HostID,
+    ServiceID,
+    ServiceName,
+    ShortObjectInfo,
+)
 
 
 class HostClusterPair(NamedTuple):
@@ -67,6 +76,14 @@ class ClusterTopology(NamedTuple):
         )
 
         return set(self.hosts).difference(mapped_hosts)
+
+    @property
+    def component_full_name_id_mapping(self) -> dict[ComponentNameKey, ComponentID]:
+        return {
+            ComponentNameKey(service=service.info.name, component=component.info.name): component.info.id
+            for service in self.services.values()
+            for component in service.components.values()
+        }
 
 
 class NoEmptyValuesDict(UserDict):

@@ -25,12 +25,16 @@ class ActionFilter(
     char_fields=("name", "display_name"),
     number_fields=("id",),
 ):
-    name = CharFilter(label="Action Name", field_name="name", lookup_expr="icontains")
-    display_name = CharFilter(label="Action Display Name", field_name="display_name", lookup_expr="icontains")
-    is_host_own_action = BooleanFilter(
-        label="Is Host Own Action", field_name="host_action", method="filter_is_host_own_action"
+    name = CharFilter(label="Case insensitive and partial filter by name.", field_name="name", lookup_expr="icontains")
+    display_name = CharFilter(
+        label="Case insensitive and partial filter by display name.", field_name="display_name", lookup_expr="icontains"
     )
-    prototype_id = NumberFilter(field_name="prototype", label="Prototype ID")
+    is_host_own_action = BooleanFilter(
+        label="Filter for host's own actions / actions from another objects",
+        field_name="host_action",
+        method="filter_is_host_own_action",
+    )
+    prototype_id = NumberFilter(field_name="prototype", label="Identifier of action's owner")
 
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")
 

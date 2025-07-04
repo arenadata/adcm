@@ -244,6 +244,13 @@ def _extract_scripts(entity: dict, context: dict) -> list[JobSpec] | None:
     for script in map(_flatten_on_fail, scripts):
         result = {}
 
+        if (
+            isinstance(script.get("params"), list)
+            and script.get("script") == "hc_apply"
+            and script.get("script_type") == "internal"
+        ):
+            script["params"] = {"hc_apply": script["params"]}
+
         _fill_value(result, script, "name")
         _fill_value(result, script, "params")
         _fill_value(result, script, "state_on_fail")
@@ -393,10 +400,10 @@ def _universalise_action_types(result: dict):
 
 
 def _states_to_masking(result: dict):
-    if "states" not in result or "masking" in result:
+    if "masking" in result:
         return result
 
-    states = result["states"]
+    states = result.get("states", {})
 
     extra = {
         "masking": {
@@ -502,7 +509,9 @@ def _to_config_definition(result: dict[ParameterKey, dict], context: dict) -> Co
         elif spec.type == "variant":
             spec.limits["source"] = check_variant(param)
 
-        if param.get("activatable"):
+        # it's very strange, but some stuff is bound to "active"
+        # being present whenever "activatable" is MENTIONED even when it's not true
+        if "activatable" in param:
             active = param.get("active", False)
             attrs[key] = {"active": active}
             spec.limits["active"] = active

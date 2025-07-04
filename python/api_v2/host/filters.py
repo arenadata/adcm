@@ -27,10 +27,14 @@ class HostFilter(
     number_fields=("id", ("hostprovider", "provider__id")),
     with_object_status=True,
 ):
-    name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
-    cluster_name = CharFilter(label="Cluster name", field_name="cluster__name", lookup_expr="exact")
-    is_in_cluster = BooleanFilter(label="Is host in cluster", method="filter_is_in_cluster")
+    name = CharFilter(
+        label="Case insensitive and partial filter by host name.", field_name="fqdn", lookup_expr="icontains"
+    )
+    hostprovider_name = CharFilter(
+        label="Filter by hostprovider name.", field_name="provider__name", lookup_expr="exact"
+    )
+    cluster_name = CharFilter(label="Filter by cluster name.", field_name="cluster__name", lookup_expr="exact")
+    is_in_cluster = BooleanFilter(label="Filter by is host in cluster.", method="filter_is_in_cluster")
     ordering = OrderingFilter(
         fields={
             "fqdn": "name",
@@ -60,9 +64,13 @@ class ClusterHostFilter(
     number_fields=("id", ("hostprovider", "provider__id")),
     with_object_status=True,
 ):
-    name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name", lookup_expr="exact")
-    component_id = NumberFilter(label="Component id", field_name="hostcomponent__component_id")
+    name = CharFilter(
+        label="Case insensitive and partial filter by host name.", field_name="fqdn", lookup_expr="icontains"
+    )
+    hostprovider_name = CharFilter(
+        label="Filter by hostprovider name.", field_name="provider__name", lookup_expr="exact"
+    )
+    component_id = NumberFilter(label="Filter by component id.", field_name="hostcomponent__component_id")
     ordering = OrderingFilter(
         fields={
             "fqdn": "name",

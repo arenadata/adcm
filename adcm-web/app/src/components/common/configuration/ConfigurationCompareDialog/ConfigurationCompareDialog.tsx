@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, LabeledField, Select } from '@uikit';
+import { DialogV2, LabeledField, Select } from '@uikit';
 import type { AdcmConfigShortView, AdcmConfiguration, AdcmFullConfigurationInfo } from '@models/adcm';
 import CompareJson from '@uikit/CompareJson/CompareJson';
 import { dateToString } from '@utils/date/dateConvertUtils';
@@ -28,6 +28,8 @@ interface ConfigurationCompareDialogProps {
 const prepareDate = (value: string) => {
   return dateToString(new Date(value), { toUtc: true });
 };
+
+const noDialogControl = <></>;
 
 const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
   onClose,
@@ -102,11 +104,11 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
     return configsOptions;
   }, [configVersions, draftFullConfigurationInfo]);
 
-  const noDialogControl = <></>;
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={onClose}
+    <DialogV2
+      onCancel={onClose}
       dialogControls={noDialogControl}
       width="100%"
       height="100%"
@@ -125,7 +127,7 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
           {leftViewData && rightViewData && <CompareJson oldData={leftViewData} newData={rightViewData} />}
         </div>
       </div>
-    </Dialog>
+    </DialogV2>
   );
 };
 

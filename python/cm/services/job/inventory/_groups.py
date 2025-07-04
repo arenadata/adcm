@@ -10,64 +10,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
-
 from core.cluster.types import ClusterTopology
+from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName
 
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.inventory._types import HostGroupName
-from cm.services.job.types import TaskMappingDelta
 
 
 def detect_host_groups_for_cluster_bundle_action(
     cluster_topology: ClusterTopology, hosts_in_maintenance_mode: set[int], hc_delta: TaskMappingDelta
 ) -> dict[HostGroupName, set[tuple[HostID, HostName]]]:
-    groups = defaultdict(set)
+    keep_in_mm = lambda hosts: set(hosts) & hosts_in_maintenance_mode  # noqa: E731
+    keep_not_in_mm = lambda hosts: set(hosts) - hosts_in_maintenance_mode  # noqa: E731
 
-    for host in cluster_topology.hosts.values():
-        group = "CLUSTER" if host.id not in hosts_in_maintenance_mode else f"CLUSTER.{MAINTENANCE_MODE_GROUP_SUFFIX}"
-        groups[group].add((host.id, host.name))
+    groups = {
+        "CLUSTER": keep_not_in_mm(cluster_topology.hosts),
+        f"CLUSTER.{MAINTENANCE_MODE_GROUP_SUFFIX}": keep_in_mm(cluster_topology.hosts),
+    }
 
     for service in cluster_topology.services.values():
         service_name = service.info.name
+        # <service> and <service>.maintenance_mode
+
+        groups[service_name] = set()
+        groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = set()
+
         for component in service.components.values():
-            hosts_in_mm = {
-                (host_id, component.hosts[host_id].name)
-                for host_id in set(component.hosts).intersection(hosts_in_maintenance_mode)
-            }
-            hosts_not_in_mm = {
-                (host_id, component.hosts[host_id].name)
-                for host_id in set(component.hosts).difference(hosts_in_maintenance_mode)
-            }
+            component_id = component.info.id
+            component_name = f"{service_name}.{component.info.name}"
+            hosts_to_add = hc_delta.add.get(component_id, set())
+            hosts_to_remove = hc_delta.remove.get(component_id, set())
 
-            component_name = component.info.name
+            # <service>.<component> and <service>.<component>.maintenance_mode
+            groups[component_name] = keep_not_in_mm(component.hosts)
+            groups[f"{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = keep_in_mm(component.hosts)
 
-            if hosts_not_in_mm:  # we don't need empty groups
-                groups[f"{service_name}.{component_name}"] = hosts_not_in_mm
-                groups[service_name] |= hosts_not_in_mm
+            # <service>.<component>.add and <service>.<component>.add.maintenance_mode
+            groups[f"{component_name}.add"] = keep_not_in_mm(hosts_to_add)
+            groups[f"{component_name}.add.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = keep_in_mm(hosts_to_add)
 
-            if hosts_in_mm:
-                groups[f"{service_name}.{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
-                groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= hosts_in_mm
+            # <service>.<component>.remove and <service>.<component>.remove.maintenance_mode
+            groups[f"{component_name}.remove"] = keep_not_in_mm(hosts_to_remove)
+            groups[f"{component_name}.remove.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = keep_in_mm(hosts_to_remove)
 
-    if hc_delta.is_empty:
-        return groups
+            # ---
+            # patch_for_hc_apply
+            # This patch was made during the reworking of the HC map storage mechanism. See ADCM-6478.
+            # For backward compatibility, you must leave the inventory.json file in the "future" state.
+            # 1. Changing inventory groups
+            # 2. Calculating maintenance_mode for services and components
+            # 3. Service and component configurations after removing
 
-    for component_key, hosts in hc_delta.add.items():
-        group_full_name = f"{component_key}.add"
-        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
-        if hosts_not_in_mm:
-            groups[group_full_name] = hosts_not_in_mm
+            # As part of the ADCM-6563 task, after discussion with the Bundle development team,
+            # it was decided not to return the behavior for scenarios 2 and 3, since this functionality
+            # is not currently used.
 
-    for component_key, hosts in hc_delta.remove.items():
-        group_full_name = f"{component_key}.remove"
-        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
-        if hosts_not_in_mm:
-            groups[group_full_name] = hosts_not_in_mm
+            # You must add and remove hosts from the corresponding groups.
+            # add hosts to:
+            # <service>.<component> and <service>.<component>.maintenance_mode
+            groups[component_name] |= keep_not_in_mm(hosts_to_add)
+            groups[f"{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= keep_in_mm(hosts_to_add)
 
-        hosts_in_mm = {(host.id, host.name) for host in hosts if host.id in hosts_in_maintenance_mode}
-        if hosts_in_mm:
-            groups[f"{group_full_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
+            # remove hosts from:
+            # <service>.<component> and <service>.<component>.maintenance_mode
+            groups[component_name] -= keep_not_in_mm(hosts_to_remove)
+            groups[f"{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] -= keep_in_mm(hosts_to_remove)
+            # ---
 
-    return groups
+            groups[service_name] |= groups[component_name]
+            groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= groups[
+                f"{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            ]
+
+    return {
+        group_name: {(hid, cluster_topology.hosts[hid].name) for hid in hosts}
+        for group_name, hosts in groups.items()
+        if len(hosts) > 0
+    }

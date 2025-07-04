@@ -1,0 +1,11 @@
+#!/bin/sh
+
+. /etc/adcmenv
+
+waitforinit
+
+if [ "$FEATURE_JOB_SCHEDULER" = "new" ] && { [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; }
+then
+    echo "Run scheduler ... "
+    exec "${adcmroot}/python/jobs/scheduler/run.py"
+fi

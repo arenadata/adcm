@@ -18,7 +18,10 @@ import signal
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.job.types import ExecutionStatus, Job, Task
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import (
+    ADCMCoreType,
+    CoreObjectDescriptor,
+)
 
 from cm.services.concern.locks import (
     delete_task_flag_concern,
@@ -26,6 +29,8 @@ from cm.services.concern.locks import (
     update_task_flag_concern,
     update_task_lock_concern,
 )
+from cm.services.config import retrieve_primary_configs
+from cm.services.hierarchy import retrieve_object_hierarchy
 from cm.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -167,7 +172,7 @@ class JobSequenceRunner(TaskRunner):
         if task.hostcomponent == new_fields.hostcomponent:
             return task
 
-        return Task(**(task.dict() | {"hostcomponent": new_fields.hostcomponent}))
+        return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
     def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
         (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
@@ -176,6 +181,11 @@ class JobSequenceRunner(TaskRunner):
             prepare_environment(task=task, job=target.job, configuration=self._settings)
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
+        if task.owner:
+            self._update_job_related_configs(
+                job_id=target.job.id, owner=CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
+            )
+
         target.executor.execute()
 
         self._repo.update_job(
@@ -195,6 +205,9 @@ class JobSequenceRunner(TaskRunner):
             update_task_flag_concern(job_id=target.job.id)
 
         result = target.executor.wait_finished().result
+        # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,
+        # you must explicitly close old and unusable connections.
+        self._repo.close_old_connections()
 
         if result.code == -15:
             job_status = ExecutionStatus.ABORTED
@@ -283,11 +296,7 @@ class JobSequenceRunner(TaskRunner):
         if last_job:
             self._update_owner_state(task=finished_task, job=last_job, owner=owner)
 
-        if (
-            self._runtime.status in {ExecutionStatus.FAILED, ExecutionStatus.ABORTED, ExecutionStatus.BROKEN}
-            and finished_task.action.hc_acl
-            and finished_task.hostcomponent.restore_on_fail
-        ):
+        if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
             set_hostcomponent(task=finished_task, logger=self._logger)
 
     def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
@@ -324,3 +333,9 @@ class JobSequenceRunner(TaskRunner):
             self._notifier.send_prototype_update_event(object_=owner)
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
+
+    def _update_job_related_configs(self, job_id: int, owner: CoreObjectDescriptor) -> None:
+        hierarchy = retrieve_object_hierarchy(object_=owner)
+        related_configs = retrieve_primary_configs(objects=hierarchy)
+
+        self._repo.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))

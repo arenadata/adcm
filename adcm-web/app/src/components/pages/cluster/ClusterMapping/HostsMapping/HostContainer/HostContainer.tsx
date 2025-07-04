@@ -37,15 +37,17 @@ const HostContainer = ({
 
   const componentsOptions = useMemo<SelectOption<AdcmMappingComponent>[]>(
     () =>
-      allComponents.map((component) => {
-        const { componentNotAvailableError } = checkComponentMappingAvailability(component);
-        return {
-          label: component.displayName,
-          value: component,
-          disabled: Boolean(componentNotAvailableError),
-          title: componentNotAvailableError,
-        };
-      }),
+      allComponents
+        .map((component) => {
+          const { componentNotAvailableError } = checkComponentMappingAvailability(component);
+          return {
+            label: component.displayName,
+            value: component,
+            disabled: Boolean(componentNotAvailableError),
+            title: componentNotAvailableError,
+          };
+        })
+        .sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1)),
     [allComponents],
   );
 

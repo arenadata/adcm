@@ -3,7 +3,7 @@ import { Checkbox, Statusable, Spinner } from '@uikit';
 import s from './ClusterImportCard.module.scss';
 import cn from 'classnames';
 import type { AdcmClusterImport } from '@models/adcm';
-import { AdcmClusterImportPayloadType } from '@models/adcm';
+import { AdcmClusterImportPayloadType, AdcmClusterStatus } from '@models/adcm';
 import ClusterImportCardServiceItem from './ClusterImportCardServiceItem';
 import type {
   ClusterImportsSetGroup,
@@ -114,58 +114,56 @@ const ClusterImportCard = ({
   });
 
   return (
-    <>
-      <div className={clusterImportItemClasses} data-test={dataTest}>
-        <div className={s.clusterImportItem__block}>
-          <Statusable
-            status={clusterImport.cluster.status === 'up' ? 'running' : 'unknown'}
-            size="medium"
-            className={s.clusterImportItem__title}
-          >
-            {clusterImport.cluster.name}
-          </Statusable>
-          {isClusterRequired && (
-            <div className={s.clusterImportItem__requireBlock}>Cluster configuration import is required</div>
-          )}
-          {requiredServiceImport.map((service) => (
-            <div key={service.id} className={s.clusterImportItem__requireBlock}>
-              Import of {service.displayName} is required
-            </div>
-          ))}
-        </div>
-        <div className={s.clusterImportItem__block}>
-          {clusterImport.importCluster && (
-            <Checkbox
-              label="Cluster configuration"
-              checked={isClusterSelected}
-              onChange={clusterCheckHandler}
-              disabled={isClusterImportDisabled}
-            />
-          )}
-        </div>
-        <div className={s.clusterImportItem__block}>
-          {clusterImport.importServices && (
-            <>
-              <Checkbox
-                label="All Services"
-                onChange={allServicesCheckHandler}
-                checked={isAllServicesSelected}
-                disabled={isAllServicesDisabled}
-              />
-              {clusterImport.importServices.map((service) => (
-                <ClusterImportCardServiceItem
-                  key={service.id}
-                  service={service}
-                  selectedSingleBind={selectedSingleBind}
-                  selectedImports={selectedImports}
-                  onCheckHandler={onCheckHandler}
-                />
-              ))}
-            </>
-          )}
-        </div>
+    <div className={clusterImportItemClasses} data-test={dataTest}>
+      <div className={s.clusterImportItem__block}>
+        <Statusable
+          status={clusterImport.cluster.status === AdcmClusterStatus.Up ? 'done' : 'unknown'}
+          size="medium"
+          className={s.clusterImportItem__title}
+        >
+          {clusterImport.cluster.name}
+        </Statusable>
+        {isClusterRequired && (
+          <div className={s.clusterImportItem__requireBlock}>Cluster configuration import is required</div>
+        )}
+        {requiredServiceImport.map((service) => (
+          <div key={service.id} className={s.clusterImportItem__requireBlock}>
+            Import of {service.displayName} is required
+          </div>
+        ))}
       </div>
-    </>
+      <div className={s.clusterImportItem__block}>
+        {clusterImport.importCluster && (
+          <Checkbox
+            label="Cluster configuration"
+            checked={isClusterSelected}
+            onChange={clusterCheckHandler}
+            disabled={isClusterImportDisabled}
+          />
+        )}
+      </div>
+      <div className={s.clusterImportItem__block}>
+        {clusterImport.importServices && (
+          <>
+            <Checkbox
+              label="All Services"
+              onChange={allServicesCheckHandler}
+              checked={isAllServicesSelected}
+              disabled={isAllServicesDisabled}
+            />
+            {clusterImport.importServices.map((service) => (
+              <ClusterImportCardServiceItem
+                key={service.id}
+                service={service}
+                selectedSingleBind={selectedSingleBind}
+                selectedImports={selectedImports}
+                onCheckHandler={onCheckHandler}
+              />
+            ))}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 

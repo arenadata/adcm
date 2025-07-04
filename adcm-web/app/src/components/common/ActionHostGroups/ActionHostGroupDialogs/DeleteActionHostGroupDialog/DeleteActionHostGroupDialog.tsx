@@ -1,4 +1,4 @@
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type { AdcmActionHostGroup } from '@models/adcm';
 
 export interface DeleteActionHostGroupDialogProps {
@@ -13,16 +13,19 @@ const DeleteActionHostGroupDialog = ({
   actionHostGroup,
   onDelete,
   onClose,
-}: DeleteActionHostGroupDialogProps) => (
-  <Dialog
-    isOpen={isOpen}
-    actionButtonLabel="Delete"
-    title={`Delete action host group ${actionHostGroup.name}`}
-    onAction={onDelete}
-    onOpenChange={onClose}
-  >
-    Action host group {actionHostGroup.name} will be deleted
-  </Dialog>
-);
+}: DeleteActionHostGroupDialogProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <DialogV2
+      actionButtonLabel="Delete"
+      title={`Delete action host group ${actionHostGroup.name}`}
+      onAction={onDelete}
+      onCancel={onClose}
+    >
+      Action host group {actionHostGroup.name} will be deleted
+    </DialogV2>
+  );
+};
 
 export default DeleteActionHostGroupDialog;

@@ -12,11 +12,13 @@ export type ConfigurationField = {
   isNullable: boolean;
   fieldAttributes?: FieldAttributes;
   parentNode: ConfigurationNode;
+  defaultValue?: JSONPrimitive;
   value: JSONPrimitive;
   path: ConfigurationNodePath;
   isDeletable: boolean;
   isCleanable: boolean;
   isReadonly: boolean;
+  isDraggable: boolean;
 };
 
 export type ConfigurationNewField = {
@@ -40,7 +42,9 @@ export type ConfigurationObject = {
   isReadonly: boolean;
   isCleanable: boolean;
   objectType: 'map' | 'structure';
+  defaultValue?: JSONPrimitive;
   value: JSONValue;
+  isDraggable: boolean;
 };
 
 export type ConfigurationNewEmptyObject = {
@@ -63,7 +67,9 @@ export type ConfigurationArray = {
   isReadonly: boolean;
   isDeletable: boolean;
   isCleanable: boolean;
+  defaultValue?: JSONPrimitive;
   value: JSONValue;
+  isDraggable: boolean;
 };
 
 export type ConfigurationNewArrayItem = {
@@ -75,6 +81,15 @@ export type ConfigurationNewArrayItem = {
   path: ConfigurationNodePath;
 };
 
+export type ConfigurationItemDropPlaceholder = {
+  type: 'dropPlaceholder';
+  title: string;
+  fieldSchema: SingleSchemaDefinition; // items schema
+  parentNode: ConfigurationNode;
+  fieldAttributes?: FieldAttributes;
+  path: ConfigurationNodePath; // new item path after drop
+};
+
 export type ConfigurationNode = Node<ConfigurationField | ConfigurationObject | ConfigurationArray>;
 
 export type ConfigurationNodeView = Node<
@@ -84,10 +99,16 @@ export type ConfigurationNodeView = Node<
   | ConfigurationObject
   | ConfigurationArray
   | ConfigurationNewArrayItem
+  | ConfigurationItemDropPlaceholder
 >;
 
 export type ConfigurationTreeFilter = {
   title: string;
-  showInvisible: boolean; // false
+  showInvisible: boolean;
   showAdvanced: boolean;
+};
+
+export type ConfigurationTreeState = {
+  selectedNode: ConfigurationNodeView | null;
+  dragNode: ConfigurationNodeView | null;
 };

@@ -1,5 +1,5 @@
 import { useDispatch, useStore } from '@hooks';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import type React from 'react';
 import { deleteService, closeDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
@@ -8,7 +8,7 @@ const DeleteClusterServiceDialog: React.FC = () => {
 
   const clusterService = useStore(({ adcm }) => adcm.servicesActions.deleteDialog.service);
 
-  const isOpenDeleteDialog = !!clusterService;
+  if (!clusterService) return null;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
@@ -22,15 +22,14 @@ const DeleteClusterServiceDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
-      isOpen={isOpenDeleteDialog}
-      onOpenChange={handleCloseDialog}
+    <DialogV2
       title={`Delete "${clusterService?.displayName}" service`}
       onAction={handleConfirmDialog}
+      onCancel={handleCloseDialog}
       actionButtonLabel="Delete"
     >
       All service information will be deleted
-    </Dialog>
+    </DialogV2>
   );
 };
 export default DeleteClusterServiceDialog;

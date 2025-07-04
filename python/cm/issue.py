@@ -138,7 +138,7 @@ def update_issues_and_flags_after_deleting() -> None:
             logger.info("Deleted %s", concern_str)
         elif related != affected:
             for object_moved_out_hierarchy in related.difference(affected):
-                remove_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
+                unlink_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
 
 
 def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
@@ -154,7 +154,7 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
     on_commit(func=partial(send_concern_creation_event, object_=object_, concern=concern_data))
 
 
-def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+def unlink_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
     if not concern or not hasattr(concern, "id"):
         return
 

@@ -1,0 +1,9 @@
+---
+- type: cluster
+  name: cluster
+  version: 1
+  actions:
+    some_action:
+      type: task
+      scripts_jinja: scripts.j2
+      scripts: script

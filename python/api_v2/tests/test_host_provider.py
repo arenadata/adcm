@@ -52,7 +52,7 @@ class TestProvider(BaseAPITestCase):
     def test_create_success(self):
         response = (self.client.v2 / "hostproviders").post(
             data={
-                "prototypeId": self.host_provider_bundle.pk,
+                "prototypeId": self.host_provider_bundle.prototype_set.get(name="provider").pk,
                 "name": self.host_provider.name + " new",
                 "description": "newly created host provider",
             },
@@ -63,7 +63,7 @@ class TestProvider(BaseAPITestCase):
     def test_create_no_description_success(self):
         response = (self.client.v2 / "hostproviders").post(
             data={
-                "prototypeId": self.host_provider_bundle.pk,
+                "prototypeId": self.host_provider_bundle.prototype_set.get(name="provider").pk,
                 "name": self.host_provider.name + " new",
             },
         )

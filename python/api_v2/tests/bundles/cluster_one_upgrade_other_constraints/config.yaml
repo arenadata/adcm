@@ -49,13 +49,6 @@
           default:
             - "1"
             - "woohoo"
-      hc_acl:
-        - action: add
-          service: service_1
-          component: component_1
-        - action: remove
-          service: service_1
-          component: component_2
       ui_options:
         disclaimer: "Cool upgrade"
 

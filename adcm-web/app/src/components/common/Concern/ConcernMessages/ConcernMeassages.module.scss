@@ -7,4 +7,11 @@
   &:not(:first-of-type) {
     margin-top: 13px;
   }
+
+  &__removeButton {
+    margin-left: 8px;
+    border-radius: 8px;
+    border: 2px solid var(--color-xdark);
+    vertical-align: middle;
+  }
 }

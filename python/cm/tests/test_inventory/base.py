@@ -18,6 +18,7 @@ import json
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import HostComponentEntry
+from core.job.types import TaskMappingDelta
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -25,6 +26,7 @@ from jinja2 import Template
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
 from cm.models import (
+    ADCM,
     Action,
     ADCMEntity,
     ADCMModel,
@@ -35,7 +37,6 @@ from cm.models import (
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job._utils import construct_delta_for_task
 from cm.services.job.inventory import get_inventory_data
-from cm.services.job.types import TaskMappingDelta
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -68,6 +69,8 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
         self.bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"
+
+        self.adcm_id = ADCM.objects.values_list("id", flat=True).get()
 
     @staticmethod
     def render_template(file: Path, context: dict) -> str:
@@ -131,7 +134,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         )
 
         return construct_delta_for_task(
-            topology=new_topology,
             host_difference=find_hosts_difference(new_topology=new_topology, old_topology=topology),
         )
 

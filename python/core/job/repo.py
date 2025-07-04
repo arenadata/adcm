@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable, Protocol
+from typing import Any, Collection, ContextManager, Iterable, Protocol
 
 from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
 from core.job.types import ActionInfo, Job, JobSpec, Task
-from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, TaskID
 
 
 class JobRepoInterface(Protocol):
@@ -27,7 +27,8 @@ class JobRepoInterface(Protocol):
     ) -> Task:
         ...
 
-    def update_task(self, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
+    @classmethod
+    def update_task(cls, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
         ...
 
     def get_task_jobs(self, task_id: int) -> Iterable[Job]:
@@ -36,17 +37,20 @@ class JobRepoInterface(Protocol):
     def get_task_mutable_fields(self, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
         ...
 
-    def create_jobs(self, task_id: int, jobs: Iterable[JobSpec]) -> None:
+    @staticmethod
+    def create_jobs(task_id: int, jobs: Iterable[JobSpec]) -> None:
         ...
 
     def get_job(self, id: int) -> Job:  # noqa: A002
         """Should raise `NotFoundError` on fail"""
         ...
 
-    def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
+    @staticmethod
+    def update_job(id: int, data: JobUpdateDTO) -> None:  # noqa: A002
         ...
 
-    def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
+    @staticmethod
+    def create_logs(logs: Iterable[LogCreateDTO]) -> None:
         ...
 
     def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None:
@@ -55,6 +59,18 @@ class JobRepoInterface(Protocol):
     def update_owner_multi_states(
         self, owner: CoreObjectDescriptor, add_multi_states: Collection[str], remove_multi_states: Collection[str]
     ) -> None:
+        ...
+
+    @staticmethod
+    def close_old_connections() -> None:
+        ...
+
+    @classmethod
+    def get_target_orm(cls, task_id: TaskID) -> Any:
+        ...
+
+    @classmethod
+    def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
         ...
 
 

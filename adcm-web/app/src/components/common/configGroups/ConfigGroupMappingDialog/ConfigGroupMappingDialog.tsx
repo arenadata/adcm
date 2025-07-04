@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useMemo } from 'react';
 import type { AdcmConfigGroup, AdcmHost, AdcmHostCandidate } from '@models/adcm';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { useForm } from '@hooks';
 import s from './ConfigGroupMappingDialog.module.scss';
@@ -42,7 +42,10 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   candidatesHosts,
   isSaveMapping,
 }) => {
+  if (configGroup === null) return;
+
   const isOpen = configGroup !== null;
+
   const { isValid, setErrors, errors, formData, setFormData } = useForm<FormData, FormErrors>(initFormData);
 
   const srcList = useMemo(() => {
@@ -93,11 +96,10 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   }, [configGroup?.name]);
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={onClose}
+    <DialogV2
       title={`Mapping config group "${configGroup?.name}" to hosts`}
       onAction={handleSubmit}
+      onCancel={onClose}
       actionButtonLabel="Save"
       isActionDisabled={!isValid || isSaveMapping}
       width="860px"
@@ -113,7 +115,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
         destError={errors.destErrorMessage}
         className={s.configGroupMappingDialog__listTransfer}
       />
-    </Dialog>
+    </DialogV2>
   );
 };
 export default ConfigGroupMappingDialog;

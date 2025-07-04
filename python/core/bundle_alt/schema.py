@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, Optional, TypeAlias
 import re
 
 from adcm_version import compare_prototype_versions
@@ -104,8 +104,12 @@ def is_path_correct(raw_path: str) -> bool:
     return raw_path.startswith("./") or not raw_path.startswith(("..", "/"))
 
 
-def convert_config(config: list | dict) -> list:
+def convert_config(config: Any) -> list:
     """Converts old-style dict config to list config"""
+
+    # We expect this validator to be called only if a field is defined in the data.
+    if config is None:
+        raise ValueError("the value cannot be empty")
 
     if not isinstance(config, dict):
         return config
@@ -115,7 +119,10 @@ def convert_config(config: list | dict) -> list:
         subs = None
         extra = {}
 
-        if "type" not in value or not isinstance(value["type"], str):  # it is a group
+        if value is None:
+            # patch very strange stuff when it's None and not dict, cases aren't prod-related
+            value = {}
+        elif "type" not in value or not isinstance(value["type"], str):  # it is a group
             extra = {"type": "group", "required": False}
             subs = convert_config(value)
 
@@ -397,7 +404,6 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
 
 def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
     # at least ADS has duplicates in config
-    return parameters
     if not parameters:
         return None
 
@@ -420,13 +426,13 @@ CONFIG_TYPE: TypeAlias = Annotated[
     CONFIG_LIST | None,
     Field(default=None),
     BeforeValidator(convert_config),
-    AfterValidator(config_duplicates),
 ]
+ACTION_CONFIG_TYPE: TypeAlias = Annotated[CONFIG_TYPE, AfterValidator(config_duplicates)]
 
 
-##########
-# UPGRADES
-##########
+#######
+# STATES SCHEMAS
+#######
 
 
 class StatesSchema(TypedDict):
@@ -453,15 +459,123 @@ class UnAvailabilitySchema(TypedDict):
     unavailable: Literal["any"] | list[str]
 
 
+def patch_masking(value: dict | None) -> dict:
+    # To make an action available, we can specify the making field without the value.
+    # If a field is specified, but its value is None, we must set an explicit value that differs from the default,
+    # so that after serialization this field remains and the code that patches the default values of the available
+    # field will work.
+    if value is None:
+        return {}
+
+    return value
+
+
 class MaskingSchema(TypedDict):
     state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
     multi_state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
+
+
+MASKING_SCHEMA = Annotated[MaskingSchema | None, Field(default=None), BeforeValidator(patch_masking)]
+
+#######
+# HC_ACL SCHEMAS
+#######
 
 
 class HcAclSchema(TypedDict):
     component: str
     action: Literal["add", "remove"]
     service: Annotated[str | None, Field(default=None)]
+
+
+class HcApplyRule(_BaseModel):
+    service: str
+    component: str
+    action: Literal["add", "remove"]
+
+
+class HcApplySchema(_BaseModel):
+    rules: list[HcApplyRule]
+
+
+#######
+# BASE SCRIPTS
+#######
+
+
+class _WithAllowToTerminateField(_BaseModel):
+    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+
+
+class _InternalBundleSwitchScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["bundle_switch"]
+    params: Annotated[None, Field(default=None)]
+
+
+class _InternalBundleRevertScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["bundle_revert"]
+    params: Annotated[None, Field(default=None)]
+
+
+class _InternalHcApplyScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["hc_apply"]
+    params: Annotated[HcApplySchema | None, Field(default=None)]
+
+
+class _AnsibleScript(_BaseModel):
+    script_type: Literal["ansible"]
+    script: Annotated[str, AfterValidator(script_is_correct_path)]
+    params: Annotated[dict | None, Field(default=None)]
+
+
+class _PythonScript(_BaseModel):
+    script_type: Literal["python"]
+    script: Annotated[str, AfterValidator(script_is_correct_path)]
+    params: Annotated[None, Field(default=None)]
+
+
+class _BaseScriptSchema(_BaseModel):
+    name: str
+    display_name: Annotated[str | None, Field(default=None)]
+    on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
+
+
+class InternalBundleSwitchScriptSchema(_BaseScriptSchema, _InternalBundleSwitchScript):
+    ...
+
+
+class InternalBundleRevertScriptSchema(_BaseScriptSchema, _InternalBundleRevertScript):
+    ...
+
+
+class InternalHcApplyScriptSchema(_BaseScriptSchema, _InternalHcApplyScript):
+    ...
+
+
+class AnsibleScriptSchema(_BaseScriptSchema, _AnsibleScript):
+    ...
+
+
+class PythonScriptSchema(_BaseScriptSchema, _PythonScript):
+    ...
+
+
+##########
+# UPGRADES
+##########
+
+
+INTERNAL_UPGRADE_SCRIPTS_SCHEMA = Annotated[
+    InternalBundleSwitchScriptSchema | InternalBundleRevertScriptSchema, Field(discriminator="script")
+]
+
+
+UPGRADE_SCRIPTS_SCHEMA = Annotated[
+    INTERNAL_UPGRADE_SCRIPTS_SCHEMA | AnsibleScriptSchema, Field(discriminator="script_type")
+]
 
 
 class VersionsSchema(_BaseModel):
@@ -481,15 +595,6 @@ class VersionsSchema(_BaseModel):
         return self
 
 
-class UpgradeScriptSchema(TypedDict):
-    name: str
-    script: str
-    script_type: Literal["internal", "ansible"]
-    display_name: Annotated[str | None, Field(default=None)]
-    params: Annotated[dict | None, Field(default=None)]
-    on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
-
-
 class _BaseUpgradeSchema(_BaseModel):
     name: VERSION
     versions: Annotated[VersionsSchema, AfterValidator(min_and_max_present)]
@@ -497,13 +602,13 @@ class _BaseUpgradeSchema(_BaseModel):
     description: Annotated[str | None, Field(default=None)]
     states: Annotated[StatesSchema, Field(default=None)]
     from_edition: Annotated[str | list[str] | None, Field(default=None)]
-    scripts: Annotated[list[UpgradeScriptSchema] | None, Field(default=None)]
-    masking: Annotated[MaskingSchema | None, Field(default=None)]
+    scripts: Annotated[list[UPGRADE_SCRIPTS_SCHEMA] | None, Field(default=None)]
+    masking: MASKING_SCHEMA
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     venv: VENV
     ui_options: Annotated[dict | None, Field(default=None)]
-    config: CONFIG_TYPE
+    config: ACTION_CONFIG_TYPE
 
     @model_validator(mode="after")
     def exclusive_masking_and_scripts(self):
@@ -521,7 +626,9 @@ class _BaseUpgradeSchema(_BaseModel):
 
 
 class ClusterUpgradeSchema(_BaseUpgradeSchema):
-    hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    # As part of the ADCM-6563 task, it was decided to drop support for upgrades with `hc_acl`.
+    # hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
+    pass
 
 
 class ProviderUpgradeSchema(_BaseUpgradeSchema):
@@ -551,13 +658,13 @@ class _BaseActionSchema(_BaseModel):
     allow_for_action_host_group: Annotated[bool, Field(default=None)]
     log_files: Annotated[list[str] | None, Field(default=None, deprecated=True)]
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
-    masking: Annotated[MaskingSchema | None, Field(default=None)]
+    masking: MASKING_SCHEMA
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
     venv: VENV
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
-    config: CONFIG_TYPE
+    config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
 
     @model_validator(mode="before")
@@ -578,19 +685,27 @@ class _BaseActionSchema(_BaseModel):
 
         return data
 
-    @model_validator(mode="after")
-    def exclusive_visibility_fields(self):
-        states_specified = self.states is not None
-        masking_specified = self.masking is not None
+    # Has to check it as before mode and key presense,
+    # because lots of cases (e.g. in integration tests specify "masking:" without value)
+    # has `None` value when key is specified.
+    # Surely there's a way to check it with pydantic mechanics, yet this one is easier.
+    @model_validator(mode="before")
+    @classmethod
+    def exclusive_visibility_fields(cls, data: Any):
+        if not isinstance(data, dict):
+            return data
+
+        states_specified = "states" in data
+        masking_specified = "masking" in data
 
         if states_specified and masking_specified:
             raise ValueError('Action uses both mutual excluding states "states" and "masking"')
 
-        on_fail_success_specified = self.on_fail is not None or self.on_success is not None
-        if states_specified and on_fail_success_specified:
+        on_fail_success_specified = "on_fail" in data or "on_success" in data
+        if not masking_specified and on_fail_success_specified:
             raise ValueError('Action uses "on_success/on_fail" states without "masking"')
 
-        return self
+        return data
 
     @model_validator(mode="after")
     def exclusive_host_action_and_action_host_group(self):
@@ -614,45 +729,119 @@ class _BaseActionSchema(_BaseModel):
 
         return self
 
+    @field_validator("config_jinja", mode="before")
+    @classmethod
+    def config_jinja_definition(cls, value: Any):
+        if value is None:
+            raise ValueError("the value cannot be empty")
 
-class JobSchema(_BaseActionSchema):
+        return value
+
+
+class _BaseJobSchema(_BaseActionSchema):
     type: Literal["job"]
-    script_type: ACTION_SCRIPT_TYPE
-    script: Annotated[str, AfterValidator(script_is_correct_path)]
+
+
+class InternalBundleSwitchJobSchema(_BaseJobSchema, _InternalBundleSwitchScript):
+    ...
+
+
+class InternalBundleRevertJobSchema(_BaseJobSchema, _InternalBundleRevertScript):
+    ...
+
+
+class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.hc_acl is None:
+            raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
+        return self
+
+
+INTERNAL_JOB_SCHEMA = Annotated[
+    InternalBundleSwitchJobSchema | InternalBundleRevertJobSchema | InternalHcApplyJobShema,
+    Field(discriminator="script"),
+]
+
+
+class AnsibleJobSchema(_BaseJobSchema, _AnsibleScript):
+    ...
+
+
+class PythonJobSchema(_BaseJobSchema, _PythonScript):
+    ...
+
+
+JOB_SCHEMA = Annotated[INTERNAL_JOB_SCHEMA | AnsibleJobSchema | PythonJobSchema, Field(discriminator="script_type")]
+
+
+class InternalBundleSwitchTaskScriptSchema(InternalBundleSwitchScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
+class InternalBundleRevertTaskScriptSchema(InternalBundleRevertScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
+class InternalHcApplyTaskScriptSchema(InternalHcApplyScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
+class AnsibleTaskScriptSchema(AnsibleScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
+class PythonTaskScriptSchema(PythonScriptSchema, _WithAllowToTerminateField):
+    ...
 
 
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
 
 
-class ScriptSchema(TypedDict):
-    name: str
-    script: Annotated[str, AfterValidator(script_is_correct_path)]
-    script_type: ACTION_SCRIPT_TYPE
-    display_name: Annotated[str | None, Field(default=None)]
-    params: Annotated[dict | None, Field(default=None)]
-    on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
+    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalHcApplyTaskScriptSchema,
+    Field(discriminator="script"),
+]
 
 
-class TaskPlainSchema(_BaseTaskSchema):
-    scripts: list[ScriptSchema]
+TASK_SCRIPTS_SCHEMA = Annotated[
+    INTERNAL_TASK_SCRIPTS_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema, Field(discriminator="script_type")
+]
 
 
-class TaskJinjaSchema(_BaseTaskSchema):
-    scripts_jinja: str
+class TaskSchema(_BaseTaskSchema):
+    scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
+    scripts_jinja: Optional[str] = None
 
     @field_validator("scripts_jinja")
     @classmethod
     def scripts_jinja_path_format(cls, v: str):
         if not is_path_correct(v):
             raise ValueError('"scripts_jinja" has unsupported path format')
-
         return v
+
+    @model_validator(mode="after")
+    def validate_only_one_set(self):
+        if bool(self.scripts) == bool(self.scripts_jinja):
+            raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
+        return self
+
+    @model_validator(mode="after")
+    def validate_hc_apply_together_hc_acl(self):
+        if self.scripts is None:
+            return self
+
+        for script in self.scripts:
+            if script.script_type == "internal" and script.script == "hc_apply" and self.hc_acl is None:
+                raise ValueError('"hc_apply" requires "hc_acl" declaration')
+
+        return self
 
 
 ACTIONS_TYPE: TypeAlias = Annotated[
-    dict[NAME, JobSchema | TaskPlainSchema | TaskJinjaSchema] | None,
+    dict[NAME, Annotated[JOB_SCHEMA | TaskSchema, Field(discriminator="type")]] | None,
     Field(default=None),
     BeforeValidator(forbidden_mm_actions),
 ]
@@ -819,7 +1008,12 @@ def parse(
     except KeyError as e:
         raise BundleParsingError("Field `type` is missing: can't parse definition") from e
 
-    return TYPE_SCHEMA_MAP[def_type].model_validate(definition, strict=True)
+    try:
+        core_model = TYPE_SCHEMA_MAP[def_type]
+    except KeyError as e:
+        raise BundleParsingError(f'Value "{def_type}" is not allowed') from e
+
+    return core_model.model_validate(definition, strict=True)
 
 
 ###############
@@ -828,7 +1022,7 @@ def parse(
 
 
 class ScriptsJinjaSchema(_BaseModel):
-    scripts: Annotated[list[ScriptSchema], Field(min_length=1)]
+    scripts: Annotated[list[TASK_SCRIPTS_SCHEMA], Field(min_length=1)]
 
 
 ##############

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Dialog } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { closeUnlinkDialog, unlinkHostWithUpdate } from '@store/adcm/hosts/hostsActionsSlice';
 
@@ -8,7 +8,7 @@ const UnlinkHostDialog: React.FC = () => {
 
   const host = useStore(({ adcm }) => adcm.hostsActions.unlinkDialog.host);
 
-  const isOpenUnlink = !!host;
+  if (!host) return null;
 
   const handleCloseDialog = () => {
     dispatch(closeUnlinkDialog());
@@ -23,15 +23,14 @@ const UnlinkHostDialog: React.FC = () => {
 
   return (
     <>
-      <Dialog
-        isOpen={isOpenUnlink}
-        onOpenChange={handleCloseDialog}
+      <DialogV2
         title="Unlink host"
         onAction={handleConfirmDialog}
+        onCancel={handleCloseDialog}
         actionButtonLabel="Unlink"
       >
         The host will be unlinked from the cluster
-      </Dialog>
+      </DialogV2>
     </>
   );
 };

@@ -1,0 +1,12 @@
+---
+- type: cluster
+  name: cluster
+  version: 1
+  actions:
+    action:
+      type: job
+      script_type: ansible
+      script: playbook.yaml
+      hc_acl:
+        - component: component_1
+          action: add

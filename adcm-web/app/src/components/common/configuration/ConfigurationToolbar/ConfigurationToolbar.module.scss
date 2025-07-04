@@ -1,11 +1,25 @@
+:global {
+  body.theme-dark {
+    --search-input-background: var(--color-xblack);
+  }
+  body.theme-light {
+    --search-input-background: var(--color-xwhite);
+  }
+}
+
 .configurationToolbar {
   display: flex;
   gap: 10px 20px;
   margin: 32px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  backdrop-filter: blur(7px);
 
   &__search {
     width: 33%;
     min-width: 200px;
+    background: var(--search-input-background);
   }
 
   &__buttons {

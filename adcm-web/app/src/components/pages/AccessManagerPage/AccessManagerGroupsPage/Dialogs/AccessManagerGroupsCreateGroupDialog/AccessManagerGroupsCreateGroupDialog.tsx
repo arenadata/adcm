@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { Dialog, FormFieldsContainer, FormField, Input } from '@uikit';
+import { DialogV2, FormFieldsContainer, FormField, Input } from '@uikit';
 import { useCreateGroupForm } from './useCreateGroupForm';
 import { useDispatch, useStore } from '@hooks';
 import { closeCreateDialog } from '@store/adcm/groups/groupsActionsSlice';
@@ -46,45 +46,46 @@ const AccessManagerGroupsCreateDialog = () => {
   };
 
   return (
-    <Dialog
-      title="Create new users group"
-      isOpen={isOpenDialog}
-      onOpenChange={handleCloseDialog}
-      onAction={submitForm}
-      isActionDisabled={!isValid}
-      actionButtonLabel="Create"
-    >
-      <FormFieldsContainer>
-        <FormField label="Group name" error={errors.name}>
-          <Input
-            //
-            value={formData.name}
-            type="text"
-            onChange={handleGroupNameChange}
-            placeholder="Enter unique name"
-            autoFocus
-          />
-        </FormField>
-        <FormField label="Description">
-          <Input
-            value={formData.description}
-            type="text"
-            onChange={handleGroupDescriptionChange}
-            placeholder="Enter description"
-          />
-        </FormField>
-        <FormField label="Users">
-          <MultiSelect
-            checkAllLabel="All users"
-            value={formData.usersIds}
-            onChange={handleGroupUsersChange}
-            options={usersOptions}
-            maxHeight={400}
-            placeholder="Select"
-          />
-        </FormField>
-      </FormFieldsContainer>
-    </Dialog>
+    isOpenDialog && (
+      <DialogV2
+        title="Create new users group"
+        onAction={submitForm}
+        onCancel={handleCloseDialog}
+        isActionDisabled={!isValid}
+        actionButtonLabel="Create"
+      >
+        <FormFieldsContainer>
+          <FormField label="Group name" error={errors.name}>
+            <Input
+              //
+              value={formData.name}
+              type="text"
+              onChange={handleGroupNameChange}
+              placeholder="Enter unique name"
+              autoFocus
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={formData.description}
+              type="text"
+              onChange={handleGroupDescriptionChange}
+              placeholder="Enter description"
+            />
+          </FormField>
+          <FormField label="Users">
+            <MultiSelect
+              checkAllLabel="All users"
+              value={formData.usersIds}
+              onChange={handleGroupUsersChange}
+              options={usersOptions}
+              maxHeight={400}
+              placeholder="Select"
+            />
+          </FormField>
+        </FormFieldsContainer>
+      </DialogV2>
+    )
   );
 };
 

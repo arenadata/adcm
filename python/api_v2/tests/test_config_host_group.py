@@ -195,7 +195,7 @@ class TestClusterCHG(BaseClusterCHGTestCase):
         response = self.client.v2[self.cluster_1_host_group, "hosts"].post(data={"hostId": self.new_host.pk})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertDictEqual(response.json(), {"id": 2, "name": "new_host"})
+        self.assertDictEqual(response.json(), {"id": self.new_host.id, "name": "new_host"})
 
     def test_add_host_from_another_config_host_group_fail(self):
         new_host_group = ConfigHostGroup.objects.create(
@@ -408,90 +408,6 @@ class TestServiceCHG(BaseServiceCHGTestCase):
             self.assertEqual(response.status_code, HTTP_201_CREATED)
             self.assertEqual(response.json()["description"], "new config")
 
-    def test_adcm_5113_create_success(self):
-        service_config_data = {
-            "config": {
-                "group": {"password": "newpassword"},
-                "activatable_group": {"text": "new text"},
-                "string": "new string",
-            },
-            "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/activatable_group/text": {"isSynchronized": False},
-                "/group/password": {"isSynchronized": False},
-                "/string": {"isSynchronized": False},
-            },
-            "description": "new config",
-        }
-
-        service_new_host_group = ConfigHostGroup.objects.create(
-            name="service_new_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
-        )
-
-        config_log_to_delete = ConfigLog.objects.filter(pk=service_new_host_group.pk).last()
-        config_log_to_delete.delete()
-
-        response = self.client.v2[service_new_host_group, "configs"].post(data=service_config_data)
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-    def test_adcm_5113_twice_create_success(self):
-        service_config_data_1 = {
-            "config": {
-                "group": {"password": "newpassword"},
-                "activatable_group": {"text": "new text"},
-                "string": "new string",
-            },
-            "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/activatable_group/text": {"isSynchronized": False},
-                "/group/password": {"isSynchronized": False},
-                "/string": {"isSynchronized": False},
-            },
-            "description": "new config",
-        }
-        service_config_data_2 = {
-            "config": {
-                "group": {"password": "newpassword2"},
-                "activatable_group": {"text": "new text 2"},
-                "string": "new string 2",
-            },
-            "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/activatable_group/text": {"isSynchronized": False},
-                "/group/password": {"isSynchronized": False},
-                "/string": {"isSynchronized": False},
-            },
-            "description": "new config 2",
-        }
-
-        service_new_host_group_1 = ConfigHostGroup.objects.create(
-            name="service_new_config_host_group_1",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
-        )
-        service_new_host_group_2 = ConfigHostGroup.objects.create(
-            name="service_new_config_host_group_2",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
-        )
-
-        config_logs_to_delete = ConfigLog.objects.filter(
-            pk__in=(service_new_host_group_1.pk, service_new_host_group_2.pk)
-        )
-        config_logs_to_delete.first().delete()
-        config_logs_to_delete.last().delete()
-
-        response = self.client.v2[service_new_host_group_1, "configs"].post(data=service_config_data_1)
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        response = self.client.v2[service_new_host_group_2, "configs"].post(data=service_config_data_2)
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
     def test_delete_success(self):
         response = self.client.v2[self.service_1_host_group].delete()
 
@@ -521,7 +437,7 @@ class TestServiceCHG(BaseServiceCHGTestCase):
         response = self.client.v2[self.service_1_host_group, "hosts"].post(data={"hostId": self.host_for_service.pk})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertDictEqual(response.json(), {"id": 3, "name": "host_for_service"})
+        self.assertDictEqual(response.json(), {"id": self.host_for_service.id, "name": self.host_for_service.name})
 
     def test_add_not_mapped_host_fail(self):
         initial_hosts_count = self.service_1_host_group.hosts.count()
@@ -908,7 +824,14 @@ class TestProviderCHG(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(
             response.json()["results"],
-            [{"description": "", "hosts": [{"id": 1, "name": "host"}], "id": 1, "name": "config_host_group"}],
+            [
+                {
+                    "description": "",
+                    "hosts": [{"id": self.host.id, "name": "host"}],
+                    "id": self.host_group.id,
+                    "name": "config_host_group",
+                }
+            ],
         )
 
     def test_retrieve_success(self):
@@ -917,7 +840,12 @@ class TestProviderCHG(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(
             response.json(),
-            {"description": "", "hosts": [{"id": 1, "name": "host"}], "id": 1, "name": "config_host_group"},
+            {
+                "description": "",
+                "hosts": [{"id": self.host.id, "name": "host"}],
+                "id": self.host_group.id,
+                "name": "config_host_group",
+            },
         )
 
     def test_create_success(self):
@@ -927,7 +855,13 @@ class TestProviderCHG(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertDictEqual(
-            response.json(), {"description": "group config new", "hosts": [], "id": 2, "name": "group-config-new"}
+            response.json(),
+            {
+                "description": "group config new",
+                "hosts": [],
+                "id": ConfigHostGroup.objects.last().id,
+                "name": "group-config-new",
+            },
         )
 
     def test_create_without_config_fail(self):
@@ -973,13 +907,13 @@ class TestProviderCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, "hosts"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertListEqual(response.json(), [{"id": 1, "name": "host"}])
+        self.assertListEqual(response.json(), [{"id": self.host.id, "name": "host"}])
 
     def test_add_host_success(self):
         response = self.client.v2[self.host_group, "hosts"].post(data={"hostId": self.new_host.pk})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertDictEqual(response.json(), {"id": 2, "name": "new-host"})
+        self.assertDictEqual(response.json(), {"id": self.new_host.id, "name": "new-host"})
 
     def test_add_self_host_fail(self):
         response = self.client.v2[self.host_group, "hosts"].post(data={"hostId": self.host.pk})
@@ -998,7 +932,7 @@ class TestProviderCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, "host-candidates"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertListEqual(response.json(), [{"id": 2, "name": "new-host"}])
+        self.assertListEqual(response.json(), [{"id": self.new_host.id, "name": "new-host"}])
 
     def test_delete_host_success(self):
         response = self.client.v2[self.host_group, "hosts", self.host].delete()

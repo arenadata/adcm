@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { Button, Dialog } from '@uikit';
+import { Button, DialogV2 } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { deleteGroupsWithUpdate } from '@store/adcm/groups/groupsActionsSlice';
 
@@ -30,15 +30,16 @@ const AccessManagerGroupsDeleteButton: React.FC = () => {
       <Button variant="secondary" disabled={!areSomeRowsSelected} onClick={handleClick}>
         Delete
       </Button>
-      <Dialog
-        isOpen={isOpenDeleteConfirm}
-        onOpenChange={handleCloseDialog}
-        title="Delete groups"
-        onAction={handleConfirmDialog}
-        actionButtonLabel="Delete"
-      >
-        All selected groups will be deleted.
-      </Dialog>
+      {isOpenDeleteConfirm && (
+        <DialogV2
+          title="Delete groups"
+          onAction={handleConfirmDialog}
+          onCancel={handleCloseDialog}
+          actionButtonLabel="Delete"
+        >
+          All selected groups will be deleted.
+        </DialogV2>
+      )}
     </>
   );
 };

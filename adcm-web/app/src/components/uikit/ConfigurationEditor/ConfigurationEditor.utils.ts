@@ -100,6 +100,44 @@ export const deleteArrayItem = (configuration: ConfigurationData, path: Configur
   return newConfiguration;
 };
 
+export const moveArrayItem = (
+  configuration: ConfigurationData,
+  currentPath: ConfigurationNodePath,
+  newPath: ConfigurationNodePath,
+) => {
+  const newConfiguration = cloneConfiguration(configuration);
+
+  const currentIndex = Number(currentPath.pop()!);
+  const newIndex = Number(newPath.pop()!);
+
+  let node = newConfiguration;
+  for (const part of currentPath) {
+    node = node[part] as JSONObject;
+  }
+
+  const arrayNode = node as unknown as [];
+  const tmp = arrayNode[currentIndex];
+
+  // moving forward item
+  if (currentIndex < newIndex) {
+    // moving all elements one position backwards
+    for (let i = currentIndex; i < newIndex; i++) {
+      arrayNode[i] = arrayNode[i + 1];
+    }
+
+    arrayNode[newIndex] = tmp;
+  } else if (newIndex < currentIndex) {
+    // moving all elements one position forward
+    for (let i = currentIndex; i > newIndex; i--) {
+      arrayNode[i] = arrayNode[i - 1];
+    }
+
+    arrayNode[newIndex] = tmp;
+  }
+
+  return newConfiguration;
+};
+
 export const removeEmpty = (value: unknown): unknown => {
   if (isObject(value)) {
     const newObject: JSONObject = {};

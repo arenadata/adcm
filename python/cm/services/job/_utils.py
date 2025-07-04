@@ -10,53 +10,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from core.cluster.types import ClusterTopology, TopologyHostDiff
+from core.cluster.types import TopologyHostDiff
+from core.job.types import HcAclRule, TaskMappingDelta
+from core.types import ComponentID, ComponentNameKey
 
 from cm.errors import AdcmEx
-from cm.services.job.types import ActionHCRule, TaskMappingDelta
+from cm.services.job.types import ActionHCRule
 
 
-def construct_delta_for_task(topology: ClusterTopology, host_difference: TopologyHostDiff) -> TaskMappingDelta:
+def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDelta:
     delta = TaskMappingDelta()
-
-    if not (host_difference.mapped or host_difference.unmapped):
-        return delta
-
-    component_keys = {
-        component_id: f"{service_topology.info.name}.{component_topology.info.name}"
-        for service_id, service_topology in topology.services.items()
-        for component_id, component_topology in service_topology.components.items()
-    }
-
-    for component_id, added_hosts in host_difference.mapped.components.items():
-        key = component_keys[component_id]
-        delta.add[key] = {topology.hosts[host_id] for host_id in added_hosts}
-
-    for component_id, removed_hosts in host_difference.unmapped.components.items():
-        key = component_keys[component_id]
-        delta.remove[key] = {topology.hosts[host_id] for host_id in removed_hosts}
+    delta.add = dict(host_difference.mapped.components)
+    delta.remove = dict(host_difference.unmapped.components)
 
     return delta
 
 
-def check_delta_is_allowed(delta: TaskMappingDelta, rules: list[ActionHCRule]) -> None:
+def check_delta_is_allowed(
+    delta: TaskMappingDelta,
+    rules: list[ActionHCRule | HcAclRule],
+    full_name_mapping: dict[ComponentNameKey, ComponentID],
+) -> None:
     if not rules:
         return
 
     allowed = {"add": set(), "remove": set()}
+
     for rule in rules:
-        component_key = f"{rule['service']}.{rule['component']}"
-        allowed[rule["action"]].add(component_key)
+        component_key = ComponentNameKey(service=rule["service"], component=rule["component"])
+        component_id = full_name_mapping.get(component_key)
+        if component_id:
+            allowed[rule["action"]].add(component_id)
 
     disallowed_add = set(delta.add.keys()).difference(allowed["add"])
     if disallowed_add:
-        disallowed = next(iter(disallowed_add))
-        message = f'no permission to "add" component {disallowed} to cluster mapping'
+        disallowed_id = next(iter(disallowed_add))
+        reversed_mapping = {val: key for key, val in full_name_mapping.items()}
+        disallowed_name = reversed_mapping[disallowed_id]
+        message = f'no permission to "add" component {disallowed_name} to cluster mapping'
         raise AdcmEx(code="WRONG_ACTION_HC", msg=message)
 
     disallowed_remove = set(delta.remove.keys()).difference(allowed["remove"])
     if disallowed_remove:
-        disallowed = next(iter(disallowed_remove))
-        message = f'no permission to "remove" component {disallowed} from cluster mapping'
+        disallowed_id = next(iter(disallowed_remove))
+        reversed_mapping = {val: key for key, val in full_name_mapping.items()}
+        disallowed_name = reversed_mapping[disallowed_id]
+        message = f'no permission to "remove" component {disallowed_name} from cluster mapping'
         raise AdcmEx(code="WRONG_ACTION_HC", msg=message)

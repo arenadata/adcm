@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
+import { DialogV2, FormField, FormFieldsContainer, Input } from '@uikit';
 import type { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { useForm } from '@hooks';
 import { required } from '@utils/validationsUtils';
@@ -44,10 +44,10 @@ const ConfigGroupCreateDialog: React.FC<ConfigGroupCreateDialogProps> = ({ isCre
     handleChangeFormData({ description: event.target.value });
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={onClose}
+    <DialogV2
       isActionDisabled={!isValid || isCreating}
       title="Create configuration group"
       actionButtonLabel="Next"
@@ -63,7 +63,7 @@ const ConfigGroupCreateDialog: React.FC<ConfigGroupCreateDialogProps> = ({ isCre
           <Input value={formData.description} onChange={handleChangeDescription} />
         </FormField>
       </FormFieldsContainer>
-    </Dialog>
+    </DialogV2>
   );
 };
 

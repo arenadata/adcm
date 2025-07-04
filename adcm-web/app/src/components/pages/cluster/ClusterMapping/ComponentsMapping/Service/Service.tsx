@@ -10,6 +10,7 @@ import { checkComponentMappingAvailability, checkHostMappingAvailability } from 
 export interface ServiceProps {
   service: AdcmMappingComponentService;
   componentsMapping: ComponentMapping[];
+  hasErrors?: boolean;
   anchorId: string;
   hosts: AdcmHostShortView[];
   mappingFilter: MappingFilter;
@@ -22,6 +23,7 @@ export interface ServiceProps {
 const Service = ({
   service,
   componentsMapping,
+  hasErrors,
   anchorId,
   hosts,
   mappingFilter,
@@ -30,12 +32,11 @@ const Service = ({
   onUnmap,
   onInstallServices,
 }: ServiceProps) => {
-  const isServiceValid = componentsMapping.every((cm) => mappingErrors[cm.component.id] === undefined);
   const titleClassName = cn(s.service__title, {
-    [s.service__title_error]: !isServiceValid,
+    [s.service__title_error]: hasErrors,
   });
 
-  const markerType = isServiceValid ? 'check' : 'alert';
+  const markerType = !hasErrors ? 'check' : 'alert';
 
   const filteredComponentsMapping = useMemo(() => {
     return componentsMapping.filter((componentMapping) =>

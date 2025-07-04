@@ -1,7 +1,7 @@
 import type React from 'react';
-import Dialog from '@uikit/Dialog/Dialog';
 import { useDispatch, useStore } from '@hooks';
 import { deleteWithUpdateBundles, closeDeleteDialog } from '@store/adcm/bundles/bundlesActionsSlice';
+import { DialogV2 } from '@uikit';
 
 const BundleItemDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -9,7 +9,7 @@ const BundleItemDeleteDialog: React.FC = () => {
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
   const deletableId = useStore(({ adcm }) => adcm.bundlesActions.deleteDialog.id);
 
-  const isOpen = deletableId !== null;
+  if (deletableId === null) return;
 
   const handleCloseDialog = () => {
     dispatch(closeDeleteDialog());
@@ -24,16 +24,15 @@ const BundleItemDeleteDialog: React.FC = () => {
   const deletableBundleName = bundles.find(({ id }) => id === deletableId)?.name || '';
 
   return (
-    <Dialog
+    <DialogV2
       //
-      isOpen={isOpen}
-      onOpenChange={handleCloseDialog}
       title={`Delete "${deletableBundleName}" bundle`}
       onAction={handleConfirmDialog}
+      onCancel={handleCloseDialog}
       actionButtonLabel="Delete"
     >
       All bundle information will be deleted
-    </Dialog>
+    </DialogV2>
   );
 };
 export default BundleItemDeleteDialog;

@@ -16,10 +16,11 @@ from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -29,7 +30,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.job.filters import JobFilter
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
@@ -52,25 +53,23 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="postJobTerminate",
         description="Terminate the execution of a specific job.",
         summary="POST job terminate",
-        responses={
-            HTTP_200_OK: OpenApiResponse(),
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
-        },
+        responses=responses(
+            success=(HTTP_200_OK, None), errors=(HTTP_409_CONFLICT, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getJob",
         description="Get information about a specific ADCM job.",
         summary="GET job",
-        responses={
-            HTTP_200_OK: JobRetrieveSerializer,
-            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
-        },
+        responses=responses(
+            success=(HTTP_200_OK, JobRetrieveSerializer), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
+        ),
     ),
 )
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
     filterset_class = JobFilter
-    permission_classes = [JobPermissions]
+    permission_classes = [IsAuthenticated, JobPermissions]
     permission_required = [VIEW_JOBLOG_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):

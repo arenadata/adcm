@@ -27,11 +27,17 @@ class ServiceFilter(
     number_fields=("id",),
     with_object_status=True,
 ):
-    name = CharFilter(label="Service name", field_name="prototype__name", lookup_expr="icontains")
-    display_name = CharFilter(
-        label="Service display name", field_name="prototype__display_name", lookup_expr="icontains"
+    name = CharFilter(
+        label="Case insensitive and partial filter by service name.",
+        field_name="prototype__name",
+        lookup_expr="icontains",
     )
-    status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    display_name = CharFilter(
+        label="Case insensitive and partial filter by service display name.",
+        field_name="prototype__display_name",
+        lookup_expr="icontains",
+    )
+    status = ChoiceFilter(label="Filter by service status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(
         fields={"prototype__display_name": "displayName"},
         field_labels={
