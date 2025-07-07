@@ -26,15 +26,12 @@ export const useRequestHosts = () => {
     if (hosts.length) {
       dispatch(loadHostsDynamicActions(hosts));
     }
-
-    return () => {
-      dispatch(cleanupHostDynamicActions());
-    };
   }, [dispatch, hosts]);
 
   // clear hosts slice and hosts tables
   useEffect(() => {
     return () => {
+      dispatch(cleanupHostDynamicActions());
       dispatch(cleanupHosts());
       dispatch(cleanupList());
     };
