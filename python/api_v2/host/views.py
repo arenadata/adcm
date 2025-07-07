@@ -16,6 +16,7 @@ from adcm.permissions import (
     VIEW_HOST_PERM,
     VIEW_PROVIDER_PERM,
     ChangeMMPermissions,
+    IsAuthenticatedAudit,
     check_custom_perm,
     get_object_for_user,
 )
@@ -30,6 +31,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -42,7 +44,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -72,23 +74,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET hosts",
         parameters=[
             OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by host name.",
-            ),
-            OpenApiParameter(
-                name="hostprovider_name",
-                description="Filter by hostprovider name.",
-            ),
-            OpenApiParameter(
-                name="cluster_name",
-                description="Filter by cluster name.",
-            ),
-            OpenApiParameter(
-                name="is_in_cluster",
-                description="Filter by is host in cluster.",
-                type=bool,
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -106,92 +91,48 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 default="name",
             ),
         ],
-        responses={
-            HTTP_200_OK: HostSerializer(many=True),
-        },
+        responses=responses(success=HostSerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postHosts",
         description="Create a new hosts.",
         summary="POST hosts",
-        responses={
-            HTTP_201_CREATED: HostSerializer,
-            **{err_code: ErrorSerializer for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, HostSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getHost",
         description="Get information about a specific host.",
         summary="GET host",
-        parameters=[
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="Host id.",
-            ),
-        ],
-        responses={
-            HTTP_200_OK: HostSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-        },
+        responses=responses(success=HostSerializer, errors=HTTP_404_NOT_FOUND),
     ),
     destroy=extend_schema(
         operation_id="deleteHost",
         description="Delete host from ADCM.",
         summary="DELETE host",
-        parameters=[
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="Host id.",
-            ),
-        ],
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)},
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     partial_update=extend_schema(
         operation_id="patchHost",
         description="Change host Information.",
         summary="PATCH host",
-        parameters=[
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="Host id.",
-            ),
-        ],
-        responses={
-            HTTP_200_OK: HostSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
-            },
-        },
+        responses=responses(
+            success=HostSerializer,
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     maintenance_mode=extend_schema(
         operation_id="postHostMaintenanceMode",
         description="Turn on/off maintenance mode on the host.",
         summary="POST host maintenance-mode",
-        parameters=[
-            OpenApiParameter(
-                name="id",
-                type=int,
-                location=OpenApiParameter.PATH,
-                description="Host id.",
-            ),
-        ],
-        responses={
-            HTTP_200_OK: HostChangeMaintenanceModeSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
-            },
-        },
+        responses=responses(
+            success=HostChangeMaintenanceModeSerializer,
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     config_schema=extend_config_schema("host"),
 )
@@ -209,7 +150,7 @@ class HostViewSet(
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
-    permission_classes = [HostsPermissions]
+    permission_classes = [IsAuthenticated, HostsPermissions]
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
 
@@ -297,7 +238,12 @@ class HostViewSet(
         before=extract_previous_from_object(Host, "maintenance_mode"),
         after=extract_current_from_response("maintenance_mode"),
     )
-    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="maintenance-mode",
+        permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
+    )
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
 

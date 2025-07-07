@@ -22,8 +22,14 @@ class ComponentFilter(
     number_fields=("id",),
     with_object_status=True,
 ):
-    name = CharFilter(field_name="prototype__name", label="Name", lookup_expr="icontains")
-    display_name = CharFilter(field_name="prototype__display_name", label="Display Name", lookup_expr="icontains")
+    name = CharFilter(
+        field_name="prototype__name", label="Case insensitive and partial filter by name.", lookup_expr="icontains"
+    )
+    display_name = CharFilter(
+        field_name="prototype__display_name",
+        label="Case insensitive and partial filter by display name.",
+        lookup_expr="icontains",
+    )
     ordering = OrderingFilter(
         fields={"prototype__name": "name", "prototype__display_name": "displayName"},
         field_labels={

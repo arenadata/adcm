@@ -17,6 +17,7 @@ from adcm.permissions import (
     VIEW_IMPORT_PERM,
     VIEW_SERVICE_PERM,
     ChangeMMPermissions,
+    IsAuthenticatedAudit,
     check_custom_perm,
     get_object_for_user,
 )
@@ -41,6 +42,7 @@ from rest_framework.mixins import (
     ListModelMixin,
     RetrieveModelMixin,
 )
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -53,7 +55,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -113,28 +115,13 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getClusterService",
         summary="GET cluster service",
         description="Get information about a specific cluster service.",
-        responses=responses(success=ServiceRetrieveSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=ServiceRetrieveSerializer, errors=HTTP_404_NOT_FOUND),
     ),
     list=extend_schema(
         operation_id="getClusterServices",
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
-            OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by service name.",
-            ),
-            OpenApiParameter(
-                # It is necessary to specify such fields with underscores, otherwise this field will be duplicated
-                # in the scheme. The name in the schema must match the name of the field in the filter class
-                name="display_name",
-                description="Case insensitive and partial filter by service display name.",
-            ),
-            OpenApiParameter(
-                name="status",
-                description="Filter by status",
-                enum=("up", "down"),
-            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -145,7 +132,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 default="id",
             ),
         ],
-        responses=responses(success=ServiceRetrieveSerializer(many=True), errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ServiceRetrieveSerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postClusterServices",
@@ -154,10 +141,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         request=ManyServiceCreateSerializer,
         responses={
             (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_SERVICE_TO_CLUSTER_RESPONSE_SCHEMA,
-            **{
-                k: ErrorSerializer
-                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
-            },
+            **responses(errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)),
         },
     ),
     destroy=extend_schema(
@@ -165,8 +149,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="DELETE cluster service",
         description="Delete a specific cluster service.",
         responses=responses(
-            success=(HTTP_204_NO_CONTENT, None),
-            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
         ),
     ),
     maintenance_mode=extend_schema(
@@ -182,7 +165,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getComponentStatuses",
         summary="GET component statuses",
         description="Get information about component statuses.",
-        responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=ServiceStatusSerializer, errors=(HTTP_404_NOT_FOUND,)),
     ),
     config_schema=extend_config_schema("service"),
 )
@@ -199,7 +182,7 @@ class ServiceViewSet(
     queryset = Service.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter
     permission_required = [VIEW_SERVICE_PERM]
-    permission_classes = [ServicePermissions]
+    permission_classes = [IsAuthenticated, ServicePermissions]
     audit_model_hint = Service
     retrieve_status_map_actions = ("list", "statuses")
 
@@ -268,7 +251,12 @@ class ServiceViewSet(
         )
     )
     @update_mm_objects
-    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="maintenance-mode",
+        permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
+    )
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         service: Service = get_object_for_user(
             user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]

@@ -20,11 +20,13 @@ class ProviderFilter(
     char_fields=("name",),
     number_fields=("id", ("bundle", "prototype__bundle__id")),
 ):
-    name = CharFilter(field_name="name", label="Hostprovider name", lookup_expr="icontains")
-    prototype_display_name = CharFilter(
-        field_name="prototype__display_name", label="Hostprovider prototype display name", lookup_expr="exact"
+    name = CharFilter(
+        field_name="name", label="Case insensitive and partial filter by hostprovider name.", lookup_expr="icontains"
     )
-    state = CharFilter(field_name="state", label="Hostprovider state", lookup_expr="exact")
+    prototype_display_name = CharFilter(
+        field_name="prototype__display_name", label="Filter by prototype display name.", lookup_expr="exact"
+    )
+    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
     ordering = OrderingFilter(
         fields={"name": "name"},
         field_labels={"name": "Name"},

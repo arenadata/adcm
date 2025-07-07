@@ -291,4 +291,16 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
 
         return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
 
-    return exception_handler(exc=exc, context=context)
+    response = exception_handler(exc=exc, context=context)
+
+    if not isinstance(exc, AdcmEx) and response and 400 <= response.status_code <= 499:
+        data = {
+            "code": "API_ERROR",
+            "level": "ERROR",
+            "desc": response.data.get("detail", response.status_code)
+            if isinstance(response.data, dict)
+            else response.status_code,
+        }
+        response.data = data
+
+    return response

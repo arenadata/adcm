@@ -27,9 +27,9 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import responses
 from api_v2.login.serializers import LoginSerializer
 
 
@@ -58,10 +58,7 @@ class BaseLoginView(GenericAPIView):
         operation_id="postLogin",
         description="Perform authorization in ADCM.",
         summary="POST login",
-        responses={
-            HTTP_200_OK: LoginSerializer,
-            HTTP_401_UNAUTHORIZED: ErrorSerializer,
-        },
+        responses=responses(success=LoginSerializer, errors=HTTP_400_BAD_REQUEST, auth_required=False),
     ),
 )
 class LoginView(BaseLoginView):

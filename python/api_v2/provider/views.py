@@ -17,12 +17,12 @@ from cm.errors import AdcmEx
 from cm.models import ObjectType, Prototype, Provider
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (
-    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
@@ -30,7 +30,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -69,18 +69,6 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
             OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by hostprovider name.",
-            ),
-            OpenApiParameter(
-                name="prototype_display_name",
-                description="Filter by prototype display name.",
-            ),
-            OpenApiParameter(
-                name="state",
-                description="Filter by state.",
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -90,43 +78,36 @@ from api_v2.views import ADCMGenericViewSet
                 default="name",
             ),
         ],
-        responses={
-            HTTP_200_OK: ProviderSchemaSerializer(many=True),
-        },
+        responses=responses(success=ProviderSchemaSerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postHostproviders",
         summary="POST hostproviders",
         description="Creation of a new ADCM hostprovider.",
-        responses={
-            HTTP_201_CREATED: ProviderSchemaSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_409_CONFLICT: ErrorSerializer,
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, ProviderSchemaSerializer), errors=(HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getHostprovider",
         summary="GET hostprovider",
         description="Get information about a specific hostprovider.",
-        responses={HTTP_200_OK: ProviderSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=ProviderSerializer, errors=HTTP_404_NOT_FOUND),
     ),
     destroy=extend_schema(
         operation_id="deleteHostprovider",
         summary="DELETE hostprovider",
         description="Delete a specific ADCM hostprovider.",
-        responses={
-            HTTP_200_OK: OpenApiResponse(),
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-            HTTP_409_CONFLICT: ErrorSerializer,
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+        ),
     ),
     config_schema=extend_config_schema("provider"),
 )
 class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet):
     queryset = Provider.objects.select_related("prototype").order_by("name")
     serializer_class = ProviderSerializer
-    permission_classes = [ProviderPermissions]
+    permission_classes = [IsAuthenticated, ProviderPermissions]
     permission_required = [VIEW_PROVIDER_PERM]
     filterset_class = ProviderFilter
     filter_backends = (DjangoFilterBackend,)

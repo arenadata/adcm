@@ -19,6 +19,7 @@ from adcm.permissions import (
     VIEW_IMPORT_PERM,
     VIEW_SERVICE_PERM,
     ChangeMMPermissions,
+    IsAuthenticatedAudit,
     check_custom_perm,
     get_object_for_user,
 )
@@ -65,6 +66,7 @@ from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -77,7 +79,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
+from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
@@ -161,7 +163,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     create=extend_schema(
         operation_id="postCluster",
         summary="POST cluster",
-        description="Creates of a new ADCM cluster.",
+        description="Create a new ADCM cluster.",
         responses=responses(
             success=(HTTP_201_CREATED, ClusterSerializer),
             errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
@@ -174,20 +176,10 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(name="id", type=int, description="Cluster ID."),
-            OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by cluster name.",
-            ),
             OpenApiParameter(
                 name="status",
                 description="Status filter.",
                 enum=("up", "down"),
-            ),
-            OpenApiParameter(name="prototypeName", description="Filter by prototype name."),
-            OpenApiParameter(
-                name="prototypeDisplayName",
-                description="Filter by prototype display name.",
             ),
             OpenApiParameter(
                 name="ordering",
@@ -200,13 +192,15 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 ),
                 default="name",
             ),
+            *exclude_params(names=["id"]),
         ],
+        responses=responses(success=ClusterSerializer(many=True)),
     ),
     retrieve=extend_schema(
         summary="GET cluster",
         description="Get information about a specific cluster.",
         operation_id="getCluster",
-        responses=responses(success=ClusterSerializer, errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ClusterSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     partial_update=extend_schema(
         operation_id="patchCluster",
@@ -227,9 +221,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getClusterServiceStatuses",
         summary="Get information about cluster service statuses.",
         description="Get information about cluster service statuses.",
-        responses=responses(
-            success=RelatedServicesStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
-        ),
+        responses=responses(success=RelatedServicesStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
@@ -246,7 +238,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                     "id",
                     "-id",
                 ],
-                default="displayName",
+                default="id",
             ),
         ],
     ),
@@ -254,21 +246,19 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getServicePrototypes",
         summary="GET service prototypes",
         description="Get service prototypes that is related to this cluster.",
-        responses=responses(success=ServicePrototypeSerializer(many=True), errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ServicePrototypeSerializer(many=True)),
     ),
     service_candidates=extend_schema(
         operation_id="getServiceCandidates",
         summary="GET service candidates",
         description="Get service prototypes that can be added to this cluster.",
-        responses=responses(success=ServicePrototypeSerializer(many=True), errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=ServicePrototypeSerializer(many=True)),
     ),
     hosts_statuses=extend_schema(
         operation_id="getClusterHostStatuses",
         summary="Get information about cluster hosts statuses.",
         description="Get information about cluster hosts statuses.",
-        responses=responses(
-            success=RelatedHostsStatusesSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
-        ),
+        responses=responses(success=RelatedHostsStatusesSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
@@ -285,7 +275,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                     "id",
                     "-id",
                 ],
-                default="name",
+                default="id",
             ),
         ],
     ),
@@ -307,7 +297,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster ansible configuration schema",
         description="Get information about cluster ansible config schema.",
         examples=DefaultParams.CONFIG_SCHEMA_EXAMPLE,
-        responses=responses(success=dict, errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=dict),
     ),
     config_schema=extend_config_schema("cluster"),
 )
@@ -326,7 +316,7 @@ class ClusterViewSet(
     )
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
-    permission_classes = [ClusterPermissions]
+    permission_classes = [IsAuthenticated, ClusterPermissions]
     retrieve_status_map_actions = (
         "services_statuses",
         "hosts_statuses",
@@ -507,7 +497,7 @@ class ClusterViewSet(
         operation_id="getHostComponentMapping",
         summary="GET host component mapping",
         description="Get information about host and component mapping.",
-        responses=responses(success=MappingSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=MappingSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     )
     @extend_schema(
         methods=["post"],
@@ -756,19 +746,6 @@ class ClusterViewSet(
         summary="GET cluster hosts",
         parameters=[
             OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by host name.",
-            ),
-            OpenApiParameter(
-                name="hostprovider_name",
-                description="Filter by hostprovider name.",
-            ),
-            OpenApiParameter(
-                name="component_id",
-                description="Filter by component id.",
-                type=int,
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -784,36 +761,31 @@ class ClusterViewSet(
                 default="name",
             ),
         ],
-        responses={
-            HTTP_200_OK: HostSerializer(many=True),
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-        },
+        responses=responses(success=HostSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
     ),
     create=extend_schema(
         operation_id="postCusterHosts",
         description="Add a new hosts to cluster.",
         summary="POST cluster hosts",
         request=ManyHostAddSerializer,
-        responses={
-            (HTTP_201_CREATED, "application/json"): DefaultParams.ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA,
-            **{
-                k: ErrorSerializer
-                for k in (HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
-            },
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, DefaultParams.ADD_HOST_TO_CLUSTER_RESPONSE_SCHEMA),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     retrieve=extend_schema(
         operation_id="getClusterHost",
         description="Get information about a specific cluster host.",
         summary="GET cluster host",
-        responses=responses(success=HostSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=HostSerializer, errors=(HTTP_404_NOT_FOUND,)),
     ),
     destroy=extend_schema(
         operation_id="deleteClusterHost",
         description="Unlink host from cluster.",
         summary="DELETE cluster host",
         responses=responses(
-            success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            success=(HTTP_204_NO_CONTENT, None),
+            errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
         ),
     ),
     maintenance_mode=extend_schema(
@@ -829,14 +801,14 @@ class ClusterViewSet(
         operation_id="getHostStatuses",
         description="Get information about cluster host status.",
         summary="GET host status",
-        responses=responses(success=ClusterHostStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=ClusterHostStatusSerializer, errors=(HTTP_404_NOT_FOUND,)),
     ),
 )
 class HostClusterViewSet(
     PermissionListMixin, ObjectWithStatusViewMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet
 ):
     permission_required = [VIEW_HOST_PERM]
-    permission_classes = [HostsClusterPermissions]
+    permission_classes = [IsAuthenticated, HostsClusterPermissions]
     # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
     # don't use it directly, use `get_queryset`
     queryset = (
@@ -931,7 +903,12 @@ class HostClusterViewSet(
         before=extract_previous_from_object(Host, "maintenance_mode"),
         after=extract_current_from_response("maintenance_mode"),
     )
-    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="maintenance-mode",
+        permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
+    )
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
 

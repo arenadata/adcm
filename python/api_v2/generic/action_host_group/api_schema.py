@@ -35,7 +35,7 @@ def document_action_host_group_viewset(object_type: str):
             description=f"Create a new {object_type}'s action host group.",
             responses=responses(
                 success=(HTTP_201_CREATED, ActionHostGroupSerializer),
-                errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+                errors=(HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN),
             ),
         ),
         list=extend_schema(
@@ -54,9 +54,7 @@ def document_action_host_group_viewset(object_type: str):
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
             ],
-            responses=responses(
-                success=ActionHostGroupSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
-            ),
+            responses=responses(success=ActionHostGroupSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),
         retrieve=extend_schema(
             operation_id=f"get{capitalized_type}ActionHostGroup",
@@ -68,7 +66,9 @@ def document_action_host_group_viewset(object_type: str):
             operation_id=f"delete{capitalized_type}ActionHostGroup",
             summary=f"DELETE {object_type}'s Action Host Group",
             description=f"Delete specific {object_type}'s action host group.",
-            responses=responses(success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)),
+            responses=responses(
+                success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)
+            ),
         ),
         host_candidate=extend_schema(
             operation_id=f"get{capitalized_type}ActionHostGroupCandidates",
@@ -130,9 +130,7 @@ def document_action_host_group_viewset(object_type: str):
                     default="name",
                 ),
             ],
-            responses=responses(
-                success=ShortHostSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
-            ),
+            responses=responses(success=ShortHostSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),
     )
 
@@ -144,7 +142,7 @@ def document_action_host_group_hosts_viewset(object_type: str):
         list=extend_schema(
             operation_id=f"get{capitalized_type}ActionHostGroupHosts",
             description=f"Get information about {object_type}'s Action Host Group hosts.",
-            summary=f"GET {object_type}'s action host group hosts.",
+            summary=f"GET {object_type}'s action host group hosts",
             parameters=[
                 OpenApiParameter(
                     name="name",
@@ -170,7 +168,7 @@ def document_action_host_group_hosts_viewset(object_type: str):
                     default="name",
                 ),
             ],
-            responses=responses(success=ShortHostSerializer, errors=HTTP_403_FORBIDDEN),
+            responses=responses(success=ShortHostSerializer, errors=HTTP_404_NOT_FOUND),
         ),
         create=extend_schema(
             operation_id=f"post{capitalized_type}ActionHostGroupHosts",
@@ -178,14 +176,14 @@ def document_action_host_group_hosts_viewset(object_type: str):
             description=f"Add hosts to {object_type}'s action host group.",
             responses=responses(
                 success=(HTTP_201_CREATED, ShortHostSerializer),
-                errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+                errors=(HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN),
             ),
         ),
         destroy=extend_schema(
             operation_id=f"delete{capitalized_type}ActionHostGroupHosts",
             summary=f"DELETE {object_type}'s Action Host Group hosts",
             description=f"Delete specific host from {object_type}'s action host group.",
-            responses=responses(success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)),
+            responses=responses(success=(HTTP_204_NO_CONTENT, None), errors=(HTTP_409_CONFLICT, HTTP_404_NOT_FOUND)),
         ),
     )
 

@@ -12,9 +12,7 @@
 
 from pathlib import Path
 from typing import Any
-import os
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
 from core.bundle_alt.process import ConfigJinjaContext
 from core.errors import localize_error
 from django.conf import settings
@@ -48,7 +46,10 @@ def get_jinja_config(
     )
 
     # too difficult for now to pass headers from all usages
-    use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
+    # As part of the ADCM-6747 task, we are leaving the old mechanism
+    # for preparing the configuration from the jinja file.
+    # use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
+    use_new_approach = False
 
     if not use_new_approach:
         return _get_jinja_config_old(

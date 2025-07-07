@@ -10,12 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 
+from api_v2.api_schema import responses
 from api_v2.login.views import BaseLoginView
+from api_v2.token.serializers import TokenSerializer
 
 
 class TokenAuthenticationExcludingTokenAcquiring(TokenAuthentication):
@@ -23,6 +27,14 @@ class TokenAuthenticationExcludingTokenAcquiring(TokenAuthentication):
         return
 
 
+@extend_schema_view(
+    post=extend_schema(
+        operation_id="acquireToken",
+        description="Get user token.",
+        summary="POST login",
+        responses=responses(success=TokenSerializer, errors=HTTP_400_BAD_REQUEST, auth_required=False),
+    ),
+)
 class TokenView(BaseLoginView):
     authentication_classes = (TokenAuthenticationExcludingTokenAcquiring,)
 
@@ -30,4 +42,5 @@ class TokenView(BaseLoginView):
         user = self.perform_login(request=request)
         token, _ = Token.objects.get_or_create(user=user)
 
-        return Response({"token": token.key})
+        serializer = TokenSerializer({"token": token.key})
+        return Response(serializer.data)

@@ -18,6 +18,7 @@ from adcm.permissions import (
     VIEW_SERVICE_PERM,
     ChangeMMPermissions,
     DjangoModelPermissionsAudit,
+    IsAuthenticatedAudit,
     check_custom_perm,
     get_object_for_user,
 )
@@ -32,7 +33,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -43,7 +44,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import exclude_params, responses
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -95,32 +96,19 @@ from api_v2.views import (
         operation_id="getHostComponentStatusesOfComponent",
         summary="GET host-component statuses of component on hoosts",
         description="Get information about component on hosts statuses.",
-        responses={HTTP_200_OK: ComponentStatusSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=ComponentStatusSerializer, errors=(HTTP_404_NOT_FOUND,)),
     ),
     retrieve=extend_schema(
         operation_id="getComponent",
         description="Get information about a specific component.",
         summary="GET component",
-        responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=ComponentSerializer, errors=(HTTP_404_NOT_FOUND,)),
     ),
     list=extend_schema(
         operation_id="getComponents",
         description="Get a list of all components of a particular service with information on them.",
         summary="GET components",
         parameters=[
-            OpenApiParameter(
-                name="id",
-                description="Component id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by name.",
-            ),
-            OpenApiParameter(
-                name="display_name",
-                description="Case insensitive and partial filter by display name.",
-            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -132,26 +120,24 @@ from api_v2.views import (
                 ),
                 default="id",
             ),
+            *exclude_params(names=("id",)),
         ],
-        responses={HTTP_200_OK: ComponentSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=ComponentSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
     ),
     maintenance_mode=extend_schema(
         operation_id="postComponentMaintenanceMode",
         description="Turn on/off maintenance mode on the component.",
         summary="POST component maintenance-mode",
-        responses={
-            HTTP_200_OK: ComponentMaintenanceModeSerializer,
-            **{
-                err_code: ErrorSerializer
-                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
-            },
-        },
+        responses=responses(
+            success=ComponentMaintenanceModeSerializer,
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     config_schema=extend_config_schema("config"),
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = Component.objects.select_related("cluster", "service").order_by("pk")
-    permission_classes = [DjangoModelPermissions]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
     retrieve_status_map_actions = ("statuses", "list")
@@ -184,7 +170,12 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         )
     )
     @update_mm_objects
-    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="maintenance-mode",
+        permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
+    )
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         component: Component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
