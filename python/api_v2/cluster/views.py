@@ -52,6 +52,7 @@ from cm.services.cluster import (
 )
 from cm.services.mapping import set_host_component_mapping
 from cm.services.status import notify
+from cm.status_api import send_object_update_event
 from core.bundle.operations import build_requires_dependencies_map
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
 from core.cluster.operations import (
@@ -385,6 +386,8 @@ class ClusterViewSet(
         instance.name = valid_data.get("name", instance.name)
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
+
+        send_object_update_event(instance, changes={"name": instance.name, "description": instance.description})
 
         return Response(
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data

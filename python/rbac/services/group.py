@@ -11,11 +11,13 @@
 # limitations under the License.
 
 """Service functions for working with Group model"""
-
+import functools
 
 from cm.errors import raise_adcm_ex
+from cm.status_api import send_object_update_event
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from django.db.transaction import on_commit
 
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
@@ -81,4 +83,15 @@ def update(
     except IntegrityError as e:
         raise_adcm_ex("GROUP_CONFLICT", msg=f"Group update failed with error {e}")
     _update_users(group, user_set)
+    on_commit(
+        func=functools.partial(
+            send_object_update_event,
+            object_=group,
+            changes={
+                "displayName": name_to_display,
+                "description": description,
+                "users": [u.pk for u in group.user_set.all()],
+            },
+        )
+    )
     return group
