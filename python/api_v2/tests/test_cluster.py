@@ -148,7 +148,7 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_crete_without_required_field_fail(self):
+    def test_create_without_required_field_fail(self):
         response = (self.client.v2 / "clusters").post(data={})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)

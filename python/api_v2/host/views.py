@@ -25,6 +25,7 @@ from audit.alt.hooks import extract_current_from_response, extract_previous_from
 from cm.api import delete_host
 from cm.errors import AdcmEx
 from cm.models import Cluster, ConcernType, Host, Prototype, Provider
+from cm.status_api import send_object_update_event
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -229,6 +230,7 @@ class HostViewSet(
             raise AdcmEx(code="HOST_UPDATE_ERROR")
 
         serializer.save()
+        send_object_update_event(instance, changes={"name": instance.fqdn, "description": instance.description})
 
         return Response(
             status=HTTP_200_OK, data=HostSerializer(instance=instance, context=self.get_serializer_context()).data

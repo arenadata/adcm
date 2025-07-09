@@ -138,6 +138,14 @@ def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
     )
 
 
+def send_user_update_event(user_id: int, changes: dict) -> None:
+    post_event(
+        event=EventTypes.UPDATE.format("user"),
+        object_id=user_id,
+        changes=changes,
+    )
+
+
 def send_task_status_update_event(task_id: int, status: str) -> None:
     post_event(event=EventTypes.UPDATE.format("task"), object_id=task_id, changes={"status": status})
 
