@@ -1060,6 +1060,8 @@ class AbstractAction(ADCMModel):
     allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
+    wizard_template = models.JSONField(null=True, default=None)
+
     config_jinja = models.CharField(max_length=1000, blank=True, null=True)
     scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")
 
@@ -1739,3 +1741,59 @@ class HostInfo(models.Model):
         indexes = [
             models.Index(fields=["host"]),
         ]
+
+
+class ProcessState(models.TextChoices):
+    CREATED = "created", "created"
+    BROKEN = "broken", "broken"
+    REVOKED = "revoked", "revoked"
+    FINISHED = "finished", "finished"
+
+
+class ProcessStepState(models.TextChoices):
+    CREATED = "created", "created"
+    RUNNING = "running", "running"
+    BROKEN = "broken", "broken"
+    REVOKED = "revoked", "revoked"
+    FAILED = "failed", "failed"
+    SUCCESS = "success", "success"
+    ABORTED = "aborted", "aborted"
+
+
+class Process(models.Model):
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
+    obejct_id = models.PositiveIntegerField(default=0)
+    object_type = models.CharField(
+        max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
+    )
+    last_completed_step = models.OneToOneField(
+        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="completed_for_process"
+    )
+    flow_spec = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    hash = models.UUIDField(primary_key=False, editable=True)
+    state = models.CharField(
+        max_length=100,
+        choices=ProcessState,
+        default=ProcessState.CREATED,
+    )
+
+
+class ProcessStep(models.Model):
+    process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name="steps")
+    name = models.CharField(max_length=150, null=True)
+    display_name = models.CharField(max_length=150, null=True)
+    step_spec = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    state = models.CharField(
+        max_length=100,
+        choices=ProcessStepState,
+        default=ProcessStepState.CREATED,
+    )
+
+
+class ProcessStepInput(models.Model):
+    step = models.OneToOneField(ProcessStep, on_delete=models.CASCADE)
+    configuration = models.JSONField(null=True)
+    job = models.OneToOneField(TaskLog, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
