@@ -59,7 +59,7 @@ from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
 )
 from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
-from core.types import ComponentNameKey, ServiceNameKey
+from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -387,7 +387,11 @@ class ClusterViewSet(
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
 
-        send_object_update_event(instance, changes={"name": instance.name, "description": instance.description})
+        send_object_update_event(
+            instance.pk,
+            ADCMCoreType.CLUSTER.value,
+            changes={"name": instance.name, "description": instance.description},
+        )
 
         return Response(
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data

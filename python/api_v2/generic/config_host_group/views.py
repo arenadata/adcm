@@ -15,6 +15,7 @@ from adcm.permissions import VIEW_CONFIG_HOST_GROUP_PERM, VIEW_HOST_PERM, check_
 from cm.errors import AdcmEx
 from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
 from cm.status_api import send_object_update_event
+from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -192,7 +193,11 @@ class CHGViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        send_object_update_event(instance, changes={"name": instance.name, "description": instance.description})
+        send_object_update_event(
+            obj_id=instance.id,
+            obj_type=ADCMHostGroupType.CONFIG.value,
+            changes={"name": instance.name, "description": instance.description},
+        )
 
         return Response(serializer.data)
 

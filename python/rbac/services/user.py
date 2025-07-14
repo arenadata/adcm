@@ -15,7 +15,7 @@ from operator import attrgetter
 from typing import Any, Iterable
 
 from cm.services.adcm import retrieve_password_requirements
-from cm.status_api import send_user_update_event
+from cm.status_api import send_object_update_event
 from core.errors import NotFoundError
 from core.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.rbac.errors import UpdateLDAPUserError
@@ -29,7 +29,7 @@ from core.rbac.operations import (
     update_user_password,
 )
 from core.rbac.types import GroupBasicInfo, GroupID, SourceType, UserBasicInfo, UserID
-from core.types import ShortObjectInfo
+from core.types import RBACCoreType, ShortObjectInfo
 from django.db.models import F
 from django.db.transaction import atomic, on_commit
 from djangorestframework_camel_case.util import camelize
@@ -213,6 +213,13 @@ def _perform_user_update(
             add_user_to_groups(user_id=user_id, groups=new_user_groups - current_groups, db=GroupDB)
             remove_user_from_groups(user_id=user_id, groups=current_groups - new_user_groups, db=GroupDB)
 
-        on_commit(func=partial(send_user_update_event, user_id=user.id, changes=camelize(update_data.dict())))
+        on_commit(
+            func=partial(
+                send_object_update_event,
+                obj_id=user_id,
+                obj_type=RBACCoreType.USER.value,
+                changes=dict(camelize(update_data.dict())),
+            )
+        )
 
     return user_id

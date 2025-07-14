@@ -16,7 +16,13 @@ from urllib.parse import urljoin
 import json
 
 from api_v2.concern.serializers import ConcernSerializer
-from core.types import ADCMCoreType, ClusterID, ConcernID, CoreObjectDescriptor, ObjectID
+from core.types import (
+    ADCMCoreType,
+    ClusterID,
+    ConcernID,
+    CoreObjectDescriptor,
+    ObjectID,
+)
 from django.conf import settings
 from djangorestframework_camel_case.util import camelize
 from requests import Response
@@ -130,18 +136,10 @@ def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
     )
 
 
-def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
+def send_object_update_event(obj_id: int, obj_type: str, changes: dict) -> None:
     post_event(
-        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
-        changes=changes,
-    )
-
-
-def send_user_update_event(user_id: int, changes: dict) -> None:
-    post_event(
-        event=EventTypes.UPDATE.format("user"),
-        object_id=user_id,
+        event=EventTypes.UPDATE.format(fix_object_type(obj_type)),
+        object_id=obj_id,
         changes=changes,
     )
 

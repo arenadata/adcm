@@ -14,6 +14,7 @@ import functools
 
 from cm.errors import raise_adcm_ex
 from cm.status_api import send_object_update_event
+from core.types import RBACCoreType
 from django.db import IntegrityError
 from django.db.transaction import atomic, on_commit
 from rest_framework.exceptions import ValidationError
@@ -100,12 +101,13 @@ def role_update(role: Role, partial, **kwargs) -> Role:
     on_commit(
         func=functools.partial(
             send_object_update_event,
-            object_=role,
+            obj_id=role.id,
+            obj_type=RBACCoreType.ROLE.value,
             changes={
                 "name": role.name,
                 "description": role.description,
                 "displayName": role.display_name,
-                "child": [c.pk for c in role.child.all()],
+                "children": [c.pk for c in role.child.all()],
             },
         )
     )
