@@ -16,6 +16,7 @@ from unittest.mock import patch
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.models import ConfigHostGroup
+from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
 from django.test import TransactionTestCase
 from djangorestframework_camel_case.util import camelize
@@ -82,7 +83,7 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
                 self.host_group,
                 {"name": "new_name"},
             ),
-            "rbac.services.user.send_user_update_event": (
+            "rbac.services.user.send_object_update_event": (
                 User.objects.first(),
                 {"first_name": "new_name"},
             ),
@@ -110,9 +111,16 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
                 args, kwargs = mock_send_event.call_args
 
                 if args:
-                    obj_id = args[0].id
+                    obj_id, obj_type = args[0], args[1]
                 else:
-                    obj_id = kwargs["user_id"] if isinstance(patched_obj, User) else kwargs["object_"].pk
+                    obj_id, obj_type = kwargs["obj_id"], kwargs["obj_type"]
 
                 self.assertEqual(obj_id, patched_obj.id)
+
+                patched_obj_type = patched_obj.__class__.__name__.lower()
+
+                if ADCMHostGroupType.CONFIG.value == obj_type:
+                    patched_obj_type = "-".join(patched_obj.__class__.__name__.lower().split("host"))
+
+                self.assertEqual(obj_type, patched_obj_type)
                 self.assertDictContainsSubset(camelize(params), kwargs.get("changes", {}))

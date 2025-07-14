@@ -33,11 +33,13 @@ type serviceStatus struct {
 }
 
 type eventMessage struct {
-	Event  string `json:"event"`
-	Object struct {
-		Id      int                  `json:"id"`
-		Changes *statusChangePayload `json:"changes,omitempty"`
-	} `json:"object"`
+	Event  string      `json:"event"`
+	Object EventObject `json:"object"`
+}
+
+type EventObject struct {
+	Id      int                  `json:"id"`
+	Changes *statusChangePayload `json:"changes"`
 }
 
 type statusChangePrototype struct {
@@ -58,6 +60,22 @@ type statusChangePayload struct {
 	State           string                     `json:"state,omitempty"`
 	Prototype       *statusChangePrototype     `json:"prototype,omitempty"`
 	MaintenanceMode string                     `json:"maintenanceMode,omitempty"`
+	Name            string                     `json:"name,omitempty"`
+	DisplayName     string                     `json:"displayName,omitempty"`
+	Description     string                     `json:"description,omitempty"`
+	NewPassword     string                     `json:"newPassword,omitempty"`
+	CurrentPassword string                     `json:"currentPassword,omitempty"`
+	Users           []int                      `json:"users,omitempty"`
+	Objects         []int                      `json:"objects,omitempty"`
+	Groups          []int                      `json:"groups,omitempty"`
+	Role            int                        `json:"role,omitempty"`
+	Child           int                        `json:"child,omitempty"`
+	Children        []int                      `json:"children,omitempty"`
+	Password        string                     `json:"password,omitempty"`
+	FirstName       string                     `json:"firstName,omitempty"`
+	LastName        string                     `json:"lastName,omitempty"`
+	Email           string                     `json:"email,omitempty"`
+	IsSuperUser     bool                       `json:"isSuperUser,omitempty"`
 }
 
 type statusChangeReasonPayload struct {

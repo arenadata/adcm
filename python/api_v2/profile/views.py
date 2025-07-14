@@ -16,8 +16,9 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.services.adcm import retrieve_password_requirements
-from cm.status_api import send_user_update_event
+from cm.status_api import send_object_update_event
 from core.rbac.operations import update_user_password
+from core.types import RBACCoreType
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rbac.models import User
@@ -82,6 +83,8 @@ class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
             password_requirements=retrieve_password_requirements(),
         )
 
-        send_user_update_event(user_id=user.pk, changes={"newPassword": current_password})
+        send_object_update_event(
+            obj_id=user.pk, obj_type=RBACCoreType.USER.value, changes={"newPassword": current_password}
+        )
 
         return Response()

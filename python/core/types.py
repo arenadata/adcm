@@ -85,6 +85,13 @@ class ADCMCoreType(Enum):
     HOST = "host"
 
 
+class RBACCoreType(Enum):
+    USER = "user"
+    GROUP = "group"
+    ROLE = "role"
+    POLICY = "policy"
+
+
 class ADCMHostGroupType(Enum):
     CONFIG = "config-group"
     ACTION = "action-group"

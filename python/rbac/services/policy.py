@@ -15,6 +15,7 @@ from functools import partial
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import ADCMEntity
 from cm.status_api import send_object_update_event
+from core.types import RBACCoreType
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic, on_commit
@@ -118,17 +119,22 @@ def policy_update(policy: Policy, group: list[Group] | None = None, **kwargs) ->
 
     policy.apply()
 
+    changes = {
+        "name": policy.name,
+        "description": policy.description,
+        "role": policy.role.pk,
+        "groups": [g.pk for g in policy.group.all()],
+    }
+
+    if objects is not None:
+        changes["objects"] = [o.pk for o in objects]
+
     on_commit(
         func=partial(
             send_object_update_event,
-            object_=policy,
-            changes={
-                "name": policy.name,
-                "description": policy.description,
-                "objects": objects,
-                "role": policy.role.pk,
-                "groups": [g.pk for g in policy.group.all()],
-            },
+            obj_id=policy.id,
+            obj_type=RBACCoreType.POLICY.value,
+            changes=changes,
         )
     )
 
