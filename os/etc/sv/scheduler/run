@@ -2,7 +2,7 @@
 
 . /etc/adcmenv
 
-waitforinit
+waitforwsgi
 
 if [ "$FEATURE_JOB_SCHEDULER" = "new" ] && { [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; }
 then

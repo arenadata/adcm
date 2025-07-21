@@ -33,7 +33,7 @@ from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
 from jobs.scheduler.logger import logger
 from jobs.scheduler.queuers import QUEUER_REGISTRY
-from jobs.scheduler.utils import set_status_on_fail, set_status_on_success
+from jobs.scheduler.utils import clear_concerns_on_error, set_status_on_fail, set_status_on_success
 
 
 def run_launcher_in_loop() -> None:
@@ -66,6 +66,7 @@ def run_launcher_in_loop() -> None:
 @set_status_on_fail(status=ExecutionStatus.BROKEN, errors=Exception)
 @set_status_on_fail(status=ExecutionStatus.REVOKED, errors=LauncherError)
 @set_status_on_success(status=ExecutionStatus.SCHEDULED)
+@clear_concerns_on_error
 def schedule_task(
     *, task_id: TaskID, env_type: TaskRunnerEnvironment, job_repo: JobRepoInterface, scheduler_repo: ModuleType
 ) -> bool:
@@ -83,11 +84,12 @@ def schedule_task(
 @set_status_on_fail(status=ExecutionStatus.BROKEN, errors=Exception)
 @set_status_on_fail(status=ExecutionStatus.REVOKED, errors=LauncherError)
 @set_status_on_success(status=ExecutionStatus.QUEUED)
+@clear_concerns_on_error
 def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoInterface) -> None:
     worker_info = queuer.queue(task_id)
     job_repo.update_task(id=task_id, data=TaskUpdateDTO(executor=worker_info))
 
-    logger.info(f"Task #{task_id} queued to #{worker_info['worker_id']} {worker_info['environment']} worker")
+    logger.info(f"Task #{task_id} queued as #{worker_info['worker_id']} {worker_info['environment']} task")
 
 
 def validate(

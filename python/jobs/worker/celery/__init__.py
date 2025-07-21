@@ -9,15 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from cm.services.job.run import get_default_runner
-from core.types import TaskID
-
-from jobs.worker.celery.worker import app
-
-
-@app.task(track_started=True)
-def run_task(*, task_id: TaskID) -> None:
-    runner = get_default_runner()
-    runner.run(task_id=task_id)
