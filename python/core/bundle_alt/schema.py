@@ -19,7 +19,9 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    Discriminator,
     Field,
+    Tag,
     field_validator,
     model_validator,
 )
@@ -595,6 +597,114 @@ class VersionsSchema(_BaseModel):
         return self
 
 
+#########
+# WIZARD
+#########
+
+
+class PythonEngine(_BaseModel):
+    type: Literal["python"]
+
+
+class Jinja2Engine(_BaseModel):
+    type: Literal["jinja2"]
+
+
+class PathToFile(_BaseModel):
+    path: Annotated[str, AfterValidator(script_is_correct_path)]
+
+
+class PathWithEntrypoint(PathToFile):
+    entrypoint: str
+
+
+class PythonTemplate(_BaseModel):
+    file: PathWithEntrypoint
+    engine: PythonEngine
+
+
+class Jinja2Template(_BaseModel):
+    file: PathToFile
+    engine: Jinja2Engine
+
+
+def engine_type_discriminator(value):
+    if isinstance(value, dict):
+        return value.get("engine", {}).get("type")
+    return getattr(value.engine, "type", None)
+
+
+WizardTemplate = Annotated[
+    Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
+    Field(discriminator=Discriminator(engine_type_discriminator)),
+]
+
+
+class _WizardNames(_BaseModel):
+    name: str
+    display_name: str
+
+
+# ------------------------
+# Step Schemas
+# ------------------------
+
+
+class WizardStepOperation(_BaseModel):
+    button_name: str
+
+
+class WizardStep(_WizardNames):
+    ui_options: WizardStepOperation | None = None
+    config_template: WizardTemplate | None = None
+    scripts_template: WizardTemplate | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def exclusive_templates(cls, data: Any):
+        config_template = "config_template" in data
+        scripts_template = "scripts_template" in data
+
+        if config_template and scripts_template:
+            raise ValueError('"config_template" and "scripts_template" are mutually exclusive')
+
+        if not config_template and not scripts_template:
+            raise ValueError('either "config_template" or "scripts_template" should be set')
+
+        return data
+
+
+# ------------------------
+# Stage & Wizard Schema
+# ------------------------
+
+
+class WizardStage(_WizardNames):
+    steps: list[WizardStep] = Field(..., min_length=1, description="At least one step is required in a stage")
+
+    @model_validator(mode="after")
+    def steps_names_are_unique(self):
+        step_names = set()
+        for step in self.steps:
+            if step.name in step_names:
+                raise ValueError(f"Duplicate step name: {step.name}")
+            step_names.add(step.name)
+        return self
+
+
+class Wizard(_WizardNames):
+    stages: list[WizardStage]
+
+    @model_validator(mode="after")
+    def stage_names_are_unique(self):
+        stage_names = set()
+        for stage in self.stages:
+            if stage.name in stage_names:
+                raise ValueError(f"Duplicate stage name: {stage.name}")
+            stage_names.add(stage.name)
+        return self
+
+
 class _BaseUpgradeSchema(_BaseModel):
     name: VERSION
     versions: Annotated[VersionsSchema, AfterValidator(min_and_max_present)]
@@ -666,6 +776,7 @@ class _BaseActionSchema(_BaseModel):
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
+    wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
 
     @model_validator(mode="before")
     @classmethod
@@ -680,8 +791,16 @@ class _BaseActionSchema(_BaseModel):
 
         config_jinja_specified = "config_jinja" in data
         config_specified = "config" in data
+        wizard_specified = "wizard_template" in data
+        hc_acl_specified = "hc_acl" in data
         if config_jinja_specified and config_specified:
             raise ValueError('"config" and "config_jinja" are mutually exclusive')
+
+        if wizard_specified and (config_specified or config_jinja_specified):
+            raise ValueError('"wizard_template" and "config" or  "config_jinja" are mutually exclusive')
+
+        if wizard_specified and hc_acl_specified:
+            raise ValueError('"wizard_template" and "hc_acl" are mutually exclusive')
 
         return data
 
@@ -813,7 +932,7 @@ TASK_SCRIPTS_SCHEMA = Annotated[
 
 class TaskSchema(_BaseTaskSchema):
     scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
-    scripts_jinja: Optional[str] = None
+    scripts_jinja: str | None = None
 
     @field_validator("scripts_jinja")
     @classmethod
