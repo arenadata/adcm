@@ -10,20 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generator
 import os
 
-
-def _get_env_variables(*args) -> Generator[str | None, None, None]:
-    for arg in args:
-        yield os.environ.get(arg.upper())
-
-
-DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME = _get_env_variables("DB_USER", "DB_PASS", "DB_HOST", "DB_PORT", "DB_NAME")
-_db_url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-broker_url = f"sqla+{_db_url}"
-result_backend = f"db+{_db_url}"
-result_extended = True
-broker_connection_retry_on_startup = True
-timezone = "UTC"
+JOB_WORKER_CELERY_HEARTBEAT_INTERVAL = float(os.environ.get("JOB_WORKER_CELERY_HEARTBEAT_INTERVAL", 5))  # in seconds

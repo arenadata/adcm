@@ -16,19 +16,19 @@ from functools import wraps
 import os
 import errno
 
-from celery.result import AsyncResult
 from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from cm.services.job.run.repo import JobRepoImpl
 from cm.status_api import send_task_status_update_event
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.types import ExecutionStatus
 from core.types import PID
+from django.db import connection
 from django.db.transaction import atomic
 
 from jobs.scheduler import repo
-from jobs.scheduler._types import UTC, CeleryTaskState, TaskShortInfo, WorkerID
+from jobs.scheduler._types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, TaskShortInfo, WorkerID
 from jobs.scheduler.logger import logger
-from jobs.worker.app import app
+from jobs.worker.celery.worker import app
 
 
 def set_status_on_success(status: ExecutionStatus):
@@ -80,13 +80,48 @@ def set_status_on_fail(
     return decorator
 
 
-def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
-    async_result = AsyncResult(worker_id, app=app)
+def clear_concerns_on_error(func):
+    scheduler_repo = repo
 
-    try:
-        return CeleryTaskState(async_result.state.upper())
-    except AttributeError:
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        task_id = kwargs["task_id"]
+
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            task = scheduler_repo.retrieve_task(task_id=task_id)
+
+            if task.lock_id:
+                delete_task_lock_concern(task_id=task.id)
+            else:
+                delete_task_flag_concern(task_id=task.id)
+
+            raise
+
+    return wrapper
+
+
+def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
+    table = "celery_taskmeta"
+    fields = "status, worker"
+    condition = f"task_id = '{worker_id}'"
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT {fields} FROM {table} WHERE {condition};")  # noqa: S608
+        row = cursor.fetchone()
+
+    if not row:
         return CeleryTaskState.ADCM_UNREACHABLE
+
+    status_raw, hostname = row
+
+    status = CeleryTaskState(status_raw.upper())
+
+    if status in CELERY_RUNNING_STATES and hostname not in app.ping():
+        return CeleryTaskState.FAILURE
+
+    return status
 
 
 @atomic

@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from celery import Celery
 
 import adcm.init_django  # noqa: F401, isort:skip
+from jobs.worker.celery.utils import CustomCelery, CustomWorkerStep
 
-
-app = Celery("job-runner")
-app.config_from_object("jobs.worker.settings")
+app = CustomCelery("job-runner")
+app.config_from_object("jobs.worker.celery.settings")
 app.autodiscover_tasks(packages=["jobs.worker"])
+app.steps["worker"].add(CustomWorkerStep)

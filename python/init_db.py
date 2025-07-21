@@ -19,7 +19,7 @@ import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
+from adcm.feature_flags import use_new_bundle_parsing_approach, use_new_job_scheduler
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -132,7 +132,8 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     adcm_parser = process_adcm_bundle if use_new_bundle_parsing_approach(env=os.environ, headers={}) else load_adcm
     adcm_parser(adcm_conf_file)
 
-    drop_locks()
+    if not use_new_job_scheduler():
+        drop_locks()
     recheck_issues()
     logger.info("ADCM DB is initialized")
 
