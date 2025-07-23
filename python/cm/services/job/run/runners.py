@@ -17,7 +17,7 @@ import signal
 
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
-from core.job.types import ExecutionStatus, Job, Task
+from core.job.types import ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
@@ -182,9 +182,7 @@ class JobSequenceRunner(TaskRunner):
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
-            self._update_job_related_configs(
-                job_id=target.job.id, owner=CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
-            )
+            self._update_job_related_configs(job_id=target.job.id, owner=task.owner)
 
         target.executor.execute()
 
@@ -334,8 +332,22 @@ class JobSequenceRunner(TaskRunner):
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
-    def _update_job_related_configs(self, job_id: int, owner: CoreObjectDescriptor) -> None:
-        hierarchy = retrieve_object_hierarchy(object_=owner)
+    def _update_job_related_configs(self, job_id: int, owner: TaskOwner) -> None:
+        object_ = CoreObjectDescriptor(id=owner.id, type=owner.type)
+
+        if owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
+            # ADCM-6770
+            # Please note that the service and components may be deleted while the task is running.
+            # That is, the task container is deleted during its execution, and after deletion,
+            # the task must be executed and successfully interact with other objects.
+            cluster = owner.related_objects.cluster
+
+            if cluster is None:
+                raise RuntimeError(f"Cluster missing for {owner}")
+
+            object_ = CoreObjectDescriptor(id=cluster.id, type=cluster.type)
+
+        hierarchy = retrieve_object_hierarchy(object_=object_)
         related_configs = retrieve_primary_configs(objects=hierarchy)
 
         self._repo.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
