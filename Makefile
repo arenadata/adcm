@@ -3,7 +3,7 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.7.0"
+ADCM_VERSION = "2.7.1"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
 .PHONY: build unittests pretty lint version
