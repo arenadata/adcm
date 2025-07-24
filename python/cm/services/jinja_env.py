@@ -24,6 +24,7 @@ from cm.models import (
     Host,
     MaintenanceMode,
     ObjectType,
+    Process,
     Prototype,
     Service,
     TaskLog,
@@ -42,6 +43,12 @@ from cm.services.job.inventory._types import HostGroupName
 class ActionContext(TypedDict):
     owner_group: str
     name: str
+
+
+class ActionContextWithWizard(TypedDict):
+    owner_group: str
+    name: str
+    process: dict
 
 
 class TaskContext(TypedDict):
@@ -64,7 +71,9 @@ class JinjaConfigsEnvironment(TypedDict):
     action: ActionContext
 
 
-def get_env_for_jinja_scripts(task: TaskLog, delta: TaskMappingDelta | None = None) -> JinjaScriptsEnvironment:
+def get_env_for_jinja_scripts(
+    task: TaskLog, delta: TaskMappingDelta | None = None, wizard_process: Process | None = None
+) -> JinjaScriptsEnvironment:
     action_group = None
     target_object = task.task_object
     if isinstance(target_object, ActionHostGroup):
@@ -93,12 +102,12 @@ def get_env_for_jinja_scripts(task: TaskLog, delta: TaskMappingDelta | None = No
         },
         groups=host_groups,
         task=TaskContext(config=task.config, verbose=task.verbose),
-        action=_get_action_info(action=task.action),
+        action=_get_action_info(action=task.action, process=wizard_process),
     )
 
 
 def get_env_for_jinja_config(
-    action: Action, cluster_relative_object: Cluster | Service | Component | Host
+    action: Action, cluster_relative_object: Cluster | Service | Component | Host, wizard_process: Process | None = None
 ) -> JinjaConfigsEnvironment:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
     clusters_vars = get_cluster_vars(topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object))
@@ -107,7 +116,7 @@ def get_env_for_jinja_config(
         cluster=clusters_vars.cluster,
         services=clusters_vars.services,
         groups=_get_host_group_names_for_cluster(cluster_topology=cluster_topology),
-        action=_get_action_info(action=action),
+        action=_get_action_info(action=action, process=wizard_process),
     )
 
 
@@ -117,7 +126,7 @@ def _get_host_group_names_only(
     return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
 
 
-def _get_action_info(action: Action) -> ActionContext:
+def _get_action_info(action: Action, process: Process = None) -> ActionContext:
     owner_prototype = action.prototype
 
     if owner_prototype.type == ObjectType.SERVICE:
@@ -127,6 +136,11 @@ def _get_action_info(action: Action) -> ActionContext:
         owner_group = f"{parent_name}.{owner_prototype.name}"
     else:
         owner_group = owner_prototype.type.upper()
+
+    wizard_process_context = {} if not process else _get_wizard_process_context(process)
+
+    if wizard_process_context:
+        return ActionContextWithWizard(name=action.name, owner_group=owner_group, process=wizard_process_context)
 
     return ActionContext(name=action.name, owner_group=owner_group)
 
@@ -147,3 +161,19 @@ def _get_host_group_names_for_cluster(
         )
     )
     return _get_host_group_names_only(host_groups=host_groups)
+
+
+def _get_wizard_process_context(process: Process) -> dict[str, dict]:
+    steps_qs = process.steps.all().select_related("processstepinput")
+
+    steps_by_name = {step.name: step for step in steps_qs}
+    process_dict = {}
+    for stage in process.flow_spec:
+        process_dict[stage["name"]] = {}
+        for step in stage["steps"]:
+            step_obj = steps_by_name.get(step["name"])
+
+            if "config" in step_obj.step_spec:
+                process_dict[stage["name"]][step["name"]] = {"config": step_obj.processstepinput.configuration}
+
+    return process_dict
