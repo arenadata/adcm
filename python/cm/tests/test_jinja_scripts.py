@@ -11,13 +11,27 @@
 # limitations under the License.
 
 from pathlib import Path
+from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from api.tests.test_job import RunTaskMock
+from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
+from cm.adcm_config.ansible import ansible_encrypt_and_format
 from cm.errors import AdcmEx
-from cm.models import Action, Component, ConcernItem, ConfigLog, JobLog, MaintenanceMode, TaskLog
+from cm.models import (
+    Action,
+    Component,
+    ConcernItem,
+    ConfigLog,
+    JobLog,
+    MaintenanceMode,
+    Process,
+    ProcessStep,
+    ProcessStepInput,
+    TaskLog,
+)
 from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
@@ -32,34 +46,34 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
         provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
 
-        cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
-        self.cluster_task_id = self.prepare_task(owner=cluster, name="action_on_cluster").id
+        self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        self.cluster_task_id = self.prepare_task(owner=self.cluster, name="action_on_cluster").id
 
-        service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=cluster).get()
+        service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
         self.service_task_id = self.prepare_task(owner=service, name="action_on_service").id
 
         component = service.components.get(prototype__name="component_1")
         self.component_task_id = self.prepare_task(owner=component, name="action_on_component").id
 
         provider = self.add_provider(bundle=provider_bundle, name="test_provider")
-        host = self.add_host(provider=provider, fqdn="test_host", cluster=cluster)
-        self.set_hostcomponent(cluster=cluster, entries=((host, component),))
+        host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
+        self.set_hostcomponent(cluster=self.cluster, entries=((host, component),))
 
         self.component_host_task_id = self.prepare_task(owner=component, host=host, name="host_action_on_component").id
 
-        common_config = ConfigLog.objects.get(pk=cluster.config.current).config
+        common_config = ConfigLog.objects.get(pk=self.cluster.config.current).config
         common_config["password"] = ansible_decrypt(common_config["password"])
 
         self.expected_env_part = {
             "cluster": {
                 "before_upgrade": {"state": None, "config": None},
-                "edition": cluster.edition,
+                "edition": self.cluster.edition,
                 "config": common_config,
-                "id": cluster.pk,
-                "multi_state": cluster.multi_state,
-                "name": cluster.name,
-                "state": cluster.state,
-                "version": cluster.prototype.version,
+                "id": self.cluster.pk,
+                "multi_state": self.cluster.multi_state,
+                "name": self.cluster.name,
+                "state": self.cluster.state,
+                "version": self.cluster.prototype.version,
                 "imports": None,
             },
             "services": {
@@ -93,7 +107,10 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
 
     def test_env_for_cluster(self):
         env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id)))
-        expected_env = {**self.expected_env_part, "action": {"name": "action_on_cluster", "owner_group": "CLUSTER"}}
+        expected_env = {
+            **self.expected_env_part,
+            "action": {"name": "action_on_cluster", "owner_group": "CLUSTER"},
+        }
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_service(self):
@@ -108,7 +125,10 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         env = decrypt_secrets(source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.component_task_id)))
         expected_env = {
             **self.expected_env_part,
-            "action": {"name": "action_on_component", "owner_group": "service_one_component.component_1"},
+            "action": {
+                "name": "action_on_component",
+                "owner_group": "service_one_component.component_1",
+            },
         }
         self.assertDictEqual(env, expected_env)
 
@@ -118,7 +138,98 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         )
         expected_env = {
             **self.expected_env_part,
-            "action": {"name": "host_action_on_component", "owner_group": "service_one_component.component_1"},
+            "action": {
+                "name": "host_action_on_component",
+                "owner_group": "service_one_component.component_1",
+            },
+        }
+        self.assertDictEqual(env, expected_env)
+
+    def test_env_for_wizard(self):
+        action = Action.objects.get(prototype=self.cluster.prototype, display_name="action_on_cluster")
+        process = Process.objects.create(
+            action=action,
+            obejct_id=1,
+            object_type="test_type",
+            flow_spec=[
+                {
+                    "name": "manage_ssl_stage",
+                    "steps": [{"name": f"configure_step_{j + 1}"} for j in range(3)] + [{"name": "operation_step_4"}],
+                },
+                {"name": "manage_kerberos_stage", "steps": [{"name": f"configure_step_{j + 1}"} for j in range(2)]},
+            ],
+            created_at=timezone.now(),
+            hash=uuid4(),
+            state="created",
+        )
+
+        for j in range(3):
+            step = ProcessStep.objects.create(
+                process=process,
+                name=f"configure_step_{j + 1}",
+                display_name=f"Configure Step {j + 1}",
+                step_spec={"config": {"config_spec": "config_spec"}},
+                created_at=timezone.now(),
+                state="created",
+            )
+            ProcessStepInput.objects.create(
+                step=step,
+                configuration={
+                    f"config_{j + 1}": {
+                        "keystore_path": f"/etc/security/ssl/step{j + 1}",
+                        "keystore_password": {"__ansible_vault": ansible_encrypt_and_format("pass")},
+                    }
+                },
+                created_at=timezone.now(),
+            )
+        ProcessStep.objects.create(
+            process=process,
+            name="operation_step_4",
+            display_name="Operation Step 4",
+            step_spec={"operation": {"button": "button operation"}},
+            created_at=timezone.now(),
+            state="created",
+        )
+        env = decrypt_secrets(
+            source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id), wizard_process=process)
+        )
+        expected_env = {
+            **self.expected_env_part,
+            "action": {
+                "name": "action_on_cluster",
+                "owner_group": "CLUSTER",
+                "process": {
+                    "manage_ssl_stage": {
+                        "configure_step_1": {
+                            "config": {
+                                "config_1": {"keystore_path": "/etc/security/ssl/step1", "keystore_password": "pass"}
+                            }
+                        },
+                        "configure_step_2": {
+                            "config": {
+                                "config_2": {"keystore_path": "/etc/security/ssl/step2", "keystore_password": "pass"}
+                            }
+                        },
+                        "configure_step_3": {
+                            "config": {
+                                "config_3": {"keystore_path": "/etc/security/ssl/step3", "keystore_password": "pass"}
+                            }
+                        },
+                    },
+                    "manage_kerberos_stage": {
+                        "configure_step_1": {
+                            "config": {
+                                "config_1": {"keystore_path": "/etc/security/ssl/step1", "keystore_password": "pass"}
+                            }
+                        },
+                        "configure_step_2": {
+                            "config": {
+                                "config_2": {"keystore_path": "/etc/security/ssl/step2", "keystore_password": "pass"}
+                            }
+                        },
+                    },
+                },
+            },
         }
         self.assertDictEqual(env, expected_env)
 
