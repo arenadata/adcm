@@ -11,6 +11,7 @@ export interface TableColumn {
   width?: string;
   minWidth?: string;
 }
+
 export interface TableSelectedAllOptions {
   isAllSelected?: boolean;
   toggleSelectedAll?: (isAllSelected: boolean) => void;
