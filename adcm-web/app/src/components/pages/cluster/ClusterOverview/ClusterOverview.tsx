@@ -7,7 +7,8 @@ import ClusterOverviewServices from './ClusterOverviewServices/ClusterOverviewSe
 import ClusterOverviewHosts from './ClusterOverviewHosts/ClusterOverviewHosts';
 import { useRequestClusterHostsOverview } from '@pages/cluster/ClusterOverview/useRequestClusterHostsOverview';
 import { useRequestClusterServicesOverview } from '@pages/cluster/ClusterOverview/useRequestClusterServicesOverview';
-import { orElseGet } from '@utils/checkUtils';
+import ClusterOverviewDescription from '@pages/cluster/ClusterOverview/ClusterOverviewDescription/ClusterOverviewDescription';
+import EditClusterDescriptionDialog from '@pages/ClustersPage/Dialogs/EditClusterDescriptionDialog/EditClusterDescriptionDialog';
 
 const ClusterOverview: React.FC = () => {
   const dispatch = useDispatch();
@@ -29,11 +30,12 @@ const ClusterOverview: React.FC = () => {
   }, [cluster, dispatch]);
 
   return (
-    <div>
-      <p>{orElseGet(cluster?.description, null, '')}</p>
+    <div style={{ marginTop: 'var(--base-margin-v)' }}>
+      <ClusterOverviewDescription />
       <ClusterOverviewInfo />
       <ClusterOverviewServices />
       <ClusterOverviewHosts />
+      <EditClusterDescriptionDialog />
     </div>
   );
 };
