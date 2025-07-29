@@ -17,6 +17,7 @@ import tarfile
 
 from adcm import settings
 from cm.models import (
+    ActionHostGroup,
     ActionType,
     Component,
     Host,
@@ -45,6 +46,8 @@ def get_task_download_archive_name(task: TaskLog) -> str:
 
     if isinstance(task.task_object, (Service, Component)):
         object_name = task.task_object.cluster.display_name
+    elif isinstance(task.task_object, ActionHostGroup):
+        object_name = task.task_object.name
     else:
         object_name = task.task_object.display_name
 
