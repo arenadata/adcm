@@ -25,18 +25,18 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
   return (
     <Panel className={s.configurationToolbar} data-test="configuration-toolbar">
       <SearchInput
-        placeholder="Search input"
+        placeholder="Search"
         value={filter.title}
         onChange={handleSearch}
         className={s.configurationToolbar__search}
       />
 
       <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Expand content" />
-      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
+      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Advanced" />
 
       <ButtonGroup className={s.configurationToolbar__buttons}>
         <Button variant="secondary" onClick={onRevert} disabled={!isViewDraft}>
-          Revert
+          Discard changes
         </Button>
         <Button onClick={onSave} hasError={!isValid} disabled={!isValid}>
           Save

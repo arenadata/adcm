@@ -45,7 +45,7 @@ const ConfigVersionCell: React.FC<ConfigVersionCellProps> = ({
       <div className={s.configVersionCell__header}>
         <div className={s.configVersionCell__title}>
           {configVersion.isCurrent ? 'current' : ''}
-          {configVersion.id === 0 ? 'draft' : ''}
+          {configVersion.id === 0 ? 'Editing mode' : ''}
         </div>
         <div onClick={(event) => event.stopPropagation()}>
           <ActionMenu placement="bottom-end" value={null} options={actionsOptions} onChange={handleSelectAction}>
