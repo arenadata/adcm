@@ -13,7 +13,7 @@ import type {
 } from '../MonacoCodeEditor.types';
 import s from './AdcmFieldAttributesDecorator.module.scss';
 import type { InjectedText } from 'monaco-editor/esm/vs/editor/common/modelLineProjectionData.js';
-import type { NodesDictionary } from './AdcmConfigEditor.types';
+import type { NodesDictionary } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 type DecoratorAttachedData = {
   key: 'adcm-field-attribute';

@@ -1,8 +1,12 @@
 .collapseNode {
   --collapse-node-child-padding-top: 20px;
-  --collapse-node-child-padding-left: 16px;
+  --collapse-node-child-padding-left: 33px;
   --collapse-node-margin-bottom: 12px;
   --collapse-node-border-width: 2px;
+
+  & > &__trigger, &__wrapper {
+    display: flex;
+  }
 
   &:not(:last-child) {
     padding-bottom: var(--collapse-node-margin-bottom);
@@ -12,10 +16,16 @@
     position: relative;
     width: fit-content;
     max-width: 100%;
+
+    &:hover {
+      .nodeContent__buttonWrapper {
+        display: flex;
+      }
+    }
   }
 
   &__children {
-    margin-left: 16px;
+    margin-left: 48px;
   }
 
   &__children &:first-child {
@@ -33,16 +43,27 @@
     border-color: transparent;
   }
 
-  &__children &__trigger::before {
-    content: '';
-    display: block;
-    position: absolute;
-    bottom: 50%;
-    right: 100%;
-    height: 50%;
-    width: var(--collapse-node-child-padding-left);
-    border-bottom: var(--collapse-node-border-width) solid var(--collapse-node-child-border-color, var(--collapse-node-parent-border-color));
-    box-sizing: content-box;
+  &__children &__trigger {
+
+    .expandButton {
+      margin-left: -17px;
+      margin-right: 16px;
+    }
+  }
+
+  &__children &__trigger:not(:has(.expandButton)) {
+
+    &::before {
+      content: '';
+      display: block;
+      position: absolute;
+      bottom: 50%;
+      right: 100%;
+      height: 50%;
+      width: var(--collapse-node-child-padding-left);
+      border-bottom: var(--collapse-node-border-width) solid var(--collapse-node-child-border-color, var(--collapse-node-parent-border-color));
+      box-sizing: content-box;
+    }
   }
 
   &__children &:last-child > &__trigger::before {

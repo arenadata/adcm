@@ -163,6 +163,7 @@ const ConfigurationEditor = ({
         onMoveArrayItem={handleMoveArrayItem}
         onClear={handleClearField}
         onDelete={handleDeleteField}
+        onChange={handleValueChange}
         onAddArrayItem={handleAddArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
         onChangeIsValid={onChangeIsValid}

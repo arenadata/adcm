@@ -30,7 +30,8 @@ const CollapseNode = <T,>({
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
   const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
-  const isNodeExpanded = fieldAttributes?.isActive !== false && isExpanded;
+  const isNodeCanBeExpanded = fieldAttributes?.isActive !== false;
+  const isNodeExpanded = isNodeCanBeExpanded && isExpanded;
   const isIgnoreExpandAll = node.key === rootNodeKey;
 
   const handleToggleAllNodes = useCallback(
@@ -60,7 +61,7 @@ const CollapseNode = <T,>({
   return (
     <div className={cn(s.collapseNode, getNodeClassName(node))} data-test="node-container">
       <div className={s.collapseNode__trigger} data-test="node-block">
-        {renderNodeContent(node, isExpanded, toggleCollapseNode)}
+        {renderNodeContent(node, isNodeExpanded, toggleCollapseNode)}
       </div>
       {hasChildren && (
         <div className={s.collapseNode__children} data-test="children-block">
