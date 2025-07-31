@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeAlias, TypedDict
+from typing import NamedTuple, TypeAlias, TypedDict
+
+from core.types import ConfigID, CoreObjectDescriptor, PrototypeID
 
 ConfigDict: TypeAlias = dict
 AttrDict: TypeAlias = dict
@@ -28,3 +30,9 @@ class RelatedConfigs(TypedDict):
     primary_config_id: int
     # field for storing related CHGs info (currently is out of scope)
     # config_host_groups: list[RelatedCHG]
+
+
+class ConfigCoreObjectWithPrototype(NamedTuple):
+    object: CoreObjectDescriptor
+    prototype_id: PrototypeID
+    config_id: ConfigID

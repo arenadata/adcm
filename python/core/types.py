@@ -76,7 +76,7 @@ class ADCMLocalizedError(ADCMCoreError):
         self.locations.append(location)
 
 
-class ADCMCoreType(Enum):
+class ADCMCoreType(str, Enum):
     ADCM = "adcm"
     CLUSTER = "cluster"
     SERVICE = "service"
