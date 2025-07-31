@@ -17,7 +17,7 @@ from cm.converters import core_type_to_model
 from cm.models import ConfigLog, JobLog
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
-from cm.services.config.types import RelatedConfigs
+from cm.services.config.types import ConfigCoreObjectWithPrototype, RelatedConfigs
 from cm.services.job.run.repo import JobRepoImpl
 from cm.status_api import send_config_creation_event
 from core.job.dto import JobUpdateDTO
@@ -142,13 +142,30 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         if not changed:
             return CallResult(value=return_value, changed=False, error=None)
 
-        new_configlog = set_object_config_with_plugin(
+        old_config_log_id = db_object.config.current
+
+        new_config_log = set_object_config_with_plugin(
             obj=db_object, config=configuration.config, attr=configuration.attr
         )
+
         send_config_creation_event(object_=db_object)
-        self._update_related_configs(
-            job_id=runtime.vars.job.id, old_config=db_object.config.current, new_config=new_configlog.id
+
+        target_config = ConfigCoreObjectWithPrototype(
+            object=CoreObjectDescriptor(id=target.id, type=target.type),
+            prototype_id=db_object.prototype_id,
+            config_id=old_config_log_id,
         )
+
+        try:
+            self._update_related_configs(
+                job_id=runtime.vars.job.id, target=target_config, new_config_id=new_config_log.id
+            )
+        except ValueError:
+            return CallResult(
+                value=None,
+                changed=False,
+                error=PluginTargetDetectionError(message=f"Failed to find related config for {target_config=}"),
+            )
 
         return CallResult(value=return_value, changed=True, error=None)
 
@@ -168,25 +185,26 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         return ChangeConfigReturn(value=config_params)
 
     @staticmethod
-    def _update_related_configs(job_id: int, old_config: ConfigID, new_config: ConfigID) -> None:
+    def _update_related_configs(job_id: int, target: ConfigCoreObjectWithPrototype, new_config_id: ConfigID) -> None:
         related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
             id=job_id
         )
+
         if not related_configs:
             return
 
-        index, config = None, None
-        for i, related_config in enumerate(related_configs):
-            if related_config["primary_config_id"] == old_config:
-                index = i
-                config = related_config
-                break
+        target_config = RelatedConfigs(
+            object_id=target.object.id,
+            object_type=target.object.type,
+            prototype_id=target.prototype_id,
+            primary_config_id=target.config_id,
+        )
 
-        if index and config:
-            config["primary_config_id"] = new_config
-            related_configs[index] = config
+        index = related_configs.index(target_config)
+        record = related_configs[index]
+        record["primary_config_id"] = new_config_id
 
-            JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+        JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
 
 
 def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:
