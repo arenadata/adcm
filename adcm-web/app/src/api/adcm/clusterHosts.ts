@@ -80,6 +80,14 @@ export class AdcmClusterHostsApi {
     return response.data;
   }
 
+  public static async getClusterHostPrototypeActions(clusterId: number, hostId: number, prototypeId: number) {
+    const query = qs.stringify({ is_host_own_action: false, prototype_id: prototypeId });
+    const response = await httpClient.get<AdcmDynamicAction[]>(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/?${query}`,
+    );
+    return response.data;
+  }
+
   public static async getClusterHostComponentActions(clusterId: number, hostId: number, componentPrototypeId: number) {
     const query = qs.stringify({ is_host_own_action: false, prototype_id: componentPrototypeId });
     const response = await httpClient.get<AdcmDynamicAction[]>(
