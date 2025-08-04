@@ -137,6 +137,7 @@ from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
+from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.host.filters import ClusterHostFilter
 from api_v2.host.serializers import (
     HostAddSerializer,
@@ -1018,4 +1019,14 @@ class ClusterConfigViewSet(ConfigLogViewSet):
 @document_upgrade_viewset(object_type="cluster")
 @audit_upgrade_viewset(retrieve_owner=parent_cluster_from_lookup)
 class ClusterUpgradeViewSet(UpgradeViewSet):
+    ...
+
+
+# TODO: document, audit
+class ClusterActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+# TODO: document, audit
+class ClusterActionProcessStepViewSet(ProcessStepViewSet):
     ...

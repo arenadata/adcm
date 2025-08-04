@@ -1,0 +1,33 @@
+{
+  "id": {{ process_id }},
+  "createdAt": "{{ created_at }}",
+  "state": "created",
+  "currentStep": {{ stage1_step1_id }},
+  "stages": [
+    {
+      "displayName": "First stage",
+      "steps": [
+        {
+          "id": {{ stage1_step1_id }},
+          "displayName": "Stage1.Step1",
+          "type": "configuration"
+        }
+      ]
+    },
+    {
+      "displayName": "Second stage",
+      "steps": [
+        {
+          "id": {{ stage2_step1_id }},
+          "displayName": "Stage2.Step1",
+          "type": "configuration"
+        },
+        {
+          "id": {{ stage2_step2_id }},
+          "displayName": "Stage2.Step2",
+          "type": "operation"
+        }
+      ]
+    }
+  ]
+}

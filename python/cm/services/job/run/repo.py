@@ -17,6 +17,8 @@ from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
 from typing import Collection, ContextManager, Iterable, TypeAlias
+from uuid import uuid4
+import logging
 import operator
 
 from core.errors import NotFoundError
@@ -24,6 +26,7 @@ from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskP
 from core.job.repo import ActionRepoInterface, JobRepoInterface
 from core.job.types import (
     ActionInfo,
+    AssociatedProcessStep,
     BundleInfo,
     ExecutionStatus,
     HcAclRule,
@@ -72,6 +75,9 @@ from cm.models import (
     JobLog,
     JobStatus,
     LogStorage,
+    Process,
+    ProcessStep,
+    ProcessStepInput,
     Provider,
     Service,
     SubAction,
@@ -129,6 +135,10 @@ class JobRepoImpl(JobRepoInterface):
                     root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
                 )
 
+        process_step = None
+        if step_id := ProcessStepInput.objects.filter(job_id=id).values_list("step_id", flat=True).first():
+            process_step = AssociatedProcessStep(id=step_id)
+
         return Task(
             id=id,
             target=target_,
@@ -143,6 +153,7 @@ class JobRepoImpl(JobRepoInterface):
                 is_upgrade=Upgrade.objects.filter(action=task_record.action).exists(),
                 is_host_action=task_record.action.host_action,
             ),
+            process_step=process_step,
             bundle=bundle,
             verbose=task_record.verbose,
             config=task_record.config,
@@ -177,6 +188,7 @@ class JobRepoImpl(JobRepoInterface):
     def create_task(
         cls, target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
     ) -> Task:
+        logging.getLogger("adcm").error(f"{action=}")
         if action.owner_prototype.type == ADCMCoreType.ADCM:
             if target.type != ADCMCoreType.ADCM:
                 message = f"ADCM actions can be launched only on ADCM: {target=} ; {action.owner_prototype=}"
@@ -516,11 +528,19 @@ class JobRepoImpl(JobRepoInterface):
     def close_old_connections() -> None:
         close_old_connections()
 
+    @staticmethod
+    def set_state_of_job_related_process_step(step_id: int, state: str) -> None:
+        step_qs = ProcessStep.objects.filter(id=step_id)
+        step_qs.update(state=state)
+        Process.objects.filter(id=step_qs.values_list("id", flat=True).first()).update(hash=uuid4())
+
 
 class ActionRepoImpl(ActionRepoInterface):
     @staticmethod
     def get_action(id: ActionID) -> ActionInfo:  # noqa: A002
-        action = Action.objects.values("id", "name", "prototype_id", "prototype__type", "scripts_jinja").get(id=id)
+        action = Action.objects.values(
+            "id", "name", "prototype_id", "prototype__type", "scripts_jinja", "wizard_template"
+        ).get(id=id)
         return ActionInfo(
             id=action["id"],
             name=action["name"],
@@ -528,6 +548,7 @@ class ActionRepoImpl(ActionRepoInterface):
                 id=action["prototype_id"], type=db_record_type_to_core_type(db_record_type=action["prototype__type"])
             ),
             scripts_jinja=action["scripts_jinja"],
+            wizard_template=action["wizard_template"],
         )
 
     @classmethod

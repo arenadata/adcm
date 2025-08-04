@@ -23,6 +23,7 @@ from core.types import (
     CoreObjectDescriptor,
 )
 
+from cm.models import ProcessStepState
 from cm.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -62,6 +63,13 @@ class StatusServerInteractor(Protocol):
 class JobSequenceRunner(TaskRunner):
     _notifier: EventNotifier
     _status_server = StatusServerInteractor
+    _runtime_process_step_status_map: dict[ExecutionStatus, ProcessStepState] = {
+        ExecutionStatus.SUCCESS: ProcessStepState.SUCCESS,
+        ExecutionStatus.REVOKED: ProcessStepState.FAILED,
+        ExecutionStatus.FAILED: ProcessStepState.FAILED,
+        ExecutionStatus.BROKEN: ProcessStepState.FAILED,
+        ExecutionStatus.ABORTED: ProcessStepState.ABORTED,
+    }
 
     def __init__(
         self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: Logger, **kwargs: Any
@@ -276,6 +284,9 @@ class JobSequenceRunner(TaskRunner):
                 else finished_task.owner,
             )
 
+        if finished_task.process_step:
+            self._update_associated_process(step_id=finished_task.process_step.id)
+
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)
 
@@ -351,3 +362,13 @@ class JobSequenceRunner(TaskRunner):
         related_configs = retrieve_primary_configs(objects=hierarchy)
 
         self._repo.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+
+    def _update_associated_process(self, step_id: int) -> None:
+        step_status = self._runtime_process_step_status_map.get(self._runtime.status)
+        if not step_status:
+            self._logger.error(
+                'process update called with unexpected status "%s" - process updated skipped', self._runtime.status
+            )
+            return
+
+        self._repo.set_state_of_job_related_process_step(step_id=step_id, state=step_status.value)

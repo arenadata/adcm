@@ -10,19 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.templates._renderers import TemplateRendererJinja2, TemplateRendererPython
-from core.templates._types import (
-    Jinja2Template,
-    PythonTemplate,
-    RendererEnv,
-    TemplateRenderer,
-)
 
+def generate_scripts(context: dict):
+    cluster_data = context["cluster"]
 
-def get_renderer(template: PythonTemplate | Jinja2Template, environment: RendererEnv) -> TemplateRenderer:
-    match template:
-        case PythonTemplate(file=args):
-            return TemplateRendererPython(args=args, env=environment)
+    script1 = {
+        "display_name": "Sleep",
+        "name": "sleep_script",
+        "params": {"test_params": [cluster_data.state]},
+        "script": "scripts/sleep.yaml",
+        "script_type": "ansible",
+    }
 
-        case Jinja2Template(file=args):
-            return TemplateRendererJinja2(args=args, env=environment)
+    return [script1]

@@ -75,9 +75,9 @@ class Migration(migrations.Migration):
             name="ProcessStep",
             fields=[
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("name", models.CharField(max_length=150, null=True)),
-                ("display_name", models.CharField(max_length=150, null=True)),
-                ("step_spec", models.JSONField()),
+                ("name", models.CharField(max_length=150)),
+                ("display_name", models.CharField(max_length=150)),
+                ("step_spec", models.JSONField(null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "state",
@@ -86,7 +86,6 @@ class Migration(migrations.Migration):
                             ("created", "created"),
                             ("running", "running"),
                             ("broken", "broken"),
-                            ("revoked", "revoked"),
                             ("failed", "failed"),
                             ("success", "success"),
                             ("aborted", "aborted"),

@@ -24,9 +24,12 @@ ProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
+
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
 JobID: TypeAlias = int
+ActionProcessID: TypeAlias = int
+ActionProcessStepID: TypeAlias = int
 PID: TypeAlias = int
 
 ObjectConfigID: TypeAlias = int
