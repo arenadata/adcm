@@ -1,0 +1,9 @@
+{
+  "id": {{ step_id }},
+  "displayName": "Stage2.Step2",
+  "task": null,
+  "type": "operation", 
+  "uiOptions": { 
+    "buttonName": "ButtonName" 
+  } 
+}

@@ -16,6 +16,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
+from pydantic import BaseModel, field_serializer, field_validator
+
+from core.bundle_alt.schema_validation import script_is_correct_path
+
 
 class RenderEngineType(str, Enum):
     PYTHON = "python"
@@ -38,12 +42,30 @@ class TemplateRenderer(ABC):
 # Renderer Arguments
 
 
-@dataclass(slots=True)
-class TemplateFile:
+class TemplateFile(BaseModel):
     path: Path
 
+    # validators/serializers needed to read string path from bundle definition and dump data in json-compatible format
+    @field_validator("path", mode="before")
+    @classmethod
+    def string_path_to_path_cls(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return Path(value)
 
-@dataclass(slots=True)
+        return value
+
+    @field_validator("path", mode="after")
+    @classmethod
+    def validate_path(cls, value: Path) -> Path:
+        script_is_correct_path(script=str(value))
+
+        return value
+
+    @field_serializer("path", when_used="always")
+    def path_to_string(self, path: Path) -> str:
+        return str(path)
+
+
 class TemplateFileWithEntrypoint(TemplateFile):
     entrypoint: str
 
@@ -59,13 +81,11 @@ class RendererEnv:
 # Python Template
 
 
-@dataclass(slots=True)
-class PythonEngine:
-    type: Literal[RenderEngineType.PYTHON] = RenderEngineType.PYTHON
+class PythonEngine(BaseModel):
+    type: Literal[RenderEngineType.PYTHON]
 
 
-@dataclass(slots=True)
-class PythonTemplate:
+class PythonTemplate(BaseModel):
     engine: PythonEngine
     file: TemplateFileWithEntrypoint
 
@@ -73,12 +93,10 @@ class PythonTemplate:
 # Jinja2 Template
 
 
-@dataclass(slots=True)
-class Jinja2Engine:
-    type: Literal[RenderEngineType.JINJA2] = RenderEngineType.JINJA2
+class Jinja2Engine(BaseModel):
+    type: Literal[RenderEngineType.JINJA2]
 
 
-@dataclass(slots=True)
-class Jinja2Template:
+class Jinja2Template(BaseModel):
     engine: Jinja2Engine
     file: TemplateFile

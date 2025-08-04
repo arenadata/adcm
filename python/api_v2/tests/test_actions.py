@@ -12,8 +12,10 @@
 
 from functools import partial
 from operator import itemgetter
-from typing import TypeAlias
+from pathlib import Path
+from typing import Any, TypeAlias
 from unittest.mock import patch
+from uuid import uuid4
 import json
 import unittest
 
@@ -27,25 +29,41 @@ from cm.models import (
     HostComponent,
     JobLog,
     MaintenanceMode,
+    Process,
+    ProcessStep,
+    ProcessStepInput,
     Provider,
     Service,
+    TaskLog,
 )
+from cm.services.config import ConfigAttrPair
 from cm.services.jinja_env import _get_action_info
+from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.wizard.types import ProcessOperationType, ProcessState, ProcessToChangeDTO
 from cm.tests.mocks.task_runner import RunTaskMock
+from jinja2 import Template
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+import yaml
 
 from api_v2.tests.base import BaseAPITestCase
 
 ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
+
+
+def render_template(file: Path, context: dict) -> Any:
+    data = Template(source=file.read_text(encoding="utf-8")).render(**context)
+    return yaml.safe_load(data)
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -747,3 +765,330 @@ class TestAction(BaseAPITestCase):
             self.assertEqual(self.cluster_1.concerns.count(), 2)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
+
+
+class TestWizard(BaseAPITestCase):
+    maxDiff = None
+
+    def setUp(self) -> None:
+        self.client.login(username="admin", password="admin")
+
+        wizard_cluster_bundle = self.test_bundles_dir / "wizard_action"
+        self.bundle_1 = self.add_bundle(source_dir=wizard_cluster_bundle)
+        self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
+
+        self.wizard_action = Action.objects.get(name="wizard_jinja", prototype=self.cluster_1.prototype)
+
+    def test_create_process_success(self):
+        self.assertEqual(Process.objects.count(), 0)
+        self.assertEqual(ProcessStep.objects.count(), 0)
+
+        response = self.client.v2[self.cluster_1, "actions", self.wizard_action.pk, "processes"].post(data={})
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(Process.objects.count(), 1)
+        self.assertEqual(ProcessStep.objects.count(), 3)
+
+        process = Process.objects.get()
+        expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
+        _step_ids = {f"{name}_id": id_ for name, id_ in process.steps.values_list("name", "id")}
+        expected_response = render_template(
+            file=expected_response_template,
+            context={
+                "process_id": process.id,
+                "created_at": process.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                **_step_ids,
+            },
+        )
+
+        response = response.json()
+
+        self.assertDictContainsSubset(expected_response, response)
+
+    def test_retrieve_config_step_success(self):
+        process = self.get_process(self.start_process())
+        target_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
+
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "steps", target_step.pk
+        ].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_step.refresh_from_db()
+        expected_spec = [
+            {"name": "integer_field", "type": "integer", "default": 2},
+            {"name": "string_field", "type": "string", "default": "string_value"},
+        ]
+        self.assertListEqual(target_step.step_spec, expected_spec)
+
+        response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_config_step.yml"
+        expected_response = render_template(file=response_template, context={"step_id": target_step.id})
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_retrieve_operation_step_success(self):
+        process = self.get_process(self.start_process())
+        target_step = ProcessStep.objects.get(process_id=process.id, name="stage2_step2", display_name="Stage2.Step2")
+
+        self.cluster_1.state = "new_state"
+        self.cluster_1.save(update_fields=["state"])
+
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "steps", target_step.pk
+        ].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_step.refresh_from_db()
+        expected_spec = [
+            {
+                "display_name": "Sleep",
+                "name": "sleep_script",
+                "params": {"test_params": ["new_state"]},
+                "script": "scripts/sleep.yaml",
+                "script_type": "ansible",
+            }
+        ]
+        self.assertListEqual(target_step.step_spec, expected_spec)
+
+        response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_operation_step.yml"
+        expected_response = render_template(file=response_template, context={"step_id": target_step.id})
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_submit_operation_step_success(self):
+        process = self.get_process(self.start_process())
+        initial_hash = process.hash
+
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
+        )
+
+        # Fill previous steps' `step_spec`, create inputs for them
+        test_spec = {"test": "spec"}
+        previous_step_names = {"stage1_step1", "stage2_step1"}
+        for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
+            step.step_spec = test_spec
+            step.save(update_fields=["step_spec"])
+            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+
+        # render step
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "steps", target_operation_step.id
+        ].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
+        self.assertFalse(TaskLog.objects.filter(action=self.wizard_action).exists())
+
+        # submit step
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "operation"
+        ].post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {"step_id": target_operation_step.id, "process_sync_key": process.hash},
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_operation_step.refresh_from_db()
+        expected_spec = [
+            {
+                "display_name": "Sleep",
+                "name": "sleep_script",
+                "params": {"test_params": ["created"]},
+                "script": "scripts/sleep.yaml",
+                "script_type": "ansible",
+            }
+        ]
+        self.assertListEqual(target_operation_step.step_spec, expected_spec)
+
+        task = TaskLog.objects.get(action=self.wizard_action)
+        input_ = ProcessStepInput.objects.get(step_id=target_operation_step.id)
+
+        self.assertIsNone(input_.configuration)
+        self.assertEqual(input_.job_id, task.id)
+
+        process.refresh_from_db()
+        self.assertNotEqual(initial_hash, process.hash)
+
+        # check that previous steps and inputs are not affected
+        for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
+            self.assertDictEqual(step.step_spec, test_spec)
+            input_ = ProcessStepInput.objects.get(step_id=step.id)
+            self.assertDictEqual(input_.configuration, test_spec)
+            self.assertIsNone(input_.job)
+
+    def test_operation_submit_config_success(self):
+        process = self.get_process(self.start_process())
+        process_hash_initial = process.hash
+        target_config_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage2_step1", display_name="Stage2.Step1"
+        )
+
+        # fill `step_spec` with test data, create ProcessStepInputs
+        test_step_spec = {"test": "data"}
+        test_config = {"test": "config"}
+        steps_qs = ProcessStep.objects.filter(process_id=process.id)
+        steps_qs.update(step_spec=test_step_spec)
+        for step_id in steps_qs.values_list("id", flat=True):
+            ProcessStepInput.objects.create(step_id=step_id, configuration=test_config, job=None)
+
+        new_config = {"config": {"new": "config"}, "adcm_meta": {}}
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "operation"
+        ].post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "configuration": new_config,
+                    "step_id": target_config_step.id,
+                    "process_sync_key": process.hash,
+                },
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # check that all next steps' specs are None and there is not ProcessStepInput for them
+        steps_qs = ProcessStep.objects.filter(process_id=process.id)
+        expected_step_specs = {
+            ("stage1_step1", "Stage1.Step1"): test_step_spec,
+            ("stage2_step1", "Stage2.Step1"): test_step_spec,
+            ("stage2_step2", "Stage2.Step2"): None,
+        }
+        actual_step_specs = {
+            (name, display_name): spec
+            for name, display_name, spec in steps_qs.values_list("name", "display_name", "step_spec")
+        }
+        self.assertDictEqual(actual_step_specs, expected_step_specs)
+
+        expected_steps_with_inputs: set[int] = set(
+            steps_qs.exclude(name="stage2_step2", display_name="Stage2.Step2").values_list("id", flat=True)
+        )
+        actual_steps_with_inputs = set(
+            ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)).values_list(
+                "step_id", flat=True
+            )
+        )
+        self.assertSetEqual(expected_steps_with_inputs, actual_steps_with_inputs)
+
+        # check inputs' config and job
+        input_config = {"attr": new_config.pop("adcm_meta"), **new_config}
+        for input_ in ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)):
+            expected_config = input_config if input_.step_id == target_config_step.id else test_config
+            self.assertDictEqual(input_.configuration, expected_config)
+            self.assertIsNone(input_.job)
+
+        # check that process's hash is updated
+        process.refresh_from_db()
+        self.assertNotEqual(process_hash_initial, process.hash)
+
+    def test_submit_step_config_called_success(self):
+        process = self.get_process(self.start_process())
+        process_sync_key = str(process.hash)
+        step_id = process.steps.first().pk
+        config = {"config": {"a": "b", "c": {}}, "adcmMeta": {"/a": {"isActive": True}}}
+        expected_config = ConfigAttrPair(config=config["config"], attr={"a": {"active": True}})
+        expected_process = ProcessToChangeDTO(id=process.pk, sync_key=process_sync_key)
+        expected_action = ActionRepoImpl.get_action(process.action.pk)
+        expected_parent = self.cluster_1
+        endpoint = self.get_endpoint_to_cluster_processes() / process / "operation"
+
+        self.assertEqual(process.state, ProcessState.CREATED)
+
+        with patch("api_v2.generic.wizard.views.operation_submit_config") as mock:
+            payload = {
+                "method": "submit",
+                "params": {"processSyncKey": process_sync_key, "stepId": step_id, "configuration": config},
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        mock.assert_called_once_with(
+            process=expected_process,
+            step_id=step_id,
+            configuration=expected_config,
+            parent_object=expected_parent,
+            action=expected_action,
+        )
+
+    def test_submit_step_job_called_success(self):
+        process = self.get_process(self.start_process())
+        process_sync_key = str(process.hash)
+        step_id = process.steps.get(name="stage2_step2").pk
+        expected_process = ProcessToChangeDTO(id=process.pk, sync_key=process_sync_key)
+        expected_action = ActionRepoImpl.get_action(process.action.pk)
+        expected_parent = self.cluster_1
+        endpoint = self.get_endpoint_to_cluster_processes() / process / "operation"
+
+        self.assertEqual(process.state, ProcessState.CREATED)
+
+        with patch("api_v2.generic.wizard.views.operation_submit_job") as mock, patch(
+            "api_v2.generic.wizard.views.ActionProcessViewSet._start_task"
+        ):
+            payload = {
+                "method": "submit",
+                "params": {"processSyncKey": process_sync_key, "stepId": step_id},
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        mock.assert_called_once_with(
+            process=expected_process, step_id=step_id, parent_object=expected_parent, action=expected_action
+        )
+
+    def test_complete_process_success(self):
+        process = self.get_process(self.start_process())
+        process_sync_key = process.hash
+        endpoint = self.get_endpoint_to_cluster_processes() / process / "operation"
+
+        self.assertEqual(process.state, ProcessState.CREATED)
+
+        payload = {"method": "complete", "params": {"processSyncKey": process_sync_key}}
+        response = endpoint.post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        process.refresh_from_db()
+        self.assertEqual(process.state, ProcessState.FINISHED)
+
+    def test_operation_validation_fail(self):
+        process = self.get_process(self.start_process())
+        endpoint = self.get_endpoint_to_cluster_processes() / process / "operation"
+
+        with self.subTest("Incorrect method"):
+            payload = {"method": "notexist", "params": {}}
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            error = response.json()["desc"]
+            self.assertIn('"notexist" is not a valid choice', error)
+
+        with self.subTest("Incorrect payload for complete"):
+            payload = {"method": "complete", "params": {}}
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            error = response.json()["desc"]
+            self.assertIn("process_sync_key", error)
+            self.assertIn("Field required [type=missing", error)
+
+        with self.subTest("Incorrect payload for submit: missing stepId"):
+            payload = {"method": "submit", "params": {"processSyncKey": uuid4()}}
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            error = response.json()["desc"]
+            self.assertIn("step_id", error)
+            self.assertIn("Field required [type=missing", error)
+
+        with self.subTest("Incorrect payload for complete: wrong sync key type"):
+            payload = {"method": "complete", "params": {"processSyncKey": "abs"}}
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            error = response.json()["desc"]
+            self.assertIn("Input should be a valid UUID", error)
+
+    def start_process(self):
+        endpoint = self.get_endpoint_to_cluster_processes()
+        response = endpoint.post(data={})
+        return response.json()["id"]
+
+    def get_endpoint_to_cluster_processes(self):
+        return self.client.v2[self.cluster_1, "actions", self.wizard_action.pk, "processes"]
+
+    def get_process(self, process_id: int) -> Process:
+        return Process.objects.get(pk=process_id)

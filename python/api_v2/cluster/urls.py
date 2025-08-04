@@ -19,6 +19,8 @@ from api_v2.cluster.views import (
     ClusterActionHostGroupActionsViewSet,
     ClusterActionHostGroupHostsViewSet,
     ClusterActionHostGroupViewSet,
+    ClusterActionProcessStepViewSet,
+    ClusterActionProcessViewSet,
     ClusterActionViewSet,
     ClusterCHGViewSet,
     ClusterConfigCHGViewSet,
@@ -64,6 +66,8 @@ HOST_PREFIX = "hosts"
 SERVICE_PREFIX = "services"
 CONFIG_PREFIX = "configs"
 IMPORT_PREFIX = "imports"
+PROCESS_PREFIX = "processes"
+STEP_PREFIX = "steps"
 
 
 def extract_urls_from_routers(routers: Iterable[NestedSimpleRouter]) -> tuple[str, ...]:
@@ -79,6 +83,20 @@ import_cluster_router.register(prefix=IMPORT_PREFIX, viewset=ClusterImportViewSe
 
 cluster_action_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
 cluster_action_router.register(prefix=ACTION_PREFIX, viewset=ClusterActionViewSet, basename="cluster-action")
+
+cluster_action_process_router = NestedSimpleRouter(
+    parent_router=cluster_action_router, parent_prefix=ACTION_PREFIX, lookup="action"
+)
+cluster_action_process_router.register(
+    prefix=PROCESS_PREFIX, viewset=ClusterActionProcessViewSet, basename="cluster-action-wizard"
+)
+
+cluster_action_process_step_router = NestedSimpleRouter(
+    parent_router=cluster_action_process_router, parent_prefix=PROCESS_PREFIX, lookup="process"
+)
+cluster_action_process_step_router.register(
+    prefix=STEP_PREFIX, viewset=ClusterActionProcessStepViewSet, basename="cluster-action-process-step"
+)
 
 cluster_config_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
 cluster_config_router.register(prefix=CONFIG_PREFIX, viewset=ClusterConfigViewSet, basename="cluster-config")
@@ -181,6 +199,8 @@ urlpatterns = [
     # cluster
     *cluster_router.urls,
     *cluster_action_router.urls,
+    *cluster_action_process_router.urls,
+    *cluster_action_process_step_router.urls,
     *cluster_config_router.urls,
     *import_cluster_router.urls,
     *extract_urls_from_routers(cluster_config_group_routers),

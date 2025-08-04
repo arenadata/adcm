@@ -88,13 +88,21 @@ def get_action_configuration(
     if not prototype_configs:
         return None, None, None
 
-    config = defaultdict(dict)
-    attr = {}
-
     if action_.prototype.type == "adcm":
         path_resolver = ADCMBundlePathResolver()
     else:
         path_resolver = BundlePathResolver(bundle_hash=action_.prototype.bundle.hash)
+
+    return get_schema_config_meta(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
+
+
+def get_schema_config_meta(
+    object_: Cluster | Service | Component | Provider | Host,
+    prototype_configs: list[PrototypeConfig],
+    path_resolver: ADCMBundlePathResolver | BundlePathResolver,
+) -> tuple[dict | None, dict | None, dict | None]:
+    config = defaultdict(dict)
+    attr = {}
 
     for prototype_config in prototype_configs:
         name = prototype_config.name

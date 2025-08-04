@@ -296,6 +296,7 @@ def _action_definition_to_model(definition: ActionDefinition, prototype: Prototy
         allow_in_maintenance_mode=definition.allow_in_maintenance_mode,
         config_jinja=definition.config_jinja,
         scripts_jinja=definition.scripts_jinja if definition.scripts_jinja else "",
+        wizard_template=definition.wizard_template,
     )
 
 

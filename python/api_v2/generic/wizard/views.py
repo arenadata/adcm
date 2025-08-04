@@ -1,0 +1,273 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from pathlib import Path
+from typing import Literal
+
+from adcm.mixins import GetParentObjectMixin, ParentObject
+from cm.converters import core_type_to_model, orm_object_to_core_descriptor
+from cm.models import Process, ProcessStep, ProcessStepInput, TaskLog
+from cm.services.bundle import BundlePathResolver
+from cm.services.config import ConfigAttrPair
+from cm.services.config.jinja import _get_jinja_config_new
+from cm.services.job.run._task import start_task
+from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.wizard import repo
+from cm.services.wizard.operation_submit_config import operation_submit_config
+from cm.services.wizard.operation_submit_job import operation_submit_job
+from cm.services.wizard.operations import (
+    SerializedConfigStep,
+    SerializedOperationStep,
+    complete_process,
+    initiate_process,
+    render_template,
+)
+from cm.services.wizard.types import ProcessOperationType, ProcessToChangeDTO, Step, StepType, StepUpdateDTO
+from core.bundle_alt.schema import WizardStep
+from core.job.types import ActionInfo
+from core.templates._types import RendererEnv
+from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
+from django.db.transaction import atomic
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from api_v2.generic.action.utils import get_schema_config_meta
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.generic.wizard.serializers import OperationSerializer, ProcessSerializer, StepSerializer
+from api_v2.views import ADCMGenericViewSet
+
+
+class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
+    queryset = Process.objects.all()
+
+    def get_serializer_class(self):
+        match self.action:
+            case "create" | "retrieve":
+                return ProcessSerializer
+            case "operation":
+                return OperationSerializer
+            case _:
+                raise NotImplementedError(f"No serializer for action: {self.action}")
+
+    def get_parent_and_action_supporting_wizard(self) -> tuple[ParentObject, ActionInfo]:
+        parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+
+        action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
+        if not action.wizard_template:
+            raise RuntimeError(f"Action #{action.id} does not support wizard functionality.")
+
+        return parent_object, action
+
+    def retrieve(self, request, *args, pk: str, **kwargs):  # noqa: ARG002
+        instance = self.get_object()
+        context = {
+            "process_id": instance.pk,
+            "step_names_id_map": repo.retrieve_step_names_id_map(process_id=instance.pk),
+        }
+        serializer = self.get_serializer(instance, context=context)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
+        action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
+        parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+
+        if not action.wizard_template:
+            raise RuntimeError(f"Action #{action.id} does not support wizard functionality.")
+
+        # TODO: check if Process already exists
+        with atomic():
+            process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action)
+            # TODO: create flag on parent_object
+
+        context = {
+            "process_id": process_id,
+            "step_names_id_map": repo.retrieve_step_names_id_map(process_id=process_id),
+        }
+
+        serializer = self.get_serializer(
+            instance=Process.objects.get(pk=process_id),
+            context=context,
+        )
+
+        return Response(data=serializer.data, status=HTTP_201_CREATED)
+
+    @action(methods=["post"], detail=True, url_path="operation")
+    def operation(self, request, *_, pk: ActionProcessID, **_kw):  # noqa: ARG002
+        process_id = int(pk)
+        parent_object, action = self.get_parent_and_action_supporting_wizard()
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        operation = serializer.validated_data
+        process = ProcessToChangeDTO(id=process_id, sync_key=operation["params"]["process_sync_key"])
+
+        match operation:
+            case {"method": ProcessOperationType.SUBMIT, "params": {"step_id": step_id}}:
+                step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+                match step.type:
+                    case StepType.CONFIGURATION:
+                        # todo missing serialization check (most likely impossible)
+                        config_input = operation["params"]["configuration"]
+                        config = self.prepare_step_config_input(
+                            process_id=process_id, step_id=step_id, config=config_input
+                        )
+                        operation_submit_config(
+                            process=process,
+                            step_id=step_id,
+                            configuration=config,
+                            parent_object=parent_object,
+                            action=action,
+                        )
+                    case StepType.OPERATION:
+                        operation_submit_job(
+                            process=process, step_id=step_id, parent_object=parent_object, action=action
+                        )
+                        self._start_task(step_id)
+
+            case {"method": ProcessOperationType.COMPLETE}:
+                complete_process(process=process)
+
+        return Response(status=HTTP_200_OK)
+
+    def _start_task(self, step_id: int):
+        task = TaskLog.objects.get(
+            id=ProcessStepInput.objects.filter(step_id=step_id).values_list("job_id", flat=True).first()
+        )
+        # todo write pid to task (executor)
+        start_task(task=task)
+
+    def prepare_step_config_input(
+        self,
+        process_id: int,  # noqa: ARG002
+        step_id: int,  # noqa: ARG002
+        config: dict[Literal["config", "adcm_meta", "adcmMeta"], dict],
+    ) -> ConfigAttrPair:
+        # todo make it work
+        # step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+        # config = represent_string_as_json_type()
+
+        # todo do something with this bs
+        attr = convert_adcm_meta_to_attr(config.get("adcm_meta"))
+
+        return ConfigAttrPair(config=config["config"], attr=attr)
+
+
+class ProcessStepViewSet(GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
+    queryset = ProcessStep.objects.all()
+    serializer_class = StepSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        _ = request, args
+
+        process_id, step_id, action_id = kwargs["process_pk"], kwargs["pk"], kwargs["action_pk"]
+
+        parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+        object_ = orm_object_to_core_descriptor(parent_object)
+
+        step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+        data = step.model_dump(include={"id", "display_name", "type"})
+
+        extra = serialize_step(process_id=process_id, step_id=step_id, action_id=action_id, object_=object_)
+        data.update(**extra)
+
+        return Response(data=data, status=HTTP_200_OK)
+
+
+def serialize_step(
+    process_id: ActionProcessID, step_id: ActionProcessStepID, action_id: ActionID, object_: CoreObjectDescriptor
+) -> SerializedConfigStep | SerializedOperationStep:
+    process = repo.retrieve_process(process_id=process_id)
+    step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+    step_spec_raw = repo.find_step_spec(step=step, process_flow_spec=process.flow_spec)
+
+    if step.is_render_required:
+        _render_step_from_flow_spec(step=step, step_spec_raw=step_spec_raw, action_id=action_id, object_=object_)
+        step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+
+    # TODO: merge with StepInput if exists
+    step_input = ProcessStepInput.objects.filter(step_id=step.id).first()
+
+    match step.type:
+        case StepType.CONFIGURATION:
+            return _serialize_config_step(
+                step=step, step_spec_raw=step_spec_raw, action_id=action_id, object_=object_, step_input=step_input
+            )
+        case StepType.OPERATION:
+            return _serialize_operation_step(step_spec_raw=step_spec_raw, step_input=step_input)
+        case _:
+            raise NotImplementedError(f"Can't serialize {step.type} step.")
+
+
+def _serialize_config_step(
+    step: Step,
+    step_spec_raw: WizardStep,
+    action_id: ActionID,
+    object_: CoreObjectDescriptor,
+    step_input: ProcessStepInput | None,
+) -> SerializedConfigStep:
+    action_orm = repo.retrieve_action_orm(action_id=action_id)
+    object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
+    path_resolver = BundlePathResolver(bundle_hash=action_orm.prototype.bundle.hash)
+    config_file = Path(path_resolver.bundle_root, step_spec_raw.template.file.path)
+
+    prototype_configs, _ = _get_jinja_config_new(
+        data=step.step_spec,
+        action=action_orm,
+        config_file=config_file,
+        resolver=path_resolver,
+        object_=object_orm,
+    )
+
+    schema, config, meta = get_schema_config_meta(
+        object_=object_orm,
+        prototype_configs=prototype_configs,
+        path_resolver=path_resolver,
+    )
+
+    if step_input:
+        config = step_input.configuration["config"]
+        meta = convert_attr_to_adcm_meta(step_input.configuration["attr"])
+
+    return {"config_schema": schema, "adcm_meta": meta, "config": config}
+
+
+def _serialize_operation_step(
+    step_spec_raw: WizardStep, step_input: ProcessStepInput | None
+) -> SerializedOperationStep:
+    ui_options = step_spec_raw.model_dump(include={"ui_options"}).get("ui_options")
+
+    task = None
+    if step_input:
+        task = {"id": step_input.job_id}
+
+    # TODO: get job based on ProcessStepInput
+    return {"ui_options": ui_options, "task": task}
+
+
+def _render_step_from_flow_spec(
+    step: Step, step_spec_raw: WizardStep, action_id: ActionID, object_: CoreObjectDescriptor
+) -> None:
+    action = ActionRepoImpl.get_action(id=action_id)
+    environment = RendererEnv(
+        discovery_root=repo.get_bundle_root_from_prototype(prototype_id=action.owner_prototype.id)
+    )
+
+    rendered = render_template(
+        template=step_spec_raw.template, environment=environment, action_id=action.id, object_=object_
+    )
+    # todo conversion is missing
+
+    repo.update_step(step_id=step.id, data=StepUpdateDTO(step_spec=rendered))

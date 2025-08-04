@@ -35,6 +35,7 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
+from cm.services.wizard.types import ProcessState
 
 
 class ObjectType(models.TextChoices):
@@ -1743,18 +1744,13 @@ class HostInfo(models.Model):
         ]
 
 
-class ProcessState(models.TextChoices):
-    CREATED = "created", "created"
-    BROKEN = "broken", "broken"
-    REVOKED = "revoked", "revoked"
-    FINISHED = "finished", "finished"
+ProcessStateChoices = tuple((state.value, state.value) for state in ProcessState)
 
 
 class ProcessStepState(models.TextChoices):
     CREATED = "created", "created"
     RUNNING = "running", "running"
     BROKEN = "broken", "broken"
-    REVOKED = "revoked", "revoked"
     FAILED = "failed", "failed"
     SUCCESS = "success", "success"
     ABORTED = "aborted", "aborted"
@@ -1774,20 +1770,20 @@ class Process(models.Model):
     hash = models.UUIDField(primary_key=False, editable=True)
     state = models.CharField(
         max_length=100,
-        choices=ProcessState,
+        choices=ProcessStateChoices,
         default=ProcessState.CREATED,
     )
 
 
 class ProcessStep(models.Model):
     process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name="steps")
-    name = models.CharField(max_length=150, null=True)
-    display_name = models.CharField(max_length=150, null=True)
-    step_spec = models.JSONField()
+    name = models.CharField(max_length=150)
+    display_name = models.CharField(max_length=150)
+    step_spec = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     state = models.CharField(
         max_length=100,
-        choices=ProcessStepState,
+        choices=ProcessStepState.choices,
         default=ProcessStepState.CREATED,
     )
 
