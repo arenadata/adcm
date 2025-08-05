@@ -17,6 +17,7 @@ from django.conf import settings
 
 def ansible_encrypt(msg: str) -> bytes:
     vault = VaultAES256()
+
     secret = VaultSecret(_bytes=bytes(settings.ANSIBLE_SECRET, settings.ENCODING_UTF_8))
 
     return vault.encrypt(b_plaintext=bytes(msg, settings.ENCODING_UTF_8), secret=secret)

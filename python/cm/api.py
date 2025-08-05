@@ -518,13 +518,11 @@ def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[Concern
     return None, {}
 
 
-def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
+def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict, description: str) -> ConfigLog:
     new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
-        config_log = save_object_config(
-            object_config=obj.config, config=new_conf, attr=attr, description="ansible update"
-        )
+        config_log = save_object_config(object_config=obj.config, config=new_conf, attr=attr, description=description)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     return config_log

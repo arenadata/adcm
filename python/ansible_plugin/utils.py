@@ -15,7 +15,6 @@ from typing import Any
 import json
 
 # isort: off
-from ansible.errors import AnsibleError
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
@@ -41,21 +40,6 @@ def get_service_by_name(cluster_id, service_name):
     cluster = Cluster.obj.get(id=cluster_id)
     proto = Prototype.obj.get(type="service", name=service_name, bundle=cluster.prototype.bundle)
     return Service.obj.get(cluster=cluster, prototype=proto)
-
-
-def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
-    try:
-        match field_type:
-            case "float":
-                return float(value)
-            case "integer":
-                return int(value)
-            case "option":
-                return get_option_value(value=value, limits=limits)
-            case _:
-                return value
-    except ValueError as error:
-        raise AnsibleError(f"Could not convert '{value}' to '{field_type}'") from error
 
 
 def assign_view_logstorage_permissions_by_job(log_storage: LogStorage) -> None:
@@ -106,3 +90,15 @@ def finish_check(job_id: int):
 
     GroupCheckLog.objects.filter(job=job).delete()
     CheckLog.objects.filter(job=job).delete()
+
+
+def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
+    match field_type:
+        case "float":
+            return float(value)
+        case "integer":
+            return int(value)
+        case "option":
+            return get_option_value(value=value, limits=limits)
+        case _:
+            return value

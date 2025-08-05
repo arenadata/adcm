@@ -784,17 +784,6 @@ def get_adcm_config(section=None):
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
 
 
-def get_option_value(value: str, limits: dict) -> str | int | float:
-    if value in limits["option"].values():
-        return value
-    elif re.match(r"^\d+$", value):
-        return int(value)
-    elif re.match(r"^\d+\.\d+$", value):
-        return float(value)
-
-    return raise_adcm_ex("CONFIG_OPTION_ERROR")
-
-
 def get_default(conf: PrototypeConfig, path_resolver: PathResolver | None = None) -> Any:
     value = conf.default
     if conf.default == "":
@@ -856,3 +845,14 @@ def get_main_info(obj: ADCMEntity | None) -> str | None:
     )
 
     return get_default(main_info, path_resolver=path_resolver)
+
+
+def get_option_value(value: str, limits: dict) -> str | int | float:
+    if value in limits["option"].values():
+        return value
+    elif re.match(r"^\d+$", value):
+        return int(value)
+    elif re.match(r"^\d+\.\d+$", value):
+        return float(value)
+
+    return raise_adcm_ex("CONFIG_OPTION_ERROR")
