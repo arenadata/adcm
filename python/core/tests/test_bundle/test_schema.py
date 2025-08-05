@@ -15,7 +15,13 @@ from unittest import TestCase
 from pydantic import ValidationError
 import yaml
 
-from core.bundle_alt.schema import TYPE_SCHEMA_MAP, TaskSchema, Wizard, _BaseUpgradeSchema
+from core.bundle_alt.schema import (
+    TYPE_SCHEMA_MAP,
+    InternalConfigApplyScriptSchema,
+    TaskSchema,
+    Wizard,
+    _BaseUpgradeSchema,
+)
 
 
 class TestBundleSchema(TestCase):
@@ -1402,3 +1408,33 @@ class TestWizardSchema(TestCase):
         with self.assertRaises(ValidationError, msg="wizard is not expected in upgrade action"):
             parsed_data = yaml.safe_load(yaml_input_of_jinja)
             _BaseUpgradeSchema.model_validate(parsed_data["upgrade"][0])
+
+    def test_config_apply_pass(self):
+        yaml_input_of_jinja = """
+            - name: state_2
+              display_name: "State 2"
+              script_type: internal
+              script: config_apply
+              params:
+                changes:
+                  - object:
+                      type: cluster
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        value: "{{ action.process.manage_ssl_stage.configure_ssl.config.ssl_config }}"
+                  - object:
+                      type: service
+                      service_name: "{{ roles_generic_args.service_name }}"
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        active: true
+                  - object:
+                      type: component
+                      service_name: "{{ roles_generic_args.service_name }}"
+                      component_name: "{{ roles_generic_args.component_name }}"
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        value: "{{ action.process.manage_ssl_stage.configure_ssl.config.ssl_config }}"
+        """
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+        InternalConfigApplyScriptSchema.model_validate(parsed_data[0])

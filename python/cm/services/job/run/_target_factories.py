@@ -30,8 +30,17 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
+from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import AnsibleConfig, Cluster, Component, LogStorage, Prototype, TaskLog
+from cm.models import (
+    ADCM,
+    AnsibleConfig,
+    Cluster,
+    Component,
+    LogStorage,
+    Prototype,
+    TaskLog,
+)
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
@@ -65,6 +74,7 @@ class ExecutionTargetFactory:
             "bundle_switch": internal_script_bundle_switch,
             "bundle_revert": internal_script_bundle_revert,
             "hc_apply": internal_script_hc_apply,
+            "config_apply": internal_script_config_apply,
         }
 
     def __call__(
@@ -198,6 +208,46 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
         )
 
     return 0
+
+
+def internal_script_config_apply(task: Task, job: Job):
+    from ansible_plugin.executors.config import apply_config_changes
+
+    owner_model = core_type_to_model(core_type=task.owner.type)
+    # need to think if the owner object may be deleted during execution, need we check?
+    owner = owner_model.objects.get(id=task.owner.id)
+
+    # are we going to allow to change one component from context of another?
+    for change in job.params.changes:
+        changing_object = _extract_apply_config_target(owner, change)
+        apply_config_changes(
+            job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
+        )
+
+
+def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:
+    if change["object"]["type"] == orm_object_to_core_type(owner).value:
+        changing_object = owner
+    else:
+        changing_object_model = core_type_to_model(core_type=ADCMCoreType(change["object"]["type"]))
+        changing_object_name = change["object"][f'{change["object"]["type"]}_name']
+        changing_object_filter = {"prototype__name": changing_object_name}
+
+        if ADCMCoreType(change["object"]["type"]) in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
+            changing_object_filter["cluster_id"] = owner.id
+
+            if change["object"]["type"] == ADCMCoreType.COMPONENT.value:
+                changing_object_filter["service__prototype__name"] = change["object"]["service_name"]
+
+        changing_object = changing_object_model.objects.filter(**changing_object_filter).first()
+
+        if not changing_object:
+            raise AdcmEx(
+                code="INTERNAL_SERVER_ERROR",
+                msg=f"The configuration contains non-existing object of owner {change['object']}",
+            )
+
+    return changing_object
 
 
 def _extract_mapping_delta_part(

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from cm.services.config._base import (
     ConfigAttrPair,
     retrieve_config_attr_pairs,

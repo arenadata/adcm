@@ -13,13 +13,15 @@
 from typing import Any, Collection, TypeAlias, TypedDict
 
 from cm.api import set_object_config_with_plugin
-from cm.converters import core_type_to_model
-from cm.models import ConfigLog, JobLog
+from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_type
+from cm.errors import AdcmEx
+from cm.models import ADCM, ConfigLog, JobLog
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.services.config.types import ConfigCoreObjectWithPrototype, RelatedConfigs
 from cm.services.job.run.repo import JobRepoImpl
 from cm.status_api import send_config_creation_event
+from core.bundle_alt.schema import ConfigApplyParameterItem
 from core.job.dto import JobUpdateDTO
 from core.types import ConfigID, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -29,7 +31,6 @@ from typing_extensions import Self
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
-    BaseStrictModel,
     BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
@@ -37,7 +38,6 @@ from ansible_plugin.base import (
     TargetConfig,
     from_arguments_root,
 )
-from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 from ansible_plugin.utils import cast_to_type
 
@@ -47,31 +47,9 @@ ParamValue: TypeAlias = Any
 OriginalValues: TypeAlias = ConfigAttrPair
 
 
-class ParameterToChange(BaseStrictModel):
-    key: str
-    value: ParamValue = None
-    active: bool | None = None
-
-    @model_validator(mode="after")
-    def check_one_is_specified(self) -> Self:
-        if self.model_fields_set.issuperset({"active", "value"}):
-            message = "Could use only `value` or `active`, not both"
-            raise ValueError(message)
-
-        return self
-
-    @model_validator(mode="after")
-    def check_either_value_or_active(self) -> Self:
-        if not self.model_fields_set.intersection({"active", "value"}):
-            message = "Either `value` or `active` should be specified"
-            raise ValueError(message)
-
-        return self
-
-
-class ChangeConfigArguments(ParameterToChange, BaseTypedArguments):
+class ChangeConfigArguments(ConfigApplyParameterItem, BaseTypedArguments):
     # new API to change multiple parameters
-    parameters: list[ParameterToChange] | None = None
+    parameters: list[ConfigApplyParameterItem] | None = None
 
     # not required for old API for changing one parameter
     key: str | None = None
@@ -93,6 +71,12 @@ class ChangeConfigArguments(ParameterToChange, BaseTypedArguments):
         # check is moved to `check_either_single_or_multi_parameters`
         return self
 
+    def get_changes(self) -> list[dict]:
+        return [
+            {"key": parameter.key, "value": parameter.value, "active": parameter.active}
+            for parameter in self.parameters or [self]
+        ]
+
 
 class ChangeConfigReturn(TypedDict):
     value: dict[str, ParamValue] | ParamValue
@@ -113,59 +97,17 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value={}, changed=False, error=error)
 
-        changes = ConfigAttrPair(config={}, attr={})
-        for parameter in arguments.parameters or [arguments]:
-            key = parameter.key
-            if "/" not in key:
-                key = f"{key}/"
-
-            if parameter.active is not None:
-                changes.attr[key] = {"active": parameter.active}
-            else:
-                changes.config[key] = parameter.value
-
-        return_value = self._prepare_return_value(changes.config)
-
         model = core_type_to_model(core_type=target.type)
-        try:
-            db_object = model.objects.select_related("config").get(id=target.id)
-        except model.DoesNotExist:
-            return CallResult(
-                value=None, changed=False, error=PluginTargetDetectionError(message=f"Failed to find {target=}")
-            )
+        db_object = model.objects.select_related("config").get(id=target.id)
 
-        configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
-        spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
+        changes_config, changed = apply_config_changes(
+            runtime.vars.job.id, db_object, arguments.get_changes(), "ansible update"
+        )
 
-        changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
+        return_value = self._prepare_return_value(changes_config)
 
         if not changed:
             return CallResult(value=return_value, changed=False, error=None)
-
-        old_config_log_id = db_object.config.current
-
-        new_config_log = set_object_config_with_plugin(
-            obj=db_object, config=configuration.config, attr=configuration.attr
-        )
-
-        send_config_creation_event(object_=db_object)
-
-        target_config = ConfigCoreObjectWithPrototype(
-            object=CoreObjectDescriptor(id=target.id, type=target.type),
-            prototype_id=db_object.prototype_id,
-            config_id=old_config_log_id,
-        )
-
-        try:
-            self._update_related_configs(
-                job_id=runtime.vars.job.id, target=target_config, new_config_id=new_config_log.id
-            )
-        except ValueError:
-            return CallResult(
-                value=None,
-                changed=False,
-                error=PluginTargetDetectionError(message=f"Failed to find related config for {target_config=}"),
-            )
 
         return CallResult(value=return_value, changed=True, error=None)
 
@@ -184,27 +126,68 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         # return of this plugin should always have `value` key
         return ChangeConfigReturn(value=config_params)
 
-    @staticmethod
-    def _update_related_configs(job_id: int, target: ConfigCoreObjectWithPrototype, new_config_id: ConfigID) -> None:
-        related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
-            id=job_id
-        )
 
-        if not related_configs:
-            return
+def apply_config_changes(
+    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
+) -> tuple[dict, bool]:
+    changes = ConfigAttrPair(config={}, attr={})
+    for parameter in parameters:
+        key = parameter["key"]
+        if "/" not in key:
+            key = f"{key}/"
 
-        target_config = RelatedConfigs(
-            object_id=target.object.id,
-            object_type=target.object.type,
-            prototype_id=target.prototype_id,
-            primary_config_id=target.config_id,
-        )
+        if parameter.get("active") is not None:
+            changes.attr[key] = {"active": parameter["active"]}
+        else:
+            changes.config[key] = parameter["value"]
 
-        index = related_configs.index(target_config)
-        record = related_configs[index]
-        record["primary_config_id"] = new_config_id
+    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
+    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
 
-        JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
+
+    if not changed:
+        return changes.config, False
+
+    old_config_log_id = db_object.config.current
+
+    new_configlog = set_object_config_with_plugin(
+        obj=db_object, config=configuration.config, attr=configuration.attr, description=changes_description
+    )
+    send_config_creation_event(object_=db_object)
+
+    config_core_object = ConfigCoreObjectWithPrototype(
+        object=CoreObjectDescriptor(id=db_object.id, type=orm_object_to_core_type(db_object)),
+        prototype_id=db_object.prototype_id,
+        config_id=old_config_log_id,
+    )
+    related_configs = _update_related_configs(job_id=job_id, target=config_core_object, new_config_id=new_configlog.id)
+
+    JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+
+    return changes.config, True
+
+
+def _update_related_configs(
+    job_id: int, target: ConfigCoreObjectWithPrototype, new_config_id: ConfigID
+) -> list[RelatedConfigs] | None:
+    related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
+        id=job_id
+    )
+    if not related_configs:
+        return None
+
+    target_config = RelatedConfigs(
+        object_id=target.object.id,
+        object_type=target.object.type.value,
+        prototype_id=target.prototype_id,
+        primary_config_id=target.config_id,
+    )
+    index = related_configs.index(target_config)
+    record = related_configs[index]
+    record["primary_config_id"] = new_config_id
+
+    return related_configs
 
 
 def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:
@@ -220,7 +203,7 @@ def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec:
     keys_to_change = set(changes.config.keys()) | set(changes.attr.keys())
     if missing_keys := keys_to_change - spec.keys():
         message = f"Some keys aren't presented in specification: {', '.join(sorted(missing_keys))}"
-        raise PluginIncorrectCallError(message=message)
+        raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
 
     changed = False
 
@@ -251,7 +234,7 @@ def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec:
             message = (
                 "`active` parameter can be changed only for activatable group. " f"Group {key} is not one of them."
             )
-            raise PluginIncorrectCallError(message=message)
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
 
         attr_key = key.rstrip("/")
         # we want to directly compare "active"'s since it's the only thing we may change via plugin

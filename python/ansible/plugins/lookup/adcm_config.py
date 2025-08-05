@@ -161,7 +161,7 @@ def update_config(obj: ADCMEntity, conf: dict) -> PluginResult:
     if not changed:
         return PluginResult(conf, False)
 
-    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
+    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr, description="ansible update")
     send_config_creation_event(object_=obj)
 
     if len(conf) == 1:

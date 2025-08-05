@@ -20,6 +20,7 @@ from pydantic import (
     Discriminator,
     Field,
     Tag,
+    conlist,
     field_validator,
     model_validator,
 )
@@ -361,6 +362,83 @@ class HcApplySchema(_BaseModel):
     rules: list[HcApplyRule]
 
 
+class AdcmConfigApplyRule(_BaseModel):
+    type: Literal["adcm"]
+
+
+class HostConfigApplyRule(_BaseModel):
+    type: Literal["host"]
+
+
+class ProviderConfigApplyRule(_BaseModel):
+    type: Literal["provider"]
+
+
+class ClusterConfigApplyRule(_BaseModel):
+    type: Literal["cluster"]
+
+
+class ServiceConfigApplyRule(_BaseModel):
+    type: Literal["service"]
+    service_name: str
+
+
+class ComponentConfigApplyRule(ServiceConfigApplyRule):
+    type: Literal["component"]
+    component_name: str
+
+
+class ConfigApplyParameterItem(_BaseModel):
+    key: str
+    value: Any = None
+    active: bool = None
+
+    @model_validator(mode="after")
+    def check_one_is_specified(self):
+        if self.model_fields_set.issuperset({"active", "value"}):
+            message = "Could use only `value` or `active`, not both"
+            raise ValueError(message)
+
+        return self
+
+    @model_validator(mode="after")
+    def check_either_value_or_active(self):
+        if not self.model_fields_set.intersection({"active", "value"}):
+            message = "Either `value` or `active` should be specified"
+            raise ValueError(message)
+
+        return self
+
+
+class ConfigApplyObject(_BaseModel):
+    object: Annotated[
+        ClusterConfigApplyRule
+        | ServiceConfigApplyRule
+        | ComponentConfigApplyRule
+        | HostConfigApplyRule
+        | ProviderConfigApplyRule
+        | AdcmConfigApplyRule,
+        Field(discriminator="type"),
+    ]
+    parameters: list[ConfigApplyParameterItem]
+
+    def __hash__(self):
+        return hash(self.model_dump_json())
+
+
+class ConfigApplySchema(_BaseModel):
+    changes: conlist(ConfigApplyObject, min_length=1)
+
+    @model_validator(mode="after")
+    def ensure_unique_changes(self):
+        seen = set()
+        for change in self.changes:
+            if change in seen:
+                raise ValueError("Duplicate change detected in 'changes'")
+            seen.add(change)
+        return self
+
+
 #######
 # BASE SCRIPTS
 #######
@@ -400,6 +478,12 @@ class _PythonScript(_BaseModel):
     params: Annotated[None, Field(default=None)]
 
 
+class _InternalConfigApplyScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["config_apply"]
+    params: ConfigApplySchema
+
+
 class _BaseScriptSchema(_BaseModel):
     name: str
     display_name: Annotated[str | None, Field(default=None)]
@@ -423,6 +507,10 @@ class AnsibleScriptSchema(_BaseScriptSchema, _AnsibleScript):
 
 
 class PythonScriptSchema(_BaseScriptSchema, _PythonScript):
+    ...
+
+
+class InternalConfigApplyScriptSchema(_BaseScriptSchema, _InternalConfigApplyScript):
     ...
 
 
@@ -780,12 +868,19 @@ class PythonTaskScriptSchema(PythonScriptSchema, _WithAllowToTerminateField):
     ...
 
 
+class InternalConfigApplyTaskScriptSchema(InternalConfigApplyScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
 
 
 INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
-    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalHcApplyTaskScriptSchema,
+    InternalBundleSwitchTaskScriptSchema
+    | InternalBundleRevertTaskScriptSchema
+    | InternalHcApplyTaskScriptSchema
+    | InternalConfigApplyTaskScriptSchema,
     Field(discriminator="script"),
 ]
 
