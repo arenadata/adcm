@@ -140,7 +140,13 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
             case {"method": ProcessOperationType.COMPLETE}:
                 complete_process(process=process)
 
-        return Response(status=HTTP_200_OK)
+        return Response(
+            status=HTTP_200_OK,
+            data=ProcessSerializer(
+                Process.objects.get(pk=process_id),
+                context={"step_names_id_map": repo.retrieve_step_names_id_map(process_id=process_id)},
+            ).data,
+        )
 
     def _start_task(self, step_id: int):
         task = TaskLog.objects.get(
