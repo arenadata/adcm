@@ -20,6 +20,7 @@ import json
 import unittest
 
 from cm.models import (
+    ADCM,
     Action,
     Cluster,
     Component,
@@ -852,6 +853,35 @@ class TestWizard(BaseAPITestCase):
         response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_operation_step.yml"
         expected_response = render_template(file=response_template, context={"step_id": target_step.id})
         self.assertDictEqual(response.json(), expected_response)
+
+    def test_retrieve_wizard_action_success(self):
+        with self.subTest("not a wizard action"):
+            response = self.client.v2[
+                "adcm", "actions", Action.objects.filter(prototype=ADCM.objects.first().prototype).first().pk
+            ].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertIsNone(response.json()["processes"], None)
+
+        with self.subTest("wizard action without processes"):
+            response = self.client.v2[self.cluster_1, "actions", self.wizard_action.pk].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(response.json()["processes"], [])
+
+        with self.subTest("wizard action with process"):
+            process = self.get_process(self.start_process())
+
+            # Fill previous steps' `step_spec`, create inputs for them
+            test_spec = {"test": "spec"}
+            previous_step_names = {"stage1_step1", "stage2_step1"}
+            for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
+                step.step_spec = test_spec
+                step.save(update_fields=["step_spec"])
+                ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+
+            response = self.client.v2[self.cluster_1, "actions", self.wizard_action.pk].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()["processes"]), 1)
+            self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.hash))
 
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process())

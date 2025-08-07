@@ -46,6 +46,7 @@ from api_v2.generic.action.serializers import (
 from api_v2.generic.action.utils import (
     filter_actions_by_user_perm,
     get_action_configuration,
+    get_wizard_action_processes,
     has_run_perms,
 )
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
@@ -147,6 +148,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
                 "config_schema": config_schema,
                 "config": config,
                 "adcm_meta": adcm_meta,
+                "processes": get_wizard_action_processes(action_),
             },
         )
 

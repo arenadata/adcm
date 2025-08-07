@@ -16,6 +16,7 @@ from uuid import UUID
 from cm.models import Process, ProcessStep, ProcessStepState
 from cm.services.wizard.types import ProcessOperationType
 from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.fields import DateTimeField
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -56,14 +57,15 @@ class StageSerializer(Serializer):
         return StepFromStageSerializer(sorted(steps, key=lambda x: x["id"]), many=True).data
 
 
-class ProcessSerializer(ModelSerializer):
-    current_step = SerializerMethodField(source="get_current_step")
-    stages = StageSerializer(source="flow_spec", many=True)
+class ProcessShortSerializer(ModelSerializer):
     sync_key = CharField(source="hash")
+    state = CharField()
+    current_step = SerializerMethodField(source="get_current_step")
+    created_at = DateTimeField()
 
     class Meta:
         model = Process
-        fields = ["id", "state", "current_step", "created_at", "stages", "sync_key"]
+        fields = ["id", "state", "current_step", "created_at", "sync_key"]
 
     def get_current_step(self, instance: Process) -> int:
         _ = instance
@@ -82,6 +84,14 @@ class ProcessSerializer(ModelSerializer):
             latest = step_ids[0]
 
         return latest
+
+
+class ProcessSerializer(ProcessShortSerializer):
+    stages = StageSerializer(source="flow_spec", many=True)
+
+    class Meta:
+        model = Process
+        fields = ["id", "state", "current_step", "created_at", "stages", "sync_key"]
 
 
 class StepSerializer(Serializer):
