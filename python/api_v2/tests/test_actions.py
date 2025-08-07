@@ -888,6 +888,9 @@ class TestWizard(BaseAPITestCase):
             }
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], process.id)
+        self.assertEqual(response.json()["createdAt"], str(process.created_at.isoformat().replace("+00:00", "Z")))
+        self.assertEqual(sum(len(stage["steps"]) for stage in response.json()["stages"]), process.steps.count())
 
         target_operation_step.refresh_from_db()
         expected_spec = [
