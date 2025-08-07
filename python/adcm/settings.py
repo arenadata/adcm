@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import timedelta
 from json import JSONDecodeError
 from pathlib import Path
 import os
@@ -388,3 +389,5 @@ STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH = STDOUT_STDERR_LOG_CUT_LENGTH * STDOUT_STDER
 STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via link>"
 
 TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
+
+WIZARD_STALE_STATE_TIMEOUT = timedelta(days=1)
