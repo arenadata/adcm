@@ -210,7 +210,7 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
     return 0
 
 
-def internal_script_config_apply(task: Task, job: Job):
+def internal_script_config_apply(task: Task, job: Job) -> int:
     from ansible_plugin.executors.config import apply_config_changes
 
     owner_model = core_type_to_model(core_type=task.owner.type)
@@ -223,6 +223,7 @@ def internal_script_config_apply(task: Task, job: Job):
         apply_config_changes(
             job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
         )
+    return 0
 
 
 def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:
