@@ -822,6 +822,10 @@ class InternalBundleRevertJobSchema(_BaseJobSchema, _InternalBundleRevertScript)
     ...
 
 
+class InternalConfigApplyJobSchema(_BaseJobSchema, _InternalConfigApplyScript):
+    ...
+
+
 class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
@@ -832,7 +836,10 @@ class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
 
 
 INTERNAL_JOB_SCHEMA = Annotated[
-    InternalBundleSwitchJobSchema | InternalBundleRevertJobSchema | InternalHcApplyJobShema,
+    InternalBundleSwitchJobSchema
+    | InternalBundleRevertJobSchema
+    | InternalHcApplyJobShema
+    | InternalConfigApplyJobSchema,
     Field(discriminator="script"),
 ]
 
