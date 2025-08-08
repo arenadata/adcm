@@ -12,10 +12,11 @@
 
 from unittest import TestCase
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 import yaml
 
 from core.bundle_alt.schema import (
+    JOB_SCHEMA,
     TYPE_SCHEMA_MAP,
     InternalConfigApplyScriptSchema,
     TaskSchema,
@@ -1197,7 +1198,7 @@ class TestBundleSchema(TestCase):
 
 
 class TestWizardSchema(TestCase):
-    def test_correct_format_success(self):
+    def test_correct_task_format_success(self):
         yaml_input_of_jinja = """
             name: ssl_kerberos_wizard
             display_name: "SSL & Kerberos Setup"
@@ -1249,6 +1250,34 @@ class TestWizardSchema(TestCase):
         parsed_data = yaml.safe_load(yaml_input_of_jinja)
         validated_model = Wizard.model_validate(parsed_data)
         self.assertIsInstance(validated_model, Wizard)
+
+    def test_correct_job_format_success(self):
+        yaml_input_of_jinja = """
+            apply:
+              type: job
+              script: config_apply
+              script_type: internal
+              states:
+                available: any
+              params:
+                changes:
+                  - object:
+                      type: cluster
+                    parameters:
+                      - key: test_string
+                        value: "test"
+                  - object:
+                      type: service
+                      service_name: service_1
+                    parameters:
+                      - key:  test_int
+                        value: 34
+                    """
+
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+
+        adapter = TypeAdapter(JOB_SCHEMA)
+        adapter.validate_python(parsed_data["apply"])
 
     def test_prohibited_file_format_fail(self):
         yaml_input_of_jinja = """
