@@ -31,7 +31,12 @@ from cm.adcm_config.config import (
     save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
-from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
+from cm.converters import (
+    CoreObject,
+    orm_object_to_action_target_type,
+    orm_object_to_core_descriptor,
+    orm_object_to_core_type,
+)
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
     add_concern_to_object,
@@ -83,6 +88,7 @@ from cm.services.concern.distribution import (
 )
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.concern.locks import get_lock_on_object
+from cm.services.job.run import update_related_configs
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     notify_about_new_concern,
@@ -518,14 +524,25 @@ def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[Concern
     return None, {}
 
 
-def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict, description: str) -> ConfigLog:
+def set_object_config_with_plugin(
+    job_id: int, obj: ADCM | CoreObject, config: dict, attr: dict, description: str
+) -> None:
+    old_config_log_id = obj.config.current
     new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
         config_log = save_object_config(object_config=obj.config, config=new_conf, attr=attr, description=description)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    return config_log
+    core_object = orm_object_to_core_descriptor(object_=obj)
+    update_related_configs(
+        job_id=job_id,
+        object_=core_object,
+        object_prototype_id=obj.prototype_id,
+        old_config_id=old_config_log_id,
+        new_config_id=config_log.id,
+    )
+    send_config_creation_event(object_=obj)
 
 
 def get_hc(cluster: Cluster | None) -> list[dict] | None:

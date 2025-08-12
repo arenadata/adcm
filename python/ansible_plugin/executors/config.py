@@ -13,17 +13,13 @@
 from typing import Any, Collection, TypeAlias, TypedDict
 
 from cm.api import set_object_config_with_plugin
-from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_type
+from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigLog, JobLog
+from cm.models import ADCM, ConfigLog
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
-from cm.services.config.types import ConfigCoreObjectWithPrototype, RelatedConfigs
-from cm.services.job.run.repo import JobRepoImpl
-from cm.status_api import send_config_creation_event
 from core.bundle_alt.schema import ConfigApplyParameterItem
-from core.job.dto import JobUpdateDTO
-from core.types import ConfigID, CoreObjectDescriptor
+from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import model_validator
 from typing_extensions import Self
@@ -149,45 +145,15 @@ def apply_config_changes(
     if not changed:
         return changes.config, False
 
-    old_config_log_id = db_object.config.current
-
-    new_configlog = set_object_config_with_plugin(
-        obj=db_object, config=configuration.config, attr=configuration.attr, description=changes_description
+    set_object_config_with_plugin(
+        job_id=job_id,
+        obj=db_object,
+        config=configuration.config,
+        attr=configuration.attr,
+        description=changes_description,
     )
-    send_config_creation_event(object_=db_object)
-
-    config_core_object = ConfigCoreObjectWithPrototype(
-        object=CoreObjectDescriptor(id=db_object.id, type=orm_object_to_core_type(db_object)),
-        prototype_id=db_object.prototype_id,
-        config_id=old_config_log_id,
-    )
-    related_configs = _update_related_configs(job_id=job_id, target=config_core_object, new_config_id=new_configlog.id)
-
-    JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
 
     return changes.config, True
-
-
-def _update_related_configs(
-    job_id: int, target: ConfigCoreObjectWithPrototype, new_config_id: ConfigID
-) -> list[RelatedConfigs] | None:
-    related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
-        id=job_id
-    )
-    if not related_configs:
-        return None
-
-    target_config = RelatedConfigs(
-        object_id=target.object.id,
-        object_type=target.object.type.value,
-        prototype_id=target.prototype_id,
-        primary_config_id=target.config_id,
-    )
-    index = related_configs.index(target_config)
-    record = related_configs[index]
-    record["primary_config_id"] = new_config_id
-
-    return related_configs
 
 
 def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:

@@ -12,11 +12,11 @@
 
 from typing import Iterable, NamedTuple
 
+from core.config.types import RelatedConfigs
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, ObjectConfigID, ObjectID
 
 from cm.converters import core_type_to_model
 from cm.models import ConfigLog
-from cm.services.config.types import RelatedConfigs
 
 
 class ConfigAttrPair(NamedTuple):

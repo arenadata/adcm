@@ -28,6 +28,7 @@ from cm.api import add_service_to_cluster
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import Action, Component, ConfigLog, HostComponent, MaintenanceMode, Prototype, get_object_cluster
+from cm.services.job.run import create_related_configs
 from cm.services.job.run._target_factories import (
     internal_script_config_apply,
     internal_script_hc_apply,
@@ -732,6 +733,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
     def test_internal_config_apply(self):
         task = self.prepare_task(owner=self.cluster, name="state_2")
         job = list(JobRepoImpl.get_task_jobs(task.id)).pop()
+        create_related_configs(job_id=job.id, owner=task.owner)
 
         initial_config = ConfigLog.objects.get(pk=self.cluster.config.current).config
         initial_config["password"] = ansible_decrypt(initial_config["password"])

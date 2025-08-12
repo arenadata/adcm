@@ -19,7 +19,7 @@ from cm.converters import core_type_to_model
 from cm.models import ConfigRevision, JobLog
 from cm.services.config import ConfigAttrPair, retrieve_config_attr_pairs, retrieve_configs_with_revision
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
-from cm.services.config.types import RelatedConfigs
+from core.config.types import RelatedConfigs
 from core.types import (
     ADCMCoreType,
     ConfigID,
