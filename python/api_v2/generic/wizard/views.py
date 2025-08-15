@@ -14,9 +14,10 @@ from pathlib import Path
 from typing import Literal
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
-from cm.converters import core_type_to_model, orm_object_to_core_descriptor
+from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.models import Process, ProcessStep, ProcessStepInput, TaskLog
 from cm.services.bundle import BundlePathResolver
+from cm.services.concern.flags import BuiltInFlag, lower_flag, raise_flag
 from cm.services.config import ConfigAttrPair
 from cm.services.config.jinja import _get_jinja_config_new
 from cm.services.job.run._task import start_task
@@ -89,7 +90,10 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
         # TODO: check if Process already exists
         with atomic():
             process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action)
-            # TODO: create flag on parent_object
+            raise_flag(
+                BuiltInFlag.WIZARD_PROCESS_RUNNING.value,
+                on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],
+            )
 
         context = {
             "process_id": process_id,
@@ -139,6 +143,10 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
 
             case {"method": ProcessOperationType.COMPLETE}:
                 complete_process(process=process)
+                lower_flag(
+                    BuiltInFlag.WIZARD_PROCESS_RUNNING.value.name,
+                    on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],
+                )
 
         return Response(
             status=HTTP_200_OK,

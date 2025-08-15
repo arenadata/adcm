@@ -45,6 +45,9 @@ class BuiltInFlag(Enum):
     ADCM_OUTDATED_CONFIG = ConcernFlag(
         name="adcm_outdated_config", message="outdated config", cause=ConcernCause.CONFIG
     )
+    WIZARD_PROCESS_RUNNING = ConcernFlag(
+        name="wizard_process_running", message="configuring  process", cause=ConcernCause.CONFIGURING_PROCESS
+    )
 
 
 def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> bool:
