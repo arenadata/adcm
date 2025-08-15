@@ -25,6 +25,7 @@ from cm.models import (
     Cluster,
     Component,
     ConcernCause,
+    ConcernItem,
     ConcernType,
     Host,
     HostComponent,
@@ -42,6 +43,7 @@ from cm.services.jinja_env import _get_action_info
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard.types import ProcessOperationType, ProcessState, ProcessToChangeDTO
 from cm.tests.mocks.task_runner import RunTaskMock
+from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -790,6 +792,13 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(Process.objects.count(), 1)
         self.assertEqual(ProcessStep.objects.count(), 3)
 
+        flags = ConcernItem.objects.filter(
+            owner_id=self.cluster_1.pk,
+            owner_type=ContentType.objects.get_for_model(model=Cluster),
+            cause=ConcernCause.CONFIGURING_PROCESS,
+        )
+        self.assertEqual(flags.count(), 1)
+
         process = Process.objects.get()
         expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
         _step_ids = {f"{name}_id": id_ for name, id_ in process.steps.values_list("name", "id")}
@@ -1080,6 +1089,13 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         process.refresh_from_db()
         self.assertEqual(process.state, ProcessState.FINISHED)
+
+        flags = ConcernItem.objects.filter(
+            owner_id=self.cluster_1.pk,
+            owner_type=ContentType.objects.get_for_model(model=Cluster),
+            cause=ConcernCause.CONFIGURING_PROCESS,
+        )
+        self.assertEqual(flags.count(), 0)
 
     def test_operation_validation_fail(self):
         process = self.get_process(self.start_process())

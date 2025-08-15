@@ -1620,6 +1620,7 @@ class ConcernCause(models.TextChoices):
     IMPORT = "import", "import"
     SERVICE = "service", "service"
     REQUIREMENT = "requirement", "requirement"
+    CONFIGURING_PROCESS = "configuring_process", "configuring_process"
 
 
 class ConcernItem(ADCMModel):
