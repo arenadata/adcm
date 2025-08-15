@@ -29,6 +29,7 @@ class ProcessState(str, Enum):
 class ProcessOperationType(str, Enum):
     SUBMIT = "submit"
     COMPLETE = "complete"
+    RESET = "reset_step"
 
 
 @dataclass(slots=True)

@@ -1755,6 +1755,7 @@ class ProcessStepState(models.TextChoices):
     FAILED = "failed", "failed"
     SUCCESS = "success", "success"
     ABORTED = "aborted", "aborted"
+    REVOKED = "revoked", "revoked"
 
 
 class Process(models.Model):

@@ -15,12 +15,12 @@ from typing import Any, Literal, TypeAlias
 from core.job.types import ActionInfo, WizardTemplate
 from core.templates import RendererEnv, get_renderer
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
+from django.db.models import QuerySet
 
 from cm.converters import core_type_to_model
-from cm.models import ProcessState, ProcessStep, ProcessStepInput
+from cm.models import ProcessState, ProcessStep, ProcessStepInput, ProcessStepState
 from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.wizard import repo, stage
-from cm.services.wizard.repo import retrieve_next_step_ids
 from cm.services.wizard.types import ProcessToChangeDTO
 
 SerializedConfigStep: TypeAlias = dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -128,7 +128,43 @@ def complete_process(process: ProcessToChangeDTO):
     repo.set_process_status(process=process, state=ProcessState.FINISHED)
 
 
-def revoke_next_steps(process_id: ActionProcessID, step_id: ActionProcessStepID) -> None:
-    target_ids = retrieve_next_step_ids(process_id=process_id, step_id=step_id)
-    ProcessStepInput.objects.filter(step_id__in=target_ids).delete()
-    ProcessStep.objects.filter(id__in=target_ids).update(step_spec=None)
+def revoke_next_steps(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[int]:
+    """
+    Revokes all steps after the given step_id.
+    """
+    qs = retrieve_next_steps_qs(process_id, step_id)
+    return _repo_revoke_steps(qs)
+
+
+def revoke_starting_with_step(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[int]:
+    """
+    Revokes the given step_id and all following steps.
+    """
+    qs = retrieve_steps_starting_with_qs(process_id, step_id)
+    return _repo_revoke_steps(qs)
+
+
+def retrieve_next_steps_qs(process_id: ActionProcessID, step_id: ActionProcessStepID) -> QuerySet:
+    """
+    Returns a queryset of steps after the given step_id in the same process.
+    """
+    return ProcessStep.objects.filter(process_id=process_id, id__gt=step_id)
+
+
+def retrieve_steps_starting_with_qs(process_id: ActionProcessID, step_id: ActionProcessStepID) -> QuerySet:
+    """
+    Returns a queryset of steps starting from (and including) step_id in the same process.
+    """
+    return ProcessStep.objects.filter(process_id=process_id, id__gte=step_id)
+
+
+def _repo_revoke_steps(steps_qs: QuerySet) -> set[int]:
+    """
+    Deletes inputs and clears specs for the given steps.
+    Operates directly on the queryset to avoid loading IDs unnecessarily.
+    Returns the set of step IDs revoked.
+    """
+    step_ids = set(steps_qs.values_list("id", flat=True))
+    ProcessStepInput.objects.filter(step_id__in=step_ids).delete()
+    ProcessStep.objects.filter(id__in=step_ids).update(state=ProcessStepState.REVOKED, step_spec=None)
+    return step_ids
