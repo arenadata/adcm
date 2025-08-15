@@ -22,6 +22,7 @@ from cm.services.config.jinja import _get_jinja_config_new
 from cm.services.job.run._task import start_task
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
+from cm.services.wizard.operation_reset import operation_reset
 from cm.services.wizard.operation_submit_config import operation_submit_config
 from cm.services.wizard.operation_submit_job import operation_submit_job
 from cm.services.wizard.operations import (
@@ -139,6 +140,9 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
 
             case {"method": ProcessOperationType.COMPLETE}:
                 complete_process(process=process)
+
+            case {"method": ProcessOperationType.RESET, "params": {"step_id": step_id}}:
+                operation_reset(process=process, step_id=step_id)
 
         return Response(
             status=HTTP_200_OK,

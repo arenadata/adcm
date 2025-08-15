@@ -33,6 +33,7 @@ from cm.models import (
     Process,
     ProcessStep,
     ProcessStepInput,
+    ProcessStepState,
     Provider,
     Service,
     TaskLog,
@@ -780,6 +781,13 @@ class TestWizard(BaseAPITestCase):
 
         self.wizard_action = Action.objects.get(name="wizard_jinja", prototype=self.cluster_1.prototype)
 
+    def _fill_wizard_steps_for_process(self, process_id: int, test_spec, previous_step_names) -> None:
+        # Fill previous steps' `step_spec`, create inputs for them
+        for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
+            step.step_spec = test_spec
+            step.save(update_fields=["step_spec"])
+            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+
     def test_create_process_success(self):
         self.assertEqual(Process.objects.count(), 0)
         self.assertEqual(ProcessStep.objects.count(), 0)
@@ -788,7 +796,7 @@ class TestWizard(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Process.objects.count(), 1)
-        self.assertEqual(ProcessStep.objects.count(), 3)
+        self.assertEqual(ProcessStep.objects.count(), 6)
 
         process = Process.objects.get()
         expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
@@ -870,13 +878,7 @@ class TestWizard(BaseAPITestCase):
         with self.subTest("wizard action with process"):
             process = self.get_process(self.start_process())
 
-            # Fill previous steps' `step_spec`, create inputs for them
-            test_spec = {"test": "spec"}
-            previous_step_names = {"stage1_step1", "stage2_step1"}
-            for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
-                step.step_spec = test_spec
-                step.save(update_fields=["step_spec"])
-                ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+            self._fill_wizard_steps_for_process(process.id, {"test": "spec"}, {"stage1_step1", "stage2_step1"})
 
             response = self.client.v2[self.cluster_1, "actions", self.wizard_action.pk].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
@@ -886,18 +888,13 @@ class TestWizard(BaseAPITestCase):
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process())
         initial_hash = process.hash
+        test_spec, previous_step_names = {"test": "spec"}, {"stage1_step1", "stage2_step1"}
 
         target_operation_step = ProcessStep.objects.get(
             process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
         )
 
-        # Fill previous steps' `step_spec`, create inputs for them
-        test_spec = {"test": "spec"}
-        previous_step_names = {"stage1_step1", "stage2_step1"}
-        for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
-            step.step_spec = test_spec
-            step.save(update_fields=["step_spec"])
-            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+        self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
 
         # render step
         response = self.client.v2[
@@ -986,6 +983,9 @@ class TestWizard(BaseAPITestCase):
             ("stage1_step1", "Stage1.Step1"): test_step_spec,
             ("stage2_step1", "Stage2.Step1"): test_step_spec,
             ("stage2_step2", "Stage2.Step2"): None,
+            ("stage3_step1", "Stage3.Step1"): None,
+            ("stage4_step1", "Stage4.Step1"): None,
+            ("stage4_step2", "Stage4.Step2"): None,
         }
         actual_step_specs = {
             (name, display_name): spec
@@ -994,7 +994,9 @@ class TestWizard(BaseAPITestCase):
         self.assertDictEqual(actual_step_specs, expected_step_specs)
 
         expected_steps_with_inputs: set[int] = set(
-            steps_qs.exclude(name="stage2_step2", display_name="Stage2.Step2").values_list("id", flat=True)
+            steps_qs.exclude(name__in=["stage2_step2", "stage3_step1", "stage4_step1", "stage4_step2"]).values_list(
+                "id", flat=True
+            )
         )
         actual_steps_with_inputs = set(
             ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)).values_list(
@@ -1067,6 +1069,52 @@ class TestWizard(BaseAPITestCase):
         mock.assert_called_once_with(
             process=expected_process, step_id=step_id, parent_object=expected_parent, action=expected_action
         )
+
+    def test_reset_operation_step_success(self):
+        process = self.get_process(self.start_process())
+        all_steps = ["stage1_step1", "stage2_step1", "stage2_step2", "stage3_step1", "stage4_step1", "stage4_step2"]
+        test_spec, previous_step_names = {"test": "spec"}, ["stage1_step1", "stage2_step1"]
+        new_config = {"config": {"new": "config"}, "adcm_meta": {}}
+
+        self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
+
+        for step_name in all_steps:
+            target_step = ProcessStep.objects.get(process_id=process.id, name=step_name)
+            submit_params = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {"step_id": target_step.id, "process_sync_key": process.hash},
+            }
+            if step_name in ["stage1_step1", "stage2_step1"]:
+                submit_params["params"]["configuration"] = new_config
+            else:
+                target_step.state = ProcessStepState.SUCCESS
+                target_step.save(update_fields=["state"])
+
+        target_step_to_reset = ProcessStep.objects.get(process_id=process.id, name="stage3_step1")
+
+        response = self.client.v2[
+            self.cluster_1, "actions", self.wizard_action.pk, "processes", process.id, "operation"
+        ].post(
+            data={
+                "method": ProcessOperationType.RESET,
+                "params": {"step_id": target_step_to_reset.id, "process_sync_key": process.hash},
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        previous_step_to_target = ProcessStep.objects.get(process_id=process.id, name="stage2_step2")
+        previous_step_with_input = ProcessStep.objects.get(process_id=process.id, name="stage2_step1")
+
+        self.assertEqual(previous_step_to_target.state, ProcessStepState.SUCCESS)
+
+        self.assertIsNotNone(previous_step_with_input.processstepinput)
+        self.assertIsNotNone(previous_step_with_input.step_spec)
+
+        for step_name in all_steps[3:]:
+            step = ProcessStep.objects.get(process_id=process.id, name=step_name)
+            self.assertEqual(step.state, ProcessStepState.REVOKED)
+            self.assertFalse(hasattr(step, "processstepinput"))
+            self.assertIsNone(step.step_spec)
 
     def test_complete_process_success(self):
         process = self.get_process(self.start_process())

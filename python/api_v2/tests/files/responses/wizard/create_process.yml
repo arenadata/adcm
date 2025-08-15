@@ -28,6 +28,31 @@
           "type": "operation"
         }
       ]
+    },
+    {
+      "displayName": "Third stage",
+      "steps": [
+        {
+          "id": {{ stage3_step1_id }},
+          "displayName": "Stage3.Step1",
+          "type": "operation"
+        },
+      ]
+    },
+    {
+      "displayName": "Fourth stage",
+      "steps": [
+        {
+          "id": {{ stage4_step1_id }},
+          "displayName": "Stage4.Step1",
+          "type": "operation"
+        },
+        {
+          "id": {{ stage4_step2_id }},
+          "displayName": "Stage4.Step2",
+          "type": "operation"
+        }
+      ]
     }
   ]
 }

@@ -119,9 +119,3 @@ def find_step_spec(step: Step, process_flow_spec: list[WizardStage]) -> WizardSt
 
 def retrieve_task_orm(task_id: TaskID) -> TaskLog:
     return TaskLog.objects.get(id=task_id)
-
-
-def retrieve_next_step_ids(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[ActionProcessStepID]:
-    # Here we rely on process steps bulk_create behavior:
-    # ids of created rows are preserves the definition order in process.flow_spec
-    return set(ProcessStep.objects.filter(process_id=process_id, id__gt=step_id).values_list("id", flat=True))
