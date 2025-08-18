@@ -49,7 +49,7 @@ class StepType(str, Enum):
 
 class ActionProcess(BaseModel):
     id: ActionProcessID
-    obejct_id: ObjectID
+    object_id: ObjectID
     object_type: ADCMCoreType
     flow_spec: list[WizardStage] = Field(..., min_length=1)
 
