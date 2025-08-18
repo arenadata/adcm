@@ -14,6 +14,7 @@
   top: 0;
   position: sticky;
   backdrop-filter: blur(7px);
+  z-index: 1;
 
   &__inputAndSwitches {
     width: 100%;
