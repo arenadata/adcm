@@ -160,6 +160,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
         target_action = self.get_object()
         action_owner = self._get_actions_owner()
 
+        if isinstance(action_owner, Host) and action_owner.original is not None:
+            raise AdcmEx("ACTION_ERROR", msg="It is forbidden to run an actions on duplicates.")
+
         self.check_permissions_for_run(request=request, action=target_action)
 
         if reason := target_action.get_start_impossible_reason(action_owner):

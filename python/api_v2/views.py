@@ -88,7 +88,7 @@ class ObjectWithStatusViewMixin:
         if self.action in self.retrieve_status_map_actions:
             return {**context, "status_map": retrieve_status_map()}
 
-        if self.action == "create":
+        if self.action in {"create", "create_duplicate"}:
             return {**context, "status": 0}
 
         if self.action not in self.retrieve_single_status_actions:

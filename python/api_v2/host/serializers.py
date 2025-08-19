@@ -50,6 +50,23 @@ class HCComponentNameSerializer(ModelSerializer):
         fields = ["id", "name", "display_name"]
 
 
+class BindingsHostSerializer(ModelSerializer):
+    concerns = ConcernSerializer(many=True)
+    name = CharField(source="fqdn")
+    cluster = HostClusterSerializer()
+
+    class Meta:
+        model = Host
+        fields = [
+            "id",
+            "name",
+            "cluster",
+            "concerns",
+            "is_maintenance_mode_available",
+            "maintenance_mode",
+        ]
+
+
 class HostSerializer(WithStatusSerializer):
     hostprovider = ProviderParentSerializer(source="provider")
     prototype = PrototypeRelatedSerializer()
@@ -71,6 +88,7 @@ class HostSerializer(WithStatusSerializer):
     )
     cluster = HostClusterSerializer(read_only=True)
     components = SerializerMethodField()
+    duplicates = SerializerMethodField()
 
     class Meta:
         model = Host
@@ -88,6 +106,7 @@ class HostSerializer(WithStatusSerializer):
             "multi_state",
             "cluster",
             "components",
+            "duplicates",
         ]
 
     @staticmethod
@@ -95,6 +114,15 @@ class HostSerializer(WithStatusSerializer):
     def get_components(instance: Host) -> list[dict]:
         return HCComponentNameSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
+        ).data
+
+    # TODO: add to schema
+    @staticmethod
+    def get_duplicates(instance: Host):
+        duplicates_qs = instance.duplicates.order_by("id")
+        return BindingsHostSerializer(
+            instance=duplicates_qs.prefetch_related("concerns").select_related("cluster"),
+            many=True,
         ).data
 
 
@@ -179,3 +207,8 @@ class HostAuditSerializer(ModelSerializer):
 
 class ManyHostAddSerializer(ListSerializer):
     child = HostAddSerializer()
+
+
+class CreateDuplicateSerializer(EmptySerializer):
+    name = CharField()
+    cluster_id = IntegerField(allow_null=True, default=None)

@@ -233,7 +233,7 @@ def _get_inventory_for_action_from_cluster_bundle(
 def _get_inventory_for_action_from_provider_bundle(object_: Provider | Host) -> dict:
     if isinstance(object_, Provider):
         provider_id = object_.pk
-        hosts_group = set(Host.objects.values_list("id", "fqdn").filter(provider=object_))
+        hosts_group = set(Host.objects.values_list("id", "fqdn").filter(provider=object_, original__isnull=True))
         group_name = "PROVIDER"
     else:
         provider_id = int(object_.provider_id)
