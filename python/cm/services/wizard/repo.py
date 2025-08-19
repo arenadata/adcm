@@ -39,7 +39,7 @@ def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
 def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: list[WizardStage]) -> ActionProcess:
     process = Process.objects.create(
         action_id=action_id,
-        obejct_id=object_.id,
+        object_id=object_.id,
         object_type=object_.type.value,
         last_completed_step=None,
         flow_spec=[stage.model_dump(exclude_defaults=True, exclude_unset=True) for stage in stages],

@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
             name="Process",
             fields=[
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("obejct_id", models.PositiveIntegerField(default=0)),
+                ("object_id", models.PositiveIntegerField(default=0)),
                 (
                     "object_type",
                     models.CharField(

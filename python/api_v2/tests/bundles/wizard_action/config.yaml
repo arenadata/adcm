@@ -3,7 +3,7 @@
   name: cluster_with_wizard
   version: &version '1.0'
   edition: community
-  actions:
+  actions: &actions
     wizard_jinja:
       type: job
       script: ./sleep.yaml
@@ -21,3 +21,18 @@
       type: float
       required: false
       default: 0.1
+
+- type: service
+  name: service_1
+  version: "0.1"
+
+  actions:
+    <<: *actions
+
+  config: *config
+
+  components:
+    component_1:
+      actions:
+        <<: *actions
+      config: *config

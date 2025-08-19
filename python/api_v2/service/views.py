@@ -85,6 +85,7 @@ from api_v2.generic.config_host_group.audit import (
 from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
+from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (
@@ -357,4 +358,14 @@ class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
 @document_config_viewset(object_type="service")
 @audit_config_viewset(type_in_name="Service", retrieve_owner=parent_service_from_lookup)
 class ServiceConfigViewSet(ConfigLogViewSet):
+    ...
+
+
+# TODO: document, audit
+class ServiceActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+# TODO: document, audit
+class ServiceActionProcessStepViewSet(ProcessStepViewSet):
     ...

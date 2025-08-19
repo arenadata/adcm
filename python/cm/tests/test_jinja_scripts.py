@@ -149,7 +149,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         action = Action.objects.get(prototype=self.cluster.prototype, display_name="action_on_cluster")
         process = Process.objects.create(
             action=action,
-            obejct_id=1,
+            object_id=1,
             object_type="test_type",
             flow_spec=[
                 {

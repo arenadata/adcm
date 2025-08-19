@@ -1760,7 +1760,7 @@ class ProcessStepState(models.TextChoices):
 
 class Process(models.Model):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
-    obejct_id = models.PositiveIntegerField(default=0)
+    object_id = models.PositiveIntegerField(default=0)
     object_type = models.CharField(
         max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
     )
