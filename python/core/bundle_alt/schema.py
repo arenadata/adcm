@@ -822,10 +822,6 @@ class InternalBundleRevertJobSchema(_BaseJobSchema, _InternalBundleRevertScript)
     ...
 
 
-class InternalConfigApplyJobSchema(_BaseJobSchema, _InternalConfigApplyScript):
-    ...
-
-
 class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
@@ -836,10 +832,7 @@ class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
 
 
 INTERNAL_JOB_SCHEMA = Annotated[
-    InternalBundleSwitchJobSchema
-    | InternalBundleRevertJobSchema
-    | InternalHcApplyJobShema
-    | InternalConfigApplyJobSchema,
+    InternalBundleSwitchJobSchema | InternalBundleRevertJobSchema | InternalHcApplyJobShema,
     Field(discriminator="script"),
 ]
 
@@ -884,6 +877,11 @@ class _BaseTaskSchema(_BaseActionSchema):
 
 
 INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
+    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalHcApplyTaskScriptSchema,
+    Field(discriminator="script"),
+]
+
+INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     InternalBundleSwitchTaskScriptSchema
     | InternalBundleRevertTaskScriptSchema
     | InternalHcApplyTaskScriptSchema
@@ -894,6 +892,12 @@ INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
 
 TASK_SCRIPTS_SCHEMA = Annotated[
     INTERNAL_TASK_SCRIPTS_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema, Field(discriminator="script_type")
+]
+
+
+TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
+    INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema,
+    Field(discriminator="script_type"),
 ]
 
 
@@ -1108,7 +1112,7 @@ def parse(
 
 
 class ScriptsJinjaSchema(_BaseModel):
-    scripts: Annotated[list[TASK_SCRIPTS_SCHEMA], Field(min_length=1)]
+    scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
 
 
 ##############

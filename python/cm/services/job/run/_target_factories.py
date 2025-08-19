@@ -30,7 +30,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_type
+from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
@@ -227,28 +227,27 @@ def internal_script_config_apply(task: Task, job: Job) -> int:
 
 
 def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:
-    if change["object"]["type"] == orm_object_to_core_type(owner).value:
-        changing_object = owner
-    else:
-        changing_object_model = core_type_to_model(core_type=ADCMCoreType(change["object"]["type"]))
-        changing_object_name = change["object"][f'{change["object"]["type"]}_name']
-        changing_object_filter = {"prototype__name": changing_object_name}
+    # in order to preserve single mechanism with adcm_config plugin.
+    # Requires refactoring to move it common location with plugins
+    from ansible_plugin.base import (
+        CoreObjectTargetDescription,
+        _from_target_description,
+        build_vars_context_from_descriptor,
+    )
+    from ansible_plugin.errors import PluginTargetDetectionError
 
-        if ADCMCoreType(change["object"]["type"]) in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
-            changing_object_filter["cluster_id"] = owner.id
+    context = build_vars_context_from_descriptor(orm_object_to_core_descriptor(owner))
+    target_description = CoreObjectTargetDescription(**change["object"])
 
-            if change["object"]["type"] == ADCMCoreType.COMPONENT.value:
-                changing_object_filter["service__prototype__name"] = change["object"]["service_name"]
+    try:
+        target = _from_target_description(target_description, context)
+    except PluginTargetDetectionError as e:
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f"The configuration contains non-existing object of owner {change['object']}",
+        ) from e
 
-        changing_object = changing_object_model.objects.filter(**changing_object_filter).first()
-
-        if not changing_object:
-            raise AdcmEx(
-                code="INTERNAL_SERVER_ERROR",
-                msg=f"The configuration contains non-existing object of owner {change['object']}",
-            )
-
-    return changing_object
+    return core_type_to_model(core_type=target.type).objects.get(pk=target.id)
 
 
 def _extract_mapping_delta_part(
