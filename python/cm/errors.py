@@ -210,7 +210,8 @@ ERRORS = {
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
     "BUNDLE_SIGNATURE_VERIFICATION_ERROR": ("Bundle signature verification error", HTTP_409_CONFLICT, ERR),
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
-    "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR),
+    "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
+    "INVALID_CREATE_DUPLICATE_HOST": ("You cannot create a copy from a copy", HTTP_409_CONFLICT, ERR),
 }
 
 

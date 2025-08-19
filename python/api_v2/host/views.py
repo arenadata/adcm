@@ -25,6 +25,7 @@ from audit.alt.hooks import extract_current_from_response, extract_previous_from
 from cm.api import delete_host
 from cm.errors import AdcmEx
 from cm.models import Cluster, ConcernType, Host, Prototype, Provider
+from cm.services.host.duplicates import create_duplicate
 from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType
 from django.db.transaction import atomic
@@ -56,9 +57,11 @@ from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.host.filters import HostFilter
 from api_v2.host.permissions import (
+    CreateDuplicateHostPermissions,
     HostsPermissions,
 )
 from api_v2.host.serializers import (
+    CreateDuplicateSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
     HostSerializer,
@@ -137,6 +140,15 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         ),
     ),
     config_schema=extend_config_schema("host"),
+    create_duplicate=extend_schema(
+        operation_id="postCreateDuplicate",
+        description="Create duplicate host.",
+        summary="POST host create-duplicate",
+        responses=responses(
+            success=(HTTP_201_CREATED, HostSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
+    ),
 )
 class HostViewSet(
     PermissionListMixin,
@@ -149,6 +161,7 @@ class HostViewSet(
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
         .prefetch_related("concerns", "hostcomponent_set__component__prototype")
+        .filter(original__isnull=True)
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
@@ -159,10 +172,15 @@ class HostViewSet(
     def get_serializer_class(self):
         if self.action == "create":
             return HostCreateSerializer
-        elif self.action in ("update", "partial_update"):
+
+        if self.action in ("update", "partial_update"):
             return HostUpdateSerializer
-        elif self.action == "maintenance_mode":
+
+        if self.action == "maintenance_mode":
             return HostChangeMaintenanceModeSerializer
+
+        if self.action == "create_duplicate":
+            return CreateDuplicateSerializer
 
         return HostSerializer
 
@@ -253,6 +271,29 @@ class HostViewSet(
     )
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
+
+    @audit_create(name="Duplicate host created", object_=host_from_response)
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="duplicates",
+        # TODO: Maybe that's not enough.
+        permission_classes=[IsAuthenticatedAudit, CreateDuplicateHostPermissions],
+    )
+    def create_duplicate(self, request: Request, *args, **kwargs):  # noqa: ARG002
+        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
+
+        duplicate = Host.objects.get(id=duplicate_id)
+        serializer = HostSerializer(instance=duplicate, context=self.get_serializer_context())
+
+        return Response(data=serializer.data, status=HTTP_201_CREATED)
 
 
 @document_action_viewset(object_type="host")

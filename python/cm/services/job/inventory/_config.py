@@ -13,7 +13,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from functools import reduce
-from typing import Any, Iterable, Literal, NamedTuple
+from typing import Any, Iterable, Literal, NamedTuple, TypeAlias
 
 from core.cluster.types import ClusterTopology
 from core.config.types import AttrDict, ConfigDict
@@ -26,7 +26,8 @@ from core.types import (
     PrototypeID,
 )
 from django.conf import settings
-from django.db.models import F, QuerySet, Value
+from django.db.models import F, Q, QuerySet, Value
+from django.db.models.functions import Coalesce
 
 from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 from cm.services.config import retrieve_config_attr_pairs
@@ -38,6 +39,9 @@ from cm.services.job.inventory._types import ObjectsInInventoryMap
 class _ObjectRequiredConfigInfo(NamedTuple):
     prototype_id: PrototypeID
     config_id: ConfigID
+
+
+ObjectConfigInfo: TypeAlias = dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]
 
 
 def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
@@ -205,13 +209,26 @@ def get_adcm_configuration() -> dict[str, Any]:
 
 
 def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]:
+    # Refactoring is necessary.
+    # The current implementation is difficult to understand. Since the copies of the host
+    # do not have their own configuration, the original configuration must be used when generating
+    # the inventory file. 2 conditions have been added for this.
     query_for_objects_config_info: QuerySet = reduce(
         lambda left_qs, right_qs: left_qs.union(right_qs),
         (
-            orm_type.objects.filter(id__in=objects.get(core_type, ()), config__isnull=False).values(
+            (
+                orm_type.objects.filter(
+                    Q(config__isnull=False) | Q(config__isnull=True, original__isnull=False),
+                    id__in=objects.get(core_type, ()),
+                )
+                if core_type == ADCMCoreType.HOST
+                else orm_type.objects.filter(id__in=objects.get(core_type, ()), config__isnull=False)
+            ).values(
                 "id",
                 "prototype_id",
-                current_config_id=F("config__current"),
+                current_config_id=Coalesce("original__config__current", "config__current")
+                if core_type == ADCMCoreType.HOST
+                else F("config__current"),
                 type=Value(core_type.value if isinstance(core_type, ADCMCoreType) else core_type),
             )
             for orm_type, core_type in (

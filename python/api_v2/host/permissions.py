@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.utils import audit
 from rest_framework.permissions import DjangoObjectPermissions
 
 
@@ -29,3 +30,13 @@ class HostsPermissions(DjangoObjectPermissions):
             return True
 
         return super().has_permission(request=request, view=view)
+
+
+class CreateDuplicateHostPermissions(DjangoObjectPermissions):
+    perms_map = {
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+    }
+
+    @audit
+    def has_permission(self, request, view):
+        return super().has_permission(request, view)

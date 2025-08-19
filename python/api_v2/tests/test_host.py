@@ -33,7 +33,7 @@ class TestHost(BaseAPITestCase):
         super().setUp()
 
         self.host = self.add_host(
-            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host"
+            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test-host"
         )
 
         self.host_action = Action.objects.get(name="host_action", prototype=self.host.prototype)
@@ -49,7 +49,7 @@ class TestHost(BaseAPITestCase):
         response = self.client.v2[self.host].get()
         data = {
             "id": self.host.pk,
-            "name": "test_host",
+            "name": "test-host",
             "description": "description",
             "state": "created",
             "status": 32,
@@ -283,7 +283,7 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["a_first_host", "test_host", "test_host_2", "test_host_5", "test_host_6", "test_host_7"],
+                ["a_first_host", "test-host", "test_host_2", "test_host_5", "test_host_6", "test_host_7"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -303,7 +303,7 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["a_first_host", "test_host_6", "test_host_7", "test_host_2", "test_host_5", "test_host"],
+                ["a_first_host", "test_host_6", "test_host_7", "test_host_2", "test_host_5", "test-host"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -333,7 +333,7 @@ class TestHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_7", "test_host_2", "a_first_host", "test_host", "test_host_6", "test_host_5"],
+                ["test_host_7", "test_host_2", "a_first_host", "test-host", "test_host_6", "test_host_5"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -342,7 +342,7 @@ class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test-host")
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second-host")
         self.control_free_host = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="not-bound-host"
@@ -556,7 +556,7 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["bound-to-same-host", "test_host", "test_host_2", "test_host_5", "test_host_6", "test_host_7"],
+                ["bound-to-same-host", "test-host", "test_host_2", "test_host_5", "test_host_6", "test_host_7"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -566,7 +566,7 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_6", "test_host_7", "test_host_2", "test_host_5", "bound-to-same-host", "test_host"],
+                ["test_host_6", "test_host_7", "test_host_2", "test_host_5", "bound-to-same-host", "test-host"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -596,7 +596,7 @@ class TestClusterHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 6)
             self.assertListEqual(
-                ["test_host_6", "test_host", "test_host_2", "bound-to-same-host", "test_host_7", "test_host_5"],
+                ["test_host_6", "test-host", "test_host_2", "bound-to-same-host", "test_host_7", "test_host_5"],
                 [host["name"] for host in response.json()["results"]],
             )
 
@@ -656,7 +656,7 @@ class TestHostActions(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test-host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 

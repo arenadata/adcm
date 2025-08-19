@@ -526,7 +526,7 @@ class Provider(ADCMEntity):
 
 
 class Host(ADCMEntity):
-    fqdn = models.CharField(max_length=1000, unique=True)
+    fqdn = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -536,8 +536,16 @@ class Host(ADCMEntity):
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
+    original = models.ForeignKey("self", null=True, default=None, on_delete=models.CASCADE, related_name="duplicates")
 
     __error_code__ = "HOST_NOT_FOUND"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["fqdn"], condition=models.Q(original=None), name="unique_host_fqdn_with_original"
+            )
+        ]
 
     @property
     def bundle_id(self):

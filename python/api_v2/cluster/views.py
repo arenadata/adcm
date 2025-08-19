@@ -144,6 +144,7 @@ from api_v2.host.serializers import (
     HostChangeMaintenanceModeSerializer,
     HostMappingSerializer,
     HostSerializer,
+    HostShortSerializer,
     ManyHostAddSerializer,
 )
 from api_v2.host.utils import maintenance_mode
@@ -745,6 +746,13 @@ class ClusterViewSet(
         }
 
         return Response(status=HTTP_200_OK, data=schema)
+
+    @action(methods=["get"], detail=True, pagination_class=None, filter_backends=[], url_path="host-candidates")
+    def host_candidates(self, request, *args, **kwargs):  # noqa: ARG002
+        # TODO doesn't respect RBAC
+        hosts = Host.objects.filter(Q(cluster__isnull=True)).order_by("fqdn", "id").only("id", "fqdn")
+        serializer = HostShortSerializer(instance=hosts, many=True)
+        return Response(data=serializer.data, status=HTTP_200_OK)
 
 
 @extend_schema_view(
