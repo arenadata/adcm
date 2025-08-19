@@ -1,0 +1,25 @@
+- name: state_2
+  script_type: internal
+  script: config_apply
+  params:
+    changes:
+      - object:
+          type: cluster
+        parameters:
+          - key: "integer"
+            value: 99
+      - object:
+          type: service
+          service_name: service_two_components
+        parameters:
+          - key: "string"
+            value: "string"
+      - object:
+          type: component
+          service_name: service_two_components
+          component_name: component_1
+        parameters:
+          - key: "list"
+            value:
+              - "value1"
+              - "value99"
