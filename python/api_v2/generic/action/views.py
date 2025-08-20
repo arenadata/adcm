@@ -54,7 +54,28 @@ from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
-class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, ADCMGenericViewSet):
+class ActionPermissionsMixin:
+    def check_permissions_for_list(self, request: Request, parent_object: ADCMEntity) -> None:
+        if (
+            not parent_object
+            or not request.user.has_perm(perm=f"cm.view_{parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(perm=f"cm.view_{parent_object.__class__.__name__.lower()}", obj=parent_object)
+        ):
+            raise NotFound()
+
+    def check_permissions_for_run(self, request: Request, action: Action, parent_object: ADCMEntity) -> None:
+        if (
+            not parent_object
+            or not request.user.has_perm(perm=f"cm.view_{parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(perm=f"cm.view_{parent_object.__class__.__name__.lower()}", obj=parent_object)
+            or not has_run_perms(user=request.user, action=action, obj=parent_object)
+        ):
+            raise NotFound()
+
+
+class ActionViewSet(
+    ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin
+):
     filterset_class = ActionFilter
     general_queryset = (
         Action.objects.select_related("prototype")
@@ -105,31 +126,10 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
 
         return ActionListSerializer
 
-    def check_permissions_for_list(self, request: Request) -> None:
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-        ):
-            raise NotFound()
-
-    def check_permissions_for_run(self, request: Request, action: Action) -> None:
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-            or not has_run_perms(user=request.user, action=action, obj=self.parent_object)
-        ):
-            raise NotFound()
-
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         self.parent_object = self.get_parent_object()
 
-        self.check_permissions_for_list(request=request)
+        self.check_permissions_for_list(request=request, parent_object=self.parent_object)
 
         return self._list_actions_available_to_user(request)
 
@@ -137,7 +137,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
         self.parent_object = self.get_parent_object()
         action_ = self.get_object()
 
-        self.check_permissions_for_run(request=request, action=action_)
+        self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self._get_actions_owner())
 
@@ -163,7 +163,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
         if isinstance(action_owner, Host) and action_owner.original is not None:
             raise AdcmEx("ACTION_ERROR", msg="It is forbidden to run an actions on duplicates.")
 
-        self.check_permissions_for_run(request=request, action=target_action)
+        self.check_permissions_for_run(request=request, action=target_action, parent_object=self.parent_object)
 
         if reason := target_action.get_start_impossible_reason(action_owner):
             raise AdcmEx("ACTION_ERROR", msg=reason)
