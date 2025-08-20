@@ -842,65 +842,125 @@ class TestWizard(BaseAPITestCase):
         process = self.get_process(self.start_process(self.cluster_1))
         target_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
 
-        for obj in (self.cluster_1, self.service_1, self.component_1):
-            with self.subTest(f"retrieve process for {obj}"):
+        self.client.login(**self.test_user_credentials)
+
+        with self.subTest("No view permissions"):
+            response = self.client.v2[
+                self.cluster_1,
+                "actions",
+                self.get_object_wizard_action(self.cluster_1).pk,
+                "processes",
+                process.id,
+                "steps",
+                target_step.pk,
+            ].get()
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.subTest("No run permissions"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 response = self.client.v2[
-                    obj,
+                    self.cluster_1,
                     "actions",
-                    self.get_object_wizard_action(obj).pk,
+                    self.get_object_wizard_action(self.cluster_1).pk,
                     "processes",
                     process.id,
                     "steps",
                     target_step.pk,
                 ].get()
-                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-                target_step.refresh_from_db()
-                expected_spec = [
-                    {"name": "integer_field", "type": "integer", "default": 2},
-                    {"name": "string_field", "type": "string", "default": "string_value"},
-                ]
-                self.assertListEqual(target_step.step_spec, expected_spec)
+        self.client.login(username="admin", password="admin")
 
-                response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_config_step.yml"
-                expected_response = render_template(file=response_template, context={"step_id": target_step.id})
-                self.assertDictEqual(response.json(), expected_response)
+        with self.subTest("All permissions"):
+            for obj in (self.cluster_1, self.service_1, self.component_1):
+                with self.subTest(f"retrieve process for {obj}"):
+                    response = self.client.v2[
+                        obj,
+                        "actions",
+                        self.get_object_wizard_action(obj).pk,
+                        "processes",
+                        process.id,
+                        "steps",
+                        target_step.pk,
+                    ].get()
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+
+                    target_step.refresh_from_db()
+                    expected_spec = [
+                        {"name": "integer_field", "type": "integer", "default": 2},
+                        {"name": "string_field", "type": "string", "default": "string_value"},
+                    ]
+                    self.assertListEqual(target_step.step_spec, expected_spec)
+
+                    response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_config_step.yml"
+                    expected_response = render_template(file=response_template, context={"step_id": target_step.id})
+                    self.assertDictEqual(response.json(), expected_response)
 
     def test_retrieve_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
         target_step = ProcessStep.objects.get(process_id=process.id, name="stage2_step2", display_name="Stage2.Step2")
 
-        for obj in (self.cluster_1, self.service_1, self.component_1):
-            with self.subTest(f"retrieve operation for {obj}"):
-                obj.state = "new_state"
-                obj.save(update_fields=["state"])
+        self.client.login(**self.test_user_credentials)
 
+        with self.subTest("No view permissions"):
+            response = self.client.v2[
+                self.cluster_1,
+                "actions",
+                self.get_object_wizard_action(self.cluster_1).pk,
+                "processes",
+                process.id,
+                "steps",
+                target_step.pk,
+            ].get()
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.subTest("No run permissions"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 response = self.client.v2[
-                    obj,
+                    self.cluster_1,
                     "actions",
-                    self.get_object_wizard_action(obj).pk,
+                    self.get_object_wizard_action(self.cluster_1).pk,
                     "processes",
                     process.id,
                     "steps",
                     target_step.pk,
                 ].get()
-                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-                target_step.refresh_from_db()
-                expected_spec = [
-                    {
-                        "display_name": "Sleep",
-                        "name": "sleep_script",
-                        "params": {"test_params": ["new_state"]},
-                        "script": "scripts/sleep.yaml",
-                        "script_type": "ansible",
-                    }
-                ]
-                self.assertListEqual(target_step.step_spec, expected_spec)
+        self.client.login(username="admin", password="admin")
 
-                response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_operation_step.yml"
-                expected_response = render_template(file=response_template, context={"step_id": target_step.id})
-                self.assertDictEqual(response.json(), expected_response)
+        with self.subTest("All permissions"):
+            for obj in (self.cluster_1, self.service_1, self.component_1):
+                with self.subTest(f"retrieve operation for {obj}"):
+                    obj.state = "new_state"
+                    obj.save(update_fields=["state"])
+
+                    response = self.client.v2[
+                        obj,
+                        "actions",
+                        self.get_object_wizard_action(obj).pk,
+                        "processes",
+                        process.id,
+                        "steps",
+                        target_step.pk,
+                    ].get()
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+
+                    target_step.refresh_from_db()
+                    expected_spec = [
+                        {
+                            "display_name": "Sleep",
+                            "name": "sleep_script",
+                            "params": {"test_params": ["new_state"]},
+                            "script": "scripts/sleep.yaml",
+                            "script_type": "ansible",
+                        }
+                    ]
+                    self.assertListEqual(target_step.step_spec, expected_spec)
+
+                    response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_operation_step.yml"
+                    expected_response = render_template(file=response_template, context={"step_id": target_step.id})
+                    self.assertDictEqual(response.json(), expected_response)
 
     def test_retrieve_wizard_action_success(self):
         with self.subTest("not a wizard action"):

@@ -188,7 +188,9 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         return ConfigAttrPair(config=config["config"], attr=attr)
 
 
-class ProcessStepViewSet(GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
+class ProcessStepViewSet(
+    GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet, ActionPermissionsMixin
+):
     queryset = ProcessStep.objects.all()
     serializer_class = StepSerializer
 
@@ -198,6 +200,11 @@ class ProcessStepViewSet(GetParentObjectMixin, ListModelMixin, RetrieveModelMixi
         process_id, step_id, action_id = kwargs["process_pk"], kwargs["pk"], kwargs["action_pk"]
 
         parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+
+        self.check_permissions_for_run(
+            request=request, action=Action.objects.get(pk=action_id), parent_object=parent_object
+        )
+
         object_ = orm_object_to_core_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
