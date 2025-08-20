@@ -15,7 +15,7 @@ from typing import Literal
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
-from cm.models import Process, ProcessStep, ProcessStepInput, TaskLog
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, TaskLog
 from cm.services.bundle import BundlePathResolver
 from cm.services.concern.flags import BuiltInFlag, lower_flag, raise_flag
 from cm.services.config import ConfigAttrPair
@@ -46,12 +46,13 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.generic.action.utils import get_schema_config_meta
+from api_v2.generic.action.views import ActionPermissionsMixin
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.generic.wizard.serializers import OperationSerializer, ProcessSerializer, StepSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
-class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
+class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = Process.objects.all()
 
     def get_serializer_class(self):
@@ -73,6 +74,10 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet):
         return parent_object, action
 
     def retrieve(self, request, *args, pk: str, **kwargs):  # noqa: ARG002
+        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
+        self.check_permissions_for_run(
+            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
+        )
         instance = self.get_object()
         context = {
             "process_id": instance.pk,

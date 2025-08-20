@@ -787,6 +787,9 @@ class TestWizard(BaseAPITestCase):
 
         self.cluster_wizard_action = self.get_object_wizard_action(self.cluster_1)
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
     def _fill_wizard_steps_for_process(self, process_id: int, test_spec, previous_step_names) -> None:
         # Fill previous steps' `step_spec`, create inputs for them
         for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
@@ -1180,6 +1183,25 @@ class TestWizard(BaseAPITestCase):
             cause=ConcernCause.CONFIGURING_PROCESS,
         )
         self.assertEqual(flags.count(), 0)
+
+    def test_retrieve_process_success(self):
+        process = self.get_process(self.start_process(self.cluster_1))
+        self.assertEqual(process.state, ProcessState.CREATED)
+
+        endpoint = self.get_endpoint_to_processes(self.cluster_1) / process
+        with self.subTest("All permissions"):
+            response = endpoint.get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        with self.subTest("No view permissions"):
+            self.client.login(**self.test_user_credentials)
+            response = endpoint.get()
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.subTest("No run permissions"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                response = endpoint.get()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_operation_validation_fail(self):
         process = self.get_process(self.start_process(self.cluster_1))
