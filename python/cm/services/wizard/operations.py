@@ -48,7 +48,9 @@ from cm.services.wizard.types import (
     StepUpdateDTO,
 )
 
-SerializedConfigStep: TypeAlias = dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
+SerializedConfigStep: TypeAlias = dict[
+    Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
+]
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
 OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetStepPayload
 
