@@ -11,29 +11,30 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Literal
+from typing import Any
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, TaskLog
+from cm.errors import AdcmEx
+from cm.models import Action, Process, ProcessStep, ProcessStepInput
 from cm.services.bundle import BundlePathResolver
-from cm.services.concern.flags import BuiltInFlag, lower_flag, raise_flag
-from cm.services.config import ConfigAttrPair
+from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.config.jinja import _get_jinja_config_new
-from cm.services.job.run._task import start_task
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
-from cm.services.wizard.operation_reset import operation_reset
-from cm.services.wizard.operation_submit_config import operation_submit_config
-from cm.services.wizard.operation_submit_job import operation_submit_job
+from cm.services.wizard.errors import (
+    NotCurrentStepSubmissionError,
+    SyncKeyMismatchError,
+)
 from cm.services.wizard.operations import (
     SerializedConfigStep,
     SerializedOperationStep,
-    complete_process,
     initiate_process,
+    perform_operation,
     render_template,
 )
-from cm.services.wizard.types import ProcessOperationType, ProcessToChangeDTO, Step, StepType, StepUpdateDTO
+from cm.services.wizard.types import Step, StepType, StepUpdateDTO
+from cm.services.wizard.validation import validate_operation
 from core.bundle_alt.schema import WizardStep
 from core.job.types import ActionInfo
 from core.templates._types import RendererEnv
@@ -47,13 +48,17 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.generic.action.utils import get_schema_config_meta
 from api_v2.generic.action.views import ActionPermissionsMixin
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.generic.config.utils import convert_attr_to_adcm_meta
 from api_v2.generic.wizard.serializers import OperationSerializer, ProcessSerializer, StepSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
 class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = Process.objects.all()
+    exc_conversion_map = {
+        SyncKeyMismatchError: AdcmEx("WIZARD_SYNC_KEY_CONFLICT"),
+        NotCurrentStepSubmissionError: AdcmEx("WIZARD_SUBMIT_STEP_CONFLICT", msg="Only current step can be submitted"),
+    }
 
     def get_serializer_class(self):
         match self.action:
@@ -120,42 +125,10 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
 
-        operation = serializer.validated_data
-        process = ProcessToChangeDTO(id=process_id, sync_key=operation["params"]["process_sync_key"])
-
-        match operation:
-            case {"method": ProcessOperationType.SUBMIT, "params": {"step_id": step_id}}:
-                step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-                match step.type:
-                    case StepType.CONFIGURATION:
-                        # todo missing serialization check (most likely impossible)
-                        config_input = operation["params"]["configuration"]
-                        config = self.prepare_step_config_input(
-                            process_id=process_id, step_id=step_id, config=config_input
-                        )
-                        operation_submit_config(
-                            process=process,
-                            step_id=step_id,
-                            configuration=config,
-                            parent_object=parent_object,
-                            action=action,
-                        )
-                    case StepType.OPERATION:
-                        operation_submit_job(
-                            process=process, step_id=step_id, parent_object=parent_object, action=action
-                        )
-                        self._start_task(step_id)
-
-            case {"method": ProcessOperationType.COMPLETE}:
-                complete_process(process=process)
-                lower_flag(
-                    BuiltInFlag.WIZARD_PROCESS_RUNNING.value.name,
-                    on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],
-                )
-
-            case {"method": ProcessOperationType.RESET, "params": {"step_id": step_id}}:
-                operation_reset(process=process, step_id=step_id)
+        validate_operation(process_id=process_id, payload=payload)
+        perform_operation(process_id=process_id, payload=payload, object_=parent_object, action=action)
 
         return Response(
             status=HTTP_200_OK,
@@ -165,27 +138,8 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
             ).data,
         )
 
-    def _start_task(self, step_id: int):
-        task = TaskLog.objects.get(
-            id=ProcessStepInput.objects.filter(step_id=step_id).values_list("job_id", flat=True).first()
-        )
-        # todo write pid to task (executor)
-        start_task(task=task)
-
-    def prepare_step_config_input(
-        self,
-        process_id: int,  # noqa: ARG002
-        step_id: int,  # noqa: ARG002
-        config: dict[Literal["config", "adcm_meta", "adcmMeta"], dict],
-    ) -> ConfigAttrPair:
-        # todo make it work
-        # step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        # config = represent_string_as_json_type()
-
-        # todo do something with this bs
-        attr = convert_adcm_meta_to_attr(config.get("adcm_meta"))
-
-        return ConfigAttrPair(config=config["config"], attr=attr)
+    def handle_exception(self, exc: Any):
+        return super().handle_exception(self.exc_conversion_map.get(exc.__class__, exc))
 
 
 class ProcessStepViewSet(GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):

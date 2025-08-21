@@ -35,15 +35,14 @@ from cm.models import (
     Process,
     ProcessStep,
     ProcessStepInput,
-    ProcessStepState,
     Provider,
     Service,
     TaskLog,
 )
-from cm.services.config import ConfigAttrPair
 from cm.services.jinja_env import _get_action_info
 from cm.services.job.run.repo import ActionRepoImpl
-from cm.services.wizard.types import ProcessOperationType, ProcessState, ProcessToChangeDTO
+from cm.services.wizard.schema_validation import ProcessOperationType, SubmitStepPayload
+from cm.services.wizard.types import ProcessState, ProcessStepState
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -794,7 +793,8 @@ class TestWizard(BaseAPITestCase):
         # Fill previous steps' `step_spec`, create inputs for them
         for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
             step.step_spec = test_spec
-            step.save(update_fields=["step_spec"])
+            step.state = ProcessStepState.COMPLETED
+            step.save(update_fields=["step_spec", "state"])
             ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
 
     def test_create_process_success(self):
@@ -925,11 +925,11 @@ class TestWizard(BaseAPITestCase):
                 response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk].get()
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertEqual(len(response.json()["processes"]), 1)
-                self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.hash))
+                self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.sync_key))
 
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        initial_hash = process.hash
+        initial_sync_key = process.sync_key
         test_spec, previous_step_names = {"test": "spec"}, {"stage1_step1", "stage2_step1"}
 
         target_operation_step = ProcessStep.objects.get(
@@ -959,7 +959,7 @@ class TestWizard(BaseAPITestCase):
         ].post(
             data={
                 "method": ProcessOperationType.SUBMIT,
-                "params": {"step_id": target_operation_step.id, "process_sync_key": process.hash},
+                "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
             }
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -986,7 +986,7 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(input_.job_id, task.id)
 
         process.refresh_from_db()
-        self.assertNotEqual(initial_hash, process.hash)
+        self.assertNotEqual(initial_sync_key, process.sync_key)
 
         # check that previous steps and inputs are not affected
         for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
@@ -995,12 +995,15 @@ class TestWizard(BaseAPITestCase):
             self.assertDictEqual(input_.configuration, test_spec)
             self.assertIsNone(input_.job)
 
-    def test_operation_submit_config_success(self):
+    def test_submit_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        process_hash_initial = process.hash
+        self.assertIsNone(process.last_completed_step_id)
+
+        process_sync_key_initial = process.sync_key
         target_config_step = ProcessStep.objects.get(
             process_id=process.id, name="stage2_step1", display_name="Stage2.Step1"
         )
+        self.assertEqual(target_config_step.state, ProcessStepState.CREATED)
 
         # fill `step_spec` with test data, create ProcessStepInputs
         test_step_spec = {"test": "data"}
@@ -1009,6 +1012,9 @@ class TestWizard(BaseAPITestCase):
         steps_qs.update(step_spec=test_step_spec)
         for step_id in steps_qs.values_list("id", flat=True):
             ProcessStepInput.objects.create(step_id=step_id, configuration=test_config, job=None)
+
+        # make all previous steps 'completed'
+        ProcessStep.objects.filter(id__lt=target_config_step.id).update(state=ProcessStepState.COMPLETED)
 
         new_config = {"config": {"new": "config"}, "adcm_meta": {}}
         response = self.client.v2[
@@ -1019,7 +1025,7 @@ class TestWizard(BaseAPITestCase):
                 "params": {
                     "configuration": new_config,
                     "step_id": target_config_step.id,
-                    "process_sync_key": process.hash,
+                    "process_sync_key": process.sync_key,
                 },
             }
         )
@@ -1060,24 +1066,24 @@ class TestWizard(BaseAPITestCase):
             self.assertDictEqual(input_.configuration, expected_config)
             self.assertIsNone(input_.job)
 
-        # check that process's hash is updated
+        # check that process's sync_key is updated
         process.refresh_from_db()
-        self.assertNotEqual(process_hash_initial, process.hash)
+        self.assertNotEqual(process_sync_key_initial, process.sync_key)
+        self.assertEqual(process.last_completed_step_id, target_config_step.id)
+
+        target_config_step.refresh_from_db()
+        self.assertEqual(target_config_step.state, ProcessStepState.COMPLETED)
 
     def test_submit_step_config_called_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        process_sync_key = str(process.hash)
+        process_sync_key = str(process.sync_key)
         step_id = process.steps.first().pk
         config = {"config": {"a": "b", "c": {}}, "adcmMeta": {"/a": {"isActive": True}}}
-        expected_config = ConfigAttrPair(config=config["config"], attr={"a": {"active": True}})
-        expected_process = ProcessToChangeDTO(id=process.pk, sync_key=process_sync_key)
-        expected_action = ActionRepoImpl.get_action(process.action.pk)
-        expected_parent = self.cluster_1
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
 
         self.assertEqual(process.state, ProcessState.CREATED)
 
-        with patch("api_v2.generic.wizard.views.operation_submit_config") as mock:
+        with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
             payload = {
                 "method": "submit",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id, "configuration": config},
@@ -1085,28 +1091,33 @@ class TestWizard(BaseAPITestCase):
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-        mock.assert_called_once_with(
-            process=expected_process,
-            step_id=step_id,
-            configuration=expected_config,
-            parent_object=expected_parent,
-            action=expected_action,
+        expected_action = ActionRepoImpl.get_action(process.action.pk)
+        expected_payload = SubmitStepPayload.model_validate(
+            {
+                "method": "submit",
+                "params": {
+                    "process_sync_key": process_sync_key,
+                    "step_id": step_id,
+                    "configuration": {"config": {"a": "b", "c": {}}, "adcm_meta": {"/a": {"isActive": True}}},
+                },
+            }
+        )
+        perform_operation_mock.assert_called_once_with(
+            process_id=process.id, payload=expected_payload, object_=self.cluster_1, action=expected_action
         )
 
     def test_submit_step_job_called_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        process_sync_key = str(process.hash)
+        process_sync_key = str(process.sync_key)
         step_id = process.steps.get(name="stage2_step2").pk
-        expected_process = ProcessToChangeDTO(id=process.pk, sync_key=process_sync_key)
-        expected_action = ActionRepoImpl.get_action(process.action.pk)
-        expected_parent = self.cluster_1
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
 
         self.assertEqual(process.state, ProcessState.CREATED)
 
-        with patch("api_v2.generic.wizard.views.operation_submit_job") as mock, patch(
-            "api_v2.generic.wizard.views.ActionProcessViewSet._start_task"
-        ):
+        # make all previous steps 'completed'
+        ProcessStep.objects.filter(id__lt=step_id).update(state=ProcessStepState.COMPLETED)
+
+        with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
             payload = {
                 "method": "submit",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id},
@@ -1114,8 +1125,12 @@ class TestWizard(BaseAPITestCase):
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-        mock.assert_called_once_with(
-            process=expected_process, step_id=step_id, parent_object=expected_parent, action=expected_action
+        expected_action = ActionRepoImpl.get_action(process.action.pk)
+        expected_payload = SubmitStepPayload.model_validate(
+            {**payload, "params": {"process_sync_key": process_sync_key, "step_id": step_id}}
+        )
+        perform_operation_mock.assert_called_once_with(
+            process_id=process.id, payload=expected_payload, object_=self.cluster_1, action=expected_action
         )
 
     def test_reset_operation_step_success(self):
@@ -1130,12 +1145,12 @@ class TestWizard(BaseAPITestCase):
             target_step = ProcessStep.objects.get(process_id=process.id, name=step_name)
             submit_params = {
                 "method": ProcessOperationType.SUBMIT,
-                "params": {"step_id": target_step.id, "process_sync_key": process.hash},
+                "params": {"step_id": target_step.id, "process_sync_key": process.sync_key},
             }
             if step_name in ["stage1_step1", "stage2_step1"]:
                 submit_params["params"]["configuration"] = new_config
             else:
-                target_step.state = ProcessStepState.SUCCESS
+                target_step.state = ProcessStepState.COMPLETED
                 target_step.save(update_fields=["state"])
 
         target_step_to_reset = ProcessStep.objects.get(process_id=process.id, name="stage3_step1")
@@ -1145,7 +1160,7 @@ class TestWizard(BaseAPITestCase):
         ].post(
             data={
                 "method": ProcessOperationType.RESET,
-                "params": {"step_id": target_step_to_reset.id, "process_sync_key": process.hash},
+                "params": {"step_id": target_step_to_reset.id, "process_sync_key": process.sync_key},
             }
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1153,20 +1168,20 @@ class TestWizard(BaseAPITestCase):
         previous_step_to_target = ProcessStep.objects.get(process_id=process.id, name="stage2_step2")
         previous_step_with_input = ProcessStep.objects.get(process_id=process.id, name="stage2_step1")
 
-        self.assertEqual(previous_step_to_target.state, ProcessStepState.SUCCESS)
+        self.assertEqual(previous_step_to_target.state, ProcessStepState.COMPLETED)
 
         self.assertIsNotNone(previous_step_with_input.processstepinput)
         self.assertIsNotNone(previous_step_with_input.step_spec)
 
         for step_name in all_steps[3:]:
             step = ProcessStep.objects.get(process_id=process.id, name=step_name)
-            self.assertEqual(step.state, ProcessStepState.REVOKED)
+            self.assertEqual(step.state, ProcessStepState.CREATED)
             self.assertFalse(hasattr(step, "processstepinput"))
             self.assertIsNone(step.step_spec)
 
     def test_complete_process_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        process_sync_key = process.hash
+        process_sync_key = process.sync_key
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
 
         self.assertEqual(process.state, ProcessState.CREATED)
@@ -1175,7 +1190,7 @@ class TestWizard(BaseAPITestCase):
         response = endpoint.post(data=payload)
         self.assertEqual(response.status_code, HTTP_200_OK)
         process.refresh_from_db()
-        self.assertEqual(process.state, ProcessState.FINISHED)
+        self.assertEqual(process.state, ProcessState.COMPLETED)
 
         flags = ConcernItem.objects.filter(
             owner_id=self.cluster_1.pk,
@@ -1208,27 +1223,37 @@ class TestWizard(BaseAPITestCase):
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
 
         with self.subTest("Incorrect method"):
-            payload = {"method": "notexist", "params": {}}
+            payload = {"method": "notexist", "params": {"process_sync_key": process.sync_key}}
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
-            self.assertIn('"notexist" is not a valid choice', error)
+            self.assertIn(
+                "Input tag 'notexist' found using 'method' does not match any of the expected tags",
+                error,
+            )
 
         with self.subTest("Incorrect payload for complete"):
             payload = {"method": "complete", "params": {}}
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
-            self.assertIn("process_sync_key", error)
-            self.assertIn("Field required [type=missing", error)
+            self.assertIn("params.process_sync_key", error)
+            self.assertIn("Field required [type=missing, input_value={}, input_type=dict]", error)
 
         with self.subTest("Incorrect payload for submit: missing stepId"):
-            payload = {"method": "submit", "params": {"processSyncKey": uuid4()}}
+            payload = {"method": "submit", "params": {"processSyncKey": process.sync_key}}
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
             self.assertIn("step_id", error)
-            self.assertIn("Field required [type=missing", error)
+            self.assertIn("Field required [type=missing", error)  # TODO: not informative description (3 errors)
+
+        with self.subTest("Incorrect payload for complete: wrong sync key"):
+            payload = {"method": "complete", "params": {"processSyncKey": uuid4()}}
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            error = response.json()["desc"]
+            self.assertIn("Sync key mismatch", error)
 
         with self.subTest("Incorrect payload for complete: wrong sync key type"):
             payload = {"method": "complete", "params": {"processSyncKey": "abs"}}

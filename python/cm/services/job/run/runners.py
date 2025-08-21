@@ -23,7 +23,6 @@ from core.types import (
     CoreObjectDescriptor,
 )
 
-from cm.models import ProcessStepState
 from cm.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -36,6 +35,7 @@ from cm.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.services.job.run.audit import audit_task_finish
+from cm.services.wizard.types import ProcessStepState
 
 NO_PROCESS_PID = 0
 
@@ -62,13 +62,6 @@ class StatusServerInteractor(Protocol):
 class JobSequenceRunner(TaskRunner):
     _notifier: EventNotifier
     _status_server = StatusServerInteractor
-    _runtime_process_step_status_map: dict[ExecutionStatus, ProcessStepState] = {
-        ExecutionStatus.SUCCESS: ProcessStepState.SUCCESS,
-        ExecutionStatus.REVOKED: ProcessStepState.FAILED,
-        ExecutionStatus.FAILED: ProcessStepState.FAILED,
-        ExecutionStatus.BROKEN: ProcessStepState.FAILED,
-        ExecutionStatus.ABORTED: ProcessStepState.ABORTED,
-    }
 
     def __init__(
         self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: Logger, **kwargs: Any
@@ -343,11 +336,7 @@ class JobSequenceRunner(TaskRunner):
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
     def _update_associated_process(self, step_id: int) -> None:
-        step_status = self._runtime_process_step_status_map.get(self._runtime.status)
-        if not step_status:
-            self._logger.error(
-                'process update called with unexpected status "%s" - process updated skipped', self._runtime.status
-            )
-            return
-
+        step_status = (
+            ProcessStepState.COMPLETED if self._runtime.status == ExecutionStatus.SUCCESS else ProcessStepState.CREATED
+        )
         self._repo.set_state_of_job_related_process_step(step_id=step_id, state=step_status.value)

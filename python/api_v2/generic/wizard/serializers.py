@@ -11,22 +11,24 @@
 # limitations under the License.
 
 from typing import Any
-from uuid import UUID
 
-from cm.models import Process, ProcessStep, ProcessStepState
-from cm.services.wizard.types import ProcessOperationType
+from cm.models import Process
+from cm.services.wizard.schema_validation import (
+    CompleteStepPayload,
+    OperationPayloadSchema,
+    ResetStepPayload,
+    SubmitStepPayload,
+)
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import (
     CharField,
-    ChoiceField,
     DictField,
     IntegerField,
     ModelSerializer,
     Serializer,
     SerializerMethodField,
 )
-from rest_framework.status import HTTP_400_BAD_REQUEST
 import pydantic
 
 
@@ -58,7 +60,7 @@ class StageSerializer(Serializer):
 
 
 class ProcessShortSerializer(ModelSerializer):
-    sync_key = CharField(source="hash")
+    sync_key = CharField()
     state = CharField()
     current_step = SerializerMethodField(source="get_current_step")
     created_at = DateTimeField()
@@ -68,22 +70,9 @@ class ProcessShortSerializer(ModelSerializer):
         fields = ["id", "state", "current_step", "created_at", "sync_key"]
 
     def get_current_step(self, instance: Process) -> int:
-        _ = instance
+        from cm.services.wizard.operations import retrieve_current_step_id
 
-        latest = None
-        step_ids = []
-        for stage in reversed(instance.flow_spec):
-            for step in reversed(stage["steps"]):
-                step_id = self.context["step_names_id_map"][step["name"], step["display_name"]]
-                step_ids.append(step_id)
-                state = ProcessStep.objects.values_list("state", flat=True).get(id=step_id)
-                if state in (ProcessStepState.CREATED, ProcessStepState.RUNNING):
-                    latest = step_id
-
-        if latest is None:
-            latest = step_ids[0]
-
-        return latest
+        return retrieve_current_step_id(process_id=instance.id)
 
 
 class ProcessSerializer(ProcessShortSerializer):
@@ -100,44 +89,14 @@ class StepSerializer(Serializer):
     type = CharField()
 
 
-# Operations on Step
-
-
-class ProcessSyncKey(pydantic.BaseModel):
-    process_sync_key: UUID
-
-
-class Configuration(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(extra="forbid")
-
-    config: dict
-    adcm_meta: dict
-
-
-class SubmitOperation(ProcessSyncKey):
-    model_config = pydantic.ConfigDict(extra="forbid")
-
-    step_id: int
-    configuration: Configuration | None = None
-
-
 class OperationSerializer(Serializer):
-    method = ChoiceField(choices=[e.value for e in ProcessOperationType])
-    # todo add validation
+    method = CharField()
     params = DictField()
 
-    def validate(self, attrs: Any) -> Any:
-        res = super().validate(attrs)
-
-        params = attrs.get("params") or {}
-
+    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteStepPayload | ResetStepPayload:
         try:
-            match res.get("method"):
-                case ProcessOperationType.COMPLETE:
-                    ProcessSyncKey.model_validate(params)
-                case ProcessOperationType.SUBMIT:
-                    SubmitOperation.model_validate(params)
+            validated = OperationPayloadSchema.model_validate({"payload": attrs}).payload
         except pydantic.ValidationError as e:
-            raise DRFValidationError(detail=e, code=HTTP_400_BAD_REQUEST) from e
+            raise DRFValidationError(detail=e) from e
 
-        return res
+        return validated
