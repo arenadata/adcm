@@ -87,15 +87,18 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):  # noqa: ARG002
-        action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
-        parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
 
-        if not action.wizard_template:
-            raise RuntimeError(f"Action #{action.id} does not support wizard functionality.")
+        self.check_permissions_for_run(
+            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
+        )
+
+        if not action_info.wizard_template:
+            raise RuntimeError(f"Action #{action_info.id} does not support wizard functionality.")
 
         # TODO: check if Process already exists
         with atomic():
-            process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action)
+            process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action_info)
             raise_flag(
                 BuiltInFlag.WIZARD_PROCESS_RUNNING.value,
                 on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],

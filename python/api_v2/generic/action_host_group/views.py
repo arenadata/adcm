@@ -411,7 +411,7 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)
 
     def check_permissions_for_list(self, request: Request, parent_object: ADCMEntity) -> None:
-        if not (parent_object and self.parent_object.object):
+        if not (parent_object and parent_object.object):
             raise NotFound()
 
         group_owner = parent_object.object
