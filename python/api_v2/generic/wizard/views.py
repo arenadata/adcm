@@ -124,14 +124,18 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
     @action(methods=["post"], detail=True, url_path="operation")
     def operation(self, request, *_, pk: ActionProcessID, **_kw):  # noqa: ARG002
         process_id = int(pk)
-        parent_object, action = self.get_parent_and_action_supporting_wizard()
+        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
+
+        self.check_permissions_for_run(
+            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
+        )
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
         validate_operation(process_id=process_id, payload=payload)
-        perform_operation(process_id=process_id, payload=payload, object_=parent_object, action=action)
+        perform_operation(process_id=process_id, payload=payload, object_=parent_object, action=action_info)
 
         return Response(
             status=HTTP_200_OK,

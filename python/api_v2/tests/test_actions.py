@@ -1019,62 +1019,92 @@ class TestWizard(BaseAPITestCase):
 
         self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
 
-        # render step
-        response = self.client.v2[
-            self.cluster_1,
-            "actions",
-            self.cluster_wizard_action.pk,
-            "processes",
-            process.id,
-            "steps",
-            target_operation_step.id,
-        ].get()
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.client.login(**self.test_user_credentials)
 
-        self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
-        self.assertFalse(TaskLog.objects.filter(action=self.cluster_wizard_action).exists())
+        with self.subTest("No view permissions"):
+            # submit step
+            response = self.client.v2[
+                self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        # submit step
-        response = self.client.v2[
-            self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
-        ].post(
-            data={
-                "method": ProcessOperationType.SUBMIT,
-                "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
-            }
-        )
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], process.id)
-        self.assertEqual(response.json()["createdAt"], str(process.created_at.isoformat().replace("+00:00", "Z")))
-        self.assertEqual(sum(len(stage["steps"]) for stage in response.json()["stages"]), process.steps.count())
+        with self.subTest("No run permissions"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                # submit step
+                response = self.client.v2[
+                    self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                ].post(
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
+                    }
+                )
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        target_operation_step.refresh_from_db()
-        expected_spec = [
-            {
-                "display_name": "Sleep",
-                "name": "sleep_script",
-                "params": {"test_params": ["created"]},
-                "script": "scripts/sleep.yaml",
-                "script_type": "ansible",
-            }
-        ]
-        self.assertListEqual(target_operation_step.step_spec, expected_spec)
+        self.client.login(username="admin", password="admin")
 
-        task = TaskLog.objects.get(action=self.cluster_wizard_action)
-        input_ = ProcessStepInput.objects.get(step_id=target_operation_step.id)
+        with self.subTest("All permissions"):
+            # render step
+            response = self.client.v2[
+                self.cluster_1,
+                "actions",
+                self.cluster_wizard_action.pk,
+                "processes",
+                process.id,
+                "steps",
+                target_operation_step.id,
+            ].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.assertIsNone(input_.configuration)
-        self.assertEqual(input_.job_id, task.id)
+            self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
+            self.assertFalse(TaskLog.objects.filter(action=self.cluster_wizard_action).exists())
 
-        process.refresh_from_db()
-        self.assertNotEqual(initial_sync_key, process.sync_key)
+            # submit step
+            response = self.client.v2[
+                self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["id"], process.id)
+            self.assertEqual(response.json()["createdAt"], str(process.created_at.isoformat().replace("+00:00", "Z")))
+            self.assertEqual(sum(len(stage["steps"]) for stage in response.json()["stages"]), process.steps.count())
 
-        # check that previous steps and inputs are not affected
-        for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
-            self.assertDictEqual(step.step_spec, test_spec)
-            input_ = ProcessStepInput.objects.get(step_id=step.id)
-            self.assertDictEqual(input_.configuration, test_spec)
-            self.assertIsNone(input_.job)
+            target_operation_step.refresh_from_db()
+            expected_spec = [
+                {
+                    "display_name": "Sleep",
+                    "name": "sleep_script",
+                    "params": {"test_params": ["created"]},
+                    "script": "scripts/sleep.yaml",
+                    "script_type": "ansible",
+                }
+            ]
+            self.assertListEqual(target_operation_step.step_spec, expected_spec)
+
+            task = TaskLog.objects.get(action=self.cluster_wizard_action)
+            input_ = ProcessStepInput.objects.get(step_id=target_operation_step.id)
+
+            self.assertIsNone(input_.configuration)
+            self.assertEqual(input_.job_id, task.id)
+
+            process.refresh_from_db()
+            self.assertNotEqual(initial_sync_key, process.sync_key)
+
+            # check that previous steps and inputs are not affected
+            for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
+                self.assertDictEqual(step.step_spec, test_spec)
+                input_ = ProcessStepInput.objects.get(step_id=step.id)
+                self.assertDictEqual(input_.configuration, test_spec)
+                self.assertIsNone(input_.job)
 
     def test_submit_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
