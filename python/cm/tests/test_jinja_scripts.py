@@ -159,7 +159,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
                 {"name": "manage_kerberos_stage", "steps": [{"name": f"configure_step_{j + 1}"} for j in range(2)]},
             ],
             created_at=timezone.now(),
-            hash=uuid4(),
+            sync_key=uuid4(),
             state="created",
         )
 

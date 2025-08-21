@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal
+from uuid import UUID
 
 from core.bundle_alt.schema import WizardStage, _WizardNames
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID
@@ -22,24 +22,24 @@ from pydantic import BaseModel, ConfigDict, Field
 class ProcessState(str, Enum):
     CREATED = "created"
     BROKEN = "broken"
-    REVOKED = "revoked"
-    FINISHED = "finished"
+    COMPLETED = "completed"
 
 
-class ProcessOperationType(str, Enum):
-    SUBMIT = "submit"
-    COMPLETE = "complete"
-    RESET = "reset_step"
+class ProcessStepState(str, Enum):
+    CREATED = "created"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    BROKEN = "broken"
 
 
-@dataclass(slots=True)
-class ProcessToChangeDTO:
-    id: ActionProcessID
-    sync_key: str
+class ProcessUpdateDTO(BaseModel):
+    sync_key: UUID | None = None
+    last_completed_step: ActionProcessStepID | None = None
 
 
 class StepUpdateDTO(BaseModel):
     step_spec: Any = None
+    state: ProcessStepState | None = None
 
 
 class StepType(str, Enum):
@@ -52,6 +52,7 @@ class ActionProcess(BaseModel):
     object_id: ObjectID
     object_type: ADCMCoreType
     flow_spec: list[WizardStage] = Field(..., min_length=1)
+    sync_key: UUID
 
 
 class Step(_WizardNames):
@@ -60,6 +61,7 @@ class Step(_WizardNames):
     display_name: str
     step_spec: Any = None
     type: Literal[StepType.CONFIGURATION, StepType.OPERATION]
+    state: ProcessStepState
 
     model_config = ConfigDict(extra="allow")
 

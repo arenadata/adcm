@@ -212,6 +212,8 @@ ERRORS = {
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
     "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "INVALID_CREATE_DUPLICATE_HOST": ("You cannot create a copy from a copy", HTTP_409_CONFLICT, ERR),
+    "WIZARD_SYNC_KEY_CONFLICT": ("Sync key mismatch", HTTP_409_CONFLICT, ERR),
+    "WIZARD_SUBMIT_STEP_CONFLICT": ("Can't submit step", HTTP_409_CONFLICT, ERR),
 }
 
 
@@ -295,12 +297,14 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     response = exception_handler(exc=exc, context=context)
 
     if not isinstance(exc, AdcmEx) and response and 400 <= response.status_code <= 499:
+        detail = response.status_code
+        if hasattr(exc, "detail"):
+            detail = exc.detail
+
         data = {
             "code": "API_ERROR",
             "level": "ERROR",
-            "desc": response.data.get("detail", response.status_code)
-            if isinstance(response.data, dict)
-            else response.status_code,
+            "desc": detail,
         }
         response.data = data
 

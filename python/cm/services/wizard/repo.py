@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import TypeAlias
+from typing import Generator, TypeAlias
 from uuid import uuid4
 
 from core.bundle_alt.schema import WizardStage, WizardStep
@@ -22,7 +22,7 @@ from cm.models import Action, Process, ProcessStep, Prototype, TaskLog
 from cm.services.wizard.types import (
     ActionProcess,
     ProcessState,
-    ProcessToChangeDTO,
+    ProcessUpdateDTO,
     Step,
     StepUpdateDTO,
 )
@@ -43,7 +43,7 @@ def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: l
         object_type=object_.type.value,
         last_completed_step=None,
         flow_spec=[stage.model_dump(exclude_defaults=True, exclude_unset=True) for stage in stages],
-        hash=uuid4(),
+        sync_key=uuid4(),
     )
 
     return ActionProcess.model_validate(process, from_attributes=True)
@@ -69,10 +69,10 @@ def retrieve_action_orm(action_id: ActionID) -> Action:
     return Action.objects.get(id=action_id)
 
 
-def set_process_status(process: ProcessToChangeDTO, state: ProcessState) -> WasUpdated:
+def set_process_status(process: ActionProcess, state: ProcessState) -> WasUpdated:
     records_updated = Process.objects.filter(
         pk=process.id,
-        hash=process.sync_key,
+        sync_key=process.sync_key,
     ).update(state=state)
     return bool(records_updated)
 
@@ -87,12 +87,16 @@ def retrieve_step_names_id_map(process_id: ActionProcessID) -> dict[tuple[str, s
 
 
 def retrieve_step(process_id: ActionProcessID, step_id: ActionProcessStepID) -> Step:
-    process = retrieve_process(process_id=process_id)
-    step = ProcessStep.objects.get(id=step_id, process_id=process_id)
-    step_spec_raw = find_step_spec(step=step, process_flow_spec=process.flow_spec)
-    step.type = step_spec_raw.step_type
+    return next(retrieve_steps(process_id=process_id, id=step_id))
 
-    return Step.model_validate(step, from_attributes=True)
+
+def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, None, None]:
+    flow_spec = retrieve_process(process_id=process_id).flow_spec
+    for step_orm in ProcessStep.objects.filter(process_id=process_id, **kwargs).order_by("id"):
+        step_spec_raw = find_step_spec(step=step_orm, process_flow_spec=flow_spec)
+        step_orm.type = step_spec_raw.step_type
+
+        yield Step.model_validate(step_orm, from_attributes=True)
 
 
 def retrieve_process(process_id: ActionProcessID) -> ActionProcess:
@@ -103,6 +107,10 @@ def retrieve_process(process_id: ActionProcessID) -> ActionProcess:
 
 def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
     ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
+
+
+def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
+    Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
 
 
 def find_step_spec(step: Step, process_flow_spec: list[WizardStage]) -> WizardStep:

@@ -54,16 +54,11 @@ class Migration(migrations.Migration):
                 ),
                 ("flow_spec", models.JSONField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("hash", models.UUIDField()),
+                ("sync_key", models.UUIDField()),
                 (
                     "state",
                     models.CharField(
-                        choices=[
-                            ("created", "created"),
-                            ("broken", "broken"),
-                            ("revoked", "revoked"),
-                            ("finished", "finished"),
-                        ],
+                        choices=[("created", "created"), ("broken", "broken"), ("completed", "completed")],
                         default="created",
                         max_length=100,
                     ),
@@ -85,10 +80,8 @@ class Migration(migrations.Migration):
                         choices=[
                             ("created", "created"),
                             ("running", "running"),
+                            ("completed", "completed"),
                             ("broken", "broken"),
-                            ("failed", "failed"),
-                            ("success", "success"),
-                            ("aborted", "aborted"),
                         ],
                         default="created",
                         max_length=100,
