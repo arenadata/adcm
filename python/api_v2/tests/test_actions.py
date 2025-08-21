@@ -801,42 +801,63 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(Process.objects.count(), 0)
         self.assertEqual(ProcessStep.objects.count(), 0)
 
-        for obj in (self.cluster_1, self.service_1, self.component_1):
-            with self.subTest(f"create process for {obj}"):
-                response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"].post(
-                    data={}
-                )
+        self.client.login(**self.test_user_credentials)
 
-                self.assertEqual(response.status_code, HTTP_201_CREATED)
-                self.assertEqual(
-                    Process.objects.filter(object_id=obj.pk, object_type=orm_object_to_core_type(obj).value).count(), 1
-                )
+        with self.subTest("No view permissions"):
+            response = self.client.v2[
+                self.cluster_1, "actions", self.get_object_wizard_action(self.cluster_1).pk, "processes"
+            ].post(data={})
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-                process = Process.objects.get(object_id=obj.pk, object_type=orm_object_to_core_type(obj).value)
+        with self.subTest("No run permissions"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                response = self.client.v2[
+                    self.cluster_1, "actions", self.get_object_wizard_action(self.cluster_1).pk, "processes"
+                ].post(data={})
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-                flags = ConcernItem.objects.filter(
-                    owner_id=self.cluster_1.pk,
-                    owner_type=ContentType.objects.get_for_model(model=Cluster),
-                    cause=ConcernCause.CONFIGURING_PROCESS,
-                )
-                self.assertEqual(flags.count(), 1)
+        self.client.login(username="admin", password="admin")
 
-                self.assertEqual(ProcessStep.objects.filter(process=process).count(), 6)
+        with self.subTest("All permissions"):
+            for obj in (self.cluster_1, self.service_1, self.component_1):
+                with self.subTest(f"create process for {obj}"):
+                    response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"].post(
+                        data={}
+                    )
 
-                expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
-                _step_ids = {f"{name}_id": id_ for name, id_ in process.steps.values_list("name", "id")}
-                expected_response = render_template(
-                    file=expected_response_template,
-                    context={
-                        "process_id": process.id,
-                        "created_at": process.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                        **_step_ids,
-                    },
-                )
+                    self.assertEqual(response.status_code, HTTP_201_CREATED)
+                    self.assertEqual(
+                        Process.objects.filter(
+                            object_id=obj.pk, object_type=orm_object_to_core_type(obj).value
+                        ).count(),
+                        1,
+                    )
 
-                response = response.json()
+                    process = Process.objects.get(object_id=obj.pk, object_type=orm_object_to_core_type(obj).value)
 
-                self.assertDictContainsSubset(expected_response, response)
+                    flags = ConcernItem.objects.filter(
+                        owner_id=self.cluster_1.pk,
+                        owner_type=ContentType.objects.get_for_model(model=Cluster),
+                        cause=ConcernCause.CONFIGURING_PROCESS,
+                    )
+                    self.assertEqual(flags.count(), 1)
+
+                    self.assertEqual(ProcessStep.objects.filter(process=process).count(), 6)
+
+                    expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
+                    _step_ids = {f"{name}_id": id_ for name, id_ in process.steps.values_list("name", "id")}
+                    expected_response = render_template(
+                        file=expected_response_template,
+                        context={
+                            "process_id": process.id,
+                            "created_at": process.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                            **_step_ids,
+                        },
+                    )
+
+                    response = response.json()
+
+                    self.assertDictContainsSubset(expected_response, response)
 
     def test_retrieve_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
