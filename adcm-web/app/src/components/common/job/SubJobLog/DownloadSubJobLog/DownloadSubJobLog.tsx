@@ -12,7 +12,13 @@ const DownloadSubJobLog: React.FC<DownloadSubJobLogProps> = ({ subJobId, subJobL
   const downloadLink = `${apiHost}/api/v2/jobs/${subJobId}/logs/${subJobLogId}/download/`;
 
   return (
-    <a className={s.downloadSubJobLog} href={downloadLink} download="download" target="_blank" rel="noreferrer">
+    <a
+      className={s.downloadSubJobLog}
+      href={downloadLink}
+      download="download"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <IconButton size="small" className={s.iconButton} icon="download" />
     </a>
   );
