@@ -24,7 +24,7 @@ from cm.models import (
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.template import TemplateBuilder
-from cm.utils import get_on_fail_states
+from cm.utils import decrypt_secrets, get_on_fail_states
 
 
 def get_job_specs_from_template(
@@ -34,9 +34,13 @@ def get_job_specs_from_template(
 
     path_resolver = BundlePathResolver(bundle_hash=task.action.prototype.bundle.hash)
     scripts_jinja_file = path_resolver.resolve(task.action.scripts_jinja)
+    # TO DO: get rid of using decrypt_secrets here
+    context = get_env_for_jinja_scripts(task=task, delta=delta)
+    decrypted_context = decrypt_secrets(context)
+
     template_builder = TemplateBuilder(
         template_path=scripts_jinja_file,
-        context=get_env_for_jinja_scripts(task=task, delta=delta),
+        context=decrypted_context,
         bundle_path=path_resolver.bundle_root,
         error=AdcmEx(code="UNPROCESSABLE_ENTITY", msg="Can't render jinja template"),
     )

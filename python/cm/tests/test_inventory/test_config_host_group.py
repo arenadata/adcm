@@ -21,7 +21,8 @@ from cm.models import (
     Prototype,
 )
 from cm.services.job.inventory import get_inventory_data
-from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
+from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.utils import decrypt_secrets
 
 
 class TestCHGsInInventory(BaseInventoryTestCase):

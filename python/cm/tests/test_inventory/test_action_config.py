@@ -24,7 +24,8 @@ from cm.services.job.action import ActionRunPayload, prepare_task_for_action, ru
 from cm.services.job.run._target_factories import prepare_ansible_job_config
 from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
+from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.utils import decrypt_secrets
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
