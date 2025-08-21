@@ -23,7 +23,9 @@ from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.wizard import repo, stage
 from cm.services.wizard.types import ProcessToChangeDTO
 
-SerializedConfigStep: TypeAlias = dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
+SerializedConfigStep: TypeAlias = dict[
+    Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
+]
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
 
 

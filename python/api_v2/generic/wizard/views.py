@@ -264,7 +264,7 @@ def _serialize_config_step(
         config = step_input.configuration["config"]
         meta = convert_attr_to_adcm_meta(step_input.configuration["attr"])
 
-    return {"config_schema": schema, "adcm_meta": meta, "config": config}
+    return {"configuration": {"config_schema": schema, "adcm_meta": meta, "config": config}}
 
 
 def _serialize_operation_step(
