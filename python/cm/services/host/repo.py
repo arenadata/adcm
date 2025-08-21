@@ -40,7 +40,7 @@ def duplicate_host_record(
     duplicate.config = None
     duplicate.original_id = host.id
     duplicate.cluster = None
-    duplicate._maintenance_mode = "off"
+    duplicate.maintenance_mode = "off"
 
     duplicate.fqdn = overrides.name
     duplicate.description = overrides.description

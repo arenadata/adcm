@@ -12,7 +12,7 @@
 
 from operator import itemgetter
 
-from cm.models import Cluster, Host
+from cm.models import Cluster, Host, MaintenanceMode
 from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -118,3 +118,21 @@ class TestDuplicateHost(BaseAPITestCase):
         host_1_record = next(host for host in host_list if host["id"] == self.host_1.id)
         duplicates = host_1_record["duplicates"]
         self.assertEqual(duplicates, expected_duplicates)
+
+    def test_adcm_6944_duplicate_when_mm_is_on(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.host_1.maintenance_mode = MaintenanceMode.ON
+        self.host_1.save(update_fields=["maintenance_mode"])
+
+        name = "another"
+        data = {"name": name}
+        expected_data = {
+            "cluster": None,
+            "description": f"Copied from {self.host_1.fqdn}",
+            "isMaintenanceModeAvailable": False,
+            "maintenanceMode": "off",
+        }
+        response = self.client.v2[self.host_1, "duplicates"].post(data=data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertDictContainsSubset(expected_data, response.json())
