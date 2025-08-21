@@ -31,6 +31,7 @@ from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.config.patterns import Pattern
 from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.template import TemplateBuilder
+from cm.utils import decrypt_secrets
 
 
 def get_jinja_config(
@@ -39,9 +40,13 @@ def get_jinja_config(
     resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
     jinja_conf_file = resolver.resolve(action.config_jinja)
 
+    context = get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object)
+    decrypted_context = decrypt_secrets(context)
+
+    # TO DO: get rid of using decrypt_secrets here
     template_builder = TemplateBuilder(
         template_path=jinja_conf_file,
-        context=get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object),
+        context=decrypted_context,
         bundle_path=resolver.bundle_root,
     )
 

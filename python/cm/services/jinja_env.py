@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, TypedDict
+from typing import Annotated
 
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
+from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from cm.models import (
     Action,
@@ -56,24 +58,24 @@ class TaskContext(TypedDict):
     verbose: bool
 
 
-class JinjaScriptsEnvironment(TypedDict):
+class JinjaScriptsEnvironment(BaseModel):
     cluster: Annotated[dict, ClusterNode]
     services: dict[ServiceName, Annotated[dict, ServiceNode]]
     groups: dict[HostGroupName, list[HostName]]
     task: TaskContext
-    action: ActionContext
+    action: ActionContext | ActionContextWithWizard
 
 
-class JinjaConfigsEnvironment(TypedDict):
+class JinjaConfigsEnvironment(BaseModel):
     cluster: ClusterNode
     services: dict[str, ServiceNode]
     groups: dict[HostGroupName, list[HostName]]
-    action: ActionContext
+    action: ActionContext | ActionContextWithWizard
 
 
 def get_env_for_jinja_scripts(
     task: TaskLog, delta: TaskMappingDelta | None = None, wizard_process: Process | None = None
-) -> JinjaScriptsEnvironment:
+) -> dict:
     action_group = None
     target_object = task.task_object
     if isinstance(target_object, ActionHostGroup):
@@ -103,12 +105,12 @@ def get_env_for_jinja_scripts(
         groups=host_groups,
         task=TaskContext(config=task.config, verbose=task.verbose),
         action=_get_action_info(action=task.action, process=wizard_process),
-    )
+    ).model_dump(mode="python")
 
 
 def get_env_for_jinja_config(
     action: Action, cluster_relative_object: Cluster | Service | Component | Host, wizard_process: Process | None = None
-) -> JinjaConfigsEnvironment:
+) -> dict:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
     clusters_vars = get_cluster_vars(topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object))
 
@@ -117,7 +119,7 @@ def get_env_for_jinja_config(
         services=clusters_vars.services,
         groups=_get_host_group_names_for_cluster(cluster_topology=cluster_topology),
         action=_get_action_info(action=action, process=wizard_process),
-    )
+    ).model_dump(mode="python")
 
 
 def _get_host_group_names_only(
