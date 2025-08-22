@@ -87,6 +87,7 @@ class StepSerializer(Serializer):
     id = IntegerField()
     display_name = CharField()
     type = CharField()
+    state = CharField()
 
 
 class OperationSerializer(Serializer):
