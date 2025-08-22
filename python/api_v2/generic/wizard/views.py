@@ -169,7 +169,7 @@ class ProcessStepViewSet(
         object_ = orm_object_to_core_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        data = step.model_dump(include={"id", "display_name", "type"})
+        data = step.model_dump(include={"id", "display_name", "type", "state"})
 
         extra = serialize_step(process_id=process_id, step_id=step_id, action_id=action_id, object_=object_)
         data.update(**extra)
