@@ -1765,8 +1765,11 @@ class Process(models.Model):
     object_type = models.CharField(
         max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
     )
+    current_step = models.OneToOneField(
+        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="current_for_process"
+    )
     last_completed_step = models.OneToOneField(
-        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="completed_for_process"
+        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="last_completed_for_process"
     )
     flow_spec = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
