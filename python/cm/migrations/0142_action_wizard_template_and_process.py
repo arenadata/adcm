@@ -97,11 +97,21 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="process",
+            name="current_step",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="current_for_process",
+                to="cm.processstep",
+            ),
+        ),
+        migrations.AddField(
+            model_name="process",
             name="last_completed_step",
             field=models.OneToOneField(
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
-                related_name="completed_for_process",
+                related_name="last_completed_for_process",
                 to="cm.processstep",
             ),
         ),
