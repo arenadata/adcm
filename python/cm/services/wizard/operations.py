@@ -15,10 +15,10 @@ from uuid import uuid4
 import logging
 
 from adcm.mixins import ParentObject
-from core.bundle_alt.process import ScriptJinjaContext, parse_scripts_jinja
+from core.bundle_alt.process import ScriptsConversionContext, parse_scripts
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
-from core.job.types import ActionInfo, WizardTemplate
-from core.templates import RendererEnv, get_renderer
+from core.job.types import ActionInfo
+from core.templates import RendererEnv, Template, get_renderer
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
 from django.db.models import QuerySet
 from django.db.transaction import atomic
@@ -56,7 +56,7 @@ OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetSte
 
 
 def render_template(
-    template: WizardTemplate, environment: RendererEnv, action_id: ActionID, object_: CoreObjectDescriptor
+    template: Template, environment: RendererEnv, action_id: ActionID, object_: CoreObjectDescriptor
 ) -> Any:
     renderer = get_renderer(template=template, environment=environment)
     # TODO: replace with correct context retriever; handle render error
@@ -263,12 +263,12 @@ def _operation_submit_job(
 
     bundle_root_path = repo.get_bundle_root_from_prototype(prototype_id=parent_object.prototype_id)
     action_orm = repo.retrieve_action_orm(action_id=action.id)  # ???
-    context = ScriptJinjaContext(
+    context = ScriptsConversionContext(
         source_dir=bundle_root_path / step_raw_spec.template.file.path,
         action_allow_to_terminate=action_orm.allow_to_terminate,
     )
 
-    jobs = list(parse_scripts_jinja(data=step.step_spec, context=context))
+    jobs = list(parse_scripts(data=step.step_spec, context=context))
 
     job_repo.create_jobs(task_id=task.id, jobs=jobs)
 

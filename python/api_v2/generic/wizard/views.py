@@ -35,9 +35,9 @@ from cm.services.wizard.operations import (
 )
 from cm.services.wizard.types import Step, StepType, StepUpdateDTO
 from cm.services.wizard.validation import validate_operation
-from core.bundle_alt.schema import WizardStep
+from core.bundle_alt.schema import ActionProcessStep
 from core.job.types import ActionInfo
-from core.templates._types import RendererEnv
+from core.templates import RendererEnv
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 from django.db.transaction import atomic
 from rest_framework.decorators import action
@@ -97,9 +97,6 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
         )
-
-        if not action_info.wizard_template:
-            raise RuntimeError(f"Action #{action_info.id} does not support wizard functionality.")
 
         # TODO: check if Process already exists
         with atomic():
@@ -204,7 +201,7 @@ def serialize_step(
 
 def _serialize_config_step(
     step: Step,
-    step_spec_raw: WizardStep,
+    step_spec_raw: ActionProcessStep,
     action_id: ActionID,
     object_: CoreObjectDescriptor,
     step_input: ProcessStepInput | None,
@@ -214,6 +211,7 @@ def _serialize_config_step(
     path_resolver = BundlePathResolver(bundle_hash=action_orm.prototype.bundle.hash)
     config_file = Path(path_resolver.bundle_root, step_spec_raw.template.file.path)
 
+    # todo replace it with new rendering
     prototype_configs, _ = _get_jinja_config_new(
         data=step.step_spec,
         action=action_orm,
@@ -236,7 +234,7 @@ def _serialize_config_step(
 
 
 def _serialize_operation_step(
-    step_spec_raw: WizardStep, step_input: ProcessStepInput | None
+    step_spec_raw: ActionProcessStep, step_input: ProcessStepInput | None
 ) -> SerializedOperationStep:
     ui_options = step_spec_raw.model_dump(include={"ui_options"}).get("ui_options")
 
@@ -249,7 +247,7 @@ def _serialize_operation_step(
 
 
 def _render_step_from_flow_spec(
-    step: Step, step_spec_raw: WizardStep, action_id: ActionID, object_: CoreObjectDescriptor
+    step: Step, step_spec_raw: ActionProcessStep, action_id: ActionID, object_: CoreObjectDescriptor
 ) -> None:
     action = ActionRepoImpl.get_action(id=action_id)
     environment = RendererEnv(

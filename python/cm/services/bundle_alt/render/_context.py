@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated
+from dataclasses import dataclass
 
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
@@ -34,103 +34,144 @@ from cm.models import (
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.job.inventory import (
     ClusterNode,
+    HostGroupName,
     ServiceNode,
     detect_host_groups_for_cluster_bundle_action,
     get_cluster_vars,
+    sort_hosts_within_groups,
 )
-from cm.services.job.inventory._base import sort_hosts_within_groups
-from cm.services.job.inventory._types import HostGroupName
+
+# For keeping garbage coupled
 
 
-class ActionContext(TypedDict):
+@dataclass(slots=True)
+class ActionArgs:
+    action: Action
+    cluster_relative_object: Cluster | Service | Component | Host
+    action_process: Process | None = None
+
+
+@dataclass(slots=True)
+class TaskArgs:
+    task: TaskLog
+    delta: TaskMappingDelta | None = None
+    action_process: Process | None = None
+
+
+# For Internal Typehint Purposes
+
+
+class _ActionContext(TypedDict):
     owner_group: str
     name: str
 
 
-class ActionContextWithWizard(TypedDict):
-    owner_group: str
-    name: str
-    process: dict
+class _ProcessContext(TypedDict):
+    # todo implement
+    ...
 
 
-class TaskContext(TypedDict):
+class _ActionWithProcessContext(_ActionContext):
+    process: _ProcessContext
+
+
+class _TaskContext(TypedDict):
     config: dict | None
     verbose: bool
 
 
-class JinjaScriptsEnvironment(BaseModel):
-    cluster: Annotated[dict, ClusterNode]
-    services: dict[ServiceName, Annotated[dict, ServiceNode]]
-    groups: dict[HostGroupName, list[HostName]]
-    task: TaskContext
-    action: ActionContext | ActionContextWithWizard
-
-
-class JinjaConfigsEnvironment(BaseModel):
+class ActionRenderContext(BaseModel):
     cluster: ClusterNode
-    services: dict[str, ServiceNode]
+    services: dict[ServiceName, ServiceNode]
     groups: dict[HostGroupName, list[HostName]]
-    action: ActionContext | ActionContextWithWizard
+    action: _ActionContext | _ActionWithProcessContext
 
 
-def get_env_for_jinja_scripts(
-    task: TaskLog, delta: TaskMappingDelta | None = None, wizard_process: Process | None = None
-) -> dict:
+class TaskRenderContext(ActionRenderContext):
+    task: _TaskContext
+
+
+# Context Preparation Functions
+
+
+def prepare_context_for_action(args: ActionArgs) -> dict:
+    context = _prepare_context_for_action(
+        action=args.action,
+        cluster_relative_object=args.cluster_relative_object,
+        action_process=args.action_process,
+        delta=None,
+    )
+    return context.model_dump(mode="python")
+
+
+def prepare_context_for_task(args: TaskArgs) -> dict:
     action_group = None
-    target_object = task.task_object
+    target_object = args.task.task_object
     if isinstance(target_object, ActionHostGroup):
         action_group = target_object
         target_object = target_object.object
 
-    cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
+    if not isinstance(target_object, (Cluster, Service, Component, Host)):
+        message = f"Target for task context can't be of type {type(target_object)}"
+        raise TypeError(message)
 
-    cluster_vars = get_cluster_vars(topology=cluster_topology)
+    action_context = _prepare_context_for_action(
+        action=args.task.action,
+        cluster_relative_object=target_object,
+        action_process=args.action_process,
+        delta=args.delta,
+    )
 
-    host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=delta)
     if action_group:
-        host_groups |= {
-            "target": Host.objects.values_list("fqdn", flat=True).filter(
-                id__in=ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=action_group.id).values_list(
-                    "host_id", flat=True
-                )
-            )
-        }
+        target_group_hosts = _get_names_of_hosts_in_action_host_group(action_group.pk)
+        action_context.groups |= {"target": target_group_hosts}
 
-    return JinjaScriptsEnvironment(
-        cluster=cluster_vars.cluster.model_dump(by_alias=True),
-        services={
-            service_name: service_data.model_dump(by_alias=True)
-            for service_name, service_data in cluster_vars.services.items()
-        },
-        groups=host_groups,
-        task=TaskContext(config=task.config, verbose=task.verbose),
-        action=_get_action_info(action=task.action, process=wizard_process),
+    task_context = _TaskContext(config=args.task.config, verbose=args.task.verbose)
+
+    return TaskRenderContext(
+        cluster=action_context.cluster,
+        services=action_context.services,
+        groups=action_context.groups,
+        task=task_context,
+        action=action_context.action,
     ).model_dump(mode="python")
 
 
-def get_env_for_jinja_config(
-    action: Action, cluster_relative_object: Cluster | Service | Component | Host, wizard_process: Process | None = None
-) -> dict:
+def _prepare_context_for_action(
+    action: Action,
+    cluster_relative_object: Cluster | Service | Component | Host,
+    action_process: Process | None = None,
+    delta: TaskMappingDelta | None = None,
+) -> ActionRenderContext:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
-    clusters_vars = get_cluster_vars(topology=cluster_topology)
-    groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology)
-    action = _get_action_info(action=action, process=wizard_process)
 
-    return JinjaConfigsEnvironment(
+    clusters_vars = get_cluster_vars(topology=cluster_topology)
+
+    groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology, hc_delta=delta or TaskMappingDelta())
+
+    action_context = _get_action_info(action=action)
+    if action_process:
+        process_context = _get_wizard_process_context(action_process)
+        action_context = _ActionWithProcessContext(**action_context, process=process_context)
+
+    return ActionRenderContext(
         cluster=clusters_vars.cluster,
         services=clusters_vars.services,
         groups=groups,
-        action=action,
-    ).model_dump(mode="python")
+        action=action_context,
+    )
+
+
+# Helper Functions
 
 
 def _get_host_group_names_only(
     host_groups: dict[HostGroupName, list[tuple[HostID, HostName]]],
 ) -> dict[HostGroupName, list[HostName]]:
-    return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
+    return {group_name: [host_name for _, host_name in group_data] for group_name, group_data in host_groups.items()}
 
 
-def _get_action_info(action: Action, process: Process = None) -> ActionContext:
+def _get_action_info(action: Action) -> _ActionContext:
     owner_prototype = action.prototype
 
     if owner_prototype.type == ObjectType.SERVICE:
@@ -141,12 +182,7 @@ def _get_action_info(action: Action, process: Process = None) -> ActionContext:
     else:
         owner_group = owner_prototype.type.upper()
 
-    wizard_process_context = {} if not process else _get_wizard_process_context(process)
-
-    if wizard_process_context:
-        return ActionContextWithWizard(name=action.name, owner_group=owner_group, process=wizard_process_context)
-
-    return ActionContext(name=action.name, owner_group=owner_group)
+    return _ActionContext(name=action.name, owner_group=owner_group)
 
 
 def _get_host_group_names_for_cluster(
@@ -167,7 +203,7 @@ def _get_host_group_names_for_cluster(
     return _get_host_group_names_only(host_groups=host_groups)
 
 
-def _get_wizard_process_context(process: Process) -> dict[str, dict]:
+def _get_wizard_process_context(process: Process) -> _ProcessContext:
     steps_qs = process.steps.all().select_related("processstepinput")
 
     steps_by_name = {step.name: step for step in steps_qs}
@@ -181,3 +217,13 @@ def _get_wizard_process_context(process: Process) -> dict[str, dict]:
                 process_dict[stage["name"]][step["name"]] = {"config": step_obj.processstepinput.configuration}
 
     return process_dict
+
+
+def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[HostName]:
+    return sorted(
+        Host.objects.values_list("fqdn", flat=True).filter(
+            id__in=ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=action_host_group_id).values_list(
+                "host_id", flat=True
+            )
+        )
+    )

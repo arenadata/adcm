@@ -11,15 +11,15 @@
 # limitations under the License.
 
 from contextlib import suppress
+from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Generator, Hashable, Iterable, TypeAlias
+from typing import Any, Hashable, Iterable, TypeAlias
 import warnings
 import collections.abc
 
 from adcm_version import compare_adcm_versions
 from ruyaml.error import ReusedAnchorWarning
-from typing_extensions import TypedDict
 import yaml
 import ruyaml
 
@@ -33,12 +33,14 @@ from core.bundle_alt.errors import (
 )
 from core.bundle_alt.representation import build_parent_key_safe, repr_from_key, repr_from_raw
 from core.bundle_alt.schema import (
+    ActionProcessSpec,
+    ActionProcessStage,
     ADCMSchema,
     ClusterSchema,
     ComponentSchema,
+    DynamicScriptsSchema,
     HostSchema,
     ProviderSchema,
-    ScriptsJinjaSchema,
     ServiceSchema,
     parse,
 )
@@ -52,12 +54,14 @@ _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
 _RelativePath: TypeAlias = str
 
 
-class ScriptJinjaContext(TypedDict):
+@dataclass(slots=True)
+class ScriptsConversionContext:
     source_dir: Path
     action_allow_to_terminate: bool
 
 
-class ConfigJinjaContext(TypedDict):
+@dataclass(slots=True)
+class ConfigConversionContext:
     bundle_root: Path
     path: str  # dir with jinja template, relative to bundle root
     object: dict
@@ -185,15 +189,24 @@ def retrieve_bundle_definitions(
 
 
 @convert_validation_to_bundle_error
-def parse_scripts_jinja(data: list[dict], context: ScriptJinjaContext) -> Generator[JobSpec, None, None]:
-    scripts = ScriptsJinjaSchema.model_validate({"scripts": data}, strict=True)
+def parse_action_process_stages(data: list[dict]) -> list[ActionProcessStage]:
+    input_ = {"stages": data}
+    result = ActionProcessSpec.model_validate(input_, strict=True)
+    return result.stages
+
+
+@convert_validation_to_bundle_error
+def parse_scripts(data: list[dict], context: ScriptsConversionContext) -> list[JobSpec]:
+    scripts = DynamicScriptsSchema.model_validate({"scripts": data}, strict=True)
     scripts = scripts.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
     for script in scripts:  # propagate `allow_to_terminate` attr from action if not set
         if not script.get("allow_to_terminate"):
-            script["allow_to_terminate"] = context["action_allow_to_terminate"]
+            script["allow_to_terminate"] = context.action_allow_to_terminate
 
-    yield from extract_scripts(scripts=scripts, path_resolution_root=context["source_dir"])
+    scripts = extract_scripts(scripts=scripts, path_resolution_root=context.source_dir)
+
+    return scripts or []
 
 
 def _normalize_definitions(

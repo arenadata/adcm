@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal, NamedTuple, Protocol, TypeAlias
 
-from core.job.types import JobSpec, WizardTemplate
+from core.job.types import JobSpec
+from core.templates import Template
 
 
 class WithName(Protocol):
@@ -125,7 +126,7 @@ class ActionDefinition:
     config_jinja: str | None = None
 
     hostcomponentmap: list = field(default_factory=list)
-    wizard_template: WizardTemplate | None = None
+    wizard_template: Template | None = None
 
     # Task completion
     on_success: OnCompletion = field(default_factory=OnCompletion)

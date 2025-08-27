@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Generator, TypeAlias
 from uuid import uuid4
 
-from core.bundle_alt.schema import WizardStage, WizardStep
+from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID, TaskID
 from django.conf import settings
 
@@ -36,7 +36,9 @@ def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
     return Path(settings.BUNDLE_DIR, hash_)
 
 
-def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: list[WizardStage]) -> ActionProcess:
+def create_process(
+    object_: CoreObjectDescriptor, action_id: ActionID, stages: list[ActionProcessStage]
+) -> ActionProcess:
     process = Process.objects.create(
         action_id=action_id,
         object_id=object_.id,
@@ -49,7 +51,7 @@ def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: l
     return ActionProcess.model_validate(process, from_attributes=True)
 
 
-def create_stages(process_id: ActionProcessID, stages: list[WizardStage]) -> None:
+def create_stages(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> None:
     objects = []
     for stage in stages:
         for step in stage.steps:
@@ -94,7 +96,7 @@ def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, Non
     flow_spec = retrieve_process(process_id=process_id).flow_spec
     for step_orm in ProcessStep.objects.filter(process_id=process_id, **kwargs).order_by("id"):
         step_spec_raw = find_step_spec(step=step_orm, process_flow_spec=flow_spec)
-        step_orm.type = step_spec_raw.step_type
+        step_orm.type = step_spec_raw.type
 
         yield Step.model_validate(step_orm, from_attributes=True)
 
@@ -113,7 +115,7 @@ def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
     Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
 
 
-def find_step_spec(step: Step, process_flow_spec: list[WizardStage]) -> WizardStep:
+def find_step_spec(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
     if not process_flow_spec:
         raise RuntimeError("process.flow_spec is empty")
 

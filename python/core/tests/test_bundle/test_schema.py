@@ -17,9 +17,9 @@ import yaml
 
 from core.bundle_alt.schema import (
     TYPE_SCHEMA_MAP,
+    ActionProcessSpec,
     InternalConfigApplyScriptSchema,
     TaskSchema,
-    Wizard,
     _BaseUpgradeSchema,
 )
 
@@ -1199,8 +1199,6 @@ class TestBundleSchema(TestCase):
 class TestWizardSchema(TestCase):
     def test_correct_task_format_success(self):
         yaml_input_of_jinja = """
-            name: ssl_kerberos_wizard
-            display_name: "SSL & Kerberos Setup"
             stages:
               - name: manage_ssl_stage
                 display_name: "Manage SSL"
@@ -1247,13 +1245,11 @@ class TestWizardSchema(TestCase):
                     """
 
         parsed_data = yaml.safe_load(yaml_input_of_jinja)
-        validated_model = Wizard.model_validate(parsed_data)
-        self.assertIsInstance(validated_model, Wizard)
+        validated_model = ActionProcessSpec.model_validate(parsed_data)
+        self.assertIsInstance(validated_model, ActionProcessSpec)
 
     def test_prohibited_file_format_fail(self):
         yaml_input_of_jinja = """
-            name: ssl_kerberos_wizard
-            display_name: "SSL & Kerberos Setup"
             stages:
                 - name: save_stage
                   display_name: "Save configuration"
@@ -1271,7 +1267,7 @@ class TestWizardSchema(TestCase):
         """
         with self.assertRaises(ValidationError, msg="Script path should be valid and not be external folder"):
             parsed_data = yaml.safe_load(yaml_input_of_jinja)
-            Wizard.model_validate(parsed_data)
+            ActionProcessSpec.model_validate(parsed_data)
 
     def test_hc_acl_and_wizard_mutually_exclusive_fail(self):
         yaml_input_of_jinja = """
@@ -1336,8 +1332,6 @@ class TestWizardSchema(TestCase):
 
     def test_step_names_unique_fail(self):
         yaml_input_of_jinja = """
-            name: ssl_kerberos_wizard
-            display_name: "SSL & Kerberos Setup"
             stages:
               - name: manage_ssl_stage
                 display_name: "Manage SSL"
@@ -1359,7 +1353,7 @@ class TestWizardSchema(TestCase):
         """
         with self.assertRaises(ValidationError, msg="step names should be unique"):
             parsed_data = yaml.safe_load(yaml_input_of_jinja)
-            Wizard.model_validate(parsed_data)
+            ActionProcessSpec.model_validate(parsed_data)
 
     def test_entrypoint_specified_for_jinja_fail(self):
         yaml_input_of_jinja = """

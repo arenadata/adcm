@@ -20,6 +20,7 @@ from core.templates._types import (
     PythonTemplate,
     RenderEngineType,
     RendererEnv,
+    Template,
     TemplateFile,
     TemplateFileWithEntrypoint,
     TemplateRenderer,
@@ -39,4 +40,5 @@ __all__ = [
     "TemplateRenderer",
     "TemplateRendererJinja2",
     "TemplateRendererPython",
+    "Template",
 ]

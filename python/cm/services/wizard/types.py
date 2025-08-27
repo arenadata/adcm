@@ -14,7 +14,8 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
-from core.bundle_alt.schema import WizardStage, _WizardNames
+from core.bundle_alt.schema import ActionProcessStage, _WizardNames
+from core.job.types import StepType
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -42,16 +43,11 @@ class StepUpdateDTO(BaseModel):
     state: ProcessStepState | None = None
 
 
-class StepType(str, Enum):
-    CONFIGURATION = "configuration"
-    OPERATION = "operation"
-
-
 class ActionProcess(BaseModel):
     id: ActionProcessID
     object_id: ObjectID
     object_type: ADCMCoreType
-    flow_spec: list[WizardStage] = Field(..., min_length=1)
+    flow_spec: list[ActionProcessStage] = Field(..., min_length=1)
     sync_key: UUID
 
 

@@ -94,10 +94,16 @@ class TemplateRendererJinja2(TemplateRenderer):
 
     def _read_template(self) -> Template:
         j2_env = self._prepare_environment()
-        return j2_env.get_template(str(self.args.path))
+        template_name = str(self.args.path.name)
+        return j2_env.get_template(template_name)
 
     def _prepare_environment(self) -> Environment:
-        paths_to_load = [str(self.env.discovery_root)]
+        # Path discovery entries and order are important:
+        # they affect both template discovering and path resolution in jinja2 runtime.
+        bundle_root = self.env.discovery_root
+        script_dir_within_bundle = bundle_root / self.args.path.parent
+        paths_to_load = [str(script_dir_within_bundle), str(bundle_root)]
+
         loader = FileSystemLoader(paths_to_load)
         autoescape = select_autoescape(default_for_string=False, enabled_extensions=("html", "htm"))
         # S701 suggests to use select autoescape, but not smart enough to check out that it's used

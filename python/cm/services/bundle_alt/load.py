@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import cache
 from operator import methodcaller
 from pathlib import Path
@@ -27,7 +27,7 @@ from core.bundle_alt._config import check_default_values_in_jinja_config
 from core.bundle_alt.bundle_load import get_hash_safe, untar_safe
 from core.bundle_alt.convertion import extract_config
 from core.bundle_alt.errors import convert_validation_to_bundle_error
-from core.bundle_alt.process import ConfigJinjaContext, retrieve_bundle_definitions
+from core.bundle_alt.process import ConfigConversionContext, retrieve_bundle_definitions
 from core.bundle_alt.schema import ConfigJinjaSchema
 from core.errors import localize_error
 from django.conf import settings
@@ -38,7 +38,7 @@ from rbac.upgrade.role import prepare_action_roles
 import ruyaml
 
 from cm.errors import AdcmEx
-from cm.models import ADCM, Bundle, PrototypeConfig, SignatureStatus
+from cm.models import ADCM, Action, Bundle, PrototypeConfig, SignatureStatus
 from cm.services.bundle_alt import repo
 from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 
@@ -93,11 +93,11 @@ def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: 
 
 
 @convert_validation_to_bundle_error
-def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action, prototype) -> list[PrototypeConfig]:
+def parse_config_jinja(data: list[dict], context: ConfigConversionContext, *, action: Action) -> list[PrototypeConfig]:
     config = ConfigJinjaSchema.model_validate({"config": data}, strict=True)
     config = config.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
 
-    definition = extract_config(config=config, context=context)
+    definition = extract_config(config=config, context=asdict(context))
 
     if not definition:
         return []
@@ -108,7 +108,9 @@ def parse_config_jinja(data: list[dict], context: ConfigJinjaContext, *, action,
         attributes=definition.default_attrs,
     )
 
-    orm_entries = repo.convert_config_definition_to_orm_model(definition=definition, prototype=prototype, action=action)
+    orm_entries = repo.convert_config_definition_to_orm_model(
+        definition=definition, prototype=action.prototype, action=action
+    )
 
     return list(orm_entries)
 

@@ -10,14 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ._context import ActionArgs, TaskArgs
+from ._render import Environment, render_config, render_process, render_scripts
 
-from core.bundle_alt.schema import ActionProcessStage
-
-
-def convert_stages(stages_raw: list[dict]) -> list[ActionProcessStage]:
-    stages = []
-
-    for stage in stages_raw:
-        stages.append(ActionProcessStage.model_validate(stage))
-
-    return stages
+__all__ = ["ActionArgs", "TaskArgs", "Environment", "render_process", "render_config", "render_scripts"]

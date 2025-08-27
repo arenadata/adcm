@@ -14,9 +14,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, field_serializer, field_validator
+from pydantic import BaseModel, Discriminator, Field, Tag, field_serializer, field_validator
 
 from core.bundle_alt.schema_validation import script_is_correct_path
 
@@ -100,3 +100,18 @@ class Jinja2Engine(BaseModel):
 class Jinja2Template(BaseModel):
     engine: Jinja2Engine
     file: TemplateFile
+
+
+# Template Generics
+
+
+def engine_type_discriminator(value):
+    if isinstance(value, dict):
+        return value.get("engine", {}).get("type")
+    return getattr(value.engine, "type", None)
+
+
+Template = Annotated[
+    Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
+    Field(discriminator=Discriminator(engine_type_discriminator)),
+]
