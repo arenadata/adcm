@@ -72,9 +72,15 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
     def get_parent_and_action_supporting_wizard(self) -> tuple[ParentObject, ActionInfo]:
         parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
 
-        action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
+        try:
+            action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
+        except Action.DoesNotExist:
+            raise NotFound("Action not found") from None
+
         if not action.wizard_template:
-            raise RuntimeError(f"Action #{action.id} does not support wizard functionality.")
+            raise AdcmEx(
+                code="WIZARD_ACTION_NOT_SUITABLE", msg=f"Action #{action.id} does not support wizard functionality."
+            )
 
         return parent_object, action
 
