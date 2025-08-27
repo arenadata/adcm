@@ -79,6 +79,7 @@ from api_v2.generic.config_host_group.audit import (
     audit_host_config_host_group_viewset,
 )
 from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
+from api_v2.generic.wizard.audit import audit_action_process_viewset
 from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.utils.audit import (
     component_from_lookup,
@@ -304,6 +305,7 @@ class ComponentConfigViewSet(ConfigLogViewSet):
 
 
 # TODO: document, audit
+@audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
 class ComponentActionProcessViewSet(ActionProcessViewSet):
     ...
 
