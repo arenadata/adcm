@@ -17,9 +17,7 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
-    Discriminator,
     Field,
-    Tag,
     conlist,
     field_validator,
     model_validator,
@@ -39,7 +37,8 @@ from core.bundle_alt.schema_validation import (
     script_is_correct_path,
     validate_name,
 )
-from core.templates import Jinja2Template, PythonTemplate
+from core.job.types import StepType
+from core.templates import Template
 
 VERSION: TypeAlias = int | float | str
 VENV: TypeAlias = Annotated[
@@ -546,37 +545,9 @@ class VersionsSchema(_BaseModel):
         return self
 
 
-#########
-# WIZARD
-#########
-
-
-class PythonEngine(_BaseModel):
-    type: Literal["python"]
-
-
-class Jinja2Engine(_BaseModel):
-    type: Literal["jinja2"]
-
-
-class PathToFile(_BaseModel):
-    path: Annotated[str, AfterValidator(script_is_correct_path)]
-
-
-class PathWithEntrypoint(PathToFile):
-    entrypoint: str
-
-
-def engine_type_discriminator(value):
-    if isinstance(value, dict):
-        return value.get("engine", {}).get("type")
-    return getattr(value.engine, "type", None)
-
-
-WizardTemplate = Annotated[
-    Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
-    Field(discriminator=Discriminator(engine_type_discriminator)),
-]
+##########################
+# ACTION PROCESS (WIZARD)
+##########################
 
 
 class _WizardNames(_BaseModel):
@@ -584,56 +555,46 @@ class _WizardNames(_BaseModel):
     display_name: str
 
 
-# ------------------------
 # Step Schemas
-# ------------------------
 
 
-class WizardStepOperation(_BaseModel):
+class _StepOperationUIOptions(_BaseModel):
     button_name: str
 
 
-class WizardStep(_WizardNames):
-    ui_options: WizardStepOperation | None = None
-    config_template: WizardTemplate | None = None
-    scripts_template: WizardTemplate | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def exclusive_templates(cls, data: Any):
-        config_template = "config_template" in data
-        scripts_template = "scripts_template" in data
-
-        if config_template and scripts_template:
-            raise ValueError('"config_template" and "scripts_template" are mutually exclusive')
-
-        if not config_template and not scripts_template:
-            raise ValueError('either "config_template" or "scripts_template" should be set')
-
-        return data
+class OperationStep(_WizardNames):
+    scripts_template: Template
+    ui_options: _StepOperationUIOptions | None = None
 
     @property
-    def step_type(self) -> str:  # TODO: cm.services.wizard.types.StepType (ADCM-6812)
-        if self.config_template is not None:
-            return "configuration"
-
-        if self.scripts_template is not None:
-            return "operation"
+    def type(self) -> StepType:
+        return StepType.OPERATION
 
     @property
-    def template(self) -> WizardTemplate:
-        for template in (self.config_template, self.scripts_template):
-            if template:
-                return template
+    def template(self) -> Template:
+        return self.scripts_template
 
 
-# ------------------------
-# Stage & Wizard Schema
-# ------------------------
+class ConfigurationStep(_WizardNames):
+    config_template: Template
+
+    @property
+    def type(self) -> StepType:
+        return StepType.CONFIGURATION
+
+    @property
+    def template(self) -> Template:
+        return self.config_template
 
 
-class WizardStage(_WizardNames):
-    steps: list[WizardStep] = Field(..., min_length=1, description="At least one step is required in a stage")
+ActionProcessStep = OperationStep | ConfigurationStep
+
+
+# Stage & Action Process Schema
+
+
+class ActionProcessStage(_WizardNames):
+    steps: list[ActionProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
 
     @model_validator(mode="after")
     def steps_names_are_unique(self):
@@ -641,12 +602,14 @@ class WizardStage(_WizardNames):
         for step in self.steps:
             if step.name in step_names:
                 raise ValueError(f"Duplicate step name: {step.name}")
+
             step_names.add(step.name)
+
         return self
 
 
-class Wizard(_WizardNames):
-    stages: list[WizardStage]
+class ActionProcessSpec(_BaseModel):
+    stages: list[ActionProcessStage]
 
     @model_validator(mode="after")
     def stage_names_are_unique(self):
@@ -654,8 +617,15 @@ class Wizard(_WizardNames):
         for stage in self.stages:
             if stage.name in stage_names:
                 raise ValueError(f"Duplicate stage name: {stage.name}")
+
             stage_names.add(stage.name)
+
         return self
+
+
+###########
+# Upgrades
+###########
 
 
 class _BaseUpgradeSchema(_BaseModel):
@@ -729,7 +699,7 @@ class _BaseActionSchema(_BaseModel):
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
-    wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
+    wizard_template: Annotated[Template | None, Field(default=None)]
 
     @model_validator(mode="before")
     @classmethod
@@ -1111,7 +1081,7 @@ def parse(
 ###############
 
 
-class ScriptsJinjaSchema(_BaseModel):
+class DynamicScriptsSchema(_BaseModel):
     scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
 
 

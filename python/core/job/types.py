@@ -15,10 +15,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal, NamedTuple
 
-from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag
+from pydantic import BaseModel, ConfigDict, Field
 
-from core.bundle_alt.schema import engine_type_discriminator
-from core.templates import Jinja2Template, PythonTemplate
+from core.templates import Template
 from core.types import (
     ActionID,
     ADCMCoreType,
@@ -52,18 +51,12 @@ class ScriptType(str, Enum):
     INTERNAL = "internal"
 
 
-WizardTemplate = Annotated[
-    Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
-    Field(discriminator=Discriminator(engine_type_discriminator)),
-]
-
-
 class ActionInfo(BaseModel):
     id: ActionID
     name: str
     owner_prototype: PrototypeDescriptor
     scripts_jinja: str
-    wizard_template: WizardTemplate | None
+    wizard_template: Template | None
 
 
 class StateChanges(NamedTuple):
@@ -199,3 +192,8 @@ class Job(BaseModel):
     params: JobParams
 
     on_fail: StateChanges
+
+
+class StepType(str, Enum):
+    OPERATION = "operation"
+    CONFIGURATION = "configuration"
