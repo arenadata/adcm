@@ -42,7 +42,7 @@ from core.templates import Template
 
 VERSION: TypeAlias = int | float | str
 VENV: TypeAlias = Annotated[
-    Literal["default", "2.8", "2.9"] | None,
+    Literal["default", "2.8", "2.9", "2.16"] | None,
     Field(default=None),
     # fixme cast is too broad, but required since round trip load
     BeforeValidator(lambda x: str(x) if x is not None else x),
