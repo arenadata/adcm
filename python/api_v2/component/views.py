@@ -79,6 +79,7 @@ from api_v2.generic.config_host_group.audit import (
     audit_host_config_host_group_viewset,
 )
 from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
+from api_v2.generic.wizard.api_schema import document_action_process_step_viewset, document_action_process_viewset
 from api_v2.generic.wizard.audit import audit_action_process_viewset
 from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.utils.audit import (
@@ -304,12 +305,13 @@ class ComponentConfigViewSet(ConfigLogViewSet):
     ...
 
 
-# TODO: document, audit
 @audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
+@document_action_process_viewset(object_type="component")
 class ComponentActionProcessViewSet(ActionProcessViewSet):
     ...
 
 
 # TODO: document, audit
+@document_action_process_step_viewset(object_type="component")
 class ComponentActionProcessStepViewSet(ProcessStepViewSet):
     ...

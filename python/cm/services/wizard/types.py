@@ -59,7 +59,7 @@ class Step(_WizardNames):
     type: Literal[StepType.CONFIGURATION, StepType.OPERATION]
     state: ProcessStepState
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", use_enum_values=True)
 
     @property
     def is_render_required(self) -> bool:

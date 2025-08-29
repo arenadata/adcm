@@ -101,3 +101,12 @@ class OperationSerializer(Serializer):
             raise DRFValidationError(detail=e) from e
 
         return validated
+
+
+class StepConfigurationSerializer(StepSerializer):
+    configuration = DictField()
+
+
+class StepOperationSerializer(StepSerializer):
+    ui_options = DictField()
+    task = DictField(allow_null=True, required=False)
