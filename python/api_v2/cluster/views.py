@@ -137,6 +137,7 @@ from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
+from api_v2.generic.wizard.api_schema import document_action_process_step_viewset, document_action_process_viewset
 from api_v2.generic.wizard.audit import audit_action_process_viewset
 from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.host.filters import ClusterHostFilter
@@ -1031,12 +1032,13 @@ class ClusterUpgradeViewSet(UpgradeViewSet):
     ...
 
 
-# TODO: document, audit
 @audit_action_process_viewset(retrieve_owner=parent_cluster_from_lookup)
+@document_action_process_viewset(object_type="cluster")
 class ClusterActionProcessViewSet(ActionProcessViewSet):
     ...
 
 
 # TODO: document, audit
+@document_action_process_step_viewset(object_type="cluster")
 class ClusterActionProcessStepViewSet(ProcessStepViewSet):
     ...

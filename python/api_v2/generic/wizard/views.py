@@ -42,14 +42,20 @@ from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjec
 from django.db.transaction import atomic
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.generic.action.utils import get_schema_config_meta
 from api_v2.generic.action.views import ActionPermissionsMixin
 from api_v2.generic.config.utils import convert_attr_to_adcm_meta
-from api_v2.generic.wizard.serializers import OperationSerializer, ProcessSerializer, StepSerializer
+from api_v2.generic.wizard.serializers import (
+    OperationSerializer,
+    ProcessSerializer,
+    StepConfigurationSerializer,
+    StepOperationSerializer,
+    StepSerializer,
+)
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -152,9 +158,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         return super().handle_exception(self.exc_conversion_map.get(exc.__class__, exc))
 
 
-class ProcessStepViewSet(
-    GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet, ActionPermissionsMixin
-):
+class ProcessStepViewSet(GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = ProcessStep.objects.all()
     serializer_class = StepSerializer
 
@@ -174,14 +178,19 @@ class ProcessStepViewSet(
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
         data = step.model_dump(include={"id", "display_name", "type", "state"})
 
-        extra = serialize_step(process_id=process_id, step_id=step_id, action_id=action_id, object_=object_)
-        data.update(**extra)
+        serialized_data = serialize_step(
+            process_id=process_id, step_id=step_id, action_id=action_id, object_=object_, base_data=data
+        )
 
-        return Response(data=data, status=HTTP_200_OK)
+        return Response(data=serialized_data, status=HTTP_200_OK)
 
 
 def serialize_step(
-    process_id: ActionProcessID, step_id: ActionProcessStepID, action_id: ActionID, object_: CoreObjectDescriptor
+    process_id: ActionProcessID,
+    step_id: ActionProcessStepID,
+    action_id: ActionID,
+    object_: CoreObjectDescriptor,
+    base_data: dict,
 ) -> SerializedConfigStep | SerializedOperationStep:
     process = repo.retrieve_process(process_id=process_id)
     step = repo.retrieve_step(process_id=process_id, step_id=step_id)
@@ -197,10 +206,15 @@ def serialize_step(
     match step.type:
         case StepType.CONFIGURATION:
             return _serialize_config_step(
-                step=step, step_spec_raw=step_spec_raw, action_id=action_id, object_=object_, step_input=step_input
+                step=step,
+                step_spec_raw=step_spec_raw,
+                action_id=action_id,
+                object_=object_,
+                step_input=step_input,
+                base_data=base_data,
             )
         case StepType.OPERATION:
-            return _serialize_operation_step(step_spec_raw=step_spec_raw, step_input=step_input)
+            return _serialize_operation_step(step_spec_raw=step_spec_raw, step_input=step_input, base_data=base_data)
         case _:
             raise NotImplementedError(f"Can't serialize {step.type} step.")
 
@@ -211,6 +225,7 @@ def _serialize_config_step(
     action_id: ActionID,
     object_: CoreObjectDescriptor,
     step_input: ProcessStepInput | None,
+    base_data: dict,
 ) -> SerializedConfigStep:
     action_orm = repo.retrieve_action_orm(action_id=action_id)
     object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
@@ -236,11 +251,13 @@ def _serialize_config_step(
         config = step_input.configuration["config"]
         meta = convert_attr_to_adcm_meta(step_input.configuration["attr"])
 
-    return {"configuration": {"config_schema": schema, "adcm_meta": meta, "config": config}}
+    return StepConfigurationSerializer(
+        base_data | {"configuration": {"config_schema": schema, "adcm_meta": meta, "config": config}}
+    ).data
 
 
 def _serialize_operation_step(
-    step_spec_raw: ActionProcessStep, step_input: ProcessStepInput | None
+    step_spec_raw: ActionProcessStep, step_input: ProcessStepInput | None, base_data: dict
 ) -> SerializedOperationStep:
     ui_options = step_spec_raw.model_dump(include={"ui_options"}).get("ui_options")
 
@@ -249,7 +266,7 @@ def _serialize_operation_step(
         task = {"id": step_input.job_id}
 
     # TODO: get job based on ProcessStepInput
-    return {"ui_options": ui_options, "task": task}
+    return StepOperationSerializer(base_data | {"ui_options": ui_options, "task": task}).data
 
 
 def _render_step_from_flow_spec(
