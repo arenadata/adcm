@@ -11,9 +11,13 @@
 # limitations under the License.
 
 from audit.models import AuditLogOperationType
-from cm.models import ADCM, Action, Cluster, Component, Service
+from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from cm.services.wizard.schema_validation import ProcessOperationType
+from cm.services.wizard.types import ProcessStepState
 from rest_framework.status import (
+    HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -38,6 +42,107 @@ class TestActionProcessAudit(BaseAPITestCase):
     def get_object_wizard_action(self, obj: Cluster | Service | Component) -> Action:
         return Action.objects.get(name="wizard_jinja", prototype=obj.prototype)
 
+    def start_process(self, obj: Cluster | Service | Component):
+        endpoint = self.get_endpoint_to_processes(obj)
+        response = endpoint.post(data={})
+        return response.json()["id"]
+
+    def get_endpoint_to_processes(self, obj: Cluster | Service | Component):
+        return self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"]
+
+    def get_process(self, process_id: int) -> Process:
+        return Process.objects.get(pk=process_id)
+
+    def _fill_wizard_steps_for_process(self, process_id: int, test_spec, previous_step_names) -> None:
+        # Fill previous steps' `step_spec`, create inputs for them
+        for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
+            step.step_spec = test_spec
+            step.state = ProcessStepState.COMPLETED
+            step.save(update_fields=["step_spec", "state"])
+            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+
+    def test_audit_record_process_operation(self):
+        test_spec, previous_step_names = {"test": "spec"}, {"stage1_step1", "stage2_step1"}
+
+        process = self.get_process(self.start_process(self.cluster_1))
+        action = self.get_object_wizard_action(self.cluster_1)
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_step1", display_name="Stage1.Step1"
+        )
+
+        with self.subTest(f"submit process step for {self.cluster_1} fail (bad request)"):
+            response = self.client.v2[self.cluster_1, "actions", action.pk, "processes", process.id, "operation"].post()
+
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            self.check_last_audit_record(
+                operation_name=f"Operation for process {process.id} of action {action.display_name}",
+                operation_result="fail",
+                operation_type=AuditLogOperationType.UPDATE,
+                **self.prepare_audit_object_arguments(expected_object=self.cluster_1, is_deleted=False),
+                user__username="admin",
+            )
+
+        with self.subTest(f"submit process step for {self.cluster_1} fail (no permissions"):
+            self.client.login(**self.test_user_credentials)
+
+            response = self.client.v2[self.cluster_1, "actions", action.pk, "processes", process.id, "operation"].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
+                }
+            )
+
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+            self.check_last_audit_record(
+                operation_name=f"Operation {ProcessOperationType.SUBMIT.value} for process {process.id}"
+                f" of action {action.display_name}",
+                operation_result="denied",
+                operation_type=AuditLogOperationType.UPDATE,
+                **self.prepare_audit_object_arguments(expected_object=self.cluster_1, is_deleted=False),
+                user__username=self.test_user_credentials["username"],
+            )
+
+        self.client.login(username="admin", password="admin")
+
+        for obj in (self.cluster_1, self.service_1, self.component_1):
+            with self.subTest(f"submit process step for {obj} success"):
+                process = self.get_process(self.start_process(obj))
+                target_operation_step = ProcessStep.objects.get(
+                    process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
+                )
+                self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
+                action = self.get_object_wizard_action(obj)
+
+                # render step
+                response = self.client.v2[
+                    obj,
+                    "actions",
+                    action.pk,
+                    "processes",
+                    process.id,
+                    "steps",
+                    target_operation_step.id,
+                ].get()
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {"step_id": target_operation_step.id, "process_sync_key": process.sync_key},
+                    }
+                )
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.check_last_audit_record(
+                    operation_name=f"Operation {ProcessOperationType.SUBMIT.value} for process {process.id}"
+                    f" of action {action.display_name}",
+                    operation_result="success",
+                    operation_type=AuditLogOperationType.UPDATE,
+                    **self.prepare_audit_object_arguments(expected_object=obj, is_deleted=False),
+                    user__username="admin",
+                )
+                ConcernItem.objects.all().delete()
+
     def test_audit_record_process_create(self):
         with self.subTest(f"create process for {self.cluster_1} (access denied)"):
             self.client.login(**self.test_user_credentials)
@@ -47,7 +152,7 @@ class TestActionProcessAudit(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
             self.check_last_audit_record(
                 operation_name=f"Process of action {action.display_name} created",
-                operation_result="fail",
+                operation_result="denied",
                 operation_type=AuditLogOperationType.CREATE,
                 **self.prepare_audit_object_arguments(expected_object=self.cluster_1, is_deleted=False),
                 user__username=self.test_user_credentials["username"],
@@ -55,7 +160,6 @@ class TestActionProcessAudit(BaseAPITestCase):
 
         with self.subTest(f"create process for {self.cluster_1} (not found)"):
             self.client.login(username="admin", password="admin")
-            action = self.get_object_wizard_action(self.cluster_1)
             response = self.client.v2[self.cluster_1, "actions", 999, "processes"].post(data={})
 
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
