@@ -76,7 +76,7 @@ class JobRepoInterface(Protocol):
     # this function should be revisioned alongside action-process coupling,
     # now it's aimed to do a lot of work, some of which isn't suited for repo
     @staticmethod
-    def set_state_of_job_related_process_step(step_id: int, state: str) -> None:
+    def set_state_of_job_related_process_step(process_id: int, step_id: int, state: str) -> None:
         ...
 
 

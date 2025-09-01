@@ -13,13 +13,13 @@
 from functools import partial
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, Collection, TypeAlias
 from unittest.mock import patch
 from uuid import uuid4
 import json
 import unittest
 
-from cm.converters import orm_object_to_core_type
+from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.models import (
     ADCM,
     Action,
@@ -41,6 +41,8 @@ from cm.models import (
 )
 from cm.services.jinja_env import _get_action_info
 from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.wizard.operations import OperationContext, find_current_and_last_completed_steps
+from cm.services.wizard.render_step import RenderStepContext, render_step
 from cm.services.wizard.schema_validation import ProcessOperationType, SubmitStepPayload
 from cm.services.wizard.types import ProcessState, ProcessStepState
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -789,9 +791,12 @@ class TestWizard(BaseAPITestCase):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
-    def _fill_wizard_steps_for_process(self, process_id: int, test_spec, previous_step_names) -> None:
-        # Fill previous steps' `step_spec`, create inputs for them
-        for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
+    @staticmethod
+    def _set_completed_fill_specs_create_inputs_for_steps_by_name(
+        process_id: int, test_spec, step_names: Collection[str]
+    ) -> None:
+        # Fill previous steps' `step_spec`, create inputs for them, set `completed` state
+        for step in ProcessStep.objects.filter(process_id=process_id, name__in=step_names):
             step.step_spec = test_spec
             step.state = ProcessStepState.COMPLETED
             step.save(update_fields=["step_spec", "state"])
@@ -859,6 +864,14 @@ class TestWizard(BaseAPITestCase):
 
                     self.assertDictContainsSubset(expected_response, response)
 
+                    first_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1")
+                    self.assertIsNotNone(first_step.step_spec)
+                    self.assertEqual(first_step.state, ProcessStepState.CREATED)
+
+                    rest_steps_qs = ProcessStep.objects.filter(process_id=process.id, id__ne=first_step.id)
+                    self.assertSetEqual(set(rest_steps_qs.values_list("step_spec", flat=True)), {None})
+                    self.assertSetEqual(set(rest_steps_qs.values_list("state", flat=True)), {ProcessStepState.CREATED})
+
     def test_retrieve_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
         target_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
@@ -921,6 +934,11 @@ class TestWizard(BaseAPITestCase):
         process = self.get_process(self.start_process(self.cluster_1))
         target_step = ProcessStep.objects.get(process_id=process.id, name="stage2_step2", display_name="Stage2.Step2")
 
+        previous_step_names = {"stage1_step1", "stage2_step1"}
+        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process_id=process.id, test_spec={"test": "data"}, step_names=previous_step_names
+        )
+
         self.client.login(**self.test_user_credentials)
 
         with self.subTest("No view permissions"):
@@ -950,6 +968,22 @@ class TestWizard(BaseAPITestCase):
 
         self.client.login(username="admin", password="admin")
 
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(target_step.id, current_step_id)
+        self.assertEqual(current_step_id - 1, last_completed_step_id)
+
+        render_step(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.cluster_wizard_action.id,
+                object=orm_object_to_core_descriptor(self.cluster_1),
+            ),
+        )
+        cluster_state = self.cluster_1.state
+
         with self.subTest("All permissions"):
             for obj in (self.cluster_1, self.service_1, self.component_1):
                 with self.subTest(f"retrieve operation for {obj}"):
@@ -972,8 +1006,8 @@ class TestWizard(BaseAPITestCase):
                         {
                             "display_name": "Sleep",
                             "name": "sleep_script",
-                            "params": {"test_params": ["new_state"]},
-                            "script": "scripts/sleep.yaml",
+                            "params": {"test_params": [cluster_state]},
+                            "script": "wizard_jinja/scripts/sleep.yaml",
                             "script_type": "ansible",
                         }
                     ]
@@ -1001,7 +1035,9 @@ class TestWizard(BaseAPITestCase):
             with self.subTest(f"wizard action of {obj} with process"):
                 process = self.get_process(self.start_process(obj))
 
-                self._fill_wizard_steps_for_process(process.id, {"test": "spec"}, {"stage1_step1", "stage2_step1"})
+                self._set_completed_fill_specs_create_inputs_for_steps_by_name(
+                    process.id, {"test": "spec"}, {"stage1_step1", "stage2_step1"}
+                )
 
                 response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk].get()
                 self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1017,8 +1053,7 @@ class TestWizard(BaseAPITestCase):
             process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
         )
 
-        self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
-
+        self._set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, test_spec, previous_step_names)
         self.client.login(**self.test_user_credentials)
 
         with self.subTest("No view permissions"):
@@ -1050,16 +1085,18 @@ class TestWizard(BaseAPITestCase):
 
         with self.subTest("All permissions"):
             # render step
-            response = self.client.v2[
-                self.cluster_1,
-                "actions",
-                self.cluster_wizard_action.pk,
-                "processes",
-                process.id,
-                "steps",
-                target_operation_step.id,
-            ].get()
-            self.assertEqual(response.status_code, HTTP_200_OK)
+            current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+                steps=ProcessStep.objects.filter(process_id=process.id)
+            )
+            self.assertEqual(current_step_id, target_operation_step.id)
+            render_step(
+                step_id=current_step_id,
+                context=RenderStepContext(
+                    process_id=process.id,
+                    action_id=self.cluster_wizard_action.pk,
+                    object=orm_object_to_core_descriptor(self.cluster_1),
+                ),
+            )
 
             self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
             self.assertFalse(TaskLog.objects.filter(action=self.cluster_wizard_action).exists())
@@ -1084,7 +1121,7 @@ class TestWizard(BaseAPITestCase):
                     "display_name": "Sleep",
                     "name": "sleep_script",
                     "params": {"test_params": ["created"]},
-                    "script": "scripts/sleep.yaml",
+                    "script": "wizard_jinja/scripts/sleep.yaml",
                     "script_type": "ansible",
                 }
             ]
@@ -1108,7 +1145,12 @@ class TestWizard(BaseAPITestCase):
 
     def test_submit_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        self.assertIsNone(process.last_completed_step_id)
+
+        first_step_id = (
+            ProcessStep.objects.filter(process_id=process.id).values_list("id", flat=True).order_by("id").first()
+        )
+        self.assertEqual(process.current_step_id, first_step_id)
+        self.assertIsNone(process.last_completed_step)
 
         process_sync_key_initial = process.sync_key
         target_config_step = ProcessStep.objects.get(
@@ -1116,16 +1158,25 @@ class TestWizard(BaseAPITestCase):
         )
         self.assertEqual(target_config_step.state, ProcessStepState.CREATED)
 
-        # fill `step_spec` with test data, create ProcessStepInputs
         test_step_spec = {"test": "data"}
-        test_config = {"test": "config"}
-        steps_qs = ProcessStep.objects.filter(process_id=process.id)
-        steps_qs.update(step_spec=test_step_spec)
-        for step_id in steps_qs.values_list("id", flat=True):
-            ProcessStepInput.objects.create(step_id=step_id, configuration=test_config, job=None)
+        previous_step_names = {"stage1_step1"}
+        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process_id=process.id, test_spec=test_step_spec, step_names=previous_step_names
+        )
 
-        # make all previous steps 'completed'
-        ProcessStep.objects.filter(id__lt=target_config_step.id).update(state=ProcessStepState.COMPLETED)
+        # render step
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_config_step.id)
+        render_step(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.cluster_wizard_action.pk,
+                object=orm_object_to_core_descriptor(self.cluster_1),
+            ),
+        )
 
         new_config = {"config": {"new": "config"}, "adcm_meta": {}}
         response = self.client.v2[
@@ -1142,12 +1193,22 @@ class TestWizard(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        # check that all next steps' specs are None and there is not ProcessStepInput for them
+        # check that next steps' spec is rendered, no input; rest next steps are without specs and inputs
+        expected_current_step_spec = [{"default": 1, "name": "int", "type": "integer"}]
+        expected_next_step_spec = [
+            {
+                "display_name": "Sleep",
+                "name": "sleep_script",
+                "params": {"test_params": ["created"]},
+                "script": "wizard_jinja/scripts/sleep.yaml",
+                "script_type": "ansible",
+            }
+        ]
         steps_qs = ProcessStep.objects.filter(process_id=process.id)
         expected_step_specs = {
             ("stage1_step1", "Stage1.Step1"): test_step_spec,
-            ("stage2_step1", "Stage2.Step1"): test_step_spec,
-            ("stage2_step2", "Stage2.Step2"): None,
+            ("stage2_step1", "Stage2.Step1"): expected_current_step_spec,
+            ("stage2_step2", "Stage2.Step2"): expected_next_step_spec,
             ("stage3_step1", "Stage3.Step1"): None,
             ("stage4_step1", "Stage4.Step1"): None,
             ("stage4_step2", "Stage4.Step2"): None,
@@ -1159,9 +1220,7 @@ class TestWizard(BaseAPITestCase):
         self.assertDictEqual(actual_step_specs, expected_step_specs)
 
         expected_steps_with_inputs: set[int] = set(
-            steps_qs.exclude(name__in=["stage2_step2", "stage3_step1", "stage4_step1", "stage4_step2"]).values_list(
-                "id", flat=True
-            )
+            steps_qs.filter(name__in={"stage1_step1", "stage2_step1"}).values_list("id", flat=True)
         )
         actual_steps_with_inputs = set(
             ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)).values_list(
@@ -1173,7 +1232,7 @@ class TestWizard(BaseAPITestCase):
         # check inputs' config and job
         input_config = {"attr": new_config.pop("adcm_meta"), **new_config}
         for input_ in ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)):
-            expected_config = input_config if input_.step_id == target_config_step.id else test_config
+            expected_config = input_config if input_.step_id == target_config_step.id else test_step_spec
             self.assertDictEqual(input_.configuration, expected_config)
             self.assertIsNone(input_.job)
 
@@ -1196,16 +1255,15 @@ class TestWizard(BaseAPITestCase):
 
         with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
             payload = {
-                "method": "submit",
+                "method": "submit_step",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id, "configuration": config},
             }
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-        expected_action = ActionRepoImpl.get_action(process.action.pk)
         expected_payload = SubmitStepPayload.model_validate(
             {
-                "method": "submit",
+                "method": "submit_step",
                 "params": {
                     "process_sync_key": process_sync_key,
                     "step_id": step_id,
@@ -1213,8 +1271,13 @@ class TestWizard(BaseAPITestCase):
                 },
             }
         )
+        expected_context = OperationContext(
+            object=orm_object_to_core_descriptor(self.cluster_1),
+            action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
+            config_processor=None,
+        )
         perform_operation_mock.assert_called_once_with(
-            process_id=process.id, payload=expected_payload, object_=self.cluster_1, action=expected_action
+            process_id=process.id, payload=expected_payload, context=expected_context
         )
 
     def test_submit_step_job_called_success(self):
@@ -1230,41 +1293,46 @@ class TestWizard(BaseAPITestCase):
 
         with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
             payload = {
-                "method": "submit",
+                "method": "submit_step",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id},
             }
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-        expected_action = ActionRepoImpl.get_action(process.action.pk)
         expected_payload = SubmitStepPayload.model_validate(
             {**payload, "params": {"process_sync_key": process_sync_key, "step_id": step_id}}
         )
+        expected_context = OperationContext(
+            object=orm_object_to_core_descriptor(self.cluster_1),
+            action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
+            config_processor=None,
+        )
         perform_operation_mock.assert_called_once_with(
-            process_id=process.id, payload=expected_payload, object_=self.cluster_1, action=expected_action
+            process_id=process.id, payload=expected_payload, context=expected_context
         )
 
     def test_reset_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
-        all_steps = ["stage1_step1", "stage2_step1", "stage2_step2", "stage3_step1", "stage4_step1", "stage4_step2"]
-        test_spec, previous_step_names = {"test": "spec"}, ["stage1_step1", "stage2_step1"]
-        new_config = {"config": {"new": "config"}, "adcm_meta": {}}
-
-        self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
-
-        for step_name in all_steps:
-            target_step = ProcessStep.objects.get(process_id=process.id, name=step_name)
-            submit_params = {
-                "method": ProcessOperationType.SUBMIT,
-                "params": {"step_id": target_step.id, "process_sync_key": process.sync_key},
-            }
-            if step_name in ["stage1_step1", "stage2_step1"]:
-                submit_params["params"]["configuration"] = new_config
-            else:
-                target_step.state = ProcessStepState.COMPLETED
-                target_step.save(update_fields=["state"])
-
         target_step_to_reset = ProcessStep.objects.get(process_id=process.id, name="stage3_step1")
+
+        previous_step_names = list(
+            ProcessStep.objects.filter(process_id=process.id, id__lt=target_step_to_reset.id).values_list(
+                "name", flat=True
+            )
+        )
+        current_step_name = [target_step_to_reset.name]
+        next_step_names = list(
+            ProcessStep.objects.filter(process_id=process.id, id__gt=target_step_to_reset.id).values_list(
+                "name", flat=True
+            )
+        )
+
+        test_spec = {"test": "spec"}
+        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process.id, test_spec, previous_step_names + current_step_name
+        )
+        # fill next steps spec to check it will be set to None
+        ProcessStep.objects.filter(process_id=process.id, name__in=next_step_names).update(step_spec=test_spec)
 
         response = self.client.v2[
             self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
@@ -1276,22 +1344,65 @@ class TestWizard(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        previous_step_to_target = ProcessStep.objects.get(process_id=process.id, name="stage2_step2")
-        previous_step_with_input = ProcessStep.objects.get(process_id=process.id, name="stage2_step1")
+        previous_step_ids = ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names).values_list(
+            "id", flat=True
+        )
+        next_step_ids = ProcessStep.objects.filter(process_id=process.id, name__in=next_step_names).values_list(
+            "id", flat=True
+        )
+        previous_qs = ProcessStep.objects.filter(process_id=process.id, id__in=previous_step_ids)
+        current = ProcessStep.objects.get(process_id=process.id, id=target_step_to_reset.id)
+        next_qs = ProcessStep.objects.filter(process_id=process.id, id__in=next_step_ids)
 
-        self.assertEqual(previous_step_to_target.state, ProcessStepState.COMPLETED)
+        # expecting:
+        #   previous steps:
+        #     - inputs exists
+        #     - spec without changes
+        #     - `completed` state
+        #   current step (which we just resetted):
+        #     - no input
+        #     - freshly rendered spec
+        #     - `created` state
+        #   next steps:
+        #     - no inputs
+        #     - specs is None
+        #     - `created` state
 
-        self.assertIsNotNone(previous_step_with_input.processstepinput)
-        self.assertIsNotNone(previous_step_with_input.step_spec)
+        actual_previous_inputs_count = ProcessStepInput.objects.filter(step_id__in=previous_step_ids).count()
+        self.assertEqual(actual_previous_inputs_count, previous_qs.count())
+        actual_previous_specs = list(previous_qs.values_list("step_spec", flat=True))
+        self.assertListEqual(actual_previous_specs, [test_spec] * previous_qs.count())
+        actual_previous_states = set(previous_qs.values_list("state", flat=True))
+        self.assertSetEqual(actual_previous_states, {ProcessStepState.COMPLETED})
 
-        for step_name in all_steps[3:]:
-            step = ProcessStep.objects.get(process_id=process.id, name=step_name)
-            self.assertEqual(step.state, ProcessStepState.CREATED)
-            self.assertFalse(hasattr(step, "processstepinput"))
-            self.assertIsNone(step.step_spec)
+        actual_current_inputs_count = ProcessStepInput.objects.filter(step_id=current.id).count()
+        self.assertEqual(actual_current_inputs_count, 0)
+        expected_current_spec = [
+            {
+                "display_name": "Sleep",
+                "name": "sleep_script",
+                "params": {"test_params": [self.cluster_1.state]},
+                "script": "wizard_jinja/scripts/sleep.yaml",
+                "script_type": "ansible",
+            }
+        ]
+        self.assertListEqual(current.step_spec, expected_current_spec)
+        self.assertEqual(current.state, ProcessStepState.CREATED)
+
+        actual_next_inputs_count = ProcessStepInput.objects.filter(step_id__in=next_step_ids).count()
+        self.assertEqual(actual_next_inputs_count, 0)
+        actual_next_steps_spec = set(next_qs.values_list("step_spec", flat=True))
+        self.assertSetEqual(actual_next_steps_spec, {None})
+        actual_next_states = set(next_qs.values_list("state", flat=True))
+        self.assertSetEqual(actual_next_states, {ProcessStepState.CREATED})
 
     def test_complete_process_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
+        step_names = ProcessStep.objects.filter(process_id=process.id).values_list("name", flat=True)
+        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process_id=process.id, test_spec={"test": "spec"}, step_names=step_names
+        )
+
         process_sync_key = process.sync_key
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
 
@@ -1352,7 +1463,7 @@ class TestWizard(BaseAPITestCase):
             self.assertIn("Field required [type=missing, input_value={}, input_type=dict]", error)
 
         with self.subTest("Incorrect payload for submit: missing stepId"):
-            payload = {"method": "submit", "params": {"processSyncKey": process.sync_key}}
+            payload = {"method": "submit_step", "params": {"processSyncKey": process.sync_key}}
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
@@ -1360,11 +1471,12 @@ class TestWizard(BaseAPITestCase):
             self.assertIn("Field required [type=missing", error)  # TODO: not informative description (3 errors)
 
         with self.subTest("Incorrect payload for complete: wrong sync key"):
-            payload = {"method": "complete", "params": {"processSyncKey": uuid4()}}
+            wrong_sync_key = uuid4()
+            payload = {"method": "complete", "params": {"processSyncKey": wrong_sync_key}}
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             error = response.json()["desc"]
-            self.assertIn("Sync key mismatch", error)
+            self.assertIn(f"Can't find Process #5 ({str(wrong_sync_key)})", error)
 
         with self.subTest("Incorrect payload for complete: wrong sync key type"):
             payload = {"method": "complete", "params": {"processSyncKey": "abs"}}

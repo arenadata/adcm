@@ -17,8 +17,9 @@ import signal
 
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
-from core.job.types import ExecutionStatus, Job, Task
+from core.job.types import AssociatedProcessInfo, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
+    ActionID,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
@@ -35,6 +36,7 @@ from cm.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.services.job.run.audit import audit_task_finish
+from cm.services.wizard.render_step import RenderStepContext, render_step
 from cm.services.wizard.types import ProcessStepState
 
 NO_PROCESS_PID = 0
@@ -276,8 +278,10 @@ class JobSequenceRunner(TaskRunner):
                 else finished_task.owner,
             )
 
-        if finished_task.process_step:
-            self._update_associated_process(step_id=finished_task.process_step.id)
+        if finished_task.process:
+            self._update_associated_process(
+                process=finished_task.process, action_id=task.action.id, task_owner=finished_task.owner
+            )
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)
@@ -335,8 +339,22 @@ class JobSequenceRunner(TaskRunner):
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
-    def _update_associated_process(self, step_id: int) -> None:
+    def _update_associated_process(
+        self, process: AssociatedProcessInfo, action_id: ActionID, task_owner: TaskOwner | None
+    ) -> None:
+        if not task_owner:
+            raise RuntimeError("Task has no owner")
+
         step_status = (
             ProcessStepState.COMPLETED if self._runtime.status == ExecutionStatus.SUCCESS else ProcessStepState.CREATED
         )
-        self._repo.set_state_of_job_related_process_step(step_id=step_id, state=step_status.value)
+        self._repo.set_state_of_job_related_process_step(
+            process_id=process.process_id, step_id=process.step_id, state=step_status.value
+        )
+
+        context = RenderStepContext(
+            process_id=process.process_id,
+            action_id=action_id,
+            object=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
+        )
+        render_step(step_id=process.step_id, context=context)

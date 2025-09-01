@@ -212,9 +212,11 @@ ERRORS = {
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
     "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "INVALID_CREATE_DUPLICATE_HOST": ("You cannot create a copy from a copy", HTTP_409_CONFLICT, ERR),
-    "WIZARD_SYNC_KEY_CONFLICT": ("Sync key mismatch", HTTP_409_CONFLICT, ERR),
-    "WIZARD_SUBMIT_STEP_CONFLICT": ("Can't submit step", HTTP_409_CONFLICT, ERR),
+    "WIZARD_SYNC_KEY_CONFLICT": ("Sync key conflict", HTTP_409_CONFLICT, ERR),
+    "WIZARD_TEMPLATE_FILE_NOT_FOUND": ("Template file not found", HTTP_409_CONFLICT, ERR),
+    "WIZARD_OPERATION_CONFLICT": ("Wizard operation conflict", HTTP_409_CONFLICT, ERR),
     "WIZARD_ACTION_NOT_SUITABLE": ("does not support wizard functionality", HTTP_409_CONFLICT, ERR),
+    "WIZARD_STEP_NOT_RENDERED": ("Step is not rendered yet", HTTP_409_CONFLICT, ERR),
 }
 
 

@@ -12,12 +12,13 @@
 
 
 class WizardError(Exception):
+    def __init__(self, msg: str = ""):
+        self.msg = msg
+
+
+class WizardOperationError(WizardError):
     pass
 
 
 class SyncKeyMismatchError(WizardError):
-    pass
-
-
-class NotCurrentStepSubmissionError(WizardError):
     pass

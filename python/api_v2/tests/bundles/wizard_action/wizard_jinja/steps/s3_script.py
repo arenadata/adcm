@@ -18,7 +18,7 @@ def generate_scripts(context: dict):
         "display_name": "Sleep",
         "name": "sleep_script",
         "params": {"test_params": [cluster_data["state"]]},
-        "script": "scripts/sleep.yaml",
+        "script": "wizard_jinja/scripts/sleep.yaml",
         "script_type": "ansible",
     }
 

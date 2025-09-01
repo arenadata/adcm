@@ -26,7 +26,7 @@ from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskP
 from core.job.repo import ActionRepoInterface, JobRepoInterface
 from core.job.types import (
     ActionInfo,
-    AssociatedProcessStep,
+    AssociatedProcessInfo,
     BundleInfo,
     ExecutionStatus,
     HcAclRule,
@@ -44,6 +44,8 @@ from core.job.types import (
 )
 from core.types import (
     ActionID,
+    ActionProcessID,
+    ActionProcessStepID,
     ActionTargetDescriptor,
     ADCMCoreType,
     CoreObjectDescriptor,
@@ -135,9 +137,10 @@ class JobRepoImpl(JobRepoInterface):
                     root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
                 )
 
-        process_step = None
-        if step_id := ProcessStepInput.objects.filter(job_id=id).values_list("step_id", flat=True).first():
-            process_step = AssociatedProcessStep(id=step_id)
+        associated_process = None
+        if step_data := ProcessStepInput.objects.filter(job_id=id).values_list("step_id", "step__process_id").first():
+            step_id, process_id = step_data
+            associated_process = AssociatedProcessInfo(process_id=process_id, step_id=step_id)
 
         return Task(
             id=id,
@@ -153,7 +156,7 @@ class JobRepoImpl(JobRepoInterface):
                 is_upgrade=Upgrade.objects.filter(action=task_record.action).exists(),
                 is_host_action=task_record.action.host_action,
             ),
-            process_step=process_step,
+            process=associated_process,
             bundle=bundle,
             verbose=task_record.verbose,
             config=task_record.config,
@@ -529,10 +532,11 @@ class JobRepoImpl(JobRepoInterface):
         close_old_connections()
 
     @staticmethod
-    def set_state_of_job_related_process_step(step_id: int, state: str) -> None:
-        step_qs = ProcessStep.objects.filter(id=step_id)
-        step_qs.update(state=state)
-        Process.objects.filter(id=step_qs.values_list("id", flat=True).first()).update(hash=uuid4())
+    def set_state_of_job_related_process_step(
+        process_id: ActionProcessID, step_id: ActionProcessStepID, state: str
+    ) -> None:
+        ProcessStep.objects.filter(id=step_id).update(state=state)
+        Process.objects.filter(id=process_id).update(sync_key=uuid4())
 
 
 class ActionRepoImpl(ActionRepoInterface):
