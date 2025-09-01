@@ -136,3 +136,10 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertDictContainsSubset(expected_data, response.json())
+
+    def test_adcm_6943_new_host_with_name_of_duplicate_pass(self):
+        create_duplicate(host_id=self.host_1.id, name="awesome")
+
+        response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
