@@ -13,6 +13,7 @@
 from typing import Any
 
 from cm.models import Process
+from cm.services.wizard.operations import find_current_and_last_completed_steps
 from cm.services.wizard.schema_validation import (
     CompleteStepPayload,
     OperationPayloadSchema,
@@ -69,10 +70,10 @@ class ProcessShortSerializer(ModelSerializer):
         model = Process
         fields = ["id", "state", "current_step", "created_at", "sync_key"]
 
-    def get_current_step(self, instance: Process) -> int:
-        from cm.services.wizard.operations import retrieve_current_step_id
+    def get_current_step(self, instance: Process) -> int | None:
+        current_step_id, _ = find_current_and_last_completed_steps(steps=instance.steps.all())
 
-        return retrieve_current_step_id(process_id=instance.id)
+        return current_step_id
 
 
 class ProcessSerializer(ProcessShortSerializer):

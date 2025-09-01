@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProcessOperationType(str, Enum):
-    SUBMIT = "submit"
+    SUBMIT = "submit_step"
     COMPLETE = "complete"
     RESET = "reset_step"
 
@@ -67,11 +67,11 @@ class CompleteStepPayload(BaseModel):
     params: _SyncKeyParam
 
 
+# Reset
+
+
 class _ResetStepParams(_SyncKeyParam, _StepIDParam):
     ...
-
-
-# Reset
 
 
 class ResetStepPayload(BaseModel):

@@ -12,7 +12,7 @@
 
 from pathlib import Path
 from typing import Generator, TypeAlias
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID, TaskID
@@ -22,6 +22,7 @@ from cm.models import Action, Process, ProcessStep, Prototype, TaskLog
 from cm.services.wizard.types import (
     ActionProcess,
     ProcessState,
+    ProcessStepState,
     ProcessUpdateDTO,
     Step,
     StepUpdateDTO,
@@ -51,7 +52,7 @@ def create_process(
     return ActionProcess.model_validate(process, from_attributes=True)
 
 
-def create_stages(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> None:
+def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> None:
     objects = []
     for stage in stages:
         for step in stage.steps:
@@ -92,10 +93,16 @@ def retrieve_step(process_id: ActionProcessID, step_id: ActionProcessStepID) -> 
     return next(retrieve_steps(process_id=process_id, id=step_id))
 
 
+def retrieve_running_step_ids(process_id: ActionProcessID) -> set[ActionProcessStepID]:
+    return set(
+        ProcessStep.objects.filter(process_id=process_id, state=ProcessStepState.RUNNING).values_list("id", flat=True)
+    )
+
+
 def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, None, None]:
     flow_spec = retrieve_process(process_id=process_id).flow_spec
     for step_orm in ProcessStep.objects.filter(process_id=process_id, **kwargs).order_by("id"):
-        step_spec_raw = find_step_spec(step=step_orm, process_flow_spec=flow_spec)
+        step_spec_raw = find_raw_step_spec(step=step_orm, process_flow_spec=flow_spec)
         step_orm.type = step_spec_raw.type
 
         yield Step.model_validate(step_orm, from_attributes=True)
@@ -111,11 +118,15 @@ def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
     ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
 
 
-def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
-    Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
+def update_process(process_id: ActionProcessID, sync_key: UUID, data: ProcessUpdateDTO) -> WasUpdated:
+    records_updated = Process.objects.filter(id=process_id, sync_key=sync_key).update(
+        **data.model_dump(exclude_unset=True)
+    )
+
+    return bool(records_updated)
 
 
-def find_step_spec(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
+def find_raw_step_spec(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
     if not process_flow_spec:
         raise RuntimeError("process.flow_spec is empty")
 
@@ -129,3 +140,9 @@ def find_step_spec(step: Step, process_flow_spec: list[ActionProcessStage]) -> A
 
 def retrieve_task_orm(task_id: TaskID) -> TaskLog:
     return TaskLog.objects.get(id=task_id)
+
+
+def retrieve_next_step_ids(process_id: ActionProcessID, step_id: ActionProcessStepID) -> tuple[ActionProcessStepID]:
+    return tuple(
+        ProcessStep.objects.filter(process_id=process_id, id__gt=step_id).values_list("id", flat=True).order_by("id")
+    )

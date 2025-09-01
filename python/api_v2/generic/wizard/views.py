@@ -22,22 +22,17 @@ from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.config.jinja import _get_jinja_config_new
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
-from cm.services.wizard.errors import (
-    NotCurrentStepSubmissionError,
-    SyncKeyMismatchError,
-)
+from cm.services.wizard.errors import SyncKeyMismatchError, WizardOperationError
 from cm.services.wizard.operations import (
+    OperationContext,
     SerializedConfigStep,
     SerializedOperationStep,
     initiate_process,
     perform_operation,
-    render_template,
 )
-from cm.services.wizard.types import Step, StepType, StepUpdateDTO
-from cm.services.wizard.validation import validate_operation
+from cm.services.wizard.types import Step, StepType
 from core.bundle_alt.schema import ActionProcessStep
 from core.job.types import ActionInfo
-from core.templates import RendererEnv
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 from django.db.transaction import atomic
 from rest_framework.decorators import action
@@ -62,8 +57,8 @@ from api_v2.views import ADCMGenericViewSet
 class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = Process.objects.all()
     exc_conversion_map = {
-        SyncKeyMismatchError: AdcmEx("WIZARD_SYNC_KEY_CONFLICT"),
-        NotCurrentStepSubmissionError: AdcmEx("WIZARD_SUBMIT_STEP_CONFLICT", msg="Only current step can be submitted"),
+        SyncKeyMismatchError: "WIZARD_SYNC_KEY_CONFLICT",
+        WizardOperationError: "WIZARD_OPERATION_CONFLICT",
     }
 
     def get_serializer_class(self):
@@ -143,8 +138,12 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
-        validate_operation(process_id=process_id, payload=payload)
-        perform_operation(process_id=process_id, payload=payload, object_=parent_object, action=action_info)
+        context = OperationContext(
+            object=orm_object_to_core_descriptor(object_=parent_object),
+            action=action_info,
+            config_processor=None,
+        )
+        perform_operation(process_id=process_id, payload=payload, context=context)
 
         return Response(
             status=HTTP_200_OK,
@@ -155,7 +154,10 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         )
 
     def handle_exception(self, exc: Any):
-        return super().handle_exception(self.exc_conversion_map.get(exc.__class__, exc))
+        if exc_code := self.exc_conversion_map.get(exc.__class__):
+            exc = AdcmEx(code=exc_code, msg=exc.msg)
+
+        return super().handle_exception(exc)
 
 
 class ProcessStepViewSet(GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet, ActionPermissionsMixin):
@@ -192,15 +194,13 @@ def serialize_step(
     object_: CoreObjectDescriptor,
     base_data: dict,
 ) -> SerializedConfigStep | SerializedOperationStep:
-    process = repo.retrieve_process(process_id=process_id)
     step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-    step_spec_raw = repo.find_step_spec(step=step, process_flow_spec=process.flow_spec)
-
     if step.is_render_required:
-        _render_step_from_flow_spec(step=step, step_spec_raw=step_spec_raw, action_id=action_id, object_=object_)
-        step = repo.retrieve_step(process_id=process_id, step_id=step_id)
+        raise AdcmEx("WIZARD_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
 
-    # TODO: merge with StepInput if exists
+    process = repo.retrieve_process(process_id=process_id)
+    step_spec_raw = repo.find_raw_step_spec(step=step, process_flow_spec=process.flow_spec)
+
     step_input = ProcessStepInput.objects.filter(step_id=step.id).first()
 
     match step.type:
@@ -265,21 +265,4 @@ def _serialize_operation_step(
     if step_input:
         task = {"id": step_input.job_id}
 
-    # TODO: get job based on ProcessStepInput
     return StepOperationSerializer(base_data | {"ui_options": ui_options, "task": task}).data
-
-
-def _render_step_from_flow_spec(
-    step: Step, step_spec_raw: ActionProcessStep, action_id: ActionID, object_: CoreObjectDescriptor
-) -> None:
-    action = ActionRepoImpl.get_action(id=action_id)
-    environment = RendererEnv(
-        discovery_root=repo.get_bundle_root_from_prototype(prototype_id=action.owner_prototype.id)
-    )
-
-    rendered = render_template(
-        template=step_spec_raw.template, environment=environment, action_id=action.id, object_=object_
-    )
-    # todo conversion is missing
-
-    repo.update_step(step_id=step.id, data=StepUpdateDTO(step_spec=rendered))

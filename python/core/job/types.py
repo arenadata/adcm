@@ -125,8 +125,9 @@ class TaskActionInfo(NamedTuple):
     is_host_action: bool
 
 
-class AssociatedProcessStep(NamedTuple):
-    id: int
+class AssociatedProcessInfo(NamedTuple):
+    process_id: int
+    step_id: int
 
 
 class Task(BaseModel):
@@ -143,7 +144,7 @@ class Task(BaseModel):
     selector: dict
 
     action: TaskActionInfo
-    process_step: AssociatedProcessStep | None
+    process: AssociatedProcessInfo | None
 
     verbose: bool
     hostcomponent: HostComponentChanges

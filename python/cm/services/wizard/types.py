@@ -35,6 +35,7 @@ class ProcessStepState(str, Enum):
 
 class ProcessUpdateDTO(BaseModel):
     sync_key: UUID | None = None
+    current_step: ActionProcessID | None = None
     last_completed_step: ActionProcessStepID | None = None
 
 
@@ -49,6 +50,8 @@ class ActionProcess(BaseModel):
     object_type: ADCMCoreType
     flow_spec: list[ActionProcessStage] = Field(..., min_length=1)
     sync_key: UUID
+    current_step_id: ActionProcessStepID | None = None
+    last_completed_step_id: ActionProcessStepID | None = None
 
 
 class Step(_WizardNames):

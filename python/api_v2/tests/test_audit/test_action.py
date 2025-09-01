@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from audit.models import AuditLogOperationType
+from cm.converters import orm_object_to_core_descriptor
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from cm.services.wizard.render_step import RenderStepContext, render_step
 from cm.services.wizard.schema_validation import ProcessOperationType
 from cm.services.wizard.types import ProcessStepState
 from rest_framework.status import (
@@ -114,16 +116,12 @@ class TestActionProcessAudit(BaseAPITestCase):
                 action = self.get_object_wizard_action(obj)
 
                 # render step
-                response = self.client.v2[
-                    obj,
-                    "actions",
-                    action.pk,
-                    "processes",
-                    process.id,
-                    "steps",
-                    target_operation_step.id,
-                ].get()
-                self.assertEqual(response.status_code, HTTP_200_OK)
+                render_step(
+                    step_id=target_operation_step.id,
+                    context=RenderStepContext(
+                        process_id=process.id, action_id=action.id, object=orm_object_to_core_descriptor(obj)
+                    ),
+                )
 
                 response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(
                     data={
