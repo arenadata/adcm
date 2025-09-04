@@ -15,24 +15,29 @@ from typing import Callable, Literal, Optional, TypeAlias
 from uuid import UUID, uuid4
 import logging
 
-from core.bundle_alt.process import ScriptsConversionContext, parse_scripts
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
-from core.job.types import ActionInfo
-from core.templates import RendererEnv
+from core.job.types import ActionInfo, JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.utils import timezone
 
+from cm.adcm_config.checks import check_attr
+from cm.adcm_config.config import (
+    check_config_spec,
+    get_spec_flat_spec_config_attr_from_prototype_configs,
+    process_config_spec,
+)
 from cm.converters import core_type_to_model
-from cm.models import ProcessStep, ProcessStepInput
+from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
+from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
 from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.config import ConfigAttrPair
 from cm.services.job.run import start_task
 from cm.services.job.run.repo import JobRepoImpl
-from cm.services.wizard import repo, stage
-from cm.services.wizard.errors import SyncKeyMismatchError, WizardOperationError
-from cm.services.wizard.render_step import RenderStepContext, render_step, render_template
+from cm.services.wizard import repo
+from cm.services.wizard.errors import ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
 from cm.services.wizard.schema_validation import (
     CompleteStepPayload,
     Configuration,
@@ -45,9 +50,11 @@ from cm.services.wizard.types import (
     ProcessState,
     ProcessStepState,
     ProcessUpdateDTO,
+    Step,
     StepType,
     StepUpdateDTO,
 )
+from cm.variant import process_variant
 
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -83,24 +90,32 @@ def find_current_and_last_completed_steps(
 
 
 def initiate_process(object_: CoreObjectDescriptor, action: ActionInfo) -> ActionProcessID:
-    environment = RendererEnv(
-        discovery_root=repo.get_bundle_root_from_prototype(prototype_id=action.owner_prototype.id)
-    )
-    stages_raw = render_template(
-        template=action.wizard_template, environment=environment, action_id=action.id, object_=object_
-    )
-    stages = stage.convert_stages(stages_raw=stages_raw)
+    object_orm = core_type_to_model(object_.type).objects.get(id=object_.id)
+    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
 
-    process = repo.create_process(object_=object_, action_id=action.id, stages=stages)
-    repo.create_steps(process_id=process.id, stages=stages)  # TODO: validate stages
+    environment = Environment(bundle_root=bundle_root)
+    action_args = ActionArgs(
+        action=repo.retrieve_action_orm(action_id=action.id),
+        cluster_relative_object=object_orm,
+        action_process=None,
+    )
+    stages = render_process(template=action.wizard_template, environment=environment, context_args=action_args)
+    db_stages = repo.convert_stages_to_db_format(stages=stages)
+    process = repo.create_process(object_=object_, action_id=action.id, stages=db_stages)
 
-    current_id, _ = find_current_and_last_completed_steps(steps=ProcessStep.objects.filter(process_id=process.id))
+    # Works with bulk_create only if the Step model’s primary key is an AutoField, ignore_conflicts=False and
+    # db is PostgreSQL, MariaDB, or SQLite 3.35+
+    # https://docs.djangoproject.com/en/5.1/ref/models/querysets/#bulk-create
+    steps = repo.create_steps(process_id=process.id, stages=stages)
+    current_step_id = steps[0].id
+
     repo.update_process(
-        process_id=process.id, sync_key=process.sync_key, data=ProcessUpdateDTO(current_step=current_id)
+        process_id=process.id,
+        data=ProcessUpdateDTO(current_step=current_step_id, flow_spec=db_stages),
     )
 
     context = RenderStepContext(process_id=process.id, action_id=action.id, object=object_)
-    render_step(step_id=current_id, context=context)
+    fill_step_spec(step_id=current_step_id, context=context)
 
     return process.id
 
@@ -113,7 +128,6 @@ def complete_process(process: ActionProcess) -> None:
 def complete_step(
     process_id: ActionProcessID,
     step_id: ActionProcessStepID,
-    sync_key: UUID,
     action_id: ActionID,
     object_: CoreObjectDescriptor,
 ) -> None:
@@ -126,12 +140,11 @@ def complete_step(
     )
     repo.update_process(
         process_id=process_id,
-        sync_key=sync_key,
         data=ProcessUpdateDTO(current_step=current_id, last_completed_step=last_completed_id),
     )
     if current_id:
         context = RenderStepContext(process_id=process_id, action_id=action_id, object=object_)
-        render_step(step_id=current_id, context=context)
+        fill_step_spec(step_id=current_id, context=context)
 
 
 def revoke_next_steps(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[int]:
@@ -165,8 +178,10 @@ def retrieve_steps_starting_with_qs(process_id: ActionProcessID, step_id: Action
 
 
 def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID) -> None:
-    if not repo.update_process(process_id=process_id, sync_key=sync_key, data=ProcessUpdateDTO(sync_key=uuid4())):
-        raise SyncKeyMismatchError(f"Can't find Process #{process_id} ({str(sync_key)})")
+    process = repo.retrieve_process(process_id=process_id)
+    _check_sync_key(sync_key=sync_key, process=process)
+
+    repo.update_process(process_id=process_id, data=ProcessUpdateDTO(sync_key=uuid4()))
 
 
 def _repo_revoke_steps(steps_qs: QuerySet) -> set[int]:
@@ -212,11 +227,9 @@ def submit_step(process: ActionProcess, payload: SubmitStepPayload, context: Ope
             )
             _operation_submit_config(
                 process=process,
-                step_id=payload.params.step_id,
+                step=step,
                 configuration=config,
-                sync_key=payload.params.process_sync_key,
-                object_=context.object,
-                action=context.action,
+                context=context,
             )
 
         case StepType.OPERATION:
@@ -235,12 +248,11 @@ def reset_step(process: ActionProcess, payload: ResetStepPayload, context: Opera
 
     repo.update_process(
         process_id=process.id,
-        sync_key=payload.params.process_sync_key,
         data=ProcessUpdateDTO(current_step=current_id, last_completed_step=last_completed_id),
     )
     if current_id:
         render_context = RenderStepContext(process_id=process.id, action_id=context.action.id, object=context.object)
-        render_step(step_id=current_id, context=render_context)
+        fill_step_spec(step_id=current_id, context=render_context)
 
 
 def _prepare_step_config_input(  # TODO: https://tracker.yandex.ru/ADCM-6942
@@ -263,31 +275,17 @@ def _operation_submit_job(
     process: ActionProcess,
     step_id: int,
     *,
-    parent_object: CoreObjectDescriptor,  # target == owner,Cluster,Service,Component,Provider,Host/ActionHostGroup???
+    parent_object: CoreObjectDescriptor,
     action: ActionInfo,
 ) -> None:
     job_repo = JobRepoImpl
-    owner = parent_object  # target == owner
 
     step = repo.retrieve_step(process_id=process.id, step_id=step_id)
-    step_raw_spec = repo.find_raw_step_spec(step=step, process_flow_spec=process.flow_spec)
-
-    prototype_id = core_type_to_model(parent_object.type).objects.get(id=parent_object.id).prototype_id
-    bundle_root_path = repo.get_bundle_root_from_prototype(prototype_id=prototype_id)
-    template_path = bundle_root_path / step_raw_spec.template.file.path
-
-    target = ActionTargetDescriptor(id=owner.id, type=owner.type)
+    target = ActionTargetDescriptor(id=parent_object.id, type=parent_object.type)
     payload = TaskPayloadDTO()
 
-    task = job_repo.create_task(target=target, owner=owner, action=action, payload=payload)
-
-    allow_to_terminate = repo.retrieve_action_orm(action_id=action.id).allow_to_terminate
-    context = ScriptsConversionContext(
-        source_dir=template_path.parent,
-        action_allow_to_terminate=allow_to_terminate,
-    )
-    jobs = list(parse_scripts(data=step.step_spec, context=context))
-    job_repo.create_jobs(task_id=task.id, jobs=jobs)
+    task = job_repo.create_task(target=target, owner=parent_object, action=action, payload=payload)
+    job_repo.create_jobs(task_id=task.id, jobs=[JobSpec(**job) for job in step.step_spec])
 
     logs = []
     for job in job_repo.get_task_jobs(task_id=task.id):
@@ -317,36 +315,52 @@ def _operation_submit_job(
 
 def _operation_submit_config(
     process: ActionProcess,
-    step_id: ActionProcessStepID,
+    step: Step,
     configuration: ConfigAttrPair,
     *,
-    sync_key: UUID,
-    object_: CoreObjectDescriptor,
-    action: ActionInfo,
+    context: OperationContext,
 ) -> None:
-    data = {"step_id": step_id, "configuration": configuration._asdict(), "job": None, "created_at": timezone.now()}
-    step_input_qs = ProcessStepInput.objects.filter(step_id=step_id)
+    _validate_config(config=configuration, step=step, context=context)
+
+    data = {"step_id": step.id, "configuration": configuration._asdict(), "job": None, "created_at": timezone.now()}
+    step_input_qs = ProcessStepInput.objects.filter(step_id=step.id)
 
     if not step_input_qs.exists():
         ProcessStepInput.objects.create(**data)
     else:
         step_input_qs.update(**data)
 
-    revoke_next_steps(process_id=process.id, step_id=step_id)
-
+    revoke_next_steps(process_id=process.id, step_id=step.id)
     complete_step(
         process_id=process.id,
-        step_id=step_id,
-        sync_key=sync_key,
-        action_id=action.id,
-        object_=object_,
+        step_id=step.id,
+        action_id=context.action.id,
+        object_=context.object,
     )
+
+
+def _validate_config(config: ConfigAttrPair, step: Step, context: OperationContext) -> None:
+    object_orm = core_type_to_model(context.object.type).objects.get(id=context.object.id)
+    action_orm = repo.retrieve_action_orm(action_id=context.action.id)
+    step_orm = repo.retrieve_step_orm(step_id=step.id)
+
+    prototype_configs = [PrototypeConfig(**config) for config in step.step_spec]
+    spec, flat_spec, _, _ = get_spec_flat_spec_config_attr_from_prototype_configs(
+        prototype=object_orm.prototype, prototype_configs=prototype_configs
+    )
+
+    check_attr(proto=action_orm.prototype, obj=action_orm, attr=config.attr, spec=flat_spec)
+    process_variant(obj=object_orm, spec=spec, conf=config.config)
+    check_config_spec(
+        proto=action_orm.prototype, obj=action_orm, spec=spec, flat_spec=flat_spec, conf=config.config, attr=config.attr
+    )
+    process_config_spec(obj=step_orm, spec=spec, new_config=config.config)
 
 
 def _check_step_is_current(process: ActionProcess, payload: SubmitStepPayload) -> None:
     current_step_id, _ = find_current_and_last_completed_steps(steps=ProcessStep.objects.filter(process_id=process.id))
     if payload.params.step_id != current_step_id:
-        raise WizardOperationError("Only current step can be submitted.")
+        raise ActionProcessOperationError("Only current step can be submitted.")
 
 
 def _check_sync_key(sync_key: UUID, process: ActionProcess) -> None:
@@ -356,10 +370,10 @@ def _check_sync_key(sync_key: UUID, process: ActionProcess) -> None:
 
 def _check_no_running_steps(process: ActionProcess) -> None:
     if repo.retrieve_running_step_ids(process_id=process.id):
-        raise WizardOperationError("There is a running step.")
+        raise ActionProcessOperationError("There is a running step.")
 
 
 def _check_all_steps_completed(process: ActionProcess) -> None:
     for step in repo.retrieve_steps(process_id=process.id):
         if step.state != ProcessStepState.COMPLETED:
-            raise WizardOperationError("All steps must be completed.")
+            raise ActionProcessOperationError("All steps must be completed.")

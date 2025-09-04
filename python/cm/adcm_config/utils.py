@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Mapping, Union
+from typing import Mapping
 
 from django.conf import settings
 
@@ -20,6 +20,7 @@ from cm.models import (
     Action,
     ADCMEntity,
     ConfigHostGroup,
+    ProcessStep,
     Prototype,
     PrototypeConfig,
     StagePrototype,
@@ -81,7 +82,7 @@ def to_flat_dict(config: dict, spec: dict) -> dict:
     return flat
 
 
-def cook_file_type_name(obj: Union["ADCMEntity", "ConfigHostGroup"], key: str, sub_key: str) -> str:
+def cook_file_type_name(obj: ADCMEntity | ConfigHostGroup | ProcessStep, key: str, sub_key: str) -> str:
     if isinstance(obj, ADCMEntity):
         filename = [obj.prototype.type, str(obj.id), key, sub_key]
     elif isinstance(obj, ConfigHostGroup):
@@ -93,6 +94,8 @@ def cook_file_type_name(obj: Union["ADCMEntity", "ConfigHostGroup"], key: str, s
             key,
             sub_key,
         ]
+    elif isinstance(obj, ProcessStep):
+        filename = ["process", str(obj.process_id), "step", str(obj.id), key, sub_key]
     else:
         filename = ["task", str(obj.id), key, sub_key]
 

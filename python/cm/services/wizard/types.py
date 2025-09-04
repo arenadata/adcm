@@ -37,6 +37,7 @@ class ProcessUpdateDTO(BaseModel):
     sync_key: UUID | None = None
     current_step: ActionProcessID | None = None
     last_completed_step: ActionProcessStepID | None = None
+    flow_spec: list[ActionProcessStage] | None = None
 
 
 class StepUpdateDTO(BaseModel):
@@ -46,10 +47,10 @@ class StepUpdateDTO(BaseModel):
 
 class ActionProcess(BaseModel):
     id: ActionProcessID
+    sync_key: UUID
     object_id: ObjectID
     object_type: ADCMCoreType
     flow_spec: list[ActionProcessStage] = Field(..., min_length=1)
-    sync_key: UUID
     current_step_id: ActionProcessStepID | None = None
     last_completed_step_id: ActionProcessStepID | None = None
 
@@ -67,3 +68,23 @@ class Step(_WizardNames):
     @property
     def is_render_required(self) -> bool:
         return self.step_spec is None
+
+
+class DBPrototypeConfig(BaseModel):
+    type: str
+    name: str
+    subname: str
+    display_name: str
+    description: str
+    default: Any
+    required: bool
+    limits: dict
+    ui_options: dict
+    group_customization: bool
+    ansible_options: dict
+
+
+class SerializedPrototypeConfigs(BaseModel):
+    configs: list[DBPrototypeConfig] = Field(min_length=1)
+
+    model_config = ConfigDict(extra="forbid")

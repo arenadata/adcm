@@ -42,7 +42,7 @@ from cm.models import (
 from cm.services.jinja_env import _get_action_info
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard.operations import OperationContext, find_current_and_last_completed_steps
-from cm.services.wizard.render_step import RenderStepContext, render_step
+from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
 from cm.services.wizard.schema_validation import ProcessOperationType, SubmitStepPayload
 from cm.services.wizard.types import ProcessState, ProcessStepState
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -919,10 +919,100 @@ class TestWizard(BaseAPITestCase):
                     ].get()
                     self.assertEqual(response.status_code, HTTP_200_OK)
 
+                    expected_response = {
+                        "displayName": "Stage1.Step1",
+                        "id": target_step.id,
+                        "type": "configuration",
+                        "state": "created",
+                        "configuration": {
+                            "configSchema": {
+                                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                                "title": "Configuration",
+                                "description": "",
+                                "readOnly": False,
+                                "adcmMeta": {
+                                    "isAdvanced": False,
+                                    "isInvisible": False,
+                                    "activation": None,
+                                    "synchronization": None,
+                                    "nullValue": None,
+                                    "isSecret": False,
+                                    "stringExtra": None,
+                                    "enumExtra": None,
+                                },
+                                "type": "object",
+                                "properties": {
+                                    "integer_field": {
+                                        "title": "integer_field",
+                                        "type": "integer",
+                                        "description": "",
+                                        "default": 2,
+                                        "readOnly": False,
+                                        "adcmMeta": {
+                                            "isAdvanced": False,
+                                            "isInvisible": False,
+                                            "activation": None,
+                                            "synchronization": None,
+                                            "isSecret": False,
+                                            "stringExtra": None,
+                                            "enumExtra": None,
+                                        },
+                                    },
+                                    "string_field": {
+                                        "title": "string_field",
+                                        "type": "string",
+                                        "description": "",
+                                        "default": "string_value",
+                                        "readOnly": False,
+                                        "adcmMeta": {
+                                            "isAdvanced": False,
+                                            "isInvisible": False,
+                                            "activation": None,
+                                            "synchronization": None,
+                                            "isSecret": False,
+                                            "stringExtra": {"isMultiline": False},
+                                            "enumExtra": None,
+                                        },
+                                        "minLength": 1,
+                                    },
+                                },
+                                "additionalProperties": False,
+                                "required": ["integer_field", "string_field"],
+                            },
+                            "adcmMeta": {},
+                            "config": {"integer_field": 2, "string_field": "string_value"},
+                        },
+                    }
+                    self.assertDictEqual(response.json(), expected_response)
+
                     target_step.refresh_from_db()
                     expected_spec = [
-                        {"name": "integer_field", "type": "integer", "default": 2},
-                        {"name": "string_field", "type": "string", "default": "string_value"},
+                        {
+                            "name": "integer_field",
+                            "type": "integer",
+                            "limits": {},
+                            "default": 2,
+                            "subname": "",
+                            "required": True,
+                            "ui_options": {},
+                            "description": "",
+                            "display_name": "integer_field",
+                            "ansible_options": {"unsafe": False},
+                            "group_customization": False,
+                        },
+                        {
+                            "name": "string_field",
+                            "type": "string",
+                            "limits": {},
+                            "default": "string_value",
+                            "subname": "",
+                            "required": True,
+                            "ui_options": {},
+                            "description": "",
+                            "display_name": "string_field",
+                            "ansible_options": {"unsafe": False},
+                            "group_customization": False,
+                        },
                     ]
                     self.assertListEqual(target_step.step_spec, expected_spec)
 
@@ -974,7 +1064,10 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(target_step.id, current_step_id)
         self.assertEqual(current_step_id - 1, last_completed_step_id)
 
-        render_step(
+        new_state = "new_state"
+        self.cluster_1.state = new_state
+        self.cluster_1.save(update_fields=["state"])
+        fill_step_spec(
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
@@ -982,14 +1075,10 @@ class TestWizard(BaseAPITestCase):
                 object=orm_object_to_core_descriptor(self.cluster_1),
             ),
         )
-        cluster_state = self.cluster_1.state
 
         with self.subTest("All permissions"):
             for obj in (self.cluster_1, self.service_1, self.component_1):
                 with self.subTest(f"retrieve operation for {obj}"):
-                    obj.state = "new_state"
-                    obj.save(update_fields=["state"])
-
                     response = self.client.v2[
                         obj,
                         "actions",
@@ -1001,14 +1090,28 @@ class TestWizard(BaseAPITestCase):
                     ].get()
                     self.assertEqual(response.status_code, HTTP_200_OK)
 
+                    expected_response = {
+                        "displayName": "Stage2.Step2",
+                        "id": target_step.id,
+                        "state": "created",
+                        "task": None,
+                        "type": "operation",
+                        "uiOptions": {"buttonName": "ButtonName"},
+                    }
+                    self.assertDictEqual(response.json(), expected_response)
+
                     target_step.refresh_from_db()
                     expected_spec = [
                         {
-                            "display_name": "Sleep",
                             "name": "sleep_script",
-                            "params": {"test_params": [cluster_state]},
+                            "params": {"test_params": [new_state]},
                             "script": "wizard_jinja/scripts/sleep.yaml",
                             "script_type": "ansible",
+                            "display_name": "Sleep",
+                            "state_on_fail": "",
+                            "allow_to_terminate": False,
+                            "multi_state_on_fail_set": [],
+                            "multi_state_on_fail_unset": [],
                         }
                     ]
                     self.assertListEqual(target_step.step_spec, expected_spec)
@@ -1081,15 +1184,15 @@ class TestWizard(BaseAPITestCase):
                 )
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.client.login(username="admin", password="admin")
-
         with self.subTest("All permissions"):
+            self.client.login(username="admin", password="admin")
+
             # render step
             current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
                 steps=ProcessStep.objects.filter(process_id=process.id)
             )
             self.assertEqual(current_step_id, target_operation_step.id)
-            render_step(
+            fill_step_spec(
                 step_id=current_step_id,
                 context=RenderStepContext(
                     process_id=process.id,
@@ -1118,11 +1221,15 @@ class TestWizard(BaseAPITestCase):
             target_operation_step.refresh_from_db()
             expected_spec = [
                 {
-                    "display_name": "Sleep",
                     "name": "sleep_script",
                     "params": {"test_params": ["created"]},
                     "script": "wizard_jinja/scripts/sleep.yaml",
                     "script_type": "ansible",
+                    "display_name": "Sleep",
+                    "state_on_fail": "",
+                    "allow_to_terminate": False,
+                    "multi_state_on_fail_set": [],
+                    "multi_state_on_fail_unset": [],
                 }
             ]
             self.assertListEqual(target_operation_step.step_spec, expected_spec)
@@ -1169,7 +1276,7 @@ class TestWizard(BaseAPITestCase):
             steps=ProcessStep.objects.filter(process_id=process.id)
         )
         self.assertEqual(current_step_id, target_config_step.id)
-        render_step(
+        fill_step_spec(
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
@@ -1178,30 +1285,52 @@ class TestWizard(BaseAPITestCase):
             ),
         )
 
-        new_config = {"config": {"new": "config"}, "adcm_meta": {}}
-        response = self.client.v2[
-            self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
-        ].post(
-            data={
-                "method": ProcessOperationType.SUBMIT,
-                "params": {
-                    "configuration": new_config,
-                    "step_id": target_config_step.id,
-                    "process_sync_key": process.sync_key,
-                },
-            }
-        )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        wrong_config = {"config": {"new": "config"}, "adcm_meta": {}}
+        new_config = {"config": {"int": 22}, "adcm_meta": {}}
+
+        for config, expected_code in ((wrong_config, HTTP_400_BAD_REQUEST), (new_config, HTTP_200_OK)):
+            with self.subTest(f"Submit {config=}, {expected_code=}"):
+                response = self.client.v2[
+                    self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                ].post(
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {
+                            "configuration": config,
+                            "step_id": target_config_step.id,
+                            "process_sync_key": process.sync_key,
+                        },
+                    }
+                )
+                self.assertEqual(response.status_code, expected_code)
 
         # check that next steps' spec is rendered, no input; rest next steps are without specs and inputs
-        expected_current_step_spec = [{"default": 1, "name": "int", "type": "integer"}]
+        expected_current_step_spec = [
+            {
+                "name": "int",
+                "type": "integer",
+                "limits": {},
+                "default": 1,
+                "subname": "",
+                "required": True,
+                "ui_options": {},
+                "description": "",
+                "display_name": "int",
+                "ansible_options": {"unsafe": False},
+                "group_customization": False,
+            }
+        ]
         expected_next_step_spec = [
             {
-                "display_name": "Sleep",
                 "name": "sleep_script",
                 "params": {"test_params": ["created"]},
                 "script": "wizard_jinja/scripts/sleep.yaml",
                 "script_type": "ansible",
+                "display_name": "Sleep",
+                "state_on_fail": "",
+                "allow_to_terminate": False,
+                "multi_state_on_fail_set": [],
+                "multi_state_on_fail_unset": [],
             }
         ]
         steps_qs = ProcessStep.objects.filter(process_id=process.id)
@@ -1379,11 +1508,15 @@ class TestWizard(BaseAPITestCase):
         self.assertEqual(actual_current_inputs_count, 0)
         expected_current_spec = [
             {
-                "display_name": "Sleep",
                 "name": "sleep_script",
-                "params": {"test_params": [self.cluster_1.state]},
+                "params": {"test_params": ["created"]},
                 "script": "wizard_jinja/scripts/sleep.yaml",
                 "script_type": "ansible",
+                "display_name": "Sleep",
+                "state_on_fail": "",
+                "allow_to_terminate": False,
+                "multi_state_on_fail_set": [],
+                "multi_state_on_fail_unset": [],
             }
         ]
         self.assertListEqual(current.step_spec, expected_current_spec)

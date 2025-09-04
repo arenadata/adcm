@@ -13,7 +13,7 @@
 from collections import OrderedDict
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Collection
 import re
 import copy
 import json
@@ -44,6 +44,7 @@ from cm.models import (
     ConfigHostGroup,
     ConfigLog,
     ObjectConfig,
+    ProcessStep,
     Prototype,
     PrototypeConfig,
     Provider,
@@ -82,22 +83,28 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 def get_prototype_config(
     prototype: Prototype, action: Action = None, obj: ADCMEntity = None
 ) -> tuple[dict, dict, dict, dict]:
+    if action is not None and obj is not None and action.config_jinja:
+        prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=obj)
+    else:
+        prototype_configs = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
+
+    return get_spec_flat_spec_config_attr_from_prototype_configs(
+        prototype=prototype, prototype_configs=prototype_configs
+    )
+
+
+def get_spec_flat_spec_config_attr_from_prototype_configs(
+    prototype: Prototype,
+    prototype_configs: Collection[PrototypeConfig],
+) -> tuple[dict, dict, dict, dict]:
     spec = {}
     flat_spec = OrderedDict()
     config = {}
     attr = {}
     flist = ("default", "required", "type", "limits")
 
-    if action is not None and obj is not None and action.config_jinja:
-        proto_conf, _ = get_jinja_config(action=action, cluster_relative_object=obj)
-        proto_conf_group = [config for config in proto_conf if config.type == "group"]
-    else:
-        proto_conf = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
-        proto_conf_group = PrototypeConfig.objects.filter(prototype=prototype, action=action, type="group").order_by(
-            "id"
-        )
-
-    for conf in proto_conf_group:
+    group_prototype_configs = (proto_conf for proto_conf in prototype_configs if proto_conf.type == "group")
+    for conf in group_prototype_configs:
         spec[conf.name] = {}
         config[conf.name] = {}
         if "activatable" in conf.limits:
@@ -107,7 +114,7 @@ def get_prototype_config(
         ADCMBundlePathResolver() if prototype.type == "adcm" else BundlePathResolver(bundle_hash=prototype.bundle.hash)
     )
 
-    for conf in proto_conf:
+    for conf in prototype_configs:
         flat_spec[f"{conf.name}/{conf.subname}"] = conf
         if conf.subname == "":
             if conf.type != "group":
@@ -678,7 +685,7 @@ def check_config_spec(
             )
 
 
-def _process_secretfile(obj: ADCMEntity, key: str, subkey: str, value: Any) -> None:
+def _process_secretfile(obj: ADCMEntity | ProcessStep, key: str, subkey: str, value: Any) -> None:
     if value is not None and value.startswith(settings.ANSIBLE_VAULT_HEADER):
         try:
             value = ansible_decrypt(msg=value)
@@ -738,7 +745,7 @@ def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
                 conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
 
 
-def process_config_spec(obj: ADCMEntity | TaskLog, spec: dict, new_config: dict) -> dict:
+def process_config_spec(obj: ADCMEntity | TaskLog | ProcessStep, spec: dict, new_config: dict) -> dict:
     for cfg_key, cfg_value in new_config.items():
         spec_type = spec[cfg_key].get("type")
 

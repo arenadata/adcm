@@ -11,14 +11,14 @@
 # limitations under the License.
 
 
-class WizardError(Exception):
+class ActionProcessError(Exception):
     def __init__(self, msg: str = ""):
         self.msg = msg
 
 
-class WizardOperationError(WizardError):
+class ActionProcessOperationError(ActionProcessError):
     pass
 
 
-class SyncKeyMismatchError(WizardError):
+class SyncKeyMismatchError(ActionProcessError):
     pass
