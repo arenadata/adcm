@@ -13,23 +13,25 @@
 from core.types import ClusterID, HostID
 from django.db.transaction import atomic
 
-from cm.services.cluster import perform_host_to_cluster_map
+from cm.services import cluster
 from cm.services.host import repo
 from cm.services.status import notify
 
 
-@atomic
 def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = None) -> HostID:
-    original = repo.get_original_host(host_id=host_id)
+    with atomic():
+        original = repo.get_original_host(host_id=host_id)
 
-    overrides = repo.DuplicateHostOverrides(name=name, description=f"Copied from {original.fqdn}")
-    duplicate = repo.duplicate_host_record(host=original, overrides=overrides)
+        overrides = repo.DuplicateHostOverrides(name=name, description=f"Copied from {original.fqdn}")
+        duplicate = repo.duplicate_host_record(host=original, overrides=overrides)
 
-    if cluster_id:
-        perform_host_to_cluster_map(
-            cluster_id=cluster_id,
-            hosts=[duplicate.id],
-            status_service=notify,
-        )
+        if cluster_id:
+            cluster.perform_host_to_cluster_map(
+                cluster_id=cluster_id,
+                hosts=[duplicate.id],
+                status_service=notify,
+            )
+
+    notify.register_host_duplicates(original=host_id, duplicates=(duplicate.id,))
 
     return duplicate.id

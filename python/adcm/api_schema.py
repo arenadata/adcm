@@ -185,3 +185,17 @@ def postprocess_hook_exclude_advanced_filters(generator: SchemaGenerator, reques
             description["get"]["parameters"] = new_parameters
 
     return result
+
+
+def preprocess_hook_exclude_internal_from_schema(endpoints, **kwargs):
+    """
+    preprocessing hook that filters out {format} suffixed paths, in case
+    format_suffix_patterns is used and {format} path params are unwanted.
+    """
+    _ = kwargs
+    internal_prefix = "/api/v2/internal"
+    return [
+        (path, path_regex, method, callback)
+        for path, path_regex, method, callback in endpoints
+        if not path.startswith(internal_prefix)
+    ]

@@ -334,7 +334,8 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
-ADCM_HIDDEN_USERS = {"status", "system"}
+ADCM_STATUS_USERNAME = "status"
+ADCM_HIDDEN_USERS = {ADCM_STATUS_USERNAME, "system"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_FILE_FIELD_TYPES = {"file", "secretfile"}
@@ -349,6 +350,7 @@ STATUS_REQUEST_TIMEOUT = 0.1
 JOB_TYPE = "job"
 TASK_TYPE = "task"
 
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "ADCM API",
     "DESCRIPTION": "Arenadata Cluster Manager",
@@ -358,6 +360,9 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
+    "PREPROCESSING_HOOKS": [
+        "adcm.api_schema.preprocess_hook_exclude_internal_from_schema",
+    ],
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",

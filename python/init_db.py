@@ -68,7 +68,7 @@ def _create_admin_user() -> None:
 
 
 def _create_status_user() -> tuple[str, str | None]:
-    username = "status"
+    username = settings.ADCM_STATUS_USERNAME
     email = f"{username}@example.com"
 
     status_user = User.objects.filter(username=username).only("email").first()
