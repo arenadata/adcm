@@ -156,7 +156,7 @@ class HostCreateSerializer(EmptySerializer):
         max_length=253,
         help_text="fully qualified domain name",
         validators=[
-            HostUniqueValidator(queryset=Host.objects.all()),
+            HostUniqueValidator(queryset=Host.objects.filter(original__isnull=True)),
             StartMidEndValidator(
                 start=settings.ALLOWED_HOST_FQDN_START_CHARS,
                 mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
