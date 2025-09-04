@@ -84,7 +84,7 @@ def _get_jinja_config_old(
 def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
     context = ConfigConversionContext(
         bundle_root=resolver.bundle_root,
-        path=str(config_file.parent.relative_to(resolver.bundle_root)),
+        path=str(config_file.parent),
         object={"config_group_customization": False},
     )
 

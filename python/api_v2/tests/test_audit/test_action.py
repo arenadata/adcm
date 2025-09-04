@@ -13,7 +13,7 @@
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_core_descriptor
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
-from cm.services.wizard.render_step import RenderStepContext, render_step
+from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
 from cm.services.wizard.schema_validation import ProcessOperationType
 from cm.services.wizard.types import ProcessStepState
 from rest_framework.status import (
@@ -116,7 +116,7 @@ class TestActionProcessAudit(BaseAPITestCase):
                 action = self.get_object_wizard_action(obj)
 
                 # render step
-                render_step(
+                fill_step_spec(
                     step_id=target_operation_step.id,
                     context=RenderStepContext(
                         process_id=process.id, action_id=action.id, object=orm_object_to_core_descriptor(obj)

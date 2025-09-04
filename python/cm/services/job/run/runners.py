@@ -36,7 +36,7 @@ from cm.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.services.job.run.audit import audit_task_finish
-from cm.services.wizard.render_step import RenderStepContext, render_step
+from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
 from cm.services.wizard.types import ProcessStepState
 
 NO_PROCESS_PID = 0
@@ -357,4 +357,4 @@ class JobSequenceRunner(TaskRunner):
             action_id=action_id,
             object=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
         )
-        render_step(step_id=process.step_id, context=context)
+        fill_step_spec(step_id=process.step_id, context=context)

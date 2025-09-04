@@ -10,19 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from typing import Any
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Process, ProcessStep, ProcessStepInput
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.bundle import BundlePathResolver
 from cm.services.concern.flags import BuiltInFlag, raise_flag
-from cm.services.config.jinja import _get_jinja_config_new
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
-from cm.services.wizard.errors import SyncKeyMismatchError, WizardOperationError
+from cm.services.wizard.errors import ActionProcessOperationError, SyncKeyMismatchError
 from cm.services.wizard.operations import (
     OperationContext,
     SerializedConfigStep,
@@ -31,9 +29,8 @@ from cm.services.wizard.operations import (
     perform_operation,
 )
 from cm.services.wizard.types import Step, StepType
-from core.bundle_alt.schema import ActionProcessStep
 from core.job.types import ActionInfo
-from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
+from core.types import ActionProcessID, CoreObjectDescriptor
 from django.db.transaction import atomic
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -58,7 +55,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
     queryset = Process.objects.all()
     exc_conversion_map = {
         SyncKeyMismatchError: "WIZARD_SYNC_KEY_CONFLICT",
-        WizardOperationError: "WIZARD_OPERATION_CONFLICT",
+        ActionProcessOperationError: "WIZARD_OPERATION_CONFLICT",
     }
 
     def get_serializer_class(self):
@@ -180,67 +177,38 @@ class ProcessStepViewSet(GetParentObjectMixin, RetrieveModelMixin, ADCMGenericVi
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
         data = step.model_dump(include={"id", "display_name", "type", "state"})
 
-        serialized_data = serialize_step(
-            process_id=process_id, step_id=step_id, action_id=action_id, object_=object_, base_data=data
-        )
+        serialized_data = serialize_step(step=step, object_=object_, base_data=data)
 
         return Response(data=serialized_data, status=HTTP_200_OK)
 
 
 def serialize_step(
-    process_id: ActionProcessID,
-    step_id: ActionProcessStepID,
-    action_id: ActionID,
-    object_: CoreObjectDescriptor,
-    base_data: dict,
+    step: Step, object_: CoreObjectDescriptor, base_data: dict
 ) -> SerializedConfigStep | SerializedOperationStep:
-    step = repo.retrieve_step(process_id=process_id, step_id=step_id)
     if step.is_render_required:
         raise AdcmEx("WIZARD_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
-
-    process = repo.retrieve_process(process_id=process_id)
-    step_spec_raw = repo.find_raw_step_spec(step=step, process_flow_spec=process.flow_spec)
 
     step_input = ProcessStepInput.objects.filter(step_id=step.id).first()
 
     match step.type:
         case StepType.CONFIGURATION:
-            return _serialize_config_step(
-                step=step,
-                step_spec_raw=step_spec_raw,
-                action_id=action_id,
-                object_=object_,
-                step_input=step_input,
-                base_data=base_data,
-            )
+            return _serialize_config_step(step=step, object_=object_, step_input=step_input, base_data=base_data)
         case StepType.OPERATION:
-            return _serialize_operation_step(step_spec_raw=step_spec_raw, step_input=step_input, base_data=base_data)
+            return _serialize_operation_step(step=step, step_input=step_input, base_data=base_data)
         case _:
             raise NotImplementedError(f"Can't serialize {step.type} step.")
 
 
 def _serialize_config_step(
     step: Step,
-    step_spec_raw: ActionProcessStep,
-    action_id: ActionID,
     object_: CoreObjectDescriptor,
     step_input: ProcessStepInput | None,
     base_data: dict,
 ) -> SerializedConfigStep:
-    action_orm = repo.retrieve_action_orm(action_id=action_id)
     object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
-    path_resolver = BundlePathResolver(bundle_hash=action_orm.prototype.bundle.hash)
-    config_file = Path(path_resolver.bundle_root, step_spec_raw.template.file.path)
+    path_resolver = BundlePathResolver(bundle_hash=object_orm.prototype.bundle.hash)
 
-    # todo replace it with new rendering
-    prototype_configs, _ = _get_jinja_config_new(
-        data=step.step_spec,
-        action=action_orm,
-        config_file=config_file,
-        resolver=path_resolver,
-        object_=object_orm,
-    )
-
+    prototype_configs = [PrototypeConfig(**config) for config in step.step_spec]
     schema, config, meta = get_schema_config_meta(
         object_=object_orm,
         prototype_configs=prototype_configs,
@@ -257,9 +225,11 @@ def _serialize_config_step(
 
 
 def _serialize_operation_step(
-    step_spec_raw: ActionProcessStep, step_input: ProcessStepInput | None, base_data: dict
+    step: Step, step_input: ProcessStepInput | None, base_data: dict
 ) -> SerializedOperationStep:
-    ui_options = step_spec_raw.model_dump(include={"ui_options"}).get("ui_options")
+    process = repo.retrieve_process(process_id=step.process_id)
+    step_spec_declaration = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec)
+    ui_options = step_spec_declaration.model_dump(include={"ui_options"}).get("ui_options")
 
     task = None
     if step_input:

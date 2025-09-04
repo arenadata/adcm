@@ -11,19 +11,21 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Generator, TypeAlias
-from uuid import UUID, uuid4
+from typing import Any, Generator, TypeAlias
+from uuid import uuid4
 
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID, TaskID
 from django.conf import settings
 
-from cm.models import Action, Process, ProcessStep, Prototype, TaskLog
+from cm.models import Action, Process, ProcessStep, Prototype, PrototypeConfig, TaskLog
 from cm.services.wizard.types import (
     ActionProcess,
+    DBPrototypeConfig,
     ProcessState,
     ProcessStepState,
     ProcessUpdateDTO,
+    SerializedPrototypeConfigs,
     Step,
     StepUpdateDTO,
 )
@@ -37,22 +39,20 @@ def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
     return Path(settings.BUNDLE_DIR, hash_)
 
 
-def create_process(
-    object_: CoreObjectDescriptor, action_id: ActionID, stages: list[ActionProcessStage]
-) -> ActionProcess:
+def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: list[dict[str, Any]]) -> ActionProcess:
     process = Process.objects.create(
         action_id=action_id,
         object_id=object_.id,
         object_type=object_.type.value,
         last_completed_step=None,
-        flow_spec=[stage.model_dump(exclude_defaults=True, exclude_unset=True) for stage in stages],
+        flow_spec=stages,
         sync_key=uuid4(),
     )
 
     return ActionProcess.model_validate(process, from_attributes=True)
 
 
-def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> None:
+def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> list[ProcessStep]:
     objects = []
     for stage in stages:
         for step in stage.steps:
@@ -65,11 +65,19 @@ def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) 
                 )
             )
 
-    ProcessStep.objects.bulk_create(objects)
+    return ProcessStep.objects.bulk_create(objects)
 
 
 def retrieve_action_orm(action_id: ActionID) -> Action:
     return Action.objects.get(id=action_id)
+
+
+def retrieve_step_orm(step_id: ActionProcessStepID) -> ProcessStep:
+    return ProcessStep.objects.get(id=step_id)
+
+
+def retrieve_process_orm(process_id: ActionProcessID) -> Process:
+    return Process.objects.get(id=process_id)
 
 
 def set_process_status(process: ActionProcess, state: ProcessState) -> WasUpdated:
@@ -102,8 +110,7 @@ def retrieve_running_step_ids(process_id: ActionProcessID) -> set[ActionProcessS
 def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, None, None]:
     flow_spec = retrieve_process(process_id=process_id).flow_spec
     for step_orm in ProcessStep.objects.filter(process_id=process_id, **kwargs).order_by("id"):
-        step_spec_raw = find_raw_step_spec(step=step_orm, process_flow_spec=flow_spec)
-        step_orm.type = step_spec_raw.type
+        step_orm.type = find_step_spec_declaration(step=step_orm, process_flow_spec=flow_spec).type
 
         yield Step.model_validate(step_orm, from_attributes=True)
 
@@ -118,15 +125,11 @@ def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
     ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
 
 
-def update_process(process_id: ActionProcessID, sync_key: UUID, data: ProcessUpdateDTO) -> WasUpdated:
-    records_updated = Process.objects.filter(id=process_id, sync_key=sync_key).update(
-        **data.model_dump(exclude_unset=True)
-    )
-
-    return bool(records_updated)
+def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
+    Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
 
 
-def find_raw_step_spec(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
+def find_step_spec_declaration(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
     if not process_flow_spec:
         raise RuntimeError("process.flow_spec is empty")
 
@@ -146,3 +149,11 @@ def retrieve_next_step_ids(process_id: ActionProcessID, step_id: ActionProcessSt
     return tuple(
         ProcessStep.objects.filter(process_id=process_id, id__gt=step_id).values_list("id", flat=True).order_by("id")
     )
+
+
+def serialize_prototype_configs(data: list[PrototypeConfig]) -> list[DBPrototypeConfig]:
+    return SerializedPrototypeConfigs.model_validate({"configs": data}, from_attributes=True).model_dump()["configs"]
+
+
+def convert_stages_to_db_format(stages: list[ActionProcessStage]) -> list[dict[str, Any]]:
+    return [stage.model_dump() for stage in stages]

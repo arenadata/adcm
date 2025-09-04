@@ -11,17 +11,14 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Any
 
-from core.bundle_alt.schema import ActionProcessStep
-from core.templates import RendererEnv, Template, get_renderer
+from core.job.types import JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 
 from cm.converters import core_type_to_model
-from cm.services.jinja_env import get_env_for_jinja_config
-from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.bundle_alt.render import ActionArgs, Environment, TaskArgs, render_config, render_scripts
 from cm.services.wizard import repo
-from cm.services.wizard.types import Step, StepUpdateDTO
+from cm.services.wizard.types import DBPrototypeConfig, StepType, StepUpdateDTO
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,37 +28,44 @@ class RenderStepContext:
     object: CoreObjectDescriptor
 
 
-def render_step(step_id: ActionProcessStepID, context: RenderStepContext) -> None:
+def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext) -> None:
+    spec = _render_step(step_id=step_id, context=context)
+    repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
+
+
+def _render_step(step_id: ActionProcessStepID, context: RenderStepContext) -> list[JobSpec] | list[DBPrototypeConfig]:
     process = repo.retrieve_process(process_id=context.process_id)
     step = repo.retrieve_step(process_id=context.process_id, step_id=step_id)
+    template = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec).template
 
-    step_spec_raw = repo.find_raw_step_spec(step=step, process_flow_spec=process.flow_spec)
-    render_step_from_flow_spec(step=step, spec_raw=step_spec_raw, action_id=context.action_id, object_=context.object)
+    process_orm = repo.retrieve_process_orm(process_id=process.id)
+    action_orm = repo.retrieve_action_orm(action_id=context.action_id)
+    object_orm = core_type_to_model(context.object.type).objects.get(id=context.object.id)
+    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
+    environment = Environment(bundle_root=bundle_root)
 
+    match step.type:
+        case StepType.CONFIGURATION:
+            action_args = ActionArgs(
+                action=action_orm,
+                cluster_relative_object=object_orm,
+                action_process=process_orm,
+            )
+            prototype_configs = render_config(template=template, environment=environment, context_args=action_args)
+            step_spec = repo.serialize_prototype_configs(data=prototype_configs)
 
-def render_step_from_flow_spec(
-    step: Step, spec_raw: ActionProcessStep, action_id: ActionID, object_: CoreObjectDescriptor
-) -> None:
-    action = ActionRepoImpl.get_action(id=action_id)
-    environment = RendererEnv(
-        discovery_root=repo.get_bundle_root_from_prototype(prototype_id=action.owner_prototype.id)
-    )
+        case StepType.OPERATION:
+            task_args = TaskArgs(
+                target_object=object_orm,
+                action=action_orm,
+                config={},
+                verbose=False,
+                delta=None,
+                action_process=process_orm,
+            )
+            step_spec = render_scripts(template=template, environment=environment, context_args=task_args)
 
-    rendered = render_template(
-        template=spec_raw.template, environment=environment, action_id=action.id, object_=object_
-    )
-    # todo conversion is missing
+        case _:
+            raise NotImplementedError(f"Unexpected step type {step.type}")
 
-    repo.update_step(step_id=step.id, data=StepUpdateDTO(step_spec=rendered))
-
-
-def render_template(
-    template: Template, environment: RendererEnv, action_id: ActionID, object_: CoreObjectDescriptor
-) -> Any:
-    renderer = get_renderer(template=template, environment=environment)
-    # TODO: replace with correct context retriever; handle render error
-    orm_object = core_type_to_model(object_.type).objects.get(pk=object_.id)
-    context = get_env_for_jinja_config(
-        action=repo.retrieve_action_orm(action_id=action_id), cluster_relative_object=orm_object
-    )
-    return renderer.render(context=context)
+    return step_spec

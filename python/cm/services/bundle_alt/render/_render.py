@@ -66,10 +66,9 @@ def render_config(
         template=template, environment=environment, build_context=prepare_context_for_action, context_args=context_args
     )
 
-    template_dir_relative_path = template.file.path.parent.relative_to(environment.bundle_root)
     parsing_context = ConfigConversionContext(
         bundle_root=environment.bundle_root,
-        path=str(template_dir_relative_path),
+        path=str(template.file.path.parent),
         object={"config_group_customization": False},
     )
     config_prototypes = parse_config_jinja(
@@ -93,10 +92,9 @@ def render_scripts(
         context_args=context_args,
     )
 
-    template_dir_relative_path = template.file.path.parent.relative_to(environment.bundle_root)
-    allow_to_terminate_from_action = context_args.task.action.allow_to_terminate
+    allow_to_terminate_from_action = context_args.action.allow_to_terminate
     parsing_context = ScriptsConversionContext(
-        source_dir=template_dir_relative_path, action_allow_to_terminate=allow_to_terminate_from_action
+        source_dir=template.file.path.parent, action_allow_to_terminate=allow_to_terminate_from_action
     )
 
     scripts = parse_scripts(data=raw, context=parsing_context)

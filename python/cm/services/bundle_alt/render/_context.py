@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
@@ -29,7 +29,6 @@ from cm.models import (
     Process,
     Prototype,
     Service,
-    TaskLog,
 )
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.job.inventory import (
@@ -53,9 +52,13 @@ class ActionArgs:
 
 @dataclass(slots=True)
 class TaskArgs:
-    task: TaskLog
-    delta: TaskMappingDelta | None = None
+    target_object: Cluster | Service | Component | Host | ActionHostGroup
+    action: Action
     action_process: Process | None = None
+
+    config: dict = field(default_factory=dict)
+    verbose: bool = False
+    delta: TaskMappingDelta | None = None
 
 
 # For Internal Typehint Purposes
@@ -106,7 +109,7 @@ def prepare_context_for_action(args: ActionArgs) -> dict:
 
 def prepare_context_for_task(args: TaskArgs) -> dict:
     action_group = None
-    target_object = args.task.task_object
+    target_object = args.target_object
     if isinstance(target_object, ActionHostGroup):
         action_group = target_object
         target_object = target_object.object
@@ -116,7 +119,7 @@ def prepare_context_for_task(args: TaskArgs) -> dict:
         raise TypeError(message)
 
     action_context = _prepare_context_for_action(
-        action=args.task.action,
+        action=args.action,
         cluster_relative_object=target_object,
         action_process=args.action_process,
         delta=args.delta,
@@ -126,7 +129,7 @@ def prepare_context_for_task(args: TaskArgs) -> dict:
         target_group_hosts = _get_names_of_hosts_in_action_host_group(action_group.pk)
         action_context.groups |= {"target": target_group_hosts}
 
-    task_context = _TaskContext(config=args.task.config, verbose=args.task.verbose)
+    task_context = _TaskContext(config=args.config, verbose=args.verbose)
 
     return TaskRenderContext(
         cluster=action_context.cluster,
@@ -213,7 +216,8 @@ def _get_wizard_process_context(process: Process) -> _ProcessContext:
         for step in stage["steps"]:
             step_obj = steps_by_name.get(step["name"])
 
-            if "config" in step_obj.step_spec:
+            # TODO: check step type; process proto_configs from step_spec (like in inventory)
+            if step_obj.step_spec and "config" in step_obj.step_spec:
                 process_dict[stage["name"]][step["name"]] = {"config": step_obj.processstepinput.configuration}
 
     return process_dict
