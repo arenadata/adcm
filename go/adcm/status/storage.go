@@ -107,6 +107,57 @@ func intSliceContains(a []int, x int) bool {
 	return false
 }
 
+// Host Duplicates
+
+type HostDuplicates struct {
+	// Storage for IDs of host duplicates.
+	// It's a dumb implementation of set using the map type.
+	// To get duplicate ids iterate over second level keys retrieved by original host ID.
+	//
+	// First key is Original Host ID,
+	// Second key is Duplicate Host ID,
+	// Value by duplicate id is meaningless integer.
+	duplicates map[int]map[int]int
+	mutex      sync.Mutex
+}
+
+func newHostDuplicates() *HostDuplicates {
+	return &HostDuplicates{
+		duplicates: make(map[int]map[int]int),
+	}
+}
+
+func (hd *HostDuplicates) Register(original int, duplicates []int) {
+	hd.mutex.Lock()
+	defer hd.mutex.Unlock()
+
+	registeredDuplicates, exists := hd.duplicates[original]
+
+	if !exists {
+		registeredDuplicates = make(map[int]int, len(duplicates))
+		hd.duplicates[original] = registeredDuplicates
+	}
+
+	for _, id := range duplicates {
+		registeredDuplicates[id] = 0
+	}
+}
+
+func (hd *HostDuplicates) GetForID(original int) []int {
+	duplicates, exists := hd.duplicates[original]
+	if !exists {
+		return []int{}
+	}
+
+	out := make([]int, 0, len(hd.duplicates))
+
+	for id := range duplicates {
+		out = append(out, id)
+	}
+
+	return out
+}
+
 // Server
 
 func newStorage(db dbStorage, label string) *Storage {
