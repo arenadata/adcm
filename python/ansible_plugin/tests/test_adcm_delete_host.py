@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
 from cm.models import Component, Host, Prototype
+from cm.services.host.duplicates import create_duplicate
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError
@@ -99,3 +100,26 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                     "Plugin should be called only in context of host, " f"not {orm_object_to_core_type(object_).value}",
                     result.error.message,
                 )
+
+    def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
+        host = self.add_host(provider=self.another_provider, fqdn="original-host")
+
+        create_duplicate(host_id=host.id, name="duplicate-1", cluster_id=self.cluster.id)
+        create_duplicate(host_id=host.id, name="duplicate-2", cluster_id=self.cluster.id)
+
+        task = self.prepare_task(owner=host, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMDeleteHostPluginExecutor, call_arguments={}, call_context=job
+        )
+
+        result = executor.execute()
+
+        self.assertIsInstance(result.error, PluginRuntimeError)
+        self.assertIn(
+            "It is forbidden to delete a host if at least one duplicate is associated with the cluster.",
+            result.error.message,
+        )
+
+        self.assertEqual(Host.objects.all().count(), 6)
