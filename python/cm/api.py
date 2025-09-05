@@ -257,6 +257,12 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     if cluster:
         raise AdcmEx(code="HOST_CONFLICT", msg="Unable to remove a host associated with a cluster.")
 
+    if host.duplicates.filter(cluster__isnull=False).exists():
+        raise AdcmEx(
+            code="HOST_CONFLICT",
+            msg="It is forbidden to delete a host if at least one duplicate is associated with the cluster.",
+        )
+
     if cancel_tasks:
         cancel_locking_tasks(obj=host, obj_deletion=True)
 

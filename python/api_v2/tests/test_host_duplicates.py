@@ -12,10 +12,10 @@
 
 from operator import itemgetter
 
-from cm.models import Cluster, Host, MaintenanceMode
+from cm.models import Cluster, Component, Host, MaintenanceMode
 from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -143,3 +143,28 @@ class TestDuplicateHost(BaseAPITestCase):
         response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
+        duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="duplicate-1", cluster_id=self.cluster_1.id)
+        duplicate_2_id = create_duplicate(host_id=self.host_1.id, name="duplicate-2")
+
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).first()
+        component_1 = Component.objects.get(service=service, prototype__name="component_1")
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[
+                (Host.objects.get(id=duplicate_1_id), component_1),
+            ],
+        )
+
+        response = self.client.v2[self.host_1].delete()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "HOST_CONFLICT")
+        self.assertEqual(
+            response.data["desc"],
+            "It is forbidden to delete a host if at least one duplicate is associated with the cluster.",
+        )
+
+        self.assertEqual(Host.objects.filter(id__in=[self.host_1.id, duplicate_1_id, duplicate_2_id]).count(), 3)
