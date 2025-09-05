@@ -13,7 +13,6 @@
 from dataclasses import dataclass
 from typing import Callable, Literal, Optional, TypeAlias
 from uuid import UUID, uuid4
-import logging
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.types import ActionInfo, JobSpec
@@ -296,7 +295,6 @@ def _operation_submit_job(
         job_repo.create_logs(logs)
 
     task_orm = repo.retrieve_task_orm(task_id=task.id)
-    logging.getLogger("adcm").error(f"{task_orm.action=}")
 
     data = {"step_id": step_id, "configuration": None, "job_id": task_orm.id, "created_at": timezone.now()}
     step_input_qs = ProcessStepInput.objects.filter(step_id=step_id)

@@ -81,10 +81,7 @@ def retrieve_process_orm(process_id: ActionProcessID) -> Process:
 
 
 def set_process_status(process: ActionProcess, state: ProcessState) -> WasUpdated:
-    records_updated = Process.objects.filter(
-        pk=process.id,
-        sync_key=process.sync_key,
-    ).update(state=state)
+    records_updated = Process.objects.filter(pk=process.id).update(state=state)
     return bool(records_updated)
 
 

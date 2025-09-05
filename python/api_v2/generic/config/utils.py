@@ -679,7 +679,7 @@ def get_config_schema(
             group_fields = [
                 pc
                 for pc in prototype_configs
-                if pc.name == field.name and pc.prototype == field.prototype and pc.type != "group"
+                if pc.name == field.name and pc.prototype_id == field.prototype_id and pc.type != "group"
             ]
             item = get_field(
                 prototype_config=field, object_=object_, path_resolver=path_resolver, group_fields=group_fields
