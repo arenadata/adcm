@@ -218,7 +218,8 @@ def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor
         (
             (
                 orm_type.objects.filter(
-                    Q(config__isnull=False) | Q(config__isnull=True, original__isnull=False),
+                    Q(config__isnull=False)
+                    | Q(config__isnull=True, original__isnull=False, original__config__isnull=False),
                     id__in=objects.get(core_type, ()),
                 )
                 if core_type == ADCMCoreType.HOST
