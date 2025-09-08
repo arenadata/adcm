@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 from functools import partial
 from operator import itemgetter
 from pathlib import Path
@@ -41,7 +42,11 @@ from cm.models import (
 )
 from cm.services.jinja_env import _get_action_info
 from cm.services.job.run.repo import ActionRepoImpl
-from cm.services.wizard.operations import OperationContext, find_current_and_last_completed_steps
+from cm.services.wizard.operations import (
+    OperationContext,
+    find_current_and_last_completed_steps,
+    process_payload_config,
+)
 from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
 from cm.services.wizard.schema_validation import ProcessOperationType, SubmitStepPayload
 from cm.services.wizard.types import ProcessState, ProcessStepState
@@ -52,6 +57,7 @@ from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
+from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -783,6 +789,10 @@ class TestWizard(BaseAPITestCase):
         self.bundle_1 = self.add_bundle(source_dir=wizard_cluster_bundle)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
 
+        wizard_config_bundle = self.test_bundles_dir / "wizard_config"
+        self.config_bundle = self.add_bundle(source_dir=wizard_config_bundle)
+        self.config_cluster = self.add_cluster(bundle=self.config_bundle, name="config_cluster")
+
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
         self.component_1 = Component.objects.filter(service=self.service_1).first()
 
@@ -1403,7 +1413,7 @@ class TestWizard(BaseAPITestCase):
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
             action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
-            config_processor=None,
+            config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
             process_id=process.id, payload=expected_payload, context=expected_context
@@ -1434,7 +1444,7 @@ class TestWizard(BaseAPITestCase):
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
             action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
-            config_processor=None,
+            config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
             process_id=process.id, payload=expected_payload, context=expected_context
@@ -1617,6 +1627,153 @@ class TestWizard(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
             self.assertIn("Input should be a valid UUID", error)
+
+    def test_validation_submit_config(self):
+        process = self.get_process(process_id=self.start_process(obj=self.config_cluster))
+        step = process.steps.get(name="first_config_step")
+
+        base_payload = {
+            "config": {
+                "integer_field": 100,
+                "json_not_required": None,
+                "agroup": {
+                    "str_in_agroup": "new str in agroup value",
+                    "json_in_agroup": '{"new": "json", "in": "agroup"}',
+                },
+            },
+            "adcmMeta": {"/agroup": {"isActive": True}},
+        }
+
+        with self.subTest("Correct config"):
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=base_payload
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # check json string conversion
+            input_ = ProcessStepInput.objects.get(step_id=step.id)
+            expected_input = {
+                "config": {
+                    "integer_field": 100,
+                    "json_not_required": None,
+                    "agroup": {
+                        "str_in_agroup": "new str in agroup value",
+                        "json_in_agroup": {"new": "json", "in": "agroup"},
+                    },
+                },
+                "attr": {"agroup": {"active": True}},
+            }
+            self.assertDictEqual(input_.configuration, expected_input)
+
+        with self.subTest("Correct wihtout not required field"):
+            self.make_step_current(step=step)
+            payload = deepcopy(base_payload)
+            del payload["config"]["json_not_required"]
+
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=payload
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # check absence of not required field in input
+            input_ = ProcessStepInput.objects.get(step_id=step.id)
+            expected_input = {
+                "config": {
+                    "integer_field": 100,
+                    "agroup": {
+                        "str_in_agroup": "new str in agroup value",
+                        "json_in_agroup": {"new": "json", "in": "agroup"},
+                    },
+                },
+                "attr": {"agroup": {"active": True}},
+            }
+            self.assertDictEqual(input_.configuration, expected_input)
+
+        with self.subTest("Without adcmMeta"):
+            self.make_step_current(step=step)
+            payload = deepcopy(base_payload)
+            del payload["adcmMeta"]
+
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=payload
+            )
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+            expected_response = {
+                "code": "ATTRIBUTE_ERROR",
+                "desc": "there isn't `agroup` group in the `attr`",
+                "level": "error",
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        with self.subTest("With empty adcmMeta"):
+            self.make_step_current(step=step)
+            payload = deepcopy(base_payload)
+            payload["adcmMeta"] = {}
+
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=payload
+            )
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+            expected_response = {
+                "code": "ATTRIBUTE_ERROR",
+                "desc": "there isn't `agroup` group in the `attr`",
+                "level": "error",
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        with self.subTest("With empty /agroup meta"):
+            self.make_step_current(step=step)
+            payload = deepcopy(base_payload)
+            payload["adcmMeta"]["/agroup"] = {}
+
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=payload
+            )
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+            expected_response = {
+                "code": "ATTRIBUTE_ERROR",
+                "desc": 'there isn\'t `/agroup` group in the config (cluster "wizard_config" 1.0)',
+                "level": "error",
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        with self.subTest("Without required field"):
+            self.make_step_current(step=step)
+            payload = deepcopy(base_payload)
+            del payload["config"]["integer_field"]
+
+            response = self.submit_config_step(
+                obj=self.config_cluster, process=process, step_id=step.id, config_payload=payload
+            )
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+            expected_json_response = {
+                "code": "CONFIG_KEY_ERROR",
+                "desc": 'There is no required key "integer_field" in input config (cluster "wizard_config" 1.0)',
+                "level": "error",
+            }
+            self.assertDictEqual(response.json(), expected_json_response)
+
+    def submit_config_step(self, obj: Cluster, process: Process, step_id: int, config_payload: dict) -> Response:
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(obj=obj) / process / "operation"
+        payload = {
+            "method": "submit_step",
+            "params": {"processSyncKey": process.sync_key, "stepId": step_id, "configuration": config_payload},
+        }
+
+        return endpoint.post(data=payload)
+
+    def make_step_current(self, step: ProcessStep) -> None:
+        steps_qs = ProcessStep.objects.filter(process_id=step.process_id)
+        steps_qs.filter(id__lt=step.id).update(state=ProcessStepState.COMPLETED)
+
+        self_and_next_ids = set(steps_qs.filter(id__gte=step.id).values_list("id", flat=True))
+        steps_qs.filter(id__in=self_and_next_ids).update(state=ProcessStepState.CREATED)
+        ProcessStepInput.objects.filter(step_id__in=self_and_next_ids).delete()
 
     def start_process(self, obj: Cluster | Service | Component):
         endpoint = self.get_endpoint_to_processes(obj)

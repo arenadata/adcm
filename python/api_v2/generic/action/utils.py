@@ -31,13 +31,14 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
+from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.config.jinja import get_jinja_config
 from cm.services.wizard.types import ProcessState
 from django.conf import settings
 from django.utils import timezone
 from rbac.models import User
 
-from api_v2.generic.config.utils import convert_attr_to_adcm_meta, get_config_schema
+from api_v2.generic.config.utils import get_config_schema
 
 
 def get_str_hash(value: str) -> str:

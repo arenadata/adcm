@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Callable, Literal, Optional, TypeAlias
+from typing import Literal, Protocol, TypeAlias
 from uuid import UUID, uuid4
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
@@ -31,7 +31,7 @@ from cm.converters import core_type_to_model
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
 from cm.services.concern.flags import BuiltInFlag, lower_flag
-from cm.services.config import ConfigAttrPair
+from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.job.run import start_task
 from cm.services.job.run.repo import JobRepoImpl
 from cm.services.wizard import repo
@@ -62,11 +62,16 @@ SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | 
 OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetStepPayload
 
 
+class ConfigProcessor(Protocol):
+    def __call__(self, step: Step, config: Configuration) -> ConfigAttrPair:
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class OperationContext:
     object: CoreObjectDescriptor
     action: ActionInfo
-    config_processor: Optional[Callable] = None  # TODO
+    config_processor: ConfigProcessor
 
 
 def find_current_and_last_completed_steps(
@@ -221,13 +226,10 @@ def submit_step(process: ActionProcess, payload: SubmitStepPayload, context: Ope
     step = repo.retrieve_step(process_id=process.id, step_id=payload.params.step_id)
     match step.type:
         case StepType.CONFIGURATION:
-            config: ConfigAttrPair = _prepare_step_config_input(
-                process_id=process.id, step_id=payload.params.step_id, config=payload.params.configuration
-            )
             _operation_submit_config(
                 process=process,
                 step=step,
-                configuration=config,
+                configuration=payload.params.configuration,
                 context=context,
             )
 
@@ -254,20 +256,12 @@ def reset_step(process: ActionProcess, payload: ResetStepPayload, context: Opera
         fill_step_spec(step_id=current_id, context=render_context)
 
 
-def _prepare_step_config_input(  # TODO: https://tracker.yandex.ru/ADCM-6942
-    process_id: int,  # noqa: ARG001
-    step_id: int,  # noqa: ARG001
-    config: Configuration,
-) -> ConfigAttrPair:
-    from api_v2.generic.config.utils import convert_adcm_meta_to_attr
-    # todo make it work
-    # step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-    # config = represent_string_as_json_type()
+def process_payload_config(step: Step, config: Configuration) -> ConfigAttrPair:
+    json_proto_configs = [PrototypeConfig(**cfg) for cfg in step.step_spec if cfg["type"] == "json"]
+    config_ = represent_string_as_json_type(prototype_configs=json_proto_configs, value=config.config)
+    attr_ = convert_adcm_meta_to_attr(adcm_meta=config.adcm_meta)
 
-    # todo do something with this bs
-    attr = convert_adcm_meta_to_attr(config.adcm_meta)
-
-    return ConfigAttrPair(config=config.config, attr=attr)
+    return ConfigAttrPair(config=config_, attr=attr_)
 
 
 def _operation_submit_job(
@@ -314,10 +308,11 @@ def _operation_submit_job(
 def _operation_submit_config(
     process: ActionProcess,
     step: Step,
-    configuration: ConfigAttrPair,
+    configuration: Configuration,
     *,
     context: OperationContext,
 ) -> None:
+    configuration = context.config_processor(step=step, config=configuration)
     _validate_config(config=configuration, step=step, context=context)
 
     data = {"step_id": step.id, "configuration": configuration._asdict(), "job": None, "created_at": timezone.now()}

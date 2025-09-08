@@ -1,0 +1,10 @@
+- name: first_config_stage
+  display_name: "First config stage"
+  steps:
+    - name: first_config_step
+      display_name: "First config step"
+      config_template:
+        file:
+          path: wizard_jinja/steps/s1_config.j2
+        engine:
+          type: jinja2

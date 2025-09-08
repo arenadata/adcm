@@ -18,6 +18,7 @@ from cm.errors import AdcmEx
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.bundle import BundlePathResolver
 from cm.services.concern.flags import BuiltInFlag, raise_flag
+from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
 from cm.services.wizard.errors import ActionProcessOperationError, SyncKeyMismatchError
@@ -27,6 +28,7 @@ from cm.services.wizard.operations import (
     SerializedOperationStep,
     initiate_process,
     perform_operation,
+    process_payload_config,
 )
 from cm.services.wizard.types import Step, StepType
 from core.job.types import ActionInfo
@@ -40,7 +42,6 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.generic.action.utils import get_schema_config_meta
 from api_v2.generic.action.views import ActionPermissionsMixin
-from api_v2.generic.config.utils import convert_attr_to_adcm_meta
 from api_v2.generic.wizard.serializers import (
     OperationSerializer,
     ProcessSerializer,
@@ -138,7 +139,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         context = OperationContext(
             object=orm_object_to_core_descriptor(object_=parent_object),
             action=action_info,
-            config_processor=None,
+            config_processor=process_payload_config,
         )
         perform_operation(process_id=process_id, payload=payload, context=context)
 

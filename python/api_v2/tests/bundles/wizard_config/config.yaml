@@ -1,0 +1,17 @@
+---
+- type: cluster
+  name: wizard_config
+  version: &version '1.0'
+  edition: community
+  actions: &actions
+    wizard_jinja:
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/stages.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
