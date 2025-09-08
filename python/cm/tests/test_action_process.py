@@ -10,20 +10,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
 
-from adcm.tests.base import BaseTestCase
-from core.types import ADCMCoreType
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
 
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.wizard.operations import find_current_and_last_completed_steps
+from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.wizard import repo
+from cm.services.wizard.operations import (
+    OperationContext,
+    find_current_and_last_completed_steps,
+    initiate_process,
+    submit_step,
+)
+from cm.services.wizard.schema_validation import (
+    Configuration,
+    ProcessOperationType,
+    SubmitStepPayload,
+    _SubmitConfigurationStepParams,
+)
 from cm.services.wizard.types import ProcessStepState
 
 StepName: TypeAlias = str
 
+ACTION_PROCESS_BUNDLE = Path(__file__).parent / "bundles" / "cluster_action_process"
 
-class TestWizardLogic(BaseTestCase):
+
+class TestActionProcessLogic(BaseTestCase):
     def _create_dummy_process_with_steps(self, num_steps: int) -> Process:
         bundle = Bundle.objects.create(name="dummy_bundle", version="1", hash="dummy")
         prototype = Prototype.objects.create(
@@ -129,3 +145,60 @@ class TestWizardLogic(BaseTestCase):
             )
             self.assertIsNone(current)
             self.assertEqual(last_completed, steps_name_id_map["step_4"])
+
+
+class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
+    maxDiff = None
+
+    def get_process_context(self, process_id: ActionProcessID):
+        from cm.services.bundle_alt.render._context import _get_action_process_context
+
+        process = Process.objects.get(id=process_id)
+        return _get_action_process_context(process=process)
+
+    def test_process_step_sequential_rendering(self):
+        bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
+        cluster = self.add_cluster(bundle=bundle, name="cc")
+        object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
+        action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
+        action_info = ActionRepoImpl.get_action(id=action.pk)
+
+        process_id = initiate_process(object_=object_, action=action_info)
+
+        ctx = self.get_process_context(process_id)
+        self.assertIsNotNone(ctx["current"])
+        self.assertDictEqual(ctx["current"], {"stage": "first_stage", "step": "stage1_step1"})
+        self.assertDictEqual(
+            ctx["stages"], {f"{stage_name}_stage": {} for stage_name in ("first", "second", "third", "fourth")}
+        )
+
+        config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
+
+        process = repo.retrieve_process(process_id=process_id)
+        context = OperationContext(object=object_, action=action_info, config_processor=None)
+        payload = SubmitStepPayload(
+            method=ProcessOperationType.SUBMIT,
+            params=_SubmitConfigurationStepParams(
+                process_sync_key=process.sync_key,
+                step_id=process.current_step_id,
+                configuration=Configuration(config=config, adcm_meta={}),
+            ),
+        )
+
+        submit_step(process=process, payload=payload, context=context)
+
+        ctx = self.get_process_context(process_id)
+        self.assertDictContainsSubset(
+            {f"{stage_name}_stage": {} for stage_name in ("second", "third", "fourth")}, ctx["stages"]
+        )
+
+        first_step = ctx["stages"]["first_stage"]["stage1_step1"]
+        self.assertEqual(set(first_step.keys()), {"config"})
+
+        actual_config = first_step["config"]["config"]
+        self.assertEqual(actual_config["integer_field"], config["integer_field"])
+        self.assertEqual(actual_config["string_field"], config["string_field"])
+        self.assertIn("__ansible_vault", actual_config["g"]["pass"])
+        self.assertNotEqual(actual_config["fl"], config["fl"])
+        file_value = Path(actual_config["fl"])
+        self.assertEqual(file_value.name, (f"process.{process_id}.step.{process.current_step_id}.fl."))

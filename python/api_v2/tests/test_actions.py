@@ -792,15 +792,13 @@ class TestWizard(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     @staticmethod
-    def _set_completed_fill_specs_create_inputs_for_steps_by_name(
-        process_id: int, test_spec, step_names: Collection[str]
-    ) -> None:
+    def set_completed_fill_specs_create_inputs_for_steps_by_name(process_id: int, step_names: Collection[str]) -> None:
         # Fill previous steps' `step_spec`, create inputs for them, set `completed` state
         for step in ProcessStep.objects.filter(process_id=process_id, name__in=step_names):
-            step.step_spec = test_spec
+            step.step_spec = [{"name": "a", "subname": ""}]
             step.state = ProcessStepState.COMPLETED
             step.save(update_fields=["step_spec", "state"])
-            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration={"config": {}, "attr": {}})
 
     def test_create_process_success(self):
         self.assertEqual(Process.objects.count(), 0)
@@ -1025,8 +1023,8 @@ class TestWizard(BaseAPITestCase):
         target_step = ProcessStep.objects.get(process_id=process.id, name="stage2_step2", display_name="Stage2.Step2")
 
         previous_step_names = {"stage1_step1", "stage2_step1"}
-        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
-            process_id=process.id, test_spec={"test": "data"}, step_names=previous_step_names
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process_id=process.id, step_names=previous_step_names
         )
 
         self.client.login(**self.test_user_credentials)
@@ -1138,8 +1136,8 @@ class TestWizard(BaseAPITestCase):
             with self.subTest(f"wizard action of {obj} with process"):
                 process = self.get_process(self.start_process(obj))
 
-                self._set_completed_fill_specs_create_inputs_for_steps_by_name(
-                    process.id, {"test": "spec"}, {"stage1_step1", "stage2_step1"}
+                self.set_completed_fill_specs_create_inputs_for_steps_by_name(
+                    process.id, {"stage1_step1", "stage2_step1"}
                 )
 
                 response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk].get()
@@ -1150,13 +1148,13 @@ class TestWizard(BaseAPITestCase):
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
         initial_sync_key = process.sync_key
-        test_spec, previous_step_names = {"test": "spec"}, {"stage1_step1", "stage2_step1"}
+        previous_step_names = {"stage1_step1", "stage2_step1"}
 
         target_operation_step = ProcessStep.objects.get(
             process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
         )
 
-        self._set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, test_spec, previous_step_names)
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
         self.client.login(**self.test_user_credentials)
 
         with self.subTest("No view permissions"):
@@ -1245,9 +1243,10 @@ class TestWizard(BaseAPITestCase):
 
             # check that previous steps and inputs are not affected
             for step in ProcessStep.objects.filter(process_id=process.id, name__in=previous_step_names):
-                self.assertDictEqual(step.step_spec, test_spec)
+                # taken hardcoded values from "fill" function, which is bad from test design perspective
+                self.assertListEqual(step.step_spec, [{"name": "a", "subname": ""}])
                 input_ = ProcessStepInput.objects.get(step_id=step.id)
-                self.assertDictEqual(input_.configuration, test_spec)
+                self.assertDictEqual(input_.configuration, {"config": {}, "attr": {}})
                 self.assertIsNone(input_.job)
 
     def test_submit_config_step_success(self):
@@ -1265,14 +1264,14 @@ class TestWizard(BaseAPITestCase):
         )
         self.assertEqual(target_config_step.state, ProcessStepState.CREATED)
 
-        test_step_spec = {"test": "data"}
+        test_step_spec = {"config": {}, "attr": {}}
         previous_step_names = {"stage1_step1"}
-        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
-            process_id=process.id, test_spec=test_step_spec, step_names=previous_step_names
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process_id=process.id, step_names=previous_step_names
         )
 
         # render step
-        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+        current_step_id, _ = find_current_and_last_completed_steps(
             steps=ProcessStep.objects.filter(process_id=process.id)
         )
         self.assertEqual(current_step_id, target_config_step.id)
@@ -1334,8 +1333,8 @@ class TestWizard(BaseAPITestCase):
             }
         ]
         steps_qs = ProcessStep.objects.filter(process_id=process.id)
-        expected_step_specs = {
-            ("stage1_step1", "Stage1.Step1"): test_step_spec,
+        expected_step_specs: dict[tuple, list[dict] | None] = {
+            ("stage1_step1", "Stage1.Step1"): [{"name": "a", "subname": ""}],
             ("stage2_step1", "Stage2.Step1"): expected_current_step_spec,
             ("stage2_step2", "Stage2.Step2"): expected_next_step_spec,
             ("stage3_step1", "Stage3.Step1"): None,
@@ -1456,9 +1455,9 @@ class TestWizard(BaseAPITestCase):
             )
         )
 
-        test_spec = {"test": "spec"}
-        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
-            process.id, test_spec, previous_step_names + current_step_name
+        test_spec = [{"name": "a", "subname": ""}]
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(
+            process.id, previous_step_names + current_step_name
         )
         # fill next steps spec to check it will be set to None
         ProcessStep.objects.filter(process_id=process.id, name__in=next_step_names).update(step_spec=test_spec)
@@ -1532,9 +1531,7 @@ class TestWizard(BaseAPITestCase):
     def test_complete_process_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
         step_names = ProcessStep.objects.filter(process_id=process.id).values_list("name", flat=True)
-        self._set_completed_fill_specs_create_inputs_for_steps_by_name(
-            process_id=process.id, test_spec={"test": "spec"}, step_names=step_names
-        )
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process_id=process.id, step_names=step_names)
 
         process_sync_key = process.sync_key
         endpoint = self.get_endpoint_to_processes(self.cluster_1) / process / "operation"
@@ -1609,7 +1606,7 @@ class TestWizard(BaseAPITestCase):
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             error = response.json()["desc"]
-            self.assertIn(f"Can't find Process #5 ({str(wrong_sync_key)})", error)
+            self.assertIn(f"Can't find Process #{process.pk} ({str(wrong_sync_key)})", error)
 
         with self.subTest("Incorrect payload for complete: wrong sync key type"):
             payload = {"method": "complete", "params": {"processSyncKey": "abs"}}

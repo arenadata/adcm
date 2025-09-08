@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
+from typing import Literal
 
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
@@ -27,10 +28,13 @@ from cm.models import (
     MaintenanceMode,
     ObjectType,
     Process,
+    ProcessStep,
     Prototype,
+    PrototypeConfig,
     Service,
 )
 from cm.services.cluster import retrieve_related_cluster_topology
+from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.services.job.inventory import (
     ClusterNode,
     HostGroupName,
@@ -39,6 +43,7 @@ from cm.services.job.inventory import (
     get_cluster_vars,
     sort_hosts_within_groups,
 )
+from cm.services.job.inventory._config import ProcessStepPair, update_configuration_for_inventory_inplace
 
 # For keeping garbage coupled
 
@@ -69,9 +74,12 @@ class _ActionContext(TypedDict):
     name: str
 
 
+_CurrentStep = dict[Literal["step", "stage"], str]
+
+
 class _ProcessContext(TypedDict):
-    # todo implement
-    ...
+    current: _CurrentStep | None
+    stages: dict[str, dict]
 
 
 class _ActionWithProcessContext(_ActionContext):
@@ -154,7 +162,7 @@ def _prepare_context_for_action(
 
     action_context = _get_action_info(action=action)
     if action_process:
-        process_context = _get_wizard_process_context(action_process)
+        process_context = _get_action_process_context(action_process)
         action_context = _ActionWithProcessContext(**action_context, process=process_context)
 
     return ActionRenderContext(
@@ -206,21 +214,46 @@ def _get_host_group_names_for_cluster(
     return _get_host_group_names_only(host_groups=host_groups)
 
 
-def _get_wizard_process_context(process: Process) -> _ProcessContext:
+def _get_action_process_context(process: Process) -> _ProcessContext:
     steps_qs = process.steps.all().select_related("processstepinput")
 
-    steps_by_name = {step.name: step for step in steps_qs}
-    process_dict = {}
+    steps_by_name: dict[str, ProcessStep] = {step.name: step for step in steps_qs}
+
+    current: _CurrentStep | None = None
+    stages = {}
+
     for stage in process.flow_spec:
-        process_dict[stage["name"]] = {}
+        stages[stage["name"]] = {}
         for step in stage["steps"]:
-            step_obj = steps_by_name.get(step["name"])
+            step_obj = steps_by_name[step["name"]]
 
-            # TODO: check step type; process proto_configs from step_spec (like in inventory)
-            if step_obj.step_spec and "config" in step_obj.step_spec:
-                process_dict[stage["name"]][step["name"]] = {"config": step_obj.processstepinput.configuration}
+            if process.current_step and step_obj.id == process.current_step.id:
+                current = {"step": step["name"], "stage": stage["name"]}
 
-    return process_dict
+            if _is_config_step(step) and (step_input := getattr(step_obj, "processstepinput", None)):
+                config_input = step_input.configuration
+
+                proto_flat_spec = {
+                    f"{config['name']}/{config['subname']}": PrototypeConfig(**config) for config in step_obj.step_spec
+                }
+                flat_spec = convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=proto_flat_spec)
+
+                configuration = {"config": config_input["config"], "attr": config_input["attr"]}
+                update_configuration_for_inventory_inplace(
+                    configuration=configuration["config"],
+                    attributes=configuration["attr"],
+                    specification=flat_spec,
+                    config_owner=ProcessStepPair(process_id=process.id, step_id=step_obj.id),
+                )
+
+                stages[stage["name"]][step["name"]] = {"config": configuration}
+
+    return _ProcessContext(stages=stages, current=current)
+
+
+def _is_config_step(step: dict) -> bool:
+    # left this check as there's no "type" field for now in step spec/obj
+    return "config_template" in step
 
 
 def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[HostName]:
