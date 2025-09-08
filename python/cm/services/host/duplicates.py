@@ -14,8 +14,10 @@ from core.types import ClusterID, HostID
 from django.db.transaction import atomic
 
 from cm.services import cluster
+from cm.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.services.host import repo
 from cm.services.status import notify
+from cm.status_api import notify_about_redistributed_concerns_from_maps
 
 
 def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = None) -> HostID:
@@ -32,6 +34,9 @@ def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = 
                 status_service=notify,
             )
 
+        attached_concern_map = distribute_concern_from_provider_to_host(host_id=duplicate.id)
+
     notify.register_host_duplicates(original=host_id, duplicates=(duplicate.id,))
+    notify_about_redistributed_concerns_from_maps(added=attached_concern_map, removed={})
 
     return duplicate.id

@@ -433,3 +433,18 @@ def _get_own_concerns_of_objects(
         objects_concerns[model_name_to_core_type(concern.owner_type.model)][concern.owner_id].add(concern.id)
 
     return objects_concerns
+
+
+def distribute_concern_from_provider_to_host(host_id: int) -> AffectedObjectConcernMap:
+    provider_id = Host.objects.get(id=host_id).provider_id
+    concerns = ConcernItem.objects.filter(
+        owner_id=provider_id, owner_type=ContentType.objects.get_for_model(Provider)
+    ).values_list("id", flat=True)
+
+    if not concerns:
+        return {}
+
+    added = {ADCMCoreType.HOST: {host_id: set(concerns)}}
+    _update_db_concerns_state(added=added, removed={})
+
+    return added

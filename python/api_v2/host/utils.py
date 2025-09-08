@@ -13,18 +13,14 @@
 from adcm.permissions import check_custom_perm
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license
-from cm.issue import (
-    _prototype_issue_map,
-    add_concern_to_object,
-    recheck_issues,
-)
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
-from cm.services.concern import retrieve_issue
-from cm.services.concern.locks import get_lock_on_object
+from cm.services.concern.cases import recalculate_own_concerns_on_add_hosts
+from cm.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
-from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor, ProviderID
+from cm.status_api import notify_about_redistributed_concerns_from_maps
+from core.types import ADCMCoreType, BundleID, ProviderID
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -39,43 +35,37 @@ def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster
 
     host = Host.objects.create(prototype=host_prototype, provider_id=provider_id, fqdn=fqdn, cluster=cluster)
 
-    process_config_issues_policies_hc(host)
-
-    return host
-
-
-def _recheck_new_host_issues(host: Host):
-    """
-    Copy-pasted parts of update_hierarchy_issues() from cm.issue for the sake of number of queries optimization
-    Works only on newly created hosts (without mapping to components)
-    """
-
-    recheck_issues(obj=host)  # only host itself is directly affected
-
-    # propagate issues from provider only to this host
-    provider = CoreObjectDescriptor(id=host.provider_id, type=ADCMCoreType.PROVIDER)
-    for issue_cause in _prototype_issue_map.get(ObjectType.PROVIDER, []):
-        add_concern_to_object(object_=host, concern=retrieve_issue(owner=provider, cause=issue_cause))
-
-
-def process_config_issues_policies_hc(host: Host) -> None:
     obj_conf = init_object_config(proto=host.prototype, obj=host)
     host.config = obj_conf
     host.save(update_fields=["config"])
 
-    add_concern_to_object(object_=host, concern=get_lock_on_object(host.provider))
-    _recheck_new_host_issues(host=host)
+    concern_map = {ADCMCoreType.HOST: {host.id: set()}}
+    host_concern_map = recalculate_own_concerns_on_add_hosts(host=host)
+
+    if host_concern_map:
+        concern_id = next(iter(host_concern_map[ADCMCoreType.HOST][host.id]))
+        host.concerns.add(concern_id)
+        concern_map[ADCMCoreType.HOST][host.id].add(concern_id)
+
+    attached_concern_map = distribute_concern_from_provider_to_host(host_id=host.id)
+
+    if attached_concern_map:
+        concern_map[ADCMCoreType.HOST][host.id] |= attached_concern_map[ADCMCoreType.HOST][host.id]
+
     re_apply_object_policy(apply_object=host.provider)
 
     if cluster := host.cluster:
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
 
     if cluster:
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
     else:
         logger.info("host #%s %s is added", host.pk, host.fqdn)
+
+    return host
 
 
 def maintenance_mode(request: Request, host: Host) -> Response:
