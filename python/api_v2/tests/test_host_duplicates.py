@@ -19,6 +19,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -31,6 +32,9 @@ class TestDuplicateHost(BaseAPITestCase):
         super().setUp()
 
         self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def get_ids(self, collection: list[dict]) -> set[int]:
         return set(map(itemgetter("id"), collection))
@@ -195,3 +199,43 @@ class TestDuplicateHost(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             self.assertIn("Ensure this field has no more than 253 characters.", response.json()["desc"])
+
+    def test_adcm_6961_duplicate_host_cant_be_added_without_permissions(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.subTest("No permission granted - denied"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                response = self.client.v2[self.host_1, "duplicates"].post(
+                    data={"name": "another-host", "cluster_id": self.cluster_1.pk}
+                )
+
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+                self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
+
+        with self.subTest("No permission granted (non-existend pk) - denied"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                response = self.client.v2[self.host_1, "duplicates"].post(
+                    data={"name": "another-host", "cluster_id": 999}
+                )
+
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+                self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
+
+        with self.subTest("Permissions Create host only - denied"):
+            with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Create host"):
+                response = self.client.v2[self.host_1, "duplicates"].post(
+                    data={"name": "another-host", "cluster_id": self.cluster_1.pk}
+                )
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.assertEqual(response.json()["code"], "CLUSTER_NOT_FOUND")
+
+        with self.subTest("Permission Create host and View cluster configurations granted - success"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Create host"):
+                    response = self.client.v2[self.host_1, "duplicates"].post(
+                        data={"name": "another-host", "cluster_id": self.cluster_1.pk}
+                    )
+
+                    self.assertEqual(response.status_code, HTTP_201_CREATED)
+                    self.assertTrue(Host.objects.filter(fqdn="another-host").exists())

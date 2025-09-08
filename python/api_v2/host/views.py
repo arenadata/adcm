@@ -281,12 +281,15 @@ class HostViewSet(
         permission_classes=[IsAuthenticatedAudit, CreateDuplicateHostPermissions],
     )
     def create_duplicate(self, request: Request, *args, **kwargs):  # noqa: ARG002
-        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
+
+        if data["cluster_id"]:
+            get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
+
+        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
 
         duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
 
