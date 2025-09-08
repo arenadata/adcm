@@ -153,6 +153,7 @@ class HostCreateSerializer(EmptySerializer):
     name = CharField(
         allow_null=False,
         required=True,
+        min_length=2,
         max_length=253,
         help_text="fully qualified domain name",
         validators=[
@@ -210,5 +211,17 @@ class ManyHostAddSerializer(ListSerializer):
 
 
 class CreateDuplicateSerializer(EmptySerializer):
-    name = CharField()
+    name = CharField(
+        min_length=2,
+        max_length=253,
+        validators=[
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+    )
     cluster_id = IntegerField(allow_null=True, default=None)

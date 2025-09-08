@@ -15,7 +15,13 @@ from operator import itemgetter
 from cm.models import Cluster, Component, Host, MaintenanceMode
 from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -168,3 +174,24 @@ class TestDuplicateHost(BaseAPITestCase):
         )
 
         self.assertEqual(Host.objects.filter(id__in=[self.host_1.id, duplicate_1_id, duplicate_2_id]).count(), 3)
+
+    def test_adcm_6968_host_duplicates_validators(self):
+        with self.subTest("clusterId is incorrect"):
+            data = {"name": "duplicate", "clusterId": 0}
+            response = self.client.v2[self.host_1, "duplicates"].post(data=data)
+
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+            self.assertIn("cluster doesn't exist", response.json()["desc"])
+
+        with self.subTest("host name has length < 2"):
+            data = {"name": "a"}
+            response = self.client.v2[self.host_1, "duplicates"].post(data=data)
+
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            self.assertIn("Min length is 2", response.json()["desc"])
+        with self.subTest("host name has length > 253"):
+            data = {"name": "a" * 256}
+            response = self.client.v2[self.host_1, "duplicates"].post(data=data)
+
+            self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+            self.assertIn("Ensure this field has no more than 253 characters.", response.json()["desc"])
