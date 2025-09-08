@@ -13,6 +13,8 @@
 from core.types import ClusterID, HostID
 from django.db.transaction import atomic
 
+from cm.errors import AdcmEx
+from cm.models import Cluster
 from cm.services import cluster
 from cm.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.services.host import repo
@@ -27,12 +29,15 @@ def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = 
         overrides = repo.DuplicateHostOverrides(name=name, description=f"Copied from {original.fqdn}")
         duplicate = repo.duplicate_host_record(host=original, overrides=overrides)
 
-        if cluster_id:
-            cluster.perform_host_to_cluster_map(
-                cluster_id=cluster_id,
-                hosts=[duplicate.id],
-                status_service=notify,
-            )
+        if cluster_id is not None:
+            try:
+                cluster.perform_host_to_cluster_map(
+                    cluster_id=cluster_id,
+                    hosts=[duplicate.id],
+                    status_service=notify,
+                )
+            except Cluster.DoesNotExist as e:
+                raise AdcmEx("CLUSTER_NOT_FOUND") from e
 
         attached_concern_map = distribute_concern_from_provider_to_host(host_id=duplicate.id)
 
