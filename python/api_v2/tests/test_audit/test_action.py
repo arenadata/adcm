@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterable, Literal
+
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_core_descriptor
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
@@ -55,16 +57,26 @@ class TestActionProcessAudit(BaseAPITestCase):
     def get_process(self, process_id: int) -> Process:
         return Process.objects.get(pk=process_id)
 
-    def _fill_wizard_steps_for_process(self, process_id: int, test_spec, previous_step_names) -> None:
+    def fill_wizard_steps_for_process(
+        self,
+        process_id: int,
+        test_spec: list[dict],
+        test_input: dict[Literal["config", "attr"], dict],
+        previous_step_names: Iterable[str],
+    ) -> None:
         # Fill previous steps' `step_spec`, create inputs for them
         for step in ProcessStep.objects.filter(process_id=process_id, name__in=previous_step_names):
             step.step_spec = test_spec
             step.state = ProcessStepState.COMPLETED
             step.save(update_fields=["step_spec", "state"])
-            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_spec)
+            ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_input)
 
     def test_audit_record_process_operation(self):
-        test_spec, previous_step_names = {"test": "spec"}, {"stage1_step1", "stage2_step1"}
+        test_spec, test_input, previous_step_names = (
+            [{"name": "spec", "subname": ""}],
+            {"config": {}, "attr": {}},
+            {"stage1_step1", "stage2_step1"},
+        )
 
         process = self.get_process(self.start_process(self.cluster_1))
         action = self.get_object_wizard_action(self.cluster_1)
@@ -112,7 +124,7 @@ class TestActionProcessAudit(BaseAPITestCase):
                 target_operation_step = ProcessStep.objects.get(
                     process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
                 )
-                self._fill_wizard_steps_for_process(process.id, test_spec, previous_step_names)
+                self.fill_wizard_steps_for_process(process.id, test_spec, test_input, previous_step_names)
                 action = self.get_object_wizard_action(obj)
 
                 # render step

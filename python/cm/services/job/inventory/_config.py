@@ -12,6 +12,7 @@
 
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import reduce
 from typing import Any, Iterable, Literal, NamedTuple, TypeAlias
 
@@ -42,6 +43,12 @@ class _ObjectRequiredConfigInfo(NamedTuple):
 
 
 ObjectConfigInfo: TypeAlias = dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]
+
+
+@dataclass(slots=True)
+class ProcessStepPair:
+    process_id: int
+    step_id: int
 
 
 def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
@@ -255,7 +262,7 @@ def update_configuration_for_inventory_inplace(
     configuration: ConfigDict,
     attributes: AttrDict,
     specification: FlatSpec,
-    config_owner: CoreObjectDescriptor | GeneralEntityDescriptor,
+    config_owner: CoreObjectDescriptor | GeneralEntityDescriptor | ProcessStepPair,
     config_host_group_id: int | None = None,
 ) -> AttrDict:
     skip_deactivated_groups: set[str] = set()
@@ -329,7 +336,7 @@ def _to_unsafe_dict(value: str) -> dict[Literal["__ansible_unsafe"], str]:
 
 
 def _build_string_path_for_file(
-    object_itself: CoreObjectDescriptor | GeneralEntityDescriptor,
+    object_itself: CoreObjectDescriptor | GeneralEntityDescriptor | ProcessStepPair,
     config_key: str,
     config_subkey: str = "",
     config_host_group_id: int | None = None,
@@ -339,23 +346,33 @@ def _build_string_path_for_file(
     When it's about group config, pass its id alongside CoreObjectDescription (from owner of the group).
     When it's task, pass GeneralEntryDescriptor(id=task_id, type="task"),
     """
-    if not isinstance(object_itself, CoreObjectDescriptor):
-        type_as_string = object_itself.type
-    elif object_itself.type == ADCMCoreType.PROVIDER:
-        type_as_string = "provider"
-    else:
-        type_as_string = object_itself.type.value
-
-    if config_host_group_id is not None:
+    if isinstance(object_itself, ProcessStepPair):
         filename = [
-            type_as_string,
-            str(object_itself.id),
-            "group",
-            str(config_host_group_id),
+            "process",
+            str(object_itself.process_id),
+            "step",
+            str(object_itself.step_id),
             config_key,
             config_subkey,
         ]
     else:
-        filename = [type_as_string, str(object_itself.id), config_key, config_subkey]
+        if not isinstance(object_itself, CoreObjectDescriptor):
+            type_as_string = object_itself.type
+        elif object_itself.type == ADCMCoreType.PROVIDER:
+            type_as_string = "provider"
+        else:
+            type_as_string = object_itself.type.value
+
+        if config_host_group_id is not None:
+            filename = [
+                type_as_string,
+                str(object_itself.id),
+                "group",
+                str(config_host_group_id),
+                config_key,
+                config_subkey,
+            ]
+        else:
+            filename = [type_as_string, str(object_itself.id), config_key, config_subkey]
 
     return str(settings.FILE_DIR / ".".join(filename))
