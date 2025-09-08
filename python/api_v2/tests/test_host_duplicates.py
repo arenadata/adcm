@@ -149,10 +149,18 @@ class TestDuplicateHost(BaseAPITestCase):
 
     def test_adcm_6943_new_host_with_name_of_duplicate_pass(self):
         create_duplicate(host_id=self.host_1.id, name="awesome")
+        create_duplicate(host_id=self.host_1.id, name="awesome-2")
+        with self.subTest("New host"):
+            response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
 
-        response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        with self.subTest("Renaming already existent"):
+            response = self.client.v2[self.host_1].patch(data={"name": "awesome-2"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.host_1.refresh_from_db()
+            self.assertEqual(self.host_1.fqdn, "awesome-2")
 
     def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
         duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="duplicate-1", cluster_id=self.cluster_1.id)
