@@ -15,6 +15,12 @@ from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigHostGroup, ConfigLog, PrototypeConfig
+from cm.services.config import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    represent_json_type_as_string,
+    represent_string_as_json_type,
+)
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -28,12 +34,6 @@ from rest_framework.status import (
 
 from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.generic.config.utils import (
-    convert_adcm_meta_to_attr,
-    convert_attr_to_adcm_meta,
-    represent_json_type_as_string,
-    represent_string_as_json_type,
-)
 from api_v2.views import ADCMGenericViewSet
 
 

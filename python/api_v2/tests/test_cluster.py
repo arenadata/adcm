@@ -25,6 +25,7 @@ from cm.models import (
     Prototype,
     Service,
 )
+from cm.services.config import convert_adcm_meta_to_attr
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
@@ -41,7 +42,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr
 from api_v2.tests.base import BaseAPITestCase
 
 

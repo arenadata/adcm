@@ -22,6 +22,7 @@ from cm.models import (
     HostComponent,
     PrototypeConfig,
 )
+from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
@@ -49,7 +50,6 @@ from api_v2.generic.action.utils import (
     get_wizard_action_processes,
     has_run_perms,
 )
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet
 

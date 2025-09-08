@@ -21,6 +21,7 @@ from adcm.permissions import (
 )
 from cm.errors import AdcmEx
 from cm.models import Cluster, PrototypeConfig, Provider, TaskLog, Upgrade
+from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.stack import check_hostcomponents_objects_exist
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
@@ -34,7 +35,6 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.generic.upgrade.filters import UpgradeFilter
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer

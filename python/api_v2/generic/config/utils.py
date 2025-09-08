@@ -11,25 +11,20 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
-from copy import deepcopy
+from collections import OrderedDict
 from typing import Any, TypeAlias, Union
-import copy
 import json
 
 from adcm.feature_flags import use_new_spec_format
 from cm.adcm_config.config import get_default
 from cm.converters import orm_object_to_core_descriptor
-from cm.errors import AdcmEx
 from cm.models import (
-    Action,
     ADCMEntity,
     Cluster,
     Component,
     ConfigHostGroup,
     ConfigLog,
     Host,
-    Prototype,
     PrototypeConfig,
     Provider,
     Service,
@@ -758,107 +753,3 @@ class ConfigSchemaMixin:
 
         if not (request.user.has_perm(parent_view_perm, parent_object) or request.user.has_perm(parent_view_perm)):
             raise NotFound
-
-
-def convert_attr_to_adcm_meta(attr: dict) -> dict:
-    attr = deepcopy(attr)
-    adcm_meta = defaultdict(dict)
-    attr.pop("custom_group_keys", None)
-    group_keys = attr.pop("group_keys", {})
-
-    for key, value in attr.items():
-        adcm_meta[f"/{key}"].update({"isActive": value["active"]})
-
-    for key, value in group_keys.items():
-        if isinstance(value, dict):
-            if isinstance(value["value"], bool):
-                adcm_meta[f"/{key}"].update({"isSynchronized": not value["value"]})
-            for sub_key, sub_value in value["fields"].items():
-                adcm_meta[f"/{key}/{sub_key}"].update({"isSynchronized": not sub_value})
-        else:
-            adcm_meta[f"/{key}"].update({"isSynchronized": not value})
-
-    return adcm_meta
-
-
-def convert_adcm_meta_to_attr(adcm_meta: dict) -> dict:
-    attr = defaultdict(dict)
-    try:
-        for key, value in adcm_meta.items():
-            _, key, *sub_key = key.split("/")
-
-            if sub_key:
-                sub_key = sub_key[0]
-
-                if key not in attr["group_keys"]:
-                    attr["group_keys"].update({key: {"value": None, "fields": {}}})
-
-                attr["group_keys"][key]["fields"].update({sub_key: not value["isSynchronized"]})
-            else:
-                if "isSynchronized" in value and "isActive" in value:
-                    # activatable group in config-group
-                    attr[key].update({"active": value["isActive"]})
-                    attr["group_keys"].update({key: {"value": not value["isSynchronized"], "fields": {}}})
-                elif "isActive" in value:
-                    # activatable group not in config-group
-                    attr[key].update({"active": value["isActive"]})
-                else:
-                    # non-group root field in config-group
-                    attr["group_keys"].update({key: not value["isSynchronized"]})
-    except (KeyError, ValueError):
-        return adcm_meta
-
-    return attr
-
-
-def represent_json_type_as_string(prototype: Prototype, value: dict, action_: Action | None = None) -> dict:
-    value = copy.deepcopy(value)
-
-    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action_).values_list(
-        "name", "subname"
-    ):
-        if name not in value or (sub_name and sub_name not in value[name]):
-            continue
-
-        if sub_name:
-            new_value = json.dumps(value[name][sub_name]) if value[name][sub_name] is not None else None
-            value[name][sub_name] = new_value
-        else:
-            new_value = json.dumps(value[name]) if value[name] is not None else None
-            value[name] = new_value
-
-    return value
-
-
-def represent_string_as_json_type(
-    prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig], value: dict
-) -> dict:
-    value = copy.deepcopy(value)
-
-    for prototype_config in prototype_configs:
-        name = prototype_config.name
-        sub_name = prototype_config.subname
-
-        # json may be `null`/`None` if it's not required, so we patch it as () to skip this field
-        if name not in value or sub_name not in (value[name] or ()):
-            continue
-
-        try:
-            if sub_name:
-                new_value = json.loads(value[name][sub_name]) if value[name][sub_name] is not None else None
-                value[name][sub_name] = new_value
-            else:
-                new_value = json.loads(value[name]) if value[name] is not None else None
-                value[name] = new_value
-        except json.JSONDecodeError:
-            raise AdcmEx(
-                code="CONFIG_KEY_ERROR",
-                msg=f"The '{name}/{sub_name}' key must be in the json format.",
-            ) from None
-        except TypeError:
-            raise AdcmEx(
-                code="CONFIG_KEY_ERROR",
-                msg=f"The '{name}/{sub_name}' key must be a string type.",
-            ) from None
-
-    return value

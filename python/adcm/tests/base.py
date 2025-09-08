@@ -20,7 +20,6 @@ import random
 import string
 import tarfile
 
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
@@ -44,6 +43,7 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle_alt.load import Directories, parse_bundle_archive
+from cm.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.services.job.action import prepare_task_for_action
 from cm.services.mapping import set_host_component_mapping
 from cm.utils import deep_merge

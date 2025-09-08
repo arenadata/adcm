@@ -13,6 +13,10 @@
 
 from cm.services.config._base import (
     ConfigAttrPair,
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    represent_json_type_as_string,
+    represent_string_as_json_type,
     retrieve_config_attr_pairs,
     retrieve_configs_with_revision,
     retrieve_primary_configs,
@@ -23,4 +27,8 @@ __all__ = [
     "retrieve_config_attr_pairs",
     "retrieve_primary_configs",
     "retrieve_configs_with_revision",
+    "convert_attr_to_adcm_meta",
+    "convert_adcm_meta_to_attr",
+    "represent_json_type_as_string",
+    "represent_string_as_json_type",
 ]
