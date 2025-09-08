@@ -14,16 +14,15 @@ from copy import deepcopy
 from typing import NamedTuple
 import sys
 
-from ansible.errors import AnsibleError
-from ansible.plugins.lookup import LookupBase
-from cm.converters import CoreObject
-
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
+from ansible.errors import AnsibleError
+from ansible.plugins.lookup import LookupBase
 from ansible_plugin.utils import cast_to_type, get_service_by_name
 from cm.api import set_object_config_with_plugin
+from cm.converters import CoreObject
 from cm.logger import logger
 from cm.models import (
     ADCM,
