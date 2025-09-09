@@ -18,6 +18,7 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
 
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
+from cm.services.config._base import ConfigAttrPair
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.services.wizard import repo
 from cm.services.wizard.operations import (
@@ -175,7 +176,11 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
 
         process = repo.retrieve_process(process_id=process_id)
-        context = OperationContext(object=object_, action=action_info, config_processor=None)
+        context = OperationContext(
+            object=object_,
+            action=action_info,
+            config_processor=lambda _, config: ConfigAttrPair(config=config.config, attr=config.adcm_meta),
+        )
         payload = SubmitStepPayload(
             method=ProcessOperationType.SUBMIT,
             params=_SubmitConfigurationStepParams(

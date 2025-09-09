@@ -99,7 +99,7 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/all/", authWrap(hub, showAll, isADCM, isADCMUser))
 
 	router.GET("/api/v1/host/", authWrap(hub, hostList, isADCM, isADCMUser))
-	router.POST("/api/v1/host/duplicates/", authWrap(hub, postHostDuplicates, isADCM))
+	router.POST("/api/v1/host-duplicates/", authWrap(hub, postHostDuplicates, isADCM))
 	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost, isStatusChecker, isADCM, isADCMUser))
 	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost, isStatusChecker, isADCM))
 

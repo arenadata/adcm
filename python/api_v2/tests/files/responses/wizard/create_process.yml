@@ -9,6 +9,7 @@
       "steps": [
         {
           "id": {{ stage1_step1_id }},
+          "state": "created",
           "displayName": "Stage1.Step1",
           "type": "configuration"
         }
@@ -19,11 +20,13 @@
       "steps": [
         {
           "id": {{ stage2_step1_id }},
+          "state": "created",
           "displayName": "Stage2.Step1",
           "type": "configuration"
         },
         {
           "id": {{ stage2_step2_id }},
+          "state": "created",
           "displayName": "Stage2.Step2",
           "type": "operation"
         }
@@ -34,6 +37,7 @@
       "steps": [
         {
           "id": {{ stage3_step1_id }},
+          "state": "created",
           "displayName": "Stage3.Step1",
           "type": "operation"
         },
@@ -44,11 +48,13 @@
       "steps": [
         {
           "id": {{ stage4_step1_id }},
+          "state": "created",
           "displayName": "Stage4.Step1",
           "type": "operation"
         },
         {
           "id": {{ stage4_step2_id }},
+          "state": "created",
           "displayName": "Stage4.Step2",
           "type": "operation"
         }

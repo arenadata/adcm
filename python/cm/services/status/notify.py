@@ -128,4 +128,4 @@ def register_all_duplicates() -> None:
 
 def register_host_duplicates(original: HostID, duplicates: Iterable[HostID]) -> None:
     payload = {"hostId": original, "duplicates": list(duplicates)}
-    api_request("post", "host/duplicates/", data=payload)
+    api_request("post", "host-duplicates/", data=payload)

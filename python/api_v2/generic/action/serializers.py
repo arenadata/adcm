@@ -104,7 +104,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
         for process in processes:
             context = {
                 "process_id": process.pk,
-                "step_names_id_map": repo.retrieve_step_names_id_map(process_id=process.pk),
+                "step_names_id_map": repo.retrieve_step_names_id_state_map(process_id=process.pk),
             }
             serialized.append(ProcessShortSerializer(process, context=context).data)
 

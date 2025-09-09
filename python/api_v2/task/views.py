@@ -119,7 +119,7 @@ from api_v2.views import ADCMGenericViewSet
     ),
 )
 class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
-    queryset = TaskLog.objects.select_related("action").filter(action__wizard_template__isnull=True).order_by("-pk")
+    queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
     permission_classes = [IsAuthenticated, TaskPermissions]

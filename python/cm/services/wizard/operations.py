@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Literal, Protocol, TypeAlias
+from typing import Callable, Literal, TypeAlias
 from uuid import UUID, uuid4
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
@@ -62,9 +62,7 @@ SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | 
 OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetStepPayload
 
 
-class ConfigProcessor(Protocol):
-    def __call__(self, step: Step, config: Configuration) -> ConfigAttrPair:
-        ...
+ConfigProcessor = Callable[[Step, Configuration], ConfigAttrPair]
 
 
 @dataclass(frozen=True, slots=True)
@@ -312,10 +310,10 @@ def _operation_submit_config(
     *,
     context: OperationContext,
 ) -> None:
-    configuration = context.config_processor(step=step, config=configuration)
-    _validate_config(config=configuration, step=step, context=context)
+    config_attr_pair = context.config_processor(step, configuration)
+    _validate_config(config=config_attr_pair, step=step, context=context)
 
-    data = {"step_id": step.id, "configuration": configuration._asdict(), "job": None, "created_at": timezone.now()}
+    data = {"step_id": step.id, "configuration": config_attr_pair._asdict(), "job": None, "created_at": timezone.now()}
     step_input_qs = ProcessStepInput.objects.filter(step_id=step.id)
 
     if not step_input_qs.exists():
