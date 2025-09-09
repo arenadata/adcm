@@ -35,6 +35,7 @@ import pydantic
 
 class StepFromStageSerializer(Serializer):
     id = IntegerField()
+    state = CharField()
     display_name = CharField()
     type = SerializerMethodField()
 
@@ -55,7 +56,8 @@ class StageSerializer(Serializer):
     def get_steps(self, data: dict) -> list[dict]:
         steps = data["steps"]
         for step in steps:
-            step["id"] = self.context["step_names_id_map"][step["name"], step["display_name"]]
+            step["id"] = self.context["step_names_id_state_map"][step["name"], step["display_name"]][0]
+            step["state"] = self.context["step_names_id_state_map"][step["name"], step["display_name"]][1]
 
         return StepFromStageSerializer(sorted(steps, key=lambda x: x["id"]), many=True).data
 

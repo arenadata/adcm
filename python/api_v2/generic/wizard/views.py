@@ -91,7 +91,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         instance = self.get_object()
         context = {
             "process_id": instance.pk,
-            "step_names_id_map": repo.retrieve_step_names_id_map(process_id=instance.pk),
+            "step_names_id_state_map": repo.retrieve_step_names_id_state_map(process_id=instance.pk),
         }
         serializer = self.get_serializer(instance, context=context)
         return Response(serializer.data)
@@ -113,7 +113,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
 
         context = {
             "process_id": process_id,
-            "step_names_id_map": repo.retrieve_step_names_id_map(process_id=process_id),
+            "step_names_id_state_map": repo.retrieve_step_names_id_state_map(process_id=process_id),
         }
 
         serializer = self.get_serializer(
@@ -147,7 +147,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
             status=HTTP_200_OK,
             data=ProcessSerializer(
                 Process.objects.get(pk=process_id),
-                context={"step_names_id_map": repo.retrieve_step_names_id_map(process_id=process_id)},
+                context={"step_names_id_state_map": repo.retrieve_step_names_id_state_map(process_id=process_id)},
             ).data,
         )
 

@@ -85,12 +85,21 @@ def set_process_status(process: ActionProcess, state: ProcessState) -> WasUpdate
     return bool(records_updated)
 
 
-def retrieve_step_names_id_map(process_id: ActionProcessID) -> dict[tuple[str, str], int]:
+# For better naming in retrieve names function.
+# Remove after rework to dicts / better mechanism.
+_StepName: TypeAlias = str
+_StepDisplayName: TypeAlias = str
+_StepStateAsStr: TypeAlias = str
+
+
+def retrieve_step_names_id_state_map(
+    process_id: ActionProcessID,
+) -> dict[tuple[_StepName, _StepDisplayName], tuple[ActionProcessStepID, _StepStateAsStr]]:
     return {
-        (name, display_name): id_
-        for name, display_name, id_ in ProcessStep.objects.values_list("name", "display_name", "id").filter(
-            process_id=process_id
-        )
+        (name, display_name): (id_, state)
+        for name, display_name, id_, state in ProcessStep.objects.values_list(
+            "name", "display_name", "id", "state"
+        ).filter(process_id=process_id)
     }
 
 

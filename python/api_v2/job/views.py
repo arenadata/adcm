@@ -67,9 +67,7 @@ from api_v2.views import ADCMGenericViewSet
     ),
 )
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
-    queryset = (
-        JobLog.objects.select_related("task__action").filter(task__action__wizard_template__isnull=True).order_by("pk")
-    )
+    queryset = JobLog.objects.select_related("task__action").order_by("pk")
     filterset_class = JobFilter
     permission_classes = [IsAuthenticated, JobPermissions]
     permission_required = [VIEW_JOBLOG_PERMISSION]
