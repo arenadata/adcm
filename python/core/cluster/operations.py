@@ -12,16 +12,18 @@
 
 from collections import defaultdict
 from copy import copy
+from dataclasses import dataclass
 from typing import Any, Collection, Generator, Iterable, Protocol
 
 from core.cluster.rules import (
     check_all_hosts_exist,
     check_hosts_can_be_added_to_cluster,
+    filter_host_candidates,
 )
 from core.cluster.types import (
     ClusterTopology,
     ComponentTopology,
-    HostClusterPair,
+    HostAddInfo,
     HostComponentEntry,
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
@@ -244,23 +246,66 @@ def find_hosts_difference(new_topology: ClusterTopology, old_topology: ClusterTo
 # !===== Hosts In Cluster =====!
 
 
+@dataclass(slots=True)
+class SearchConditions:
+    with_id: Iterable[HostID] | None = None
+    bound_to_cluster: ClusterID | None = None
+    unbound_to_cluster: bool | None = None
+
+    def __post_init__(self):
+        specified_conditions = filter(None, (self.with_id, self.bound_to_cluster, self.unbound_to_cluster))
+        at_least_one_specified = next(specified_conditions, None) is not None
+        if not at_least_one_specified:
+            message = f"{self.__class__.__name__} must have at least one condition set (not None)"
+            raise ValueError(message)
+
+
 class HostClusterDBProtocol(Protocol):
-    def get_host_cluster_pairs_for_hosts(self, hosts: Iterable[HostID]) -> Iterable[HostClusterPair]:
-        """Extract pairs of ids host-component for given hosts"""
+    @staticmethod
+    def get_info_for_hosts(include: SearchConditions) -> Iterable[HostAddInfo]:
+        """
+        Extract host information that is important to cluster operations prior to adding host to cluster.
+        Conditions in `include` will be united OR-like.
+        """
+        ...
 
-    def set_cluster_id_for_hosts(self, cluster_id: ClusterID, hosts: Iterable[HostID]) -> Any:
+    @staticmethod
+    def set_cluster_id_for_hosts(cluster_id: ClusterID, hosts: Iterable[HostID]) -> Any:
         """Set `cluster_id` to all given hosts"""
+        ...
 
 
-def add_hosts_to_cluster(cluster_id: int, hosts: Collection[int], db: HostClusterDBProtocol) -> Collection[int]:
-    existing_hosts: tuple[HostClusterPair, ...] = tuple(db.get_host_cluster_pairs_for_hosts(hosts))
+def add_hosts_to_cluster(
+    cluster_id: ClusterID, hosts: Collection[HostID], db: HostClusterDBProtocol
+) -> Collection[HostID]:
+    hosts_info: tuple[HostAddInfo, ...] = tuple(
+        db.get_info_for_hosts(include=SearchConditions(with_id=hosts, bound_to_cluster=cluster_id))
+    )
+    hosts_to_add = tuple(host for host in hosts_info if host.id in hosts)
+    hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
 
-    check_all_hosts_exist(host_candidates=hosts, existing_hosts=existing_hosts)
-    check_hosts_can_be_added_to_cluster(cluster_id=cluster_id, hosts=existing_hosts)
+    check_all_hosts_exist(hosts_to_add=hosts, existing_hosts=hosts_info)
+    check_hosts_can_be_added_to_cluster(
+        hosts_to_add=hosts_to_add, cluster_id=cluster_id, hosts_in_cluster=hosts_in_cluster
+    )
 
     db.set_cluster_id_for_hosts(cluster_id, hosts)
 
     return hosts
+
+
+def find_host_candidates_for_cluster(cluster_id: ClusterID, db: HostClusterDBProtocol) -> Collection[HostAddInfo]:
+    hosts_info: tuple[HostAddInfo, ...] = tuple(
+        db.get_info_for_hosts(include=SearchConditions(unbound_to_cluster=True, bound_to_cluster=cluster_id))
+    )
+    unbound_hosts = tuple(host for host in hosts_info if host.cluster_id is None)
+    hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
+
+    candidates = filter_host_candidates(
+        unbound_hosts=unbound_hosts, cluster_id=cluster_id, hosts_in_cluster=hosts_in_cluster
+    )
+
+    return tuple(candidates)
 
 
 def construct_mapping_from_delta(

@@ -217,6 +217,7 @@ ERRORS = {
     "WIZARD_OPERATION_CONFLICT": ("Wizard operation conflict", HTTP_409_CONFLICT, ERR),
     "WIZARD_ACTION_NOT_SUITABLE": ("does not support wizard functionality", HTTP_409_CONFLICT, ERR),
     "WIZARD_STEP_NOT_RENDERED": ("Step is not rendered yet", HTTP_409_CONFLICT, ERR),
+    "CONFIG_OPERATION_ERROR": ("Can't perform operation with config", HTTP_409_CONFLICT, ERR),
 }
 
 

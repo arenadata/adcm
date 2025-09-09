@@ -11,11 +11,16 @@
 # limitations under the License.
 
 from unittest.mock import patch
+import secrets
 
-from cm.models import Action, Component, Host, HostComponent, Provider
+from cm.api import remove_host_from_cluster
+from cm.models import Action, Cluster, Component, Host, HostComponent, Provider
+from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.host.duplicates import create_duplicate
+from cm.services.status import notify
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, HostID, HostName
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -364,6 +369,26 @@ class TestClusterHost(BaseAPITestCase):
         self.control_host_another_cluster.refresh_from_db()
         self.assertEqual(self.control_host_another_cluster.cluster, self.cluster_2)
 
+    def get_host_candidates(self, cluster: Cluster) -> list[tuple[HostID, HostName]]:
+        response = self.client.v2[cluster, "host-candidates"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        entries = response.json()
+        return [(entry["id"], entry["name"]) for entry in entries]
+
+    def assert_hosts_in_candidates(self, *hosts: Host, candidates: list[tuple[HostID, HostName]]):
+        expected = {(h.id, h.fqdn) for h in hosts}
+        self.assertTrue(
+            expected.issubset(candidates),
+            msg=f"Not found entries: {', '.join(map(str, expected.difference( candidates)))}",
+        )
+
+    def assert_hosts_not_in_candidates(self, *hosts: Host, candidates: list[tuple[HostID, HostName]]):
+        expected = {(h.id, h.fqdn) for h in hosts}
+        self.assertFalse(
+            expected.intersection(candidates),
+            msg=f"Not expected entries: {', '.join(map(str, expected.difference( candidates)))}",
+        )
+
     def test_list_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response = self.client.v2[self.cluster_1, "hosts"].get()
@@ -650,6 +675,56 @@ class TestClusterHost(BaseAPITestCase):
 
                 host_ids = {host["id"] for host in response.json()["results"]}
                 self.assertSetEqual(host_ids, expected_ids)
+
+    def test_host_candidates_filtering_success(self):
+        host_1 = self.host
+        host_2 = self.host_2
+        host_duplicate_1 = Host.objects.get(id=create_duplicate(host_id=host_1.pk, name="duplicate"))
+        host_duplicate_named_as_host_2 = Host.objects.get(id=create_duplicate(host_id=host_1.pk, name=host_2.name))
+
+        candidates = self.get_host_candidates(self.cluster_1)
+        self.assert_hosts_in_candidates(
+            host_1, host_duplicate_1, host_2, host_duplicate_named_as_host_2, candidates=candidates
+        )
+
+        with self.subTest("exclude by name and origin"):
+            perform_host_to_cluster_map(
+                cluster_id=self.cluster_1.pk, hosts=[host_duplicate_named_as_host_2.pk], status_service=notify
+            )
+
+            candidates = self.get_host_candidates(self.cluster_1)
+            self.assert_hosts_not_in_candidates(
+                host_2, host_1, host_duplicate_1, host_duplicate_named_as_host_2, candidates=candidates
+            )
+
+        host_duplicate_named_as_host_2.refresh_from_db()
+        remove_host_from_cluster(host=host_duplicate_named_as_host_2)
+
+        with self.subTest("exclude by original host add"):
+            perform_host_to_cluster_map(cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify)
+
+            candidates = self.get_host_candidates(self.cluster_2)
+            self.assert_hosts_in_candidates(host_2, candidates=candidates)
+            self.assert_hosts_not_in_candidates(
+                host_1, host_duplicate_1, host_duplicate_named_as_host_2, candidates=candidates
+            )
+
+    def test_host_candidates_not_allowed_without_cluster_admin_permissions(self):
+        credentials = {"username": "aaaa", "password": secrets.token_hex(8)}
+        user = self.create_user(user_data=credentials)
+
+        self.client.login(**credentials)
+        ep = self.client.v2[self.cluster_1, "host-candidates"]
+
+        response = ep.get()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.grant_permissions(to=user, on=self.cluster_1, role_name="Cluster Administrator"):
+            response = ep.get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertGreater(len(response.json()), 0)
 
 
 class TestHostActions(BaseAPITestCase):

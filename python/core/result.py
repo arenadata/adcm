@@ -10,20 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreError, ADCMMessageError
+from dataclasses import dataclass
+from typing import Generic, Literal, TypeGuard, TypeVar
+
+T = TypeVar("T")
 
 
-class HostDoesNotExistError(ADCMCoreError):
-    ...
+@dataclass(slots=True)
+class Success(Generic[T]):
+    value: T
+
+    def __bool__(self) -> Literal[True]:
+        return True
 
 
-class ClusterAddHostError(ADCMMessageError):
-    ...
+@dataclass(slots=True)
+class Fail(Generic[T]):
+    value: T
+
+    def __bool__(self) -> Literal[False]:
+        return False
 
 
-class HostAlreadyBoundError(ADCMCoreError):
-    ...
+def is_success(result: Success[T] | Fail) -> TypeGuard[Success[T]]:
+    return bool(result)
 
 
-class HostBelongsToAnotherClusterError(ADCMCoreError):
-    ...
+def is_fail(result: Success | Fail[T]) -> TypeGuard[Fail[T]]:
+    return not is_success(result)

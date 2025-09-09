@@ -46,6 +46,7 @@ from cm.models import (
 )
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import (
+    ClusterDB,
     perform_host_to_cluster_map,
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
@@ -57,6 +58,7 @@ from core.bundle.operations import build_requires_dependencies_map
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
 from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
+    find_host_candidates_for_cluster,
 )
 from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
 from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
@@ -750,10 +752,10 @@ class ClusterViewSet(
         return Response(status=HTTP_200_OK, data=schema)
 
     @action(methods=["get"], detail=True, pagination_class=None, filter_backends=[], url_path="host-candidates")
-    def host_candidates(self, request, *args, **kwargs):  # noqa: ARG002
-        # TODO doesn't respect RBAC
-        hosts = Host.objects.filter(Q(cluster__isnull=True)).order_by("fqdn", "id").only("id", "fqdn")
-        serializer = HostShortSerializer(instance=hosts, many=True)
+    def host_candidates(self, request, *_, **kwargs):
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        candidates = find_host_candidates_for_cluster(cluster_id=cluster.pk, db=ClusterDB)
+        serializer = HostShortSerializer(instance=candidates, many=True)
         return Response(data=serializer.data, status=HTTP_200_OK)
 
 

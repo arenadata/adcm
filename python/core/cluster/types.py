@@ -22,6 +22,7 @@ from core.types import (
     ComponentName,
     ComponentNameKey,
     HostID,
+    HostName,
     ServiceID,
     ServiceName,
     ShortObjectInfo,
@@ -31,6 +32,19 @@ from core.types import (
 class HostClusterPair(NamedTuple):
     host_id: HostID
     cluster_id: ClusterID | None
+
+
+@dataclass(slots=True, frozen=True)
+class HostAddInfo:
+    id: HostID
+    name: HostName
+    original_id: HostID | None
+    cluster_id: ClusterID | None
+
+    @property
+    def fqdn(self) -> str:
+        # added for convenience in some APIs / serializers
+        return self.name
 
 
 class HostComponentEntry(NamedTuple):

@@ -97,23 +97,30 @@ class ActionViewSet(
 
         self.prototype_objects = {}
 
-        if isinstance(self.parent_object, Host) and self.parent_object.cluster:
-            self.prototype_objects[self.parent_object.cluster.prototype] = self.parent_object.cluster
+        result_qs = self.general_queryset
 
-            for hc_item in HostComponent.objects.filter(host=self.parent_object).select_related(
-                "service__prototype", "component__prototype"
-            ):
-                self.prototype_objects[hc_item.service.prototype] = hc_item.service
-                self.prototype_objects[hc_item.component.prototype] = hc_item.component
+        if isinstance(self.parent_object, Host):
+            if self.parent_object.cluster:
+                self.prototype_objects[self.parent_object.cluster.prototype] = self.parent_object.cluster
 
-        actions = self.general_queryset.filter(
+                for hc_item in HostComponent.objects.filter(host=self.parent_object).select_related(
+                    "service__prototype", "component__prototype"
+                ):
+                    self.prototype_objects[hc_item.service.prototype] = hc_item.service
+                    self.prototype_objects[hc_item.component.prototype] = hc_item.component
+
+            if self.parent_object.original:
+                # for host duplicates own actions should be always excluded
+                result_qs = result_qs.exclude(host_action=False)
+
+        result_qs = result_qs.filter(
             Q(prototype=self.parent_object.prototype, host_action=False)
             | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
         )
 
         self.prototype_objects[self.parent_object.prototype] = self.parent_object
 
-        return actions
+        return result_qs
 
     def get_serializer_class(
         self,
@@ -159,9 +166,6 @@ class ActionViewSet(
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
         action_owner = self._get_actions_owner()
-
-        if isinstance(action_owner, Host) and action_owner.original is not None:
-            raise AdcmEx("ACTION_ERROR", msg="It is forbidden to run an actions on duplicates.")
 
         self.check_permissions_for_run(request=request, action=target_action, parent_object=self.parent_object)
 

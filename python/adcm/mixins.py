@@ -37,6 +37,10 @@ class GetParentObjectMixin:
     def get_parent_object(self, raise_: Exception) -> ParentObject:
         ...
 
+    @overload
+    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
+        ...
+
     def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
         try:
             return self._get_parent_object_unsafe()

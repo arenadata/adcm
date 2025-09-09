@@ -11,6 +11,8 @@
 # limitations under the License.
 
 
+from typing import NoReturn
+
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -24,7 +26,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, Prototype, Provider
+from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
 from cm.services.host.duplicates import create_duplicate
 from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType
@@ -308,4 +310,9 @@ class HostActionViewSet(ActionViewSet):
 @document_config_viewset(object_type="host")
 @audit_config_viewset(type_in_name="Host", retrieve_owner=parent_host_from_lookup)
 class HostConfigViewSet(ConfigLogViewSet):
-    ...
+    def on_config_absent_for_owner(self, owner_object: MainObject) -> NoReturn:
+        # it can only be host, yet we can't typehint it conveniently with 3.10 Generics
+        if isinstance(owner_object, Host) and owner_object.original:
+            raise AdcmEx(code="CONFIG_OPERATION_ERROR", msg="Configuration change on host duplicate is not allowed")
+
+        super().on_config_absent_for_owner(owner_object)
