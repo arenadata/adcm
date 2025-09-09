@@ -105,7 +105,6 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         host = self.add_host(provider=self.another_provider, fqdn="original-host")
 
         create_duplicate(host_id=host.id, name="duplicate-1", cluster_id=self.cluster.id)
-        create_duplicate(host_id=host.id, name="duplicate-2", cluster_id=self.cluster.id)
 
         task = self.prepare_task(owner=host, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
@@ -122,4 +121,4 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             result.error.message,
         )
 
-        self.assertEqual(Host.objects.all().count(), 6)
+        self.assertEqual(Host.objects.all().count(), 5)

@@ -12,7 +12,7 @@
 
 from operator import itemgetter
 
-from cm.models import Cluster, Component, Host, MaintenanceMode
+from cm.models import Action, Cluster, Component, Host, MaintenanceMode
 from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
 from rest_framework.status import (
@@ -24,7 +24,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, RunTaskMock
 
 
 class TestDuplicateHost(BaseAPITestCase):
@@ -74,29 +74,6 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertDictContainsSubset(expected_data, response.json())
-
-    def test_host_candidates_include_originals_and_duplicates(self):
-        get_id = itemgetter("id")
-
-        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_1)
-        host_1_d1_id = create_duplicate(host_id=self.host_1.id, name="awesome")
-        host_1_d2_id = create_duplicate(host_id=self.host_1.id, name=self.host_1.fqdn)
-        # for now it is allowed to map duplicate to cluster alongside the original
-        create_duplicate(host_id=host_2.id, name="host-2-duplicate", cluster_id=self.cluster_1.id)
-        host_2_d2_id = create_duplicate(host_id=host_2.id, name="host-2-duplicate")
-
-        expected_candidates = [
-            {"id": self.host_1.id, "name": self.host_1.fqdn},
-            {"id": host_1_d1_id, "name": "awesome"},
-            {"id": host_1_d2_id, "name": self.host_1.fqdn},
-            {"id": host_2_d2_id, "name": "host-2-duplicate"},
-        ]
-
-        response = self.client.v2[self.cluster_1, "host-candidates"].get()
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        candidates = response.json()
-        self.assertEqual(sorted(candidates, key=get_id), sorted(expected_candidates, key=get_id))
 
     def test_add_duplicate_to_cluster_after_creation(self):
         duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="awesome")
@@ -247,3 +224,44 @@ class TestDuplicateHost(BaseAPITestCase):
 
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
                     self.assertTrue(Host.objects.filter(fqdn="another-host").exists())
+
+    def get_action_names_from_response(self, actions: list[dict]) -> list[str]:
+        return list(map(itemgetter("name"), actions))
+
+    def create_duplicate(self, origin: Host, name: str = "duplicate", cluster: Cluster | None = None) -> Host:
+        duplicate_id = create_duplicate(host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None))
+        return Host.objects.get(id=duplicate_id)
+
+    def test_forbid_action_launch_of_host_own_actions_on_duplicates(self):
+        duplicate = self.create_duplicate(origin=self.host_1, cluster=self.cluster_1)
+        self.add_services_to_cluster(["service_1"], cluster=self.cluster_1)
+        component = Component.objects.get(prototype__name="component_1")
+        self.set_hostcomponent(self.cluster_1, [(duplicate, component)])
+
+        action_from_component = Action.objects.get(prototype=component.prototype, name="component_on_host")
+        action_from_host = Action.objects.get(prototype=duplicate.prototype, name="host_action")
+
+        with self.subTest("host action list is correct"):
+            response = self.client.v2[duplicate, "actions"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertNotIn(action_from_host.name, self.get_action_names_from_response(response.json()))
+
+        with self.subTest("own host action can not be launched"):
+            response = self.client.v2[duplicate, "actions", action_from_host, "run"].post()
+
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        with self.subTest("action from cluster objects can be launched"):
+            with RunTaskMock():
+                response = self.client.v2[duplicate, "actions", action_from_component, "run"].post()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_forbid_config_change(self):
+        duplicate = self.create_duplicate(origin=self.host_1)
+
+        response = self.client.v2[duplicate, "configs"].post(data={"config": {"not": "exist"}, "adcmMeta": {}})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn("host duplicate", response.json()["desc"])

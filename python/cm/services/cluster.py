@@ -13,15 +13,22 @@
 from collections import defaultdict
 from typing import Collection, Generator, Iterable, Protocol
 
-from core.cluster.operations import add_hosts_to_cluster, build_clusters_topology
+from core.cluster.operations import (
+    HostClusterDBProtocol,
+    SearchConditions,
+    add_hosts_to_cluster,
+    build_clusters_topology,
+)
 from core.cluster.types import (
     ClusterTopology,
+    HostAddInfo,
     HostClusterPair,
     HostComponentEntry,
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, ShortObjectInfo
+from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
@@ -30,7 +37,7 @@ from cm.services.concern import create_issue, delete_issue
 from cm.status_api import notify_about_new_concern
 
 
-class ClusterDB:
+class ClusterDB(HostClusterDBProtocol):
     __slots__ = ()
 
     @staticmethod
@@ -39,6 +46,23 @@ class ClusterDB:
             HostClusterPair(host_id=host, cluster_id=cluster_)
             for host, cluster_ in Host.objects.filter(pk__in=hosts).values_list("id", "cluster_id").all()
         )
+
+    @staticmethod
+    def get_info_for_hosts(include: SearchConditions) -> Iterable[HostAddInfo]:
+        filter_condition = Q()
+
+        if include.with_id is not None:
+            filter_condition |= Q(id__in=include.with_id)
+
+        if include.bound_to_cluster is not None:
+            filter_condition |= Q(cluster_id=include.bound_to_cluster)
+
+        if include.unbound_to_cluster:
+            filter_condition |= Q(cluster_id__isnull=True)
+
+        qs = Host.objects.filter(filter_condition).values("id", "original_id", "cluster_id", name=F("fqdn"))
+
+        return (HostAddInfo(**values) for values in qs)
 
     @staticmethod
     def set_cluster_id_for_hosts(cluster_id: ClusterID, hosts: Iterable[HostID]) -> None:
