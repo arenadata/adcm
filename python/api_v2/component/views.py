@@ -54,6 +54,12 @@ from api_v2.component.serializers import (
 )
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.process.api_schema import (
+    document_action_process_step_viewset,
+    document_action_process_viewset,
+)
+from api_v2.generic.action.process.audit import audit_action_process_viewset
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_actions_viewset,
@@ -79,9 +85,6 @@ from api_v2.generic.config_host_group.audit import (
     audit_host_config_host_group_viewset,
 )
 from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
-from api_v2.generic.wizard.api_schema import document_action_process_step_viewset, document_action_process_viewset
-from api_v2.generic.wizard.audit import audit_action_process_viewset
-from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.utils.audit import (
     component_from_lookup,
     component_with_parents_specified_in_path_exists,

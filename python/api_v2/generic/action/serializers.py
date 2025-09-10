@@ -12,7 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.models import Action
-from cm.services.wizard import repo
+from cm.services.action_process import repo
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, IntegerField
 from rest_framework.serializers import (
@@ -22,7 +22,7 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from api_v2.generic.wizard.serializers import ProcessShortSerializer
+from api_v2.generic.action.process.serializers import ProcessShortSerializer
 
 
 class ActionListSerializer(ModelSerializer):

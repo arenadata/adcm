@@ -35,7 +35,7 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-from cm.services.wizard.types import ProcessState, ProcessStepState
+from cm.services.action_process.types import ProcessState, ProcessStepState
 
 
 class ObjectType(models.TextChoices):

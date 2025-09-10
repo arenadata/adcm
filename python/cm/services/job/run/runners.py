@@ -24,6 +24,8 @@ from core.types import (
     CoreObjectDescriptor,
 )
 
+from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.services.action_process.types import ProcessStepState
 from cm.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -36,8 +38,6 @@ from cm.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.services.job.run.audit import audit_task_finish
-from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
-from cm.services.wizard.types import ProcessStepState
 
 NO_PROCESS_PID = 0
 

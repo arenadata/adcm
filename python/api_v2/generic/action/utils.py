@@ -17,7 +17,6 @@ from typing import Iterable, Iterator, List, Literal
 import json
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
-from adcm.settings import WIZARD_STALE_STATE_TIMEOUT
 from cm.adcm_config.config import get_default
 from cm.models import (
     Action,
@@ -30,10 +29,10 @@ from cm.models import (
     Provider,
     Service,
 )
+from cm.services.action_process.types import ProcessState
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
 from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.config.jinja import get_jinja_config
-from cm.services.wizard.types import ProcessState
 from django.conf import settings
 from django.utils import timezone
 from rbac.models import User
@@ -101,7 +100,7 @@ def get_action_configuration(
     return get_schema_config_meta(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
 
 
-def get_wizard_action_processes(action: Action) -> list[Process] | None:
+def get_action_processes(action: Action) -> list[Process] | None:
     if not action.wizard_template:
         return None
 
@@ -109,7 +108,7 @@ def get_wizard_action_processes(action: Action) -> list[Process] | None:
         Process.objects.filter(
             action=action,
             state=ProcessState.CREATED,
-            created_at__gt=timezone.now() - WIZARD_STALE_STATE_TIMEOUT,
+            created_at__gt=timezone.now() - settings.ACTION_PROCESS_STALE_STATE_TIMEOUT,
         )
     )
 

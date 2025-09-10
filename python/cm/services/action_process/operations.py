@@ -29,22 +29,17 @@ from cm.adcm_config.config import (
 )
 from cm.converters import core_type_to_model
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
-from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
-from cm.services.concern.flags import BuiltInFlag, lower_flag
-from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
-from cm.services.job.run import start_task
-from cm.services.job.run.repo import JobRepoImpl
-from cm.services.wizard import repo
-from cm.services.wizard.errors import ActionProcessOperationError, SyncKeyMismatchError
-from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
-from cm.services.wizard.schema_validation import (
+from cm.services.action_process import repo
+from cm.services.action_process.errors import ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.services.action_process.schema_validation import (
     CompleteStepPayload,
     Configuration,
     ProcessOperationType,
     ResetStepPayload,
     SubmitStepPayload,
 )
-from cm.services.wizard.types import (
+from cm.services.action_process.types import (
     ActionProcess,
     ProcessState,
     ProcessStepState,
@@ -53,6 +48,11 @@ from cm.services.wizard.types import (
     StepType,
     StepUpdateDTO,
 )
+from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
+from cm.services.concern.flags import BuiltInFlag, lower_flag
+from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
+from cm.services.job.run import start_task
+from cm.services.job.run.repo import JobRepoImpl
 from cm.variant import process_variant
 
 SerializedConfigStep: TypeAlias = dict[
@@ -212,7 +212,7 @@ def perform_operation(process_id: ActionProcessID, payload: OperationPayload, co
 
         case ProcessOperationType.COMPLETE:
             complete_process(process=process)
-            lower_flag(BuiltInFlag.WIZARD_PROCESS_RUNNING.value.name, on_objects=[context.object])
+            lower_flag(BuiltInFlag.ACTION_PROCESS_RUNNING.value.name, on_objects=[context.object])
 
     update_process_sync_key(process_id=process_id, sync_key=payload.params.process_sync_key)
 

@@ -13,8 +13,8 @@
 from typing import Any
 
 from cm.models import Process
-from cm.services.wizard.operations import find_current_and_last_completed_steps
-from cm.services.wizard.schema_validation import (
+from cm.services.action_process.operations import find_current_and_last_completed_steps
+from cm.services.action_process.schema_validation import (
     CompleteStepPayload,
     OperationPayloadSchema,
     ResetStepPayload,

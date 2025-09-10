@@ -14,7 +14,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
-from core.bundle_alt.schema import ActionProcessStage, _WizardNames
+from core.bundle_alt.schema import ActionProcessStage
 from core.job.types import StepType
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID
 from pydantic import BaseModel, ConfigDict, Field
@@ -55,9 +55,10 @@ class ActionProcess(BaseModel):
     last_completed_step_id: ActionProcessStepID | None = None
 
 
-class Step(_WizardNames):
+class Step(BaseModel):
     id: ActionProcessStepID
     process_id: ActionProcessID
+    name: str
     display_name: str
     step_spec: Any = None
     type: Literal[StepType.CONFIGURATION, StepType.OPERATION]

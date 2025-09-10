@@ -92,7 +92,7 @@ cluster_action_process_router = NestedSimpleRouter(
     parent_router=cluster_action_router, parent_prefix=ACTION_PREFIX, lookup="action"
 )
 cluster_action_process_router.register(
-    prefix=PROCESS_PREFIX, viewset=ClusterActionProcessViewSet, basename="cluster-action-wizard"
+    prefix=PROCESS_PREFIX, viewset=ClusterActionProcessViewSet, basename="cluster-action-process"
 )
 
 cluster_action_process_step_router = NestedSimpleRouter(

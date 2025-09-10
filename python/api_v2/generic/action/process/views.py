@@ -16,13 +16,9 @@ from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
-from cm.services.bundle import BundlePathResolver
-from cm.services.concern.flags import BuiltInFlag, raise_flag
-from cm.services.config import convert_attr_to_adcm_meta
-from cm.services.job.run.repo import ActionRepoImpl
-from cm.services.wizard import repo
-from cm.services.wizard.errors import ActionProcessOperationError, SyncKeyMismatchError
-from cm.services.wizard.operations import (
+from cm.services.action_process import repo
+from cm.services.action_process.errors import ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.operations import (
     OperationContext,
     SerializedConfigStep,
     SerializedOperationStep,
@@ -30,7 +26,11 @@ from cm.services.wizard.operations import (
     perform_operation,
     process_payload_config,
 )
-from cm.services.wizard.types import Step, StepType
+from cm.services.action_process.types import Step, StepType
+from cm.services.bundle import BundlePathResolver
+from cm.services.concern.flags import BuiltInFlag, raise_flag
+from cm.services.config import convert_attr_to_adcm_meta
+from cm.services.job.run.repo import ActionRepoImpl
 from core.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -40,23 +40,23 @@ from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from api_v2.generic.action.utils import get_schema_config_meta
-from api_v2.generic.action.views import ActionPermissionsMixin
-from api_v2.generic.wizard.serializers import (
+from api_v2.generic.action.process.serializers import (
     OperationSerializer,
     ProcessSerializer,
     StepConfigurationSerializer,
     StepOperationSerializer,
     StepSerializer,
 )
+from api_v2.generic.action.utils import get_schema_config_meta
+from api_v2.generic.action.views import ActionPermissionsMixin
 from api_v2.views import ADCMGenericViewSet
 
 
 class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = Process.objects.all()
     exc_conversion_map = {
-        SyncKeyMismatchError: "WIZARD_SYNC_KEY_CONFLICT",
-        ActionProcessOperationError: "WIZARD_OPERATION_CONFLICT",
+        SyncKeyMismatchError: "ACTION_PROCESS_SYNC_KEY_CONFLICT",
+        ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
     }
 
     def get_serializer_class(self):
@@ -68,7 +68,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
             case _:
                 raise NotImplementedError(f"No serializer for action: {self.action}")
 
-    def get_parent_and_action_supporting_wizard(self) -> tuple[ParentObject, ActionInfo]:
+    def get_parent_and_action_supporting_process(self) -> tuple[ParentObject, ActionInfo]:
         parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
 
         try:
@@ -78,13 +78,14 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
 
         if not action.wizard_template:
             raise AdcmEx(
-                code="WIZARD_ACTION_NOT_SUITABLE", msg=f"Action #{action.id} does not support wizard functionality."
+                code="ACTION_PROCESS_ACTION_NOT_SUITABLE",
+                msg=f"Action #{action.id} does not support action process functionality.",
             )
 
         return parent_object, action
 
     def retrieve(self, request, *args, pk: str, **kwargs):  # noqa: ARG002
-        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
+        parent_object, action_info = self.get_parent_and_action_supporting_process()
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
         )
@@ -97,7 +98,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):  # noqa: ARG002
-        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
+        parent_object, action_info = self.get_parent_and_action_supporting_process()
 
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
@@ -107,7 +108,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         with atomic():
             process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action_info)
             raise_flag(
-                BuiltInFlag.WIZARD_PROCESS_RUNNING.value,
+                BuiltInFlag.ACTION_PROCESS_RUNNING.value,
                 on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],
             )
 
@@ -126,7 +127,7 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
     @action(methods=["post"], detail=True, url_path="operation")
     def operation(self, request, *_, pk: ActionProcessID, **_kw):  # noqa: ARG002
         process_id = int(pk)
-        parent_object, action_info = self.get_parent_and_action_supporting_wizard()
+        parent_object, action_info = self.get_parent_and_action_supporting_process()
 
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
@@ -187,7 +188,7 @@ def serialize_step(
     step: Step, object_: CoreObjectDescriptor, base_data: dict
 ) -> SerializedConfigStep | SerializedOperationStep:
     if step.is_render_required:
-        raise AdcmEx("WIZARD_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
+        raise AdcmEx("ACTION_PROCESS_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
 
     step_input = ProcessStepInput.objects.filter(step_id=step.id).first()
 
