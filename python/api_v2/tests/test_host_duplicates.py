@@ -33,11 +33,15 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
-
     def get_ids(self, collection: list[dict]) -> set[int]:
         return set(map(itemgetter("id"), collection))
+
+    def get_action_names_from_response(self, actions: list[dict]) -> list[str]:
+        return list(map(itemgetter("name"), actions))
+
+    def create_duplicate(self, origin: Host, name: str = "duplicate", cluster: Cluster | None = None) -> Host:
+        duplicate_id = create_duplicate(host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None))
+        return Host.objects.get(id=duplicate_id)
 
     def assert_cluster_host_candidates(self, cluster: Cluster, expected_ids: set[int]):
         host_candidates = self.client.v2[cluster, "host-candidates"].get().json()
@@ -186,10 +190,12 @@ class TestDuplicateHost(BaseAPITestCase):
             self.assertIn("Ensure this field has no more than 253 characters.", response.json()["desc"])
 
     def test_adcm_6961_duplicate_host_cant_be_added_without_permissions(self):
-        self.client.login(**self.test_user_credentials)
+        test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        test_user = self.create_user(**test_user_credentials)
+        self.client.login(**test_user_credentials)
 
         with self.subTest("No permission granted - denied"):
-            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            with self.grant_permissions(to=test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 response = self.client.v2[self.host_1, "duplicates"].post(
                     data={"name": "another-host", "cluster_id": self.cluster_1.pk}
                 )
@@ -198,7 +204,7 @@ class TestDuplicateHost(BaseAPITestCase):
                 self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
 
         with self.subTest("No permission granted (non-existend pk) - denied"):
-            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            with self.grant_permissions(to=test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 response = self.client.v2[self.host_1, "duplicates"].post(
                     data={"name": "another-host", "cluster_id": 999}
                 )
@@ -207,7 +213,7 @@ class TestDuplicateHost(BaseAPITestCase):
                 self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
 
         with self.subTest("Permissions Create host only - denied"):
-            with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Create host"):
+            with self.grant_permissions(to=test_user, on=self.provider, role_name="Create host"):
                 response = self.client.v2[self.host_1, "duplicates"].post(
                     data={"name": "another-host", "cluster_id": self.cluster_1.pk}
                 )
@@ -216,21 +222,14 @@ class TestDuplicateHost(BaseAPITestCase):
                 self.assertEqual(response.json()["code"], "CLUSTER_NOT_FOUND")
 
         with self.subTest("Permission Create host and View cluster configurations granted - success"):
-            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-                with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Create host"):
+            with self.grant_permissions(to=test_user, on=self.cluster_1, role_name="View cluster configurations"):
+                with self.grant_permissions(to=test_user, on=self.provider, role_name="Create host"):
                     response = self.client.v2[self.host_1, "duplicates"].post(
                         data={"name": "another-host", "cluster_id": self.cluster_1.pk}
                     )
 
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
                     self.assertTrue(Host.objects.filter(fqdn="another-host").exists())
-
-    def get_action_names_from_response(self, actions: list[dict]) -> list[str]:
-        return list(map(itemgetter("name"), actions))
-
-    def create_duplicate(self, origin: Host, name: str = "duplicate", cluster: Cluster | None = None) -> Host:
-        duplicate_id = create_duplicate(host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None))
-        return Host.objects.get(id=duplicate_id)
 
     def test_forbid_action_launch_of_host_own_actions_on_duplicates(self):
         duplicate = self.create_duplicate(origin=self.host_1, cluster=self.cluster_1)
@@ -265,3 +264,33 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertIn("host duplicate", response.json()["desc"])
+
+    def test_host_list_queries_amount(self):
+        expected_queries_amount = 10
+
+        # When there aren't any duplicates, there will be 1 less query (for concerns prefetch),
+        # yet amount of queries won't increase when more instances/duplicates arrive
+        create_duplicate(host_id=self.host_1.pk, name="jjjj")
+
+        with self.assertNumQueries(expected_queries_amount):
+            response = (self.client.v2 / "hosts").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.add_host(provider=self.provider, fqdn="something")
+        another_host = self.add_host(provider=self.provider, fqdn="something-else")
+        create_duplicate(host_id=another_host.pk, name="wow")
+
+        with self.assertNumQueries(expected_queries_amount):
+            response = (self.client.v2 / "hosts").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_duplicate_add_to_wrong_cluster_fail(self):
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_1)
+        duplicate = self.create_duplicate(origin=self.host_1, name=host_2.fqdn)
+
+        response = self.client.v2[self.cluster_1, "hosts"].post(data=[{"hostId": duplicate.pk}])
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
+        self.assertIn("same name", response.json()["desc"])

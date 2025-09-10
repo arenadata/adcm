@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from operator import attrgetter
+
 from adcm import settings
 from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Component, Host, MaintenanceMode, Provider
@@ -50,7 +52,7 @@ class HCComponentNameSerializer(ModelSerializer):
         fields = ["id", "name", "display_name"]
 
 
-class BindingsHostSerializer(ModelSerializer):
+class HostDuplicateSerializer(ModelSerializer):
     concerns = ConcernSerializer(many=True)
     name = CharField(source="fqdn")
     cluster = HostClusterSerializer()
@@ -88,7 +90,6 @@ class HostSerializer(WithStatusSerializer):
     )
     cluster = HostClusterSerializer(read_only=True)
     components = SerializerMethodField()
-    duplicates = SerializerMethodField()
 
     class Meta:
         model = Host
@@ -106,7 +107,6 @@ class HostSerializer(WithStatusSerializer):
             "multi_state",
             "cluster",
             "components",
-            "duplicates",
         ]
 
     @staticmethod
@@ -116,14 +116,21 @@ class HostSerializer(WithStatusSerializer):
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
         ).data
 
+
+class HostWithDuplicatesSerializer(HostSerializer):
+    duplicates = SerializerMethodField()
+
     # TODO: add to schema
     @staticmethod
     def get_duplicates(instance: Host):
-        duplicates_qs = instance.duplicates.order_by("id")
-        return BindingsHostSerializer(
-            instance=duplicates_qs.prefetch_related("concerns").select_related("cluster"),
+        return HostDuplicateSerializer(
+            instance=sorted(instance.duplicates.all(), key=attrgetter("id")),
             many=True,
         ).data
+
+    class Meta:
+        model = Host
+        fields = HostSerializer.Meta.fields + ["duplicates"]
 
 
 class HostUpdateSerializer(ModelSerializer):
