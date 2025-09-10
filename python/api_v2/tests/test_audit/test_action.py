@@ -15,9 +15,9 @@ from typing import Iterable, Literal
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_core_descriptor
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
-from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
-from cm.services.wizard.schema_validation import ProcessOperationType
-from cm.services.wizard.types import ProcessStepState
+from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.services.action_process.schema_validation import ProcessOperationType
+from cm.services.action_process.types import ProcessStepState
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -33,8 +33,8 @@ class TestActionProcessAudit(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        wizard_cluster_bundle = self.test_bundles_dir / "wizard_action"
-        self.bundle_1 = self.add_bundle(source_dir=wizard_cluster_bundle)
+        cluster_bundle = self.test_bundles_dir / "wizard_action"
+        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
@@ -43,7 +43,7 @@ class TestActionProcessAudit(BaseAPITestCase):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
-    def get_object_wizard_action(self, obj: Cluster | Service | Component) -> Action:
+    def get_object_action_with_process(self, obj: Cluster | Service | Component) -> Action:
         return Action.objects.get(name="wizard_jinja", prototype=obj.prototype)
 
     def start_process(self, obj: Cluster | Service | Component):
@@ -52,12 +52,12 @@ class TestActionProcessAudit(BaseAPITestCase):
         return response.json()["id"]
 
     def get_endpoint_to_processes(self, obj: Cluster | Service | Component):
-        return self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"]
+        return self.client.v2[obj, "actions", self.get_object_action_with_process(obj).pk, "processes"]
 
     def get_process(self, process_id: int) -> Process:
         return Process.objects.get(pk=process_id)
 
-    def fill_wizard_steps_for_process(
+    def fill_steps_for_process(
         self,
         process_id: int,
         test_spec: list[dict],
@@ -79,7 +79,7 @@ class TestActionProcessAudit(BaseAPITestCase):
         )
 
         process = self.get_process(self.start_process(self.cluster_1))
-        action = self.get_object_wizard_action(self.cluster_1)
+        action = self.get_object_action_with_process(self.cluster_1)
         target_operation_step = ProcessStep.objects.get(
             process_id=process.id, name="stage1_step1", display_name="Stage1.Step1"
         )
@@ -124,8 +124,8 @@ class TestActionProcessAudit(BaseAPITestCase):
                 target_operation_step = ProcessStep.objects.get(
                     process_id=process.id, name="stage2_step2", display_name="Stage2.Step2"
                 )
-                self.fill_wizard_steps_for_process(process.id, test_spec, test_input, previous_step_names)
-                action = self.get_object_wizard_action(obj)
+                self.fill_steps_for_process(process.id, test_spec, test_input, previous_step_names)
+                action = self.get_object_action_with_process(obj)
 
                 # render step
                 fill_step_spec(
@@ -156,7 +156,7 @@ class TestActionProcessAudit(BaseAPITestCase):
     def test_audit_record_process_create(self):
         with self.subTest(f"create process for {self.cluster_1} (access denied)"):
             self.client.login(**self.test_user_credentials)
-            action = self.get_object_wizard_action(self.cluster_1)
+            action = self.get_object_action_with_process(self.cluster_1)
             response = self.client.v2[self.cluster_1, "actions", action.pk, "processes"].post(data={})
 
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -198,7 +198,7 @@ class TestActionProcessAudit(BaseAPITestCase):
         for obj in (self.cluster_1, self.service_1, self.component_1):
             with self.subTest(f"create process for {obj} (success)"):
                 self.client.login(username="admin", password="admin")
-                action = self.get_object_wizard_action(obj)
+                action = self.get_object_action_with_process(obj)
                 response = self.client.v2[obj, "actions", action.pk, "processes"].post(data={})
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)

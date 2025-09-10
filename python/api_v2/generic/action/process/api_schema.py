@@ -12,7 +12,7 @@
 
 from uuid import uuid4
 
-from cm.services.wizard.schema_validation import ProcessOperationType
+from cm.services.action_process.schema_validation import ProcessOperationType
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,
@@ -31,7 +31,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import ErrorSerializer, responses
-from api_v2.generic.wizard.serializers import ProcessSerializer
+from api_v2.generic.action.process.serializers import ProcessSerializer
 
 
 class Step(Serializer):

@@ -40,16 +40,16 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.jinja_env import _get_action_info
-from cm.services.job.run.repo import ActionRepoImpl
-from cm.services.wizard.operations import (
+from cm.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     process_payload_config,
 )
-from cm.services.wizard.render_step import RenderStepContext, fill_step_spec
-from cm.services.wizard.schema_validation import ProcessOperationType, SubmitStepPayload
-from cm.services.wizard.types import ProcessState, ProcessStepState
+from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.services.action_process.schema_validation import ProcessOperationType, SubmitStepPayload
+from cm.services.action_process.types import ProcessState, ProcessStepState
+from cm.services.jinja_env import _get_action_info
+from cm.services.job.run.repo import ActionRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -779,24 +779,24 @@ class TestAction(BaseAPITestCase):
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
 
 
-class TestWizard(BaseAPITestCase):
+class TestActionProcess(BaseAPITestCase):
     maxDiff = None
 
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        wizard_cluster_bundle = self.test_bundles_dir / "wizard_action"
-        self.bundle_1 = self.add_bundle(source_dir=wizard_cluster_bundle)
+        cluster_bundle = self.test_bundles_dir / "wizard_action"
+        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
 
-        wizard_config_bundle = self.test_bundles_dir / "wizard_config"
-        self.config_bundle = self.add_bundle(source_dir=wizard_config_bundle)
+        config_bundle = self.test_bundles_dir / "wizard_config"
+        self.config_bundle = self.add_bundle(source_dir=config_bundle)
         self.config_cluster = self.add_cluster(bundle=self.config_bundle, name="config_cluster")
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
         self.component_1 = Component.objects.filter(service=self.service_1).first()
 
-        self.cluster_wizard_action = self.get_object_wizard_action(self.cluster_1)
+        self.cluster_with_action_process = self.get_object_action_with_process(self.cluster_1)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
@@ -818,14 +818,14 @@ class TestWizard(BaseAPITestCase):
 
         with self.subTest("No view permissions"):
             response = self.client.v2[
-                self.cluster_1, "actions", self.get_object_wizard_action(self.cluster_1).pk, "processes"
+                self.cluster_1, "actions", self.get_object_action_with_process(self.cluster_1).pk, "processes"
             ].post(data={})
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         with self.subTest("No run permissions"):
             with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 response = self.client.v2[
-                    self.cluster_1, "actions", self.get_object_wizard_action(self.cluster_1).pk, "processes"
+                    self.cluster_1, "actions", self.get_object_action_with_process(self.cluster_1).pk, "processes"
                 ].post(data={})
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -834,9 +834,9 @@ class TestWizard(BaseAPITestCase):
         with self.subTest("All permissions"):
             for obj in (self.cluster_1, self.service_1, self.component_1):
                 with self.subTest(f"create process for {obj}"):
-                    response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"].post(
-                        data={}
-                    )
+                    response = self.client.v2[
+                        obj, "actions", self.get_object_action_with_process(obj).pk, "processes"
+                    ].post(data={})
 
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
                     self.assertEqual(
@@ -857,7 +857,9 @@ class TestWizard(BaseAPITestCase):
 
                     self.assertEqual(ProcessStep.objects.filter(process=process).count(), 6)
 
-                    expected_response_template = self.test_files_dir / "responses" / "wizard" / "create_process.yml"
+                    expected_response_template = (
+                        self.test_files_dir / "responses" / "action_process" / "create_process.yml"
+                    )
                     _step_ids = {f"{name}_id": id_ for name, id_ in process.steps.values_list("name", "id")}
                     expected_response = render_template(
                         file=expected_response_template,
@@ -890,7 +892,7 @@ class TestWizard(BaseAPITestCase):
             response = self.client.v2[
                 self.cluster_1,
                 "actions",
-                self.get_object_wizard_action(self.cluster_1).pk,
+                self.get_object_action_with_process(self.cluster_1).pk,
                 "processes",
                 process.id,
                 "steps",
@@ -903,7 +905,7 @@ class TestWizard(BaseAPITestCase):
                 response = self.client.v2[
                     self.cluster_1,
                     "actions",
-                    self.get_object_wizard_action(self.cluster_1).pk,
+                    self.get_object_action_with_process(self.cluster_1).pk,
                     "processes",
                     process.id,
                     "steps",
@@ -919,7 +921,7 @@ class TestWizard(BaseAPITestCase):
                     response = self.client.v2[
                         obj,
                         "actions",
-                        self.get_object_wizard_action(obj).pk,
+                        self.get_object_action_with_process(obj).pk,
                         "processes",
                         process.id,
                         "steps",
@@ -1024,7 +1026,9 @@ class TestWizard(BaseAPITestCase):
                     ]
                     self.assertListEqual(target_step.step_spec, expected_spec)
 
-                    response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_config_step.yml"
+                    response_template = (
+                        self.test_files_dir / "responses" / "action_process" / "retrieve_config_step.yml"
+                    )
                     expected_response = render_template(file=response_template, context={"step_id": target_step.id})
                     self.assertDictEqual(response.json(), expected_response)
 
@@ -1043,7 +1047,7 @@ class TestWizard(BaseAPITestCase):
             response = self.client.v2[
                 self.cluster_1,
                 "actions",
-                self.get_object_wizard_action(self.cluster_1).pk,
+                self.get_object_action_with_process(self.cluster_1).pk,
                 "processes",
                 process.id,
                 "steps",
@@ -1056,7 +1060,7 @@ class TestWizard(BaseAPITestCase):
                 response = self.client.v2[
                     self.cluster_1,
                     "actions",
-                    self.get_object_wizard_action(self.cluster_1).pk,
+                    self.get_object_action_with_process(self.cluster_1).pk,
                     "processes",
                     process.id,
                     "steps",
@@ -1079,7 +1083,7 @@ class TestWizard(BaseAPITestCase):
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
-                action_id=self.cluster_wizard_action.id,
+                action_id=self.cluster_with_action_process.id,
                 object=orm_object_to_core_descriptor(self.cluster_1),
             ),
         )
@@ -1090,7 +1094,7 @@ class TestWizard(BaseAPITestCase):
                     response = self.client.v2[
                         obj,
                         "actions",
-                        self.get_object_wizard_action(obj).pk,
+                        self.get_object_action_with_process(obj).pk,
                         "processes",
                         process.id,
                         "steps",
@@ -1124,12 +1128,14 @@ class TestWizard(BaseAPITestCase):
                     ]
                     self.assertListEqual(target_step.step_spec, expected_spec)
 
-                    response_template = self.test_files_dir / "responses" / "wizard" / "retrieve_operation_step.yml"
+                    response_template = (
+                        self.test_files_dir / "responses" / "action_process" / "retrieve_operation_step.yml"
+                    )
                     expected_response = render_template(file=response_template, context={"step_id": target_step.id})
                     self.assertDictEqual(response.json(), expected_response)
 
-    def test_retrieve_wizard_action_success(self):
-        with self.subTest("not a wizard action"):
+    def test_retrieve_action_with_process_success(self):
+        with self.subTest("action without process"):
             response = self.client.v2[
                 "adcm", "actions", Action.objects.filter(prototype=ADCM.objects.first().prototype).first().pk
             ].get()
@@ -1137,20 +1143,20 @@ class TestWizard(BaseAPITestCase):
             self.assertIsNone(response.json()["processes"], None)
 
         for obj in (self.cluster_1, self.service_1, self.component_1):
-            with self.subTest(f"wizard action of {obj} without processes"):
-                response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk].get()
+            with self.subTest(f"action with process of {obj} without processes"):
+                response = self.client.v2[obj, "actions", self.get_object_action_with_process(obj).pk].get()
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(response.json()["processes"], [])
 
         for obj in (self.cluster_1, self.service_1, self.component_1):
-            with self.subTest(f"wizard action of {obj} with process"):
+            with self.subTest(f"action with process  of {obj} with process"):
                 process = self.get_process(self.start_process(obj))
 
                 self.set_completed_fill_specs_create_inputs_for_steps_by_name(
                     process.id, {"stage1_step1", "stage2_step1"}
                 )
 
-                response = self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk].get()
+                response = self.client.v2[obj, "actions", self.get_object_action_with_process(obj).pk].get()
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertEqual(len(response.json()["processes"]), 1)
                 self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.sync_key))
@@ -1170,7 +1176,7 @@ class TestWizard(BaseAPITestCase):
         with self.subTest("No view permissions"):
             # submit step
             response = self.client.v2[
-                self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
             ].post(
                 data={
                     "method": ProcessOperationType.SUBMIT,
@@ -1183,7 +1189,7 @@ class TestWizard(BaseAPITestCase):
             with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 # submit step
                 response = self.client.v2[
-                    self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                    self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
                 ].post(
                     data={
                         "method": ProcessOperationType.SUBMIT,
@@ -1204,17 +1210,17 @@ class TestWizard(BaseAPITestCase):
                 step_id=current_step_id,
                 context=RenderStepContext(
                     process_id=process.id,
-                    action_id=self.cluster_wizard_action.pk,
+                    action_id=self.cluster_with_action_process.pk,
                     object=orm_object_to_core_descriptor(self.cluster_1),
                 ),
             )
 
             self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
-            self.assertFalse(TaskLog.objects.filter(action=self.cluster_wizard_action).exists())
+            self.assertFalse(TaskLog.objects.filter(action=self.cluster_with_action_process).exists())
 
             # submit step
             response = self.client.v2[
-                self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
             ].post(
                 data={
                     "method": ProcessOperationType.SUBMIT,
@@ -1242,7 +1248,7 @@ class TestWizard(BaseAPITestCase):
             ]
             self.assertListEqual(target_operation_step.step_spec, expected_spec)
 
-            task = TaskLog.objects.get(action=self.cluster_wizard_action)
+            task = TaskLog.objects.get(action=self.cluster_with_action_process)
             input_ = ProcessStepInput.objects.get(step_id=target_operation_step.id)
 
             self.assertIsNone(input_.configuration)
@@ -1289,7 +1295,7 @@ class TestWizard(BaseAPITestCase):
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
-                action_id=self.cluster_wizard_action.pk,
+                action_id=self.cluster_with_action_process.pk,
                 object=orm_object_to_core_descriptor(self.cluster_1),
             ),
         )
@@ -1300,7 +1306,7 @@ class TestWizard(BaseAPITestCase):
         for config, expected_code in ((wrong_config, HTTP_400_BAD_REQUEST), (new_config, HTTP_200_OK)):
             with self.subTest(f"Submit {config=}, {expected_code=}"):
                 response = self.client.v2[
-                    self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+                    self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
                 ].post(
                     data={
                         "method": ProcessOperationType.SUBMIT,
@@ -1391,7 +1397,7 @@ class TestWizard(BaseAPITestCase):
 
         self.assertEqual(process.state, ProcessState.CREATED)
 
-        with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
+        with patch("api_v2.generic.action.process.views.perform_operation") as perform_operation_mock:
             payload = {
                 "method": "submit_step",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id, "configuration": config},
@@ -1411,7 +1417,7 @@ class TestWizard(BaseAPITestCase):
         )
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
-            action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
+            action=ActionRepoImpl.get_action(id=self.cluster_with_action_process.id),
             config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
@@ -1429,7 +1435,7 @@ class TestWizard(BaseAPITestCase):
         # make all previous steps 'completed'
         ProcessStep.objects.filter(id__lt=step_id).update(state=ProcessStepState.COMPLETED)
 
-        with patch("api_v2.generic.wizard.views.perform_operation") as perform_operation_mock:
+        with patch("api_v2.generic.action.process.views.perform_operation") as perform_operation_mock:
             payload = {
                 "method": "submit_step",
                 "params": {"processSyncKey": process_sync_key, "stepId": step_id},
@@ -1442,7 +1448,7 @@ class TestWizard(BaseAPITestCase):
         )
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
-            action=ActionRepoImpl.get_action(id=self.cluster_wizard_action.id),
+            action=ActionRepoImpl.get_action(id=self.cluster_with_action_process.id),
             config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
@@ -1473,7 +1479,7 @@ class TestWizard(BaseAPITestCase):
         ProcessStep.objects.filter(process_id=process.id, name__in=next_step_names).update(step_spec=test_spec)
 
         response = self.client.v2[
-            self.cluster_1, "actions", self.cluster_wizard_action.pk, "processes", process.id, "operation"
+            self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
         ].post(
             data={
                 "method": ProcessOperationType.RESET,
@@ -1778,10 +1784,10 @@ class TestWizard(BaseAPITestCase):
         return response.json()["id"]
 
     def get_endpoint_to_processes(self, obj: Cluster | Service | Component):
-        return self.client.v2[obj, "actions", self.get_object_wizard_action(obj).pk, "processes"]
+        return self.client.v2[obj, "actions", self.get_object_action_with_process(obj).pk, "processes"]
 
     def get_process(self, process_id: int) -> Process:
         return Process.objects.get(pk=process_id)
 
-    def get_object_wizard_action(self, obj: Cluster | Service | Component) -> Action:
+    def get_object_action_with_process(self, obj: Cluster | Service | Component) -> Action:
         return Action.objects.get(name="wizard_jinja", prototype=obj.prototype)

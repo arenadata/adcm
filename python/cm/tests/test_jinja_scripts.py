@@ -145,7 +145,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         }
         self.assertDictEqual(env, expected_env)
 
-    def test_env_for_wizard(self):
+    def test_env_for_action_process(self):
         action = Action.objects.get(prototype=self.cluster.prototype, display_name="action_on_cluster")
         process = Process.objects.create(
             action=action,
@@ -191,7 +191,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
             state="created",
         )
         env = decrypt_secrets(
-            source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id), wizard_process=process)
+            source=get_env_for_jinja_scripts(task=TaskLog.objects.get(pk=self.cluster_task_id), process=process)
         )
         expected_env = {
             **self.expected_env_part,

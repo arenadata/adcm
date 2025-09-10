@@ -58,6 +58,12 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.process.api_schema import (
+    document_action_process_step_viewset,
+    document_action_process_viewset,
+)
+from api_v2.generic.action.process.audit import audit_action_process_viewset
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_actions_viewset,
@@ -85,9 +91,6 @@ from api_v2.generic.config_host_group.audit import (
 from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
-from api_v2.generic.wizard.api_schema import document_action_process_step_viewset, document_action_process_viewset
-from api_v2.generic.wizard.audit import audit_action_process_viewset
-from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (

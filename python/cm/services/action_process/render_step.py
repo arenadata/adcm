@@ -16,9 +16,9 @@ from core.job.types import JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 
 from cm.converters import core_type_to_model
+from cm.services.action_process import repo
+from cm.services.action_process.types import DBPrototypeConfig, StepType, StepUpdateDTO
 from cm.services.bundle_alt.render import ActionArgs, Environment, TaskArgs, render_config, render_scripts
-from cm.services.wizard import repo
-from cm.services.wizard.types import DBPrototypeConfig, StepType, StepUpdateDTO
 
 
 @dataclass(frozen=True, slots=True)

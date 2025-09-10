@@ -109,6 +109,12 @@ from api_v2.cluster.serializers import (
 )
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.process.api_schema import (
+    document_action_process_step_viewset,
+    document_action_process_viewset,
+)
+from api_v2.generic.action.process.audit import audit_action_process_viewset
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_actions_viewset,
@@ -139,9 +145,6 @@ from api_v2.generic.imports.views import ImportViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
-from api_v2.generic.wizard.api_schema import document_action_process_step_viewset, document_action_process_viewset
-from api_v2.generic.wizard.audit import audit_action_process_viewset
-from api_v2.generic.wizard.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.host.filters import ClusterHostFilter
 from api_v2.host.serializers import (
     HostAddSerializer,

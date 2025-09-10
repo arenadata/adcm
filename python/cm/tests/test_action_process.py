@@ -18,22 +18,22 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
 
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.config._base import ConfigAttrPair
-from cm.services.job.run.repo import ActionRepoImpl
-from cm.services.wizard import repo
-from cm.services.wizard.operations import (
+from cm.services.action_process import repo
+from cm.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     initiate_process,
     submit_step,
 )
-from cm.services.wizard.schema_validation import (
+from cm.services.action_process.schema_validation import (
     Configuration,
     ProcessOperationType,
     SubmitStepPayload,
     _SubmitConfigurationStepParams,
 )
-from cm.services.wizard.types import ProcessStepState
+from cm.services.action_process.types import ProcessStepState
+from cm.services.config._base import ConfigAttrPair
+from cm.services.job.run.repo import ActionRepoImpl
 
 StepName: TypeAlias = str
 

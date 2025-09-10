@@ -47,7 +47,7 @@ from api_v2.generic.action.serializers import (
 from api_v2.generic.action.utils import (
     filter_actions_by_user_perm,
     get_action_configuration,
-    get_wizard_action_processes,
+    get_action_processes,
     has_run_perms,
 )
 from api_v2.task.serializers import TaskListSerializer
@@ -155,7 +155,7 @@ class ActionViewSet(
                 "config_schema": config_schema,
                 "config": config,
                 "adcm_meta": adcm_meta,
-                "processes": get_wizard_action_processes(action_),
+                "processes": get_action_processes(action_),
             },
         )
 

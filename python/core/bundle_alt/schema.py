@@ -550,7 +550,7 @@ class VersionsSchema(_BaseModel):
 ##########################
 
 
-class _WizardNames(_BaseModel):
+class _Names(_BaseModel):
     name: str
     display_name: str
 
@@ -562,7 +562,7 @@ class _StepOperationUIOptions(_BaseModel):
     button_name: str
 
 
-class OperationStep(_WizardNames):
+class OperationStep(_Names):
     scripts_template: Template
     ui_options: _StepOperationUIOptions | None = None
 
@@ -575,7 +575,7 @@ class OperationStep(_WizardNames):
         return self.scripts_template
 
 
-class ConfigurationStep(_WizardNames):
+class ConfigurationStep(_Names):
     config_template: Template
 
     @property
@@ -593,7 +593,7 @@ ActionProcessStep = OperationStep | ConfigurationStep
 # Stage & Action Process Schema
 
 
-class ActionProcessStage(_WizardNames):
+class ActionProcessStage(_Names):
     steps: list[ActionProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
 
     @model_validator(mode="after")

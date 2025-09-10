@@ -395,4 +395,4 @@ STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via lin
 
 TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
 
-WIZARD_STALE_STATE_TIMEOUT = timedelta(days=1)
+ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=1)

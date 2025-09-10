@@ -19,7 +19,7 @@ from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjec
 from django.conf import settings
 
 from cm.models import Action, Process, ProcessStep, Prototype, PrototypeConfig, TaskLog
-from cm.services.wizard.types import (
+from cm.services.action_process.types import (
     ActionProcess,
     DBPrototypeConfig,
     ProcessState,
