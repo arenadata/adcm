@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Collection
+from typing import Callable, Collection
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -55,7 +55,12 @@ from cm.services.mapping import set_host_component_mapping
 from cm.services.status import notify
 from cm.status_api import send_object_update_event
 from core.bundle.operations import build_requires_dependencies_map
-from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
+from core.cluster.errors import (
+    ClusterAddHostError,
+    HostAlreadyBoundError,
+    HostBelongsToAnotherClusterError,
+    HostDoesNotExistError,
+)
 from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     find_host_candidates_for_cluster,
@@ -842,11 +847,14 @@ class HostClusterViewSet(
     filterset_class = ClusterHostFilter
     audit_model_hint = Host
     retrieve_status_map_actions = ("list", "statuses")
-    exc_conversion_map = {
+    exc_conversion_map: dict[type[Exception], AdcmEx | Callable[[Exception], AdcmEx]] = {
         HostDoesNotExistError: AdcmEx("BAD_REQUEST", "At least one host does not exist."),
         HostAlreadyBoundError: AdcmEx("HOST_CONFLICT", "At least one host is already associated with this cluster."),
         HostBelongsToAnotherClusterError: AdcmEx(
             "FOREIGN_HOST", "At least one host is already linked to another cluster."
+        ),
+        ClusterAddHostError: lambda e: AdcmEx(
+            "HOST_CONFLICT", getattr(e, "message", "Host can not be added to cluster")
         ),
     }
 
@@ -875,8 +883,16 @@ class HostClusterViewSet(
 
         return by_cluster_qs
 
-    def handle_exception(self, exc: Any):
-        return super().handle_exception(self.exc_conversion_map.get(exc.__class__, exc))
+    def handle_exception(self, exc: Exception):
+        err_or_builder: AdcmEx | Callable[[Exception], AdcmEx] | Exception = self.exc_conversion_map.get(
+            exc.__class__, exc
+        )
+        if callable(err_or_builder):  # noqa: SIM108
+            err = err_or_builder(exc)
+        else:
+            err = err_or_builder
+
+        return super().handle_exception(err)
 
     @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
     def create(self, request, *_, **kwargs):

@@ -68,6 +68,7 @@ from api_v2.host.serializers import (
     HostCreateSerializer,
     HostSerializer,
     HostUpdateSerializer,
+    HostWithDuplicatesSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
@@ -162,7 +163,9 @@ class HostViewSet(
 ):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
-        .prefetch_related("concerns", "hostcomponent_set__component__prototype")
+        .prefetch_related(
+            "concerns", "hostcomponent_set__component__prototype", "duplicates__concerns", "duplicates__cluster"
+        )
         .filter(original__isnull=True)
         .order_by("fqdn")
     )
@@ -184,7 +187,7 @@ class HostViewSet(
         if self.action == "create_duplicate":
             return CreateDuplicateSerializer
 
-        return HostSerializer
+        return HostWithDuplicatesSerializer
 
     @audit_create(name="Host created", object_=host_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
