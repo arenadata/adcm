@@ -23,7 +23,6 @@ from cm.models import (
     ProcessStep,
     Prototype,
     PrototypeConfig,
-    StagePrototype,
 )
 
 
@@ -52,7 +51,7 @@ def group_keys_to_flat(origin: dict, spec: dict) -> dict:
     return result
 
 
-def proto_ref(prototype: StagePrototype | Prototype) -> str:
+def proto_ref(prototype: Prototype) -> str:
     return f'{prototype.type} "{prototype.name}" {prototype.version}'
 
 

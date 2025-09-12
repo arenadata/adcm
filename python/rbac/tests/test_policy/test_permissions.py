@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from django.contrib.auth.models import Group, Permission
-from guardian.models import GroupObjectPermission
 
 from rbac.models import Group as RBACGroup
 from rbac.models import Policy
@@ -24,6 +23,7 @@ class RemovePermissionsTestCase(PolicyBaseTestCase):
         super().setUp()
 
         self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
+
         self.policy = Policy.objects.first()
         self.policy.group.add(RBACGroup.objects.create(name="test_group_1"))
 
@@ -59,10 +59,3 @@ class RemovePermissionsTestCase(PolicyBaseTestCase):
 
         self.assertFalse(model_permission_codenames)
         self.assertFalse(group_object_permissions)
-
-
-class AssignPermissionsTestCase(PolicyBaseTestCase):
-    def test_assign_permissions(self):
-        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
-
-        self.assertTrue(GroupObjectPermission.objects.all())

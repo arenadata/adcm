@@ -66,6 +66,7 @@ from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_hosts_viewset,
     document_action_host_group_viewset,
 )
+from api_v2.generic.action_host_group.audit import audit_action_host_group_viewset
 from api_v2.generic.action_host_group.views import (
     ActionHostGroupActionsViewSet,
     ActionHostGroupHostsViewSet,
@@ -288,6 +289,7 @@ class ComponentActionViewSet(ActionViewSet):
 
 
 @document_action_host_group_viewset(object_type="component")
+@audit_action_host_group_viewset(parent_component_from_lookup)
 class ComponentActionHostGroupViewSet(ActionHostGroupViewSet):
     ...
 

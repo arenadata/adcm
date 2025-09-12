@@ -14,7 +14,6 @@ from pathlib import Path
 from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
-from api.tests.test_job import RunTaskMock
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -34,6 +33,7 @@ from cm.models import (
 )
 from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
+from cm.tests.mocks.task_runner import RunTaskMock
 from cm.utils import decrypt_secrets
 
 

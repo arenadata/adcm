@@ -79,7 +79,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "api.apps.APIConfig",
     "rest_framework.authtoken",
     "social_django",
     "guardian",
@@ -191,8 +190,6 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "guardian.backends.ObjectPermissionBackend",
     "rbac.ldap.CustomLDAPBackend",
-    "adcm.auth_backend.CustomYandexOAuth2",
-    "adcm.auth_backend.CustomGoogleOAuth2",
 )
 
 LANGUAGE_CODE = "en-us"
@@ -356,7 +353,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Arenadata Cluster Manager",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SCHEMA_PATH_PREFIX": r"/api/v[2-9]",
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",

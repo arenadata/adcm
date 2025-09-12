@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
-from cm.models import Bundle, Host, ObjectType, Prototype, Service
+from cm.models import Bundle, ObjectType, Prototype
 
 from rbac.models import Group
 
@@ -34,49 +34,8 @@ class PolicyBaseTestCase(BaseTestCase):
             bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",
             name="Test Provider",
         )
-        host_pks = self.create_hosts()
-        self.first_host_pk = host_pks[0]
-        self.last_host_pk = host_pks[-1]
         self.service_6_proto = Prototype.objects.get(
             bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"),
             name="service_6_manual_add",
             type=ObjectType.SERVICE,
         )
-        service_ids = self.get_service_ids()
-        self.last_service_pk = service_ids[-1]
-        self.host_component = self.get_host_components()
-        self.last_component_pk = self.host_component[-1]["component_id"]
-
-    def create_hosts(self) -> list[int]:
-        host_ids = []
-
-        for host_num in range(5):
-            name = f"host-{host_num}"
-            host = self.create_host_in_cluster(provider_pk=self.provider.pk, name=name, cluster_pk=self.cluster.pk)
-            host_ids.append(host.pk)
-
-        return host_ids
-
-    def get_service_ids(self) -> list[int]:
-        service_prototypes = Prototype.objects.filter(
-            bundle=Bundle.objects.get(name="test_cluster_for_cluster_admin_role"), type=ObjectType.SERVICE
-        ).exclude(pk=self.service_6_proto.pk)
-        service_ids = []
-
-        for service_prototype in service_prototypes:
-            service = self.create_service(cluster_pk=self.cluster.pk, name=service_prototype.name)
-            service_ids.append(service.pk)
-
-        return service_ids
-
-    def get_host_components(self) -> list[dict]:
-        host_pks = [host.pk for host in Host.objects.order_by("id")]
-        services = list(Service.objects.order_by("id"))
-        hostcomponent_data = []
-
-        for host_pk, service in zip(host_pks, services):
-            hostcomponent_data.extend(self.get_hostcomponent_data(service_pk=service.pk, host_pk=host_pk))
-
-        self.create_hostcomponent(cluster_pk=self.cluster.pk, hostcomponent_data=hostcomponent_data)
-
-        return hostcomponent_data

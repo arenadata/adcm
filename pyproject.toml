@@ -13,8 +13,6 @@ adcm-version = "1.0.3"
 ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p7" }
 apache-libcloud = "3.8.0"
 attr = "0.3.2"
-casestyle = "0.0.4"
-coreapi = "2.3.3"
 cryptography = "41.0.7"
 django-auth-ldap = "4.6.0"
 django-cors-headers = "4.3.1"
@@ -25,14 +23,10 @@ django-guardian = "2.4.0"
 # we've decided to keep it at 3.14.0, since 3.15.0 introduced unwanted behavior
 djangorestframework = "3.14.0"
 djangorestframework-camel-case = "1.4.2"
-drf-extensions = "0.7.1"
-drf-flex-fields = "1.0.2"
 drf-nested-routers = "0.93.5"
 drf-spectacular = {version = "0.27.0", extras = ["sidecar"]}
-googleapis-common-protos = "1.62.0"
 grpcio = "1.60.0"
 jinja2 = "2.11.3"
-jmespath = "1.0.1"
 jsonschema = "4.20.0"
 lxml = "4.9.4"
 markupsafe = "1.1.1"
@@ -150,11 +144,6 @@ include = [
     "conf/adcm/python_scripts",
 ]
 exclude = [
-    "python/api",
-    "python/api_ui",
-    "python/audit/cases",
-    "python/rbac/endpoints",
-    "python/rbac/endpoints_ui",
     "python/rbac/services",
     "**/tests",
     "**/migrations",

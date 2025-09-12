@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.views import AuditRoot
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from api_v2.audit.views import AuditLogViewSet, AuditSessionViewSet
+from api_v2.audit.views import AuditLogViewSet, AuditRoot, AuditSessionViewSet
 
 router = SimpleRouter()
 router.register("operations", AuditLogViewSet)

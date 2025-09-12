@@ -18,7 +18,7 @@ from rest_framework.status import HTTP_409_CONFLICT
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import AdcmEx
-from cm.models import ConfigHostGroup, Prototype, StagePrototype
+from cm.models import ConfigHostGroup, Prototype
 from cm.services.bundle import is_path_correct
 from cm.services.config.patterns import Pattern
 
@@ -147,7 +147,7 @@ def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str
 
 
 def check_config_type(
-    prototype: StagePrototype | Prototype,
+    prototype: Prototype,
     key: str,
     subkey: str,
     spec: dict,

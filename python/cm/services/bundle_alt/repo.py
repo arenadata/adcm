@@ -54,12 +54,6 @@ def find_bundle_by_hash(hash_: str) -> Bundle | None:
     return Bundle.objects.filter(hash=hash_).first()
 
 
-def order_versions():
-    # COPIED FROM cm.bundle
-    _order_model_versions(Prototype)
-    _order_model_versions(Bundle)
-
-
 def _order_model_versions(model):
     # COPIED FROM cm.bundle
     items = []

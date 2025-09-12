@@ -13,14 +13,12 @@
 
 from pathlib import Path
 from secrets import token_hex
-import os
 import json
 import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.feature_flags import use_new_bundle_parsing_approach, use_new_job_scheduler
-from cm.bundle import load_adcm
+from adcm.feature_flags import use_new_job_scheduler
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
@@ -129,8 +127,7 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     recover_statuses()
     clear_temp_tables()
 
-    adcm_parser = process_adcm_bundle if use_new_bundle_parsing_approach(env=os.environ, headers={}) else load_adcm
-    adcm_parser(adcm_conf_file)
+    process_adcm_bundle(adcm_conf_file)
 
     if not use_new_job_scheduler():
         drop_locks()
