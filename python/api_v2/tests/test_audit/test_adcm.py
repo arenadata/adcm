@@ -43,8 +43,6 @@ class TestADCMAudit(BaseAPITestCase):
                     "verification_public_key": "\n",
                     "accept_only_verified_bundles": False,
                 },
-                "google_oauth": {"client_id": None, "secret": None},
-                "yandex_oauth": {"client_id": None, "secret": None},
                 "audit_data_retention": {
                     "log_rotation_on_fs": 365,
                     "log_rotation_in_db": 365,

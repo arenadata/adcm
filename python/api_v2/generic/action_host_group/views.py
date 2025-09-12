@@ -22,7 +22,6 @@ from adcm.permissions import (
 )
 from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import adjust_denied_on_404_result
-from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
 from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
@@ -141,7 +140,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         return ActionHostGroupSerializer
 
-    @audit
     @with_parent_object
     def create(self, request: Request, *_, parent: CoreObjectDescriptor, **__) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_PERMISSION_DENIED)
@@ -189,7 +187,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         return Response(data=self.get_serializer(instance=instance).data)
 
-    @audit
     @with_parent_object
     def destroy(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)

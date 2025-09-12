@@ -13,8 +13,7 @@
 import json
 import hashlib
 
-from adcm.permissions import check_custom_perm
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
+from adcm.tests.base import BaseTestCase
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -24,21 +23,15 @@ from cm.models import (
     Component,
     ProductCategory,
     Prototype,
-    Provider,
     Service,
 )
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
 from init_db import init as init_adcm
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.status import HTTP_404_NOT_FOUND
 
 from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
-from rbac.services.policy import policy_create
-from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import prepare_action_roles
 
@@ -553,177 +546,3 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         ).count()
 
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
-
-
-class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
-    def setUp(self) -> None:
-        super().setUp()
-
-        init_adcm()
-
-        self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
-        self.provider = Provider.objects.create(
-            name="test_provider",
-            prototype=self.provider_prototype,
-        )
-        self.host = self.add_host(provider=self.provider, fqdn="testhost", cluster=self.cluster)
-        self.service = Service.objects.create(cluster=self.cluster, prototype=self.sp_1)
-        self.component = Component.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=self.cop_11,
-        )
-
-        self.mm_role_host = role_create(
-            name="mm role host",
-            display_name="mm role host",
-            child=[Role.objects.get(name="Manage Maintenance mode")],
-        )
-        self.mm_role_cluster = role_create(
-            name="mm role cluster",
-            display_name="mm role cluster",
-            child=[Role.objects.get(name="Manage cluster Maintenance mode")],
-        )
-
-    def test_change_host_maintenance_mode_failed(self):
-        with self.no_rights_user_logged_in:
-            response = self.client.get(
-                path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.id}),
-                content_type=APPLICATION_JSON,
-            )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-
-        with self.assertRaises(PermissionDenied):
-            check_custom_perm(
-                user=self.no_rights_user,
-                action_type="change_maintenance_mode",
-                model=self.host._meta.model_name,
-                obj=self.host,
-            )
-
-    def test_change_component_maintenance_mode_failed(self):
-        with self.no_rights_user_logged_in:
-            response = self.client.get(
-                path=reverse(viewname="v1:component-details", kwargs={"component_id": self.component.id}),
-                content_type=APPLICATION_JSON,
-            )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-
-        with self.assertRaises(PermissionDenied):
-            check_custom_perm(
-                user=self.no_rights_user,
-                action_type="change_maintenance_mode",
-                model=self.component._meta.model_name,
-                obj=self.component,
-            )
-
-    def test_change_service_maintenance_mode_failed(self):
-        with self.no_rights_user_logged_in:
-            response = self.client.get(
-                path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.id}),
-                content_type=APPLICATION_JSON,
-            )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-
-        with self.assertRaises(PermissionDenied):
-            check_custom_perm(
-                user=self.no_rights_user,
-                action_type="change_maintenance_mode",
-                model=self.service._meta.model_name,
-                obj=self.service,
-            )
-
-    def test_mm_host_role(self):
-        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, group=[self.test_user_group])
-        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_mm_cluster_role(self):
-        policy_create(
-            name="mm cluster policy",
-            object=[self.cluster],
-            role=self.mm_role_cluster,
-            group=[self.test_user_group],
-        )
-        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
-        check_custom_perm(
-            self.test_user,
-            "change_maintenance_mode",
-            self.component._meta.model_name,
-            self.component,
-        )
-        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_mm_cl_adm_role(self):
-        policy_create(
-            name="mm cluster policy",
-            object=[self.cluster],
-            role=Role.objects.get(name="Cluster Administrator"),
-            group=[self.test_user_group],
-        )
-        check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
-        check_custom_perm(
-            self.test_user,
-            "change_maintenance_mode",
-            self.component._meta.model_name,
-            self.component,
-        )
-        check_custom_perm(self.test_user, "change_maintenance_mode", self.service._meta.model_name, self.service)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.post(
-            path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": "ON"},
-            format="json",
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, 200)

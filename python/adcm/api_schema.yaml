@@ -1052,9 +1052,6 @@ components:
           items:
             $ref: '#/components/schemas/HCComponentName'
           readOnly: true
-        duplicates:
-          type: string
-          readOnly: true
       required:
       - id
       - name
@@ -1069,7 +1066,6 @@ components:
       - multiState
       - cluster
       - components
-      - duplicates
     HostAdd:
       type: object
       properties:
@@ -5655,21 +5651,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 9d9bf817-d3ea-48db-9512-7abf635573b3
+                    process_sync_key: 3fc15b1a-d348-484e-a1e4-61cc45167238
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 158ae8df-399d-43da-8096-d8195d11b04d
+                    process_sync_key: 833535ea-4bb1-41ba-a16d-7bc52c8c659f
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: 1d24c124-e2c3-412f-9414-5fe475a89d60
+                    process_sync_key: e581c202-4697-411c-b475-3758f2c92bfb
                 summary: Reset operation
               CompleteOperation:
                 value:
@@ -9453,21 +9449,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 54d72e36-a8d2-4931-8105-d39ef3c5ab25
+                    process_sync_key: 9348b51e-3473-48eb-9e09-30831ef7a695
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 6b1a8ac6-84c7-4b95-b23b-aaeb49d66f86
+                    process_sync_key: 72e88390-164e-45df-b8c1-7ce15fe234a3
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: e6e6b405-7724-447b-aab3-7d2b7247a210
+                    process_sync_key: 9fcd2e17-4fe8-4008-a3b2-b692f5d0fe6b
                 summary: Reset operation
               CompleteOperation:
                 value:
@@ -11093,21 +11089,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: e448ccf3-fbc2-4e4c-99ab-b742a1d7a4b2
+                    process_sync_key: 5413ea1d-8a0e-4923-b7f0-d01d85ef24dd
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 600ec881-52c5-438e-ac1b-5da371ccea9b
+                    process_sync_key: 246fc0fb-d08f-46aa-b1fb-420486b63a4c
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: 1f79a9cc-40e9-469c-96a9-0aee4504291d
+                    process_sync_key: f6d06b72-7139-4c8b-a4bf-bc3fe44eeb4d
                 summary: Reset operation
               CompleteOperation:
                 value:

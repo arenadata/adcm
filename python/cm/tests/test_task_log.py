@@ -11,28 +11,105 @@
 # limitations under the License.
 
 
+from pathlib import Path
+import io
+import tarfile
+
 from adcm.tests.base import BaseTestCase
-from api.job.views import (
-    get_task_download_archive_file_handler,
-    get_task_download_archive_name,
-)
 from core.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 
-from cm.models import (
-    Action,
-    Bundle,
-    Cluster,
-    Prototype,
-    SubAction,
-    TaskLog,
-)
+from cm.models import Action, ActionType, Bundle, Cluster, JobLog, LogStorage, Prototype, SubAction, TaskLog
 from cm.services.job.action import prepare_task_for_action
-from cm.tests.utils import (
-    gen_adcm,
-)
+from cm.tests.utils import gen_adcm
+from cm.utils import str_remove_non_alnum
+
+
+def get_task_download_archive_name(task: TaskLog) -> str:
+    archive_name = f"{task.pk}.tar.gz"
+
+    if not task.action:
+        return archive_name
+
+    action_display_name = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
+        value=task.action.name,
+    )
+    if action_display_name:
+        archive_name = f"{action_display_name}_{archive_name}"
+
+    if task.object_type.name in {
+        "adcm",
+        "cluster",
+        "service",
+        "component",
+        "provider",
+    }:
+        action_prototype_display_name = str_remove_non_alnum(
+            value=task.action.prototype.display_name,
+        ) or str_remove_non_alnum(value=task.action.prototype.name)
+        if action_prototype_display_name:
+            archive_name = f"{action_prototype_display_name}_{archive_name}"
+
+    if not task.task_object:
+        return archive_name
+
+    obj_name = None
+    if task.object_type.name == "cluster":
+        obj_name = task.task_object.name
+    elif task.object_type.name == "service" or task.object_type.name == "component":
+        obj_name = task.task_object.cluster.name
+    elif task.object_type.name == "provider":
+        obj_name = task.task_object.name
+    elif task.object_type.name == "host":
+        obj_name = task.task_object.fqdn
+
+    if obj_name:
+        archive_name = f"{str_remove_non_alnum(value=obj_name)}_{archive_name}"
+
+    return archive_name
+
+
+def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
+    jobs = JobLog.objects.filter(task=task)
+
+    if task.action and task.action.type == ActionType.JOB:
+        task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
+            value=task.action.name,
+        )
+    else:
+        task_dir_name_suffix = None
+
+    file_handler = io.BytesIO()
+    with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
+        for job in jobs:
+            if task_dir_name_suffix is None:
+                dir_name_suffix = str_remove_non_alnum(value=job.display_name or "") or str_remove_non_alnum(
+                    value=job.name
+                )
+            else:
+                dir_name_suffix = task_dir_name_suffix
+
+            directory = Path(settings.RUN_DIR, str(job.pk))
+            if directory.is_dir():
+                files = [item for item in Path(settings.RUN_DIR, str(job.pk)).iterdir() if item.is_file()]
+                for log_file in files:
+                    tarinfo = tarfile.TarInfo(f'{f"{job.pk}-{dir_name_suffix}".strip("-")}/{log_file.name}')
+                    tarinfo.size = log_file.stat().st_size
+                    tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
+            else:
+                log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
+                for log_storage in log_storages:
+                    tarinfo = tarfile.TarInfo(
+                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
+                    )
+                    # using `or ""` here to avoid passing None to `bytes`
+                    body = io.BytesIO(bytes(log_storage.body or "", settings.ENCODING_UTF_8))
+                    tarinfo.size = body.getbuffer().nbytes
+                    tar_file.addfile(tarinfo=tarinfo, fileobj=body)
+
+    return file_handler
 
 
 class TaskLogLockTest(BaseTestCase):

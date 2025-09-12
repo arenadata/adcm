@@ -70,6 +70,7 @@ from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_hosts_viewset,
     document_action_host_group_viewset,
 )
+from api_v2.generic.action_host_group.audit import audit_action_host_group_viewset
 from api_v2.generic.action_host_group.views import (
     ActionHostGroupActionsViewSet,
     ActionHostGroupHostsViewSet,
@@ -346,6 +347,7 @@ class ServiceActionViewSet(ActionViewSet):
 
 
 @document_action_host_group_viewset(object_type="service")
+@audit_action_host_group_viewset(parent_service_from_lookup)
 class ServiceActionHostGroupViewSet(ActionHostGroupViewSet):
     ...
 

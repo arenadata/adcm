@@ -160,7 +160,6 @@ class ADCMModel(models.Model):
 class Bundle(ADCMModel):
     name = models.CharField(max_length=1000)
     version = models.CharField(max_length=1000)
-    version_order = models.PositiveIntegerField(default=0)
     edition = models.CharField(max_length=1000, default="community")
     hash = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
@@ -225,7 +224,6 @@ class Prototype(ADCMModel):
     license_hash = models.CharField(max_length=1000, default=None, null=True)
     display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=1000)
-    version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
     constraint = models.JSONField(default=partial(list, (0, "+")))
@@ -1515,104 +1513,6 @@ class LogStorage(ADCMModel):
         constraints = [
             models.UniqueConstraint(fields=["job"], condition=models.Q(type="check"), name="unique_check_job"),
         ]
-
-
-class StagePrototype(ADCMModel):
-    type = models.CharField(max_length=1000, choices=ObjectType)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=1000)
-    path = models.CharField(max_length=1000, default="")
-    display_name = models.CharField(max_length=1000, blank=True)
-    version = models.CharField(max_length=1000)
-    edition = models.CharField(max_length=1000, default="community")
-    license = models.CharField(max_length=1000, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=1000, default=None, null=True)
-    license_hash = models.CharField(max_length=1000, default=None, null=True)
-    required = models.BooleanField(default=False)
-    shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=partial(list, (0, "+")))
-    requires = models.JSONField(default=list)
-    bound_to = models.JSONField(default=dict)
-    adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
-    description = models.TextField(blank=True)
-    monitoring = models.CharField(max_length=1000, choices=MONITORING_TYPE, default="active")
-    config_group_customization = models.BooleanField(default=False)
-    venv = models.CharField(default="default", max_length=1000, blank=False)
-    allow_maintenance_mode = models.BooleanField(default=False)
-    flag_autogeneration = models.JSONField(default=dict)
-
-    __error_code__ = "PROTOTYPE_NOT_FOUND"
-
-    def __str__(self):
-        return str(self.name)
-
-    class Meta:
-        unique_together = (("type", "parent", "name", "version"),)
-
-
-class StageUpgrade(ADCMModel):
-    name = models.CharField(max_length=1000, blank=True)
-    display_name = models.CharField(max_length=1000, blank=True)
-    description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=1000)
-    max_version = models.CharField(max_length=1000)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    from_edition = models.JSONField(default=partial(list, ("community",)))
-    state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=1000, blank=True)
-    action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
-
-
-class StageAction(AbstractAction):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-
-
-class StageSubAction(AbstractSubAction):
-    action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
-
-
-class StagePrototypeConfig(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=1000)
-    subname = models.CharField(max_length=1000, blank=True)
-    default = models.TextField(blank=True)
-    type = models.CharField(max_length=1000, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=1000, blank=True)
-    description = models.TextField(blank=True)
-    limits = models.JSONField(default=dict)
-    ui_options = models.JSONField(blank=True, default=dict)
-    required = models.BooleanField(default=True)
-    group_customization = models.BooleanField(null=True)
-    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
-
-    class Meta:
-        ordering = ["id"]
-        unique_together = (("prototype", "action", "name", "subname"),)
-
-
-class StagePrototypeExport(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-
-    class Meta:
-        unique_together = (("prototype", "name"),)
-
-
-class StagePrototypeImport(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-    min_version = models.CharField(max_length=1000)
-    max_version = models.CharField(max_length=1000)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    default = models.JSONField(null=True, default=None)
-    required = models.BooleanField(default=False)
-    multibind = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = (("prototype", "name"),)
 
 
 class ConcernType(models.TextChoices):

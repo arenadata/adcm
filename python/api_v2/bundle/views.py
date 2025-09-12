@@ -10,12 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
-from cm.bundle import delete_bundle, load_bundle, upload_file
+from cm.bundle import delete_bundle
 from cm.models import Bundle, ObjectType
 from cm.services.adcm import adcm_config, get_adcm_config_id
 from cm.services.bundle_alt.load import Directories, parse_bundle_from_request_to_db
@@ -125,20 +123,13 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
-        func = self._new_create if use_new_approach else self._old_create
-
-        bundle = func(request.data["file"])
+        bundle = self.upload_bundle(request.data["file"])
 
         return Response(
             status=HTTP_201_CREATED, data=BundleSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
         )
 
-    def _old_create(self, file) -> Bundle:
-        file_path = upload_file(file=file)
-        return load_bundle(bundle_file=str(file_path))
-
-    def _new_create(self, file) -> Bundle:
+    def upload_bundle(self, file) -> Bundle:
         verified_signature_only = adcm_config(get_adcm_config_id()).config["global"]["accept_only_verified_bundles"]
         return parse_bundle_from_request_to_db(
             file_from_request=file,
