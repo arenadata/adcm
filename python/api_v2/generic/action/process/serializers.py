@@ -53,6 +53,7 @@ class StageSerializer(Serializer):
     display_name = CharField()
     steps = SerializerMethodField()
 
+    # D
     def get_steps(self, data: dict) -> list[dict]:
         steps = data["steps"]
         for step in steps:

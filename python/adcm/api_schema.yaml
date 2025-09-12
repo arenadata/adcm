@@ -127,6 +127,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/ActionConfiguration'
           readOnly: true
+        processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessShort'
+          readOnly: true
       required:
       - id
       - name
@@ -136,6 +141,7 @@ components:
       - hostComponentMapRules
       - disclaimer
       - configuration
+      - processes
     ActionRun:
       type: object
       properties:
@@ -210,12 +216,12 @@ components:
       properties:
         config:
           type: object
-          additionalProperties: {}
           readOnly: true
+          additionalProperties: {}
         adcmMeta:
           type: object
-          additionalProperties: {}
           readOnly: true
+          additionalProperties: {}
       required:
       - config
       - adcmMeta
@@ -224,8 +230,8 @@ components:
       properties:
         config:
           type: object
-          additionalProperties: {}
           writeOnly: true
+          additionalProperties: {}
       required:
       - config
     AuditLog:
@@ -253,7 +259,6 @@ components:
           nullable: true
         objectChanges:
           type: object
-          additionalProperties: {}
       required:
       - id
       - name
@@ -447,6 +452,7 @@ components:
       - import
       - service
       - requirement
+      - configuring_process
       type: string
       description: |-
         * `config` - config
@@ -455,6 +461,7 @@ components:
         * `import` - import
         * `service` - service
         * `requirement` - requirement
+        * `configuring_process` - configuring_process
     Cluster:
       type: object
       properties:
@@ -578,6 +585,29 @@ components:
       - id
       - name
       - status
+    CompleteOperation:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/CompleteOperationMethodEnum'
+        params:
+          $ref: '#/components/schemas/CompleteParams'
+      required:
+      - method
+      - params
+    CompleteOperationMethodEnum:
+      enum:
+      - ProcessOperationType.COMPLETE
+      type: string
+      description: '* `complete` - complete'
+    CompleteParams:
+      type: object
+      properties:
+        syncKey:
+          type: string
+          format: uuid
+      required:
+      - syncKey
     Component:
       type: object
       properties:
@@ -856,6 +886,18 @@ components:
       - isCurrent
       - creationTime
       - description
+    CreateDuplicate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 253
+          minLength: 2
+        clusterId:
+          type: integer
+          nullable: true
+      required:
+      - name
     Error:
       type: object
       properties:
@@ -1010,6 +1052,9 @@ components:
           items:
             $ref: '#/components/schemas/HCComponentName'
           readOnly: true
+        duplicates:
+          type: string
+          readOnly: true
       required:
       - id
       - name
@@ -1024,6 +1069,7 @@ components:
       - multiState
       - cluster
       - components
+      - duplicates
     HostAdd:
       type: object
       properties:
@@ -1126,6 +1172,7 @@ components:
           type: string
           description: fully qualified domain name
           maxLength: 253
+          minLength: 2
         hostproviderId:
           type: integer
         clusterId:
@@ -1925,6 +1972,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+    Params:
+      type: object
+      properties:
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
+      required:
+      - processSyncKey
+      - stepId
     PatchedCHG:
       type: object
       properties:
@@ -2106,6 +2164,65 @@ components:
           type: integer
       required:
       - id
+    Process:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        state:
+          type: string
+        currentStep:
+          type: integer
+          nullable: true
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stage'
+        syncKey:
+          type: string
+      required:
+      - id
+      - state
+      - currentStep
+      - createdAt
+      - stages
+      - syncKey
+    ProcessShort:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        state:
+          type: string
+        currentStep:
+          type: integer
+          nullable: true
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+        syncKey:
+          type: string
+      required:
+      - id
+      - state
+      - currentStep
+      - createdAt
+      - syncKey
+    ProcessStep:
+      oneOf:
+      - $ref: '#/components/schemas/StepConfiguration'
+      - $ref: '#/components/schemas/StepOperation'
+      discriminator:
+        propertyName: type
+        mapping:
+          None: '#/components/schemas/StepOperation'
     Profile:
       type: object
       properties:
@@ -2133,8 +2250,8 @@ components:
           readOnly: true
         authSettings:
           type: object
-          additionalProperties: {}
           readOnly: true
+          additionalProperties: {}
       required:
       - id
       - username
@@ -2392,7 +2509,6 @@ components:
           type: string
         placeholder:
           type: object
-          additionalProperties: {}
       required:
       - message
       - placeholder
@@ -2542,6 +2658,21 @@ components:
       required:
       - id
       - username
+    ResetOperation:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/ResetOperationMethodEnum'
+        params:
+          $ref: '#/components/schemas/Params'
+      required:
+      - method
+      - params
+    ResetOperationMethodEnum:
+      enum:
+      - ProcessOperationType.RESET
+      type: string
+      description: '* `reset_step` - reset_step'
     Role:
       type: object
       properties:
@@ -2976,6 +3107,109 @@ components:
       required:
       - id
       - type
+    Stage:
+      type: object
+      properties:
+        displayName:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+          readOnly: true
+      required:
+      - displayName
+      - steps
+    StepConfiguration:
+      type: object
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+        configuration:
+          $ref: '#/components/schemas/StepConfigurationInternals'
+      required:
+      - configuration
+      - displayName
+      - id
+      - state
+      - type
+    StepConfigurationInternals:
+      type: object
+      properties:
+        configSchema:
+          type: object
+          additionalProperties: {}
+        config:
+          type: object
+          additionalProperties: {}
+        adcmMeta:
+          type: object
+          additionalProperties: {}
+      required:
+      - adcmMeta
+      - config
+      - configSchema
+    StepOperation:
+      type: object
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+        uiOptions:
+          type: object
+        task:
+          type: object
+          nullable: true
+      required:
+      - displayName
+      - id
+      - state
+      - type
+      - uiOptions
+    SubmitConfig:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/SubmitConfigMethodEnum'
+        configuration:
+          type: object
+        params:
+          $ref: '#/components/schemas/Params'
+      required:
+      - configuration
+      - method
+      - params
+    SubmitConfigMethodEnum:
+      enum:
+      - ProcessOperationType.SUBMIT
+      type: string
+      description: '* `submit_step` - submit with configuration'
+    SubmitOperation:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/SubmitOperationMethodEnum'
+        params:
+          $ref: '#/components/schemas/Params'
+      required:
+      - method
+      - params
+    SubmitOperationMethodEnum:
+      enum:
+      - ProcessOperationType.SUBMIT
+      type: string
+      description: '* `submit_step` - submit for operation'
     TaskList:
       type: object
       properties:
@@ -3391,6 +3625,36 @@ components:
       required:
       - password
       - username
+    clusterProcess:
+      oneOf:
+      - $ref: '#/components/schemas/SubmitConfig'
+      - $ref: '#/components/schemas/SubmitOperation'
+      - $ref: '#/components/schemas/ResetOperation'
+      - $ref: '#/components/schemas/CompleteOperation'
+      discriminator:
+        propertyName: method
+        mapping:
+          null: '#/components/schemas/CompleteOperation'
+    componentProcess:
+      oneOf:
+      - $ref: '#/components/schemas/SubmitConfig'
+      - $ref: '#/components/schemas/SubmitOperation'
+      - $ref: '#/components/schemas/ResetOperation'
+      - $ref: '#/components/schemas/CompleteOperation'
+      discriminator:
+        propertyName: method
+        mapping:
+          null: '#/components/schemas/CompleteOperation'
+    serviceProcess:
+      oneOf:
+      - $ref: '#/components/schemas/SubmitConfig'
+      - $ref: '#/components/schemas/SubmitOperation'
+      - $ref: '#/components/schemas/ResetOperation'
+      - $ref: '#/components/schemas/CompleteOperation'
+      discriminator:
+        propertyName: method
+        mapping:
+          null: '#/components/schemas/CompleteOperation'
   securitySchemes:
     cookieAuth:
       type: apiKey
@@ -5182,6 +5446,406 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v2/clusters/{clusterId}/actions/{actionId}/processes/:
+    post:
+      operationId: postClusterProcess
+      description: Create a new cluster action's process.
+      summary: POST cluster process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/actions/{actionId}/processes/{processeId}/:
+    get:
+      operationId: getClusterProcess
+      description: Get information about a specific cluster action's process.
+      summary: GET cluster process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/actions/{actionId}/processes/{processeId}/operation/:
+    post:
+      operationId: postClusterOperation
+      description: Perform operation on cluster action's process.
+      summary: POST cluster operation
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/clusterProcess'
+            examples:
+              SubmitConfiguration:
+                value:
+                  configuration:
+                    config:
+                      new: config
+                    adcmMeta: {}
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 9d9bf817-d3ea-48db-9512-7abf635573b3
+                summary: Submit configuration
+              SubmitOperation:
+                value:
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 158ae8df-399d-43da-8096-d8195d11b04d
+                summary: Submit operation
+              ResetOperation:
+                value:
+                  method: reset_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 1d24c124-e2c3-412f-9414-5fe475a89d60
+                summary: Reset operation
+              CompleteOperation:
+                value:
+                  method: complete
+                  params: {}
+                summary: Complete operation
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/clusterProcess'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/clusterProcess'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/clusterProcess'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/actions/{actionId}/processes/{processId}/steps/{stepId}/:
+    get:
+      operationId: getClusterProcessStep
+      description: Get information about a specific cluster action's process step.
+      summary: GET cluster process step
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: stepId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStep'
+              examples:
+                OperationStep:
+                  value:
+                    displayName: Stage2.Step2
+                    id: 1
+                    state: created
+                    task: null
+                    type: operation
+                    uiOptions:
+                      buttonName: ButtonName
+                  summary: Operation step
+                ConfigurationStep:
+                  value:
+                    configuration:
+                      adcmMeta: {}
+                      config:
+                        integer_field: 1
+                        string_field: string_value
+                      configSchema:
+                        $schema: https://json-schema.org/draft/2020-12/schema
+                        adcmMeta:
+                          activation: null
+                          enumExtra: null
+                          isAdvanced: false
+                          isInvisible: false
+                          isSecret: false
+                          nullValue: null
+                          stringExtra: null
+                          synchronization: null
+                        additionalProperties: false
+                        description: ''
+                        properties:
+                          integer_field:
+                            adcmMeta:
+                              activation: null
+                              enumExtra: null
+                              isAdvanced: false
+                              isInvisible: false
+                              isSecret: false
+                              stringExtra: null
+                              synchronization: null
+                            default: 1
+                            description: ''
+                            readOnly: false
+                            title: integer_field
+                            type: integer
+                        readOnly: false
+                        required:
+                        - integer_field
+                        title: Configuration
+                        type: object
+                    displayName: Stage1.Step1
+                    id: 1
+                    state: created
+                    type: configuration
+                  summary: Configuration step
+          description: ''
+        '404':
+          description: Not found
   /api/v2/clusters/{clusterId}/actions/{actionId}/:
     get:
       operationId: getClusterAction
@@ -8562,6 +9226,430 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/actions/{actionId}/processes/:
+    post:
+      operationId: postServiceProcess
+      description: Create a new service action's process.
+      summary: POST service process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/actions/{actionId}/processes/{processeId}/:
+    get:
+      operationId: getServiceProcess
+      description: Get information about a specific service action's process.
+      summary: GET service process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/actions/{actionId}/processes/{processeId}/operation/:
+    post:
+      operationId: postServiceOperation
+      description: Perform operation on service action's process.
+      summary: POST service operation
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/serviceProcess'
+            examples:
+              SubmitConfiguration:
+                value:
+                  configuration:
+                    config:
+                      new: config
+                    adcmMeta: {}
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 54d72e36-a8d2-4931-8105-d39ef3c5ab25
+                summary: Submit configuration
+              SubmitOperation:
+                value:
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 6b1a8ac6-84c7-4b95-b23b-aaeb49d66f86
+                summary: Submit operation
+              ResetOperation:
+                value:
+                  method: reset_step
+                  params:
+                    step_id: 1
+                    process_sync_key: e6e6b405-7724-447b-aab3-7d2b7247a210
+                summary: Reset operation
+              CompleteOperation:
+                value:
+                  method: complete
+                  params: {}
+                summary: Complete operation
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/serviceProcess'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/serviceProcess'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/serviceProcess'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/actions/{actionId}/processes/{processId}/steps/{stepId}/:
+    get:
+      operationId: getServiceProcessStep
+      description: Get information about a specific service action's process step.
+      summary: GET service process step
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: stepId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStep'
+              examples:
+                OperationStep:
+                  value:
+                    displayName: Stage2.Step2
+                    id: 1
+                    state: created
+                    task: null
+                    type: operation
+                    uiOptions:
+                      buttonName: ButtonName
+                  summary: Operation step
+                ConfigurationStep:
+                  value:
+                    configuration:
+                      adcmMeta: {}
+                      config:
+                        integer_field: 1
+                        string_field: string_value
+                      configSchema:
+                        $schema: https://json-schema.org/draft/2020-12/schema
+                        adcmMeta:
+                          activation: null
+                          enumExtra: null
+                          isAdvanced: false
+                          isInvisible: false
+                          isSecret: false
+                          nullValue: null
+                          stringExtra: null
+                          synchronization: null
+                        additionalProperties: false
+                        description: ''
+                        properties:
+                          integer_field:
+                            adcmMeta:
+                              activation: null
+                              enumExtra: null
+                              isAdvanced: false
+                              isInvisible: false
+                              isSecret: false
+                              stringExtra: null
+                              synchronization: null
+                            default: 1
+                            description: ''
+                            readOnly: false
+                            title: integer_field
+                            type: integer
+                        readOnly: false
+                        required:
+                        - integer_field
+                        title: Configuration
+                        type: object
+                    displayName: Stage1.Step1
+                    id: 1
+                    state: created
+                    type: configuration
+                  summary: Configuration step
+          description: ''
+        '404':
+          description: Not found
   /api/v2/clusters/{clusterId}/services/{serviceId}/actions/{actionId}/:
     get:
       operationId: getServiceAction
@@ -9760,6 +10848,454 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/actions/{actionId}/processes/:
+    post:
+      operationId: postComponentProcess
+      description: Create a new component action's process.
+      summary: POST component process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/actions/{actionId}/processes/{processeId}/:
+    get:
+      operationId: getComponentProcess
+      description: Get information about a specific component action's process.
+      summary: GET component process
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  ? /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/actions/{actionId}/processes/{processeId}/operation/
+  : post:
+      operationId: postComponentOperation
+      description: Perform operation on component action's process.
+      summary: POST component operation
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processeId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/componentProcess'
+            examples:
+              SubmitConfiguration:
+                value:
+                  configuration:
+                    config:
+                      new: config
+                    adcmMeta: {}
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: e448ccf3-fbc2-4e4c-99ab-b742a1d7a4b2
+                summary: Submit configuration
+              SubmitOperation:
+                value:
+                  method: submit_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 600ec881-52c5-438e-ac1b-5da371ccea9b
+                summary: Submit operation
+              ResetOperation:
+                value:
+                  method: reset_step
+                  params:
+                    step_id: 1
+                    process_sync_key: 1f79a9cc-40e9-469c-96a9-0aee4504291d
+                summary: Reset operation
+              CompleteOperation:
+                value:
+                  method: complete
+                  params: {}
+                summary: Complete operation
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/componentProcess'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/componentProcess'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/componentProcess'
+              examples:
+                ProcessExample:
+                  value:
+                    id: 1
+                    state: created
+                    currentStep: 3
+                    createdAt: '2025-08-29T07:12:17.847185Z'
+                    syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
+                    stages:
+                    - displayName: First stage
+                      steps:
+                      - id: 1
+                        displayName: Stage1.Step1
+                        type: configuration
+                    - displayName: Second stage
+                      steps:
+                      - id: 2
+                        displayName: Stage2.Step1
+                        type: configuration
+                      - id: 3
+                        displayName: Stage2.Step2
+                        type: operation
+                    - displayName: Third stage
+                      steps:
+                      - id: 4
+                        displayName: Stage3.Step1
+                        type: operation
+                    - displayName: Fourth stage
+                      steps:
+                      - id: 5
+                        displayName: Stage4.Step1
+                        type: operation
+                      - id: 6
+                        displayName: Stage4.Step2
+                        type: operation
+                  summary: Process example
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  ? /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/actions/{actionId}/processes/{processId}/steps/{stepId}/
+  : get:
+      operationId: getComponentProcessStep
+      description: Get information about a specific component action's process step.
+      summary: GET component process step
+      parameters:
+      - in: path
+        name: actionId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: stepId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: processId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStep'
+              examples:
+                OperationStep:
+                  value:
+                    displayName: Stage2.Step2
+                    id: 1
+                    state: created
+                    task: null
+                    type: operation
+                    uiOptions:
+                      buttonName: ButtonName
+                  summary: Operation step
+                ConfigurationStep:
+                  value:
+                    configuration:
+                      adcmMeta: {}
+                      config:
+                        integer_field: 1
+                        string_field: string_value
+                      configSchema:
+                        $schema: https://json-schema.org/draft/2020-12/schema
+                        adcmMeta:
+                          activation: null
+                          enumExtra: null
+                          isAdvanced: false
+                          isInvisible: false
+                          isSecret: false
+                          nullValue: null
+                          stringExtra: null
+                          synchronization: null
+                        additionalProperties: false
+                        description: ''
+                        properties:
+                          integer_field:
+                            adcmMeta:
+                              activation: null
+                              enumExtra: null
+                              isAdvanced: false
+                              isInvisible: false
+                              isSecret: false
+                              stringExtra: null
+                              synchronization: null
+                            default: 1
+                            description: ''
+                            readOnly: false
+                            title: integer_field
+                            type: integer
+                        readOnly: false
+                        required:
+                        - integer_field
+                        title: Configuration
+                        type: object
+                    displayName: Stage1.Step1
+                    id: 1
+                    state: created
+                    type: configuration
+                  summary: Configuration step
+          description: ''
+        '404':
+          description: Not found
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/actions/{actionId}/:
     get:
       operationId: getComponentAction
@@ -13227,6 +14763,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v2/clusters/{clusterId}/host-candidates/:
+    get:
+      operationId: clusters_host_candidates_retrieve
+      description: |-
+        A view mixin that filter object in queryset for the current logged by required permission.
+
+        **Example Usage**::
+
+            class SecureView(PermissionListMixin, ListView):
+                ...
+                permission_required = 'articles.view_article'
+                ...
+
+        or::
+
+            class SecureView(PermissionListMixin, ListView):
+                ...
+                permission_required = 'auth.change_user'
+                get_objects_for_user_extra_kwargs = {'use_groups': False}
+                ...
+
+        **Class Settings**
+
+        ``PermissionListMixin.permission_required``
+
+            *Default*: ``None``, must be set to either a string or list of strings
+            in format: *<app_label>.<permission_codename>*.
+
+        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
+
+            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cluster'
+          description: ''
   /api/v2/clusters/{clusterId}/mapping/:
     get:
       operationId: getHostComponentMapping
@@ -15947,6 +17533,72 @@ paths:
                   summary: schema example
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v2/hosts/{hostId}/duplicates/:
+    post:
+      operationId: postCreateDuplicate
+      description: Create duplicate host.
+      summary: POST host create-duplicate
+      parameters:
+      - in: path
+        name: hostId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - hosts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDuplicate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateDuplicate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateDuplicate'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
           content:
             application/json:
               schema:
