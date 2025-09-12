@@ -199,3 +199,31 @@ def preprocess_hook_exclude_internal_from_schema(endpoints, **kwargs):
         for path, path_regex, method, callback in endpoints
         if not path.startswith(internal_prefix)
     ]
+
+
+def add_additional_properties(generator, request, public, result: dict):
+    _ = generator, request, public
+
+    for name, schema in result.get("components", {}).get("schemas", {}).items():
+        if name in (
+            "ActionConfiguration",
+            "ActionRunConfiguration",
+            "AnsibleConfigRetrieve",
+            "AnsibleConfigUpdate",
+            "ConfigLog",
+            "ConfigLogList",
+            "StepConfigurationInternals",
+            "AuditSession",
+            "Profile",
+        ):
+            for prop in ["adcmMeta", "config", "configSchema", "authSettings", "details", "schema"]:
+                if prop in schema.get("properties", {}):
+                    schema["properties"][prop]["additionalProperties"] = {}
+
+        for _, path_item in result.get("paths", {}).items():
+            for _, operation in path_item.items():
+                for _, response in operation.get("responses", {}).items():
+                    schema = response.get("content", {}).get("application/json", {}).get("schema", {})
+                    if schema.get("type") == "object" and "additionalProperties" not in schema:
+                        schema["additionalProperties"] = {}
+    return result

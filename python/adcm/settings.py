@@ -371,6 +371,7 @@ SPECTACULAR_SETTINGS = {
         "adcm.api_schema.postprocess_hook_exclude_advanced_filters",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
+        "adcm.api_schema.add_additional_properties",
     ],
     "ENUM_NAME_OVERRIDES": {
         "MaintenanceModeEnum": "cm.models.MaintenanceMode",
@@ -384,6 +385,7 @@ SPECTACULAR_SETTINGS = {
         "OriginType": "rbac.models.OriginType",
         "RoleTypeEnum": "rbac.models.RoleTypes",
     },
+    "GENERIC_ADDITIONAL_PROPERTIES": None,
 }
 
 USERNAME_MAX_LENGTH = 150
