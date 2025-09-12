@@ -166,13 +166,20 @@ class HostViewSet(
         .prefetch_related(
             "concerns", "hostcomponent_set__component__prototype", "duplicates__concerns", "duplicates__cluster"
         )
-        .filter(original__isnull=True)
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
     permission_classes = [IsAuthenticated, HostsPermissions]
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+
+        if self.action == "list":
+            queryset = queryset.filter(original__isnull=True)
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "create":
