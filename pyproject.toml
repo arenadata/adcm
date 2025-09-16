@@ -24,7 +24,7 @@ django-guardian = "2.4.0"
 djangorestframework = "3.14.0"
 djangorestframework-camel-case = "1.4.2"
 drf-nested-routers = "0.93.5"
-drf-spectacular = {version = "0.27.0", extras = ["sidecar"]}
+drf-spectacular = { version = "0.27.0", extras = ["sidecar"] }
 grpcio = "1.60.0"
 jinja2 = "2.11.3"
 jsonschema = "4.20.0"
@@ -42,6 +42,8 @@ six = "1.16.0"
 social-auth-app-django = "5.4.0"
 uwsgi = "2.0.23"
 hvac = "2.3.0"
+# Andible dependencies
+jmespath = "1.0.1"  # required for community.general.json_query filter
 
 [tool.poetry.group.celery.dependencies]
 celery = "5.5.3"
@@ -110,7 +112,7 @@ ignore = [
     "E402",
     "SIM117",
     "A003",
-    "ANN001", "ANN201","ANN101", "ANN102", "ANN401", "ANN002", "ANN003", "ANN202", "ANN204", "ANN205", "ANN206",
+    "ANN001", "ANN201", "ANN101", "ANN102", "ANN401", "ANN002", "ANN003", "ANN202", "ANN204", "ANN205", "ANN206",
     "COM812",
     "ARG005",
     "S105",
@@ -119,7 +121,7 @@ ignore = [
     "RET503", "RET505",
     "FBT001", "FBT002", "FBT003",
     "PIE800",
-    "PTH103", "PTH107", "PTH110", "PTH112", "PTH118", "PTH119", "PTH120","PTH123",
+    "PTH103", "PTH107", "PTH110", "PTH112", "PTH118", "PTH119", "PTH120", "PTH123",
     "S107"
 ]
 select = [
@@ -161,7 +163,7 @@ pythonPlatform = "Linux"
 
 executionEnvironments = [
     { root = "python" },
-    { root = "conf/adcm/python_scripts", extraPaths = [ "python" ] },
+    { root = "conf/adcm/python_scripts", extraPaths = ["python"] },
 ]
 
 # TODO: Remove. Temporarily disable type issue checks
