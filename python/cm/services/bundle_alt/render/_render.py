@@ -25,6 +25,7 @@ from core.job.types import JobSpec
 from core.templates import RendererEnv, Template, get_renderer
 
 from cm.models import PrototypeConfig
+from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.bundle_alt.render._context import (
     ActionArgs,
@@ -43,6 +44,7 @@ class Environment:
 # Render by Target
 
 
+@convert_bundle_errors_to_adcm_ex
 def render_process(
     template: Template,
     environment: Environment,
@@ -57,6 +59,7 @@ def render_process(
     return stages  # noqa: RET504
 
 
+@convert_bundle_errors_to_adcm_ex
 def render_config(
     template: Template,
     environment: Environment,
@@ -80,6 +83,7 @@ def render_config(
     return config_prototypes  # noqa: RET504
 
 
+@convert_bundle_errors_to_adcm_ex
 def render_scripts(
     template: Template,
     environment: Environment,
