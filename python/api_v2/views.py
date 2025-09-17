@@ -14,9 +14,16 @@ from functools import wraps
 from typing import Callable, Collection
 
 from cm.converters import core_type_to_model, host_group_type_to_model
+from cm.errors import AdcmEx
 from cm.models import Cluster, Component, Host, Service
 from cm.services.status.client import retrieve_status_map
 from cm.status_api import get_raw_status
+from core.cluster.errors import (
+    ClusterAddHostError,
+    HostAlreadyBoundError,
+    HostBelongsToAnotherClusterError,
+    HostDoesNotExistError,
+)
 from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
@@ -247,3 +254,28 @@ def with_group_object(func: Callable) -> Callable:
         return func(*args, parent=parent, host_group=host_group, **kwargs)
 
     return wrapped
+
+
+class ClusterHostOperationHandleExceptionMixin:
+    # TODO: Review the approach of exception conversion, also see ActionProcessViewSet view.
+    exc_conversion_map: dict[type[Exception], AdcmEx | Callable[[Exception], AdcmEx]] = {
+        HostDoesNotExistError: AdcmEx("BAD_REQUEST", "At least one host does not exist."),
+        HostAlreadyBoundError: AdcmEx("HOST_CONFLICT", "At least one host is already associated with this cluster."),
+        HostBelongsToAnotherClusterError: AdcmEx(
+            "FOREIGN_HOST", "At least one host is already linked to another cluster."
+        ),
+        ClusterAddHostError: lambda e: AdcmEx(
+            "HOST_CONFLICT", getattr(e, "message", "Host can not be added to cluster")
+        ),
+    }
+
+    def handle_exception(self, exc: Exception):
+        err_or_builder: AdcmEx | Callable[[Exception], AdcmEx] | Exception = self.exc_conversion_map.get(
+            exc.__class__, exc
+        )
+        if callable(err_or_builder):  # noqa: SIM108
+            err = err_or_builder(exc)
+        else:
+            err = err_or_builder
+
+        return super().handle_exception(err)

@@ -72,7 +72,7 @@ from api_v2.host.serializers import (
 )
 from api_v2.host.utils import create_host, maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
-from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
+from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -154,6 +154,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
     ),
 )
 class HostViewSet(
+    ClusterHostOperationHandleExceptionMixin,
     PermissionListMixin,
     ConfigSchemaMixin,
     ObjectWithStatusViewMixin,
