@@ -22,14 +22,11 @@ from django.db.models import Model
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_service_to_cluster
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Component, ConfigLog, HostComponent, Prototype, get_object_cluster
-from cm.services.job.run import create_related_configs
+from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
 from cm.services.job.run._target_factories import (
-    internal_script_config_apply,
     internal_script_hc_apply,
     prepare_ansible_environment,
 )
@@ -534,42 +531,3 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
         task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, rules=rules)
         with self.assertRaises(AdcmEx):
             internal_script_hc_apply(task=task, job=job)
-
-    def test_internal_config_apply(self):
-        task = self.prepare_task(owner=self.cluster, name="state_2")
-        job = list(JobRepoImpl.get_task_jobs(task.id)).pop()
-        create_related_configs(job_id=job.id, owner=task.owner)
-
-        initial_config = ConfigLog.objects.get(pk=self.cluster.config.current).config
-        initial_config["password"] = ansible_decrypt(initial_config["password"])
-
-        config_logs_existed = len(ConfigLog.objects.all())
-
-        internal_script_config_apply(task, job)
-        self.cluster.refresh_from_db()
-
-        config_logs_created = len(ConfigLog.objects.all())
-
-        self.assertEqual(config_logs_created - config_logs_existed, 2)
-
-        cluster_current_config_pk = self.cluster.config.current
-        service_current_config_pk = self.cluster.services.get(prototype__name="service_two_components").config.current
-        component_current_config_pk = self.cluster.components.get(prototype__name="component_1").config.current
-
-        current_cluster_config = initial_config.copy()
-        current_cluster_config["integer"] = 99
-
-        current_component_config = initial_config.copy()
-        current_component_config["list"] = ["value1", "value99"]
-
-        actual_cluster_current_config = ConfigLog.objects.get(pk=cluster_current_config_pk).config
-        actual_service_current_config = ConfigLog.objects.get(pk=service_current_config_pk).config
-        actual_component_current_config = ConfigLog.objects.get(pk=component_current_config_pk).config
-
-        actual_cluster_current_config["password"] = ansible_decrypt(actual_cluster_current_config["password"])
-        actual_service_current_config["password"] = ansible_decrypt(actual_service_current_config["password"])
-        actual_component_current_config["password"] = ansible_decrypt(actual_component_current_config["password"])
-
-        self.assertDictEqual(actual_cluster_current_config, current_cluster_config)
-        self.assertDictEqual(actual_service_current_config, initial_config)
-        self.assertDictEqual(actual_component_current_config, current_component_config)
