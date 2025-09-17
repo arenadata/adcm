@@ -1,0 +1,47 @@
+- type: cluster
+  allow_maintenance_mode: true
+  name: cluster_config_apply
+  version: &version '1.0'
+  edition: community
+
+  config: &config
+    - name: ssl
+      display_name: "SSL configuration"
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: server_keystore_password
+          display_name: Server JKS keystore password
+          description: >
+            Password for given keystore
+          type: password
+          required: false
+    - name: test_string
+      type: string
+      required: false
+    - name: test_int
+      type: integer
+      required: false
+
+  actions:
+    apply:
+      type: task
+      scripts_jinja: "./script.j2"
+      states:
+        available: any
+
+- name: service_1
+  type: service
+  version: *version
+  config: *config
+  components:
+    component_1_1:
+    component_1_2:
+
+- name: service_2
+  type: service
+  version: *version
+  config: *config
+  components:
+    component_2_1:

@@ -18,7 +18,7 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import Task, TaskMappingDelta
+from core.job.types import ScriptType, Task, TaskMappingDelta
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -209,6 +209,11 @@ def prepare_task_for_action(
         job_specifications = tuple(
             get_job_specs_from_template(task_id=task.id, delta=delta, feature_scripts_jinja=feature_scripts_jinja)
         )
+        if any(
+            specs.script_type == ScriptType.INTERNAL and specs.script == "config_apply" for specs in job_specifications
+        ):
+            message = "Internal script 'config_apply' can't be used for jinja action"
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
     else:
         job_specifications = tuple(action_repo.get_job_specs(id=action))
 
