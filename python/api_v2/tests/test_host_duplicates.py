@@ -294,3 +294,13 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
         self.assertIn("same name", response.json()["desc"])
+
+    def test_create_duplicate_and_add_to_cluster_with_same_duplicate_added_fail(self):
+        self.create_duplicate(origin=self.host_1, name=self.host_1.fqdn, cluster=self.cluster_1)
+
+        response = self.client.v2[self.host_1, "duplicates"].post(
+            data={"name": self.host_1.fqdn, "clusterId": self.cluster_1.id}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
+        self.assertEqual("Host with the same origin is already added to cluster", response.json()["desc"])
