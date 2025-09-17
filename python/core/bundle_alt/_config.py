@@ -82,13 +82,7 @@ def check_default_values_in_main_config(
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
 ):
-    empty_values = {
-        "map": ({},),
-        "secretmap": ({},),
-        "list": ([],),
-    } | {str_type: ("",) for str_type in ("string", "password", "text", "secrettext")}
-
-    _check_default_values(parameters=parameters, values=values, attributes=attributes, consider_empty=empty_values)
+    _check_default_values(parameters=parameters, values=values, attributes=attributes)
 
 
 def check_default_values_in_jinja_config(
@@ -96,21 +90,20 @@ def check_default_values_in_jinja_config(
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
 ):
-    empty_values = {
-        "map": ({},),
-        "secretmap": ({},),
-        "list": ([],),
-    }
-
-    _check_default_values(parameters=parameters, values=values, attributes=attributes, consider_empty=empty_values)
+    _check_default_values(parameters=parameters, values=values, attributes=attributes)
 
 
 def _check_default_values(
     parameters: dict[ParameterKey, ConfigParamPlainSpec],
     values: dict[ParameterKey, Any],
     attributes: dict[ParameterKey, dict],
-    consider_empty: dict[_ParamType, tuple[Any]],
 ) -> None:
+    consider_empty = {
+        "map": ({},),
+        "secretmap": ({},),
+        "list": ([],),
+    } | {str_type: ("",) for str_type in ("string", "password", "text", "secrettext")}
+
     extra_checks = {
         "file": (_check_file_path_length,),
         "secretfile": (_check_file_path_length,),
