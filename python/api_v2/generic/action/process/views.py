@@ -17,7 +17,7 @@ from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm
 from cm.errors import AdcmEx
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.action_process import repo
-from cm.services.action_process.errors import ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.errors import ActionProcessDBError, ActionProcessOperationError, SyncKeyMismatchError
 from cm.services.action_process.operations import (
     OperationContext,
     SerializedConfigStep,
@@ -55,7 +55,8 @@ from api_v2.views import ADCMGenericViewSet
 class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
     queryset = Process.objects.all()
     exc_conversion_map = {
-        SyncKeyMismatchError: "ACTION_PROCESS_SYNC_KEY_CONFLICT",
+        SyncKeyMismatchError: "ACTION_PROCESS_UPDATE_CONFLICT",
+        ActionProcessDBError: "ACTION_PROCESS_UPDATE_CONFLICT",
         ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
     }
 

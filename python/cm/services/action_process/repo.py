@@ -12,13 +12,13 @@
 
 from pathlib import Path
 from typing import Any, Generator, TypeAlias
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID, TaskID
 from django.conf import settings
 
-from cm.models import Action, Process, ProcessStep, Prototype, PrototypeConfig, TaskLog
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, Prototype, PrototypeConfig, TaskLog
 from cm.services.action_process.types import (
     ActionProcess,
     DBPrototypeConfig,
@@ -27,6 +27,7 @@ from cm.services.action_process.types import (
     ProcessUpdateDTO,
     SerializedPrototypeConfigs,
     Step,
+    StepInputDTO,
     StepUpdateDTO,
 )
 
@@ -131,8 +132,24 @@ def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
     ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
 
 
+def upsert_step_input(step_id: ActionProcessStepID, data: StepInputDTO) -> None:
+    dto_data = data.model_dump()
+    inputs_qs = ProcessStepInput.objects.filter(step_id=step_id)
+
+    if not inputs_qs.exists():
+        create_data = {"step_id": step_id, **dto_data}
+        ProcessStepInput.objects.create(**create_data)
+    else:
+        inputs_qs.update(**dto_data)
+
+
 def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
     Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
+
+
+def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID) -> WasUpdated:
+    rows_matched = Process.objects.filter(id=process_id, sync_key=sync_key).update(sync_key=uuid4())
+    return bool(rows_matched)
 
 
 def find_step_spec_declaration(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:

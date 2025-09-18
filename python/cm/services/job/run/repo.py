@@ -18,7 +18,6 @@ from functools import reduce
 from pathlib import Path
 from typing import Collection, ContextManager, Iterable, TypeAlias
 from uuid import uuid4
-import logging
 import operator
 
 from core.errors import NotFoundError
@@ -191,7 +190,6 @@ class JobRepoImpl(JobRepoInterface):
     def create_task(
         cls, target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
     ) -> Task:
-        logging.getLogger("adcm").error(f"{action=}")
         if action.owner_prototype.type == ADCMCoreType.ADCM:
             if target.type != ADCMCoreType.ADCM:
                 message = f"ADCM actions can be launched only on ADCM: {target=} ; {action.owner_prototype=}"
