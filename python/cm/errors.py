@@ -212,10 +212,11 @@ ERRORS = {
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
     "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "INVALID_CREATE_DUPLICATE_HOST": ("You cannot create a copy from a copy", HTTP_409_CONFLICT, ERR),
-    "ACTION_PROCESS_SYNC_KEY_CONFLICT": ("Sync key conflict", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_UPDATE_CONFLICT": ("Can't update action process", HTTP_409_CONFLICT, ERR),
     "ACTION_PROCESS_OPERATION_CONFLICT": ("Action process operation conflict", HTTP_409_CONFLICT, ERR),
     "ACTION_PROCESS_ACTION_NOT_SUITABLE": ("Does not support action process functionality", HTTP_409_CONFLICT, ERR),
     "ACTION_PROCESS_STEP_NOT_RENDERED": ("Step is not rendered yet", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_DB_ERROR": ("Database error", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPERATION_ERROR": ("Can't perform operation with config", HTTP_409_CONFLICT, ERR),
 }
 

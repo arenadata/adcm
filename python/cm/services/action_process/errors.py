@@ -22,3 +22,7 @@ class ActionProcessOperationError(ActionProcessError):
 
 class SyncKeyMismatchError(ActionProcessError):
     pass
+
+
+class ActionProcessDBError(ActionProcessError):
+    pass

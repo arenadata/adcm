@@ -11,14 +11,16 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from functools import wraps
 from typing import Callable, Literal, TypeAlias
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.types import ActionInfo, JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
 from django.db.models import QuerySet
 from django.db.transaction import atomic
+from django.db.utils import DatabaseError
 from django.utils import timezone
 
 from cm.adcm_config.checks import check_attr
@@ -28,9 +30,10 @@ from cm.adcm_config.config import (
     process_config_spec,
 )
 from cm.converters import core_type_to_model
+from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.action_process import repo
-from cm.services.action_process.errors import ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.errors import ActionProcessDBError, ActionProcessOperationError, SyncKeyMismatchError
 from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.services.action_process.schema_validation import (
     CompleteStepPayload,
@@ -45,6 +48,7 @@ from cm.services.action_process.types import (
     ProcessStepState,
     ProcessUpdateDTO,
     Step,
+    StepInputDTO,
     StepType,
     StepUpdateDTO,
 )
@@ -180,10 +184,11 @@ def retrieve_steps_starting_with_qs(process_id: ActionProcessID, step_id: Action
 
 
 def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID) -> None:
-    process = repo.retrieve_process(process_id=process_id)
-    _check_sync_key(sync_key=sync_key, process=process)
-
-    repo.update_process(process_id=process_id, data=ProcessUpdateDTO(sync_key=uuid4()))
+    """
+    Find a process specified by process_id and sync_key and updates it's sync_key value
+    """
+    if not repo.update_process_sync_key(process_id=process_id, sync_key=sync_key):
+        raise SyncKeyMismatchError(f"There is no #{process_id} process with sync_key {sync_key}")
 
 
 def _repo_revoke_steps(steps_qs: QuerySet) -> set[int]:
@@ -198,6 +203,21 @@ def _repo_revoke_steps(steps_qs: QuerySet) -> set[int]:
     return step_ids
 
 
+def convert_db_errors(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except DatabaseError as e:
+            logger.exception("Database error during performing process' operation")
+
+            msg = "Can't update action process. Most likely due to parallel modification"
+            raise ActionProcessDBError(msg) from e
+
+    return wrapper
+
+
+@convert_db_errors
 @atomic
 def perform_operation(process_id: ActionProcessID, payload: OperationPayload, context: OperationContext) -> None:
     process = repo.retrieve_process(process_id=process_id)
@@ -288,13 +308,8 @@ def _operation_submit_job(
 
     task_orm = repo.retrieve_task_orm(task_id=task.id)
 
-    data = {"step_id": step_id, "configuration": None, "job_id": task_orm.id, "created_at": timezone.now()}
-    step_input_qs = ProcessStepInput.objects.filter(step_id=step_id)
-
-    if not step_input_qs.exists():
-        ProcessStepInput.objects.create(**data)
-    else:
-        step_input_qs.update(**data)
+    step_input_data = StepInputDTO(job_id=task_orm.id, created_at=timezone.now())
+    repo.upsert_step_input(step_id=step_id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step_id)
     repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.RUNNING))
@@ -313,13 +328,8 @@ def _operation_submit_config(
     config_attr_pair = context.config_processor(step, configuration)
     _validate_config(config=config_attr_pair, step=step, context=context)
 
-    data = {"step_id": step.id, "configuration": config_attr_pair._asdict(), "job": None, "created_at": timezone.now()}
-    step_input_qs = ProcessStepInput.objects.filter(step_id=step.id)
-
-    if not step_input_qs.exists():
-        ProcessStepInput.objects.create(**data)
-    else:
-        step_input_qs.update(**data)
+    step_input_data = StepInputDTO(configuration=config_attr_pair._asdict(), created_at=timezone.now())
+    repo.upsert_step_input(step_id=step.id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step.id)
     complete_step(

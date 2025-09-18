@@ -10,14 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
 from core.bundle_alt.schema import ActionProcessStage
 from core.job.types import StepType
-from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID
-from pydantic import BaseModel, ConfigDict, Field
+from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID, TaskID
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import TypedDict
 
 
 class ProcessState(str, Enum):
@@ -43,6 +45,32 @@ class ProcessUpdateDTO(BaseModel):
 class StepUpdateDTO(BaseModel):
     step_spec: Any = None
     state: ProcessStepState | None = None
+
+
+class _ConfigAttr(TypedDict):
+    config: dict
+    attr: dict
+
+
+class StepInputDTO(BaseModel):
+    configuration: _ConfigAttr | None = None
+    job_id: TaskID | None = None
+    created_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            config_specified = "configuration" in data
+            task_specified = "job_id" in data
+
+            none_specified = not config_specified and not task_specified
+            both_specified = config_specified and task_specified
+
+            if none_specified or both_specified:
+                raise ValueError('Exactly one field of ("configuration", "job_id") must be specified.')
+
+        return data
 
 
 class ActionProcess(BaseModel):
