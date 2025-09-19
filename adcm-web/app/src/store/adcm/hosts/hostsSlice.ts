@@ -65,7 +65,10 @@ const hostsSlice = createSlice({
       return createInitialState();
     },
     setHostMaintenanceMode(state, action) {
-      const changedHost = state.hosts.find(({ id }) => id === action.payload.hostId);
+      const changedHost =
+        state.hosts.find(({ id }) => id === action.payload.hostId) ||
+        state.hosts.flatMap((host) => host.duplicates).find(({ id }) => id === action.payload.hostId);
+
       if (changedHost) {
         changedHost.maintenanceMode = action.payload.maintenanceMode;
       }
@@ -89,23 +92,67 @@ const hostsSlice = createSlice({
     });
     builder.addCase(wsActions.create_host_concern, (state, action) => {
       const { id: hostId, changes: newConcern } = action.payload.object;
-      state.hosts = updateIfExists<AdcmHost>(
+
+      let hosts = updateIfExists<AdcmHost>(
         state.hosts,
-        (host) => host.id === hostId && host.concerns.every((concern) => concern.id !== newConcern.id),
+        (host) => {
+          if (host.id !== hostId) return false;
+
+          return host.concerns.every((concern) => concern.id !== newConcern.id);
+        },
         (host) => ({
           concerns: [...host.concerns, newConcern],
         }),
       );
+
+      hosts = updateIfExists<AdcmHost>(
+        hosts,
+        (host) => {
+          const duplicate = host.duplicates.find(({ id }) => id === hostId);
+
+          if (!duplicate) return false;
+
+          return duplicate.concerns.every((concern) => concern.id !== newConcern.id);
+        },
+        (host) => ({
+          ...host,
+          duplicates: host.duplicates.map((dup) => ({
+            ...dup,
+            concerns: [...dup.concerns, newConcern],
+          })),
+        }),
+      );
+
+      state.hosts = hosts;
     });
     builder.addCase(wsActions.delete_host_concern, (state, action) => {
       const { id, changes } = action.payload.object;
-      state.hosts = updateIfExists<AdcmHost>(
+
+      let hosts = updateIfExists<AdcmHost>(
         state.hosts,
         (host) => host.id === id,
         (host) => ({
           concerns: host.concerns.filter((concern) => concern.id !== changes.id),
         }),
       );
+
+      hosts = updateIfExists<AdcmHost>(
+        hosts,
+        (host) => {
+          const duplicate = host.duplicates.find((dup) => dup.id === id);
+
+          return !!duplicate;
+        },
+        (host) => ({
+          ...host,
+          duplicates: host.duplicates.map((dup) => ({
+            ...dup,
+            concerns: dup.concerns.filter((concern) => concern.id !== changes.id),
+          })),
+        }),
+      );
+
+      state.hosts = hosts;
     });
   },
 });

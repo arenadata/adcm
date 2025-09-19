@@ -37,7 +37,8 @@
       "correctness": {
         "useExhaustiveDependencies": "off",
         "noUnusedVariables": "error",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noFlatMapIdentity": "off"
       },
       "a11y": {
         "useButtonType": "off",

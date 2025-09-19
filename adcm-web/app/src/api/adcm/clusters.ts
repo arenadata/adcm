@@ -9,6 +9,7 @@ import type {
   AdcmUpgradeRunConfig,
   AdcmUpgradeShort,
   AdcmUpgradeDetails,
+  AdcmHostCandidate,
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -102,5 +103,10 @@ export class AdcmClustersApi {
 
   public static async unlinkHost(clusterId: number, hostId: number) {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/hosts/${hostId}/`);
+  }
+
+  public static async getHostCandidates(clusterId: number) {
+    const response = await httpClient.get<AdcmHostCandidate[]>(`/api/v2/clusters/${clusterId}/host-candidates/`);
+    return response.data;
   }
 }

@@ -16,7 +16,7 @@ const AddClusterHostsDialog = () => {
     resetForm,
     onChangeFormData,
     loadRelatedData,
-    relatedData: { hostsOptions },
+    relatedData: { hostCandidatesOptions },
     isValid,
   } = useCreateClusterHostsForm();
 
@@ -45,9 +45,9 @@ const AddClusterHostsDialog = () => {
         actionButtonLabel="Add"
       >
         <FormFieldsContainer>
-          {hostsOptions.length > 0 && (
+          {hostCandidatesOptions.length > 0 && (
             <MultiSelectPanel
-              options={hostsOptions}
+              options={hostCandidatesOptions}
               value={formData.selectedHostIds}
               onChange={handleClusterHostsChange}
               checkAllLabel="All hosts"
@@ -55,7 +55,7 @@ const AddClusterHostsDialog = () => {
               isSearchable={true}
             />
           )}
-          {hostsOptions.length === 0 && <div>No available hosts found</div>}
+          {hostCandidatesOptions.length === 0 && <div>No available hosts found</div>}
         </FormFieldsContainer>
       </DialogV2>
     )

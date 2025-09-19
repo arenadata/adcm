@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import { addClusterHostsWithUpdate, loadHosts } from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import { addClusterHostsWithUpdate, loadHostCandidates } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { useParams } from 'react-router-dom';
 import type { AddClusterHostsPayload } from '@models/adcm';
 
@@ -17,11 +17,11 @@ export const useCreateClusterHostsForm = () => {
 
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
-  const hosts = useStore(({ adcm }) => adcm.clusterHostsActions.relatedData.hosts);
+  const hostCandidates = useStore(({ adcm }) => adcm.clusterHostsActions.relatedData.hostCandidates);
 
-  const hostsOptions = useMemo(() => {
-    return hosts.filter((host) => !host.cluster).map(({ name, id }) => ({ value: id, label: name }));
-  }, [hosts]);
+  const hostCandidatesOptions = useMemo(() => {
+    return hostCandidates?.map(({ name, id }) => ({ value: id, label: name }));
+  }, [hostCandidates]);
 
   const [formData, setFormData] = useState<CreateClusterHostsPayload>(initialFormData);
 
@@ -47,7 +47,7 @@ export const useCreateClusterHostsForm = () => {
   }, [formData, dispatch, clusterId]);
 
   const loadRelatedData = useCallback(() => {
-    dispatch(loadHosts());
+    dispatch(loadHostCandidates(clusterId));
   }, [dispatch]);
 
   const handleChangeFormData = (changes: Partial<CreateClusterHostsPayload>) => {
@@ -65,7 +65,7 @@ export const useCreateClusterHostsForm = () => {
     onChangeFormData: handleChangeFormData,
     loadRelatedData,
     relatedData: {
-      hostsOptions,
+      hostCandidatesOptions,
     },
   };
 };

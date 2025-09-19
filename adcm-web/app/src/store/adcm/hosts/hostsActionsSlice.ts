@@ -4,7 +4,14 @@ import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import type { RequestError } from '@api';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi } from '@api';
-import type { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmRenameArgs, CreateAdcmHostPayload } from '@models/adcm';
+import type {
+  AdcmCluster,
+  AdcmHost,
+  AdcmHostProvider,
+  AdcmRenameArgs,
+  CreateAdcmHostPayload,
+  CreateHostDuplicatePayload,
+} from '@models/adcm';
 import { AdcmMaintenanceMode } from '@models/adcm';
 import type { SortParams } from '@models/table';
 import type { ModalState } from '@models/modal';
@@ -111,6 +118,30 @@ const createHostWithUpdate = createAsyncThunk(
   },
 );
 
+const createHostDuplicate = createAsyncThunk(
+  'adcm/hostsActions/createHostDublicate',
+  async (payload: CreateHostDuplicatePayload, thunkAPI) => {
+    try {
+      thunkAPI.dispatch(setIsActionInProgress(true));
+      const host = await AdcmHostsApi.createDuplicateHost(payload);
+      return host;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(setIsActionInProgress(false));
+    }
+  },
+);
+
+const createHostDuplicateWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/createHostDuplicateWithUpdate',
+  async (payload: CreateHostDuplicatePayload, thunkAPI) => {
+    await thunkAPI.dispatch(createHostDuplicate(payload)).unwrap();
+    await thunkAPI.dispatch(getHosts());
+  },
+);
+
 interface toggleMaintenanceModePayload {
   hostId: number;
   maintenanceMode: AdcmMaintenanceMode;
@@ -186,6 +217,9 @@ interface AdcmHostsActionsState extends ModalState<AdcmHost, 'host'> {
   unlinkDialog: {
     host: AdcmHost | null;
   };
+  hostSharingDialog: {
+    host: AdcmHost | null;
+  };
   relatedData: {
     clusters: AdcmCluster[];
     hostProviders: AdcmHostProvider[];
@@ -210,6 +244,9 @@ const createInitialState = (): AdcmHostsActionsState => ({
     host: null,
   },
   unlinkDialog: {
+    host: null,
+  },
+  hostSharingDialog: {
     host: null,
   },
   relatedData: {
@@ -242,10 +279,19 @@ const hostsActionsSlice = createCrudSlice({
     closeUnlinkDialog(state) {
       state.unlinkDialog.host = null;
     },
+    openHostSharingDialog(state, action) {
+      state.hostSharingDialog.host = action.payload;
+    },
+    closeHostSharingDialog(state) {
+      state.hostSharingDialog.host = null;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(toggleMaintenanceMode.pending, (state) => {
       hostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
+    });
+    builder.addCase(createHostDuplicate.pending, (state) => {
+      hostsActionsSlice.caseReducers.closeHostSharingDialog(state);
     });
     builder.addCase(unlinkHost.pending, (state) => {
       hostsActionsSlice.caseReducers.closeUnlinkDialog(state);
@@ -295,6 +341,8 @@ export const {
   openUpdateDialog,
   closeUpdateDialog,
   setIsActionInProgress,
+  openHostSharingDialog,
+  closeHostSharingDialog,
 } = hostsActionsSlice.actions;
 
 export {
@@ -308,6 +356,7 @@ export {
   deleteHostWithUpdate,
   toggleMaintenanceMode,
   updateHostWithUpdate as updateHost,
+  createHostDuplicateWithUpdate as createHostDuplicate,
 };
 
 export default hostsActionsSlice.reducer;
