@@ -7,6 +7,8 @@ import type { RequestError } from '@api';
 import { AdcmClusterConfigGroupsApi } from '@api';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { updateIfExists } from '@utils/objectUtils';
 
 const loadClusterConfigGroups = createAsyncThunk(
   'adcm/clusterConfigGroups/loadClusterConfigGroups',
@@ -87,6 +89,14 @@ const clusterConfigGroupsSlice = createSlice({
       state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterConfigGroups = [];
       state.totalCount = 0;
+    });
+    builder.addCase(wsActions['update_config-group'], (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.clusterConfigGroups = updateIfExists<AdcmConfigGroup>(
+        state.clusterConfigGroups,
+        (config) => config.id === id,
+        () => changes,
+      );
     });
   },
 });

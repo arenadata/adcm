@@ -7,6 +7,8 @@ import type { RequestError } from '@api';
 import { AdcmHostProviderConfigGroupsApi } from '@api';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { updateIfExists } from '@utils/objectUtils';
 
 const loadHostProviderConfigGroups = createAsyncThunk(
   'adcm/hostProviderConfigGroups/loadHostProviderConfigGroups',
@@ -92,6 +94,14 @@ const hostProviderConfigGroupsSlice = createSlice({
       state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.hostProviderConfigGroups = [];
       state.totalCount = 0;
+    });
+    builder.addCase(wsActions['update_config-group'], (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hostProviderConfigGroups = updateIfExists<AdcmConfigGroup>(
+        state.hostProviderConfigGroups,
+        (config) => config.id === id,
+        () => changes,
+      );
     });
   },
 });

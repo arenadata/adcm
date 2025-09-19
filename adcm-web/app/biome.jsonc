@@ -23,7 +23,8 @@
       "recommended": true,
       "complexity": {
         "noStaticOnlyClass": "off",
-        "noForEach": "off"
+        "noForEach": "off",
+        "useLiteralKeys": "off"
       },
       "style": {
         "useImportType": "error",

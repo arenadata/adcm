@@ -11,6 +11,7 @@ import type {
   UpdateHostProviderEvent,
   UpdateServiceEvent,
   UpdateJobEvent,
+  UpdateGroupConfigEvent,
 } from '@models/adcm';
 
 export const wsActions = {
@@ -20,6 +21,8 @@ export const wsActions = {
   create_component_config: createAction<CreateConfigEvent>('adcm/ws/create_component_config'),
   create_hostprovider_config: createAction<CreateConfigEvent>('adcm/ws/create_hostprovider_config'),
   create_host_config: createAction<CreateConfigEvent>('adcm/ws/create_host_config'),
+
+  ['update_config-group']: createAction<UpdateGroupConfigEvent>('adcm/ws/update_config-group'),
 
   create_adcm_concern: createAction<CreateConcernEvent>('adcm/ws/create_adcm_concern'),
   create_cluster_concern: createAction<CreateConcernEvent>('adcm/ws/create_cluster_concern'),
