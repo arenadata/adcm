@@ -21,6 +21,17 @@ export type CreateConfigEvent = {
   };
 };
 
+export type UpdateGroupConfigEvent = {
+  event: 'update_config-group';
+  object: {
+    id: number;
+    changes: {
+      name: string;
+      description?: string;
+    };
+  };
+};
+
 // Concern events
 
 export type CreateConcernEvent = {
@@ -137,6 +148,7 @@ export type UpdateJobEvent = {
 
 export type AdcmBackendEvent =
   | CreateConfigEvent
+  | UpdateGroupConfigEvent
   | CreateConcernEvent
   | DeleteConcernEvent
   | UpdateHostComponentMapEvent

@@ -1,6 +1,7 @@
 import { AdcmHostProviderConfigGroupsApi } from '@api';
 import type { AdcmConfigGroup } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { createAsyncThunk } from '@store/redux';
 
 type GetHostProviderConfigGroupPayload = {
@@ -42,6 +43,12 @@ const hostProviderConfigGroupSlice = createSlice({
     });
     builder.addCase(getHostProviderConfigGroup.rejected, (state) => {
       state.hostProviderConfigGroup = null;
+    });
+    builder.addCase(wsActions['update_config-group'], (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.hostProviderConfigGroup?.id === id) {
+        state.hostProviderConfigGroup = { ...state.hostProviderConfigGroup, ...changes };
+      }
     });
   },
 });
