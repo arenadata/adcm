@@ -1,6 +1,7 @@
 import type { AdcmConcerns } from './concern';
 import type { AdcmEntityState } from './common';
 import type { AdcmHostProvider } from './hostProvider';
+import type { AdcmMaintenanceMode } from './maintenanceMode';
 
 export enum AdcmHostStatus {
   Up = 'up',
@@ -25,6 +26,20 @@ export interface AdcmHostPrototype {
   version: string;
 }
 
+interface AdcmHostCluster {
+  id: number;
+  name: string;
+}
+
+export interface AdcmHostDuplicate {
+  id: number;
+  name: string;
+  cluster: AdcmHostCluster | null;
+  concerns: AdcmConcerns[];
+  isMaintenanceModeAvailable: boolean;
+  maintenanceMode: AdcmMaintenanceMode;
+}
+
 export interface AdcmHost {
   id: number;
   name: string;
@@ -36,10 +51,8 @@ export interface AdcmHost {
   concerns: AdcmConcerns[];
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: string;
-  cluster: {
-    id: number;
-    name: string;
-  };
+  cluster: AdcmHostCluster;
+  duplicates: AdcmHostDuplicate[];
 }
 
 export interface CreateAdcmHostPayload {
@@ -53,3 +66,7 @@ export interface AdcmUpdatePayload {
 }
 
 export type AdcmHostCandidate = Pick<AdcmHost, 'id' | 'name'>;
+
+export interface CreateHostDuplicatePayload extends Omit<CreateAdcmHostPayload, 'hostproviderId'> {
+  hostId: number;
+}

@@ -1,28 +1,25 @@
 import { createAsyncThunk } from '@store/redux';
 import type { RequestError } from '@api';
-import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi } from '@api';
+import { AdcmClusterHostsApi, AdcmClustersApi } from '@api';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import type { AdcmClusterHost, AdcmHost, AddClusterHostsPayload } from '@models/adcm';
+import type { AdcmClusterHost, AdcmHost, AdcmHostCandidate, AddClusterHostsPayload } from '@models/adcm';
 import { AdcmMaintenanceMode } from '@models/adcm';
 import { getClusterHosts, setHostMaintenanceMode } from './hostsSlice';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (_arg, thunkAPI) => {
-  try {
-    const hostsDefault = await AdcmHostsApi.getHosts();
-
-    const hosts = await AdcmHostsApi.getHosts(
-      {},
-      { sortBy: 'name', sortDirection: 'asc' },
-      { pageNumber: 0, perPage: hostsDefault.count },
-    );
-    return hosts.results;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error);
-  }
-});
+const loadHostCandidates = createAsyncThunk(
+  'adcm/clusterHostsActions/loadHostCandidates',
+  async (clusterId: number, thunkAPI) => {
+    try {
+      const hosts = await AdcmClustersApi.getHostCandidates(clusterId);
+      return hosts;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
 
 interface UnlinkHostTogglePayload {
   hostId: number;
@@ -106,7 +103,7 @@ interface AdcmHostsActionsState extends ModalState<AdcmClusterHost, 'clusterHost
     clusterHost: AdcmHost | null;
   };
   relatedData: {
-    hosts: AdcmHost[];
+    hostCandidates: AdcmHostCandidate[];
   };
 }
 
@@ -127,7 +124,7 @@ const createInitialState = (): AdcmHostsActionsState => ({
     clusterHost: null,
   },
   relatedData: {
-    hosts: [],
+    hostCandidates: [],
   },
 });
 
@@ -160,11 +157,11 @@ const clusterHostsActionsSlice = createCrudSlice({
       // hide actions dialogs, when load new hosts list (not silent refresh)
       clusterHostsActionsSlice.caseReducers.cleanupActions();
     });
-    builder.addCase(loadHosts.fulfilled, (state, action) => {
-      state.relatedData.hosts = action.payload;
+    builder.addCase(loadHostCandidates.fulfilled, (state, action) => {
+      state.relatedData.hostCandidates = action.payload;
     });
-    builder.addCase(loadHosts.rejected, (state) => {
-      state.relatedData.hosts = [];
+    builder.addCase(loadHostCandidates.rejected, (state) => {
+      state.relatedData.hostCandidates = [];
     });
     builder.addCase(toggleMaintenanceMode.pending, (state) => {
       clusterHostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
@@ -181,6 +178,6 @@ export const {
   closeMaintenanceModeDialog,
 } = clusterHostsActionsSlice.actions;
 
-export { unlinkHostWithUpdate, loadHosts, addClusterHostsWithUpdate, toggleMaintenanceMode };
+export { unlinkHostWithUpdate, loadHostCandidates, addClusterHostsWithUpdate, toggleMaintenanceMode };
 
 export default clusterHostsActionsSlice.reducer;

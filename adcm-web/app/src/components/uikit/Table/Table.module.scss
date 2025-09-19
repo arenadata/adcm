@@ -147,7 +147,9 @@
   td {
     color: var(--table-tr-color);
     background: var(--table-tr-background);
-    transition: background-color 250ms, color 250ms;
+    transition:
+      background-color 250ms,
+      color 250ms;
     font-weight: 400;
   }
 
@@ -291,12 +293,12 @@
       border-top-right-radius: 0;
       border-top-left-radius: 0;
       border-spacing: 0;
+    }
 
-      td {
-        border-top-right-radius: 0 !important;
-        border-top-left-radius: 0 !important;
-        box-shadow: inset 0 0 0 2px var(--table-tr-border, transparent);
-      }
+    .expandedBlock > td {
+      box-shadow: inset 0 0 0 2px var(--table-tr-border, transparent);
+      border-top-right-radius: 0 !important;
+      border-top-left-radius: 0 !important;
     }
   }
 
