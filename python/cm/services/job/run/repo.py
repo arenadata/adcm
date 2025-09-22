@@ -85,6 +85,7 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+from cm.services.action_process.types import ProcessStepState
 
 TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 
@@ -535,6 +536,25 @@ class JobRepoImpl(JobRepoInterface):
     ) -> None:
         ProcessStep.objects.filter(id=step_id).update(state=state)
         Process.objects.filter(id=process_id).update(sync_key=uuid4())
+
+    @staticmethod
+    def find_current_and_last_completed_process_steps(process_id) -> tuple[int | None, int | None]:
+        # TODO: this is copy from cm.services.action_process_operations.find_current_and_last_completed_steps
+        #  To solve the problem of cyclic imports.
+        current = None
+        last_completed = None
+
+        for id_, state in ProcessStep.objects.filter(process_id=process_id).values_list("id", "state").order_by("-id"):
+            if state in {ProcessStepState.CREATED, ProcessStepState.RUNNING}:
+                current = id_
+
+            if last_completed is None and state == ProcessStepState.COMPLETED:
+                last_completed = id_
+
+            if current and last_completed:
+                break
+
+        return current, last_completed
 
 
 class ActionRepoImpl(ActionRepoInterface):

@@ -352,9 +352,14 @@ class JobSequenceRunner(TaskRunner):
             process_id=process.process_id, step_id=process.step_id, state=step_status.value
         )
 
-        context = RenderStepContext(
-            process_id=process.process_id,
-            action_id=action_id,
-            object=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
-        )
-        fill_step_spec(step_id=process.step_id, context=context)
+        # TODO: where change current step ? ? ?
+
+        current_id, _ = self._repo.find_current_and_last_completed_process_steps(process_id=process.process_id)
+
+        if current_id:
+            context = RenderStepContext(
+                process_id=process.process_id,
+                action_id=action_id,
+                object=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
+            )
+            fill_step_spec(step_id=current_id, context=context)

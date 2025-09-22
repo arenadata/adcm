@@ -79,6 +79,10 @@ class JobRepoInterface(Protocol):
     def set_state_of_job_related_process_step(process_id: int, step_id: int, state: str) -> None:
         ...
 
+    @staticmethod
+    def find_current_and_last_completed_process_steps(process_id) -> tuple[int | None, int | None]:
+        ...
+
 
 class ActionRepoInterface(Protocol):
     def get_action(self, id: ActionID) -> ActionInfo:  # noqa: A002
