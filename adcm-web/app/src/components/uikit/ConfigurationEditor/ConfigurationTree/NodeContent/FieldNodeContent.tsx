@@ -1,6 +1,12 @@
 import { useCallback, useRef, useMemo, useState } from 'react';
 import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
-import { emptyStringStub, nullStub, secretStub, whiteSpaceStringStub } from '../ConfigurationTree.constants';
+import {
+  emptyStringStub,
+  nullStub,
+  secretStub,
+  treeNodeLabelCharsLimit,
+  whiteSpaceStringStub,
+} from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
 import st from '../../../CollapseTree2/CollapseNode.module.scss';
 import cn from 'classnames';
@@ -16,6 +22,7 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import { useClipboardCopy } from '@hooks';
+import { getViewNodeValue } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils.ts';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
@@ -177,7 +184,7 @@ const FieldNodeContent = ({
           />
         )}
         <div className={s.nodeContent__value} data-test="node-value" onClick={handleClick}>
-          {value}
+          {getViewNodeValue(value, treeNodeLabelCharsLimit)}
         </div>
         {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
