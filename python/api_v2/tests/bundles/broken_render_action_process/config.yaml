@@ -1,0 +1,41 @@
+---
+- type: cluster
+  name: broken_render_process_wizard
+  version: '1.0'
+  edition: community
+  actions:
+    broken_process:
+      type: job
+      script: playbook.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: broken_process.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    broken_configuration_step:
+      type: job
+      script: playbook.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: broken_configuration_step.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    broken_operation_step:
+      type: job
+      script: playbook.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: broken_operation_step.j2
+        engine:
+          type: jinja2
+      states:
+        available: any

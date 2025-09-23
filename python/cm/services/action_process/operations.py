@@ -361,7 +361,7 @@ def _validate_config(config: ConfigAttrPair, step: Step, context: OperationConte
 def _check_step_is_current(process: ActionProcess, payload: SubmitStepPayload) -> None:
     current_step_id, _ = find_current_and_last_completed_steps(steps=ProcessStep.objects.filter(process_id=process.id))
     if payload.params.step_id != current_step_id:
-        raise ActionProcessOperationError("Only current step can be submitted.")
+        raise ActionProcessOperationError("Only current step can be submitted")
 
 
 def _check_sync_key(sync_key: UUID, process: ActionProcess) -> None:
@@ -371,10 +371,10 @@ def _check_sync_key(sync_key: UUID, process: ActionProcess) -> None:
 
 def _check_no_running_steps(process: ActionProcess) -> None:
     if repo.retrieve_running_step_ids(process_id=process.id):
-        raise ActionProcessOperationError("There is a running step.")
+        raise ActionProcessOperationError("There is a running step")
 
 
 def _check_all_steps_completed(process: ActionProcess) -> None:
     for step in repo.retrieve_steps(process_id=process.id):
         if step.state != ProcessStepState.COMPLETED:
-            raise ActionProcessOperationError("All steps must be completed.")
+            raise ActionProcessOperationError("All steps must be completed")

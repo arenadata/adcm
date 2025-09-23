@@ -17,7 +17,13 @@ from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm
 from cm.errors import AdcmEx
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.action_process import repo
-from cm.services.action_process.errors import ActionProcessDBError, ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.errors import (
+    ActionProcessDBError,
+    ActionProcessNotFoundError,
+    ActionProcessOperationError,
+    ActionProcessStepNotFoundError,
+    SyncKeyMismatchError,
+)
 from cm.services.action_process.operations import (
     OperationContext,
     SerializedConfigStep,
@@ -34,6 +40,7 @@ from cm.services.job.run.repo import ActionRepoImpl
 from core.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.db.transaction import atomic
+from django.http.response import Http404
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -52,12 +59,23 @@ from api_v2.generic.action.views import ActionPermissionsMixin
 from api_v2.views import ADCMGenericViewSet
 
 
-class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin):
+class ProcessStepHandleExceptionMixin:
+    def handle_exception(self, exc: Any):
+        if exc_code := self.exc_conversion_map.get(exc.__class__):
+            exc = AdcmEx(code=exc_code, msg=exc.msg)
+
+        return super().handle_exception(exc)
+
+
+class ActionProcessViewSet(
+    ProcessStepHandleExceptionMixin, GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin
+):
     queryset = Process.objects.all()
     exc_conversion_map = {
         SyncKeyMismatchError: "ACTION_PROCESS_UPDATE_CONFLICT",
         ActionProcessDBError: "ACTION_PROCESS_UPDATE_CONFLICT",
         ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
+        ActionProcessNotFoundError: "ACTION_PROCESS_NOT_FOUND",
     }
 
     def get_serializer_class(self):
@@ -90,7 +108,11 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
         )
-        instance = self.get_object()
+        try:
+            instance = self.get_object()
+        except Http404 as error:
+            raise ActionProcessNotFoundError from error
+
         context = {
             "process_id": instance.pk,
             "step_names_id_state_map": repo.retrieve_step_names_id_state_map(process_id=instance.pk),
@@ -153,16 +175,20 @@ class ActionProcessViewSet(GetParentObjectMixin, ADCMGenericViewSet, ActionPermi
             ).data,
         )
 
-    def handle_exception(self, exc: Any):
-        if exc_code := self.exc_conversion_map.get(exc.__class__):
-            exc = AdcmEx(code=exc_code, msg=exc.msg)
 
-        return super().handle_exception(exc)
-
-
-class ProcessStepViewSet(GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet, ActionPermissionsMixin):
+class ProcessStepViewSet(
+    ProcessStepHandleExceptionMixin,
+    GetParentObjectMixin,
+    RetrieveModelMixin,
+    ADCMGenericViewSet,
+    ActionPermissionsMixin,
+):
     queryset = ProcessStep.objects.all()
     serializer_class = StepSerializer
+    exc_conversion_map = {
+        ActionProcessNotFoundError: "ACTION_PROCESS_NOT_FOUND",
+        ActionProcessStepNotFoundError: "ACTION_PROCESS_STEP_NOT_FOUND",
+    }
 
     def retrieve(self, request, *args, **kwargs):
         _ = request, args

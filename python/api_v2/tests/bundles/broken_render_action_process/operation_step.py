@@ -11,26 +11,16 @@
 # limitations under the License.
 
 
-class ActionProcessError(Exception):
-    def __init__(self, msg: str = ""):
-        self.msg = msg
+def generate_scripts(context: dict):
+    cluster_data = context["cluster"]
 
+    script1 = {
+        "display_name": "Sleep",
+        "extra_field": "extra_field",
+        "name": "sleep",
+        "params": {"test_params": [cluster_data["state"]]},
+        "script": "no_exist_file.yaml",
+        "script_type": "no_exist_type",
+    }
 
-class ActionProcessOperationError(ActionProcessError):
-    pass
-
-
-class SyncKeyMismatchError(ActionProcessError):
-    pass
-
-
-class ActionProcessDBError(ActionProcessError):
-    pass
-
-
-class ActionProcessNotFoundError(ActionProcessError):
-    pass
-
-
-class ActionProcessStepNotFoundError(ActionProcessError):
-    pass
+    return [script1]
