@@ -19,6 +19,7 @@ from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjec
 from django.conf import settings
 
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, Prototype, PrototypeConfig, TaskLog
+from cm.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
 from cm.services.action_process.types import (
     ActionProcess,
     DBPrototypeConfig,
@@ -105,7 +106,10 @@ def retrieve_step_names_id_state_map(
 
 
 def retrieve_step(process_id: ActionProcessID, step_id: ActionProcessStepID) -> Step:
-    return next(retrieve_steps(process_id=process_id, id=step_id))
+    try:
+        return next(retrieve_steps(process_id=process_id, id=step_id))
+    except StopIteration as error:
+        raise ActionProcessStepNotFoundError() from error
 
 
 def retrieve_running_step_ids(process_id: ActionProcessID) -> set[ActionProcessStepID]:
@@ -123,7 +127,10 @@ def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, Non
 
 
 def retrieve_process(process_id: ActionProcessID) -> ActionProcess:
-    process = Process.objects.get(id=process_id)
+    try:
+        process = Process.objects.get(id=process_id)
+    except Process.DoesNotExist as error:
+        raise ActionProcessNotFoundError() from error
 
     return ActionProcess.model_validate(process, from_attributes=True)
 
