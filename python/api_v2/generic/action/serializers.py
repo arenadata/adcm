@@ -127,8 +127,13 @@ class UpgradeRunSerializer(EmptySerializer):
     is_verbose = BooleanField(required=False, default=False)
 
 
+class ProcessIdSerializer(EmptySerializer):
+    id = IntegerField()
+
+
 class ActionRunSerializer(UpgradeRunSerializer):
     should_block_object = BooleanField(required=False, default=True, initial=True)
+    process = ProcessIdSerializer(required=False, default=None, allow_null=True, initial=None)
 
 
 class ActionNameSerializer(ModelSerializer):

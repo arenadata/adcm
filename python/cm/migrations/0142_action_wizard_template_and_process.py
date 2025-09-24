@@ -125,4 +125,9 @@ class Migration(migrations.Migration):
                 ("step", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to="cm.processstep")),
             ],
         ),
+        migrations.AddField(
+            model_name="tasklog",
+            name="process",
+            field=models.JSONField(default=None, null=True),
+        ),
     ]

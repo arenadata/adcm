@@ -73,16 +73,6 @@ class JobRepoInterface(Protocol):
     def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
         ...
 
-    # this function should be revisioned alongside action-process coupling,
-    # now it's aimed to do a lot of work, some of which isn't suited for repo
-    @staticmethod
-    def set_state_of_job_related_process_step(process_id: int, step_id: int, state: str) -> None:
-        ...
-
-    @staticmethod
-    def find_current_and_last_completed_process_steps(process_id) -> tuple[int | None, int | None]:
-        ...
-
 
 class ActionRepoInterface(Protocol):
     def get_action(self, id: ActionID) -> ActionInfo:  # noqa: A002

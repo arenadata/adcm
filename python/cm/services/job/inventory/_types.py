@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 from core.types import ADCMCoreType, ComponentID, HostID, ObjectID
 from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import TypedDict
 
 HostGroupName: TypeAlias = str
 
@@ -101,3 +102,11 @@ class HostNode(_MultiStateConversionModel):
 class ClusterVars(BaseModel):
     cluster: ClusterNode
     services: dict[str, ServiceNode]
+
+
+CurrentStep = dict[Literal["step", "stage"], str]
+
+
+class ProcessContext(TypedDict):
+    current: CurrentStep | None
+    stages: dict[str, dict]

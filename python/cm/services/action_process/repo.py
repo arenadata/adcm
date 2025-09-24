@@ -154,8 +154,8 @@ def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
     Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
 
 
-def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID) -> WasUpdated:
-    rows_matched = Process.objects.filter(id=process_id, sync_key=sync_key).update(sync_key=uuid4())
+def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID, new_sync_key: UUID) -> WasUpdated:
+    rows_matched = Process.objects.filter(id=process_id, sync_key=sync_key).update(sync_key=new_sync_key)
     return bool(rows_matched)
 
 

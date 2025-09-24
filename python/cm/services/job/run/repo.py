@@ -17,15 +17,19 @@ from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
 from typing import Collection, ContextManager, Iterable, TypeAlias
-from uuid import uuid4
 import operator
 
 from core.errors import NotFoundError
-from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
+from core.job.dto import (
+    JobUpdateDTO,
+    LogCreateDTO,
+    TaskMutableFieldsDTO,
+    TaskPayloadDTO,
+    TaskUpdateDTO,
+)
 from core.job.repo import ActionRepoInterface, JobRepoInterface
 from core.job.types import (
     ActionInfo,
-    AssociatedProcessInfo,
     BundleInfo,
     ExecutionStatus,
     HcAclRule,
@@ -43,8 +47,6 @@ from core.job.types import (
 )
 from core.types import (
     ActionID,
-    ActionProcessID,
-    ActionProcessStepID,
     ActionTargetDescriptor,
     ADCMCoreType,
     CoreObjectDescriptor,
@@ -76,16 +78,12 @@ from cm.models import (
     JobLog,
     JobStatus,
     LogStorage,
-    Process,
-    ProcessStep,
-    ProcessStepInput,
     Provider,
     Service,
     SubAction,
     TaskLog,
     Upgrade,
 )
-from cm.services.action_process.types import ProcessStepState
 
 TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 
@@ -137,11 +135,6 @@ class JobRepoImpl(JobRepoInterface):
                     root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
                 )
 
-        associated_process = None
-        if step_data := ProcessStepInput.objects.filter(job_id=id).values_list("step_id", "step__process_id").first():
-            step_id, process_id = step_data
-            associated_process = AssociatedProcessInfo(process_id=process_id, step_id=step_id)
-
         return Task(
             id=id,
             target=target_,
@@ -156,7 +149,7 @@ class JobRepoImpl(JobRepoInterface):
                 is_upgrade=Upgrade.objects.filter(action=task_record.action).exists(),
                 is_host_action=task_record.action.host_action,
             ),
-            process=associated_process,
+            action_process=task_record.process,
             bundle=bundle,
             verbose=task_record.verbose,
             config=task_record.config,
@@ -231,6 +224,7 @@ class JobRepoImpl(JobRepoInterface):
             status=ExecutionStatus.CREATED.value,
             selector=selector,
             is_blocking=payload.is_blocking,
+            process=payload.process.model_dump(mode="json") if payload.process else None,
         )
 
         return cls.get_task(id=task.pk)
@@ -529,32 +523,6 @@ class JobRepoImpl(JobRepoInterface):
     @staticmethod
     def close_old_connections() -> None:
         close_old_connections()
-
-    @staticmethod
-    def set_state_of_job_related_process_step(
-        process_id: ActionProcessID, step_id: ActionProcessStepID, state: str
-    ) -> None:
-        ProcessStep.objects.filter(id=step_id).update(state=state)
-        Process.objects.filter(id=process_id).update(sync_key=uuid4())
-
-    @staticmethod
-    def find_current_and_last_completed_process_steps(process_id) -> tuple[int | None, int | None]:
-        # TODO: this is copy from cm.services.action_process_operations.find_current_and_last_completed_steps
-        #  To solve the problem of cyclic imports.
-        current = None
-        last_completed = None
-
-        for id_, state in ProcessStep.objects.filter(process_id=process_id).values_list("id", "state").order_by("-id"):
-            if state in {ProcessStepState.CREATED, ProcessStepState.RUNNING}:
-                current = id_
-
-            if last_completed is None and state == ProcessStepState.COMPLETED:
-                last_completed = id_
-
-            if current and last_completed:
-                break
-
-        return current, last_completed
 
 
 class ActionRepoImpl(ActionRepoInterface):

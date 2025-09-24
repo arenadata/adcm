@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal, NamedTuple
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -125,8 +126,15 @@ class TaskActionInfo(NamedTuple):
     is_host_action: bool
 
 
-class AssociatedProcessInfo(NamedTuple):
-    process_id: int
+class AssociatedProcess(BaseModel):
+    # The process passed explicitly when launching the action.
+    id: int
+
+
+class CallingProcess(BaseModel):
+    # The process in which this task is called.
+    id: int
+    sync_key: UUID
     step_id: int
 
 
@@ -144,7 +152,7 @@ class Task(BaseModel):
     selector: dict
 
     action: TaskActionInfo
-    process: AssociatedProcessInfo | None
+    action_process: CallingProcess | AssociatedProcess | None
 
     verbose: bool
     hostcomponent: HostComponentChanges

@@ -17,15 +17,13 @@ import signal
 
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
-from core.job.types import AssociatedProcessInfo, ExecutionStatus, Job, Task, TaskOwner
+from core.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
     ActionID,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
 
-from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
-from cm.services.action_process.types import ProcessStepState
 from cm.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -278,9 +276,9 @@ class JobSequenceRunner(TaskRunner):
                 else finished_task.owner,
             )
 
-        if finished_task.process:
-            self._update_associated_process(
-                process=finished_task.process, action_id=task.action.id, task_owner=finished_task.owner
+        if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
+            self._update_calling_process(
+                process=finished_task.action_process, action_id=task.action.id, task_owner=finished_task.owner
             )
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
@@ -339,27 +337,19 @@ class JobSequenceRunner(TaskRunner):
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
-    def _update_associated_process(
-        self, process: AssociatedProcessInfo, action_id: ActionID, task_owner: TaskOwner | None
+    def _update_calling_process(
+        self, process: CallingProcess, action_id: ActionID, task_owner: TaskOwner | None
     ) -> None:
+        from cm.services.action_process.operations import complete_operation_step
+
         if not task_owner:
             raise RuntimeError("Task has no owner")
 
-        step_status = (
-            ProcessStepState.COMPLETED if self._runtime.status == ExecutionStatus.SUCCESS else ProcessStepState.CREATED
+        complete_operation_step(
+            process_id=process.id,
+            process_sync_key=process.sync_key,
+            step_id=process.step_id,
+            action_id=action_id,
+            object_=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
+            is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
         )
-        self._repo.set_state_of_job_related_process_step(
-            process_id=process.process_id, step_id=process.step_id, state=step_status.value
-        )
-
-        # TODO: where change current step ? ? ?
-
-        current_id, _ = self._repo.find_current_and_last_completed_process_steps(process_id=process.process_id)
-
-        if current_id:
-            context = RenderStepContext(
-                process_id=process.process_id,
-                action_id=action_id,
-                object=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
-            )
-            fill_step_spec(step_id=current_id, context=context)
