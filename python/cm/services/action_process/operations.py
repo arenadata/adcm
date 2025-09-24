@@ -14,9 +14,10 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Literal, TypeAlias
 from uuid import UUID
+import uuid
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
-from core.job.types import ActionInfo, JobSpec
+from core.job.types import ActionInfo, CallingProcess, JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
 from django.db.models import QuerySet
 from django.db.transaction import atomic
@@ -153,6 +154,26 @@ def complete_step(
         fill_step_spec(step_id=current_id, context=context)
 
 
+def complete_operation_step(
+    process_id: ActionProcessID,
+    process_sync_key: UUID,
+    step_id: ActionProcessStepID,
+    action_id: ActionID,
+    object_: CoreObjectDescriptor,
+    is_operation_success: bool,
+) -> None:
+    update_process_sync_key(process_id=process_id, sync_key=process_sync_key, new_sync_key=uuid.uuid4())
+
+    if not is_operation_success:
+        repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.CREATED))
+        # We are not deleting the ProcessStepInput, as it is forbidden to submit a complete step,
+        # and we expect that the user will have to reset this step or previous ones,
+        # which will entail deleting the current ProcessStepInput.
+        return
+
+    complete_step(process_id=process_id, step_id=step_id, action_id=action_id, object_=object_)
+
+
 def revoke_next_steps(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[int]:
     """
     Revokes all steps after the given step_id.
@@ -183,11 +204,11 @@ def retrieve_steps_starting_with_qs(process_id: ActionProcessID, step_id: Action
     return ProcessStep.objects.filter(process_id=process_id, id__gte=step_id)
 
 
-def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID) -> None:
+def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID, new_sync_key: UUID) -> None:
     """
     Find a process specified by process_id and sync_key and updates it's sync_key value
     """
-    if not repo.update_process_sync_key(process_id=process_id, sync_key=sync_key):
+    if not repo.update_process_sync_key(process_id=process_id, sync_key=sync_key, new_sync_key=new_sync_key):
         raise SyncKeyMismatchError(f"There is no #{process_id} process with sync_key {sync_key}")
 
 
@@ -223,9 +244,11 @@ def perform_operation(process_id: ActionProcessID, payload: OperationPayload, co
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
 
+    new_process_sync_key = uuid.uuid4()
+
     match payload.method:
         case ProcessOperationType.SUBMIT:
-            submit_step(process=process, payload=payload, context=context)
+            submit_step(process=process, payload=payload, context=context, new_process_sync_key=new_process_sync_key)
 
         case ProcessOperationType.RESET:
             reset_step(process=process, payload=payload, context=context)
@@ -234,10 +257,14 @@ def perform_operation(process_id: ActionProcessID, payload: OperationPayload, co
             complete_process(process=process)
             lower_flag(BuiltInFlag.ACTION_PROCESS_RUNNING.value.name, on_objects=[context.object])
 
-    update_process_sync_key(process_id=process_id, sync_key=payload.params.process_sync_key)
+    update_process_sync_key(
+        process_id=process_id, sync_key=payload.params.process_sync_key, new_sync_key=new_process_sync_key
+    )
 
 
-def submit_step(process: ActionProcess, payload: SubmitStepPayload, context: OperationContext) -> None:
+def submit_step(
+    process: ActionProcess, new_process_sync_key: UUID, payload: SubmitStepPayload, context: OperationContext
+) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
 
@@ -253,7 +280,11 @@ def submit_step(process: ActionProcess, payload: SubmitStepPayload, context: Ope
 
         case StepType.OPERATION:
             _operation_submit_job(
-                process=process, step_id=payload.params.step_id, parent_object=context.object, action=context.action
+                process=process,
+                step_id=payload.params.step_id,
+                new_process_sync_key=new_process_sync_key,
+                parent_object=context.object,
+                action=context.action,
             )
 
 
@@ -285,6 +316,7 @@ def process_payload_config(step: Step, config: Configuration) -> ConfigAttrPair:
 def _operation_submit_job(
     process: ActionProcess,
     step_id: int,
+    new_process_sync_key: UUID,
     *,
     parent_object: CoreObjectDescriptor,
     action: ActionInfo,
@@ -293,7 +325,9 @@ def _operation_submit_job(
 
     step = repo.retrieve_step(process_id=process.id, step_id=step_id)
     target = ActionTargetDescriptor(id=parent_object.id, type=parent_object.type)
-    payload = TaskPayloadDTO()
+    payload = TaskPayloadDTO(
+        process=CallingProcess(id=process.id, sync_key=new_process_sync_key, step_id=process.current_step_id)
+    )
 
     task = job_repo.create_task(target=target, owner=parent_object, action=action, payload=payload)
     job_repo.create_jobs(task_id=task.id, jobs=[JobSpec(**job) for job in step.step_spec])

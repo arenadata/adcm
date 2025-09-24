@@ -16,6 +16,8 @@ from typing import Any, Literal, TypeAlias, TypedDict
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
 
+from cm.services.job.inventory import ProcessContext
+
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
 ShortHostInfo: TypeAlias = ShortObjectInfo
 
@@ -92,6 +94,7 @@ class JobConfig(BaseModel):
     context: dict[str, Any]
     env: JobEnv
     job: JobData
+    process: ProcessContext | None = None
 
     def model_dump(self, **kwargs) -> dict[str, Any]:
         result = super().model_dump(**kwargs)

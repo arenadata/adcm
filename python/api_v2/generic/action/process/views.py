@@ -34,9 +34,10 @@ from cm.services.action_process.operations import (
 )
 from cm.services.action_process.types import Step, StepType
 from cm.services.bundle import BundlePathResolver
-from cm.services.concern.flags import BuiltInFlag, raise_flag
+from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy_for_flag
 from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.job.run.repo import ActionRepoImpl
+from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -130,10 +131,13 @@ class ActionProcessViewSet(
         # TODO: check if Process already exists
         with atomic():
             process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action_info)
-            raise_flag(
-                BuiltInFlag.ACTION_PROCESS_RUNNING.value,
-                on_objects=[CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))],
-            )
+            flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
+            targets = [CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))]
+            changed = raise_flag(flag=flag, on_objects=targets)
+
+            if changed:
+                added = update_hierarchy_for_flag(flag=flag, on_objects=targets)
+                notify_about_redistributed_concerns_from_maps(added=added, removed={})
 
         context = {
             "process_id": process_id,

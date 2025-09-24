@@ -1377,6 +1377,8 @@ class TaskLog(ADCMModel):
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
     executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
+    process = models.JSONField(null=True, default=None)
+
     """
     Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,
     but does affect concern interactions and action launch.

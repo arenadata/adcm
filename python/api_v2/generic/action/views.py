@@ -13,6 +13,11 @@
 from itertools import compress
 
 from adcm.mixins import GetParentObjectMixin
+from cm.converters import (
+    orm_object_to_action_target_descriptor,
+    orm_object_to_action_target_type,
+    orm_object_to_core_descriptor,
+)
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -26,6 +31,8 @@ from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_js
 from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
 from core.cluster.types import HostComponentEntry
+from core.job.types import AssociatedProcess
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
 from rest_framework.decorators import action
@@ -44,6 +51,7 @@ from api_v2.generic.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.generic.action.utils import (
+    check_process_object,
     filter_actions_by_user_perm,
     get_action_configuration,
     get_action_processes,
@@ -142,11 +150,23 @@ class ActionViewSet(
 
     def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
         self.parent_object = self.get_parent_object()
-        action_ = self.get_object()
+        action_: Action = self.get_object()
 
         self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self._get_actions_owner())
+
+        # processes = None - If processes are not supported by the action.
+        # processes = [] - If processes is supported by the action, but there are no created processes yet.
+        # processes = [last created process] - If processes are is supported by the action and the processes exists.
+        processes = None
+
+        if action_.wizard_template and orm_object_to_action_target_type(object_=self.parent_object) in (
+            ADCMCoreType.CLUSTER,
+            ADCMCoreType.SERVICE,
+            ADCMCoreType.COMPONENT,
+        ):
+            processes = get_action_processes(action=action_, object_=orm_object_to_core_descriptor(self.parent_object))
 
         serializer = self.get_serializer_class()(
             instance=action_,
@@ -155,7 +175,7 @@ class ActionViewSet(
                 "config_schema": config_schema,
                 "config": config,
                 "adcm_meta": adcm_meta,
-                "processes": get_action_processes(action_),
+                "processes": processes,
             },
         )
 
@@ -198,6 +218,13 @@ class ActionViewSet(
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
+        if serializer.validated_data["process"]:
+            check_process_object(
+                process_id=serializer.validated_data["process"]["id"],
+                action_id=target_action.id,
+                action_target=orm_object_to_action_target_descriptor(object_=self.parent_object),
+            )
+
         # As part of the ADCM-6747 task, we are leaving the old mechanism
         # for preparing the scripts from the jinja file.
         # use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers=request.headers)
@@ -215,6 +242,9 @@ class ActionViewSet(
                 },
                 verbose=serializer.validated_data["is_verbose"],
                 is_blocking=serializer.validated_data["should_block_object"],
+                process=AssociatedProcess(**serializer.validated_data["process"])
+                if serializer.validated_data["process"]
+                else None,
             ),
             feature_scripts_jinja=use_new_approach,
         )

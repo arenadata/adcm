@@ -159,6 +159,10 @@ components:
         shouldBlockObject:
           type: boolean
           default: true
+        process:
+          allOf:
+          - $ref: '#/components/schemas/ProcessId'
+          nullable: true
     ActionRunConfiguration:
       type: object
       properties:
@@ -2171,7 +2175,6 @@ components:
         currentStep:
           type: integer
           nullable: true
-          readOnly: true
         createdAt:
           type: string
           format: date-time
@@ -2188,6 +2191,13 @@ components:
       - createdAt
       - stages
       - syncKey
+    ProcessId:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+      - id
     ProcessShort:
       type: object
       properties:
@@ -2199,7 +2209,6 @@ components:
         currentStep:
           type: integer
           nullable: true
-          readOnly: true
         createdAt:
           type: string
           format: date-time
@@ -5651,21 +5660,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 3fc15b1a-d348-484e-a1e4-61cc45167238
+                    process_sync_key: 2af1219a-2ad3-43c0-932d-d89641a2896a
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 833535ea-4bb1-41ba-a16d-7bc52c8c659f
+                    process_sync_key: 249ed137-cfbb-4760-b605-75768ea9cabf
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: e581c202-4697-411c-b475-3758f2c92bfb
+                    process_sync_key: 70af4bd9-17f4-44fa-b2a1-b97883159191
                 summary: Reset operation
               CompleteOperation:
                 value:
@@ -9449,21 +9458,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 9348b51e-3473-48eb-9e09-30831ef7a695
+                    process_sync_key: 8d20fa2c-e7b9-40c5-87c2-1b2a85328c70
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 72e88390-164e-45df-b8c1-7ce15fe234a3
+                    process_sync_key: 504fce6d-8398-492d-b457-9aa6deacd1fe
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: 9fcd2e17-4fe8-4008-a3b2-b692f5d0fe6b
+                    process_sync_key: 19252c1a-a3f8-4a3d-aeab-c124a1f57045
                 summary: Reset operation
               CompleteOperation:
                 value:
@@ -11089,21 +11098,21 @@ paths:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 5413ea1d-8a0e-4923-b7f0-d01d85ef24dd
+                    process_sync_key: 3c40b9c2-d3d8-4032-9431-2dafde1d9271
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     step_id: 1
-                    process_sync_key: 246fc0fb-d08f-46aa-b1fb-420486b63a4c
+                    process_sync_key: fa291eb6-a12a-4a5b-a02c-af8ef410b0de
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     step_id: 1
-                    process_sync_key: f6d06b72-7139-4c8b-a4bf-bc3fe44eeb4d
+                    process_sync_key: 238f4dcd-8a8a-431d-8e11-b7ef9094eb28
                 summary: Reset operation
               CompleteOperation:
                 value:

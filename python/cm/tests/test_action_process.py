@@ -152,10 +152,10 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID):
-        from cm.services.bundle_alt.render._context import _get_action_process_context
+        from cm.services.job.inventory import get_action_process_context
 
         process = Process.objects.get(id=process_id)
-        return _get_action_process_context(process=process)
+        return get_action_process_context(process=process)
 
     def test_process_step_sequential_rendering(self):
         bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
@@ -190,7 +190,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
             ),
         )
 
-        submit_step(process=process, payload=payload, context=context)
+        submit_step(process=process, payload=payload, context=context, new_process_sync_key=uuid4())
 
         ctx = self.get_process_context(process_id)
         self.assertDictContainsSubset(

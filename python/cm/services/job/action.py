@@ -18,7 +18,7 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import ScriptType, Task, TaskMappingDelta
+from core.job.types import AssociatedProcess, ScriptType, Task, TaskMappingDelta
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -70,6 +70,7 @@ class ActionRunPayload:
     hostcomponent: set[HostComponentEntry] = field(default_factory=set)
     verbose: bool = False
     is_blocking: bool = True
+    process: AssociatedProcess | None = None
 
 
 def run_action(
@@ -110,6 +111,7 @@ def run_action(
         mapping_delta=delta,
         post_upgrade_hostcomponent=post_upgrade_hc,
         is_blocking=payload.is_blocking,
+        process=payload.process,
     )
 
     with atomic():

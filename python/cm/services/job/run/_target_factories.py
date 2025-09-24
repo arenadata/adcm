@@ -38,11 +38,12 @@ from cm.models import (
     Cluster,
     Component,
     LogStorage,
+    Process,
     Prototype,
     TaskLog,
 )
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
+from cm.services.job.inventory import get_action_process_context, get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -304,6 +305,7 @@ def _switch_hc_if_required(task: Task) -> None:
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
     job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration)
     job_run_dir = configuration.adcm.run_dir / str(job.id)
+
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
@@ -365,7 +367,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
     if task.config:
         job_data.config = task.config
 
-    params: dict = job.params.dict()
+    params: dict = job.params.model_dump()
     if not params["ansible_tags"]:
         # if it's empty, it shouldn't be included
         # and since it's the only "pre-defined" field we want empty dict if that's the case
@@ -373,6 +375,11 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
 
     if params:
         job_data.params = params
+
+    process_context = None
+
+    if task.action_process:
+        process_context = get_action_process_context(process=Process.objects.get(id=task.action_process.id))
 
     return JobConfig(
         adcm={"config": get_adcm_configuration()},
@@ -385,6 +392,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             status_api_token=configuration.integrations.status_server_token,
         ),
         job=job_data,
+        process=process_context,
     ).model_dump(exclude_unset=True)
 
 
