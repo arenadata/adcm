@@ -37,12 +37,15 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     Component,
+    ConfigLog,
     LogStorage,
     Process,
     Prototype,
     TaskLog,
 )
 from cm.services.cluster import retrieve_cluster_topology
+from cm.services.config import ConfigAttrPair
+from cm.services.config.spec import retrieve_flat_spec_for_objects
 from cm.services.job.inventory import get_action_process_context, get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
@@ -212,8 +215,6 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
 
 def internal_script_config_apply(task: Task, job: Job) -> int:
-    from ansible_plugin.executors.config import apply_config_changes
-
     owner_model = core_type_to_model(core_type=task.owner.type)
     # need to think if the owner object may be deleted during execution, need we check?
     owner = owner_model.objects.get(id=task.owner.id)
@@ -221,10 +222,62 @@ def internal_script_config_apply(task: Task, job: Job) -> int:
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(owner, change)
-        apply_config_changes(
+        _apply_config_changes(
             job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
         )
     return 0
+
+
+def _apply_config_changes(
+    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
+) -> tuple[dict, bool]:
+    from ansible_plugin.executors.config import _fill_config_and_attr
+
+    from cm.api import set_object_config_with_plugin
+
+    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
+    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
+
+    changes = _prepare_changes(parameters, spec)
+
+    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
+
+    if not changed:
+        return changes.config, False
+
+    set_object_config_with_plugin(
+        job_id=job_id,
+        obj=db_object,
+        config=configuration.config,
+        attr=configuration.attr,
+        description=changes_description,
+    )
+
+    return changes.config, True
+
+
+def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
+    changes = ConfigAttrPair(config={}, attr={})
+
+    for parameter in parameters:
+        key = parameter["key"]
+        value = parameter.get("value")
+
+        if "/" not in key:
+            key = f"{key}/"
+
+        param_spec = spec.get(key)
+        if not param_spec:
+            continue
+
+        if param_spec.type == "group" and param_spec.limits["activatable"]:
+            if not isinstance(value, bool):
+                raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"Value for {key} expected to be boolean")
+            changes.attr[key] = {"active": bool(value)}
+        else:
+            changes.config[key] = value
+
+    return changes
 
 
 def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:

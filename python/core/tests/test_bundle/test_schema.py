@@ -1421,7 +1421,7 @@ class TestWizardSchema(TestCase):
                       service_name: "{{ roles_generic_args.service_name }}"
                     parameters:
                       - key: "{{ ssl_key }}"
-                        active: true
+                        value: true
                   - object:
                       type: component
                       service_name: "{{ roles_generic_args.service_name }}"

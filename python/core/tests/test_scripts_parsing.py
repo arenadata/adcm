@@ -39,30 +39,7 @@ data = {
         "script": "config_apply",
         "script_type": "internal",
     },
-    "wrong_script_ADCM-6930": {
-        "name": "state_2",
-        "params": {
-            "changes": [
-                {"object": {"type": "cluster"}, "parameters": [{"key": "integer", "value": 99}]},
-                {
-                    "object": {"service_name": "service_two_components", "type": "service"},
-                    "parameters": [{"key": "string", "active": True, "value": "string"}],
-                },
-                {
-                    "object": {
-                        "component_name": "component_1",
-                        "service_name": "service_two_components",
-                        "type": "component",
-                    },
-                    "parameters": [{"key": "list", "value": [1, 2, 3]}],
-                },
-            ]
-        },
-        "script": "config_apply",
-        "script_type": "internal",
-        "error_message": "Could use only `value` or `active`, not both",
-    },
-    "wrong_script_active_and_value_missing": {
+    "wrong_script_value_missing": {
         "name": "state_2",
         "params": {
             "changes": [
@@ -83,7 +60,6 @@ data = {
         },
         "script": "config_apply",
         "script_type": "internal",
-        "error_message": "Either `value` or `active` should be specified",
     },
 }
 
@@ -101,7 +77,8 @@ class TestScriptsRendering(TestCase):
             "       1\n"
             "        parameters\n"
             "         0\n"
-            "         | value_error: Value error"
+            "          value\n"
+            "          | missing: Field required"
         )
 
         for case, case_data in data.items():
@@ -112,7 +89,6 @@ class TestScriptsRendering(TestCase):
                         context=ScriptsConversionContext(source_dir=Path(), action_allow_to_terminate=True),
                     )
                 else:
-                    error_message = case_data.pop("error_message")
                     with self.assertRaises(BundleParsingError) as cm:
                         parse_scripts(
                             [case_data],
@@ -121,4 +97,4 @@ class TestScriptsRendering(TestCase):
 
                     err_msg = str(cm.exception)
 
-                    self.assertIn(f"{expected_fragment}, {error_message}", err_msg)
+                    self.assertIn(expected_fragment, err_msg)

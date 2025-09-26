@@ -43,9 +43,30 @@ ParamValue: TypeAlias = Any
 OriginalValues: TypeAlias = ConfigAttrPair
 
 
-class ChangeConfigArguments(ConfigApplyParameterItem, BaseTypedArguments):
+class AdcmConfigParameterPluginItem(ConfigApplyParameterItem):
+    value: Any = None
+    active: bool | None = None
+
+    @model_validator(mode="after")
+    def check_one_is_specified(self):
+        if self.model_fields_set.issuperset({"active", "value"}):
+            message = "Could use only `value` or `active`, not both"
+            raise ValueError(message)
+
+        return self
+
+    @model_validator(mode="after")
+    def check_either_value_or_active(self):
+        if not self.model_fields_set.intersection({"active", "value"}):
+            message = "Either `value` or `active` should be specified"
+            raise ValueError(message)
+
+        return self
+
+
+class ChangeAdcmConfigArguments(AdcmConfigParameterPluginItem, BaseTypedArguments):
     # new API to change multiple parameters
-    parameters: list[ConfigApplyParameterItem] | None = None
+    parameters: list[AdcmConfigParameterPluginItem] | None = None
 
     # not required for old API for changing one parameter
     key: str | None = None
@@ -78,15 +99,18 @@ class ChangeConfigReturn(TypedDict):
     value: dict[str, ParamValue] | ParamValue
 
 
-class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, ChangeConfigReturn]):
+class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArguments, ChangeConfigReturn]):
     _config = PluginExecutorConfig(
-        arguments=ArgumentsConfig(represent_as=ChangeConfigArguments),
+        arguments=ArgumentsConfig(represent_as=ChangeAdcmConfigArguments),
         target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     @atomic()
     def __call__(
-        self, targets: Collection[CoreObjectDescriptor], arguments: ChangeConfigArguments, runtime: RuntimeEnvironment
+        self,
+        targets: Collection[CoreObjectDescriptor],
+        arguments: ChangeAdcmConfigArguments,
+        runtime: RuntimeEnvironment,
     ) -> CallResult[ChangeConfigReturn]:
         target, *_ = targets
 
