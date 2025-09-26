@@ -22,7 +22,7 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import { useClipboardCopy } from '@hooks';
-import { getViewNodeValue } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils.ts';
+import { getViewNodeValue } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;

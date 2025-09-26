@@ -1,0 +1,11 @@
+.actionWizardMap {
+  display: flex;
+  flex-direction: column;
+
+  &__title {
+    font-weight: 600;
+    font-size: 24px;
+    color: var(--color-green-light);
+    margin-bottom: var(--base-margin-v);
+  }
+}

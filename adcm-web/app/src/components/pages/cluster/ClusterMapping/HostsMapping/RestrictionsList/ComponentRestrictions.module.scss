@@ -1,6 +1,6 @@
 :global {
   body.theme-dark {
-    --component-restrictions-item-color: #989AA8;
+    --component-restrictions-item-color: var(--color-xdark-metal);
     --component-restrictions-constraint-item-color: var(--color-xwhite-off);
   }
 
@@ -12,7 +12,7 @@
 
 .componentRestrictions {
   font-size: 15px;
-  font-weight: 500px;
+  font-weight: 500;
 
   &__listItem {
     color: var(--component-restrictions-item-color);

@@ -1,5 +1,6 @@
 import type { AdcmMapping } from './clusterMapping';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from './configuration';
+import type { AdcmActionWizardProcess } from '@models/adcm/wizard';
 
 export enum AdcmHostComponentMapRuleAction {
   Add = 'add',
@@ -33,6 +34,8 @@ export interface AdcmDynamicActionDetails {
   disclaimer: string;
   hostComponentMapRules: AdcmHostComponentMapRule[];
   configuration: AdcmDynamicActionConfiguration | null;
+  startImpossibleReason: string;
+  processes: AdcmActionWizardProcess[] | null;
 }
 
 export interface AdcmDynamicActionRunConfig {
@@ -43,6 +46,9 @@ export interface AdcmDynamicActionRunConfig {
     config: ConfigurationData;
     adcmMeta: ConfigurationAttributes;
   } | null;
+  process?: {
+    id: number;
+  };
 }
 
 export type EntitiesDynamicActions = Record<number, AdcmDynamicAction[]>;

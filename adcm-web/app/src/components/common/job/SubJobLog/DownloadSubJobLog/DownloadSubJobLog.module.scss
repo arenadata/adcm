@@ -1,7 +1,7 @@
 :global {
   body.theme-dark {
     --download-subjob-log-icon-button-border: var(--color-xdark);
-    --download-subjob-log-icon-color: #989AA8;
+    --download-subjob-log-icon-color: var(--color-xdark-metal);
   }
 
   body.theme-light {
