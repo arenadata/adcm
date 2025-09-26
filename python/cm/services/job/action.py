@@ -40,10 +40,12 @@ from cm.models import (
     ConfigLog,
     Host,
     JobStatus,
+    Process,
     Provider,
     Service,
     TaskLog,
 )
+from cm.services.action_process.types import ProcessState
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.checks import check_mapping_restrictions
@@ -87,6 +89,14 @@ def run_action(
 
     if action_has_hc_acl and not action_objects.cluster:
         raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
+
+    # shouldn't be here, extract and check correctly
+    if action.wizard_template:
+        if payload.process is None:
+            raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
+
+        if not Process.objects.filter(id=payload.process.id, action=action, state=ProcessState.COMPLETED).exists():
+            raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
 
     _check_no_target_conflict(target=action_objects.target, action=action)
     check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)

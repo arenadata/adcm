@@ -40,10 +40,9 @@ def get_action_process_context(process: Process) -> ProcessContext:
                 }
                 flat_spec = convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=proto_flat_spec)
 
-                configuration = {"config": config_input["config"], "attr": config_input["attr"]}
-                update_configuration_for_inventory_inplace(
-                    configuration=configuration["config"],
-                    attributes=configuration["attr"],
+                configuration = update_configuration_for_inventory_inplace(
+                    configuration=config_input["config"],
+                    attributes=config_input["attr"],
                     specification=flat_spec,
                     config_owner=ProcessStepPair(process_id=process.id, step_id=step_obj.id),
                 )

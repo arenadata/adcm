@@ -200,9 +200,11 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         first_step = ctx["stages"]["first_stage"]["stage1_step1"]
         self.assertEqual(set(first_step.keys()), {"config"})
 
-        actual_config = first_step["config"]["config"]
-        self.assertEqual(actual_config["integer_field"], config["integer_field"])
-        self.assertEqual(actual_config["string_field"], config["string_field"])
+        actual_config = first_step["config"]
+        self.assertDictContainsSubset(
+            {"integer_field": config["integer_field"], "string_field": config["string_field"]}, actual_config
+        )
+
         self.assertIn("__ansible_vault", actual_config["g"]["pass"])
         self.assertNotEqual(actual_config["fl"], config["fl"])
         file_value = Path(actual_config["fl"])

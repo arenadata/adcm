@@ -13,11 +13,14 @@
 from dataclasses import dataclass
 
 from core.job.types import JobSpec
+from core.templates._errors import RenderError
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 
 from cm.converters import core_type_to_model
+from cm.errors import AdcmEx
+from cm.logger import logger
 from cm.services.action_process import repo
-from cm.services.action_process.types import DBPrototypeConfig, StepType, StepUpdateDTO
+from cm.services.action_process.types import DBPrototypeConfig, ProcessStepState, StepType, StepUpdateDTO
 from cm.services.bundle_alt.render import ActionArgs, Environment, TaskArgs, render_config, render_scripts
 
 
@@ -29,8 +32,12 @@ class RenderStepContext:
 
 
 def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext) -> None:
-    spec = _render_step(step_id=step_id, context=context)
-    repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
+    try:
+        spec = _render_step(step_id=step_id, context=context)
+        repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
+    except (RenderError, AdcmEx):
+        logger.exception(f"Failed to render step {step_id}")
+        repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.BROKEN))
 
 
 def _render_step(step_id: ActionProcessStepID, context: RenderStepContext) -> list[JobSpec] | list[DBPrototypeConfig]:
