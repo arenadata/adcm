@@ -78,7 +78,7 @@ class TestAPISchema(BaseAPITestCase):
         def scrub(obj):
             if isinstance(obj, dict):
                 for k, v in list(obj.items()):
-                    if k in ("version", "createdAt", "process_sync_key"):
+                    if k in ("version", "createdAt", "processSyncKey"):
                         obj[k] = "PLACEHOLDER"
                     else:
                         scrub(v)

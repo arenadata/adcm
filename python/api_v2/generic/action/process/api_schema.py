@@ -41,49 +41,54 @@ class Step(Serializer):
     state = CharField()
 
 
-class StepConfigurationInternals(Serializer):
-    config_schema = DictField()
+class SubmitStepConfiguration(Serializer):
     config = DictField()
     adcm_meta = DictField()
+
+
+class StepConfigurationInternals(SubmitStepConfiguration):
+    config_schema = DictField()
 
 
 class StepConfiguration(Step):
     configuration = StepConfigurationInternals()
 
 
+class StepTask(Serializer):
+    id = IntegerField()
+
+
 class StepOperation(Step):
     ui_options = DictField()
-    task = DictField(allow_null=True, required=False)
+    task = StepTask(allow_null=True)
 
 
-class ParamsSerializer(Serializer):
+class ResetStepParamsSerializer(Serializer):
     step_id = IntegerField()
     process_sync_key = UUIDField()
 
 
-class CompleteParamsSerializer(Serializer):
-    sync_key = UUIDField()
+class SubmitStepParamsSerializer(ResetStepParamsSerializer):
+    configuration = SubmitStepConfiguration(required=False)
 
 
-class SubmitConfig(Serializer):
-    method = ChoiceField(choices=[(ProcessOperationType.SUBMIT, "submit with configuration")])
-    configuration = DictField()
-    params = ParamsSerializer(required=True)
+class CompleteProcessParamsSerializer(Serializer):
+    process_sync_key = UUIDField()
 
 
-class SubmitOperation(Serializer):
-    method = ChoiceField(choices=[(ProcessOperationType.SUBMIT, "submit for operation")])
-    params = ParamsSerializer(required=True)
+class OperationSubmitStep(Serializer):
+    method = ChoiceField(choices=[(ProcessOperationType.SUBMIT.value, ProcessOperationType.SUBMIT.value)])
+    params = SubmitStepParamsSerializer(required=True)
 
 
-class ResetOperation(Serializer):
-    method = ChoiceField(choices=[(ProcessOperationType.RESET, ProcessOperationType.RESET)])
-    params = ParamsSerializer(required=True)
+class OperationResetStep(Serializer):
+    method = ChoiceField(choices=[(ProcessOperationType.RESET.value, ProcessOperationType.RESET.value)])
+    params = ResetStepParamsSerializer(required=True)
 
 
-class CompleteOperation(Serializer):
-    method = ChoiceField(choices=[(ProcessOperationType.COMPLETE, ProcessOperationType.COMPLETE)])
-    params = CompleteParamsSerializer(required=True)
+class OperationCompleteProcess(Serializer):
+    method = ChoiceField(choices=[(ProcessOperationType.COMPLETE.value, ProcessOperationType.COMPLETE.value)])
+    params = CompleteProcessParamsSerializer(required=True)
 
 
 example_process = OpenApiExample(
@@ -153,9 +158,12 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     "Submit configuration",
                     request_only=True,
                     value={
-                        "configuration": {"config": {"new": "config"}, "adcmMeta": {}},
                         "method": ProcessOperationType.SUBMIT.value,
-                        "params": {"step_id": 1, "process_sync_key": uuid4()},
+                        "params": {
+                            "stepId": 1,
+                            "configuration": {"config": {"new": "config"}, "adcmMeta": {}},
+                            "processSyncKey": uuid4(),
+                        },
                     },
                 ),
                 OpenApiExample(
@@ -163,7 +171,7 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.SUBMIT.value,
-                        "params": {"step_id": 1, "process_sync_key": uuid4()},
+                        "params": {"stepId": 1, "processSyncKey": uuid4()},
                     },
                 ),
                 OpenApiExample(
@@ -171,7 +179,7 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.RESET.value,
-                        "params": {"step_id": 1, "process_sync_key": uuid4()},
+                        "params": {"stepId": 1, "processSyncKey": uuid4()},
                     },
                 ),
                 OpenApiExample(
@@ -179,26 +187,17 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.COMPLETE.value,
-                        "params": {},
+                        "params": {"processSyncKey": uuid4()},
                     },
                 ),
             ],
             request=PolymorphicProxySerializer(
                 component_name=f"{object_type}Process",
-                serializers=[SubmitConfig, SubmitOperation, ResetOperation, CompleteOperation],
+                serializers=[OperationSubmitStep, OperationResetStep, OperationCompleteProcess],
                 resource_type_field_name="method",
             ),
             responses={
-                HTTP_200_OK: OpenApiResponse(
-                    response=PolymorphicProxySerializer(
-                        component_name=f"{object_type}Process",
-                        serializers=[
-                            ProcessSerializer,
-                        ],
-                        resource_type_field_name=None,
-                    ),
-                    examples=[example_process],
-                ),
+                HTTP_200_OK: OpenApiResponse(response=ProcessSerializer, examples=[example_process]),
                 HTTP_400_BAD_REQUEST: ErrorSerializer,
                 HTTP_404_NOT_FOUND: ErrorSerializer,
                 HTTP_409_CONFLICT: ErrorSerializer,
@@ -232,7 +231,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                 "displayName": "Stage2.Step2",
                                 "id": 1,
                                 "state": "created",
-                                "task": None,
+                                "task": {"id": 8},
                                 "type": "operation",
                                 "uiOptions": {"buttonName": "ButtonName"},
                             },

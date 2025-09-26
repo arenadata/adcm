@@ -589,29 +589,14 @@ components:
       - id
       - name
       - status
-    CompleteOperation:
+    CompleteProcessParams:
       type: object
       properties:
-        method:
-          $ref: '#/components/schemas/CompleteOperationMethodEnum'
-        params:
-          $ref: '#/components/schemas/CompleteParams'
-      required:
-      - method
-      - params
-    CompleteOperationMethodEnum:
-      enum:
-      - ProcessOperationType.COMPLETE
-      type: string
-      description: '* `complete` - complete'
-    CompleteParams:
-      type: object
-      properties:
-        syncKey:
+        processSyncKey:
           type: string
           format: uuid
       required:
-      - syncKey
+      - processSyncKey
     Component:
       type: object
       properties:
@@ -1524,6 +1509,51 @@ components:
         * `component` - component
         * `provider` - provider
         * `host` - host
+    OperationCompleteProcess:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationCompleteProcessMethodEnum'
+        params:
+          $ref: '#/components/schemas/CompleteProcessParams'
+      required:
+      - method
+      - params
+    OperationCompleteProcessMethodEnum:
+      enum:
+      - complete
+      type: string
+      description: '* `complete` - complete'
+    OperationResetStep:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationResetStepMethodEnum'
+        params:
+          $ref: '#/components/schemas/ResetStepParams'
+      required:
+      - method
+      - params
+    OperationResetStepMethodEnum:
+      enum:
+      - reset_step
+      type: string
+      description: '* `reset_step` - reset_step'
+    OperationSubmitStep:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationSubmitStepMethodEnum'
+        params:
+          $ref: '#/components/schemas/SubmitStepParams'
+      required:
+      - method
+      - params
+    OperationSubmitStepMethodEnum:
+      enum:
+      - submit_step
+      type: string
+      description: '* `submit_step` - submit_step'
     OriginType:
       enum:
       - local
@@ -1972,17 +2002,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
-    Params:
-      type: object
-      properties:
-        stepId:
-          type: integer
-        processSyncKey:
-          type: string
-          format: uuid
-      required:
-      - processSyncKey
-      - stepId
     PatchedCHG:
       type: object
       properties:
@@ -2663,21 +2682,17 @@ components:
       required:
       - id
       - username
-    ResetOperation:
+    ResetStepParams:
       type: object
       properties:
-        method:
-          $ref: '#/components/schemas/ResetOperationMethodEnum'
-        params:
-          $ref: '#/components/schemas/Params'
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
       required:
-      - method
-      - params
-    ResetOperationMethodEnum:
-      enum:
-      - ProcessOperationType.RESET
-      type: string
-      description: '* `reset_step` - reset_step'
+      - processSyncKey
+      - stepId
     Role:
       type: object
       properties:
@@ -3147,13 +3162,13 @@ components:
     StepConfigurationInternals:
       type: object
       properties:
-        configSchema:
-          type: object
-          additionalProperties: {}
         config:
           type: object
           additionalProperties: {}
         adcmMeta:
+          type: object
+          additionalProperties: {}
+        configSchema:
           type: object
           additionalProperties: {}
       required:
@@ -3174,47 +3189,46 @@ components:
         uiOptions:
           type: object
         task:
-          type: object
+          allOf:
+          - $ref: '#/components/schemas/StepTask'
           nullable: true
       required:
       - displayName
       - id
       - state
+      - task
       - type
       - uiOptions
-    SubmitConfig:
+    StepTask:
       type: object
       properties:
-        method:
-          $ref: '#/components/schemas/SubmitConfigMethodEnum'
-        configuration:
+        id:
+          type: integer
+      required:
+      - id
+    SubmitStepConfiguration:
+      type: object
+      properties:
+        config:
           type: object
-        params:
-          $ref: '#/components/schemas/Params'
+        adcmMeta:
+          type: object
       required:
-      - configuration
-      - method
-      - params
-    SubmitConfigMethodEnum:
-      enum:
-      - ProcessOperationType.SUBMIT
-      type: string
-      description: '* `submit_step` - submit with configuration'
-    SubmitOperation:
+      - adcmMeta
+      - config
+    SubmitStepParams:
       type: object
       properties:
-        method:
-          $ref: '#/components/schemas/SubmitOperationMethodEnum'
-        params:
-          $ref: '#/components/schemas/Params'
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
+        configuration:
+          $ref: '#/components/schemas/SubmitStepConfiguration'
       required:
-      - method
-      - params
-    SubmitOperationMethodEnum:
-      enum:
-      - ProcessOperationType.SUBMIT
-      type: string
-      description: '* `submit_step` - submit for operation'
+      - processSyncKey
+      - stepId
     TaskList:
       type: object
       properties:
@@ -3632,34 +3646,31 @@ components:
       - username
     clusterProcess:
       oneOf:
-      - $ref: '#/components/schemas/SubmitConfig'
-      - $ref: '#/components/schemas/SubmitOperation'
-      - $ref: '#/components/schemas/ResetOperation'
-      - $ref: '#/components/schemas/CompleteOperation'
+      - $ref: '#/components/schemas/OperationSubmitStep'
+      - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
         mapping:
-          null: '#/components/schemas/CompleteOperation'
+          null: '#/components/schemas/OperationCompleteProcess'
     componentProcess:
       oneOf:
-      - $ref: '#/components/schemas/SubmitConfig'
-      - $ref: '#/components/schemas/SubmitOperation'
-      - $ref: '#/components/schemas/ResetOperation'
-      - $ref: '#/components/schemas/CompleteOperation'
+      - $ref: '#/components/schemas/OperationSubmitStep'
+      - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
         mapping:
-          null: '#/components/schemas/CompleteOperation'
+          null: '#/components/schemas/OperationCompleteProcess'
     serviceProcess:
       oneOf:
-      - $ref: '#/components/schemas/SubmitConfig'
-      - $ref: '#/components/schemas/SubmitOperation'
-      - $ref: '#/components/schemas/ResetOperation'
-      - $ref: '#/components/schemas/CompleteOperation'
+      - $ref: '#/components/schemas/OperationSubmitStep'
+      - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
         mapping:
-          null: '#/components/schemas/CompleteOperation'
+          null: '#/components/schemas/OperationCompleteProcess'
   securitySchemes:
     cookieAuth:
       type: apiKey
@@ -5653,33 +5664,34 @@ paths:
             examples:
               SubmitConfiguration:
                 value:
-                  configuration:
-                    config:
-                      new: config
-                    adcmMeta: {}
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: 2af1219a-2ad3-43c0-932d-d89641a2896a
+                    stepId: 1
+                    configuration:
+                      config:
+                        new: config
+                      adcmMeta: {}
+                    processSyncKey: 30f8415a-3b55-4470-8a31-9916b508e213
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: 249ed137-cfbb-4760-b605-75768ea9cabf
+                    stepId: 1
+                    processSyncKey: 9bdb9fe6-a674-482a-8410-e3f746a7b978
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
-                    step_id: 1
-                    process_sync_key: 70af4bd9-17f4-44fa-b2a1-b97883159191
+                    stepId: 1
+                    processSyncKey: 17bdb403-01ca-4c33-b476-dc36158b2962
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
-                  params: {}
+                  params:
+                    processSyncKey: 9a0aa501-eff4-4405-9243-6d785b4e1b90
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5695,7 +5707,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/clusterProcess'
+                $ref: '#/components/schemas/Process'
               examples:
                 ProcessExample:
                   value:
@@ -5798,7 +5810,8 @@ paths:
                     displayName: Stage2.Step2
                     id: 1
                     state: created
-                    task: null
+                    task:
+                      id: 8
                     type: operation
                     uiOptions:
                       buttonName: ButtonName
@@ -9451,33 +9464,34 @@ paths:
             examples:
               SubmitConfiguration:
                 value:
-                  configuration:
-                    config:
-                      new: config
-                    adcmMeta: {}
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: 8d20fa2c-e7b9-40c5-87c2-1b2a85328c70
+                    stepId: 1
+                    configuration:
+                      config:
+                        new: config
+                      adcmMeta: {}
+                    processSyncKey: 2e417b21-3993-4c53-857f-5e61571faf11
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: 504fce6d-8398-492d-b457-9aa6deacd1fe
+                    stepId: 1
+                    processSyncKey: a488f0f4-2b5d-45b6-888e-94e1cdfba74e
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
-                    step_id: 1
-                    process_sync_key: 19252c1a-a3f8-4a3d-aeab-c124a1f57045
+                    stepId: 1
+                    processSyncKey: 37f01603-0f34-4479-a084-0528332223ea
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
-                  params: {}
+                  params:
+                    processSyncKey: 11e6df44-8ba1-4dc0-ac8e-b6680ca0a0d8
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -9493,7 +9507,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/serviceProcess'
+                $ref: '#/components/schemas/Process'
               examples:
                 ProcessExample:
                   value:
@@ -9602,7 +9616,8 @@ paths:
                     displayName: Stage2.Step2
                     id: 1
                     state: created
-                    task: null
+                    task:
+                      id: 8
                     type: operation
                     uiOptions:
                       buttonName: ButtonName
@@ -11091,33 +11106,34 @@ paths:
             examples:
               SubmitConfiguration:
                 value:
-                  configuration:
-                    config:
-                      new: config
-                    adcmMeta: {}
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: 3c40b9c2-d3d8-4032-9431-2dafde1d9271
+                    stepId: 1
+                    configuration:
+                      config:
+                        new: config
+                      adcmMeta: {}
+                    processSyncKey: 5a65ea9f-e8a0-437d-9c4c-95bc1062e14f
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
-                    step_id: 1
-                    process_sync_key: fa291eb6-a12a-4a5b-a02c-af8ef410b0de
+                    stepId: 1
+                    processSyncKey: d4d0932a-037d-4370-9517-2c80ac58b7da
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
-                    step_id: 1
-                    process_sync_key: 238f4dcd-8a8a-431d-8e11-b7ef9094eb28
+                    stepId: 1
+                    processSyncKey: 0eebdea1-568f-499f-9d6a-b542d3253d03
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
-                  params: {}
+                  params:
+                    processSyncKey: cf2cf45e-ea06-4b58-8bf2-c46c5962e08e
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11133,7 +11149,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/componentProcess'
+                $ref: '#/components/schemas/Process'
               examples:
                 ProcessExample:
                   value:
@@ -11248,7 +11264,8 @@ paths:
                     displayName: Stage2.Step2
                     id: 1
                     state: created
-                    task: null
+                    task:
+                      id: 8
                     type: operation
                     uiOptions:
                       buttonName: ButtonName

@@ -1039,7 +1039,6 @@ class ClusterActionProcessViewSet(ActionProcessViewSet):
     ...
 
 
-# TODO: document, audit
 @document_action_process_step_viewset(object_type="cluster")
 class ClusterActionProcessStepViewSet(ProcessStepViewSet):
     ...
