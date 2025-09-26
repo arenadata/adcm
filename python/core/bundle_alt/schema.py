@@ -389,24 +389,7 @@ class ComponentConfigApplyRule(ServiceConfigApplyRule):
 
 class ConfigApplyParameterItem(_BaseModel):
     key: str
-    value: Any = None
-    active: bool = None
-
-    @model_validator(mode="after")
-    def check_one_is_specified(self):
-        if self.model_fields_set.issuperset({"active", "value"}):
-            message = "Could use only `value` or `active`, not both"
-            raise ValueError(message)
-
-        return self
-
-    @model_validator(mode="after")
-    def check_either_value_or_active(self):
-        if not self.model_fields_set.intersection({"active", "value"}):
-            message = "Either `value` or `active` should be specified"
-            raise ValueError(message)
-
-        return self
+    value: Any
 
 
 class ConfigApplyObject(_BaseModel):
