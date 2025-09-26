@@ -1,0 +1,18 @@
+- name: Stage
+  display_name: Wizard
+  steps:
+    - name: step_correct
+      display_name: Correct
+      config_template:
+        file:
+          path: correct_config_step.j2
+        engine:
+          type: jinja2
+
+    - name: step_broken
+      display_name: Step
+      config_template:
+        file:
+          path: config_step.l2
+        engine:
+          type: jinja2

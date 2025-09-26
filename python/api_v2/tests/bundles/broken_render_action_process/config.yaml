@@ -28,7 +28,7 @@
       states:
         available: any
 
-    broken_operation_step:
+    broken_operation_step: &job
       type: job
       script: playbook.yaml
       script_type: ansible
@@ -39,3 +39,12 @@
           type: jinja2
       states:
         available: any
+
+    broken_second_step:
+      <<: *job
+      wizard_template:
+        file:
+          path: second_step_broken.j2
+        engine:
+          type: jinja2
+

@@ -92,6 +92,11 @@ class TestActionProcess(BaseAPITestCase):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
+    def initiate_process(self, owner, action, expected_status: int = HTTP_201_CREATED):
+        response = self.client.v2[owner, "actions", action, "processes"].post(data={})
+        self.assertEqual(response.status_code, expected_status, response.json())
+        return response
+
     def submit_config_step(self, obj: Cluster, process: Process, step_id: int, config_payload: dict) -> Response:
         process.refresh_from_db()
         endpoint = self.get_endpoint_to_processes(obj=obj) / process / "operation"
@@ -1205,18 +1210,72 @@ class TestActionProcess(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertIn("Extra inputs are not permitted", response.json()["desc"])
 
-    def test_render_broken_configuration_step_fail(self):
+    def test_render_broken_configuration_step_success(self):
+        # step is expected to be broken
         response = self.client.v2[
             self.cluster_broken_process, "actions", self.action_broken_configuration_step.id, "processes"
         ].post(data={})
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
-        self.assertIn("Input tag 'not_exist_type' found using 'type' does not match", response.json()["desc"])
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        first_step = response.json()["stages"][0]["steps"][0]
+        self.assertEqual(first_step["state"], "broken")
 
-    def test_render_broken_operation_step_fail(self):
+    def test_render_broken_operation_step_success(self):
+        # step is expected to be broken
         response = self.client.v2[
             self.cluster_broken_process, "actions", self.action_broken_operation_step.id, "processes"
         ].post(data={})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        first_step = response.json()["stages"][0]["steps"][0]
+        self.assertEqual(first_step["state"], "broken")
+
+    def test_adcm_7150_second_step_broken(self):
+        owner = self.cluster_broken_process
+        action = Action.objects.get(name="broken_second_step")
+        process: dict = self.initiate_process(owner, action).json()
+        correct_step, broken_step = tuple(ProcessStep.objects.filter(process_id=process["id"]).order_by("id"))
+
+        response = self.client.v2[owner, "actions", action, "processes", int(process["id"]), "operation"].post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": correct_step.pk,
+                    "processSyncKey": process["syncKey"],
+                    "configuration": {"config": {"string": "value"}, "adcmMeta": {}},
+                },
+            }
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        correct_step.refresh_from_db()
+        self.assertEqual(correct_step.state, ProcessStepState.COMPLETED)
+        broken_step.refresh_from_db()
+        self.assertEqual(broken_step.state, ProcessStepState.BROKEN)
+
+    def test_adcm_7150_error_running_process_action_without_process(self):
+        owner = self.cluster_1
+        action = self.cluster_with_action_process
+
+        response = self.client.v2[owner, "actions", action, "run"].post()
+
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
-        self.assertIn("Input tag 'no_exist_type' found using 'script_type' does not match", response.json()["desc"])
+        self.assertIn("Process must be specified", response.json()["desc"])
+
+    def test_adcm_7150_error_running_process_action_with_non_existent_process(self):
+        owner = self.cluster_1
+        action = self.cluster_with_action_process
+
+        response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": 4}})
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND, response.json())
+        self.assertIn("Process with id", response.json()["desc"])
+        self.assertIn("not exist", response.json()["desc"])
+
+    def test_adcm_7150_error_running_process_action_with_incomplete_process(self):
+        owner = self.cluster_1
+        action = self.cluster_with_action_process
+        process = self.initiate_process(owner, action).json()
+
+        response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": process["id"]}})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
+        self.assertIn("completed state", response.json()["desc"])
