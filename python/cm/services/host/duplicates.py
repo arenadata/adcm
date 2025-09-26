@@ -29,6 +29,9 @@ def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = 
         overrides = repo.DuplicateHostOverrides(name=name, description=f"Copied from {original.fqdn}")
         duplicate = repo.duplicate_host_record(host=original, overrides=overrides)
 
+        if original.config:
+            repo.prepare_symlinks_for_file_type(duplicate=duplicate)
+
         if cluster_id is not None:
             try:
                 cluster.perform_host_to_cluster_map(
