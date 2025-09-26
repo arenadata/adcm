@@ -1,0 +1,104 @@
+:global {
+  body.theme-dark {
+    --left-sidebar-border: var(--color-xdark);
+    --left-sidebar-background: var(--color-new-light);
+
+    --center-content-background: var(--color-xblack);
+
+    --title-label-color-normal: var(--color-xwhite-off);
+    --title-label-color-error: var(--color-light-red);
+    --title-label-color-running: var(--color-xblue);
+    --title-label-color-completed: var(--color-xgreen-saturated);
+
+    --title-tip-color: var(--color-xdark-metal);
+  }
+
+  body.theme-light {
+    --left-sidebar-border: var(--color-stroke-light);
+    --left-sidebar-background: var(--color-xgray-alt);
+
+    --center-content-background: var(--color-xwhite);
+
+    --title-label-color-normal: var(--color-xblack);
+    --title-label-color-error: var(--color-light-red);
+    --title-label-color-running: var(--color-xblue);
+    --title-label-color-completed: var(--color-xgreen);
+
+    --title-tip-color: var(--color-adcmx);
+  }
+}
+
+.actionWizardLayout {
+  display: flex;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+
+  &__leftSidebarWrap {
+    min-width: 250px;
+    max-width: 25%;
+    background-color: var(--left-sidebar-background);
+    padding: var(--page-padding-v);
+    overflow-y: auto;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: var(--page-padding-v);
+    background-color: var(--center-content-background);
+    gap: 20px;
+    overflow: auto;
+  }
+
+  &__header {
+    width: 100%;
+    display: inline-flex;
+    justify-content: space-between;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__runningIcon {
+    color: var(--title-label-color-running);
+  }
+
+  &__label {
+    --title-label-color: var(--title-label-color-normal);
+
+    font-weight: 600;
+    font-size: 24px;
+    color: var(--title-label-color);
+
+    &_running {
+      --title-label-color: var(--title-label-color-running);
+    }
+
+    &_completed {
+      --title-label-color: var(--title-label-color-completed);
+    }
+
+    &_error {
+      --title-label-color: var(--title-label-color-error) !important;
+    }
+  }
+
+  &__tip {
+    font-weight: 400;
+    font-size: 15px;
+    color: var(--title-tip-color);
+  }
+
+  &__exitButton {
+    height: 32px;
+    width: 96px;
+  }
+}

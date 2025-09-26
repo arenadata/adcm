@@ -1,0 +1,63 @@
+import { createClusterDynamicActionProcess } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { cleanupClustersWizard, getProcess } from '@store/adcm/clusters/clustersWizardSlice';
+import { closeClusterWizardDialog, openClusterWizardDialog } from '@store/adcm/clusters/clustersWizardActionsSlice';
+import { useDispatch, useStore } from '@hooks';
+import { useEffect, useState } from 'react';
+
+export const useClusterDynamicActionWizardDialog = () => {
+  const dispatch = useDispatch();
+  const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
+  const cluster = useStore((s) => s.adcm.clustersDynamicActions.dialog.cluster);
+  const processWithStages = useStore((s) => s.adcm.clustersWizard.process);
+
+  const [savedActionData, setSavedActionData] = useState<{
+    clusterId: number | null;
+    actionId: number | null;
+  }>({ clusterId: null, actionId: null });
+
+  useEffect(() => {
+    if (actionDetails && cluster) {
+      setSavedActionData({
+        clusterId: cluster.id,
+        actionId: actionDetails.id,
+      });
+    }
+  }, [actionDetails, cluster?.id]);
+
+  useEffect(() => {
+    if (!actionDetails || actionDetails.processes === null || !cluster) return;
+
+    if (actionDetails.processes.length === 0) {
+      dispatch(createClusterDynamicActionProcess({ clusterId: cluster.id, actionId: actionDetails.id }));
+    } else if (!processWithStages) {
+      dispatch(
+        getProcess({
+          clusterId: cluster.id,
+          actionId: actionDetails.id,
+          processId: actionDetails.processes[0].id,
+        }),
+      );
+    }
+  }, [dispatch, actionDetails, cluster?.id]);
+
+  useEffect(() => {
+    if (processWithStages && savedActionData.clusterId && savedActionData.actionId) {
+      dispatch(
+        openClusterWizardDialog({
+          process: processWithStages,
+          clusterId: savedActionData.clusterId,
+          actionId: savedActionData.actionId,
+        }),
+      );
+    }
+  }, [dispatch, processWithStages, savedActionData]);
+
+  const handleClose = () => {
+    dispatch(closeClusterWizardDialog());
+    dispatch(cleanupClustersWizard());
+  };
+
+  return {
+    onClose: handleClose,
+  };
+};

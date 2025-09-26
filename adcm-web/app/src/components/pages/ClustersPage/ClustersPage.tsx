@@ -8,12 +8,14 @@ import TableContainer from '@commonComponents/Table/TableContainer/TableContaine
 const ClusterPage = () => {
   useRequestClusters();
   return (
-    <TableContainer variant="easy">
-      <ClustersTableToolbar />
-      <ClustersTable />
-      <ClustersTableFooter />
+    <>
+      <TableContainer variant="easy">
+        <ClustersTableToolbar />
+        <ClustersTable />
+        <ClustersTableFooter />
+      </TableContainer>
       <Dialogs />
-    </TableContainer>
+    </>
   );
 };
 
