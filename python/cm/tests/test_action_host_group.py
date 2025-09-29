@@ -13,7 +13,7 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings
+from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
 
@@ -65,6 +65,13 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
             adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+            consul=ConsulSettings(
+                url=settings.CONSUL_URL,
+                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
+                client_cacert_file=settings.CONSUL_CACERT_FILE,
+                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
+                datacenter=settings.CONSUL_DATACENTER,
+            ),
         )
 
         self.action_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
@@ -157,6 +164,13 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                 adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
                 ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
                 integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+                consul=ConsulSettings(
+                    url=settings.CONSUL_URL,
+                    client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
+                    client_cacert_file=settings.CONSUL_CACERT_FILE,
+                    client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
+                    datacenter=settings.CONSUL_DATACENTER,
+                ),
             ),
         )
 

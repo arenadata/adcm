@@ -35,10 +35,19 @@ class IntegrationsSettings(NamedTuple):
     status_server_token: str
 
 
+class ConsulSettings(NamedTuple):
+    url: str | None
+    datacenter: str | None
+    client_cert_file: str | None
+    client_key_file: str | None
+    client_cacert_file: str | None
+
+
 class ExternalSettings(NamedTuple):
     adcm: ADCMSettings
     ansible: AnsibleSettings
     integrations: IntegrationsSettings
+    consul: ConsulSettings
 
 
 class JobFinalizer(Protocol):

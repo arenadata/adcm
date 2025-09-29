@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from typing import Literal, TypeAlias
+from uuid import UUID
 
 from core.types import ADCMCoreType, ComponentID, HostID, ObjectID
 from pydantic import BaseModel, ConfigDict, Field
@@ -60,6 +61,7 @@ class ClusterNode(_GenericInventoryNode):
     edition: str
 
     imports: dict | list | None = None
+    uuid: UUID
 
 
 class ServiceNode(_GenericInventoryNode):
@@ -68,6 +70,7 @@ class ServiceNode(_GenericInventoryNode):
 
     maintenance_mode: bool
     model_config = ConfigDict(extra="allow")
+    uuid: UUID
 
 
 class ComponentNode(_GenericInventoryNode):
@@ -76,6 +79,7 @@ class ComponentNode(_GenericInventoryNode):
 
     maintenance_mode: bool
     model_config = ConfigDict(populate_by_name=True)
+    uuid: UUID
 
 
 class ProviderNode(_MultiStateConversionModel):
@@ -93,6 +97,7 @@ class HostNode(_MultiStateConversionModel):
     id: HostID = Field(alias="adcm_hostid")
     state: str
     multi_state: list[str]
+    uuid: UUID
 
     cluster: ClusterNode | None = None
     services: dict[str, ServiceNode] | None = None

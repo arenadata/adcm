@@ -16,6 +16,7 @@ from functools import partial
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
+from uuid import UUID
 import json
 import traceback
 
@@ -355,6 +356,13 @@ def _switch_hc_if_required(task: Task) -> None:
 # ENVIRONMENT BUILDERS
 
 
+class UiidJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)
+        return super().default(obj)
+
+
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
     job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration)
     job_run_dir = configuration.adcm.run_dir / str(job.id)
@@ -364,7 +372,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
 
     inventory = prepare_ansible_inventory(task=task)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
-        json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
+        json.dump(obj=inventory, fp=file_descriptor, cls=UiidJSONEncoder, separators=(",", ":"))
 
     ansible_cfg_config_parser: ConfigParser = prepare_ansible_cfg(task=task)
     with (job_run_dir / "ansible.cfg").open(mode="w", encoding="utf-8") as config_file:
@@ -443,6 +451,11 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             tmp_dir=str(configuration.adcm.run_dir / str(job.id) / "tmp"),
             stack_dir=str(task.bundle.root),
             status_api_token=configuration.integrations.status_server_token,
+            consul_url=configuration.consul.url,
+            consul_datacenter=configuration.consul.datacenter,
+            consul_client_cert_file=configuration.consul.client_cert_file,
+            consul_client_key_file=configuration.consul.client_key_file,
+            consul_client_cacert_file=configuration.consul.client_cacert_file,
         ),
         job=job_data,
         process=process_context,
