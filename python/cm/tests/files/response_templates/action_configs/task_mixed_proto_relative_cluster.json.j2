@@ -34,7 +34,12 @@
     "log_dir": "{{ datadir }}/log",
     "tmp_dir": "{{ datadir }}/run/{{ job_id }}/tmp",
     "stack_dir": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}",
-    "status_api_token": "{{ token }}"
+    "status_api_token": "{{ token }}",
+    "consul_url": null,
+    "consul_datacenter": null,
+    "consul_client_cert_file": null,
+    "consul_client_key_file": null,
+    "consul_client_cacert_file": null
   },
   "job": {
     "id": {{ job_id }},

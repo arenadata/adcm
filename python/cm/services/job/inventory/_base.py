@@ -323,7 +323,9 @@ def _get_objects_basic_info(
                 # it should be placed in basic_nodes already, see comment for function that retrieves those
                 **objects_configuration[ADCMCoreType.HOST, host_info["id"]],
             )
-            for host_info in Host.objects.filter(id__in=hosts).order_by("id").values(*basic_fields, **basic_spec_fields)
+            for host_info in Host.objects.filter(id__in=hosts)
+            .order_by("id")
+            .values(*basic_fields, "uuid", **basic_spec_fields)
         }
 
     if providers := objects_in_inventory.get(ADCMCoreType.PROVIDER):
@@ -350,6 +352,7 @@ def _get_objects_basic_info(
             **Cluster.objects.values(
                 *basic_fields,
                 "name",
+                "uuid",
                 **basic_spec_fields,
                 version=F("prototype__version"),
                 edition=F("prototype__bundle__edition"),
@@ -372,6 +375,7 @@ def _get_objects_basic_info(
                 )
                 for service_info in Service.objects.values(
                     *basic_fields,
+                    "uuid",
                     **basic_spec_fields,
                     version=F("prototype__version"),
                     display_name=F("prototype__display_name"),
@@ -390,7 +394,7 @@ def _get_objects_basic_info(
                     ],
                 )
                 for component_info in Component.objects.values(
-                    *basic_fields, **basic_spec_fields, display_name=F("prototype__display_name")
+                    *basic_fields, "uuid", **basic_spec_fields, display_name=F("prototype__display_name")
                 ).filter(id__in=components)
             }
 

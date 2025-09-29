@@ -157,6 +157,8 @@ def get_on_fail_states(config: dict) -> tuple[str, list[str], list[str]]:
 def decrypt_secrets(source: dict) -> dict:
     result = {}
     for key, value in source.items():
+        if key == "uuid":
+            continue
         if not isinstance(value, dict):
             if isinstance(value, list):
                 result[key] = [entry if not isinstance(entry, dict) else decrypt_secrets(entry) for entry in value]
@@ -170,3 +172,12 @@ def decrypt_secrets(source: dict) -> dict:
             result[key] = decrypt_secrets(value)
 
     return result
+
+
+def strip_uuid(obj):
+    """Recursively remove 'uuid' keys from dicts and lists."""
+    if isinstance(obj, dict):
+        return {k: strip_uuid(v) for k, v in obj.items() if k != "uuid"}
+    if isinstance(obj, list):
+        return [strip_uuid(item) for item in obj]
+    return obj

@@ -45,6 +45,7 @@ from cm.tests.utils import (
     gen_prototype,
     gen_provider,
 )
+from cm.utils import strip_uuid
 
 
 class TestInventory(BaseTestCase):
@@ -143,7 +144,7 @@ class TestInventory(BaseTestCase):
             target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
             with self.subTest(obj=obj, inv=inv):
                 actual_data = get_inventory_data(target=target, is_host_action=action.host_action)
-                self.assertDictEqual(actual_data, inv)
+                self.assertDictEqual(strip_uuid(actual_data), inv)
 
 
 class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):

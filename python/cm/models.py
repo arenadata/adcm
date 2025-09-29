@@ -458,6 +458,7 @@ class Cluster(ADCMEntity):
         to="ActionHostGroup", object_id_field="object_id", content_type_field="object_type"
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     __error_code__ = "CLUSTER_NOT_FOUND"
 
@@ -535,6 +536,7 @@ class Host(ADCMEntity):
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
     original = models.ForeignKey("self", null=True, default=None, on_delete=models.CASCADE, related_name="duplicates")
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -596,6 +598,7 @@ class Service(ADCMEntity):
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -698,6 +701,7 @@ class Component(ADCMEntity):
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
