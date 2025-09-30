@@ -10,9 +10,8 @@ import {
   buildConfigurationNodes,
   iterateConfigurationNodes,
 } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
-import type { NodesDictionary } from './AdcmConfigEditor.types';
 import { swapTitleAsPropertyName as swapSchema } from '@utils/jsonSchema/jsonSchemaUtils';
-import type { ConfigurationNode } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationNode, NodesDictionary } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 import {
   MarkerSeverity,
   type IIdentifiedSingleEditOperation,

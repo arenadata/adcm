@@ -9,6 +9,7 @@
 }
 
 .pageSection {
+
   &:not(:last-child) {
     margin-bottom: var(--base-margin-v);
   }

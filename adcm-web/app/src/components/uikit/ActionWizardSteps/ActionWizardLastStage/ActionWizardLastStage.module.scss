@@ -1,0 +1,9 @@
+.actionWizardLastStage {
+
+  &__wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-margin-v);
+    margin-top: var(--base-margin-v);
+  }
+}

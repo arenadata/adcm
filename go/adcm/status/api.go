@@ -32,7 +32,7 @@ type AdcmApi struct {
 
 func newAdcmApi(secrets *SecretConfig) *AdcmApi {
 	return &AdcmApi{
-		Url:     "http://127.0.0.1:8000/api/v1",
+		Url:     "http://127.0.0.1:8000/api/v2",
 		Secrets: secrets,
 	}
 }
@@ -84,7 +84,7 @@ func (api *AdcmApi) getToken() (string, bool) {
 
 func (api *AdcmApi) checkAuth(token string) bool {
 	client := api.getClient()
-	req, _ := http.NewRequest("GET", api.Url+"/rbac/me/", nil)
+	req, _ := http.NewRequest("GET", api.Url+"/adcm/", nil)
 	req.Header.Add("Authorization", "Token "+token)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -102,7 +102,7 @@ func (api *AdcmApi) checkAuth(token string) bool {
 
 func (api *AdcmApi) checkSessionAuth(sessionId string) bool {
 	client := api.getClient()
-	req, _ := http.NewRequest("GET", api.Url+"/stack/", nil)
+	req, _ := http.NewRequest("GET", api.Url+"/adcm/", nil)
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: sessionId})
 	//logg.D.Printf(checkSessionAuth: client %+v, request %+v", client, req)
 	resp, err := client.Do(req)
@@ -125,7 +125,7 @@ func (api *AdcmApi) loadServiceMap() bool {
 		return false
 	}
 	client := api.getClient()
-	req, _ := http.NewRequest("PUT", api.Url+"/stack/load/servicemap/", nil)
+	req, _ := http.NewRequest("POST", api.Url+"/internal/unstable/status-server/sync/", nil)
 	req.Header.Add("Authorization", "Token "+token)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -146,7 +146,7 @@ func (api *AdcmApi) loadServiceMap() bool {
 		logg.E.Println("loadServiceMap: body read error: ", err)
 		return false
 	}
-	logg.D.Printf("loadServiceMap: call /stack/load/servicemap/ got %s response", resp.Status)
+	logg.D.Printf("loadServiceMap: call /internal/unstable/status-server/sync/ got %s response", resp.Status)
 	return true
 }
 

@@ -10,9 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 from cm.errors import raise_adcm_ex
+from cm.status_api import send_object_update_event
+from core.types import RBACCoreType
 from django.db import IntegrityError
-from django.db.transaction import atomic
+from django.db.transaction import atomic, on_commit
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
@@ -93,5 +97,19 @@ def role_update(role: Role, partial, **kwargs) -> Role:
 
     for policy in role.policy_set.order_by("id"):
         policy.apply()
+
+    on_commit(
+        func=functools.partial(
+            send_object_update_event,
+            obj_id=role.id,
+            obj_type=RBACCoreType.ROLE.value,
+            changes={
+                "name": role.name,
+                "description": role.description,
+                "displayName": role.display_name,
+                "children": [c.pk for c in role.child.all()],
+            },
+        )
+    )
 
     return role

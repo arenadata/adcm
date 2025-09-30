@@ -3,7 +3,6 @@ import type { ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { textToDataTestValue } from '@utils/dataTestUtils';
-import Icon from '@uikit/Icon/Icon';
 
 export interface AddItemNodeContentProps {
   node: ConfigurationNodeView;
@@ -25,9 +24,7 @@ const AddItemNodeContent = ({ node, onClick, dataTest }: AddItemNodeContentProps
       data-test={dataTest || textToDataTestValue(node.data.title)}
       onClick={handleClick}
     >
-      <div className={cn(s.nodeContent__title, s.addArrayItemNodeContent__content)}>
-        <Icon name="g3-add" size={14} /> {node.data.title}
-      </div>
+      <div className={cn(s.nodeContent__title, s.addArrayItemNodeContent__content)}>{node.data.title}</div>
     </div>
   );
 };

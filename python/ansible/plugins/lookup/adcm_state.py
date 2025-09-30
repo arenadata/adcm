@@ -14,15 +14,16 @@ import sys
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from cm.models import ADCMEntity, Cluster, Host, Provider, Service
-from cm.status_api import send_object_update_event
 
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
 from ansible_plugin.utils import get_service_by_name
+from cm.converters import orm_object_to_core_type
 from cm.logger import logger
+from cm.models import ADCMEntity, Cluster, Host, Provider, Service
+from cm.status_api import send_object_update_event
 
 DOCUMENTATION = """
     lookup: file
@@ -124,5 +125,5 @@ def set_service_state(cluster_id, service_id, state):
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     obj.set_state(state)
-    send_object_update_event(object_=obj, changes={"state": state})
+    send_object_update_event(obj_id=obj.pk, obj_type=orm_object_to_core_type(obj).value, changes={"state": state})
     return obj

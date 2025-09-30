@@ -40,7 +40,7 @@ const ConfigGroupCreateDialog: React.FC<ConfigGroupCreateDialogProps> = ({ isCre
   const handleChangeName = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleChangeFormData({ name: event.target.value });
   };
-  const handleChangeDescription = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditDescription = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleChangeFormData({ description: event.target.value });
   };
 
@@ -60,7 +60,7 @@ const ConfigGroupCreateDialog: React.FC<ConfigGroupCreateDialogProps> = ({ isCre
           <Input value={formData.name} onChange={handleChangeName} />
         </FormField>
         <FormField label="Description">
-          <Input value={formData.description} onChange={handleChangeDescription} />
+          <Input value={formData.description} onChange={handleEditDescription} />
         </FormField>
       </FormFieldsContainer>
     </DialogV2>

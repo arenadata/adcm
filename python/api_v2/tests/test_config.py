@@ -29,6 +29,7 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from cm.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -43,7 +44,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.tests.base import BaseAPITestCase
 
 CONFIGS = "configs"
@@ -2340,8 +2340,6 @@ class TestADCMConfig(BaseAPITestCase):
                     "verification_public_key": "\n",
                     "accept_only_verified_bundles": False,
                 },
-                "google_oauth": {"client_id": None, "secret": None},
-                "yandex_oauth": {"client_id": None, "secret": None},
                 "audit_data_retention": {
                     "log_rotation_on_fs": 365,
                     "log_rotation_in_db": 365,

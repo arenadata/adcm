@@ -39,6 +39,7 @@ export interface CreateAdcmClusterPayload {
   description: string;
 }
 
-export interface RenameAdcmClusterPayload {
-  name: string;
+export interface EditAdcmClusterPayload {
+  name?: string;
+  description?: string;
 }

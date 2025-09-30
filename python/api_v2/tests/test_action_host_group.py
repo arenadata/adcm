@@ -1027,6 +1027,26 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                         **self.prepare_audit_object_arguments(expected_object=action_run_target),
                     )
 
+    def test_adcm_6790_download_logs_ahg(self) -> None:
+        provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
+        host_1, host_2 = (self.add_host(provider=provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2))
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
+
+        group = self.group_map[self.cluster]
+        self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+        action = Action.objects.get(prototype=self.cluster.prototype, name="allowed_in_group_1")
+
+        with RunTaskMock() as run_task:
+            response = self.client.v2[group, "actions", action, "run"].post(
+                data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            run_task.target_task.refresh_from_db()
+
+            response = self.client.v2[run_task.target_task, "logs", "download"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
 
 class TestActionHostGroupRBAC(CommonActionHostGroupTest):
     def setUp(self) -> None:

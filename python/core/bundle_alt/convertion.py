@@ -228,6 +228,7 @@ def _extract_action(entity, context):
     _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
     _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
     _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
+    _fill_value(result, entity, "wizard_template")
 
     _patch_display_name(result, entity)
 

@@ -1,0 +1,10 @@
+- name: stage
+  display_name: Stage
+  steps:
+    - name: step
+      display_name: Step
+      config_template:
+        file:
+          path: configuration_step.j2
+        engine:
+          type: jinja2

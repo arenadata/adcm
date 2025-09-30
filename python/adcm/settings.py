@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import timedelta
 from json import JSONDecodeError
 from pathlib import Path
 import os
@@ -78,7 +79,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "api.apps.APIConfig",
     "rest_framework.authtoken",
     "social_django",
     "guardian",
@@ -190,8 +190,6 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "guardian.backends.ObjectPermissionBackend",
     "rbac.ldap.CustomLDAPBackend",
-    "adcm.auth_backend.CustomYandexOAuth2",
-    "adcm.auth_backend.CustomGoogleOAuth2",
 )
 
 LANGUAGE_CODE = "en-us"
@@ -333,7 +331,8 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
-ADCM_HIDDEN_USERS = {"status", "system"}
+ADCM_STATUS_USERNAME = "status"
+ADCM_HIDDEN_USERS = {ADCM_STATUS_USERNAME, "system"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_FILE_FIELD_TYPES = {"file", "secretfile"}
@@ -348,15 +347,19 @@ STATUS_REQUEST_TIMEOUT = 0.1
 JOB_TYPE = "job"
 TASK_TYPE = "task"
 
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "ADCM API",
     "DESCRIPTION": "Arenadata Cluster Manager",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SCHEMA_PATH_PREFIX": r"/api/v[2-9]",
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
+    "PREPROCESSING_HOOKS": [
+        "adcm.api_schema.preprocess_hook_exclude_internal_from_schema",
+    ],
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",
@@ -365,6 +368,7 @@ SPECTACULAR_SETTINGS = {
         "adcm.api_schema.postprocess_hook_exclude_advanced_filters",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
+        "adcm.api_schema.add_additional_properties",
     ],
     "ENUM_NAME_OVERRIDES": {
         "MaintenanceModeEnum": "cm.models.MaintenanceMode",
@@ -378,6 +382,7 @@ SPECTACULAR_SETTINGS = {
         "OriginType": "rbac.models.OriginType",
         "RoleTypeEnum": "rbac.models.RoleTypes",
     },
+    "GENERIC_ADDITIONAL_PROPERTIES": None,
 }
 
 USERNAME_MAX_LENGTH = 150
@@ -388,3 +393,5 @@ STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH = STDOUT_STDERR_LOG_CUT_LENGTH * STDOUT_STDER
 STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via link>"
 
 TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
+
+ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=2)

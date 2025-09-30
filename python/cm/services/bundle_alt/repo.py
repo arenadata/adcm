@@ -54,12 +54,6 @@ def find_bundle_by_hash(hash_: str) -> Bundle | None:
     return Bundle.objects.filter(hash=hash_).first()
 
 
-def order_versions():
-    # COPIED FROM cm.bundle
-    _order_model_versions(Prototype)
-    _order_model_versions(Bundle)
-
-
 def _order_model_versions(model):
     # COPIED FROM cm.bundle
     items = []
@@ -296,6 +290,7 @@ def _action_definition_to_model(definition: ActionDefinition, prototype: Prototy
         allow_in_maintenance_mode=definition.allow_in_maintenance_mode,
         config_jinja=definition.config_jinja,
         scripts_jinja=definition.scripts_jinja if definition.scripts_jinja else "",
+        wizard_template=definition.wizard_template,
     )
 
 

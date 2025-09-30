@@ -15,7 +15,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from core.job.types import ExecutionStatus, HostComponentChanges, TaskMappingDelta
+from core.job.types import AssociatedProcess, CallingProcess, ExecutionStatus, HostComponentChanges, TaskMappingDelta
 
 
 class TaskUpdateDTO(BaseModel):
@@ -54,6 +54,8 @@ class TaskPayloadDTO:
     post_upgrade_hostcomponent: list[dict] | None = None
 
     is_blocking: bool = True
+
+    process: CallingProcess | AssociatedProcess | None = None
 
 
 class TaskMutableFieldsDTO(BaseModel):

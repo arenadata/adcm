@@ -15,6 +15,8 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar
 import os
 
+from cm.adcm_config.ansible import ansible_decrypt
+
 if TYPE_CHECKING:
     from cm.models import ADCMEntity
 
@@ -149,3 +151,22 @@ def get_on_fail_states(config: dict) -> tuple[str, list[str], list[str]]:
         raise TypeError(f'Unsupported "{ON_FAIL}" type: "{type(on_fail)}"')
 
     return state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset
+
+
+# TO DO: move the function back in python/cm/tests/test_inventory/base.py after old rendering mechanism is out of use
+def decrypt_secrets(source: dict) -> dict:
+    result = {}
+    for key, value in source.items():
+        if not isinstance(value, dict):
+            if isinstance(value, list):
+                result[key] = [entry if not isinstance(entry, dict) else decrypt_secrets(entry) for entry in value]
+            else:
+                result[key] = value
+            continue
+
+        if "__ansible_vault" in value:
+            result[key] = ansible_decrypt(value["__ansible_vault"])
+        else:
+            result[key] = decrypt_secrets(value)
+
+    return result

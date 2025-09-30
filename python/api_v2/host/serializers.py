@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from operator import attrgetter
+
 from adcm import settings
 from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Component, Host, MaintenanceMode, Provider
@@ -48,6 +50,23 @@ class HCComponentNameSerializer(ModelSerializer):
     class Meta:
         model = Component
         fields = ["id", "name", "display_name"]
+
+
+class HostDuplicateSerializer(ModelSerializer):
+    concerns = ConcernSerializer(many=True)
+    name = CharField(source="fqdn")
+    cluster = HostClusterSerializer()
+
+    class Meta:
+        model = Host
+        fields = [
+            "id",
+            "name",
+            "cluster",
+            "concerns",
+            "is_maintenance_mode_available",
+            "maintenance_mode",
+        ]
 
 
 class HostSerializer(WithStatusSerializer):
@@ -98,13 +117,29 @@ class HostSerializer(WithStatusSerializer):
         ).data
 
 
+class HostWithDuplicatesSerializer(HostSerializer):
+    duplicates = SerializerMethodField()
+
+    # TODO: add to schema
+    @staticmethod
+    def get_duplicates(instance: Host):
+        return HostDuplicateSerializer(
+            instance=sorted(instance.duplicates.all(), key=attrgetter("id")),
+            many=True,
+        ).data
+
+    class Meta:
+        model = Host
+        fields = HostSerializer.Meta.fields + ["duplicates"]
+
+
 class HostUpdateSerializer(ModelSerializer):
     name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         required=True,
         validators=[
-            HostUniqueValidator(queryset=Host.objects.all()),
+            HostUniqueValidator(queryset=Host.objects.filter(original__isnull=True)),
             StartMidEndValidator(
                 start=settings.ALLOWED_HOST_FQDN_START_CHARS,
                 mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
@@ -125,10 +160,11 @@ class HostCreateSerializer(EmptySerializer):
     name = CharField(
         allow_null=False,
         required=True,
+        min_length=2,
         max_length=253,
         help_text="fully qualified domain name",
         validators=[
-            HostUniqueValidator(queryset=Host.objects.all()),
+            HostUniqueValidator(queryset=Host.objects.filter(original__isnull=True)),
             StartMidEndValidator(
                 start=settings.ALLOWED_HOST_FQDN_START_CHARS,
                 mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
@@ -179,3 +215,20 @@ class HostAuditSerializer(ModelSerializer):
 
 class ManyHostAddSerializer(ListSerializer):
     child = HostAddSerializer()
+
+
+class CreateDuplicateSerializer(EmptySerializer):
+    name = CharField(
+        min_length=2,
+        max_length=253,
+        validators=[
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+    )
+    cluster_id = IntegerField(allow_null=True, default=None)

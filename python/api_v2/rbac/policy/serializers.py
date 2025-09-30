@@ -10,16 +10,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.rbac.policy.serializers import ObjectField
-from api.rbac.serializers import BaseRelatedSerializer
+from adcm.serializers import EmptySerializer
+from cm.models import Cluster, Component, Host, Provider, Service
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField, CharField
+from rest_framework.fields import BooleanField, CharField, JSONField
 from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
+import jsonschema
 
 from api_v2.rbac.group.serializers import GroupRelatedSerializer
 from api_v2.rbac.role.serializers import RoleRelatedSerializer
+
+
+class BaseRelatedSerializer(EmptySerializer):
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+        if "id" not in data:
+            raise ValidationError("This field may not be empty.")
+
+        return data["id"]
+
+
+class ObjectField(JSONField):
+    @staticmethod
+    def schema_validate(value):
+        schema = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "number"},
+                    "type": {
+                        "type": "string",
+                        "pattern": "^(cluster|service|component|provider|host)$",
+                    },
+                    "name": {
+                        "type": "string",
+                    },
+                },
+                "additionalProperties": True,
+                "required": ["id", "type"],
+            },
+        }
+
+        try:
+            jsonschema.validate(value, schema)
+        except jsonschema.ValidationError as e:
+            raise ValidationError("the field does not match the scheme") from e
+
+        return value
+
+    def to_internal_value(self, data):
+        self.schema_validate(data)
+        dictionary = {
+            "cluster": Cluster,
+            "service": Service,
+            "component": Component,
+            "provider": Provider,
+            "host": Host,
+        }
+
+        objects = []
+        for obj in data:
+            objects.append(dictionary[obj["type"]].obj.get(id=obj["id"]))
+
+        return objects
+
+    def to_representation(self, value):
+        data = []
+        for obj in value.all():
+            data.append(
+                {
+                    "id": obj.object_id,
+                    "type": obj.object.prototype.type,
+                    "name": obj.object.display_name,
+                },
+            )
+
+        return super().to_representation(data)
 
 
 class PolicyObjectField(ObjectField):

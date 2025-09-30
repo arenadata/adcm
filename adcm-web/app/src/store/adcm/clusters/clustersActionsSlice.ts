@@ -10,6 +10,7 @@ import {
   type AdcmPrototypeVersions,
   type CreateAdcmClusterPayload,
   type AdcmRenameArgs,
+  type AdcmEditDescriptionArgs,
 } from '@models/adcm';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 import type { ModalState } from '@models/modal';
@@ -22,6 +23,9 @@ interface AdcmClusterActionsState extends ModalState<AdcmCluster, 'cluster'> {
     cluster: AdcmCluster | null;
   };
   updateDialog: {
+    cluster: AdcmCluster | null;
+  };
+  descriptionDialog: {
     cluster: AdcmCluster | null;
   };
   relatedData: {
@@ -94,6 +98,18 @@ const renameClusterWithUpdate = createAsyncThunk(
   },
 );
 
+const editClusterDescriptionWithUpdate = createAsyncThunk(
+  'adcm/clustersActions/editClusterDescriptionWithUpdate',
+  async ({ id, description }: AdcmEditDescriptionArgs, thunkAPI) => {
+    try {
+      await AdcmClustersApi.patchCluster(id, { description });
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const createInitialState = (): AdcmClusterActionsState => ({
   createDialog: {
     isOpen: false,
@@ -102,6 +118,9 @@ const createInitialState = (): AdcmClusterActionsState => ({
     cluster: null,
   },
   deleteDialog: {
+    cluster: null,
+  },
+  descriptionDialog: {
     cluster: null,
   },
   relatedData: {
@@ -124,6 +143,12 @@ const clustersActionsSlice = createCrudSlice({
     closeClusterRenameDialog(state) {
       state.updateDialog.cluster = null;
     },
+    openClusterDescriptionChangeDialog(state, action) {
+      state.descriptionDialog.cluster = action.payload;
+    },
+    closeClusterDescriptionChangeDialog(state) {
+      state.descriptionDialog.cluster = null;
+    },
   },
   extraReducers(builder) {
     builder.addCase(loadPrototypesRelatedData.fulfilled, (state) => {
@@ -138,6 +163,9 @@ const clustersActionsSlice = createCrudSlice({
     builder.addCase(renameClusterWithUpdate.fulfilled, () => {
       return createInitialState();
     });
+    builder.addCase(editClusterDescriptionWithUpdate.fulfilled, () => {
+      return createInitialState();
+    });
     builder.addCase(deleteClusterWithUpdate.pending, (state) => {
       clustersActionsSlice.caseReducers.closeDeleteDialog(state);
     });
@@ -148,6 +176,8 @@ const {
   cleanupClustersActions,
   openClusterRenameDialog,
   closeClusterRenameDialog,
+  openClusterDescriptionChangeDialog,
+  closeClusterDescriptionChangeDialog,
   openCreateDialog,
   openUpdateDialog,
   openDeleteDialog,
@@ -156,10 +186,13 @@ const {
 export {
   createCluster,
   renameClusterWithUpdate as renameCluster,
+  editClusterDescriptionWithUpdate as editDescription,
   deleteClusterWithUpdate,
   cleanupClustersActions,
   openClusterRenameDialog,
   closeClusterRenameDialog,
+  openClusterDescriptionChangeDialog,
+  closeClusterDescriptionChangeDialog,
   openCreateDialog,
   openUpdateDialog,
   openDeleteDialog,

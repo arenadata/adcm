@@ -20,10 +20,13 @@ sys.path.append("/adcm/python")
 from jobs.scheduler.launcher import run_launcher_in_loop
 from jobs.scheduler.logger import logger
 from jobs.scheduler.monitor import run_monitor_in_loop
+from jobs.scheduler.recover import actualize_locks
 
 
 def main() -> None:
     logger.info(f"Scheduler started (pid: {os.getpid()})")
+
+    actualize_locks()
 
     launcher_proc = Process(target=run_launcher_in_loop, args=())
     launcher_proc.start()

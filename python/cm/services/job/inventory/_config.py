@@ -12,10 +12,12 @@
 
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import reduce
-from typing import Any, Iterable, Literal, NamedTuple
+from typing import Any, Iterable, Literal, NamedTuple, TypeAlias
 
 from core.cluster.types import ClusterTopology
+from core.config.types import AttrDict, ConfigDict
 from core.types import (
     ADCMCoreType,
     ConfigID,
@@ -25,12 +27,12 @@ from core.types import (
     PrototypeID,
 )
 from django.conf import settings
-from django.db.models import F, QuerySet, Value
+from django.db.models import F, Q, QuerySet, Value
+from django.db.models.functions import Coalesce
 
 from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
-from cm.services.config.types import AttrDict, ConfigDict
 from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
 from cm.services.job.inventory._types import ObjectsInInventoryMap
 
@@ -38,6 +40,15 @@ from cm.services.job.inventory._types import ObjectsInInventoryMap
 class _ObjectRequiredConfigInfo(NamedTuple):
     prototype_id: PrototypeID
     config_id: ConfigID
+
+
+ObjectConfigInfo: TypeAlias = dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]
+
+
+@dataclass(slots=True)
+class ProcessStepPair:
+    process_id: int
+    step_id: int
 
 
 def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
@@ -205,13 +216,27 @@ def get_adcm_configuration() -> dict[str, Any]:
 
 
 def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]:
+    # Refactoring is necessary.
+    # The current implementation is difficult to understand. Since the copies of the host
+    # do not have their own configuration, the original configuration must be used when generating
+    # the inventory file. 2 conditions have been added for this.
     query_for_objects_config_info: QuerySet = reduce(
         lambda left_qs, right_qs: left_qs.union(right_qs),
         (
-            orm_type.objects.filter(id__in=objects.get(core_type, ()), config__isnull=False).values(
+            (
+                orm_type.objects.filter(
+                    Q(config__isnull=False)
+                    | Q(config__isnull=True, original__isnull=False, original__config__isnull=False),
+                    id__in=objects.get(core_type, ()),
+                )
+                if core_type == ADCMCoreType.HOST
+                else orm_type.objects.filter(id__in=objects.get(core_type, ()), config__isnull=False)
+            ).values(
                 "id",
                 "prototype_id",
-                current_config_id=F("config__current"),
+                current_config_id=Coalesce("original__config__current", "config__current")
+                if core_type == ADCMCoreType.HOST
+                else F("config__current"),
                 type=Value(core_type.value if isinstance(core_type, ADCMCoreType) else core_type),
             )
             for orm_type, core_type in (
@@ -237,7 +262,7 @@ def update_configuration_for_inventory_inplace(
     configuration: ConfigDict,
     attributes: AttrDict,
     specification: FlatSpec,
-    config_owner: CoreObjectDescriptor | GeneralEntityDescriptor,
+    config_owner: CoreObjectDescriptor | GeneralEntityDescriptor | ProcessStepPair,
     config_host_group_id: int | None = None,
 ) -> AttrDict:
     skip_deactivated_groups: set[str] = set()
@@ -311,7 +336,7 @@ def _to_unsafe_dict(value: str) -> dict[Literal["__ansible_unsafe"], str]:
 
 
 def _build_string_path_for_file(
-    object_itself: CoreObjectDescriptor | GeneralEntityDescriptor,
+    object_itself: CoreObjectDescriptor | GeneralEntityDescriptor | ProcessStepPair,
     config_key: str,
     config_subkey: str = "",
     config_host_group_id: int | None = None,
@@ -321,23 +346,33 @@ def _build_string_path_for_file(
     When it's about group config, pass its id alongside CoreObjectDescription (from owner of the group).
     When it's task, pass GeneralEntryDescriptor(id=task_id, type="task"),
     """
-    if not isinstance(object_itself, CoreObjectDescriptor):
-        type_as_string = object_itself.type
-    elif object_itself.type == ADCMCoreType.PROVIDER:
-        type_as_string = "provider"
-    else:
-        type_as_string = object_itself.type.value
-
-    if config_host_group_id is not None:
+    if isinstance(object_itself, ProcessStepPair):
         filename = [
-            type_as_string,
-            str(object_itself.id),
-            "group",
-            str(config_host_group_id),
+            "process",
+            str(object_itself.process_id),
+            "step",
+            str(object_itself.step_id),
             config_key,
             config_subkey,
         ]
     else:
-        filename = [type_as_string, str(object_itself.id), config_key, config_subkey]
+        if not isinstance(object_itself, CoreObjectDescriptor):
+            type_as_string = object_itself.type
+        elif object_itself.type == ADCMCoreType.PROVIDER:
+            type_as_string = "provider"
+        else:
+            type_as_string = object_itself.type.value
+
+        if config_host_group_id is not None:
+            filename = [
+                type_as_string,
+                str(object_itself.id),
+                "group",
+                str(config_host_group_id),
+                config_key,
+                config_subkey,
+            ]
+        else:
+            filename = [type_as_string, str(object_itself.id), config_key, config_subkey]
 
     return str(settings.FILE_DIR / ".".join(filename))

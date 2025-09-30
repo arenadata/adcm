@@ -15,11 +15,14 @@ export const allowIconsNames = [
   'g1-actions-disabled',
   'g1-add',
   'g1-block',
+  'g1-copy',
   'g1-check',
   'g1-config',
   'g1-delete',
   'g1-edit',
   'g1-history',
+  'g1-hourglass',
+  'g1-host-sharing',
   'g1-import',
   'g1-imports',
   'g1-info',
@@ -82,6 +85,7 @@ export const allowIconsNames = [
   'marker-info',
   'triangle-alert',
   'drag-handle',
+  'remove',
 ] as const;
 
 export type IconsNames = (typeof allowIconsNames)[number];

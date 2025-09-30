@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.8
+  version: 3.9
 
   actions:
     run_ldap_sync:
@@ -60,34 +60,6 @@
           default: adcm-usage-ss.arenadata.io
           ui_options:
             invisible: true
-    - name: "google_oauth"
-      display_name: "Google Auth"
-      type: "group"
-      subs:
-        - name: "client_id"
-          type: string
-          required: false
-        - name: "secret"
-          type: password
-          required: false
-          ui_options:
-            no_confirm: true
-      ui_options:
-        invisible: true
-    - name: "yandex_oauth"
-      display_name: "Yandex Auth"
-      type: "group"
-      subs:
-        - name: "client_id"
-          type: string
-          required: false
-        - name: "secret"
-          type: password
-          required: false
-          ui_options:
-            no_confirm: true
-      ui_options:
-        invisible: true
     - name: "audit_data_retention"
       display_name: "Data retention policy"
       type: "group"

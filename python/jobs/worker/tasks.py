@@ -14,7 +14,7 @@
 from cm.services.job.run import get_default_runner
 from core.types import TaskID
 
-from jobs.worker.app import app
+from jobs.worker.celery.worker import app
 
 
 @app.task(track_started=True)

@@ -21,26 +21,42 @@ interface LoadClusterHostsDynamicActionsPayload {
 const loadClusterHostsDynamicActions = createAsyncThunk(
   'adcm/cluster/hosts/hostsDynamicActions/LoadClusterHostsDynamicActions',
   async ({ clusterId, hosts }: LoadClusterHostsDynamicActionsPayload, thunkAPI) => {
+    const {
+      adcm: {
+        cluster: { cluster },
+      },
+    } = thunkAPI.getState();
+
     try {
-      const actionsPromises = await Promise.allSettled(
-        hosts.map(async ({ id: hostId }) => ({
+      const hostsActionsPromises = hosts.map(async ({ id: hostId }) => {
+        const ownActions = await AdcmClusterHostsApi.getClusterHostOwnActions(clusterId, hostId);
+
+        return {
           hostId,
-          dynamicActions: await AdcmClusterHostsApi.getClusterHostOwnActions(clusterId, hostId),
-        })),
-      );
-      const clusterHostsActions = fulfilledFilter(actionsPromises);
-      if (clusterHostsActions.length === 0 && hosts.length > 0) {
+          dynamicActions: cluster
+            ? [
+                ...ownActions,
+                ...(await AdcmClusterHostsApi.getClusterHostPrototypeActions(clusterId, hostId, cluster.prototype.id)),
+              ]
+            : ownActions,
+        };
+      });
+
+      const hostsActionsResults = await Promise.allSettled(hostsActionsPromises);
+
+      const fulfilledHostsActions = fulfilledFilter(hostsActionsResults);
+
+      if (fulfilledHostsActions.length === 0 && hosts.length > 0) {
         throw new Error('All hosts cannot get those actions');
       }
 
-      if (clusterHostsActions.length < hosts.length) {
+      if (fulfilledHostsActions.length < hosts.length) {
         throw new Error('Some hosts cannot get those actions');
       }
 
-      return clusterHostsActions.reduce(
+      return fulfilledHostsActions.reduce(
         (res, { hostId, dynamicActions }) => {
           res[hostId] = dynamicActions;
-
           return res;
         },
         {} as AdcmClusterHostsDynamicActionsState['clusterHostDynamicActions'],

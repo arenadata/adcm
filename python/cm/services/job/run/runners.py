@@ -17,8 +17,9 @@ import signal
 
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
-from core.job.types import ExecutionStatus, Job, Task, TaskOwner
+from core.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
+    ActionID,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
@@ -29,8 +30,7 @@ from cm.services.concern.locks import (
     update_task_flag_concern,
     update_task_lock_concern,
 )
-from cm.services.config import retrieve_primary_configs
-from cm.services.hierarchy import retrieve_object_hierarchy
+from cm.services.job.run import create_related_configs
 from cm.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -182,7 +182,7 @@ class JobSequenceRunner(TaskRunner):
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
-            self._update_job_related_configs(job_id=target.job.id, owner=task.owner)
+            create_related_configs(job_id=target.job.id, owner=task.owner)
 
         target.executor.execute()
 
@@ -276,6 +276,11 @@ class JobSequenceRunner(TaskRunner):
                 else finished_task.owner,
             )
 
+        if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
+            self._update_calling_process(
+                process=finished_task.action_process, action_id=task.action.id, task_owner=finished_task.owner
+            )
+
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)
 
@@ -332,22 +337,19 @@ class JobSequenceRunner(TaskRunner):
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
-    def _update_job_related_configs(self, job_id: int, owner: TaskOwner) -> None:
-        object_ = CoreObjectDescriptor(id=owner.id, type=owner.type)
+    def _update_calling_process(
+        self, process: CallingProcess, action_id: ActionID, task_owner: TaskOwner | None
+    ) -> None:
+        from cm.services.action_process.operations import complete_operation_step
 
-        if owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
-            # ADCM-6770
-            # Please note that the service and components may be deleted while the task is running.
-            # That is, the task container is deleted during its execution, and after deletion,
-            # the task must be executed and successfully interact with other objects.
-            cluster = owner.related_objects.cluster
+        if not task_owner:
+            raise RuntimeError("Task has no owner")
 
-            if cluster is None:
-                raise RuntimeError(f"Cluster missing for {owner}")
-
-            object_ = CoreObjectDescriptor(id=cluster.id, type=cluster.type)
-
-        hierarchy = retrieve_object_hierarchy(object_=object_)
-        related_configs = retrieve_primary_configs(objects=hierarchy)
-
-        self._repo.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+        complete_operation_step(
+            process_id=process.id,
+            process_sync_key=process.sync_key,
+            step_id=process.step_id,
+            action_id=action_id,
+            object_=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
+            is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
+        )

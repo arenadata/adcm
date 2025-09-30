@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 
 from cm.converters import core_type_to_model
@@ -18,7 +19,6 @@ from cm.models import Component, Host, Service
 
 def retrieve_object_hierarchy(object_: CoreObjectDescriptor) -> dict[ADCMCoreType, set[ObjectID]]:
     """Returns object's cluster-service-component, provider-host or ADCM hierarchy"""
-
     match object_.type:
         case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT:
             if object_.type == ADCMCoreType.CLUSTER:
@@ -35,6 +35,14 @@ def retrieve_object_hierarchy(object_: CoreObjectDescriptor) -> dict[ADCMCoreTyp
 
             if component_ids := set(Component.objects.filter(cluster_id=cluster_id).values_list("id", flat=True)):
                 hierarchy.update({ADCMCoreType.COMPONENT: component_ids})
+
+            return hierarchy
+
+        case ADCMCoreType.PROVIDER:
+            hierarchy = {object_.type: {object_.id}}
+
+            if host_ids := Host.objects.filter(provider_id=object_.id).values_list("id", flat=True):
+                hierarchy.update({ADCMCoreType.HOST: host_ids})
 
             return hierarchy
 

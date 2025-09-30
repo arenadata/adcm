@@ -30,10 +30,23 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
+from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
 from cm.errors import AdcmEx
-from cm.models import AnsibleConfig, Cluster, Component, LogStorage, Prototype, TaskLog
+from cm.models import (
+    ADCM,
+    AnsibleConfig,
+    Cluster,
+    Component,
+    ConfigLog,
+    LogStorage,
+    Process,
+    Prototype,
+    TaskLog,
+)
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
+from cm.services.config import ConfigAttrPair
+from cm.services.config.spec import retrieve_flat_spec_for_objects
+from cm.services.job.inventory import get_action_process_context, get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -65,6 +78,7 @@ class ExecutionTargetFactory:
             "bundle_switch": internal_script_bundle_switch,
             "bundle_revert": internal_script_bundle_revert,
             "hc_apply": internal_script_hc_apply,
+            "config_apply": internal_script_config_apply,
         }
 
     def __call__(
@@ -200,6 +214,96 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
     return 0
 
 
+def internal_script_config_apply(task: Task, job: Job) -> int:
+    owner_model = core_type_to_model(core_type=task.owner.type)
+    # need to think if the owner object may be deleted during execution, need we check?
+    owner = owner_model.objects.get(id=task.owner.id)
+
+    # are we going to allow to change one component from context of another?
+    for change in job.params.changes:
+        changing_object = _extract_apply_config_target(owner, change)
+        _apply_config_changes(
+            job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
+        )
+    return 0
+
+
+def _apply_config_changes(
+    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
+) -> tuple[dict, bool]:
+    from ansible_plugin.executors.config import _fill_config_and_attr
+
+    from cm.api import set_object_config_with_plugin
+
+    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
+    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
+
+    changes = _prepare_changes(parameters, spec)
+
+    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
+
+    if not changed:
+        return changes.config, False
+
+    set_object_config_with_plugin(
+        job_id=job_id,
+        obj=db_object,
+        config=configuration.config,
+        attr=configuration.attr,
+        description=changes_description,
+    )
+
+    return changes.config, True
+
+
+def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
+    changes = ConfigAttrPair(config={}, attr={})
+
+    for parameter in parameters:
+        key = parameter["key"]
+        value = parameter.get("value")
+
+        if "/" not in key:
+            key = f"{key}/"
+
+        param_spec = spec.get(key)
+        if not param_spec:
+            continue
+
+        if param_spec.type == "group" and param_spec.limits["activatable"]:
+            if not isinstance(value, bool):
+                raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"Value for {key} expected to be boolean")
+            changes.attr[key] = {"active": bool(value)}
+        else:
+            changes.config[key] = value
+
+    return changes
+
+
+def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:
+    # in order to preserve single mechanism with adcm_config plugin.
+    # Requires refactoring to move it common location with plugins
+    from ansible_plugin.base import (
+        CoreObjectTargetDescription,
+        _from_target_description,
+        build_vars_context_from_descriptor,
+    )
+    from ansible_plugin.errors import PluginTargetDetectionError
+
+    context = build_vars_context_from_descriptor(orm_object_to_core_descriptor(owner))
+    target_description = CoreObjectTargetDescription(**change["object"])
+
+    try:
+        target = _from_target_description(target_description, context)
+    except PluginTargetDetectionError as e:
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f"The configuration contains non-existing object of owner {change['object']}",
+        ) from e
+
+    return core_type_to_model(core_type=target.type).objects.get(pk=target.id)
+
+
 def _extract_mapping_delta_part(
     cluster_id: ClusterID, mapping_delta: TaskMappingDelta, hc_apply_rules: list[HcAclRule]
 ) -> TaskMappingDelta:
@@ -254,6 +358,7 @@ def _switch_hc_if_required(task: Task) -> None:
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
     job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration)
     job_run_dir = configuration.adcm.run_dir / str(job.id)
+
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
@@ -315,7 +420,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
     if task.config:
         job_data.config = task.config
 
-    params: dict = job.params.dict()
+    params: dict = job.params.model_dump()
     if not params["ansible_tags"]:
         # if it's empty, it shouldn't be included
         # and since it's the only "pre-defined" field we want empty dict if that's the case
@@ -323,6 +428,11 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
 
     if params:
         job_data.params = params
+
+    process_context = None
+
+    if task.action_process:
+        process_context = get_action_process_context(process=Process.objects.get(id=task.action_process.id))
 
     return JobConfig(
         adcm={"config": get_adcm_configuration()},
@@ -335,6 +445,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             status_api_token=configuration.integrations.status_server_token,
         ),
         job=job_data,
+        process=process_context,
     ).model_dump(exclude_unset=True)
 
 

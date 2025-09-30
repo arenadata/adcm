@@ -14,9 +14,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal, NamedTuple
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.templates import Template
 from core.types import (
     ActionID,
     ADCMCoreType,
@@ -50,11 +52,12 @@ class ScriptType(str, Enum):
     INTERNAL = "internal"
 
 
-class ActionInfo(NamedTuple):
+class ActionInfo(BaseModel):
     id: ActionID
     name: str
     owner_prototype: PrototypeDescriptor
     scripts_jinja: str
+    wizard_template: Template | None
 
 
 class StateChanges(NamedTuple):
@@ -123,6 +126,18 @@ class TaskActionInfo(NamedTuple):
     is_host_action: bool
 
 
+class AssociatedProcess(BaseModel):
+    # The process passed explicitly when launching the action.
+    id: int
+
+
+class CallingProcess(BaseModel):
+    # The process in which this task is called.
+    id: int
+    sync_key: UUID
+    step_id: int
+
+
 class Task(BaseModel):
     id: int
 
@@ -137,6 +152,7 @@ class Task(BaseModel):
     selector: dict
 
     action: TaskActionInfo
+    action_process: CallingProcess | AssociatedProcess | None
 
     verbose: bool
     hostcomponent: HostComponentChanges
@@ -185,3 +201,8 @@ class Job(BaseModel):
     params: JobParams
 
     on_fail: StateChanges
+
+
+class StepType(str, Enum):
+    OPERATION = "operation"
+    CONFIGURATION = "configuration"

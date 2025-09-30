@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import suppress
-from typing import TypeAlias
+from typing import TypeAlias, overload
 
 from cm.models import (
     Cluster,
@@ -24,51 +23,69 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host | None
+ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host
 
 
 class GetParentObjectMixin:
     kwargs: dict
 
-    def get_parent_object(self) -> ParentObject:
-        parent_object = None
+    @overload
+    def get_parent_object(self, raise_: None) -> ParentObject | None:
+        ...
 
-        with suppress(ObjectDoesNotExist):
-            if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
-                parent_object = Component.objects.select_related(
-                    "prototype", "cluster__prototype", "service__prototype"
-                ).get(
-                    pk=self.kwargs["component_pk"],
-                    cluster_id=self.kwargs["cluster_pk"],
-                    service_id=self.kwargs["service_pk"],
-                )
+    @overload
+    def get_parent_object(self, raise_: Exception) -> ParentObject:
+        ...
 
-            elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-                parent_object = Service.objects.select_related("prototype", "cluster__prototype").get(
-                    pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
-                )
+    @overload
+    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
+        ...
 
-            elif "cluster_pk" in self.kwargs and "host_pk" in self.kwargs:
-                parent_object = Host.objects.select_related(
-                    "prototype", "cluster__prototype", "provider__prototype"
-                ).get(pk=self.kwargs["host_pk"], cluster_id=self.kwargs["cluster_pk"])
+    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
+        try:
+            return self._get_parent_object_unsafe()
+        except ObjectDoesNotExist as e:
+            if raise_:
+                raise raise_ from e
 
-            elif "host_pk" in self.kwargs:
-                parent_object = Host.objects.select_related(
-                    "prototype", "cluster__prototype", "provider__prototype"
-                ).get(pk=self.kwargs["host_pk"])
+            return None
 
-            elif "cluster_pk" in self.kwargs:
-                parent_object = Cluster.objects.select_related("prototype").get(pk=self.kwargs["cluster_pk"])
+    def _get_parent_object_unsafe(self) -> ParentObject:
+        if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
+            parent_object = Component.objects.select_related(
+                "prototype", "cluster__prototype", "service__prototype"
+            ).get(
+                pk=self.kwargs["component_pk"],
+                cluster_id=self.kwargs["cluster_pk"],
+                service_id=self.kwargs["service_pk"],
+            )
 
-            elif "provider_pk" in self.kwargs:
-                parent_object = Provider.objects.select_related("prototype").get(pk=self.kwargs["provider_pk"])
+        elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
+            parent_object = Service.objects.select_related("prototype", "cluster__prototype").get(
+                pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
+            )
 
-            if "config_host_group_pk" in self.kwargs and parent_object:
-                parent_object = ConfigHostGroup.objects.get(
-                    pk=self.kwargs["config_host_group_pk"],
-                    object_id=parent_object.pk,
-                    object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
-                )
+        elif "cluster_pk" in self.kwargs and "host_pk" in self.kwargs:
+            parent_object = Host.objects.select_related("prototype", "cluster__prototype", "provider__prototype").get(
+                pk=self.kwargs["host_pk"], cluster_id=self.kwargs["cluster_pk"]
+            )
+
+        elif "host_pk" in self.kwargs:
+            parent_object = Host.objects.select_related("prototype", "cluster__prototype", "provider__prototype").get(
+                pk=self.kwargs["host_pk"]
+            )
+
+        elif "cluster_pk" in self.kwargs:
+            parent_object = Cluster.objects.select_related("prototype").get(pk=self.kwargs["cluster_pk"])
+
+        elif "provider_pk" in self.kwargs:
+            parent_object = Provider.objects.select_related("prototype").get(pk=self.kwargs["provider_pk"])
+
+        if "config_host_group_pk" in self.kwargs and parent_object:
+            parent_object = ConfigHostGroup.objects.get(
+                pk=self.kwargs["config_host_group_pk"],
+                object_id=parent_object.pk,
+                object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
+            )
 
         return parent_object

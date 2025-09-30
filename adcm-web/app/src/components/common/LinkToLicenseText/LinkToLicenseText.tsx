@@ -7,7 +7,7 @@ interface LinkToLicenseTextProps {
 
 const LinkToLicenseText: React.FC<LinkToLicenseTextProps> = ({ bundleId }) => {
   return (
-    <Link className="text-link" to={`/bundles/${bundleId}`} target="_blank">
+    <Link className="text-link" to={`/bundles/${bundleId}`} target="_blank" rel="noopener noreferrer">
       Terms of Agreement
     </Link>
   );

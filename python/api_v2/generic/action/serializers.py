@@ -12,6 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.models import Action
+from cm.services.action_process import repo
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, IntegerField
 from rest_framework.serializers import (
@@ -20,6 +21,8 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
+
+from api_v2.generic.action.process.serializers import ProcessShortSerializer
 
 
 class ActionListSerializer(ModelSerializer):
@@ -50,6 +53,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
     host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
     configuration = SerializerMethodField()
+    processes = SerializerMethodField()
 
     class Meta:
         model = Action
@@ -62,6 +66,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "host_component_map_rules",
             "disclaimer",
             "configuration",
+            "processes",
         ]
 
     @staticmethod
@@ -87,6 +92,24 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "adcm_meta": self.context["adcm_meta"],
         }
 
+    @extend_schema_field(field=ProcessShortSerializer(many=True))
+    def get_processes(self, _: Action) -> list[dict] | None:
+        processes = self.context.get("processes")
+        if processes is None:
+            return None
+        if not processes:
+            return []
+
+        serialized = []
+        for process in processes:
+            context = {
+                "process_id": process.pk,
+                "step_names_id_map": repo.retrieve_step_names_id_state_map(process_id=process.pk),
+            }
+            serialized.append(ProcessShortSerializer(process, context=context).data)
+
+        return serialized
+
 
 class HostComponentEntry(EmptySerializer):
     host_id = IntegerField()
@@ -104,8 +127,13 @@ class UpgradeRunSerializer(EmptySerializer):
     is_verbose = BooleanField(required=False, default=False)
 
 
+class ProcessIdSerializer(EmptySerializer):
+    id = IntegerField()
+
+
 class ActionRunSerializer(UpgradeRunSerializer):
     should_block_object = BooleanField(required=False, default=True, initial=True)
+    process = ProcessIdSerializer(required=False, default=None, allow_null=True, initial=None)
 
 
 class ActionNameSerializer(ModelSerializer):

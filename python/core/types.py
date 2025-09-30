@@ -24,9 +24,12 @@ ProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
+
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
 JobID: TypeAlias = int
+ActionProcessID: TypeAlias = int
+ActionProcessStepID: TypeAlias = int
 PID: TypeAlias = int
 
 ObjectConfigID: TypeAlias = int
@@ -76,13 +79,20 @@ class ADCMLocalizedError(ADCMCoreError):
         self.locations.append(location)
 
 
-class ADCMCoreType(Enum):
+class ADCMCoreType(str, Enum):
     ADCM = "adcm"
     CLUSTER = "cluster"
     SERVICE = "service"
     COMPONENT = "component"
     PROVIDER = "provider"
     HOST = "host"
+
+
+class RBACCoreType(Enum):
+    USER = "user"
+    GROUP = "group"
+    ROLE = "role"
+    POLICY = "policy"
 
 
 class ADCMHostGroupType(Enum):

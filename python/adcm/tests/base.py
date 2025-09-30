@@ -20,7 +20,6 @@ import random
 import string
 import tarfile
 
-from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
@@ -44,6 +43,7 @@ from cm.models import (
     Service,
 )
 from cm.services.bundle_alt.load import Directories, parse_bundle_archive
+from cm.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.services.job.action import prepare_task_for_action
 from cm.services.mapping import set_host_component_mapping
 from cm.utils import deep_merge
@@ -51,21 +51,19 @@ from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
 from core.job.types import Task
 from core.rbac.dto import UserCreateDTO
+from core.rbac.operations import add_user_to_groups
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.test import Client, TestCase, override_settings
-from django.urls import reverse
 from init_db import init
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.services.user import perform_user_creation
+from rbac.services.user import GroupDB, UserDB, create_new_user, perform_user_creation
 from rbac.upgrade.role import init_roles
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 APPLICATION_JSON = "application/json"
 
@@ -122,8 +120,16 @@ class BundleLogicMixin:
 
     @atomic()
     def add_bundle(self, source_dir: Path) -> Bundle:
+        if source_dir.is_dir():
+            archive = self.prepare_bundle_file(source_dir=source_dir)
+            archive_path = settings.DOWNLOAD_DIR / archive
+        else:
+            # for "easy" backward compatibility with "upload_and_load_bundle"
+            # which accepted path to already packed archive
+            archive_path = source_dir
+
         return parse_bundle_archive(
-            archive=settings.DOWNLOAD_DIR / self.prepare_bundle_file(source_dir=source_dir),
+            archive=archive_path,
             directories=Directories(
                 downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR
             ),
@@ -189,85 +195,35 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         self.login()
 
     def login(self):
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:token"),
-            data={"username": self.test_user_username, "password": self.test_user_password},
-            content_type=APPLICATION_JSON,
-        )
-        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+        # it may not be all correct since it used API based login, now Django based
+        self.client.login(username=self.test_user_username, password=self.test_user_password)
 
     @property
     @contextmanager
     def no_rights_user_logged_in(self):
-        self.client.post(path=reverse(viewname="v1:rbac:logout"))
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:token"),
-            data={
-                "username": self.no_rights_user_username,
-                "password": self.no_rights_user_password,
-            },
-            content_type=APPLICATION_JSON,
-        )
-        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+        # it may not be all correct since it used API based login, now Django based
+        self.client.logout()
 
-        yield
-
-        self.login()
+        with self.another_user_logged_in(username=self.no_rights_user_username, password=self.no_rights_user_password):
+            yield
 
     @contextmanager
     def another_user_logged_in(self, username: str, password: str):
-        self.client.post(path=reverse(viewname="v1:rbac:logout"))
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:token"),
-            data={
-                "username": username,
-                "password": password,
-            },
-            content_type=APPLICATION_JSON,
-        )
-        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+        self.client.login(username=username, password=password)
 
         yield
 
         self.login()
 
-    def another_user_log_in(self, username: str, password: str):
-        self.client.post(path=reverse(viewname="v1:rbac:logout"))
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:token"),
-            data={
-                "username": username,
-                "password": password,
-            },
-            content_type=APPLICATION_JSON,
-        )
-        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
-
     def get_new_user(self, username: str, password: str, group_pk: int | None = None) -> User:
-        data = {"username": username, "password": password}
+        data = UserCreateDTO(
+            username=username, password=password, email="", first_name="", last_name="", is_superuser=False
+        )
+        user_id = create_new_user(data=data, db=UserDB, password_requirements=None)
         if group_pk:
-            data["group"] = [{"id": group_pk}]
+            add_user_to_groups(user_id=user_id, groups=[group_pk], db=GroupDB)
 
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:user-list"),
-            data=data,
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return User.objects.get(pk=response.json()["id"])
-
-    def get_role_data(self, role_name: str) -> dict:
-        response: Response = self.client.get(
-            path=reverse(viewname="v1:rbac:role-list"),
-            data={"name": role_name, "type": "role", "view": "interface"},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        return response.json()["results"][0]
+        return User.objects.get(pk=user_id)
 
     def create_policy(
         self,
@@ -275,107 +231,24 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         obj: ADCMEntity,
         group_pk: int | None = None,
     ) -> int:
-        role_data = self.get_role_data(role_name=role_name)
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:policy-list"),
-            data={
-                "name": f"test_policy_{obj.prototype.type}_{obj.pk}_admin",
-                "role": {"id": role_data["id"]},
-                "group": [{"id": group_pk}],
-                "object": [{"name": obj.name, "type": obj.prototype.type, "id": obj.pk}],
-            },
-            content_type=APPLICATION_JSON,
+        policy_name = f"test_policy_{obj.prototype.type}_{obj.pk}_admin"
+        role = Role.objects.get(name=role_name)
+        policy = policy_create(
+            name=policy_name, role=role, group=[Group.objects.get(id=group_pk)] if group_pk else None, object=[obj]
         )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return response.json()["id"]
-
-    def create_role(
-        self,
-        role_name: str,
-        parametrized_by_type: list[ObjectType],
-        children_names: list[str],
-    ) -> Role:
-        request_data = {
-            "name": role_name,
-            "display_name": role_name,
-            "type": RoleTypes.ROLE,
-            "parametrized_by_type": parametrized_by_type,
-            "child": [],
-        }
-        for child_name in children_names:
-            response: Response = self.client.get(
-                path=reverse(viewname="v1:rbac:role-list"),
-                data={"name": child_name},
-                content_type=APPLICATION_JSON,
-            )
-
-            self.assertEqual(response.status_code, HTTP_200_OK)
-
-            request_data["child"].append({"id": response.json()["results"][0]["id"]})
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:rbac:role-list"),
-            data=request_data,
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return Role.objects.get(pk=response.json()["id"])
-
-    def upload_bundle(self, path: Path) -> None:
-        with open(path, encoding=settings.ENCODING_UTF_8) as f:
-            response: Response = self.client.post(
-                path=reverse(viewname="v1:upload-bundle"),
-                data={"file": f},
-            )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-    def load_bundle(self, path: Path) -> Bundle:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:load-bundle"),
-            data={"bundle_file": path.name},
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        return Bundle.objects.get(pk=response.data["id"])
+        return policy.pk
 
     def upload_and_load_bundle(self, path: Path) -> Bundle:
-        self.upload_bundle(path=path)
-
-        return self.load_bundle(path=path)
+        return self.add_bundle(source_dir=path)
 
     def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:cluster"),
-            data={
-                "prototype_id": Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER).pk,
-                "name": name,
-                "display_name": name,
-                "bundle_id": bundle_pk,
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return Cluster.objects.get(pk=response.json()["id"])
+        prototype = Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER)
+        return add_cluster(prototype=prototype, name=name)
 
     def create_service(self, cluster_pk: int, name: str) -> Service:
-        response = self.client.post(
-            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_pk}),
-            data={"prototype_id": Prototype.objects.get(name=name).pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return Service.objects.get(pk=response.json()["id"])
+        cluster = Cluster.objects.get(id=cluster_pk)
+        prototypes = Prototype.objects.filter(name=name, bundle_id=cluster.bundle_id).all()
+        return bulk_add_services_to_cluster(cluster=cluster, prototypes=prototypes).get()
 
     def upload_bundle_create_cluster_config_log(
         self, bundle_path: Path, cluster_name: str = "test-cluster"
@@ -387,41 +260,15 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
     def create_provider(self, bundle_path: Path, name: str) -> Provider:
         bundle = self.upload_and_load_bundle(path=bundle_path)
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:provider"),
-            data={
-                "prototype_id": Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER).pk,
-                "name": name,
-                "display_name": name,
-                "bundle_id": bundle.pk,
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        return Provider.objects.get(pk=response.json()["id"])
+        prototype = Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER)
+        return add_host_provider(prototype=prototype, name=name)
 
     def create_host_in_cluster(self, provider_pk: int, name: str, cluster_pk: int) -> Host:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"provider_id": provider_pk}),
-            data={"fqdn": name},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        host = Host.objects.get(pk=response.json()["id"])
-
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
-            data={"host_id": host.pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
+        provider = Provider.objects.get(pk=provider_pk)
+        prototype = Prototype.objects.get(bundle_id=provider.bundle_id, type="host")
+        cluster = Cluster.objects.get(pk=cluster_pk)
+        host = add_host(prototype=prototype, provider=provider, fqdn=name)
+        add_host_to_cluster(cluster=cluster, host=host)
         return host
 
     def create_new_config(self, config_data: dict) -> ObjectConfig:
@@ -438,15 +285,6 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
             hostcomponent_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service_pk})
 
         return hostcomponent_data
-
-    def create_hostcomponent(self, cluster_pk: int, hostcomponent_data: list[dict[str, int]]):
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster_pk}),
-            data={"cluster_id": cluster_pk, "hc": hostcomponent_data},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     @staticmethod
     def get_random_str_num(length: int) -> str:

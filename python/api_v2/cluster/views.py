@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Collection
+from typing import Collection
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -46,19 +46,21 @@ from cm.models import (
 )
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import (
+    ClusterDB,
     perform_host_to_cluster_map,
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
 )
 from cm.services.mapping import set_host_component_mapping
 from cm.services.status import notify
+from cm.status_api import send_object_update_event
 from core.bundle.operations import build_requires_dependencies_map
-from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
 from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
+    find_host_candidates_for_cluster,
 )
 from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
-from core.types import ComponentNameKey, ServiceNameKey
+from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -106,12 +108,19 @@ from api_v2.cluster.serializers import (
 )
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.process.api_schema import (
+    document_action_process_step_viewset,
+    document_action_process_viewset,
+)
+from api_v2.generic.action.process.audit import audit_action_process_viewset
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_actions_viewset,
     document_action_host_group_hosts_viewset,
     document_action_host_group_viewset,
 )
+from api_v2.generic.action_host_group.audit import audit_action_host_group_viewset
 from api_v2.generic.action_host_group.views import (
     ActionHostGroupActionsViewSet,
     ActionHostGroupHostsViewSet,
@@ -142,6 +151,7 @@ from api_v2.host.serializers import (
     HostChangeMaintenanceModeSerializer,
     HostMappingSerializer,
     HostSerializer,
+    HostShortSerializer,
     ManyHostAddSerializer,
 )
 from api_v2.host.utils import maintenance_mode
@@ -156,7 +166,7 @@ from api_v2.utils.audit import (
     set_removed_host_name,
     update_cluster_name,
 )
-from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
+from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -385,6 +395,12 @@ class ClusterViewSet(
         instance.name = valid_data.get("name", instance.name)
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
+
+        send_object_update_event(
+            instance.pk,
+            ADCMCoreType.CLUSTER.value,
+            changes={"name": instance.name, "description": instance.description},
+        )
 
         return Response(
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data
@@ -738,6 +754,13 @@ class ClusterViewSet(
 
         return Response(status=HTTP_200_OK, data=schema)
 
+    @action(methods=["get"], detail=True, pagination_class=None, filter_backends=[], url_path="host-candidates")
+    def host_candidates(self, request, *_, **kwargs):
+        cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
+        candidates = find_host_candidates_for_cluster(cluster_id=cluster.pk, db=ClusterDB)
+        serializer = HostShortSerializer(instance=candidates, many=True)
+        return Response(data=serializer.data, status=HTTP_200_OK)
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -805,7 +828,12 @@ class ClusterViewSet(
     ),
 )
 class HostClusterViewSet(
-    PermissionListMixin, ObjectWithStatusViewMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet
+    ClusterHostOperationHandleExceptionMixin,
+    PermissionListMixin,
+    ObjectWithStatusViewMixin,
+    RetrieveModelMixin,
+    ListModelMixin,
+    ADCMGenericViewSet,
 ):
     permission_required = [VIEW_HOST_PERM]
     permission_classes = [IsAuthenticated, HostsClusterPermissions]
@@ -819,13 +847,6 @@ class HostClusterViewSet(
     filterset_class = ClusterHostFilter
     audit_model_hint = Host
     retrieve_status_map_actions = ("list", "statuses")
-    exc_conversion_map = {
-        HostDoesNotExistError: AdcmEx("BAD_REQUEST", "At least one host does not exist."),
-        HostAlreadyBoundError: AdcmEx("HOST_CONFLICT", "At least one host is already associated with this cluster."),
-        HostBelongsToAnotherClusterError: AdcmEx(
-            "FOREIGN_HOST", "At least one host is already linked to another cluster."
-        ),
-    }
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":
@@ -851,9 +872,6 @@ class HostClusterViewSet(
             return by_cluster_qs.prefetch_related("hostcomponent_set__component__prototype")
 
         return by_cluster_qs
-
-    def handle_exception(self, exc: Any):
-        return super().handle_exception(self.exc_conversion_map.get(exc.__class__, exc))
 
     @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
     def create(self, request, *_, **kwargs):
@@ -988,6 +1006,7 @@ class ClusterHostActionViewSet(ActionViewSet):
 
 
 @document_action_host_group_viewset(object_type="cluster")
+@audit_action_host_group_viewset(parent_cluster_from_lookup)
 class ClusterActionHostGroupViewSet(ActionHostGroupViewSet):
     ...
 
@@ -1011,4 +1030,15 @@ class ClusterConfigViewSet(ConfigLogViewSet):
 @document_upgrade_viewset(object_type="cluster")
 @audit_upgrade_viewset(retrieve_owner=parent_cluster_from_lookup)
 class ClusterUpgradeViewSet(UpgradeViewSet):
+    ...
+
+
+@audit_action_process_viewset(retrieve_owner=parent_cluster_from_lookup)
+@document_action_process_viewset(object_type="cluster")
+class ClusterActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(object_type="cluster")
+class ClusterActionProcessStepViewSet(ProcessStepViewSet):
     ...

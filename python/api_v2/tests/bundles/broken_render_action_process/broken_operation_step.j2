@@ -1,0 +1,13 @@
+- name: stage
+  display_name: Stage
+  steps:
+    - name: step
+      display_name: Step
+      ui_options:
+        button_name: Run
+      scripts_template:
+        file:
+          path: operation_step.py
+          entrypoint: generate_scripts
+        engine:
+          type: python

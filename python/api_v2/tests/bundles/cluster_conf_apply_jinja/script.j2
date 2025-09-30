@@ -1,0 +1,24 @@
+- name: state_2                       
+  display name: "State 2"
+  script_type: internal
+  script: config_apply
+  params:
+    changes:
+      - object:
+          type: cluster
+        parameters:
+          - key: "{{ string_param }}"
+            value: "jinja"
+      - object:
+          type: service
+          service_name: "service_1"
+        parameters:
+          - key: "{{ int_param }}"
+            value: 67
+      - object:
+          type: component
+          service_name: "service_1"
+          component_name: "component_1_1"
+        parameters:
+          - key: "{{ option_listnodefault }}"
+            value: 80

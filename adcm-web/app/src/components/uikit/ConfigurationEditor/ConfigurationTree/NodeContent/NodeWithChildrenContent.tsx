@@ -3,6 +3,7 @@ import { isValueSet } from '@models/json';
 import type { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
+import st from '../../../CollapseTree2/CollapseNode.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
@@ -99,73 +100,97 @@ const NodeWithChildrenContent = ({
     onDragEnd?.(node, isDropped);
   };
 
+  const hasChildren = Boolean(node.children?.length);
+  const isExpandable = hasChildren;
+  const active = fieldAttributes?.isActive === undefined ? true : fieldAttributes.isActive;
+
   const className = cn(s.nodeContent, {
-    'is-open': isExpanded,
     'is-failed': errors !== undefined,
   });
 
-  const hasChildren = Boolean(node.children?.length);
-  const isExpandable = hasChildren && (fieldAttributes?.isActive === undefined ? true : fieldAttributes.isActive);
-
   return (
-    <div
-      ref={ref}
-      className={className}
-      draggable={isOverDragHandle}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      {fieldNodeData.isDraggable && (
-        <Icon
-          className={s.nodeContent__dragHandle}
-          name="drag-handle"
-          onMouseEnter={handleDragHandleMouseEnter}
-          onMouseLeave={handleDragHandleMouseLeave}
-        />
-      )}
-      {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
-        <ActivationAttribute
-          isActive={fieldAttributes.isActive}
-          isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
-          onToggle={handleIsActiveChange}
-        />
-      )}
-
-      {fieldNodeData.isCleanable && isValueSet(fieldNodeData.value) && (
-        <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
-      )}
-      {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
-      {errors && (
-        <Tooltip label={<FieldNodeErrors fieldErrors={errors} />}>
-          <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
-        </Tooltip>
-      )}
-      <span className={s.nodeContent__title} data-test="node-name">
-        {node.data.title}
-      </span>
-      {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
-        <SynchronizedAttribute
-          isSynchronized={fieldAttributes.isSynchronized}
-          {...adcmMeta.synchronization}
-          onToggle={handleIsSynchronizedChange}
-        />
-      )}
-      {!isValueSet(fieldNodeData.value) && (
-        <span className={s.nodeContent__value} data-test="null-stub">
-          {nullStub}
-        </span>
-      )}
-
+    <>
       {isExpandable && (
         <IconButton
-          icon="chevron"
-          size={12}
-          className={s.nodeContent__arrow}
+          icon={isExpanded ? 'remove' : 'g3-add'}
+          size={16}
+          className={cn(
+            s.nodeContent,
+            s.nodeContent__button,
+            s.expandButton,
+            st.expandButton,
+            isExpanded ? s.isExpanded : '',
+          )}
           onClick={handleExpandClick}
           data-test="expand-btn"
+          disabled={!active}
         />
       )}
-    </div>
+      <div
+        ref={ref}
+        className={className}
+        draggable={isOverDragHandle}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {fieldNodeData.isDraggable && (
+          <Icon
+            size={12}
+            className={s.nodeContent__dragHandle}
+            name="drag-handle"
+            onMouseEnter={handleDragHandleMouseEnter}
+            onMouseLeave={handleDragHandleMouseLeave}
+          />
+        )}
+        <span className={s.nodeContent__title} data-test="node-name">
+          {node.data.title}
+        </span>
+        {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
+          <SynchronizedAttribute
+            isSynchronized={fieldAttributes.isSynchronized}
+            {...adcmMeta.synchronization}
+            onToggle={handleIsSynchronizedChange}
+          />
+        )}
+        {!isValueSet(fieldNodeData.value) && (
+          <span className={s.nodeContent__value} data-test="null-stub">
+            {nullStub}
+          </span>
+        )}
+        {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
+          <ActivationAttribute
+            isActive={fieldAttributes.isActive}
+            isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
+            onToggle={handleIsActiveChange}
+          />
+        )}
+        {errors && (
+          <Tooltip label={<FieldNodeErrors fieldErrors={errors} />}>
+            <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
+          </Tooltip>
+        )}
+      </div>
+      <div className={cn(s.nodeContent__buttonWrapper, st.nodeContent__buttonWrapper)}>
+        {fieldNodeData.isCleanable && isValueSet(fieldNodeData.value) && (
+          <IconButton
+            className={cn(s.nodeContent, s.nodeContent__button)}
+            size={16}
+            icon="g3-clear"
+            onClick={handleClearClick}
+            data-test="clear-btn"
+          />
+        )}
+        {isDeletable && (
+          <IconButton
+            className={cn(s.nodeContent, s.nodeContent__button)}
+            size={16}
+            icon="g3-delete"
+            onClick={handleDeleteClick}
+            data-test="delete-btn"
+          />
+        )}
+      </div>
+    </>
   );
 };
 

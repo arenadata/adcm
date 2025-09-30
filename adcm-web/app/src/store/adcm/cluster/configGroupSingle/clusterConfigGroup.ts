@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@store/redux';
 import { createSlice } from '@reduxjs/toolkit';
 import type { AdcmConfigGroup } from '@models/adcm';
 import { AdcmClusterConfigGroupsApi } from '@api';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 type GetClusterConfigGroupPayload = {
   clusterId: number;
@@ -42,6 +43,12 @@ const clusterConfigGroupSlice = createSlice({
     });
     builder.addCase(getClusterConfigGroup.rejected, (state) => {
       state.clusterConfigGroup = null;
+    });
+    builder.addCase(wsActions['update_config-group'], (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.clusterConfigGroup?.id === id) {
+        state.clusterConfigGroup = { ...state.clusterConfigGroup, ...changes };
+      }
     });
   },
 });

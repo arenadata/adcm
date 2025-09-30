@@ -13,6 +13,7 @@
 from contextlib import suppress
 from typing import Collection, TypedDict
 
+from cm.converters import orm_object_to_core_type
 from cm.status_api import send_object_update_event
 from core.types import CoreObjectDescriptor
 
@@ -69,6 +70,10 @@ class ADCMMultiStateUnsetPluginExecutor(
 
         target_object.unset_multi_state(arguments.state)
         with suppress(Exception):
-            send_object_update_event(object_=target_object, changes={"state": arguments.state})
+            send_object_update_event(
+                obj_id=target_object.pk,
+                obj_type=orm_object_to_core_type(target_object).value,
+                changes={"state": arguments.state},
+            )
 
         return CallResult(value=MultiStateUnsetReturnValue(state=arguments.state), changed=True, error=None)

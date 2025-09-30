@@ -49,6 +49,37 @@ const loadClustersDynamicActions = createAsyncThunk(
   },
 );
 
+interface AdcmCreateProcessPayload {
+  clusterId: number;
+  actionId: number;
+}
+
+const createClusterDynamicActionProcess = createAsyncThunk(
+  'adcm/clustersDynamicActions/createClusterDynamicActionProcess',
+  async ({ clusterId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    const {
+      adcm: {
+        clustersDynamicActions: {
+          dialog: { cluster },
+        },
+      },
+    } = thunkAPI.getState();
+
+    try {
+      const process = await AdcmClustersApi.createClusterActionWizardProcess(clusterId, actionId);
+
+      if (cluster) {
+        await thunkAPI.dispatch(openClusterDynamicActionDialog({ cluster, actionId }));
+      }
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 interface OpenClusterDynamicActionPayload {
   cluster: AdcmCluster;
   actionId: number;
@@ -68,18 +99,18 @@ const openClusterDynamicActionDialog = createAsyncThunk(
   },
 );
 
-interface RunClusterDynamicActionPayload {
-  cluster: AdcmCluster;
+export interface RunClusterDynamicActionPayload {
+  clusterId: number;
   actionId: number;
   actionRunConfig: AdcmDynamicActionRunConfig;
 }
 
 const runClusterDynamicAction = createAsyncThunk(
   'adcm/clustersDynamicActions/runClusterDynamicAction',
-  async ({ cluster, actionId, actionRunConfig }: RunClusterDynamicActionPayload, thunkAPI) => {
+  async ({ clusterId, actionId, actionRunConfig }: RunClusterDynamicActionPayload, thunkAPI) => {
     try {
       // TODO: runClusterAction get big response with information about action, but wiki say that this should empty response
-      await AdcmClustersApi.runClusterAction(cluster.id, actionId, actionRunConfig);
+      await AdcmClustersApi.runClusterAction(clusterId, actionId, actionRunConfig);
 
       thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
@@ -141,6 +172,11 @@ const clustersDynamicActionsSlice = createSlice({
 });
 
 export const { cleanupClusterDynamicActions, closeClusterDynamicActionDialog } = clustersDynamicActionsSlice.actions;
-export { loadClustersDynamicActions, openClusterDynamicActionDialog, runClusterDynamicAction };
+export {
+  loadClustersDynamicActions,
+  createClusterDynamicActionProcess,
+  openClusterDynamicActionDialog,
+  runClusterDynamicAction,
+};
 
 export default clustersDynamicActionsSlice.reducer;

@@ -2,7 +2,7 @@ import qs from 'qs';
 import type { AdcmMaintenanceMode, Batch, CreateAdcmHostPayload, AdcmSetMaintenanceModeResponse } from '@models/adcm';
 import type { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
-import type { AdcmHost, AdcmHostsFilter, AdcmUpdatePayload } from '@models/adcm/host';
+import type { AdcmHost, AdcmHostsFilter, AdcmUpdatePayload, CreateHostDuplicatePayload } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
 import type {
   AdcmDynamicAction,
@@ -40,6 +40,12 @@ export class AdcmHostsApi {
 
   public static async createHost(payload: CreateAdcmHostPayload) {
     await httpClient.post('/api/v2/hosts/', payload);
+  }
+
+  public static async createDuplicateHost(payload: CreateHostDuplicatePayload) {
+    const { hostId, ...rest } = payload;
+
+    await httpClient.post(`/api/v2/hosts/${hostId}/duplicates/`, rest);
   }
 
   public static async getHostActions(hostId: number) {

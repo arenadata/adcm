@@ -1,0 +1,20 @@
+- name: integer_field
+  type: integer
+  default: 2
+- name: json_not_required
+  type: json
+  required: false
+  default:
+    key: value
+- name: agroup
+  type: group
+  activatable: true
+  active: false
+  subs:
+    - name: str_in_agroup
+      type: string
+      default: "default string in agroup value"
+    - name: json_in_agroup
+      type: json
+      default:
+        default_key: default_value

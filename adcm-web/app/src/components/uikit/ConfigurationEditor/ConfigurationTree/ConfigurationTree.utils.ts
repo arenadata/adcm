@@ -18,6 +18,7 @@ import type {
   ConfigurationArray,
   ConfigurationNodeView,
   ConfigurationTreeState,
+  NodesDictionary,
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
@@ -26,6 +27,8 @@ import {
   rootNodeTitle,
   secretFieldValuePrefixToIgnore,
 } from './ConfigurationTree.constants';
+
+const getIndex = (nodeArr?: ConfigurationNode[]) => (nodeArr && nodeArr.length > 0 ? nodeArr.at(-1)!.index + 1 : 0);
 
 export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
   const errors = validateJsonSchema(schema, configuration);
@@ -134,8 +137,12 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
 export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
-export const getDefaultValue = (keyName: string, node: SingleSchemaDefinition, parentNode: SingleSchemaDefinition) =>
-  node.default !== undefined ? node.default : parentNode.default?.[keyName as keyof typeof parentNode.default];
+export const getDefaultValue = (keyName: string, node: SingleSchemaDefinition, parentNode: SingleSchemaDefinition) => {
+  const parentNodeDefault = parentNode.default?.[keyName as keyof typeof parentNode.default];
+  const nodeDefault = node.default;
+
+  return nodeDefault ?? parentNodeDefault;
+};
 
 const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
   const fieldSchema: SingleSchemaDefinition = {
@@ -237,6 +244,16 @@ export function* iterateConfigurationNodes(node: ConfigurationNode): Iterable<Co
   }
 }
 
+export const buildNodeDictionary = (tree: ConfigurationNode) => {
+  const dictionary: NodesDictionary = {};
+
+  for (const node of iterateConfigurationNodes(tree)) {
+    dictionary[node.key] = node;
+  }
+
+  return dictionary;
+};
+
 const buildRootNode = (
   schema: ConfigurationSchema,
   configuration: ConfigurationData,
@@ -245,6 +262,7 @@ const buildRootNode = (
   const { fieldSchema } = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
     key: rootNodeKey,
+    index: 0,
     data: {
       title: getTitle(rootNodeTitle, fieldSchema),
       type: 'object',
@@ -263,8 +281,10 @@ const buildRootNode = (
 
   const children: ConfigurationNode[] = [];
   if (fieldSchema.properties) {
-    for (const key of Object.keys(fieldSchema.properties)) {
-      children.push(buildNode(key, [key], rootNode, fieldSchema.properties[key], configuration[key], attributes));
+    for (const [index, key] of Object.keys(fieldSchema.properties).entries()) {
+      children.push(
+        buildNode(index, key, [key], rootNode, fieldSchema.properties[key], configuration[key], attributes),
+      );
     }
   }
 
@@ -274,6 +294,7 @@ const buildRootNode = (
 };
 
 const buildNode = (
+  index: number,
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
@@ -283,19 +304,20 @@ const buildNode = (
 ): ConfigurationNode => {
   const { fieldSchema: singleFieldSchema, isNullable } = determineFieldSchema(fieldSchema);
   if (singleFieldSchema.type === 'object') {
-    return buildObjectNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildObjectNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else if (singleFieldSchema.type === 'array') {
-    return buildArrayNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildArrayNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else if (primitiveFieldTypes.has(singleFieldSchema.type as string)) {
-    return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else if (singleFieldSchema.type === undefined && singleFieldSchema.enum) {
-    return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else {
-    return buildUnknownNode(fieldName, path, parentNode, singleFieldSchema);
+    return buildUnknownNode(index, fieldName, path, parentNode, singleFieldSchema);
   }
 };
 
 const buildObjectNode = (
+  index: number,
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
@@ -318,6 +340,7 @@ const buildObjectNode = (
   );
   const node: ConfigurationNode = {
     key,
+    index,
     data: {
       title,
       type: 'object',
@@ -351,23 +374,25 @@ const buildObjectNode = (
 
     if (objectValue) {
       // add children from schema
-      for (const key of Object.keys(fieldSchema.properties)) {
-        const fieldPath = [...path, key];
-        const propertyValue = objectValue?.[key] ?? null;
-        const childrenFieldSchema = fieldSchema.properties[key];
+      for (const [key, value] of Object.keys(fieldSchema.properties).entries()) {
+        const fieldPath = [...path, value];
+        const propertyValue = objectValue?.[value] ?? null;
+        const childrenFieldSchema = fieldSchema.properties[value];
 
-        children.push(buildNode(key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
-        addedFields.add(key);
+        children.push(buildNode(key, value, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+        addedFields.add(value);
       }
 
       // add children from data (map case)
+      let index = 0;
       for (const [key, propertyValue] of Object.entries(objectValue)) {
         if (!addedFields.has(key)) {
           const fieldPath = [...path, key];
           const childrenFieldSchema = fieldSchema.properties[key] ?? getDefaultFieldSchema(node.data.fieldSchema);
 
-          children.push(buildNode(key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+          children.push(buildNode(index, key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
           addedFields.add(key);
+          index++;
         }
       }
     }
@@ -381,6 +406,7 @@ const buildObjectNode = (
 };
 
 const buildFieldNode = (
+  index: number,
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
@@ -402,6 +428,7 @@ const buildFieldNode = (
 
   const node: ConfigurationNode = {
     key,
+    index,
     data: {
       title,
       type: 'field',
@@ -427,8 +454,11 @@ const buildAddEmptyObjectNode = (
   fieldSchema: SingleSchemaDefinition,
   parentNode: ConfigurationNode,
 ) => {
+  const index = getIndex(parentNode.children);
+
   const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addEmptyObjectButton']),
+    index,
     data: {
       type: 'addEmptyObject',
       title: 'Set',
@@ -443,9 +473,11 @@ const buildAddEmptyObjectNode = (
 
 const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: ConfigurationNode) => {
   const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
+  const index = getIndex(parentNode.children);
 
   const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addFieldButton']),
+    index,
     data: {
       type: 'addField',
       title: 'Add property',
@@ -459,6 +491,7 @@ const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: Configuratio
 };
 
 const buildArrayNode = (
+  index: number,
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
@@ -482,6 +515,7 @@ const buildArrayNode = (
 
   const node: ConfigurationNode = {
     key,
+    index,
     data: {
       title,
       type: 'array',
@@ -505,7 +539,7 @@ const buildArrayNode = (
   if (array) {
     for (let i = 0; i < array.length; i++) {
       const elementPath = [...path, i];
-      node.children.push(buildNode(i.toString(), elementPath, node, itemsSchema, array[i], attributes));
+      node.children.push(buildNode(i, i.toString(), elementPath, node, itemsSchema, array[i], attributes));
     }
   }
 
@@ -517,11 +551,13 @@ const buildAddArrayItemNode = (
   parentNode: ConfigurationNode,
   fieldSchema: SingleSchemaDefinition,
 ) => {
+  const index = getIndex(parentNode.children);
   const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addArrayItemButton']),
+    index,
     data: {
       type: 'addArrayItem',
-      title: '1',
+      title: 'Add property',
       path,
       parentNode,
       fieldSchema,
@@ -536,8 +572,10 @@ const buildItemDropPlaceholderNode = (
   parentNode: ConfigurationNode,
   fieldSchema: SingleSchemaDefinition,
 ) => {
+  const index = getIndex(parentNode.children);
   const node: ConfigurationNodeView = {
     key: buildKey([...path, 'itemDropPlaceholder']),
+    index,
     data: {
       type: 'dropPlaceholder',
       title: '1',
@@ -551,6 +589,7 @@ const buildItemDropPlaceholderNode = (
 };
 
 const buildUnknownNode = (
+  index: number,
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
@@ -558,6 +597,7 @@ const buildUnknownNode = (
 ) => {
   const node: ConfigurationNode = {
     key: buildKey(path),
+    index,
     data: {
       title: `UNKNOWN FIELD: ${fieldName}, TYPE: ${fieldSchema.type}`,
       type: 'field',
@@ -714,4 +754,77 @@ export const determineFieldSchema = (
       return { isNullable: true, fieldSchema: schema1 as SingleSchemaDefinition };
     }
   }
+};
+
+interface FailedNodeInfo {
+  lastFailedNodeIndex: number;
+  failedIndices: number[];
+  beforeFailedIndices: number[];
+}
+
+export const findNodeByKey = (root: ConfigurationNodeView, targetKey: string): ConfigurationNodeView | undefined => {
+  if (root.key === targetKey) return root;
+  for (const child of root.children ?? []) {
+    const foundChild = findNodeByKey(child, targetKey);
+    if (foundChild) return foundChild;
+  }
+  return undefined;
+};
+
+export const getDirectErrorKeys = (failedMap: ConfigurationErrors, parentKey: string): Set<string> => {
+  const directErrorKeys = new Set<string>();
+  const prefix = parentKey === '/' ? '/' : `${parentKey}/`;
+  for (const key of Object.keys(failedMap)) {
+    if (key === parentKey) continue;
+    if (!key.startsWith(prefix)) continue;
+    const rest = key.slice(prefix.length);
+    const [firstTreeLevel] = rest.split('/');
+    if (firstTreeLevel) {
+      directErrorKeys.add(parentKey === '/' ? `/${firstTreeLevel}` : `${parentKey}/${firstTreeLevel}`);
+    }
+  }
+  return directErrorKeys;
+};
+
+export const getFailedNodeInfo = (
+  treeDictionary: NodesDictionary,
+  failedMap: ConfigurationErrors,
+  parentKey: string,
+): FailedNodeInfo | null => {
+  const parent = treeDictionary[parentKey]; // findNodeByKey(tree, parentKey);
+  if (!parent || !parent.children?.length) return null;
+
+  const directErrorKeys = getDirectErrorKeys(failedMap, parentKey);
+  const failedIndices: number[] = [];
+
+  // Один проход по дочерним узлам
+  for (const child of parent.children) {
+    if (directErrorKeys.has(child.key)) {
+      failedIndices.push(child.index);
+    }
+  }
+
+  if (failedIndices.length === 0) {
+    return null;
+  }
+
+  const lastFailedNodeIndex = failedIndices[failedIndices.length - 1];
+  const beforeFailedIndices = Array.from({ length: lastFailedNodeIndex }, (_, index) => index).filter(
+    (index) => !failedIndices.includes(index),
+  );
+
+  return { failedIndices, lastFailedNodeIndex, beforeFailedIndices };
+};
+
+export const getViewNodeValue = (value: string, charsLimit: number = Number.POSITIVE_INFINITY): string => {
+  if (value.length <= charsLimit) return value;
+
+  const delimiter = ' <...> ';
+
+  const calcLimit = charsLimit - delimiter.length;
+
+  const leftPart = Math.ceil(calcLimit / 2);
+  const rightPart = calcLimit - leftPart;
+
+  return value.slice(0, leftPart) + delimiter + value.slice(-rightPart);
 };

@@ -46,6 +46,7 @@ const getNodeClassName = (node: Node<SomeObject>) =>
 const CollapseComponentWithHooks = () => {
   const tree: Node<SomeObject> = {
     key: 'root',
+    index: 0,
     data: {
       title: 'root',
       isValid: false,
@@ -53,6 +54,7 @@ const CollapseComponentWithHooks = () => {
     children: [
       {
         key: 'ch1',
+        index: 0,
         data: {
           title: 'ch1',
           isValid: true,
@@ -60,6 +62,7 @@ const CollapseComponentWithHooks = () => {
         children: [
           {
             key: 'ch1-1',
+            index: 0,
             data: {
               title: 'ch1-1',
               isValid: true,
@@ -69,6 +72,7 @@ const CollapseComponentWithHooks = () => {
       },
       {
         key: 'ch2',
+        index: 1,
         data: {
           title: 'ch2',
           isValid: false,

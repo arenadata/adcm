@@ -1,0 +1,33 @@
+:global {
+  body.theme-dark {
+    --search-input-background: var(--color-xblack);
+  }
+  body.theme-light {
+    --search-input-background: var(--color-xwhite);
+  }
+}
+
+.actionWizardConfigurationEditorToolbar {
+  display: flex;
+  gap: 20px;
+  margin: 32px 0;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(7px);
+
+  &__searchWrapper {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+  }
+
+  &__search {
+    width: 53%;
+    min-width: 200px;
+    background: var(--search-input-background);
+  }
+
+  &__buttons {
+    margin-left: auto;
+  }
+}

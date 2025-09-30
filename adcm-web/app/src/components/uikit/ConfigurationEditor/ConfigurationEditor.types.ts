@@ -112,3 +112,5 @@ export type ConfigurationTreeState = {
   selectedNode: ConfigurationNodeView | null;
   dragNode: ConfigurationNodeView | null;
 };
+
+export type NodesDictionary = { [path: string]: ConfigurationNode };

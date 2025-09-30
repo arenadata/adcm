@@ -16,6 +16,11 @@ export interface AdcmRenameArgs {
   name: string;
 }
 
+export interface AdcmEditDescriptionArgs {
+  id: number;
+  description: string;
+}
+
 export enum AdcmEntitySystemState {
   Created = 'created',
 }

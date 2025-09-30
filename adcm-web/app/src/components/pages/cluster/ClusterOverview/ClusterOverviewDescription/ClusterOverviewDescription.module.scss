@@ -1,0 +1,24 @@
+:global {
+  body.theme-dark {
+    --overview-descriptionl-background-color: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --overview-descriptionl-background-color: var(--color-xgray-alt-30);
+  }
+}
+
+.clusterOverviewDescription {
+  padding: 20px;
+  border-radius: 15px;
+  background: var(--overview-descriptionl-background-color);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  & > span {
+    font-size: 16px;
+  }
+}

@@ -13,6 +13,7 @@
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog
 from cm.services.config import ConfigAttrPair
+from cm.services.job.run import create_related_configs
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
 
@@ -54,6 +55,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
     def execute_plugin(self, task: Task, call_arguments: str | dict) -> CallResult:
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        create_related_configs(job_id=job.id, owner=task.owner)
 
         executor = self.prepare_executor(
             executor_type=ADCMConfigPluginExecutor,

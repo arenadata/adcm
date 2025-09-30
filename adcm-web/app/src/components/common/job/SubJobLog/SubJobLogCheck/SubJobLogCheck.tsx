@@ -19,6 +19,7 @@ const checkItemToNode = ({ content, ...data }: AdcmSubJobLogCheckContentItem, ke
   return {
     data,
     key: `${key}`,
+    index: key,
     children: content?.map((item, index) => checkItemToNode(item, index)),
   };
 };
@@ -39,6 +40,7 @@ const SubJobLogCheck: React.FC<SubJobLogCheckProps> = ({ subJobStatus, log }) =>
         result: isRootValid,
       },
       key: 'root',
+      index: 0,
       children: log.content.map((logContentItem, index) => checkItemToNode(logContentItem, index)),
     };
   }, [subJobStatus, log]);

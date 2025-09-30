@@ -27,10 +27,17 @@ import (
 
 const MaxPostSize = 10 * 1024 * 1024
 
+// Serializers
+
 type clusterDetails struct {
 	Status   int                   `json:"status"`
 	Services map[int]serviceStatus `json:"services"`
 	Hosts    map[int]Status        `json:"hosts"`
+}
+
+type postHostDuplicatesBody struct {
+	HostID     int   `json:"hostId"`
+	Duplicates []int `json:"duplicates"`
 }
 
 // Handlers
@@ -268,18 +275,53 @@ func setHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	clusterId, ok := h.ServiceMap.getHostCluster(hostId)
-	if !ok {
-		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
+
+	saveHost := func(hid, cid int) { h.StatusEvent.save_host(h, hid, cid) }
+	checkHost := func(hid, cid int) { h.StatusEvent.check_host(h, hid, cid) }
+
+	res, err := RegisterHostStatus(hostId,
+		status,
+		saveHost,
+		checkHost,
+		h.HostStatusStorage,
+		h.ServiceMap,
+		h.Duplicates,
+	)
+	if err != nil {
+		ErrOut4(w, r, "HOST_NOT_FOUND", err.Error())
 		return
 	}
-	h.StatusEvent.save_host(h, hostId, clusterId)
-	clear := func() {
-		h.StatusEvent.check_host(h, hostId, clusterId)
-	}
-	res := h.HostStatusStorage.set(ALL, hostId, status, clear)
-	h.StatusEvent.check_host(h, hostId, clusterId)
+
 	jsonOut3(w, r, "", res)
+}
+
+func postHostDuplicates(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "POST")
+
+	body := postHostDuplicatesBody{}
+	_, err := decodeBody(w, r, &body)
+	if err != nil {
+		ErrOut4(w, r, "SERIALIZATION_ERROR", err.Error())
+		return
+	}
+
+	saveHost := func(hid, cid int) { h.StatusEvent.save_host(h, hid, cid) }
+	checkHost := func(hid, cid int) { h.StatusEvent.check_host(h, hid, cid) }
+
+	err = RegisterHostDuplicates(
+		body.HostID,
+		body.Duplicates,
+		saveHost,
+		checkHost,
+		h.HostStatusStorage,
+		h.ServiceMap,
+		h.Duplicates,
+	)
+	if err != nil {
+		ErrOut4(w, r, "HOST_DUPLICATE_REGISTER_ERROR", err.Error())
+	}
+
+	jsonOut(w, r, "")
 }
 
 func showHost(h Hub, w http.ResponseWriter, r *http.Request) {

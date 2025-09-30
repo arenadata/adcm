@@ -11,6 +11,8 @@
 # limitations under the License.
 
 
+from typing import NoReturn
+
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -24,7 +26,10 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, Prototype, Provider
+from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
+from cm.services.host.duplicates import create_duplicate
+from cm.status_api import send_object_update_event
+from core.types import ADCMCoreType
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -54,17 +59,20 @@ from api_v2.generic.config.utils import ConfigSchemaMixin, extend_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.host.filters import HostFilter
 from api_v2.host.permissions import (
+    CreateDuplicateHostPermissions,
     HostsPermissions,
 )
 from api_v2.host.serializers import (
+    CreateDuplicateSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
     HostSerializer,
     HostUpdateSerializer,
+    HostWithDuplicatesSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
-from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
+from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -135,8 +143,18 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         ),
     ),
     config_schema=extend_config_schema("host"),
+    create_duplicate=extend_schema(
+        operation_id="postCreateDuplicate",
+        description="Create duplicate host.",
+        summary="POST host create-duplicate",
+        responses=responses(
+            success=(HTTP_201_CREATED, HostSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
+    ),
 )
 class HostViewSet(
+    ClusterHostOperationHandleExceptionMixin,
     PermissionListMixin,
     ConfigSchemaMixin,
     ObjectWithStatusViewMixin,
@@ -146,7 +164,9 @@ class HostViewSet(
 ):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
-        .prefetch_related("concerns", "hostcomponent_set__component__prototype")
+        .prefetch_related(
+            "concerns", "hostcomponent_set__component__prototype", "duplicates__concerns", "duplicates__cluster"
+        )
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
@@ -154,15 +174,28 @@ class HostViewSet(
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
 
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+
+        if self.action == "list":
+            queryset = queryset.filter(original__isnull=True)
+
+        return queryset
+
     def get_serializer_class(self):
         if self.action == "create":
             return HostCreateSerializer
-        elif self.action in ("update", "partial_update"):
+
+        if self.action in ("update", "partial_update"):
             return HostUpdateSerializer
-        elif self.action == "maintenance_mode":
+
+        if self.action == "maintenance_mode":
             return HostChangeMaintenanceModeSerializer
 
-        return HostSerializer
+        if self.action == "create_duplicate":
+            return CreateDuplicateSerializer
+
+        return HostWithDuplicatesSerializer
 
     @audit_create(name="Host created", object_=host_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
@@ -229,6 +262,11 @@ class HostViewSet(
             raise AdcmEx(code="HOST_UPDATE_ERROR")
 
         serializer.save()
+        send_object_update_event(
+            instance.pk,
+            ADCMCoreType.HOST.value,
+            changes={"name": instance.fqdn, "description": instance.description},
+        )
 
         return Response(
             status=HTTP_200_OK, data=HostSerializer(instance=instance, context=self.get_serializer_context()).data
@@ -247,6 +285,32 @@ class HostViewSet(
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
 
+    @audit_create(name="Duplicate host created", object_=host_from_response)
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="duplicates",
+        # TODO: Maybe that's not enough.
+        permission_classes=[IsAuthenticatedAudit, CreateDuplicateHostPermissions],
+    )
+    def create_duplicate(self, request: Request, *args, **kwargs):  # noqa: ARG002
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        if data["cluster_id"]:
+            get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
+
+        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
+
+        duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
+
+        duplicate = Host.objects.get(id=duplicate_id)
+        serializer = HostSerializer(instance=duplicate, context=self.get_serializer_context())
+
+        return Response(data=serializer.data, status=HTTP_201_CREATED)
+
 
 @document_action_viewset(object_type="host")
 @audit_action_viewset(retrieve_owner=parent_host_from_lookup)
@@ -257,4 +321,9 @@ class HostActionViewSet(ActionViewSet):
 @document_config_viewset(object_type="host")
 @audit_config_viewset(type_in_name="Host", retrieve_owner=parent_host_from_lookup)
 class HostConfigViewSet(ConfigLogViewSet):
-    ...
+    def on_config_absent_for_owner(self, owner_object: MainObject) -> NoReturn:
+        # it can only be host, yet we can't typehint it conveniently with 3.10 Generics
+        if isinstance(owner_object, Host) and owner_object.original:
+            raise AdcmEx(code="CONFIG_OPERATION_ERROR", msg="Configuration change on host duplicate is not allowed")
+
+        super().on_config_absent_for_owner(owner_object)

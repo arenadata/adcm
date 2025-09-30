@@ -41,6 +41,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
+    HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
 from api_v2.tests.base import BaseAPITestCase
@@ -747,3 +748,13 @@ class TestAction(BaseAPITestCase):
             self.assertEqual(self.cluster_1.concerns.count(), 2)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
+
+    def test_adcm_6930_config_apply_jinja_returns_500(self) -> None:
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_conf_apply_jinja")
+        cluster = self.add_cluster(bundle=bundle, name="cluster_config_apply", description="cluster_config_apply")
+        action = Action.objects.get(name="apply", prototype=cluster.prototype)
+
+        response = self.client.v2[cluster, "actions", action, "run"].post(data={})
+
+        self.assertEqual(response.status_code, HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIn("Internal script 'config_apply' can't be used for jinja action", response.json()["desc"])

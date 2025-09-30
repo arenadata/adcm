@@ -13,7 +13,7 @@
 from pathlib import Path
 from typing import Any
 
-from core.bundle_alt.process import ConfigJinjaContext
+from core.bundle_alt.process import ConfigConversionContext
 from core.errors import localize_error
 from django.conf import settings
 from yaml import safe_load
@@ -31,6 +31,7 @@ from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.config.patterns import Pattern
 from cm.services.jinja_env import get_env_for_jinja_config
 from cm.services.template import TemplateBuilder
+from cm.utils import decrypt_secrets
 
 
 def get_jinja_config(
@@ -39,44 +40,22 @@ def get_jinja_config(
     resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
     jinja_conf_file = resolver.resolve(action.config_jinja)
 
+    context = get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object)
+    decrypted_context = decrypt_secrets(context)
+
+    # TO DO: get rid of using decrypt_secrets here
     template_builder = TemplateBuilder(
         template_path=jinja_conf_file,
-        context=get_env_for_jinja_config(action=action, cluster_relative_object=cluster_relative_object),
+        context=decrypted_context,
         bundle_path=resolver.bundle_root,
     )
 
-    # too difficult for now to pass headers from all usages
     # As part of the ADCM-6747 task, we are leaving the old mechanism
     # for preparing the configuration from the jinja file.
     # use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
-    use_new_approach = False
-
-    if not use_new_approach:
-        return _get_jinja_config_old(
-            data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
-        )
-
-    return _get_jinja_config_new(
-        data=template_builder.data,
-        action=action,
-        config_file=jinja_conf_file,
-        resolver=resolver,
-        object_=cluster_relative_object,
+    return _get_jinja_config_old(
+        data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
     )
-
-
-def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
-    context = ConfigJinjaContext(
-        bundle_root=resolver.bundle_root,
-        path=str(config_file.parent.relative_to(resolver.bundle_root)),
-        object={"config_group_customization": False},
-    )
-
-    proto = object_.prototype
-    with localize_error(f'Object of type {proto.type} named "{proto.name}", version {proto.version}'):
-        configs = parse_config_jinja(data=data, context=context, prototype=action.prototype, action=action)
-
-    return configs, {}
 
 
 def _get_jinja_config_old(
@@ -100,6 +79,20 @@ def _get_jinja_config_old(
                 attr[normalized_field["name"]] = normalized_field["limits"]
 
     return configs, attr
+
+
+def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
+    context = ConfigConversionContext(
+        bundle_root=resolver.bundle_root,
+        path=str(config_file.parent),
+        object={"config_group_customization": False},
+    )
+
+    proto = object_.prototype
+    with localize_error(f'Object of type {proto.type} named "{proto.name}", version {proto.version}'):
+        configs = parse_config_jinja(data=data, context=context, action=action)
+
+    return configs, {}
 
 
 def _normalize_field(

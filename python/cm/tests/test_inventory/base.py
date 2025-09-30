@@ -23,7 +23,6 @@ from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
 from cm.models import (
     ADCM,
@@ -37,28 +36,11 @@ from cm.models import (
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job._utils import construct_delta_for_task
 from cm.services.job.inventory import get_inventory_data
+from cm.utils import decrypt_secrets
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
 Delta: TypeAlias = dict[Literal["add", "remove"], dict[str, dict[str, Host]]]
-
-
-def decrypt_secrets(source: dict) -> dict:
-    result = {}
-    for key, value in source.items():
-        if not isinstance(value, dict):
-            if isinstance(value, list):
-                result[key] = [entry if not isinstance(entry, dict) else decrypt_secrets(entry) for entry in value]
-            else:
-                result[key] = value
-            continue
-
-        if "__ansible_vault" in value:
-            result[key] = ansible_decrypt(value["__ansible_vault"])
-        else:
-            result[key] = decrypt_secrets(value)
-
-    return result
 
 
 class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):

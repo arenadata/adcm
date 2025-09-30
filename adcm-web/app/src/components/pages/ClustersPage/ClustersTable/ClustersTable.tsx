@@ -14,6 +14,7 @@ import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import DescriptionCell from '@commonComponents/Table/Cells/DescriptionCell/DescriptionCell';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -69,7 +70,7 @@ const ClustersTable = () => {
             <MultiStateCell entity={cluster} />
             <TableCell>{cluster.prototype.displayName}</TableCell>
             <TableCell>{cluster.prototype.version}</TableCell>
-            <TableCell>{cluster.description}</TableCell>
+            <DescriptionCell cluster={cluster} />
             <TableCell hasIconOnly>
               <Concern concerns={cluster.concerns} />
             </TableCell>

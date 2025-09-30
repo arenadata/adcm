@@ -1,0 +1,72 @@
+{
+  "id": {{ step_id }},
+  "displayName": "Stage1.Step1",
+  "type": "configuration",
+  "state": "created",
+  "configuration": {
+    "configSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Configuration",
+      "description": "",
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "nullValue": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "type": "object",
+      "properties": {
+        "integer_field": {
+          "title": "integer_field",
+          "type": "integer",
+          "description": "",
+          "default": 2,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        },
+        "string_field": {
+          "title": "string_field",
+          "type": "string",
+          "description": "",
+          "default": "string_value",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "integer_field",
+        "string_field"
+      ]
+    },
+    "adcmMeta": {},
+    "config": {
+      "integer_field": 2,
+      "string_field": "string_value"
+    }
+  }
+}

@@ -35,6 +35,7 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
+from cm.services.action_process.types import ProcessState, ProcessStepState
 
 
 class ObjectType(models.TextChoices):
@@ -159,7 +160,6 @@ class ADCMModel(models.Model):
 class Bundle(ADCMModel):
     name = models.CharField(max_length=1000)
     version = models.CharField(max_length=1000)
-    version_order = models.PositiveIntegerField(default=0)
     edition = models.CharField(max_length=1000, default="community")
     hash = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
@@ -224,7 +224,6 @@ class Prototype(ADCMModel):
     license_hash = models.CharField(max_length=1000, default=None, null=True)
     display_name = models.CharField(max_length=1000, blank=True)
     version = models.CharField(max_length=1000)
-    version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
     constraint = models.JSONField(default=partial(list, (0, "+")))
@@ -525,7 +524,7 @@ class Provider(ADCMEntity):
 
 
 class Host(ADCMEntity):
-    fqdn = models.CharField(max_length=1000, unique=True)
+    fqdn = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
@@ -535,8 +534,16 @@ class Host(ADCMEntity):
         default=MaintenanceMode.OFF,
     )
     before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
+    original = models.ForeignKey("self", null=True, default=None, on_delete=models.CASCADE, related_name="duplicates")
 
     __error_code__ = "HOST_NOT_FOUND"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["fqdn"], condition=models.Q(original=None), name="unique_host_fqdn_with_original"
+            )
+        ]
 
     @property
     def bundle_id(self):
@@ -1060,6 +1067,8 @@ class AbstractAction(ADCMModel):
     allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
+    wizard_template = models.JSONField(null=True, default=None)
+
     config_jinja = models.CharField(max_length=1000, blank=True, null=True)
     scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")
 
@@ -1368,6 +1377,8 @@ class TaskLog(ADCMModel):
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
     executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
+    process = models.JSONField(null=True, default=None)
+
     """
     Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,
     but does affect concern interactions and action launch.
@@ -1506,104 +1517,6 @@ class LogStorage(ADCMModel):
         ]
 
 
-class StagePrototype(ADCMModel):
-    type = models.CharField(max_length=1000, choices=ObjectType)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=1000)
-    path = models.CharField(max_length=1000, default="")
-    display_name = models.CharField(max_length=1000, blank=True)
-    version = models.CharField(max_length=1000)
-    edition = models.CharField(max_length=1000, default="community")
-    license = models.CharField(max_length=1000, choices=LICENSE_STATE, default="absent")
-    license_path = models.CharField(max_length=1000, default=None, null=True)
-    license_hash = models.CharField(max_length=1000, default=None, null=True)
-    required = models.BooleanField(default=False)
-    shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=partial(list, (0, "+")))
-    requires = models.JSONField(default=list)
-    bound_to = models.JSONField(default=dict)
-    adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
-    description = models.TextField(blank=True)
-    monitoring = models.CharField(max_length=1000, choices=MONITORING_TYPE, default="active")
-    config_group_customization = models.BooleanField(default=False)
-    venv = models.CharField(default="default", max_length=1000, blank=False)
-    allow_maintenance_mode = models.BooleanField(default=False)
-    flag_autogeneration = models.JSONField(default=dict)
-
-    __error_code__ = "PROTOTYPE_NOT_FOUND"
-
-    def __str__(self):
-        return str(self.name)
-
-    class Meta:
-        unique_together = (("type", "parent", "name", "version"),)
-
-
-class StageUpgrade(ADCMModel):
-    name = models.CharField(max_length=1000, blank=True)
-    display_name = models.CharField(max_length=1000, blank=True)
-    description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=1000)
-    max_version = models.CharField(max_length=1000)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    from_edition = models.JSONField(default=partial(list, ("community",)))
-    state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=1000, blank=True)
-    action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
-
-
-class StageAction(AbstractAction):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-
-
-class StageSubAction(AbstractSubAction):
-    action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
-
-
-class StagePrototypeConfig(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    action = models.ForeignKey(StageAction, on_delete=models.CASCADE, null=True, default=None)
-    name = models.CharField(max_length=1000)
-    subname = models.CharField(max_length=1000, blank=True)
-    default = models.TextField(blank=True)
-    type = models.CharField(max_length=1000, choices=CONFIG_FIELD_TYPE)
-    display_name = models.CharField(max_length=1000, blank=True)
-    description = models.TextField(blank=True)
-    limits = models.JSONField(default=dict)
-    ui_options = models.JSONField(blank=True, default=dict)
-    required = models.BooleanField(default=True)
-    group_customization = models.BooleanField(null=True)
-    ansible_options = models.JSONField(default=partial(dict, (("unsafe", False),)))
-
-    class Meta:
-        ordering = ["id"]
-        unique_together = (("prototype", "action", "name", "subname"),)
-
-
-class StagePrototypeExport(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-
-    class Meta:
-        unique_together = (("prototype", "name"),)
-
-
-class StagePrototypeImport(ADCMModel):
-    prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=1000)
-    min_version = models.CharField(max_length=1000)
-    max_version = models.CharField(max_length=1000)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    default = models.JSONField(null=True, default=None)
-    required = models.BooleanField(default=False)
-    multibind = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = (("prototype", "name"),)
-
-
 class ConcernType(models.TextChoices):
     LOCK = "lock", "lock"
     ISSUE = "issue", "issue"
@@ -1617,6 +1530,7 @@ class ConcernCause(models.TextChoices):
     IMPORT = "import", "import"
     SERVICE = "service", "service"
     REQUIREMENT = "requirement", "requirement"
+    CONFIGURING_PROCESS = "configuring_process", "configuring_process"
 
 
 class ConcernItem(ADCMModel):
@@ -1739,3 +1653,51 @@ class HostInfo(models.Model):
         indexes = [
             models.Index(fields=["host"]),
         ]
+
+
+ProcessStateChoices = tuple((state.value, state.value) for state in ProcessState)
+ProcessStepStateChoices = tuple((state.value, state.value) for state in ProcessStepState)
+DEFAULT_PROCESS_STATE = ProcessState.CREATED.value
+DEFAULT_PROCESS_STEP_STATE = ProcessStepState.CREATED.value
+
+
+class Process(models.Model):
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField(default=0)
+    object_type = models.CharField(
+        max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
+    )
+    current_step = models.OneToOneField(
+        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="current_for_process"
+    )
+    last_completed_step = models.OneToOneField(
+        "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="last_completed_for_process"
+    )
+    flow_spec = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    sync_key = models.UUIDField(primary_key=False, editable=True)
+    state = models.CharField(
+        max_length=100,
+        choices=ProcessStateChoices,
+        default=DEFAULT_PROCESS_STATE,
+    )
+
+
+class ProcessStep(models.Model):
+    process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name="steps")
+    name = models.CharField(max_length=150)
+    display_name = models.CharField(max_length=150)
+    step_spec = models.JSONField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    state = models.CharField(
+        max_length=100,
+        choices=ProcessStepStateChoices,
+        default=DEFAULT_PROCESS_STEP_STATE,
+    )
+
+
+class ProcessStepInput(models.Model):
+    step = models.OneToOneField(ProcessStep, on_delete=models.CASCADE)
+    configuration = models.JSONField(null=True)
+    job = models.OneToOneField(TaskLog, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)

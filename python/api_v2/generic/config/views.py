@@ -10,11 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import NoReturn
+
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ConfigHostGroup, ConfigLog, PrototypeConfig
+from cm.models import ConfigHostGroup, ConfigLog, MainObject, PrototypeConfig
+from cm.services.config import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    represent_json_type_as_string,
+    represent_string_as_json_type,
+)
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -28,12 +36,6 @@ from rest_framework.status import (
 
 from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.generic.config.utils import (
-    convert_adcm_meta_to_attr,
-    convert_attr_to_adcm_meta,
-    represent_json_type_as_string,
-    represent_string_as_json_type,
-)
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -120,7 +122,7 @@ class ConfigLogViewSet(
             raise NotFound("Can't find config's parent object")
 
         if owner_object.config is None:
-            raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
+            self.on_config_absent_for_owner(owner_object)
 
         check_config_perm(
             user=request.user,
@@ -129,7 +131,7 @@ class ConfigLogViewSet(
             obj=owner_object,
         )
 
-    def _check_parent_permissions(self, parent_object: ParentObject = None):
+    def _check_parent_permissions(self, parent_object: ParentObject | None = None):
         parent_obj = parent_object or self.get_parent_object()
         parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
         parent_config_view_perm = "cm.view_objectconfig"
@@ -147,3 +149,7 @@ class ConfigLogViewSet(
             or self.request.user.has_perm(parent_config_view_perm)
         ):
             raise PermissionDenied
+
+    def on_config_absent_for_owner(self, owner_object: MainObject) -> NoReturn:
+        _ = owner_object
+        raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")

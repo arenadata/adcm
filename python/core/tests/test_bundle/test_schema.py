@@ -15,7 +15,13 @@ from unittest import TestCase
 from pydantic import ValidationError
 import yaml
 
-from core.bundle_alt.schema import TYPE_SCHEMA_MAP
+from core.bundle_alt.schema import (
+    TYPE_SCHEMA_MAP,
+    ActionProcessSpec,
+    InternalConfigApplyScriptSchema,
+    TaskSchema,
+    _BaseUpgradeSchema,
+)
 
 
 class TestBundleSchema(TestCase):
@@ -722,6 +728,7 @@ class TestBundleSchema(TestCase):
                     "on_success": None,
                     "hc_acl": None,
                     "venv": None,
+                    "wizard_template": None,
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
@@ -755,6 +762,7 @@ class TestBundleSchema(TestCase):
                     "on_success": None,
                     "hc_acl": None,
                     "venv": None,
+                    "wizard_template": None,
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
@@ -778,6 +786,7 @@ class TestBundleSchema(TestCase):
                     "on_success": None,
                     "hc_acl": None,
                     "venv": None,
+                    "wizard_template": None,
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
@@ -1185,3 +1194,241 @@ class TestBundleSchema(TestCase):
             raw = yaml.safe_load(yaml_schema)
             with self.assertRaises(ValidationError):
                 self.validate_schema(raw)
+
+
+class TestWizardSchema(TestCase):
+    def test_correct_task_format_success(self):
+        yaml_input_of_jinja = """
+            stages:
+              - name: manage_ssl_stage
+                display_name: "Manage SSL"
+                steps:
+                  - name: configure_ssl
+                    display_name: Configure SSL
+                    config_template:
+                      file:
+                        path: scripts/manage_ssl.j2
+                      engine:
+                        type: jinja2
+              - name: manage_kerberos_stage
+                display_name: "Manage Kerberos"
+                steps:
+                  - name: configure_kerberos
+                    display_name: "Kerberos configuration"
+                    config_template:
+                      file:
+                        path: scripts/manage_ssl.j2
+                      engine:
+                        type: jinja2
+                  - name: check_kerberos
+                    display_name: "Check configuration"
+                    ui_options:
+                      button_name: Check
+                    scripts_template:
+                      file:
+                        path: scripts/manage_ssl.j2
+                      engine:
+                        type: jinja2
+              - name: save_stage
+                display_name: "Save configuration"
+                steps:
+                  - name: save_configuration
+                    display_name: "Check configuration"
+                    ui_options:
+                      button_name: Check
+                    scripts_template:
+                      file:
+                        path: scripts/check.py
+                        entrypoint: generate_scripts
+                      engine:
+                        type: python
+                    """
+
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+        validated_model = ActionProcessSpec.model_validate(parsed_data)
+        self.assertIsInstance(validated_model, ActionProcessSpec)
+
+    def test_prohibited_file_format_fail(self):
+        yaml_input_of_jinja = """
+            stages:
+                - name: save_stage
+                  display_name: "Save configuration"
+                  steps:
+                    - name: save_configuration
+                      display_name: "Check configuration"
+                      ui_options:
+                        button_name: Check
+                      scripts_template:
+                        file:
+                          path: ../../scripts_python/cluster/check.py
+                          entrypoint: generate_scripts
+                        engine:
+                          type: python
+        """
+        with self.assertRaises(ValidationError, msg="Script path should be valid and not be external folder"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            ActionProcessSpec.model_validate(parsed_data)
+
+    def test_hc_acl_and_wizard_mutually_exclusive_fail(self):
+        yaml_input_of_jinja = """
+            type: task
+            wizard_template:
+            file:
+              path: "./wizard_jinja/manage_install.j2"
+            engine:
+              type: jinja2
+            states:
+              available:
+                - created
+                - faulty_installed
+            hc_acl:
+            - service: service_1
+              component: component_1
+              action: add
+            - service: service_2
+              component: component_2
+              action: remove
+            - service: service_2
+              component: component_3
+              action: add
+            scripts:
+            - name: script_1
+              display_name: Script 1
+              script: hc_apply
+              script_type: internal
+              params:
+                rules:
+                  - service: service_1
+                    component: component_1
+                    action: add
+                  - service: service_2
+                    component: component_2
+                    action: remove
+                  - service: service_2
+                    component: component_3
+                    action: add
+        """
+        with self.assertRaises(ValidationError, msg='"wizard_template" and "hc_acl" are mutually exclusive'):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            TaskSchema.model_validate(parsed_data)
+
+    def test_config_jinja_wizard_mutually_exclusive_fail(self):
+        yaml_input_of_jinja = """
+            type: task
+            wizard_template:
+            file:
+              path: "./wizard_jinja/manage_install.j2"
+            engine:
+              type: jinja2
+            states:
+              available:
+                - created
+                - faulty_installed
+            config_jinja: config_jinja_state.jinja2
+        """
+        with self.assertRaises(ValidationError, msg='"wizard_template" and "config_jinja" are mutually exclusive'):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            TaskSchema.model_validate(parsed_data)
+
+    def test_step_names_unique_fail(self):
+        yaml_input_of_jinja = """
+            stages:
+              - name: manage_ssl_stage
+                display_name: "Manage SSL"
+                steps:
+                  - name: configure_ssl
+                    display_name: Configure SSL
+                    config_template:
+                      file:
+                        path: scripts/manage_ssl.j2
+                      engine:
+                        type: jinja2
+                  - name: configure_ssl
+                    display_name: "Kerberos configuration"
+                    config_template:
+                      file:
+                        path: scripts/manage_ssl.j2
+                      engine:
+                        type: jinja2
+        """
+        with self.assertRaises(ValidationError, msg="step names should be unique"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            ActionProcessSpec.model_validate(parsed_data)
+
+    def test_entrypoint_specified_for_jinja_fail(self):
+        yaml_input_of_jinja = """
+            type: task
+            wizard_template:
+            file:
+              path: "./wizard_jinja/manage_install.j2"
+              entrypoint: generate_scripts
+            engine:
+              type: jinja2
+            states:
+              available:
+                - created
+                - faulty_installed
+            config_jinja: config_jinja_state.jinja2
+        """
+        with self.assertRaises(ValidationError, msg="entrypoint should not be specified for jinja"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            TaskSchema.model_validate(parsed_data)
+
+    def test_upgrade_action_with_wizard_fail(self):
+        yaml_input_of_jinja = """
+            upgrade:
+            - name: upgrade_via_action_simple
+              versions: &correct_versions
+                min: '1.0'
+                max: '2.0'
+              states: &always_available
+                available: any
+              wizard_template:
+                file:
+                  path: "./wizard_jinja/manage_install.j2"
+                engine:
+                  type: jinja2
+              scripts: &upgrade_scripts
+                - name: pre
+                  script: ./playbook.yaml
+                  script_type: ansible
+                - name: switch
+                  script: bundle_switch
+                  script_type: internal
+                - name: post
+                  script: ./playbook.yaml
+                  script_type: ansible
+        """
+        with self.assertRaises(ValidationError, msg="wizard is not expected in upgrade action"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            _BaseUpgradeSchema.model_validate(parsed_data["upgrade"][0])
+
+    def test_config_apply_pass(self):
+        yaml_input_of_jinja = """
+            - name: state_2
+              display_name: "State 2"
+              script_type: internal
+              script: config_apply
+              params:
+                changes:
+                  - object:
+                      type: cluster
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        value: "{{ action.process.manage_ssl_stage.configure_ssl.config.ssl_config }}"
+                  - object:
+                      type: service
+                      service_name: "{{ roles_generic_args.service_name }}"
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        value: true
+                  - object:
+                      type: component
+                      service_name: "{{ roles_generic_args.service_name }}"
+                      component_name: "{{ roles_generic_args.component_name }}"
+                    parameters:
+                      - key: "{{ ssl_key }}"
+                        value: "{{ action.process.manage_ssl_stage.configure_ssl.config.ssl_config }}"
+        """
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+        InternalConfigApplyScriptSchema.model_validate(parsed_data[0])

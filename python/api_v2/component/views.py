@@ -54,12 +54,19 @@ from api_v2.component.serializers import (
 )
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.process.api_schema import (
+    document_action_process_step_viewset,
+    document_action_process_viewset,
+)
+from api_v2.generic.action.process.audit import audit_action_process_viewset
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.action_host_group.api_schema import (
     document_action_host_group_actions_viewset,
     document_action_host_group_hosts_viewset,
     document_action_host_group_viewset,
 )
+from api_v2.generic.action_host_group.audit import audit_action_host_group_viewset
 from api_v2.generic.action_host_group.views import (
     ActionHostGroupActionsViewSet,
     ActionHostGroupHostsViewSet,
@@ -282,6 +289,7 @@ class ComponentActionViewSet(ActionViewSet):
 
 
 @document_action_host_group_viewset(object_type="component")
+@audit_action_host_group_viewset(parent_component_from_lookup)
 class ComponentActionHostGroupViewSet(ActionHostGroupViewSet):
     ...
 
@@ -299,4 +307,16 @@ class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
 @document_config_viewset(object_type="component")
 @audit_config_viewset(type_in_name="Component", retrieve_owner=parent_component_from_lookup)
 class ComponentConfigViewSet(ConfigLogViewSet):
+    ...
+
+
+@audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
+@document_action_process_viewset(object_type="component")
+class ComponentActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+# TODO: document, audit
+@document_action_process_step_viewset(object_type="component")
+class ComponentActionProcessStepViewSet(ProcessStepViewSet):
     ...

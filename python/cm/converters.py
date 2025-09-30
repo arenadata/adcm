@@ -13,7 +13,13 @@
 from typing import TypeAlias
 
 from audit.models import AuditObjectType
-from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, ExtraActionTargetType
+from core.types import (
+    ActionTargetDescriptor,
+    ADCMCoreType,
+    ADCMHostGroupType,
+    CoreObjectDescriptor,
+    ExtraActionTargetType,
+)
 from django.db.models import Model
 
 from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, Provider, Service
@@ -161,3 +167,7 @@ _model_name_to_audit_object_type_map = {
     "policy": AuditObjectType.POLICY,
     "actionhostgroup": AuditObjectType.ACTION_HOST_GROUP,
 }
+
+
+def orm_object_to_action_target_descriptor(object_: ADCM | CoreObject | ActionHostGroup) -> ActionTargetDescriptor:
+    return ActionTargetDescriptor(id=object_.id, type=orm_object_to_action_target_type(object_=object_))

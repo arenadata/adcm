@@ -5,10 +5,11 @@ import type {
   AdcmClustersFilter,
   AdcmCluster,
   CreateAdcmClusterPayload,
-  RenameAdcmClusterPayload,
+  EditAdcmClusterPayload,
   AdcmUpgradeRunConfig,
   AdcmUpgradeShort,
   AdcmUpgradeDetails,
+  AdcmHostCandidate,
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -17,6 +18,8 @@ import type {
   AdcmDynamicActionDetails,
   AdcmDynamicActionRunConfig,
 } from '@models/adcm/dynamicAction';
+import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
+import { AdcmWizardApi } from '@api/adcm/wizard';
 
 export class AdcmClustersApi {
   public static async getClusters(
@@ -46,7 +49,7 @@ export class AdcmClustersApi {
     return response.data;
   }
 
-  public static async patchCluster(clusterId: number, payload: RenameAdcmClusterPayload) {
+  public static async patchCluster(clusterId: number, payload: EditAdcmClusterPayload) {
     await httpClient.patch(`/api/v2/clusters/${clusterId}/`, payload);
   }
 
@@ -102,5 +105,45 @@ export class AdcmClustersApi {
 
   public static async unlinkHost(clusterId: number, hostId: number) {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/hosts/${hostId}/`);
+  }
+
+  public static async getHostCandidates(clusterId: number) {
+    const response = await httpClient.get<AdcmHostCandidate[]>(`/api/v2/clusters/${clusterId}/host-candidates/`);
+    return response.data;
+  }
+
+  // action wizard
+  public static async createClusterActionWizardProcess(clusterId: number, actionId: number) {
+    const endpoint = `/api/v2/clusters/${clusterId}/actions/${actionId}/processes/`;
+
+    return await AdcmWizardApi.createProcess(endpoint);
+  }
+
+  public static async getClusterActionWizardProcess(clusterId: number, actionId: number, processId: number) {
+    const endpoint = `/api/v2/clusters/${clusterId}/actions/${actionId}/processes/${processId}/`;
+
+    return await AdcmWizardApi.getProcess(endpoint);
+  }
+
+  public static async getClusterActionWizardStep(
+    clusterId: number,
+    actionId: number,
+    processId: number,
+    stepId: number,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
+
+    return await AdcmWizardApi.getStep(endpoint);
+  }
+
+  public static async createClusterActionWizardOperation(
+    clusterId: number,
+    actionId: number,
+    processId: number,
+    operation: AdcmWizardProcessOperationPayload,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/actions/${actionId}/processes/${processId}/operation/`;
+
+    return await AdcmWizardApi.postOperation(endpoint, operation);
   }
 }

@@ -10,10 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreError
+from core.types import ADCMCoreError, ADCMMessageError
 
 
 class HostDoesNotExistError(ADCMCoreError):
+    ...
+
+
+class ClusterAddHostError(ADCMMessageError):
     ...
 
 

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+import os
 import logging
 
 from adcm_version import compare_prototype_versions
@@ -19,7 +20,6 @@ from core.bundle_alt.types import BundleDefinitionKey, Definition
 from django.db.transaction import atomic
 
 from cm.adcm_config.config import init_object_config, switch_config
-from cm.bundle import set_adcm_url
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigLog, ObjectConfig, Prototype, SignatureStatus
 from cm.services.bundle_alt import repo
@@ -61,7 +61,7 @@ def _init_adcm(prototype: Prototype) -> None:
     adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
     adcm.config = init_object_config(prototype, adcm)
     adcm.save(update_fields=["config"])
-    set_adcm_url(adcm=adcm)
+    _set_adcm_url(adcm=adcm)
     logger.info("ADCM upgrade: version %s initialized.", prototype.version)
 
 
@@ -137,3 +137,15 @@ def _adcm_config_data_migration(adcm_config: ObjectConfig, old_version: str, new
     config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_rotation_in_db
 
     config_log_new.save(update_fields=["config"])
+
+
+def _set_adcm_url(adcm: ADCM) -> None:
+    adcm_url = os.getenv("DEFAULT_ADCM_URL")
+
+    if adcm_url is None:
+        return
+
+    config_log = ConfigLog.objects.filter(id=adcm.config.current).first()
+    config_log.config["global"]["adcm_url"] = adcm_url
+    config_log.save(update_fields=["config"])
+    logger.info("Set ADCM's URL from environment variable: %s", adcm_url)

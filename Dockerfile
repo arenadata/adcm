@@ -18,6 +18,7 @@ RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
         bash \
+        curl \
         git \
         gnupg \
         libc6-compat \
@@ -57,10 +58,16 @@ RUN apk add --no-cache --virtual .build-deps \
     $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
     $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root && \
     python -m venv /adcm/venv/2.9 --system-site-packages && \
-    /adcm/venv/2.9/bin/pip install --no-cache-dir git+https://github.com/arenadata/ansible.git@v2.9.27-p3
+    /adcm/venv/2.9/bin/pip install --no-cache-dir git+https://github.com/arenadata/ansible.git@v2.9.27-p3 && \
+    python -m venv /adcm/venv/2.16 --system-site-packages && \
+    /adcm/venv/2.16/bin/pip install --no-cache-dir ansible-core==2.16.4 && \
+    git clone -b 8.6.8_arenadata1 https://github.com/arenadata/community.general.git && \
+    cd community.general && /adcm/venv/2.16/bin/ansible-galaxy collection build && \
+    /adcm/venv/2.16/bin/ansible-galaxy collection install /community.general/community-general-8.6.8.tar.gz && \
+    curl https://raw.githubusercontent.com/ansible-community/ansible-build-data/refs/heads/main/9/ansible-9.13.0.yaml -o /adcm/ansible-9.13.0.yaml && \
+    /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml
 
 FROM python:3.10-alpine
-
 ENV PATH="/root/.local/bin:$PATH"
 RUN apk update && \
     apk upgrade && \
@@ -90,6 +97,7 @@ COPY python /adcm/python
 COPY --from=python_builder /adcm/venv /adcm/venv
 COPY --from=python_builder /usr/local/bin /usr/local/bin
 COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
+COPY --from=python_builder /root/.ansible/collections /root/.ansible/collections
 
 RUN mkdir -p /adcm/data/log
 

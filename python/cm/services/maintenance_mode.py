@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
+from cm.converters import orm_object_to_core_type
 from cm.models import (
     Action,
     Component,
@@ -120,7 +121,11 @@ def get_maintenance_mode_response(
 
         serializer.save()
         reset_objects_in_mm()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
+        send_object_update_event(
+            obj_id=obj.pk,
+            obj_type=orm_object_to_core_type(obj).value,
+            changes={"maintenanceMode": obj.maintenance_mode},
+        )
 
         return Response()
 
@@ -148,7 +153,11 @@ def get_maintenance_mode_response(
 
         serializer.save()
         reset_objects_in_mm()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
+        send_object_update_event(
+            obj_id=obj.pk,
+            obj_type=orm_object_to_core_type(obj).value,
+            changes={"maintenanceMode": obj.maintenance_mode},
+        )
 
         return Response()
 

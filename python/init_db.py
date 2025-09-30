@@ -13,14 +13,12 @@
 
 from pathlib import Path
 from secrets import token_hex
-import os
 import json
 import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.feature_flags import use_new_bundle_parsing_approach
-from cm.bundle import load_adcm
+from adcm.feature_flags import use_new_job_scheduler
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
@@ -68,7 +66,7 @@ def _create_admin_user() -> None:
 
 
 def _create_status_user() -> tuple[str, str | None]:
-    username = "status"
+    username = settings.ADCM_STATUS_USERNAME
     email = f"{username}@example.com"
 
     status_user = User.objects.filter(username=username).only("email").first()
@@ -129,10 +127,10 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     recover_statuses()
     clear_temp_tables()
 
-    adcm_parser = process_adcm_bundle if use_new_bundle_parsing_approach(env=os.environ, headers={}) else load_adcm
-    adcm_parser(adcm_conf_file)
+    process_adcm_bundle(adcm_conf_file)
 
-    drop_locks()
+    if not use_new_job_scheduler():
+        drop_locks()
     recheck_issues()
     logger.info("ADCM DB is initialized")
 

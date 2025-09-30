@@ -7,6 +7,8 @@ import type { RequestError } from '@api';
 import { AdcmClusterServiceConfigGroupsApi } from '@api';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { updateIfExists } from '@utils/objectUtils';
 
 interface loadClusterServiceConfigGroupsPayload {
   clusterId: number;
@@ -98,6 +100,14 @@ const serviceConfigGroupsSlice = createSlice({
       state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterServiceConfigGroups = [];
       state.totalCount = 0;
+    });
+    builder.addCase(wsActions['update_config-group'], (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.clusterServiceConfigGroups = updateIfExists<AdcmConfigGroup>(
+        state.clusterServiceConfigGroups,
+        (config) => config.id === id,
+        () => changes,
+      );
     });
   },
 });

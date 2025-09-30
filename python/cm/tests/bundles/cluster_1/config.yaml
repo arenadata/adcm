@@ -77,6 +77,11 @@
           subs:
             - name: x
               type: integer
+    state_2:
+        type: task
+        scripts_jinja: "./jinja/config_apply.j2"
+        states:
+          available: any
 
 - name: service_one_component
   type: service

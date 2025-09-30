@@ -13,7 +13,13 @@ import type {
   ConfigurationObject,
   ConfigurationTreeState,
 } from '../ConfigurationEditor.types';
-import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
+import {
+  buildConfigurationNodes,
+  buildConfigurationTree,
+  buildNodeDictionary,
+  getFailedNodeInfo,
+  validate,
+} from './ConfigurationTree.utils';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema, FieldErrors } from '@models/adcm';
 import type {
   ChangeConfigurationNodeHandler,
@@ -23,6 +29,7 @@ import type {
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
+import type { JSONPrimitive } from '@models/json';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -35,21 +42,29 @@ export interface ConfigurationTreeProps {
   onAddField: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
+  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onMoveArrayItem: MoveConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
   onChangeIsValid?: (isValid: boolean) => void;
 }
 
-const getNodeClassName = (node: ConfigurationNodeView, hasError: boolean, isSelected: boolean) => {
+const getNodeClassName = (
+  node: ConfigurationNodeView,
+  hasError: boolean,
+  isSelected: boolean,
+  isBeforeFailedNode: boolean,
+) => {
   const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
   const isDropPlaceholder = node.data.type === 'dropPlaceholder';
 
   return cn(s.collapseNode, {
     [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta.isAdvanced,
+    [s.collapseNode_beforeFailed]: isBeforeFailedNode,
     [s.collapseNode_failed]: hasError,
     [s.collapseNode_disabled]: !hasError && isReadonly,
     [s.isSelected]: isSelected,
+    [s.isExpandable]: !!node?.children?.length,
     [s.dropPlaceHolderMode]: isDropPlaceholder,
   });
 };
@@ -65,6 +80,7 @@ const ConfigurationTree = ({
   onAddField,
   onClear,
   onDelete,
+  onChange,
   onAddArrayItem,
   onFieldAttributesChange,
   onMoveArrayItem,
@@ -72,6 +88,7 @@ const ConfigurationTree = ({
 }: ConfigurationTreeProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
+  const nodeDictionary = buildNodeDictionary(configNode);
 
   const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
 
@@ -98,9 +115,14 @@ const ConfigurationTree = ({
   };
 
   const handleGetNodeClassName = (node: ConfigurationNodeView) => {
+    let isBeforeFailedNode = false;
     const hasError = configurationErrors[node.key] !== undefined;
     const isSelected = node.key === treeState.selectedNode?.key;
-    return getNodeClassName(node, hasError, isSelected);
+
+    const failedNodeInfo = getFailedNodeInfo(nodeDictionary, configurationErrors, node.data.parentNode.key || node.key);
+    isBeforeFailedNode = failedNodeInfo ? failedNodeInfo.lastFailedNodeIndex > node.index : false;
+
+    return getNodeClassName(node, hasError, isSelected, isBeforeFailedNode);
   };
 
   const handleDragStart = (node: ConfigurationNodeView) => {
@@ -139,6 +161,7 @@ const ConfigurationTree = ({
             onClick={handleClick}
             onClear={onClear}
             onDelete={onDelete}
+            onChange={onChange}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -176,7 +199,7 @@ const ConfigurationTree = ({
   };
 
   return (
-    <div ref={ref}>
+    <div className={s.collapseNode__root} ref={ref}>
       <CollapseNode
         node={viewConfigTree}
         treeRef={ref}

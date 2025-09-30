@@ -22,13 +22,22 @@ from audit.models import (
 )
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.permissions import AllowAny, DjangoObjectPermissions
+from rest_framework.routers import APIRootView
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.audit.filters import AuditLogFilter, AuditSessionFilter
 from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api_v2.views import ADCMReadOnlyModelViewSet
+
+
+class AuditRoot(APIRootView):
+    permission_classes = (AllowAny,)
+    api_root_dict = {
+        "operations": "auditlog-list",
+        "logins": "auditsession-list",
+    }
 
 
 @extend_schema_view(

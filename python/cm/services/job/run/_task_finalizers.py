@@ -17,7 +17,7 @@ from core.job.types import Task
 from core.types import ADCMCoreType
 from django.conf import settings
 
-from cm.converters import core_type_to_model
+from cm.converters import core_type_to_model, orm_object_to_core_type
 from cm.models import (
     MaintenanceMode,
     TaskLog,
@@ -68,7 +68,11 @@ def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType)
     ):
         obj.maintenance_mode = MaintenanceMode.OFF
         obj.save()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
+        send_object_update_event(
+            obj_id=obj.pk,
+            obj_type=orm_object_to_core_type(obj).value,
+            changes={"maintenanceMode": obj.maintenance_mode},
+        )
 
     if (
         action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
@@ -76,4 +80,8 @@ def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType)
     ):
         obj.maintenance_mode = MaintenanceMode.ON
         obj.save()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
+        send_object_update_event(
+            obj_id=obj.pk,
+            obj_type=orm_object_to_core_type(obj).value,
+            changes={"maintenanceMode": obj.maintenance_mode},
+        )

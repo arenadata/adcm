@@ -18,22 +18,29 @@ import json
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
 from cm.adcm_config.config import get_default
+from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
     Component,
     Host,
+    Process,
     PrototypeConfig,
     Provider,
     Service,
 )
+from cm.services.action_process.types import ProcessState
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
+from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.config.jinja import get_jinja_config
+from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
+from django.utils import timezone
 from rbac.models import User
+from rest_framework.exceptions import NotFound
 
-from api_v2.generic.config.utils import convert_attr_to_adcm_meta, get_config_schema
+from api_v2.generic.config.utils import get_config_schema
 
 
 def get_str_hash(value: str) -> str:
@@ -88,13 +95,39 @@ def get_action_configuration(
     if not prototype_configs:
         return None, None, None
 
-    config = defaultdict(dict)
-    attr = {}
-
     if action_.prototype.type == "adcm":
         path_resolver = ADCMBundlePathResolver()
     else:
         path_resolver = BundlePathResolver(bundle_hash=action_.prototype.bundle.hash)
+
+    return get_schema_config_meta(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
+
+
+def get_action_processes(action: Action, object_: CoreObjectDescriptor) -> list[Process]:
+    # While we are returning one object, the last one is incomplete.
+    if (
+        process := Process.objects.filter(
+            object_id=object_.id,
+            object_type=object_.type,
+            action=action,
+            state=ProcessState.CREATED,
+            created_at__gt=timezone.now() - settings.ACTION_PROCESS_STALE_STATE_TIMEOUT,
+        )
+        .order_by("id")
+        .last()
+    ):
+        return [process]
+
+    return []
+
+
+def get_schema_config_meta(
+    object_: Cluster | Service | Component | Provider | Host,
+    prototype_configs: list[PrototypeConfig],
+    path_resolver: ADCMBundlePathResolver | BundlePathResolver,
+) -> tuple[dict | None, dict | None, dict | None]:
+    config = defaultdict(dict)
+    attr = {}
 
     for prototype_config in prototype_configs:
         name = prototype_config.name
@@ -120,3 +153,19 @@ def get_action_configuration(
     adcm_meta = convert_attr_to_adcm_meta(attr=attr)
 
     return config_schema, config, adcm_meta
+
+
+def check_process_object(process_id: int, action_id: ActionID, action_target: ActionTargetDescriptor) -> None:
+    if action_target.type in {
+        ADCMCoreType.ADCM,
+        ADCMCoreType.HOST,
+        ADCMCoreType.PROVIDER,
+        ExtraActionTargetType.ACTION_HOST_GROUP,
+    }:
+        msg = f"Objects of the '{action_target.type.value}' type do not support action processes"
+        raise AdcmEx(code="ACTION_ERROR", msg=msg)
+
+    if not Process.objects.filter(
+        id=process_id, action_id=action_id, object_id=action_target.id, object_type=action_target.type.value
+    ).exists():
+        raise NotFound(f"Process with id {process_id} do not exist")

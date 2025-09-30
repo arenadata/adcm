@@ -13,7 +13,7 @@
 from functools import partial
 
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
-from django.db.models.signals import pre_delete, pre_save
+from django.db.models.signals import post_save, pre_delete, pre_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy
@@ -77,3 +77,9 @@ def send_delete_event(sender, instance: ConcernItem, **kwargs):  # noqa: ARG001
                     concern_id=instance.pk,
                 )
             )
+
+
+@receiver(signal=post_save, sender=Host)
+def update_duplicate_hosts(sender, instance: Host, **kwargs):  # noqa: ARG001
+    if instance.original is None:  # TODO: Perhaps we should replace the use of signals with triggers.
+        instance.duplicates.update(state=instance.state, _multi_state=instance._multi_state)

@@ -22,7 +22,6 @@ from adcm.permissions import (
 )
 from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import adjust_denied_on_404_result
-from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
 from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
@@ -141,7 +140,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         return ActionHostGroupSerializer
 
-    @audit
     @with_parent_object
     def create(self, request: Request, *_, parent: CoreObjectDescriptor, **__) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_PERMISSION_DENIED)
@@ -189,7 +187,6 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         return Response(data=self.get_serializer(instance=instance).data)
 
-    @audit
     @with_parent_object
     def destroy(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
@@ -410,11 +407,11 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         self.prototype_objects = {group_owner.prototype: group_owner}
         return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)
 
-    def check_permissions_for_list(self, request: Request) -> None:
-        if not (self.parent_object and self.parent_object.object):
+    def check_permissions_for_list(self, request: Request, parent_object: ADCMEntity) -> None:
+        if not (parent_object and parent_object.object):
             raise NotFound()
 
-        group_owner = self.parent_object.object
+        group_owner = parent_object.object
         model_name = group_owner.__class__.__name__.lower()
         if not (
             request.user.has_perm(perm=f"cm.view_{model_name}")
@@ -424,10 +421,10 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
 
         check_has_group_permissions_for_object(user=request.user, parent_object=group_owner, dto=VIEW_ONLY_NOT_FOUND)
 
-    def check_permissions_for_run(self, request: Request, action: Action) -> None:
-        self.check_permissions_for_list(request=request)
+    def check_permissions_for_run(self, request: Request, action: Action, parent_object: ADCMEntity) -> None:
+        self.check_permissions_for_list(request=request, parent_object=parent_object)
 
-        if not has_run_perms(user=request.user, action=action, obj=self.parent_object.object):
+        if not has_run_perms(user=request.user, action=action, obj=parent_object.object):
             raise NotFound()
 
     def _get_actions_owner(self) -> ADCMEntity:

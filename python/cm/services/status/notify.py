@@ -12,9 +12,11 @@
 
 from collections import defaultdict
 from functools import wraps
+from typing import Iterable
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ObjectMaintenanceModeState
+from core.types import HostID
 from requests import Response
 
 from cm.models import Cluster, Component, Host, HostComponent, Service
@@ -23,6 +25,12 @@ from cm.services.cluster import (
     retrieve_multiple_clusters_topology,
 )
 from cm.status_api import api_request
+
+
+def update_all() -> None:
+    register_all_duplicates()
+    reset_hc_map()
+    reset_objects_in_mm()
 
 
 def reset_hc_map() -> None:
@@ -105,3 +113,19 @@ def update_mm_objects(func):
         return res
 
     return wrapper
+
+
+def register_all_duplicates() -> None:
+    result = defaultdict(list)
+
+    duplicates = Host.objects.filter(original__isnull=False).values_list("id", "original_id")
+    for duplicate_id, original_id in duplicates:
+        result[original_id].append(duplicate_id)
+
+    for original_id, duplicates in result.items():
+        register_host_duplicates(original=original_id, duplicates=duplicates)
+
+
+def register_host_duplicates(original: HostID, duplicates: Iterable[HostID]) -> None:
+    payload = {"hostId": original, "duplicates": list(duplicates)}
+    api_request("post", "host-duplicates/", data=payload)

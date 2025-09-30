@@ -13,6 +13,7 @@
 from contextlib import suppress
 from typing import Any, Collection
 
+from cm.converters import orm_object_to_core_type
 from cm.models import Host, MaintenanceMode
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
@@ -96,7 +97,11 @@ class ADCMChangeMMExecutor(ADCMAnsiblePluginExecutor[ChangeMaintenanceModeArgume
             )
 
         with suppress(Exception):
-            send_object_update_event(object_=target_object, changes={"maintenanceMode": target_object.maintenance_mode})
+            send_object_update_event(
+                obj_id=target_object.pk,
+                obj_type=orm_object_to_core_type(target_object).value,
+                changes={"maintenanceMode": target_object.maintenance_mode},
+            )
 
         with suppress(Exception):
             reset_objects_in_mm()

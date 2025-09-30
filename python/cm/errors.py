@@ -210,7 +210,16 @@ ERRORS = {
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
     "BUNDLE_SIGNATURE_VERIFICATION_ERROR": ("Bundle signature verification error", HTTP_409_CONFLICT, ERR),
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),
-    "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR),
+    "INTERNAL_SERVER_ERROR": ("Internal server error", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
+    "INVALID_CREATE_DUPLICATE_HOST": ("You cannot create a copy from a copy", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_UPDATE_CONFLICT": ("Can't update action process", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_OPERATION_CONFLICT": ("Action process operation conflict", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_ACTION_NOT_SUITABLE": ("Does not support action process functionality", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_STEP_NOT_RENDERED": ("Step is not rendered yet", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_DB_ERROR": ("Database error", HTTP_409_CONFLICT, ERR),
+    "CONFIG_OPERATION_ERROR": ("Can't perform operation with config", HTTP_409_CONFLICT, ERR),
+    "ACTION_PROCESS_NOT_FOUND": ("Process not found", HTTP_404_NOT_FOUND, ERR),
+    "ACTION_PROCESS_STEP_NOT_FOUND": ("Step not found", HTTP_404_NOT_FOUND, ERR),
 }
 
 
@@ -294,12 +303,14 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     response = exception_handler(exc=exc, context=context)
 
     if not isinstance(exc, AdcmEx) and response and 400 <= response.status_code <= 499:
+        detail = response.status_code
+        if hasattr(exc, "detail"):
+            detail = exc.detail
+
         data = {
             "code": "API_ERROR",
             "level": "ERROR",
-            "desc": response.data.get("detail", response.status_code)
-            if isinstance(response.data, dict)
-            else response.status_code,
+            "desc": detail,
         }
         response.data = data
 

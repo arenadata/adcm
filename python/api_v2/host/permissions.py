@@ -29,3 +29,12 @@ class HostsPermissions(DjangoObjectPermissions):
             return True
 
         return super().has_permission(request=request, view=view)
+
+
+class CreateDuplicateHostPermissions(DjangoObjectPermissions):
+    perms_map = {
+        "POST": ["%(app_label)s.add_%(model_name)s"],
+    }
+
+    def has_permission(self, request, view):
+        return super().has_permission(request, view)

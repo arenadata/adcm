@@ -11,62 +11,44 @@
 # limitations under the License.
 
 from typing import Annotated, Any, Literal, Optional, TypeAlias
-import re
 
-from adcm_version import compare_prototype_versions
 from pydantic import (
     AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
     Field,
+    conlist,
     field_validator,
     model_validator,
 )
 from typing_extensions import TypedDict
 
-from core.bundle_alt._pattern import Pattern
 from core.bundle_alt.errors import BundleParsingError, convert_validation_to_bundle_error
-
-# Should be moved to consts section
-ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
-ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
-ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
-ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
-ADCM_DELETE_SERVICE_ACTION_NAME = "adcm_delete_service"
-ADCM_SERVICE_ACTION_NAMES_SET = {
-    ADCM_TURN_ON_MM_ACTION_NAME,
-    ADCM_TURN_OFF_MM_ACTION_NAME,
-    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
-    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
-    ADCM_DELETE_SERVICE_ACTION_NAME,
-}
-ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
-# section end
-
-# copied from cm.utils
-NAME_REGEX = re.compile(pattern=r"[0-9a-zA-Z_\.-]+")
+from core.bundle_alt.schema_validation import (
+    convert_config,
+    forbidden_mm_actions,
+    is_correct_pattern,
+    is_path_correct,
+    license_allowed_for_type,
+    min_and_max_present,
+    min_less_than_max,
+    patch_masking,
+    script_is_correct_path,
+    validate_name,
+)
+from core.job.types import StepType
+from core.templates import Template
 
 VERSION: TypeAlias = int | float | str
 VENV: TypeAlias = Annotated[
-    Literal["default", "2.8", "2.9"] | None,
+    Literal["default", "2.8", "2.9", "2.16"] | None,
     Field(default=None),
     # fixme cast is too broad, but required since round trip load
     BeforeValidator(lambda x: str(x) if x is not None else x),
 ]
 MONITORING: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(default=None)]
 ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
-
-
-def validate_name(name: str) -> str:
-    if NAME_REGEX.fullmatch(name) is None:
-        raise ValueError(
-            "Name is incorrect. Only latin characters, digits, "
-            "dots (.), dashes (-), and underscores (_) are allowed.",
-        )
-
-    return name
-
 
 NAME: TypeAlias = Annotated[str, AfterValidator(validate_name)]
 
@@ -78,115 +60,6 @@ class _BaseModel(BaseModel):
 ########
 # CONFIG
 ########
-
-
-# COPIED from cm FOR ADCM-6350
-def is_path_correct(raw_path: str) -> bool:
-    """
-    Return whether given path meets ADCM path description requirements
-
-    >>> this = is_path_correct
-    >>> this("relative_to_bundle/path.yaml")
-    True
-    >>> this("./relative/to/file.yaml")
-    True
-    >>> this(".secret")
-    True
-    >>> this("../hack/system")
-    False
-    >>> this("/hack/system")
-    False
-    >>> this(".././hack/system")
-    False
-    >>> this("../../hack/system")
-    False
-    """
-    return raw_path.startswith("./") or not raw_path.startswith(("..", "/"))
-
-
-def convert_config(config: Any) -> list:
-    """Converts old-style dict config to list config"""
-
-    # We expect this validator to be called only if a field is defined in the data.
-    if config is None:
-        raise ValueError("the value cannot be empty")
-
-    if not isinstance(config, dict):
-        return config
-
-    new_config = []
-    for key, value in config.items():
-        subs = None
-        extra = {}
-
-        if value is None:
-            # patch very strange stuff when it's None and not dict, cases aren't prod-related
-            value = {}
-        elif "type" not in value or not isinstance(value["type"], str):  # it is a group
-            extra = {"type": "group", "required": False}
-            subs = convert_config(value)
-
-        new_value = {"name": key, "subs": subs, **extra} if subs is not None else {"name": key, **value, **extra}
-        new_config.append(new_value)
-
-    return new_config
-
-
-def license_allowed_for_type(type_: str) -> None:
-    allowed_types = {"cluster", "service", "provider"}
-
-    if type_ not in allowed_types:
-        raise ValueError("License can be placed in cluster, service or provider")
-
-
-def min_and_max_present(versions: "VersionsSchema"):
-    if versions.min is None and versions.min_strict is None:
-        raise ValueError("min or min_strict should be present in versions of upgrade")
-
-    if versions.max is None and versions.max_strict is None:
-        raise ValueError("max or max_strict should be present in versions of upgrade")
-
-    return versions
-
-
-def min_less_than_max(versions: "VersionsSchema"):
-    if versions.min is None or versions.max is None:
-        return versions
-
-    if compare_prototype_versions(str(versions.min), str(versions.max)) > 0:
-        raise ValueError("Min version should be less or equal max version")
-
-    return versions
-
-
-def script_is_correct_path(script: str):
-    if not is_path_correct(script):
-        raise ValueError(f"Action's script has unsupported path format: {script}")
-
-    return script
-
-
-def is_correct_pattern(pattern: str | None):
-    if not isinstance(pattern, str):
-        return pattern
-
-    if not Pattern(pattern).is_valid:
-        raise ValueError(f"Pattern is not valid regular expression: {pattern}")
-
-    return pattern
-
-
-def forbidden_mm_actions(actions: Any):
-    if not isinstance(actions, dict):
-        return None
-
-    for name, data in actions.items():
-        if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(data.keys()):
-            raise ValueError(
-                "Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
-            )
-
-    return actions
 
 
 class _BaseConfigItemSchema(_BaseModel):
@@ -402,6 +275,7 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
     active: Annotated[bool | None, Field(default=None)]
 
 
+# TODO: move to schema_validation.py
 def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
     # at least ADS has duplicates in config
     if not parameters:
@@ -459,17 +333,6 @@ class UnAvailabilitySchema(TypedDict):
     unavailable: Literal["any"] | list[str]
 
 
-def patch_masking(value: dict | None) -> dict:
-    # To make an action available, we can specify the making field without the value.
-    # If a field is specified, but its value is None, we must set an explicit value that differs from the default,
-    # so that after serialization this field remains and the code that patches the default values of the available
-    # field will work.
-    if value is None:
-        return {}
-
-    return value
-
-
 class MaskingSchema(TypedDict):
     state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
     multi_state: Annotated[AvailabilitySchema | UnAvailabilitySchema | None, Field(default=None)]
@@ -496,6 +359,66 @@ class HcApplyRule(_BaseModel):
 
 class HcApplySchema(_BaseModel):
     rules: list[HcApplyRule]
+
+
+class AdcmConfigApplyRule(_BaseModel):
+    type: Literal["adcm"]
+
+
+class HostConfigApplyRule(_BaseModel):
+    type: Literal["host"]
+
+
+class ProviderConfigApplyRule(_BaseModel):
+    type: Literal["provider"]
+
+
+class ClusterConfigApplyRule(_BaseModel):
+    type: Literal["cluster"]
+
+
+class ServiceConfigApplyRule(_BaseModel):
+    type: Literal["service"]
+    service_name: str
+
+
+class ComponentConfigApplyRule(ServiceConfigApplyRule):
+    type: Literal["component"]
+    component_name: str
+
+
+class ConfigApplyParameterItem(_BaseModel):
+    key: str
+    value: Any
+
+
+class ConfigApplyObject(_BaseModel):
+    object: Annotated[
+        ClusterConfigApplyRule
+        | ServiceConfigApplyRule
+        | ComponentConfigApplyRule
+        | HostConfigApplyRule
+        | ProviderConfigApplyRule
+        | AdcmConfigApplyRule,
+        Field(discriminator="type"),
+    ]
+    parameters: list[ConfigApplyParameterItem]
+
+    def __hash__(self):
+        return hash(self.model_dump_json())
+
+
+class ConfigApplySchema(_BaseModel):
+    changes: conlist(ConfigApplyObject, min_length=1)
+
+    @model_validator(mode="after")
+    def ensure_unique_changes(self):
+        seen = set()
+        for change in self.changes:
+            if change in seen:
+                raise ValueError("Duplicate change detected in 'changes'")
+            seen.add(change)
+        return self
 
 
 #######
@@ -537,6 +460,12 @@ class _PythonScript(_BaseModel):
     params: Annotated[None, Field(default=None)]
 
 
+class _InternalConfigApplyScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["config_apply"]
+    params: ConfigApplySchema
+
+
 class _BaseScriptSchema(_BaseModel):
     name: str
     display_name: Annotated[str | None, Field(default=None)]
@@ -560,6 +489,10 @@ class AnsibleScriptSchema(_BaseScriptSchema, _AnsibleScript):
 
 
 class PythonScriptSchema(_BaseScriptSchema, _PythonScript):
+    ...
+
+
+class InternalConfigApplyScriptSchema(_BaseScriptSchema, _InternalConfigApplyScript):
     ...
 
 
@@ -593,6 +526,89 @@ class VersionsSchema(_BaseModel):
             raise ValueError("max and max_strict can not be used simultaneously in versions")
 
         return self
+
+
+##########################
+# ACTION PROCESS (WIZARD)
+##########################
+
+
+class _Names(_BaseModel):
+    name: str
+    display_name: str
+
+
+# Step Schemas
+
+
+class _StepOperationUIOptions(_BaseModel):
+    button_name: str
+
+
+class OperationStep(_Names):
+    scripts_template: Template
+    ui_options: _StepOperationUIOptions | None = None
+
+    @property
+    def type(self) -> StepType:
+        return StepType.OPERATION
+
+    @property
+    def template(self) -> Template:
+        return self.scripts_template
+
+
+class ConfigurationStep(_Names):
+    config_template: Template
+
+    @property
+    def type(self) -> StepType:
+        return StepType.CONFIGURATION
+
+    @property
+    def template(self) -> Template:
+        return self.config_template
+
+
+ActionProcessStep = OperationStep | ConfigurationStep
+
+
+# Stage & Action Process Schema
+
+
+class ActionProcessStage(_Names):
+    steps: list[ActionProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
+
+    @model_validator(mode="after")
+    def steps_names_are_unique(self):
+        step_names = set()
+        for step in self.steps:
+            if step.name in step_names:
+                raise ValueError(f"Duplicate step name: {step.name}")
+
+            step_names.add(step.name)
+
+        return self
+
+
+class ActionProcessSpec(_BaseModel):
+    stages: list[ActionProcessStage]
+
+    @model_validator(mode="after")
+    def stage_names_are_unique(self):
+        stage_names = set()
+        for stage in self.stages:
+            if stage.name in stage_names:
+                raise ValueError(f"Duplicate stage name: {stage.name}")
+
+            stage_names.add(stage.name)
+
+        return self
+
+
+###########
+# Upgrades
+###########
 
 
 class _BaseUpgradeSchema(_BaseModel):
@@ -666,6 +682,7 @@ class _BaseActionSchema(_BaseModel):
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
+    wizard_template: Annotated[Template | None, Field(default=None)]
 
     @model_validator(mode="before")
     @classmethod
@@ -680,8 +697,16 @@ class _BaseActionSchema(_BaseModel):
 
         config_jinja_specified = "config_jinja" in data
         config_specified = "config" in data
+        wizard_specified = "wizard_template" in data
+        hc_acl_specified = "hc_acl" in data
         if config_jinja_specified and config_specified:
             raise ValueError('"config" and "config_jinja" are mutually exclusive')
+
+        if wizard_specified and (config_specified or config_jinja_specified):
+            raise ValueError('"wizard_template" and "config" or  "config_jinja" are mutually exclusive')
+
+        if wizard_specified and hc_acl_specified:
+            raise ValueError('"wizard_template" and "hc_acl" are mutually exclusive')
 
         return data
 
@@ -796,6 +821,10 @@ class PythonTaskScriptSchema(PythonScriptSchema, _WithAllowToTerminateField):
     ...
 
 
+class InternalConfigApplyTaskScriptSchema(InternalConfigApplyScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
 
@@ -805,15 +834,29 @@ INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
     Field(discriminator="script"),
 ]
 
+INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
+    InternalBundleSwitchTaskScriptSchema
+    | InternalBundleRevertTaskScriptSchema
+    | InternalHcApplyTaskScriptSchema
+    | InternalConfigApplyTaskScriptSchema,
+    Field(discriminator="script"),
+]
+
 
 TASK_SCRIPTS_SCHEMA = Annotated[
     INTERNAL_TASK_SCRIPTS_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema, Field(discriminator="script_type")
 ]
 
 
+TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
+    INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema,
+    Field(discriminator="script_type"),
+]
+
+
 class TaskSchema(_BaseTaskSchema):
     scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
-    scripts_jinja: Optional[str] = None
+    scripts_jinja: str | None = None
 
     @field_validator("scripts_jinja")
     @classmethod
@@ -1021,8 +1064,8 @@ def parse(
 ###############
 
 
-class ScriptsJinjaSchema(_BaseModel):
-    scripts: Annotated[list[TASK_SCRIPTS_SCHEMA], Field(min_length=1)]
+class DynamicScriptsSchema(_BaseModel):
+    scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
 
 
 ##############

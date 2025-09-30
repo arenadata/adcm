@@ -12,7 +12,6 @@
 
 from typing import Any, Sequence
 
-from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ADCMEntity
 from django.contrib.auth.models import User
@@ -56,35 +55,12 @@ VIEW_POLICY_PERMISSION = "rbac.view_policy"
 DELETE_CONCERN_PERMISSION = "cm.delete_concernitem"
 
 
-class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
-    @audit
-    def has_permission(self, request, view):
-        return super().has_permission(request, view)
-
-
 class DjangoModelPermissionsAudit(DjangoModelPermissions):
-    @audit
     def has_permission(self, request, view):
-        return super().has_permission(request, view)
-
-
-class CustomModelPermissionsByMethod(DjangoModelPermissionsAudit):
-    method_permissions_map = {
-        # Example:
-        # "get": [("app_label.permission", ErrorToRaise), ...]
-    }
-
-    @audit
-    def has_permission(self, request, view):
-        for permission, error in view.method_permissions_map.get(request.method.lower(), []):
-            if not request.user.has_perm(perm=permission):
-                raise error
-
         return super().has_permission(request, view)
 
 
 class IsAuthenticatedAudit(IsAuthenticated):
-    @audit
     def has_permission(self, request, view):
         return super().has_permission(request, view)
 
@@ -147,6 +123,5 @@ class ChangeMMPermissions(DjangoObjectPermissions):
         "POST": [],
     }
 
-    @audit
     def has_permission(self, request, view) -> bool:
         return super().has_permission(request=request, view=view)

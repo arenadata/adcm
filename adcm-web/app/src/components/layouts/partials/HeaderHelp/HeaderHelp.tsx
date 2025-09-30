@@ -24,7 +24,7 @@ const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
   return (
     <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">
       <li className={className}>
-        <Link to={value.toString()} target="_blank" className="flex-block">
+        <Link to={value.toString()} target="_blank" rel="noopener noreferrer" className="flex-block">
           {label}
         </Link>
       </li>

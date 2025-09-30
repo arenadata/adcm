@@ -18,7 +18,7 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import Task, TaskMappingDelta
+from core.job.types import AssociatedProcess, ScriptType, Task, TaskMappingDelta
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -40,10 +40,12 @@ from cm.models import (
     ConfigLog,
     Host,
     JobStatus,
+    Process,
     Provider,
     Service,
     TaskLog,
 )
+from cm.services.action_process.types import ProcessState
 from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.checks import check_mapping_restrictions
@@ -70,6 +72,7 @@ class ActionRunPayload:
     hostcomponent: set[HostComponentEntry] = field(default_factory=set)
     verbose: bool = False
     is_blocking: bool = True
+    process: AssociatedProcess | None = None
 
 
 def run_action(
@@ -86,6 +89,14 @@ def run_action(
 
     if action_has_hc_acl and not action_objects.cluster:
         raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
+
+    # shouldn't be here, extract and check correctly
+    if action.wizard_template:
+        if payload.process is None:
+            raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
+
+        if not Process.objects.filter(id=payload.process.id, action=action, state=ProcessState.COMPLETED).exists():
+            raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
 
     _check_no_target_conflict(target=action_objects.target, action=action)
     check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
@@ -110,6 +121,7 @@ def run_action(
         mapping_delta=delta,
         post_upgrade_hostcomponent=post_upgrade_hc,
         is_blocking=payload.is_blocking,
+        process=payload.process,
     )
 
     with atomic():
@@ -209,6 +221,11 @@ def prepare_task_for_action(
         job_specifications = tuple(
             get_job_specs_from_template(task_id=task.id, delta=delta, feature_scripts_jinja=feature_scripts_jinja)
         )
+        if any(
+            specs.script_type == ScriptType.INTERNAL and specs.script == "config_apply" for specs in job_specifications
+        ):
+            message = "Internal script 'config_apply' can't be used for jinja action"
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
     else:
         job_specifications = tuple(action_repo.get_job_specs(id=action))
 

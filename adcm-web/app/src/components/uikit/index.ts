@@ -26,10 +26,12 @@ import MarkedList from '@uikit/MarkedList/MarkedList';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
 import MultiSelectList from '@uikit/Select/MultiSelect/MultiSelectList/MultiSelectList';
 import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
+import MultilineInput from '@uikit/MultilineInput/MultilineInput';
 import type { FieldProps } from './Field/Field.types';
 import ExpandableRowComponent from '@uikit/Table/TableRow/ExpandableRow';
 import FormField from '@uikit/FormField/FormField';
 import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
+import FlexGroup from './FlexGroup/FlexGroup';
 import Pagination from '@uikit/Pagination/Pagination';
 import type { PaginationData } from '@uikit/Pagination/Pagination.types';
 import Panel from './Panel/Panel';
@@ -89,6 +91,7 @@ export {
   type FieldProps,
   FormField,
   FormFieldsContainer,
+  FlexGroup,
   Icon,
   IconButton,
   type IconsNames,
@@ -98,6 +101,7 @@ export {
   type MarkerIconType,
   MultiSelectList,
   MultiSelectPanel,
+  MultilineInput,
   Input,
   InputNumber,
   InputPassword,

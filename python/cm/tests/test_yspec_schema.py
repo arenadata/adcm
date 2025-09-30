@@ -13,85 +13,91 @@
 from pathlib import Path
 
 from adcm.tests.base import ParallelReadyTestCase
+from core.bundle_alt._yspec import FormatError, process_rule
 from django.test import TestCase
+import yaml
 
-from cm.checker import FormatError
-from cm.stack import check_yspec_schema
+from cm.services.bundle_alt.load import _get_rules_for_yspec_schema
 
 
 class TestYspecSchema(TestCase, ParallelReadyTestCase):
     def setUp(self):
         self.yspec_schemas_dir = Path(__file__).parent / "files" / "yspec_schemas"
+        self.schema = _get_rules_for_yspec_schema()
+
+    def check_yspec_schema(self, conf_file: Path):
+        content = yaml.safe_load(conf_file.read_text())
+        process_rule(data=content, rules=self.schema, name="root")
 
     def test_wrong_schema_no_root(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_no_root.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_no_root.yaml")
 
         self.assertTrue(error.exception.message == 'There is no required key "root" in map.')
 
     def test_wrong_schema_no_match(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_no_match.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_no_match.yaml")
 
         self.assertTrue(error.exception.message == 'There is no key "match" in map.')
 
     def test_wrong_schema_not_supported_match(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_not_supported_match.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_not_supported_match.yaml")
 
         self.assertTrue(error.exception.message == 'Value "not_supported_match" is not allowed for map key "match".')
 
     def test_wrong_schema_extra_field_in_simple_type(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_simple_type.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_simple_type.yaml")
 
         self.assertTrue(error.exception.message == 'Map key "extra" is not allowed here (rule "simple_type")')
 
     def test_good_schema_simple_type(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_simple_type.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_simple_type.yaml")
 
     def test_wrong_schema_list_type_not_item_field(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_list_type_not_item_field.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_list_type_not_item_field.yaml")
 
         self.assertTrue(error.exception.message == 'There is no required key "item" in map.')
 
     def test_wrong_schema_extra_field_in_list_type(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_list_type.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_list_type.yaml")
 
         self.assertTrue(error.exception.message == 'Map key "extra" is not allowed here (rule "list_type")')
 
     def test_good_schema_list_type(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_list_type.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_list_type.yaml")
 
     def test_wrong_schema_extra_field_in_dict_type(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_dict_type.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_dict_type.yaml")
 
         self.assertTrue(error.exception.message == 'Map key "extra" is not allowed here (rule "dict_type")')
 
     def test_good_schema_dict_type(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_type.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_type.yaml")
 
     def test_good_schema_dict_type_with_default_item(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_type_with_default_item.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_type_with_default_item.yaml")
 
     def test_wrong_schema_set_type_not_variants_field(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_set_type_not_variants_field.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_set_type_not_variants_field.yaml")
 
         self.assertTrue(error.exception.message == 'There is no required key "variants" in map.')
 
     def test_wrong_schema_extra_field_in_set_type(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_set_type.yaml")
+            self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_set_type.yaml")
 
         self.assertTrue(error.exception.message == 'Map key "extra" is not allowed here (rule "set_type")')
 
     def test_wrong_schema_set_type_wrong_variants_value_string(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(
+            self.check_yspec_schema(
                 conf_file=self.yspec_schemas_dir / "wrong_schema_set_type_wrong_variants_value_string.yaml"
             )
 
@@ -101,18 +107,18 @@ class TestYspecSchema(TestCase, ParallelReadyTestCase):
 
     def test_wrong_schema_set_type_wrong_variants_value_list_integer(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(
+            self.check_yspec_schema(
                 conf_file=self.yspec_schemas_dir / "wrong_schema_set_type_wrong_variants_value_list_integer.yaml"
             )
 
         self.assertTrue(error.exception.message == "Value of list index \"0\" should be a <class 'str'>")
 
     def test_good_schema_set_type(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_set_type.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_set_type.yaml")
 
     def test_wrong_schema_dict_key_selection_not_variants_field(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(
+            self.check_yspec_schema(
                 conf_file=self.yspec_schemas_dir / "wrong_schema_dict_key_selection_type_not_variants_field.yaml"
             )
 
@@ -120,7 +126,7 @@ class TestYspecSchema(TestCase, ParallelReadyTestCase):
 
     def test_wrong_schema_dict_value_selection_not_selector_field(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(
+            self.check_yspec_schema(
                 conf_file=self.yspec_schemas_dir / "wrong_schema_dict_key_selection_type_not_selector_field.yaml"
             )
 
@@ -128,7 +134,7 @@ class TestYspecSchema(TestCase, ParallelReadyTestCase):
 
     def test_wrong_schema_extra_field_in_dict_value_selection_type(self):
         with self.assertRaises(FormatError) as error:
-            check_yspec_schema(
+            self.check_yspec_schema(
                 conf_file=self.yspec_schemas_dir / "wrong_schema_extra_field_in_dict_key_selection_type.yaml"
             )
 
@@ -137,4 +143,4 @@ class TestYspecSchema(TestCase, ParallelReadyTestCase):
         )
 
     def test_good_schema_dict_key_selection_type(self):
-        check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_key_selection_type.yaml")
+        self.check_yspec_schema(conf_file=self.yspec_schemas_dir / "good_schema_dict_key_selection_type.yaml")
