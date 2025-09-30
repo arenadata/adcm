@@ -11,20 +11,22 @@
 # limitations under the License.
 
 from pathlib import Path
+from typing import Callable
 import os
 import logging
 
 from adcm_version import compare_prototype_versions
+from core.bundle_alt._config import check_default_values_in_main_config
 from core.bundle_alt.process import retrieve_bundle_definitions
-from core.bundle_alt.types import BundleDefinitionKey, Definition
+from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from django.db.transaction import atomic
 
-from cm.adcm_config.config import init_object_config, switch_config
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigLog, ObjectConfig, Prototype, SignatureStatus
 from cm.services.bundle_alt import repo
 from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.services.bundle_alt.load import _get_rules_for_yspec_schema
+from cm.services.config_service import create
 
 logger = logging.getLogger("adcm")
 
@@ -35,7 +37,13 @@ def process_adcm_bundle(adcm_config_file: Path) -> None:
     current_version = adcm.prototype.version if adcm is not None else "0"
     is_upgrade_required = adcm is not None
 
-    adcm_definition = _retrieve_adcm_definition(adcm_config_file=adcm_config_file, current_version=current_version)
+    adcm_definition = retrieve_adcm_definition(
+        adcm_config_file=adcm_config_file,
+        current_version=current_version,
+        check_defaults=lambda config: check_default_values_in_main_config(
+            parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
+        ),
+    )
     if adcm_definition is None:
         return
 
@@ -47,7 +55,22 @@ def process_adcm_bundle(adcm_config_file: Path) -> None:
             _init_adcm(prototype=new_prototype)
 
 
+def init_or_upgrade_adcm(
+    adcm_definition: dict[BundleDefinitionKey, Definition],
+    adcm_config_file: Path,
+    adcm: ADCM | None,
+):
+    is_upgrade_required = adcm is not None
+    new_prototype = _prepare_adcm_prototype(definition=adcm_definition, bundle_root=adcm_config_file.parent)
+    if is_upgrade_required:
+        _upgrade_adcm(adcm=adcm, old_prototype=adcm.prototype, new_prototype=new_prototype)
+    else:
+        _init_adcm(prototype=new_prototype)
+
+
 def _upgrade_adcm(adcm: ADCM, old_prototype: Prototype, new_prototype: Prototype) -> None:
+    from cm.adcm_config.config import switch_config
+
     adcm.prototype = new_prototype
     adcm.save(update_fields=["prototype"])
     switch_config(obj=adcm, new_prototype=new_prototype, old_prototype=old_prototype)
@@ -59,7 +82,7 @@ def _upgrade_adcm(adcm: ADCM, old_prototype: Prototype, new_prototype: Prototype
 
 def _init_adcm(prototype: Prototype) -> None:
     adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
-    adcm.config = init_object_config(prototype, adcm)
+    adcm.config = create.init_object_config(prototype, adcm)
     adcm.save(update_fields=["config"])
     _set_adcm_url(adcm=adcm)
     logger.info("ADCM upgrade: version %s initialized.", prototype.version)
@@ -80,13 +103,14 @@ def _prepare_adcm_prototype(
     return Prototype.objects.get(bundle=bundle)
 
 
-def _retrieve_adcm_definition(
-    adcm_config_file: Path, current_version: str
+def retrieve_adcm_definition(
+    adcm_config_file: Path, current_version: str, check_defaults: Callable[[ConfigDefinition], None]
 ) -> dict[BundleDefinitionKey, Definition] | None:
     definitions = retrieve_bundle_definitions(
         bundle_dir=adcm_config_file.parent,
         adcm_version="0",
         yspec_schema=_get_rules_for_yspec_schema(),
+        check_defaults=check_defaults,
     )
 
     definition_version = str(definitions[("adcm",)].version)

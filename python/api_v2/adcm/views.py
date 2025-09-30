@@ -61,8 +61,8 @@ class ADCMConfigView(ConfigLogViewSet):
             .order_by("-pk")
         )
 
-    def get_parent_object(self) -> ADCM | None:
-        return ADCM.objects.first()
+    def _get_parent_object_unsafe(self) -> ADCM:
+        return ADCM.objects.get()
 
     @extend_schema(
         summary="Get ADCM config schema",

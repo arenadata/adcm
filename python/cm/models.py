@@ -20,6 +20,7 @@ import time
 import signal
 import os.path
 
+from core.action.process.types import ProcessState, ProcessStepState
 from core.job.types import ScriptType
 from core.types import ADCMCoreType
 from django.conf import settings
@@ -35,7 +36,6 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-from cm.services.action_process.types import ProcessState, ProcessStepState
 
 
 class ObjectType(models.TextChoices):
@@ -1601,6 +1601,7 @@ class ADCMEntityStatus(models.TextChoices):
 
 
 MainObject: TypeAlias = Cluster | Service | Component | Provider | Host
+ConfigHostGroupOwner: TypeAlias = Cluster | Service | Component | Provider
 
 _CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | ConfigHostGroup | Action | Upgrade | TaskLog | JobLog
 

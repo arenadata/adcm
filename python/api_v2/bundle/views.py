@@ -11,6 +11,8 @@
 # limitations under the License.
 
 
+from adcm.feature_flags import use_new_config_processing
+from application import bundle as bundle_use_case
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.bundle import delete_bundle
@@ -123,13 +125,18 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        bundle = self.upload_bundle(request.data["file"])
+        func = self.upload_bundle_new if use_new_config_processing(headers=request.headers) else self.upload_bundle_old
+
+        bundle = func(request.data["file"])
 
         return Response(
             status=HTTP_201_CREATED, data=BundleSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
         )
 
-    def upload_bundle(self, file) -> Bundle:
+    def upload_bundle_new(self, file) -> Bundle:
+        return bundle_use_case.parse_bundle_from_request_to_db(file)
+
+    def upload_bundle_old(self, file) -> Bundle:
         verified_signature_only = adcm_config(get_adcm_config_id()).config["global"]["accept_only_verified_bundles"]
         return parse_bundle_from_request_to_db(
             file_from_request=file,

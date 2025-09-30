@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from unittest.mock import patch
 import secrets
 
+from adcm.feature_flags import use_new_object_create_processing
 from cm.api import remove_host_from_cluster
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider
 from cm.services.cluster import perform_host_to_cluster_map
@@ -30,7 +32,11 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
+
+subtest_on_new_config_processing = partial(
+    subtests_on_feature_flag, flag_func=use_new_object_create_processing, override_in="api_v2.host.views"
+)
 
 
 class TestHost(BaseAPITestCase):
@@ -74,7 +80,13 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
     def test_create_without_cluster_success(self):
-        response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "new-test-host"})
+        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
+            with sub_test:
+                self._test_create_without_cluster_success(i)
+
+    def _test_create_without_cluster_success(self, i: int):
+        name = f"new-test-host-{i}"
+        response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": name})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -83,7 +95,7 @@ class TestHost(BaseAPITestCase):
 
         data = {
             "id": host_pk,
-            "name": "new-test-host",
+            "name": name,
             "state": "created",
             "status": 32,
             "hostprovider": {"id": self.provider.id, "name": "provider", "display_name": "provider"},

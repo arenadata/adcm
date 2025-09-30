@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from pathlib import Path
 from typing import Iterable
 
+from adcm.feature_flags import use_new_config_processing
 from cm.converters import orm_object_to_core_type
 from cm.models import (
     Action,
@@ -46,7 +48,11 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
+
+subtest_on_new_config_processing = partial(
+    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="cm.services.concern.checks"
+)
 
 
 class TestConcernsResponse(BaseAPITestCase):
@@ -108,7 +114,12 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_required_config_concern(self):
-        cluster = self.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster")
+        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
+            with sub_test:
+                self._test_required_config_concern(i)
+
+    def _test_required_config_concern(self, i):
+        cluster = self.add_cluster(bundle=self.required_config_bundle, name=f"required_config_cluster-{i}")
         expected_concern_reason = {
             "message": ConcernMessage.CONFIG_ISSUE.template.message,
             "placeholder": {

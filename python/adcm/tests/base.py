@@ -83,7 +83,7 @@ class ParallelReadyTestCase:
         super().__init_subclass__(**kwargs)
 
         cls.directories = cls._prepare_temporal_directories_for_adcm()
-        override_settings(**cls.directories)(cls)
+        override_settings(**cls.directories, ANSIBLE_SECRET="verysecretstuff")(cls)
 
     @staticmethod
     def _prepare_temporal_directories_for_adcm() -> dict:
