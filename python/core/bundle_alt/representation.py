@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from core.bundle_alt.predicates import is_component_key, is_service_key
 from core.bundle_alt.types import BundleDefinitionKey, GeneralObjectDescription
@@ -24,7 +24,8 @@ def make_ref(d: GeneralObjectDescription) -> str:
 
 def build_parent_key_safe(key: BundleDefinitionKey) -> BundleDefinitionKey | None:
     if is_component_key(key):
-        return ("service", key[1])
+        service_key = cast(tuple[str, str], key[0:2])
+        return ("service", service_key[1])
 
     if is_service_key(key):
         return ("cluster",)
@@ -33,11 +34,11 @@ def build_parent_key_safe(key: BundleDefinitionKey) -> BundleDefinitionKey | Non
 
 
 def find_parent(key: BundleDefinitionKey, definitions: dict[BundleDefinitionKey, T]) -> T:
-    key = build_parent_key_safe(key)
-    if key is None:
+    parent_key = build_parent_key_safe(key)
+    if parent_key is None:
         raise RuntimeError(f"No parent for {key}")
 
-    return definitions[key]
+    return definitions[parent_key]
 
 
 def dependency_entry_to_key(entry: dict) -> BundleDefinitionKey:
@@ -48,13 +49,14 @@ def dependency_entry_to_key(entry: dict) -> BundleDefinitionKey:
 
 
 def repr_from_key(k: BundleDefinitionKey) -> str:
-    type_ = k[0]
+    repr_k = cast(tuple[str, str, str], k[0:3])
+    type_ = repr_k[0]
     result = f'Object of type "{type_}"'
     if type_ == "service":
-        return f'{result} named "{k[1]}"'
+        return f'{result} named "{repr_k[1]}"'
 
     if type_ == "component":
-        return f'{result} named "{k[1]}.{k[2]}"'
+        return f'{result} named "{repr_k[1]}.{repr_k[2]}"'
 
     return result
 

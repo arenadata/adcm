@@ -16,7 +16,7 @@ Copy-pasted for ADCM-6355.
 Should be moved to a specific `core` module/package later.
 """
 
-from typing import Callable
+from typing import Any, Callable, cast
 import contextlib
 
 import ruyaml
@@ -44,6 +44,7 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
     """
 
     loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
+    loader = cast(Any, loader)
     loader._constructor.allow_duplicate_keys = allow_duplicate_keys
     try:
         return loader._constructor.get_single_data()
@@ -64,9 +65,10 @@ class FormatError(Exception):
         self.errors = caused_by
         self.parent = parent
         self.line = None
-        if isinstance(data, ruyaml.comments.CommentedBase):
+        ruyaml_any = cast(Any, ruyaml)
+        if isinstance(data, ruyaml_any.comments.CommentedBase) and data is not None:
             self.line = data.lc.line
-        elif parent and isinstance(parent, ruyaml.comments.CommentedBase):
+        elif parent and isinstance(parent, ruyaml_any.comments.CommentedBase):
             self.line = parent.lc.line
         super().__init__(message)
 
@@ -236,8 +238,9 @@ def process_rule(data, rules, name, path=None, parent=None):
 
 
 def check(data, rules):
-    if not isinstance(data, ruyaml.comments.CommentedBase):
+    ruyaml_any = cast(Any, ruyaml)
+    if not isinstance(data, ruyaml_any.comments.CommentedBase):
         raise DataError("You should use ruyaml.round_trip_load() to parse data yaml")
-    if not isinstance(rules, ruyaml.comments.CommentedBase):
+    if not isinstance(rules, ruyaml_any.comments.CommentedBase):
         raise SchemaError("You should use ruyaml.round_trip_load() to parse schema yaml")
     process_rule(data, rules, "root")

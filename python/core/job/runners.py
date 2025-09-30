@@ -69,10 +69,13 @@ class ExecutionTargetFactoryI(Protocol):
         ...
 
 
+def always_true(_: "Job") -> bool:
+    return True
+
+
 class JobProcessor(NamedTuple):
     convert: ExecutionTargetFactoryI
-    # id will always return True in bool cast
-    filter_predicate: Callable[[Job], bool] = id
+    filter_predicate: Callable[[Job], bool] = always_true
 
 
 class RunnerEnvironment(Protocol):

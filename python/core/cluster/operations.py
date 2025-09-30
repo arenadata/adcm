@@ -39,6 +39,7 @@ from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
 class ClusterTopologyDBProtocol(Protocol):
     def get_clusters_hosts(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, Iterable[ShortObjectInfo]]:
         """Get hosts that belongs to given clusters"""
+        ...
 
     def get_clusters_services_with_components(
         self, cluster_ids: Iterable[ClusterID]
@@ -47,11 +48,13 @@ class ClusterTopologyDBProtocol(Protocol):
         Retrieve pairs of clusters' services and its components.
         If service has no components, should return empty collection.
         """
+        ...
 
     def get_host_component_entries(
         self, cluster_ids: Iterable[ClusterID]
     ) -> dict[ClusterID, Iterable[HostComponentEntry]]:
         """Retrieve host-components entries of clusters"""
+        ...
 
 
 def build_clusters_topology(

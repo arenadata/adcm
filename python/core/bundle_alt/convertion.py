@@ -12,7 +12,7 @@
 
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal, cast
 import re
 
 import yaml
@@ -104,6 +104,7 @@ def schema_entry_to_definition(
 
     if is_component_key(key):
         parent = find_parent(key, entries)
+        parent = cast(ClusterSchema | ServiceSchema, parent)
         inherited = {
             "name": key[-1],
             "version": parent.version,
@@ -161,7 +162,7 @@ def _convert(entity: dict, context: dict):
     return definition
 
 
-def _extract_imports(entity: dict) -> list[dict] | None:
+def _extract_imports(entity: dict) -> list[ImportDefinition] | None:
     imports = entity.get("imports")
     if imports is None:
         return None

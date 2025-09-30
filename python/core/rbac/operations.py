@@ -81,7 +81,7 @@ def create_new_user(
 
 
 def update_user_information(user_id: UserID, data: UserUpdateDTO, db: UserDBProtocol) -> UserID:
-    user_with_email = db.get_user_by_email(email=data.email)
+    user_with_email = db.get_user_by_email(email=str(data.email))
     if data.email and user_with_email is not None and user_with_email.id != user_id:
         raise EmailTakenError()
 

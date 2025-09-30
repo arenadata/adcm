@@ -14,7 +14,7 @@ from collections import UserDict
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain
-from typing import Generator, NamedTuple, TypeAlias
+from typing import Generic, Iterable, NamedTuple, TypeAlias, TypeVar
 
 from core.types import (
     ClusterID,
@@ -67,7 +67,7 @@ class ServiceTopology(NamedTuple):
     components: dict[ComponentID, ComponentTopology]
 
     @property
-    def host_ids(self) -> Generator[HostID, None, None]:
+    def host_ids(self) -> Iterable[HostID]:
         return chain.from_iterable(component.hosts for component in self.components.values())
 
 
@@ -77,7 +77,7 @@ class ClusterTopology(NamedTuple):
     hosts: dict[HostID, ShortObjectInfo]
 
     @property
-    def component_ids(self) -> Generator[ComponentID, None, None]:
+    def component_ids(self) -> Iterable[ComponentID]:
         return chain.from_iterable(service.components for service in self.services.values())
 
     @property
@@ -100,12 +100,14 @@ class ClusterTopology(NamedTuple):
         }
 
 
-class NoEmptyValuesDict(UserDict):
-    def __setitem__(self, key, value):
-        # if value is "empty" for one reason or another
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class NoEmptyValuesDict(UserDict[K, V], Generic[K, V]):
+    def __setitem__(self, key: K, value: V) -> None:
         if not value:
             return
-
         super().__setitem__(key, value)
 
 

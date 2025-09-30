@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal, Optional, TypeAlias
+from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias
 
 from pydantic import (
     AfterValidator,
@@ -39,6 +39,8 @@ from core.bundle_alt.schema_validation import (
 )
 from core.job.types import StepType
 from core.templates import Template
+
+# pyright: reportIncompatibleVariableOverride=false, reportInvalidTypeForm=false
 
 VERSION: TypeAlias = int | float | str
 VENV: TypeAlias = Annotated[
@@ -276,7 +278,7 @@ class ConfigItemGroupSchema(_BaseConfigItemSchema):
 
 
 # TODO: move to schema_validation.py
-def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
+def config_duplicates(parameters: Sequence[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
     # at least ADS has duplicates in config
     if not parameters:
         return None

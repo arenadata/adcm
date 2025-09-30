@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, NamedTuple, TextIO
+from typing import Any, Generic, NamedTuple, TextIO, TypeVar
 import os
 import subprocess
 
@@ -51,8 +51,11 @@ class BundleExecutorConfig(ExecutorConfig):
     bundle: BundleInfo
 
 
-class Executor(ABC):
-    _config: ExecutorConfig
+C = TypeVar("C", bound=ExecutorConfig)
+
+
+class Executor(ABC, Generic[C]):
+    _config: C
     _result: ExecutionResult | None
     _process: Any | None
 
@@ -69,7 +72,7 @@ class Executor(ABC):
     def process(self):
         return self._process
 
-    def __init__(self, config: ExecutorConfig):
+    def __init__(self, config: C):
         self._config = config
         self._result = None
         self._process = None
@@ -83,8 +86,7 @@ class Executor(ABC):
         raise NotImplementedError()
 
 
-class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
-    _config: BundleExecutorConfig
+class ProcessExecutor(Executor[BundleExecutorConfig], WithErrOutLogsMixin, ABC):
     _process: subprocess.Popen | None
 
     def __init__(self, config: BundleExecutorConfig) -> None:
@@ -109,6 +111,8 @@ class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
         return self
 
     def wait_finished(self) -> Self:
+        if self._process is None:
+            return self
         return_code = self._process.wait()
         self._result = ExecutionResult(code=return_code)
 
