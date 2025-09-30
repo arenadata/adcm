@@ -59,6 +59,7 @@ class TestTask(BaseAPITestCase):
             id=prepare_task_for_action(
                 target=cluster_object,
                 orm_owner=self.cluster_1,
+                orm_target=self.cluster_1,
                 action=self.cluster_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -68,6 +69,7 @@ class TestTask(BaseAPITestCase):
             id=prepare_task_for_action(
                 target=service_object,
                 orm_owner=self.service_1,
+                orm_target=self.service_1,
                 action=self.service_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -77,6 +79,7 @@ class TestTask(BaseAPITestCase):
             id=prepare_task_for_action(
                 target=component_object,
                 orm_owner=component_1,
+                orm_target=component_1,
                 action=component_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -393,6 +396,8 @@ class TestTaskObjects(BaseAPITestCase):
         )
         target = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST) if host else owner
 
-        launch = prepare_task_for_action(target=target, orm_owner=object_, action=action.pk, payload=TaskPayloadDTO())
+        launch = prepare_task_for_action(
+            target=target, orm_owner=object_, orm_target=host or object_, action=action.pk, payload=TaskPayloadDTO()
+        )
 
         return TaskLog.objects.get(id=launch.id)

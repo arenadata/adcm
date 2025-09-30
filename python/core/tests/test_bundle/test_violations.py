@@ -17,7 +17,7 @@ from unittest.mock import patch
 import yaml
 
 from core.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
-from core.bundle_alt.errors import BundleParsingError
+from core.bundle_alt.errors import BundleParsingError, BundleValidationError
 from core.bundle_alt.process import retrieve_bundle_definitions
 
 
@@ -123,8 +123,6 @@ class TestBundleProcessingErrors(TestCase):
 
             self.assertIn('"scripts_jinja" has unsupported path format', err.exception.message)
 
-        # todo add incorrect template test
-
     def test_config_jinja(self):
         with self.subTest("mutualy exclusive with config"):
             bundle = """
@@ -163,7 +161,106 @@ class TestBundleProcessingErrors(TestCase):
 
             self.assertIn('"config_jinja" has unsupported path format', err.exception.message)
 
-        # todo add incorrect template test
+    def test_incorrect_wizard_template(self):
+        bundle_template = """
+        - name: aaa
+          type: cluster
+          version: 2
+          actions:
+            ugu:
+              type: job
+              script: dd
+              script_type: ansible
+              wizard_template:
+                engine:
+                  type: jinja2
+                file:
+                  path: {}
+        """
+
+        with self.subTest("non existing file jinja"):
+            bundle = bundle_template.format("iexist.j2")
+
+            with self.assertRaises(BundleValidationError) as err:
+                self.parse(bundle)
+
+            self.assertIn("Incorrect template for *_template at iexist.j2", err.exception.message)
+
+        with self.subTest("incorrect path format"):
+            bundle = bundle_template.format("/iexist.j2")
+
+            with self.assertRaises(BundleParsingError) as err:
+                self.parse(bundle)
+
+            self.assertIn('"wizard_template" has unsupported path format', err.exception.message)
+
+    def test_incorrect_scripts_template(self):
+        bundle_template = """
+        - name: aaa
+          type: cluster
+          version: 2
+          actions:
+            ugu:
+              type: task
+              scripts_template:
+                engine:
+                  type: python
+                file:
+                  path: {}
+                  entrypoint: run
+        """
+
+        with self.subTest("non existing file python"):
+            bundle = bundle_template.format("iexist.py")
+
+            with self.assertRaises(BundleValidationError) as err:
+                self.parse(bundle)
+
+            self.assertIn("Incorrect template for *_template at iexist.py", err.exception.message)
+
+        with self.subTest("incorrect path format"):
+            bundle = bundle_template.format("/iexist.j2")
+
+            with self.assertRaises(BundleParsingError) as err:
+                self.parse(bundle)
+
+            self.assertIn('"scripts_template" has unsupported path format', err.exception.message)
+
+    def test_incorrect_config_template(self):
+        bundle_template = """
+        - name: aaa
+          type: cluster
+          version: 2
+          actions:
+            ugu:
+              type: task
+              scripts:
+                - name: a
+                  script_type: ansible
+                  script: aa
+              config_template:
+                engine:
+                  type: python
+                file:
+                  path: {}
+                  entrypoint: run
+        """
+
+        with self.subTest("non existing file python"):
+            bundle = bundle_template.format("iexist.py")
+
+            with self.assertRaises(BundleValidationError) as err:
+                self.parse(bundle)
+
+            self.assertIn("Incorrect template for *_template at iexist.py", err.exception.message)
+
+        with self.subTest("incorrect path format"):
+            bundle = bundle_template.format("/iexist.j2")
+
+            with self.assertRaises(BundleParsingError) as err:
+                self.parse(bundle)
+
+            self.assertIn('"config_template" has unsupported path format', err.exception.message)
 
     def test_license_incorrect_object(self):
         with self.subTest("host"):

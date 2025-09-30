@@ -19,6 +19,7 @@ import copy
 import json
 
 from ansible.errors import AnsibleError
+from core.templates import parse_template
 from django.conf import settings
 from django.db.models import QuerySet
 
@@ -43,6 +44,7 @@ from cm.models import (
     Component,
     ConfigHostGroup,
     ConfigLog,
+    Host,
     ObjectConfig,
     ProcessStep,
     Prototype,
@@ -52,6 +54,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
+from cm.services.bundle_alt.render import ActionArgs, Environment, render_config
 from cm.services.config.jinja import get_jinja_config
 from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
@@ -81,16 +84,38 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 
 
 def get_prototype_config(
-    prototype: Prototype, action: Action = None, obj: ADCMEntity = None
+    prototype: Prototype, action: Action | None = None, obj: ADCMEntity | None = None
 ) -> tuple[dict, dict, dict, dict]:
     if action is not None and obj is not None and action.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=obj)
+    elif action is not None and obj is not None and action.config_template:
+        prototype_configs = _get_prototype_configs_from_config_template(prototype=prototype, action=action, target=obj)
     else:
         prototype_configs = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
 
     return get_spec_flat_spec_config_attr_from_prototype_configs(
         prototype=prototype, prototype_configs=prototype_configs
     )
+
+
+def _get_prototype_configs_from_config_template(
+    prototype: Prototype, action: Action, target: ADCMEntity
+) -> list[PrototypeConfig]:
+    if not isinstance(target, (Cluster, Service, Component, Host)):
+        message = f"Incorrect type for template rendering: {type(target)}"
+        raise TypeError(message)
+
+    template = parse_template(action.config_template)
+    environment = Environment(bundle_root=settings.BUNDLE_DIR / prototype.bundle.hash)
+
+    action_args = ActionArgs(
+        action=action,
+        cluster_relative_object=target,
+        action_process=None,
+    )
+    prototype_configs = render_config(template=template, environment=environment, context_args=action_args)
+
+    return prototype_configs  # noqa: RET504
 
 
 def get_spec_flat_spec_config_attr_from_prototype_configs(

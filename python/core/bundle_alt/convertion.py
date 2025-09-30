@@ -36,6 +36,7 @@ from core.bundle_alt.types import (
     VersionBound,
 )
 from core.job.types import JobSpec, ScriptType
+from core.templates import Template, parse_template
 
 # Public
 
@@ -229,7 +230,9 @@ def _extract_action(entity, context):
     _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
     _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
     _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
-    _fill_value(result, entity, "wizard_template")
+    _fill_value(result, entity, "config_template", cast=partial(_to_template_with_normalized_path, context=context))
+    _fill_value(result, entity, "scripts_template", cast=partial(_to_template_with_normalized_path, context=context))
+    _fill_value(result, entity, "wizard_template", cast=partial(_to_template_with_normalized_path, context=context))
 
     _patch_display_name(result, entity)
 
@@ -334,6 +337,12 @@ def _normalize_path(result: str, context: dict) -> str:
 
 
 # Specific Steps
+
+
+def _to_template_with_normalized_path(entity: dict, context: dict) -> Template:
+    template = parse_template(entity)
+    template.file.path = Path(_normalize_path(result=str(template.file.path), context=context))
+    return template
 
 
 def _patch_upgrade_action_names(result: Definition) -> Definition:

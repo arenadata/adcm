@@ -18,7 +18,8 @@ from core.cluster.operations import create_topology_with_new_mapping, find_hosts
 from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
-from core.job.types import AssociatedProcess, ScriptType, Task, TaskMappingDelta
+from core.job.types import AssociatedProcess, JobSpec, ScriptType, Task, TaskMappingDelta
+from core.templates import Template
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
@@ -47,6 +48,7 @@ from cm.models import (
 )
 from cm.services.action_process.types import ProcessState
 from cm.services.bundle import retrieve_bundle_restrictions
+from cm.services.bundle_alt.render import Environment, TaskArgs, render_scripts
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.checks import check_mapping_restrictions
 from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
@@ -131,6 +133,7 @@ def run_action(
         task = prepare_task_for_action(
             target=target,
             orm_owner=action_objects.owner,
+            orm_target=action_objects.target,
             action=action.pk,
             payload=task_payload,
             delta=delta,
@@ -151,6 +154,7 @@ def run_action(
 def prepare_task_for_action(
     target: ActionTargetDescriptor,
     orm_owner: ObjectWithAction,
+    orm_target: ActionTarget,
     action: ActionID,
     payload: TaskPayloadDTO,
     delta: TaskMappingDelta | None = None,
@@ -226,6 +230,18 @@ def prepare_task_for_action(
         ):
             message = "Internal script 'config_apply' can't be used for jinja action"
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
+    elif action_info.scripts_template:
+        if not isinstance(orm_target, (Cluster, Service, Component, Host, ActionHostGroup)):
+            message = f"Can't render scripts for target of type {type(target)}"
+            raise TypeError(message)
+
+        if not isinstance(orm_owner, (Cluster, Service, Component, Host)):
+            message = f"Can't render scripts for owner of type {type(orm_owner)}"
+            raise TypeError(message)
+
+        job_specifications = _render_scripts_from_template(
+            template=action_info.scripts_template, action=orm_action, owner=orm_owner, target=orm_target
+        )
     else:
         job_specifications = tuple(action_repo.get_job_specs(id=action))
 
@@ -244,6 +260,39 @@ def prepare_task_for_action(
         job_repo.create_logs(logs)
 
     return task
+
+
+def _render_scripts_from_template(
+    template: Template,
+    owner: Cluster | Service | Component | Host,
+    target: Cluster | Service | Component | Host | ActionHostGroup,
+    action: Action,
+) -> tuple[JobSpec, ...]:
+    # todo this level is too deep for working with that stuff, it should be passed from outside
+    #      yet it's a problem to do this now,
+    #      request for process should be separated too
+    bundle_root = settings.BUNDLE_DIR / action.prototype.bundle.hash
+    process: Process | None = (
+        Process.objects.filter(
+            action_id=action.pk,
+            object_id=target.pk,
+            object_type=orm_object_to_core_type(owner),
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    environment = Environment(bundle_root=bundle_root)
+    task_args = TaskArgs(
+        target_object=target,
+        action=action,
+        config={},
+        verbose=False,
+        delta=None,
+        action_process=process,
+    )
+    step_spec = render_scripts(template=template, environment=environment, context_args=task_args)
+    return tuple(step_spec)
 
 
 class _ActionLaunchObjects:

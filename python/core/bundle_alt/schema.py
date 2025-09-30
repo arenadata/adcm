@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias
 
 from pydantic import (
@@ -35,6 +36,7 @@ from core.bundle_alt.schema_validation import (
     min_less_than_max,
     patch_masking,
     script_is_correct_path,
+    template_script_is_correct_path,
     validate_name,
 )
 from core.job.types import StepType
@@ -53,6 +55,16 @@ MONITORING: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(def
 ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
 
 NAME: TypeAlias = Annotated[str, AfterValidator(validate_name)]
+
+WizardTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="wizard_template"))
+]
+ScriptsTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="scripts_template"))
+]
+ConfigTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="config_template"))
+]
 
 
 class _BaseModel(BaseModel):
@@ -548,7 +560,7 @@ class _StepOperationUIOptions(_BaseModel):
 
 
 class OperationStep(_Names):
-    scripts_template: Template
+    scripts_template: ScriptsTemplate
     ui_options: _StepOperationUIOptions | None = None
 
     @property
@@ -561,7 +573,7 @@ class OperationStep(_Names):
 
 
 class ConfigurationStep(_Names):
-    config_template: Template
+    config_template: ConfigTemplate
 
     @property
     def type(self) -> StepType:
@@ -684,7 +696,7 @@ class _BaseActionSchema(_BaseModel):
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
-    wizard_template: Annotated[Template | None, Field(default=None)]
+    wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
 
     @model_validator(mode="before")
     @classmethod
@@ -859,6 +871,9 @@ TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
 class TaskSchema(_BaseTaskSchema):
     scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
     scripts_jinja: str | None = None
+    scripts_template: ScriptsTemplate | None = None
+
+    config_template: ConfigTemplate | None = None
 
     @field_validator("scripts_jinja")
     @classmethod
@@ -868,9 +883,24 @@ class TaskSchema(_BaseTaskSchema):
         return v
 
     @model_validator(mode="after")
-    def validate_only_one_set(self):
-        if bool(self.scripts) == bool(self.scripts_jinja):
-            raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
+    def validate_only_one_set_for_scripts(self):
+        specified = tuple(filter(None, (self.scripts, self.scripts_jinja, self.scripts_template)))
+        if len(specified) != 1:
+            raise ValueError(
+                'Exactly one of "scripts", "scripts_jinja" or "scripts_template" must be provided, '
+                "not multiple nor neither."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_only_one_set_for_config(self):
+        # thou this one semi duplicates check in Action schema, I put it here,
+        # because `config_template` should be applicable only for Task until decided otherwise
+        specified = tuple(filter(None, (self.config, self.config_jinja, self.config_template)))
+        if len(specified) > 1:
+            raise ValueError('At most one of "config", "config_jinja" or "config_template" must be provided.')
+
         return self
 
     @model_validator(mode="after")
