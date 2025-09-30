@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from copy import deepcopy
+from uuid import UUID
 
 from core.job.dto import TaskPayloadDTO
 from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
@@ -153,7 +154,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 )
                 job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
 
-                self.assertDictEqual(decrypt_secrets(job_config), expected_data)
+                self.assertTrue(isinstance(UUID(job_config["adcm"]["uuid"]), UUID))
+
+                job_config = decrypt_secrets(job_config)
+                job_config["adcm"]["uuid"] = "uuid_stub"
+
+                self.assertDictEqual(job_config, expected_data)
 
         for object_, config, type_name in (
             (self.cluster, self.FULL_CONFIG, "cluster"),
@@ -184,7 +190,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 )
                 job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
 
-                self.assertDictEqual(decrypt_secrets(job_config), expected_data)
+                job_config = decrypt_secrets(job_config)
+                job_config["adcm"]["uuid"] = "uuid_stub"
+
+                self.assertDictEqual(job_config, expected_data)
 
     def test_adcm_5305_action_config_with_secrets_bug(self):
         """
@@ -329,5 +338,9 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                         job_config = prepare_ansible_job_config(
                             task=JobRepoImpl.get_task(task.id), job=job, configuration=self.configuration
                         )
+
+                        self.assertTrue(isinstance(UUID(job_config["adcm"]["uuid"]), UUID))
+
+                        job_config["adcm"]["uuid"] = "uuid_stub"
 
                         self.assertDictEqual(job_config, expected_data)

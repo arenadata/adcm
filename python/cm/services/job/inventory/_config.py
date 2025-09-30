@@ -202,8 +202,7 @@ def get_objects_configurations(
     }
 
 
-def get_adcm_configuration() -> dict[str, Any]:
-    adcm = ADCM.objects.select_related("config").get()
+def get_adcm_configuration(adcm: ADCM) -> dict[str, Any]:
     config_attr_pair = retrieve_config_attr_pairs(configurations=(adcm.config.current,))[adcm.config.current]
     flat_spec = retrieve_flat_spec_for_objects(prototypes=(adcm.prototype_id,))[adcm.prototype_id]
 
