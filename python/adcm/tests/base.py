@@ -429,6 +429,7 @@ class TaskTestMixin:
         return prepare_task_for_action(
             target=target,
             orm_owner=owner,
+            orm_target=host or owner,
             action=action.id,
             payload=payload or TaskPayloadDTO(),
             feature_scripts_jinja=feature_scripts_jinja,

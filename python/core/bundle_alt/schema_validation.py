@@ -17,6 +17,7 @@ from adcm_version import compare_prototype_versions
 
 from core.bundle_alt._pattern import Pattern
 from core.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET, NAME_REGEX
+from core.templates import Template
 
 if TYPE_CHECKING:
     from core.bundle_alt.schema import VersionsSchema
@@ -147,5 +148,12 @@ def patch_masking(value: dict | None) -> dict:
     # field will work.
     if value is None:
         return {}
+
+    return value
+
+
+def template_script_is_correct_path(value: Template, field_name: str) -> Template:
+    if not is_path_correct(str(value.file.path)):
+        raise ValueError(f'"{field_name}" has unsupported path format')
 
     return value

@@ -139,6 +139,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task = prepare_task_for_action(
                 target=obj_,
                 orm_owner=object_,
+                orm_target=object_,
                 action=action.pk,
                 payload=TaskPayloadDTO(
                     conf=(deepcopy(config) or {}) | config_diff, attr={"activatable_group": {"active": active}}
@@ -170,6 +171,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task = prepare_task_for_action(
                 target=target,
                 orm_owner=object_,
+                orm_target=self.host_1,
                 action=action.pk,
                 payload=TaskPayloadDTO(
                     verbose=True, conf=deepcopy(config), attr={"activatable_group": {"active": active}}
@@ -313,6 +315,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                 task = prepare_task_for_action(
                     target=target,
                     orm_owner=object_,
+                    orm_target=object_,
                     action=action.pk,
                     payload=TaskPayloadDTO(),
                 )

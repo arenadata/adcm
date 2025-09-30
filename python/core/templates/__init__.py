@@ -24,12 +24,14 @@ from core.templates._types import (
     TemplateFile,
     TemplateFileWithEntrypoint,
     TemplateRenderer,
+    parse_template,
 )
 
 __all__ = [
     "get_renderer",
     "Jinja2Engine",
     "Jinja2Template",
+    "parse_template",
     "PythonEngine",
     "PythonTemplate",
     "RenderEngineType",

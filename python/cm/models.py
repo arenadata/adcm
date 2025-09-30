@@ -1074,7 +1074,9 @@ class AbstractAction(ADCMModel):
     wizard_template = models.JSONField(null=True, default=None)
 
     config_jinja = models.CharField(max_length=1000, blank=True, null=True)
+    config_template = models.JSONField(null=True, default=None)
     scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")
+    scripts_template = models.JSONField(null=True, default=None)
 
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 

@@ -58,6 +58,7 @@ class ActionInfo(BaseModel):
     owner_prototype: PrototypeDescriptor
     scripts_jinja: str
     wizard_template: Template | None
+    scripts_template: Template | None = None
 
 
 class StateChanges(NamedTuple):

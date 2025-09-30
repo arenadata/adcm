@@ -16,9 +16,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Discriminator, Field, Tag, field_serializer, field_validator
-
-from core.bundle_alt.schema_validation import script_is_correct_path
+from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, field_serializer, field_validator
 
 
 class RenderEngineType(str, Enum):
@@ -51,13 +49,6 @@ class TemplateFile(BaseModel):
     def string_path_to_path_cls(cls, value: Any) -> Any:
         if isinstance(value, str):
             return Path(value)
-
-        return value
-
-    @field_validator("path", mode="after")
-    @classmethod
-    def validate_path(cls, value: Path) -> Path:
-        script_is_correct_path(script=str(value))
 
         return value
 
@@ -107,7 +98,11 @@ class Jinja2Template(BaseModel):
 
 def engine_type_discriminator(value):
     if isinstance(value, dict):
-        return value.get("engine", {}).get("type")
+        try:
+            return value.get("engine", {}).get("type")
+        except AttributeError:
+            return None
+
     return getattr(value.engine, "type", None)
 
 
@@ -115,3 +110,14 @@ Template = Annotated[
     Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
     Field(discriminator=Discriminator(engine_type_discriminator)),
 ]
+
+
+class _OneOfTemplates(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    template: Template
+
+
+def parse_template(raw: dict) -> Template:
+    serialized = _OneOfTemplates.model_validate({"template": raw})
+    return serialized.template

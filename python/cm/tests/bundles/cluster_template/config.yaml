@@ -1,0 +1,22 @@
+- type: cluster
+  name: with_templates
+  version: 1.0
+
+  actions:
+    with_templates:
+      type: task
+      scripts_template:
+        file:
+          path: templates/scripts.py
+          entrypoint: get_scripts
+        engine:
+          type: python
+      config_template:
+        file:
+          path: templates/config.j2
+        engine:
+          type: jinja2
+      masking: {}
+
+
+

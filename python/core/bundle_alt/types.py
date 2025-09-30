@@ -121,9 +121,11 @@ class ActionDefinition:
     # Task settings
     scripts: list[JobSpec] = field(default_factory=list)
     scripts_jinja: str | None = None
+    scripts_template: Template | None = None
 
     config: ConfigDefinition | None = None
     config_jinja: str | None = None
+    config_template: Template | None = None
 
     hostcomponentmap: list = field(default_factory=list)
     wizard_template: Template | None = None

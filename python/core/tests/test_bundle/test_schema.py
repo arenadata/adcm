@@ -736,6 +736,7 @@ class TestBundleSchema(TestCase):
                 "task_plain": {
                     "type": "task",
                     "scripts_jinja": None,
+                    "scripts_template": None,
                     "scripts": [
                         {
                             "name": "job_1",
@@ -766,11 +767,13 @@ class TestBundleSchema(TestCase):
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
+                    "config_template": None,
                 },
                 "task_jinja": {
                     "type": "task",
                     "scripts": None,
                     "scripts_jinja": "path/to/script_jinja.j2",
+                    "scripts_template": None,
                     "display_name": None,
                     "description": None,
                     "params": None,
@@ -790,6 +793,7 @@ class TestBundleSchema(TestCase):
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
+                    "config_template": None,
                 },
             }
             self.assertDictEqual(actions, expected_actions)

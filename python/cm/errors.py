@@ -239,7 +239,7 @@ def get_error(code):
 
 
 class AdcmEx(APIException):
-    def __init__(self, code, msg="", http_code: int | None = None, args=""):
+    def __init__(self, code="UNKNOWN_ERROR", msg="", http_code: int | None = None, args=""):
         err_code, err_msg, err_http_code, level = get_error(code)
         if msg != "":
             err_msg = msg

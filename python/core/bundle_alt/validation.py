@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Collection, Iterable, cast
 
 from graphlib import CycleError, TopologicalSorter
-from jinja2 import Template, TemplateError
+import jinja2
 
 from core.bundle_alt._config import check_default_values_in_main_config, key_to_str
 from core.bundle_alt._yspec import FormatError, check_rule, process_rule
@@ -32,6 +32,7 @@ from core.bundle_alt.types import (
 )
 from core.errors import localize_error
 from core.job.types import JobSpec, ScriptType
+from core.templates import RendererEnv, Template, get_renderer
 
 # This section should be in sort of global consts module
 ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
@@ -189,6 +190,7 @@ def check_actions(
             check_mm_host_action_is_allowed(action=action, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action.hostcomponentmap, definitions=definitions)
             check_jinja_templates_are_correct(action=action, bundle_root=bundle_root)
+            check_templates_are_correct(action=action, bundle_root=bundle_root)
             check_action_scripts(action=action)
 
 
@@ -233,9 +235,14 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
     if action.config_jinja:
-        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
+        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
     if action.scripts_jinja:
-        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
+        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
+
+
+def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
+    for template in filter(None, (action.wizard_template, action.config_template, action.scripts_template)):
+        check_file_is_correct_template(template=template, bundle_root=bundle_root)
 
 
 # Atomic checks
@@ -275,15 +282,22 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
                     raise BundleValidationError(message)
 
 
-def check_file_is_correct_template(bundle_root: Path, relative_template_path: str) -> None:
+def check_file_is_correct_jinja_template(bundle_root: Path, relative_template_path: str) -> None:
     path = bundle_root / relative_template_path
 
     try:
         content = path.read_text(encoding="utf-8")
-        Template(source=content)
-    except (FileNotFoundError, TemplateError) as e:
+        jinja2.Template(source=content)
+    except (FileNotFoundError, jinja2.TemplateError) as e:
         message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
         raise BundleValidationError(message) from e
+
+
+def check_file_is_correct_template(bundle_root: Path, template: Template) -> None:
+    renderer = get_renderer(template=template, environment=RendererEnv(discovery_root=bundle_root))
+    if not renderer.can_be_rendered():
+        message = f"Incorrect template for *_template at {template.file.path.relative_to(bundle_root)}"
+        raise BundleValidationError(message)
 
 
 def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) -> None:
