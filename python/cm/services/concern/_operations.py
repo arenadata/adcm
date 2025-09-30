@@ -13,7 +13,7 @@
 from collections import defaultdict
 from typing import Iterable
 
-from core.types import ADCMCoreType, Concern, CoreObjectDescriptor, ObjectID
+from core.types import ADCMCoreType, ADCMDescriptor, Concern, CoreObjectDescriptor, ObjectID
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
@@ -39,8 +39,9 @@ def delete_concerns_of_removed_objects(objects: dict[ADCMCoreType, Iterable[Obje
     ConcernItem.objects.filter(query).delete()
 
 
-def delete_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> None:
-    owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=owner.type))
+def delete_issue(owner: CoreObjectDescriptor | ADCMDescriptor, cause: ConcernCause) -> None:
+    # core type conversion is bad
+    owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=getattr(owner, "type", "adcm")))
     ConcernItem.objects.filter(owner_id=owner.id, owner_type=owner_type, cause=cause, type=ConcernType.ISSUE).delete()
 
 

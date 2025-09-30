@@ -30,7 +30,9 @@ class TestBundleProcessingErrors(TestCase):
         with patch("core.bundle_alt.process.get_config_files", new=fake_get_config_files), patch(
             "core.bundle_alt.process._read_config_file", new=lambda _: yaml.safe_load(raw)
         ):
-            return retrieve_bundle_definitions(Path(), adcm_version="30000.0.0", yspec_schema={})
+            return retrieve_bundle_definitions(
+                Path(), adcm_version="30000.0.0", yspec_schema={}, check_defaults=lambda _: None
+            )
 
     # test_yaml_errors (?) see `read_definition` from `bundle`
 

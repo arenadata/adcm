@@ -13,6 +13,7 @@
 
 from typing import NoReturn
 
+from adcm.feature_flags import use_new_object_create_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -22,6 +23,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.migration.hostprovider.create import create_host as create_host_new
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
@@ -215,18 +217,25 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
+        func = self._create_host_new if use_new_object_create_processing(request.headers) else self._create_host_old
+        host = func(request_provider, serializer, request_cluster)
+
+        return Response(
+            data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
+        )
+
+    def _create_host_old(self, request_provider, serializer, request_cluster):
         with atomic():
             bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_provider.prototype_id)
-            host = create_host(
+            return create_host(
                 bundle_id=bundle_id,
                 provider_id=request_provider.id,
                 fqdn=serializer.validated_data["fqdn"],
                 cluster=request_cluster,
             )
 
-        return Response(
-            data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
-        )
+    def _create_host_new(self, provider, serializer, cluster):
+        return create_host_new(hostprovider=provider, name=serializer.validated_data["fqdn"], cluster=cluster)
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002

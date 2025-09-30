@@ -15,6 +15,8 @@ from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
+from unittest.mock import patch
+import unittest
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
@@ -233,3 +235,11 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         job.save(update_fields=["status", "pid"])
 
         return task, job
+
+
+# Reasonably fast and dirty approach to "duplicate" test for another use case with a bit less overhead
+def subtests_on_feature_flag(tc: unittest.TestCase, flag_func, override_in: str):
+    name = flag_func.__name__
+    for flag_value in (False, True):
+        with patch(f"{override_in}.{name}", return_value=flag_value):
+            yield tc.subTest(f"{name}-{flag_value}")

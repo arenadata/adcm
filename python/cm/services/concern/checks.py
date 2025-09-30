@@ -14,6 +14,7 @@ from collections import deque
 from operator import attrgetter
 from typing import Iterable, Literal, NamedTuple, TypeAlias
 
+from adcm.feature_flags import use_new_config_processing
 from core.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.cluster.types import ClusterTopology
 from core.concern.checks import (
@@ -52,6 +53,11 @@ class MissingRequirement(NamedTuple):
 
 
 def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
+    if use_new_config_processing():
+        from cm.services import config_service
+
+        return config_service.inspect.has_issue(target)
+
     config_spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(target.prototype_id,)).values()), None)
     if not config_spec:
         return False

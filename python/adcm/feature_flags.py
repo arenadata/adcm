@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from typing import Mapping
 import os
 
 
@@ -24,6 +25,7 @@ class _Flag:
 
 FLAG_CONFIG_SPEC = _Flag("feature-config-spec")
 FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
+FLAG_CONFIG_PROCESSING = _Flag("feature-config-processing")
 
 
 def use_new_spec_format() -> bool:
@@ -32,3 +34,15 @@ def use_new_spec_format() -> bool:
 
 def use_new_job_scheduler() -> bool:
     return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"
+
+
+def use_new_config_processing(headers: Mapping | None = None) -> bool:
+    header_value = (headers or {}).get(FLAG_CONFIG_PROCESSING.header)
+    if header_value is not None:
+        return header_value == "new"
+
+    return os.environ.get(FLAG_CONFIG_PROCESSING.env) == "new"
+
+
+def use_new_object_create_processing(headers: Mapping | None = None) -> bool:
+    return use_new_config_processing(headers)

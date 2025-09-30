@@ -37,3 +37,12 @@ def retrieve_password_requirements() -> PasswordRequirements:
     return PasswordRequirements(
         min_length=auth_policy["min_password_length"], max_length=auth_policy["max_password_length"]
     )
+
+
+# todo replace return type with "core.config.Configuration"
+def get_adcm_configuration() -> ConfigAttrPair:
+    return adcm_config(get_adcm_config_id())
+
+
+def get_verified_bundles_flag(configuration: ConfigAttrPair) -> bool:
+    return bool(configuration.config["global"]["accept_only_verified_bundles"])

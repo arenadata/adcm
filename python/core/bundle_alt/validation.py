@@ -12,12 +12,12 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Collection, Iterable, cast
+from typing import Callable, Collection, Iterable, cast
 
 from graphlib import CycleError, TopologicalSorter
 import jinja2
 
-from core.bundle_alt._config import check_default_values_in_main_config, key_to_str
+from core.bundle_alt._config import key_to_str
 from core.bundle_alt._yspec import FormatError, check_rule, process_rule
 from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
@@ -42,7 +42,13 @@ ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
 # section end
 
 
-def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, yspec_schema: dict) -> None:
+def check_definitions_are_valid(
+    definitions: DefinitionsMap,
+    bundle_root: Path,
+    yspec_schema: dict,
+    *,
+    check_defaults: Callable[[ConfigDefinition], None],
+) -> None:
     # special, require too much context to include it in main loop
     check_requires(definitions)
     check_display_names_are_unique(definitions)
@@ -54,7 +60,12 @@ def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, 
             check_upgrades(upgrades=definition.upgrades, definitions=definitions)
 
             if definition.config:
-                check_config(config=definition.config, bundle_root=bundle_root, yspec_schema=yspec_schema)
+                check_config(
+                    config=definition.config,
+                    bundle_root=bundle_root,
+                    yspec_schema=yspec_schema,
+                    check_defaults=check_defaults,
+                )
 
             check_actions(
                 actions=definition.actions,
@@ -129,7 +140,13 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict) -> None:
+def check_config(
+    config: ConfigDefinition,
+    bundle_root: Path,
+    yspec_schema: dict,
+    *,
+    check_defaults: Callable[[ConfigDefinition], None],
+) -> None:
     for key, parameter in config.parameters.items():
         with localize_error(f"Configuration parameter: {key_to_str(key)}"):
             if parameter.type in ("file", "secretfile"):
@@ -156,9 +173,7 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
                         message = f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported"
                         raise BundleValidationError(message)
 
-    check_default_values_in_main_config(
-        parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
-    )
+    check_defaults(config)
 
 
 def check_file_path_in_config(bundle_root: Path, default: str, key: Iterable[str]):

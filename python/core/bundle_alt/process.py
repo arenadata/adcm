@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Hashable, Iterable, Protocol, TypeAlias, runtime_checkable
+from typing import Any, Callable, Hashable, Iterable, Protocol, TypeAlias, runtime_checkable
 import warnings
 import collections.abc
 
@@ -44,7 +44,7 @@ from core.bundle_alt.schema import (
     ServiceSchema,
     parse,
 )
-from core.bundle_alt.types import BundleDefinitionKey, Definition
+from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.bundle_alt.validation import check_definitions_are_valid
 from core.errors import localize_error
 from core.job.types import JobSpec
@@ -172,7 +172,7 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
 
 
 def retrieve_bundle_definitions(
-    bundle_dir: Path, *, adcm_version: str, yspec_schema: dict
+    bundle_dir: Path, *, adcm_version: str, yspec_schema: dict, check_defaults: Callable[[ConfigDefinition], None]
 ) -> dict[BundleDefinitionKey, Definition]:
     definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
     parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
@@ -183,7 +183,9 @@ def retrieve_bundle_definitions(
     normalized_definitions = _normalize_definitions(
         definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
     )
-    check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
+    check_definitions_are_valid(
+        normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema, check_defaults=check_defaults
+    )
     return normalized_definitions
 
 

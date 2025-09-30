@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 import json
 import unittest
 
+from adcm.feature_flags import use_new_config_processing
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.models import (
     ADCM,
@@ -44,10 +46,15 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
 
 CONFIGS = "configs"
 CONFIG_SCHEMA = "config-schema"
+
+
+subtest_on_new_config_processing = partial(
+    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.generic.config.views"
+)
 
 
 class TestClusterConfig(BaseAPITestCase):
@@ -92,6 +99,11 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertDictEqual(response.json(), data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "activatable_group": {"integer": 100},
@@ -105,7 +117,7 @@ class TestClusterConfig(BaseAPITestCase):
         }
         response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
         response_data = response.json()
         self.assertDictEqual(response_data["config"], data["config"])
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
@@ -113,6 +125,23 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertEqual(response_data["isCurrent"], True)
 
     def test_create_bad_attr_fail(self):
+        expected = (
+            {
+                "code": "ATTRIBUTE_ERROR",
+                "desc": 'there isn\'t `bad_key` group in the config (cluster "cluster_one" 1.0)',
+                "level": "error",
+            },
+            {
+                "code": "API_ERROR",
+                "desc": ["adcmMeta values should be dictionaries"],
+                "level": "ERROR",
+            },
+        )
+        for sub_test, expected_response in zip(subtest_on_new_config_processing(self), expected):
+            with sub_test:
+                self._test_create_bad_attr_fail(expected_response)
+
+    def _test_create_bad_attr_fail(self, expected_response: dict):
         data = {
             "config": {
                 "activatable_group": {"integer": 100},
@@ -128,16 +157,36 @@ class TestClusterConfig(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "ATTRIBUTE_ERROR",
-                "desc": 'there isn\'t `bad_key` group in the config (cluster "cluster_one" 1.0)',
-                "level": "error",
-            },
-        )
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_create_bad_and_good_attr_fail(self):
+        expected = (
+            (
+                HTTP_400_BAD_REQUEST,
+                {
+                    "code": "ATTRIBUTE_ERROR",
+                    "desc": 'there isn\'t `bad_key` group in the config (cluster "cluster_one" 1.0)',
+                    "level": "error",
+                },
+            ),
+            (
+                HTTP_409_CONFLICT,
+                {
+                    "code": "CONFIG_OPERATION_ERROR",
+                    "desc": (
+                        "Configuration doesn't match specification. Following violations detected:\n"
+                        "- /map_not_required [structure]: value is unexpected\n"
+                        "- /bad_key [attribute]: unexpected activation attribute"
+                    ),
+                    "level": "error",
+                },
+            ),
+        )
+        for sub_test, (code, resp) in zip(subtest_on_new_config_processing(self), expected):
+            with sub_test:
+                self._test_create_bad_and_good_attr_fail(code, resp)
+
+    def _test_create_bad_and_good_attr_fail(self, expected_code, expected_response):
         data = {
             "config": {
                 "activatable_group": {"integer": 100},
@@ -152,15 +201,8 @@ class TestClusterConfig(BaseAPITestCase):
         }
         response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "ATTRIBUTE_ERROR",
-                "desc": 'there isn\'t `bad_key` group in the config (cluster "cluster_one" 1.0)',
-                "level": "error",
-            },
-        )
+        self.assertEqual(response.status_code, expected_code)
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_schema(self):
         response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
@@ -356,6 +398,11 @@ class TestClusterCHG(BaseAPITestCase):
         self.assertDictEqual(response.json(), data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "activatable_group": {"integer": 100},
@@ -672,6 +719,11 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"password": "newpassword"},
@@ -872,7 +924,12 @@ class TestServiceCHG(BaseAPITestCase):
         actual_data["config"]["group"]["password"] = ansible_decrypt(msg=actual_data["config"]["group"]["password"])
         self.assertDictEqual(actual_data, expected_data)
 
-    def test_create_success(self):
+    def test_create_success(self) -> None:
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"password": "newpassword"},
@@ -1160,6 +1217,11 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"file": "new content"},
@@ -1355,6 +1417,11 @@ class TestComponentCHG(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"file": "new content"},
@@ -1693,6 +1760,11 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"map": {"integer_key": "100", "string_key": "new string"}},
@@ -1908,6 +1980,11 @@ class TestProviderCHG(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
         data = {
             "config": {
                 "group": {"map": {"integer_key": "100", "string_key": "new string"}},
@@ -2190,6 +2267,13 @@ class TestHostConfig(BaseAPITestCase):
         self.assertDictEqual(response.json(), data)
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
+        response = self.client.v2[self.host, CONFIGS].get()
+        initial_count = response.json()["count"]
         data = {
             "config": {
                 "activatable_group": {"option": "string2"},
@@ -2214,7 +2298,7 @@ class TestHostConfig(BaseAPITestCase):
         self.assertEqual(response_data["isCurrent"], True)
 
         response = self.client.v2[self.host, CONFIGS].get()
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], initial_count + 1)
 
     def test_list_wrong_pk_fail(self):
         response = (self.client.v2 / "hosts" / self.get_non_existent_pk(Host) / CONFIGS).get()
@@ -2333,6 +2417,12 @@ class TestADCMConfig(BaseAPITestCase):
         )
 
     def test_create_success(self):
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_create_success()
+
+    def _test_create_success(self):
+        initial_count = ConfigLog.objects.filter(obj_ref=self.adcm.config).count()
         data = {
             "config": {
                 "global": {
@@ -2360,6 +2450,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "group_object_class": "group",
                     "group_name_attribute": "cn",
                     "group_member_attribute_name": "member",
+                    "group_dn_adcm_admin": None,
                     "sync_interval": 60,
                     "tls_ca_cert_file": None,
                 },
@@ -2380,8 +2471,8 @@ class TestADCMConfig(BaseAPITestCase):
 
         response = (self.client.v2 / "adcm" / CONFIGS).post(data=data)
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(ConfigLog.objects.filter(obj_ref=self.adcm.config).count(), 2)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
+        self.assertEqual(ConfigLog.objects.filter(obj_ref=self.adcm.config).count(), initial_count + 1)
         self.assertTrue(response.json()["isCurrent"])
         self.assertEqual(response.json()["description"], "new ADCM config")
 
@@ -2931,6 +3022,11 @@ class TestPatternInConfig(BaseAPITestCase):
                 self.assertNotIn("pattern", schema)
 
     def test_change_config_of_main_object(self) -> None:
+        for sub_test in subtest_on_new_config_processing(self):
+            with sub_test:
+                self._test_change_config_of_main_object()
+
+    def _test_change_config_of_main_object(self) -> None:
         owners = (self.cluster, self.service, self.component)
         for field, cases in self._EXAMPLES["ok"].items():
             for i, correct_value in enumerate(cases):
@@ -2949,10 +3045,11 @@ class TestPatternInConfig(BaseAPITestCase):
                     response = self.change_one_field(target=owner, field_name=field, new_value=incorrect_value)
 
                     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-                    self.assertEqual(
-                        response.json()["desc"],
-                        f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
-                    )
+                    err_text = response.json()["desc"]
+
+                    self.assertIn(field, err_text)
+                    self.assertIn("pattern", err_text)
+                    self.assertIn(expected_pattern, err_text)
 
     def test_change_config_of_config_host_group(self) -> None:
         groups = (

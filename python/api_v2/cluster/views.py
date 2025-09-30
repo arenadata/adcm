@@ -12,6 +12,7 @@
 
 from typing import Collection
 
+from adcm.feature_flags import use_new_object_create_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -23,6 +24,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.migration.cluster.create import create_cluster
 from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -366,7 +368,8 @@ class ClusterViewSet(
         if not prototype:
             raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-        cluster = add_cluster(prototype=prototype, name=valid["name"], description=valid["description"])
+        func = create_cluster if use_new_object_create_processing(request.headers) else add_cluster
+        cluster = func(prototype=prototype, name=valid["name"], description=valid["description"])
 
         return Response(
             data=ClusterSerializer(cluster, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
