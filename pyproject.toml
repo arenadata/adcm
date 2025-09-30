@@ -146,7 +146,18 @@ include = [
     "conf/adcm/python_scripts",
 ]
 exclude = [
-    "python/rbac/services",
+    "dev/linters/",
+    "conf/adcm/",
+    "python/check_adcm_config.py",
+    "python/migration_checker.py",
+    "python/adcm/",
+    "python/ansible/",
+    "python/ansible_plugin/",
+    "python/api_v2/",
+    "python/audit/",
+    "python/cm/",
+    "python/jobs/",
+    "python/rbac/",
     "**/tests",
     "**/migrations",
     "**/__pycache__",
@@ -165,24 +176,3 @@ executionEnvironments = [
     { root = "python" },
     { root = "conf/adcm/python_scripts", extraPaths = ["python"] },
 ]
-
-# TODO: Remove. Temporarily disable type issue checks
-reportAttributeAccessIssue = false
-reportReturnType = false
-reportOptionalMemberAccess = false
-reportArgumentType = false
-reportIncompatibleMethodOverride = false
-reportOptionalSubscript = false
-reportAssignmentType = false
-reportIncompatibleVariableOverride = false
-reportCallIssue = false
-reportOptionalIterable = false
-reportInvalidTypeForm = false
-reportOptionalCall = false
-reportInvalidTypeArguments = false
-reportPossiblyUnboundVariable = false
-reportInvalidTypeVarUse = false
-reportGeneralTypeIssues = false
-reportIndexIssue = false
-reportOperatorIssue = false
-# END Remove.

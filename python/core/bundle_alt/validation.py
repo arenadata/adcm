@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Collection, Iterable
+from typing import Collection, Iterable, cast
 
 from graphlib import CycleError, TopologicalSorter
 from jinja2 import Template, TemplateError
@@ -83,18 +83,19 @@ def check_requires(definitions: DefinitionsMap) -> None:
                     raise BundleValidationError(message)
 
                 if required_entry_key not in definitions:
-                    if is_component_key(required_entry_key):
-                        _, service_name, component_name = required_entry_key
-                        message = f'No required component "{component_name}" of service "{service_name}"'
-                    else:
-                        _, service_name = required_entry_key
-                        message = f'No required service "{service_name}"'
-
+                    match required_entry_key:
+                        case ("component", service_name, component_name):
+                            message = f'No required component "{component_name}" of service "{service_name}"'
+                        case ("service", service_name):
+                            message = f'No required service "{service_name}"'
+                        case _:
+                            message = f"No required entity {required_entry_key}"
                     raise BundleValidationError(message)
 
-                if is_component_key(required_entry_key):
-                    parent_key = ("service", required_entry_key[1])
-                    requires_tree.add(key, parent_key, required_entry_key)
+                match required_entry_key:
+                    case ("component", service_name, component_name):
+                        parent_key: BundleDefinitionKey = ("service", service_name)
+                        requires_tree.add(key, parent_key, required_entry_key)
 
     try:
         requires_tree.prepare()
@@ -107,7 +108,8 @@ def check_display_names_are_unique(definitions: DefinitionsMap) -> None:
     component_keys = filter(is_component_key, definitions.keys())
 
     for key in component_keys:
-        service_name = key[1]
+        service_key = cast(tuple[str, str], key[0:2])
+        service_name = service_key
         component_definition = definitions[key]
         component_display_name = component_definition.display_name
         if component_display_name in component_display_names_per_service[service_name]:
@@ -267,9 +269,10 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
             raise BundleValidationError('"service" field is required in hc_acl for cluster and component') from e
 
         if hc_entry_key not in definitions:
-            _, service_name, component_name = hc_entry_key
-            message = f'Unknown component "{component_name}" of service "{service_name}"'
-            raise BundleValidationError(message)
+            match hc_entry_key:
+                case ("component", service_name, component_name):
+                    message = f'Unknown component "{component_name}" of service "{service_name}"'
+                    raise BundleValidationError(message)
 
 
 def check_file_is_correct_template(bundle_root: Path, relative_template_path: str) -> None:
