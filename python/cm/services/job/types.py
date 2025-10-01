@@ -94,8 +94,13 @@ class JobData(BaseModel):
     ) = Field(..., discriminator="action_proto_type")
 
 
+class ADCMJobConfig(BaseModel):
+    uuid: str
+    config: dict[str, Any]
+
+
 class JobConfig(BaseModel):
-    adcm: dict[Literal["config"], dict[str, Any]]
+    adcm: ADCMJobConfig
     context: dict[str, Any]
     env: JobEnv
     job: JobData

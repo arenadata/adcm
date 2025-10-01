@@ -56,6 +56,7 @@ from cm.services.job.run.executors import (
 )
 from cm.services.job.run.repo import JobRepoImpl
 from cm.services.job.types import (
+    ADCMJobConfig,
     ClusterActionType,
     ComponentActionType,
     HostActionType,
@@ -442,8 +443,10 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
     if task.action_process:
         process_context = get_action_process_context(process=Process.objects.get(id=task.action_process.id))
 
+    adcm = ADCM.objects.select_related("config").get()
+
     return JobConfig(
-        adcm={"config": get_adcm_configuration()},
+        adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=get_adcm_configuration(adcm)),
         context=context,
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),
