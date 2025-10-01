@@ -304,3 +304,15 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
         self.assertEqual("Host with the same origin is already added to cluster", response.json()["desc"])
+
+    def test_adcm_7132_create_duplicate_from_duplicate_fail(self):
+        duplicate = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate")
+        response = self.client.v2[duplicate, "duplicates"].post(data={"name": f"{duplicate.fqdn}-duplicate"})
+
+        expected_response = {
+            "code": "INVALID_CREATE_DUPLICATE_HOST",
+            "desc": f"There is not a #{duplicate.id} original host",
+            "level": "error",
+        }
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
