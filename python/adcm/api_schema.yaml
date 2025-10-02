@@ -2042,7 +2042,7 @@ components:
           type: array
           items:
             type: integer
-    PatchedHostUpdate:
+    PatchedHostDuplicateUpdate:
       type: object
       properties:
         name:
@@ -5671,27 +5671,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 30f8415a-3b55-4470-8a31-9916b508e213
+                    processSyncKey: 89ee5bdc-98f5-40f1-af2c-f53b8845c3bc
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 9bdb9fe6-a674-482a-8410-e3f746a7b978
+                    processSyncKey: 2febbaea-0877-49aa-be6d-e80bca208676
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 17bdb403-01ca-4c33-b476-dc36158b2962
+                    processSyncKey: f93e42dc-b850-480c-a172-f2958f1cc23e
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 9a0aa501-eff4-4405-9243-6d785b4e1b90
+                    processSyncKey: 33cc0763-0079-420c-94e0-2000dce61c4c
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -9471,27 +9471,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 2e417b21-3993-4c53-857f-5e61571faf11
+                    processSyncKey: bb7537d1-271d-44d6-98e7-6fba4f15d99e
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: a488f0f4-2b5d-45b6-888e-94e1cdfba74e
+                    processSyncKey: 5e4c0c08-a7a4-4bbf-b265-4825b1aa0aa6
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 37f01603-0f34-4479-a084-0528332223ea
+                    processSyncKey: ba3df3d0-6a9e-4759-8928-edbd4cd8559f
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 11e6df44-8ba1-4dc0-ac8e-b6680ca0a0d8
+                    processSyncKey: cdb2ee03-66d5-4ccf-a2eb-f8d1157709eb
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11113,27 +11113,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 5a65ea9f-e8a0-437d-9c4c-95bc1062e14f
+                    processSyncKey: 3db389e1-d01a-4f42-8f3d-aa75f67da94a
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: d4d0932a-037d-4370-9517-2c80ac58b7da
+                    processSyncKey: d3285fdc-d073-4c5a-bda9-96fca32a1e12
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 0eebdea1-568f-499f-9d6a-b542d3253d03
+                    processSyncKey: 2c4e0a2a-44eb-4392-bc66-96eeaa5279af
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: cf2cf45e-ea06-4b58-8bf2-c46c5962e08e
+                    processSyncKey: d1222499-b74d-418d-986a-fb0e4949597b
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -17409,13 +17409,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedHostUpdate'
+              $ref: '#/components/schemas/PatchedHostDuplicateUpdate'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedHostUpdate'
+              $ref: '#/components/schemas/PatchedHostDuplicateUpdate'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedHostUpdate'
+              $ref: '#/components/schemas/PatchedHostDuplicateUpdate'
       security:
       - tokenAuth: []
       - cookieAuth: []

@@ -68,6 +68,7 @@ from api_v2.host.serializers import (
     CreateDuplicateSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
+    HostDuplicateUpdateSerializer,
     HostSerializer,
     HostUpdateSerializer,
     HostWithDuplicatesSerializer,
@@ -189,7 +190,10 @@ class HostViewSet(
             return HostCreateSerializer
 
         if self.action in ("update", "partial_update"):
-            return HostUpdateSerializer
+            if not getattr(self, "_is_original_host", False):
+                return HostDuplicateUpdateSerializer
+            else:
+                return HostUpdateSerializer
 
         if self.action == "maintenance_mode":
             return HostChangeMaintenanceModeSerializer
@@ -254,6 +258,8 @@ class HostViewSet(
     )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
+        self._is_original_host = not instance.original
+
         check_custom_perm(request.user, "change", "host", instance)
 
         serializer = self.get_serializer(instance=instance, data=request.data, partial=True)
