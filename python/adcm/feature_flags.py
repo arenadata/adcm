@@ -23,13 +23,12 @@ class _Flag:
         self.env = flag.replace("-", "_").upper()
 
 
-FLAG_CONFIG_SPEC = _Flag("feature-config-spec")
 FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
 FLAG_CONFIG_PROCESSING = _Flag("feature-config-processing")
 
 
-def use_new_spec_format() -> bool:
-    return os.environ.get(FLAG_CONFIG_SPEC.env) == "new"
+def use_new_spec_format(headers: Mapping | None = None) -> bool:
+    return use_new_config_processing(headers=headers)
 
 
 def use_new_job_scheduler() -> bool:
