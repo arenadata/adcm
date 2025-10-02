@@ -53,19 +53,26 @@ def detect_stateful_parameters(
         name for name, param in with_edit_rule if _is_read_only(rule=param.edit_rule, owner_state=owner_state)
     }
 
-    deactivated_groups = spec.attributes.activatable_groups.difference(active_groups)
-    deactivated_parameters = {
-        parameter_name
-        for parameter_name in spec.parameters
-        for group_name in deactivated_groups
-        if is_part_of_group(parameter=parameter_name, group=group_name)
-    }
+    deactivated_parameters = detect_deactivated_parameters(spec=spec, active_groups=active_groups)
 
     return StatefulParameters(
         read_only=read_only_parameters,
         desync_allowed=spec.attributes.desyncable_parameters,
         deactivated=deactivated_parameters,
     )
+
+
+def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[ParameterFullName]) -> set[ParameterFullName]:
+    deactivated_groups = spec.attributes.activatable_groups.difference(active_groups)
+    if not deactivated_groups:
+        return set()
+
+    return {
+        parameter_name
+        for parameter_name in spec.parameters
+        for group_name in deactivated_groups
+        if is_part_of_group(parameter=parameter_name, group=group_name)
+    }
 
 
 # May be it should be placed in "rules" module if split will be required

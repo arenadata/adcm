@@ -12,10 +12,12 @@
 
 from collections import defaultdict
 from contextlib import suppress
-from typing import Any, TypeVar
+from functools import partial
+from typing import Any, Callable, TypeVar
 
 from core.config import spec
 from core.config._names import full_name_to_level_names
+from core.config._predicates import Predicate
 from core.config._types import (
     ConfigAttrs,
     Configuration,
@@ -28,6 +30,8 @@ from core.config._types import (
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
+New = TypeVar("New")
+Old = TypeVar("Old")
 
 
 def detect_changes(previous: Configuration, new: Configuration, specification: spec.FullSpec) -> set[ParameterFullName]:
@@ -81,10 +85,26 @@ def get_group_with_value(name: ParameterFullName, values: ConfigValues) -> tuple
     return _get_group_with_value(level_names=full_name_to_level_names(name), values=values)
 
 
-def set_by_full_name(new_value: T, name: ParameterFullName, values: ConfigValues) -> T:
+def set_by_full_name(name: ParameterFullName, new_value: Any, values: ConfigValues) -> None:
     own_name, group = get_group_with_value(name=name, values=values)
     group[own_name] = new_value
-    return new_value
+
+
+def change_by_full_name(name: ParameterFullName, func: Callable[[Any], New], values: ConfigValues) -> None:
+    own_name, group = get_group_with_value(name=name, values=values)
+    new_value = func(group[own_name])
+    group[own_name] = new_value
+
+
+def apply_if(value: Old, func: Callable[[Old], New], when: Predicate[Old]) -> Old | New:
+    if when(value):
+        return func(value)
+
+    return value
+
+
+def build_apply_if(func: Callable[[Old], New], when: Predicate[Old]) -> Callable[[Old], Old | New]:
+    return partial(apply_if, func=func, when=when)
 
 
 def detect_active_groups(attributes: ConfigAttrs) -> set[ParameterFullName]:

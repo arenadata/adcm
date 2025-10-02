@@ -13,10 +13,13 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, TypeAlias, TypeVar
+from typing import Callable, Literal, TypeAlias, TypeVar
+import logging
 
 from core.config import spec
 from core.config._config import (
+    build_apply_if,
+    change_by_full_name,
     detect_active_groups,
     detect_changes,
     flat_to_nested,
@@ -25,6 +28,7 @@ from core.config._config import (
     set_by_full_name,
 )
 from core.config._names import full_name_to_file_name
+from core.config._predicates import is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
     ConfigFlatValues,
@@ -41,7 +45,9 @@ from core.config._validate import (
     validate_configuration_is_consistent,
     validate_values_are_correct,
 )
-from core.result import Fail, Success, is_fail
+from core.result import Fail, Success, fail_with_call_on_error, is_fail, log_and_ignore
+
+log = logging.getLogger("core.config")
 
 # Types
 
@@ -56,11 +62,19 @@ class ValidationResult:
         return bool(self.changes)
 
 
+T = TypeVar("T")
+
 _EncryptFunc: TypeAlias = Callable[[str], str]
 
 _FileParameterIdentifier: TypeAlias = str
+"""
+"Own" part of filepath based on parameter name itself,
+without bounds to config owner / caller environment
+"""
 _FileTextContent: TypeAlias = str
 _FileIdentifier = TypeVar("_FileIdentifier")
+_ParameterPathBuilder: TypeAlias = Callable[[_FileParameterIdentifier], str]
+
 
 # Public
 
@@ -217,27 +231,111 @@ def encrypt_secrets(
 ) -> Success[ConfigValues]:
     out: ConfigValues = values if inplace else deepcopy(values)
 
+    encrypt_str = partial(change_by_full_name, func=build_apply_if(func=encrypt, when=is_not_none), values=out)
+    encrypt_dict = partial(
+        change_by_full_name,
+        func=build_apply_if(func=partial(_encrypt_dict, encrypt=encrypt), when=is_not_none),
+        values=out,
+    )
+
     for name, param in specification.parameters.items():
         match param:
             case spec.p.StringParameter(is_secret=True):
-                convert = encrypt
+                encrypt_str(name=name)
             case spec.p.MapParameter(is_secret=True):
-                convert = partial(_encrypt_dict, encrypt=encrypt)
+                encrypt_dict(name=name)
             case _:
                 continue
 
-        matched_value = get_by_full_name(name=name, values=out)
-        if matched_value is None:
-            continue
-
-        value_to_set = convert(matched_value)
-        set_by_full_name(new_value=value_to_set, name=name, values=out)
-
     return Success(out)
 
+
+def prepare_config_for_ansible(
+    configuration: Configuration,
+    specification: spec.FullSpec,
+    construct_parameter_path: _ParameterPathBuilder,
+    *,
+    inplace: bool = False,
+) -> Success[Configuration]:
+    target = configuration if inplace else deepcopy(configuration)
+
+    active_groups = detect_active_groups(attributes=configuration.attributes)
+    deactivated = spec.detect_deactivated_parameters(spec=specification, active_groups=active_groups)
+
+    to_empty_dict_if_is_none = build_apply_if(func=lambda _: {}, when=is_none)
+    to_empty_list_if_is_none = build_apply_if(func=lambda _: [], when=is_none)
+
+    for name, param in specification.parameters.items():
+        if name in deactivated:
+            continue
+
+        match param:
+            # set filepath
+            case spec.p.StringParameter(as_file=True):
+                construct_path_if_not_none = build_apply_if(
+                    func=lambda _, name_=name: construct_parameter_path(full_name_to_file_name(full=name_)),
+                    when=is_not_none,
+                )
+                _change_value_ignoring_missing(name=name, func=construct_path_if_not_none, values=target.values)
+            # set secret
+            case spec.p.StringParameter(is_secret=True):
+                _change_value_ignoring_missing(name=name, func=_to_ansible_vault_dict_if_is_str, values=target.values)
+            case spec.p.MapParameter(is_secret=True):
+                _change_value_ignoring_missing(
+                    name=name, func=_nested_dict_values_to_ansible_vault, values=target.values
+                )
+            # set unsafe
+            case spec.p.StringParameter(ansible=spec.p.AnsibleOptions(unsafe=True)):
+                _change_value_ignoring_missing(name=name, func=_to_ansible_unsafe_dict_if_is_str, values=target.values)
+            # set empty
+            case spec.p.ListParameter():
+                _change_value_ignoring_missing(name=name, func=to_empty_list_if_is_none, values=target.values)
+            case spec.p.MapParameter(is_secret=False):
+                _change_value_ignoring_missing(name=name, func=to_empty_dict_if_is_none, values=target.values)
+
+    deactivated_groups = specification.attributes.activatable_groups - active_groups
+    for group_name in deactivated_groups:
+        set_by_full_name(name=group_name, new_value=None, values=target.values)
+
+    return Success(target)
+
+
+# Overrides
+
+
+_log_exception = partial(
+    log_and_ignore,
+    log_func=partial(log.exception, "failed to change value, probably non-required field is missing: %s"),
+)
+_change_value_ignoring_missing = fail_with_call_on_error(on_error=_log_exception)(change_by_full_name)
+"""
+In old versions it was possible to save configuration without required fields.
+We could reconstruct config on inventory operations, but for now we just log and ignore errors.
+"""
 
 # Utilities
 
 
 def _encrypt_dict(value: dict, encrypt: _EncryptFunc) -> dict:
     return {key: encrypt(val) if isinstance(val, str) else val for key, val in value.items()}
+
+
+def _to_ansible_vault_dict_if_is_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:
+    if is_str(value):
+        return {"__ansible_vault": value}
+
+    return value
+
+
+def _to_ansible_unsafe_dict_if_is_str(value: T) -> dict[Literal["__ansible_unsafe"], str] | T:
+    if is_str(value):
+        return {"__ansible_unsafe": value}
+
+    return value
+
+
+def _nested_dict_values_to_ansible_vault(value: T) -> dict | T:
+    if isinstance(value, dict):
+        return {key: _to_ansible_vault_dict_if_is_str(val) for key, val in value.items()}
+
+    return value
