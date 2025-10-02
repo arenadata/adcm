@@ -11,19 +11,23 @@
 # limitations under the License.
 
 from copy import deepcopy
+from typing import Callable
 
-from core.config._operations import validate_new_changes_in_main_configuration
+from core.config._operations import prepare_config_for_ansible, validate_new_changes_in_main_configuration
 from core.config._spec import FullSpec
 from core.config._spec.parameters import (
     Activation,
+    AnsibleOptions,
     BooleanParameter,
     ExtraProperties,
+    JSONParameter,
     ListParameter,
     MapParameter,
     NumberParameter,
     OptionParameter,
     ParameterGroup,
     ReadOnlyRule,
+    SimpleParameter,
     StringParameter,
     StructureParameter,
     VariantParameter,
@@ -400,3 +404,135 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
         result = self.validate_changes(new=new_config)
 
         self.expect_success(result)
+
+
+class TestPrepareConfigForAnsible(ConfigTestCase):
+    def expect_correct_values(
+        self,
+        params: tuple[SimpleParameter, ...],
+        values: dict,
+        expected_values: dict,
+        path_constructor: Callable | None = None,
+    ):
+        specification = FullSpec.from_parameters(*params)
+        result = prepare_config_for_ansible(
+            configuration=Configuration(values=values),
+            specification=specification,
+            construct_parameter_path=path_constructor or (lambda x: x),
+        )
+
+        self.expect_success(result)
+        self.assertDictEqual(result.value.values, expected_values)
+
+    def test_files_as_paths(self):
+        prefix = "cluster.1"
+        params = (
+            StringParameter(identifier=name_id("plain"), as_file=False),
+            StringParameter(identifier=name_id("file_root"), as_file=True),
+            StringParameter(identifier=name_id("group", "nested_file"), as_file=True, is_secret=True),
+            StringParameter(identifier=name_id("after_file"), as_file=True, ansible=AnsibleOptions(unsafe=True)),
+            StringParameter(identifier=name_id("none_file"), as_file=True),
+        )
+        values = {
+            "plain": "a",
+            "file_root": "fr",
+            "group": {"nested_file": "gnf"},
+            "after_file": "af",
+            "none_file": None,
+        }
+        expected_values = {
+            "plain": "a",
+            "file_root": f"{prefix}.file_root.",
+            "group": {"nested_file": f"{prefix}.group.nested_file"},
+            "after_file": f"{prefix}.after_file.",
+            "none_file": None,
+        }
+
+        self.expect_correct_values(
+            params=params, values=values, expected_values=expected_values, path_constructor=lambda x: f"{prefix}.{x}"
+        )
+
+    def test_secrets_in_ansible_vault_dict(self):
+        ansible_vault = "__ansible_vault"
+        params = (
+            StringParameter(identifier=name_id("plain-s"), is_secret=False),
+            StringParameter(identifier=name_id("secret-s"), is_secret=True),
+            StringParameter(identifier=name_id("group", "plain-s"), is_secret=False),
+            StringParameter(identifier=name_id("group", "secret-s"), is_secret=True),
+            StringParameter(identifier=name_id("group", "secret-none"), is_secret=True),
+            MapParameter(identifier=name_id("group", "nested", "plain-d"), is_secret=False),
+            MapParameter(identifier=name_id("group", "nested", "secret-d"), is_secret=True),
+            MapParameter(identifier=name_id("group", "nested", "secret-none"), is_secret=True),
+            MapParameter(identifier=name_id("plain-d"), is_secret=False),
+            MapParameter(identifier=name_id("secret-d"), is_secret=True),
+        )
+        values = {
+            "plain-s": "ps",
+            "secret-s": "ss",
+            "group": {
+                "plain-s": "gps",
+                "secret-s": "gss",
+                "secret-none": None,
+                "nested": {
+                    "plain-d": {"k": "gnpd"},
+                    "secret-d": {"k": "gnsd"},
+                    "secret-none": None,
+                },
+            },
+            "plain-d": {"k": "pd"},
+            "secret-d": {"k": "sd"},
+        }
+        expected_values = {
+            "plain-s": "ps",
+            "secret-s": {ansible_vault: "ss"},
+            "group": {
+                "plain-s": "gps",
+                "secret-s": {ansible_vault: "gss"},
+                "secret-none": None,
+                "nested": {
+                    "plain-d": {"k": "gnpd"},
+                    "secret-d": {"k": {ansible_vault: "gnsd"}},
+                    "secret-none": None,
+                },
+            },
+            "plain-d": {"k": "pd"},
+            "secret-d": {"k": {ansible_vault: "sd"}},
+        }
+
+        self.expect_correct_values(params=params, values=values, expected_values=expected_values)
+
+    def test_default_for_none_map_list(self):
+        params = (
+            StringParameter(identifier=name_id("s")),
+            NumberParameter(identifier=name_id("n"), is_float=False),
+            JSONParameter(identifier=name_id("j")),
+            MapParameter(identifier=name_id("m")),
+            MapParameter(identifier=name_id("sm"), is_secret=True),
+            ListParameter(identifier=name_id("l")),
+            StringParameter(identifier=name_id("f"), as_file=True),
+            VariantParameter(identifier=name_id("v"), is_strict=True, payload={}, source="builtin"),
+            OptionParameter(identifier=name_id("o"), options={}),
+        )
+
+        values = {"s": None, "n": None, "j": None, "m": None, "sm": None, "l": None, "f": None, "v": None, "o": None}
+        expected_values = values | {"m": {}, "l": []}
+
+        self.expect_correct_values(params=params, values=values, expected_values=expected_values)
+
+    def test_ansible_unsafe_str(self):
+        ansible_unsafe = "__ansible_unsafe"
+        params = (
+            StringParameter(identifier=name_id("plain"), ansible=AnsibleOptions(unsafe=False)),
+            StringParameter(identifier=name_id("group", "nested", "uns"), ansible=AnsibleOptions(unsafe=True)),
+            StringParameter(identifier=name_id("group", "uns-none"), ansible=AnsibleOptions(unsafe=True)),
+        )
+        values = {
+            "plain": "aa",
+            "group": {"nested": {"uns": "f"}, "uns-none": None},
+        }
+        expected_values = {
+            "plain": "aa",
+            "group": {"nested": {"uns": {ansible_unsafe: "f"}}, "uns-none": None},
+        }
+
+        self.expect_correct_values(params=params, values=values, expected_values=expected_values)

@@ -63,6 +63,11 @@ class ReadOnlyRule:
 
 
 @dataclass(slots=True)
+class AnsibleOptions:
+    unsafe: bool = False
+
+
+@dataclass(slots=True)
 class Activation:
     edit_rule: WritableRule | ReadOnlyRule = field(default_factory=lambda: WritableRule(writable="any"))
     is_desyncable: bool = False
@@ -92,6 +97,7 @@ class StringParameter(_SimpleParameterBase):
     as_file: bool = False
     pattern: str | None = None
     is_secret: bool = False
+    ansible: AnsibleOptions = Field(default_factory=(AnsibleOptions))
     type: Literal[ParameterType.STRING] = ParameterType.STRING
 
 

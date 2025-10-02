@@ -14,7 +14,7 @@ from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
 from core.config import _pattern as pattern
-from core.config._config import flat_to_nested, get_by_full_name, nested_to_flat, set_by_full_name
+from core.config._config import flat_to_nested, get_by_full_name, nested_to_flat, set_by_full_name, change_by_full_name
 from core.config._types import (
     Attributes,
     ConfigFlatValues,
@@ -47,5 +47,6 @@ __all__ = [
     "operations",
     "pattern",
     "set_by_full_name",
+    "change_by_full_name",
     "spec",
 ]
