@@ -316,3 +316,19 @@ class TestDuplicateHost(BaseAPITestCase):
         }
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(response.json(), expected_response)
+
+    def test_adcm_7156_set_duplicate_name_same_as_existing_success(self):
+        duplicate_1 = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate-1")
+        duplicate_2 = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate-2")
+
+        # name as original
+        response = self.client.v2[duplicate_2].patch(data={"name": self.host_1.fqdn})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        duplicate_2.refresh_from_db()
+        self.assertEqual(duplicate_2.fqdn, self.host_1.fqdn)
+
+        # name as another duplicate
+        response = self.client.v2[duplicate_2].patch(data={"name": duplicate_1.fqdn})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        duplicate_2.refresh_from_db()
+        self.assertEqual(duplicate_2.fqdn, duplicate_1.fqdn)

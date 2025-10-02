@@ -133,21 +133,38 @@ class HostWithDuplicatesSerializer(HostSerializer):
         fields = HostSerializer.Meta.fields + ["duplicates"]
 
 
+_host_name_unique_validator = HostUniqueValidator(queryset=Host.objects.filter(original__isnull=True))
+_host_name_format_validator = StartMidEndValidator(
+    start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+    mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+    end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+    err_code="BAD_REQUEST",
+    err_msg="Wrong FQDN.",
+)
+_host_original_name_validators = [_host_name_unique_validator, _host_name_format_validator]
+_host_duplicate_name_validators = [_host_name_format_validator]
+
+
 class HostUpdateSerializer(ModelSerializer):
     name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         required=True,
-        validators=[
-            HostUniqueValidator(queryset=Host.objects.filter(original__isnull=True)),
-            StartMidEndValidator(
-                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
-                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
-                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
-                err_code="BAD_REQUEST",
-                err_msg="Wrong FQDN.",
-            ),
-        ],
+        validators=_host_original_name_validators,
+        source="fqdn",
+    )
+
+    class Meta:
+        model = Host
+        fields = ["name", "description"]
+
+
+class HostDuplicateUpdateSerializer(ModelSerializer):
+    name = CharField(
+        max_length=253,
+        help_text="fully qualified domain name",
+        required=True,
+        validators=_host_duplicate_name_validators,
         source="fqdn",
     )
 
