@@ -196,6 +196,7 @@ class ActionViewSet(
         serializer.is_valid(raise_exception=True)
 
         configuration = serializer.validated_data["configuration"]
+        description = serializer.validated_data["description"]
         config = {}
         adcm_meta = {}
 
@@ -245,6 +246,7 @@ class ActionViewSet(
                 process=AssociatedProcess(**serializer.validated_data["process"])
                 if serializer.validated_data["process"]
                 else None,
+                description=description,
             ),
             feature_scripts_jinja=use_new_approach,
         )

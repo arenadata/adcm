@@ -66,6 +66,7 @@ class TaskSerializer(ModelSerializer):
     objects = SerializerMethodField()
     start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
     end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
+    description = CharField(allow_null=True, default="")
 
     class Meta:
         model = TaskLog
@@ -81,6 +82,7 @@ class TaskSerializer(ModelSerializer):
             "is_terminatable",
             "child_jobs",
             "objects",
+            "description",
         )
 
     @staticmethod

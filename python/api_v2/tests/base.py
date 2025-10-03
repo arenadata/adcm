@@ -210,7 +210,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
             )
 
         run_task.run()
@@ -221,7 +221,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
             )
 
         run_task.run()

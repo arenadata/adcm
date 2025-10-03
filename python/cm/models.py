@@ -1384,6 +1384,7 @@ class TaskLog(ADCMModel):
     executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
     process = models.JSONField(null=True, default=None)
+    description = models.CharField(max_length=255, blank=True, default="")
 
     """
     Since ADCM-6080 non-blocking tasks appear: they won't have `lock`,

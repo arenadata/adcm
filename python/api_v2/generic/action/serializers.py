@@ -134,6 +134,7 @@ class ProcessIdSerializer(EmptySerializer):
 class ActionRunSerializer(UpgradeRunSerializer):
     should_block_object = BooleanField(required=False, default=True, initial=True)
     process = ProcessIdSerializer(required=False, default=None, allow_null=True, initial=None)
+    description = CharField(max_length=255, allow_blank=True, required=False, default="")
 
 
 class ActionNameSerializer(ModelSerializer):

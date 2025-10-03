@@ -57,6 +57,8 @@ class TaskPayloadDTO:
 
     process: CallingProcess | AssociatedProcess | None = None
 
+    description: str = ""
+
 
 class TaskMutableFieldsDTO(BaseModel):
     hostcomponent: HostComponentChanges
