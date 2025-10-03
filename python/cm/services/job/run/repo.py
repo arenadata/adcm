@@ -168,6 +168,7 @@ class JobRepoImpl(JobRepoInterface):
                 multi_state_unset=tuple(task_record.action.multi_state_on_fail_unset or ()),
             ),
             is_blocking=task_record.is_blocking,
+            description=task_record.description,
         )
 
     @classmethod
@@ -225,6 +226,7 @@ class JobRepoImpl(JobRepoInterface):
             selector=selector,
             is_blocking=payload.is_blocking,
             process=payload.process.model_dump(mode="json") if payload.process else None,
+            description=payload.description,
         )
 
         return cls.get_task(id=task.pk)

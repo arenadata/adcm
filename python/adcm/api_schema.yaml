@@ -163,6 +163,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ProcessId'
           nullable: true
+        description:
+          type: string
+          default: ''
+          maxLength: 255
     ActionRunConfiguration:
       type: object
       properties:
@@ -3276,6 +3280,10 @@ components:
           items:
             $ref: '#/components/schemas/TaskObjectsField'
           readOnly: true
+        description:
+          type: string
+          nullable: true
+          default: ''
       required:
       - id
       - name
@@ -3288,6 +3296,7 @@ components:
       - isTerminatable
       - childJobs
       - objects
+      - description
     TaskObjectsField:
       type: object
       properties:

@@ -164,6 +164,8 @@ class Task(BaseModel):
 
     is_blocking: bool
 
+    description: str
+
 
 class JobSpec(BaseModel):
     # basic info

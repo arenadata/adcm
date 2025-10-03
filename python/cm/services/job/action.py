@@ -75,6 +75,7 @@ class ActionRunPayload:
     verbose: bool = False
     is_blocking: bool = True
     process: AssociatedProcess | None = None
+    description: str = ""
 
 
 def run_action(
@@ -124,6 +125,7 @@ def run_action(
         post_upgrade_hostcomponent=post_upgrade_hc,
         is_blocking=payload.is_blocking,
         process=payload.process,
+        description=payload.description,
     )
 
     with atomic():
