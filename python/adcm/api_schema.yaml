@@ -5707,27 +5707,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 8fc0c302-4e7c-4d4e-bd63-7e11e92da178
+                    processSyncKey: f2de297e-ce15-4388-9a7a-84339c5d55f5
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: a24d1a56-0fa2-4c26-a9da-44ad6db50d51
+                    processSyncKey: 678fab0b-92a1-4ad5-b1c9-f9a6bf00f2b7
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 64d567a4-1d75-41cb-9270-d349ff8440aa
+                    processSyncKey: 6398e9a0-d1d5-497f-aa92-c52d1352f68a
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 18f15981-49a4-4269-afa2-e23d905e47fb
+                    processSyncKey: a4d6e201-7a1e-4f8b-abe6-e06869f2474f
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6054,9 +6054,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postClusterConfigGroups
-      description: Create new cluster's config-group.
-      summary: POST cluster's config-groups
+      operationId: postClusterConfigGroup
+      description: Create new cluster's config group.
+      summary: POST cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6290,7 +6290,7 @@ paths:
     get:
       operationId: getClusterConfigGroupHosts
       description: Get a list of hosts added to cluster's config-group.
-      summary: GET cluster's config-group hosts
+      summary: GET cluster's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -6358,8 +6358,8 @@ paths:
           description: ''
     post:
       operationId: postClusterConfigGroupHosts
-      description: Add host to cluster's config-group.
-      summary: POST cluster's config-group host
+      description: Add host to cluster's config group.
+      summary: POST cluster's config group host
       parameters:
       - in: path
         name: clusterId
@@ -6430,8 +6430,8 @@ paths:
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getClusterConfigGroupHost
-      description: Get information about a specific host of cluster's config-group.
-      summary: GET cluster's config-group host
+      description: Get information about a specific host of cluster's config group.
+      summary: GET cluster's config group host
       parameters:
       - in: path
         name: clusterId
@@ -6517,8 +6517,8 @@ paths:
           description: ''
     delete:
       operationId: deleteClusterConfigGroupHosts
-      description: Remove host from cluster's config-group.
-      summary: DELETE host from cluster's config-group
+      description: Remove host from cluster's config group.
+      summary: DELETE host from cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6608,8 +6608,8 @@ paths:
           description: ''
     patch:
       operationId: patchClusterConfigGroup
-      description: Change cluster's config-group's name and description.
-      summary: PATCH cluster's config-group
+      description: Change cluster's config group's name and description.
+      summary: PATCH cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6660,8 +6660,8 @@ paths:
           description: ''
     delete:
       operationId: deleteClusterConfigGroup
-      description: Delete specific cluster's config-group.
-      summary: DELETE cluster's config-group
+      description: Delete specific cluster's config group.
+      summary: DELETE cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6697,35 +6697,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getClusterConfigGroupConfigSchema
+      description: Get cluster's config group's schema information.
+      summary: GET cluster's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -6749,7 +6723,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -9507,27 +9524,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 06462770-a652-4d47-b793-cb795faadf68
+                    processSyncKey: 4d814298-39c0-4023-805d-b8800b0718b1
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: f7752617-aa38-4203-9f7e-f66b56cb0afd
+                    processSyncKey: e79135c1-f122-4931-9b36-8435c080b5f8
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 62cd2326-21c7-40e2-804b-4efa4cd32841
+                    processSyncKey: 4389a62c-8861-49cc-a48e-6d3910a0bec4
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 05cc8b6b-9ad1-413f-82b5-cb6b836e4bce
+                    processSyncKey: 40146c3b-624b-4029-a1dc-2876e66a949d
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11149,27 +11166,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: a9d82f8a-67a5-4156-9850-1b635563689f
+                    processSyncKey: 3d8ff454-1ea2-4e37-9822-f80b9f08a546
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 24090500-282c-44dc-9465-eca92da28067
+                    processSyncKey: c6cc3130-97e6-4b2f-97e8-0d1ba0609af2
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: b309ff92-dc8c-4e00-961b-548b1130cdd3
+                    processSyncKey: b0e062af-9825-4099-b0d6-98b22ff25eee
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: de3e0ce1-79bf-474b-af72-44e54676a467
+                    processSyncKey: ef1e7daf-5595-4f87-9a6f-eead12f3f8de
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11544,9 +11561,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postComponentConfigGroups
-      description: Create new component's config-group.
-      summary: POST component's config-groups
+      operationId: postComponentConfigGroup
+      description: Create new component's config group.
+      summary: POST component's config group
       parameters:
       - in: path
         name: clusterId
@@ -11828,7 +11845,7 @@ paths:
     get:
       operationId: getComponentConfigGroupHosts
       description: Get a list of hosts added to component's config-group.
-      summary: GET component's config-group hosts
+      summary: GET component's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -11908,8 +11925,8 @@ paths:
           description: ''
     post:
       operationId: postComponentConfigGroupHosts
-      description: Add host to component's config-group.
-      summary: POST component's config-group host
+      description: Add host to component's config group.
+      summary: POST component's config group host
       parameters:
       - in: path
         name: clusterId
@@ -11992,8 +12009,8 @@ paths:
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getComponentConfigGroupHost
-      description: Get information about a specific host of component's config-group.
-      summary: GET component's config-group host
+      description: Get information about a specific host of component's config group.
+      summary: GET component's config group host
       parameters:
       - in: path
         name: clusterId
@@ -12091,8 +12108,8 @@ paths:
           description: ''
     delete:
       operationId: deleteComponentConfigGroupHosts
-      description: Remove host from component's config-group.
-      summary: DELETE host from component's config-group
+      description: Remove host from component's config group.
+      summary: DELETE host from component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12206,8 +12223,8 @@ paths:
           description: ''
     patch:
       operationId: patchComponentConfigGroup
-      description: Change component's config-group's name and description.
-      summary: PATCH component's config-group
+      description: Change component's config group's name and description.
+      summary: PATCH component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12270,8 +12287,8 @@ paths:
           description: ''
     delete:
       operationId: deleteComponentConfigGroup
-      description: Delete specific component's config-group.
-      summary: DELETE component's config-group
+      description: Delete specific component's config group.
+      summary: DELETE component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12319,35 +12336,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_services_components_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getComponentConfigGroupConfigSchema
+      description: Get component's config group's schema information.
+      summary: GET component's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -12383,7 +12374,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -12799,9 +12833,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-schema/:
     get:
-      operationId: getConfigConfigSchema
-      description: Get config's config schema information.
-      summary: GET config's config schema
+      operationId: getComponentConfigSchema
+      description: Get component's config schema information.
+      summary: GET component's config schema
       parameters:
       - in: path
         name: clusterId
@@ -13055,9 +13089,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postServiceConfigGroups
-      description: Create new service's config-group.
-      summary: POST service's config-groups
+      operationId: postServiceConfigGroup
+      description: Create new service's config group.
+      summary: POST service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13315,7 +13349,7 @@ paths:
     get:
       operationId: getServiceConfigGroupHosts
       description: Get a list of hosts added to service's config-group.
-      summary: GET service's config-group hosts
+      summary: GET service's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -13389,8 +13423,8 @@ paths:
           description: ''
     post:
       operationId: postServiceConfigGroupHosts
-      description: Add host to service's config-group.
-      summary: POST service's config-group host
+      description: Add host to service's config group.
+      summary: POST service's config group host
       parameters:
       - in: path
         name: clusterId
@@ -13467,8 +13501,8 @@ paths:
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getServiceConfigGroupHost
-      description: Get information about a specific host of service's config-group.
-      summary: GET service's config-group host
+      description: Get information about a specific host of service's config group.
+      summary: GET service's config group host
       parameters:
       - in: path
         name: clusterId
@@ -13560,8 +13594,8 @@ paths:
           description: ''
     delete:
       operationId: deleteServiceConfigGroupHosts
-      description: Remove host from service's config-group.
-      summary: DELETE host from service's config-group
+      description: Remove host from service's config group.
+      summary: DELETE host from service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13663,8 +13697,8 @@ paths:
           description: ''
     patch:
       operationId: patchServiceConfigGroup
-      description: Change service's config-group's name and description.
-      summary: PATCH service's config-group
+      description: Change service's config group's name and description.
+      summary: PATCH service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13721,8 +13755,8 @@ paths:
           description: ''
     delete:
       operationId: deleteServiceConfigGroup
-      description: Delete specific service's config-group.
-      summary: DELETE service's config-group
+      description: Delete specific service's config group.
+      summary: DELETE service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13764,35 +13798,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_services_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getServiceConfigGroupConfigSchema
+      description: Get service's config group's schema information.
+      summary: GET service's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -13822,7 +13830,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -14823,35 +14874,8 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/host-candidates/:
     get:
-      operationId: clusters_host_candidates_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getClusterHostCandidates
+      description: Get a list of hosts candidates.
       parameters:
       - in: path
         name: clusterId
@@ -14869,7 +14893,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Cluster'
+                type: array
+                items:
+                  $ref: '#/components/schemas/HostShort'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/mapping/:
     get:
@@ -15757,9 +15795,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postHostproviderConfigGroups
-      description: Create new hostprovider's config-group.
-      summary: POST hostprovider's config-groups
+      operationId: postHostproviderConfigGroup
+      description: Create new hostprovider's config group.
+      summary: POST hostprovider's config group
       parameters:
       - in: path
         name: providerId
@@ -15993,7 +16031,7 @@ paths:
     get:
       operationId: getHostproviderConfigGroupHosts
       description: Get a list of hosts added to hostprovider's config-group.
-      summary: GET hostprovider's config-group hosts
+      summary: GET hostprovider's config group hosts
       parameters:
       - in: path
         name: configGroupId
@@ -16061,8 +16099,8 @@ paths:
           description: ''
     post:
       operationId: postHostproviderConfigGroupHosts
-      description: Add host to hostprovider's config-group.
-      summary: POST hostprovider's config-group host
+      description: Add host to hostprovider's config group.
+      summary: POST hostprovider's config group host
       parameters:
       - in: path
         name: configGroupId
@@ -16133,8 +16171,9 @@ paths:
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getHostproviderConfigGroupHost
-      description: Get information about a specific host of hostprovider's config-group.
-      summary: GET hostprovider's config-group host
+      description: Get information about a specific host of hostprovider's config
+        group.
+      summary: GET hostprovider's config group host
       parameters:
       - in: path
         name: configGroupId
@@ -16220,8 +16259,8 @@ paths:
           description: ''
     delete:
       operationId: deleteHostproviderConfigGroupHosts
-      description: Remove host from hostprovider's config-group.
-      summary: DELETE host from hostprovider's config-group
+      description: Remove host from hostprovider's config group.
+      summary: DELETE host from hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16311,8 +16350,8 @@ paths:
           description: ''
     patch:
       operationId: patchHostproviderConfigGroup
-      description: Change hostprovider's config-group's name and description.
-      summary: PATCH hostprovider's config-group
+      description: Change hostprovider's config group's name and description.
+      summary: PATCH hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16363,8 +16402,8 @@ paths:
           description: ''
     delete:
       operationId: deleteHostproviderConfigGroup
-      description: Delete specific hostprovider's config-group.
-      summary: DELETE hostprovider's config-group
+      description: Delete specific hostprovider's config group.
+      summary: DELETE hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16400,35 +16439,9 @@ paths:
           description: ''
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: hostproviders_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getHostproviderConfigGroupConfigSchema
+      description: Get hostprovider's config group's schema information.
+      summary: GET hostprovider's config group's config schema
       parameters:
       - in: path
         name: configGroupId
@@ -16452,7 +16465,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/host-candidates/:
     get:

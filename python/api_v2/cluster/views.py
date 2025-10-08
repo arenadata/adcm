@@ -312,6 +312,12 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
         responses=responses(success=dict),
     ),
     config_schema=extend_config_schema("cluster"),
+    host_candidates=extend_schema(
+        methods=["get"],
+        operation_id="getClusterHostCandidates",
+        description="Get a list of hosts candidates.",
+        responses=responses(success=HostShortSerializer(many=True), errors=HTTP_404_NOT_FOUND),
+    ),
 )
 class ClusterViewSet(
     PermissionListMixin,

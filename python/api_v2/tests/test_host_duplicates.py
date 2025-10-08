@@ -266,9 +266,13 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertIn("host duplicate", response.json()["desc"])
 
     def test_host_list_queries_amount(self):
-        expected_queries_amount = 10
+        expected_queries_amount = 8
 
-        # When there aren't any duplicates, there will be 1 less query (for concerns prefetch),
+        # When there aren't any duplicates, there will be 1 more query (for concerns prefetch),
+        # SELECT "django_content_type"."id", "django_content_type"."app_label", "django_content_type"."model" FROM
+        # "django_content_type" INNER JOIN "auth_permission" ON
+        # ("django_content_type"."id" = "auth_permission"."content_type_id") WHERE
+        # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_host') LIMIT 21
         # yet amount of queries won't increase when more instances/duplicates arrive
         create_duplicate(host_id=self.host_1.pk, name="jjjj")
 
