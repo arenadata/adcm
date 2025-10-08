@@ -140,7 +140,7 @@ from api_v2.views import (
             errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
         ),
     ),
-    config_schema=extend_config_schema("config"),
+    config_schema=extend_config_schema("component"),
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = Component.objects.select_related("cluster", "service").order_by("pk")

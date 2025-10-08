@@ -9,7 +9,7 @@ PY_FILES = python dev/linters conf/adcm/python_scripts
 .PHONY: build unittests pretty lint version
 
 build:
-	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14

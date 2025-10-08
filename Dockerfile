@@ -12,7 +12,7 @@ WORKDIR /code
 RUN . build.sh
 
 
-FROM python:3.10-alpine as python_builder
+FROM python:3.10-alpine AS python_builder
 ENV PATH="/root/.local/bin:$PATH"
 RUN apk update && \
     apk upgrade && \
@@ -54,18 +54,20 @@ RUN apk add --no-cache --virtual .build-deps \
     ln -s /usr/local/bin/python3 /usr/bin/python3 && \
     ln -s /usr/bin/python3 /usr/bin/python && \
     python -m venv $POETRY_VENV && \
-    $POETRY_VENV/bin/pip install --no-cache-dir -U pip setuptools && \
     $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
-    $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root && \
-    python -m venv /adcm/venv/2.9 --system-site-packages && \
+    $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root --with ansible,run && \
+    python -m venv /adcm/venv/2.9 --system-site-packages --upgrade-deps && \
     /adcm/venv/2.9/bin/pip install --no-cache-dir git+https://github.com/arenadata/ansible.git@v2.9.27-p3 && \
-    python -m venv /adcm/venv/2.16 --system-site-packages && \
+    python -m venv /adcm/venv/2.16 --system-site-packages --upgrade-deps && \
     /adcm/venv/2.16/bin/pip install --no-cache-dir ansible-core==2.16.4 && \
     git clone -b 8.6.8_arenadata1 https://github.com/arenadata/community.general.git && \
     cd community.general && /adcm/venv/2.16/bin/ansible-galaxy collection build && \
     /adcm/venv/2.16/bin/ansible-galaxy collection install /community.general/community-general-8.6.8.tar.gz && \
     curl https://raw.githubusercontent.com/ansible-community/ansible-build-data/refs/heads/main/9/ansible-9.13.0.yaml -o /adcm/ansible-9.13.0.yaml && \
-    /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml
+    /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml && \
+    /adcm/venv/2.9/bin/python -m pip uninstall -y pip && \
+    /adcm/venv/2.16/bin/python -m pip uninstall -y pip
+
 
 FROM python:3.10-alpine
 ENV PATH="/root/.local/bin:$PATH"
@@ -84,6 +86,8 @@ RUN apk update && \
         sshpass && \
     apk cache clean --purge
 
+RUN python -m pip install -U setuptools
+
 RUN ln -s /usr/local/bin/python3 /usr/bin/python3 && \
     ln -s /usr/bin/python3 /usr/bin/python
 
@@ -99,6 +103,8 @@ COPY --from=python_builder /usr/local/bin /usr/local/bin
 COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
 COPY --from=python_builder /root/.ansible/collections /root/.ansible/collections
 
+RUN python -m pip uninstall -y pip && \
+    rm -rf /root/.cache/pip
 RUN mkdir -p /adcm/data/log
 
 RUN python /adcm/python/manage.py collectstatic --noinput

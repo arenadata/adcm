@@ -456,7 +456,13 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         self.action_host_group_service.add_hosts_to_group(group_id=another_component_group.id, hosts=[self.hosts[1].id])
 
         # amount of queries checked on no host group -- it's the same
-        with self.assertNumQueries(8):
+        # When there aren't any components, there will be 1 more query (for concerns prefetch),
+        # SELECT "django_content_type"."id", "django_content_type"."app_label", "django_content_type"."model" FROM
+        # "django_content_type" INNER JOIN "auth_permission" ON
+        # ("django_content_type"."id" = "auth_permission"."content_type_id") WHERE
+        # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_component') LIMIT 21
+        # yet amount of queries won't increase when more instances/components arrive
+        with self.assertNumQueries(7):
             response = self.client.v2[self.component, ACTION_HOST_GROUPS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)

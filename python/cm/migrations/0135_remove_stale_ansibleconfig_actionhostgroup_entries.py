@@ -41,13 +41,21 @@ def remove_stale_ansibleconfig_actionhostgroup_entries(apps, schema_editor):
     # only cluster can have ansible_config
     AnsibleConfig.objects.exclude(object_id__in=cluster_ids).delete()
 
-    ahg_delete = set()
+    # After update Django to 5.2 the code stopped working:
+    # ActionHostGroup.objects.filter(id__in=[QuerySet(...), QuerySet(...), ...]).delete()
+    # with error: AttributeError: 'QuerySet' object has no attribute 'contains_aggregate'
+    # this code was working before the update Djagno (so Django<5.2).
+    ahg_delete = []
     for ct, ids in ct_ids_map.items():
-        ahg_delete.add(
-            ActionHostGroup.objects.filter(object_type_id=ct.id).exclude(object_id__in=ids).values_list("id", flat=True)
+        ahg_delete.extend(
+            list(
+                ActionHostGroup.objects.filter(object_type_id=ct.id)
+                .exclude(object_id__in=ids)
+                .values_list("id", flat=True)
+            )
         )
 
-    ActionHostGroup.objects.filter(id__in=ahg_delete).delete()
+    ActionHostGroup.objects.filter(id__in=set(ahg_delete)).delete()
 
 
 class Migration(migrations.Migration):
