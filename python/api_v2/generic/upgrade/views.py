@@ -20,9 +20,10 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, PrototypeConfig, Provider, TaskLog, Upgrade
+from cm.models import Bundle, Cluster, ObjectType, Prototype, PrototypeConfig, Provider, TaskLog, Upgrade
 from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
+from django.db.models import OuterRef, Prefetch, Subquery
 from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -42,11 +43,7 @@ from api_v2.views import ADCMGenericViewSet
 
 
 class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet):
-    queryset = (
-        Upgrade.objects.select_related("action", "bundle", "action__prototype")
-        .prefetch_related("bundle__prototype_set")
-        .order_by("pk")
-    )
+    queryset = Upgrade.objects.select_related("action", "action__prototype")
     filterset_class = UpgradeFilter
     pagination_class = None
 
@@ -58,6 +55,20 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             return UpgradeRunSerializer
 
         return UpgradeListSerializer
+
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
+        queryset = super().get_queryset(*args, **kwargs)
+        prototype_qs = Prototype.objects.filter(
+            bundle=OuterRef("pk"), type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]
+        ).order_by("id")
+
+        bundle_qs = Bundle.objects.annotate(
+            display_name=Subquery(prototype_qs.values("display_name")[:1]),
+            prototype_id=Subquery(prototype_qs.values("id")[:1]),
+            license_statues=Subquery(prototype_qs.values("license")[:1]),
+        )
+
+        return queryset.prefetch_related(Prefetch("bundle", queryset=bundle_qs)).order_by("pk")
 
     def get_object(self):
         parent_object: Cluster | Provider | None = self.get_parent_object()

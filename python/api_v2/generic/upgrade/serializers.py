@@ -15,14 +15,16 @@ from cm.models import Upgrade
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
-from api_v2.bundle.serializers import UpgradeBundleSerializer
+from api_v2.bundle.serializers import UpgradeBundleSerializer, UpgradeListBundleSerializer
 from api_v2.generic.action.serializers import ActionConfigurationSerializer, HCMapRuleEntrySerializer
 
 
 class UpgradeListSerializer(ModelSerializer):
+    bundle = UpgradeListBundleSerializer()
+
     class Meta:
         model = Upgrade
-        fields = ["id", "name", "display_name"]
+        fields = ["id", "name", "display_name", "bundle"]
 
 
 class UpgradeRetrieveSerializer(UpgradeListSerializer):

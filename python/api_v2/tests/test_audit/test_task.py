@@ -55,7 +55,7 @@ class TestTaskAudit(BaseAPITestCase):
     def test_run_action_success(self):
         with RunTaskMock() as run_task:
             response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
