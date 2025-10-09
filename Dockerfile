@@ -43,6 +43,9 @@ ENV POETRY_VENV=/opt/poetry-venv
 ENV POETRY_CACHE_DIR=/opt/poetry-cache
 ENV POETRY_VIRTUALENVS_CREATE=0
 
+ENV EXIT_CODE=0
+ENV ANSIBLE_GALAXY_RETRIES=3
+
 COPY poetry.lock pyproject.toml /adcm/
 
 RUN apk add --no-cache --virtual .build-deps \
@@ -64,7 +67,19 @@ RUN apk add --no-cache --virtual .build-deps \
     cd community.general && /adcm/venv/2.16/bin/ansible-galaxy collection build && \
     /adcm/venv/2.16/bin/ansible-galaxy collection install /community.general/community-general-8.6.8.tar.gz && \
     curl https://raw.githubusercontent.com/ansible-community/ansible-build-data/refs/heads/main/9/ansible-9.13.0.yaml -o /adcm/ansible-9.13.0.yaml && \
-    /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml && \
+    for retry in $(seq 1 $ANSIBLE_GALAXY_RETRIES); do \
+      /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml || EXIT_CODE=$?; \
+      if [ "$EXIT_CODE" -eq 0 ]; then \
+        break; \
+      else \
+        echo "Attempt $retry failed with code $EXIT_CODE, retrying in 10s..."; \
+        sleep 10; \
+      fi; \
+    done; \
+    if [ "$EXIT_CODE" -ne 0 ]; then \
+      echo "All $ANSIBLE_GALAXY_RETRIES attempts to install Ansible collections failed (exit code $EXIT_CODE)"; \
+      exit $EXIT_CODE; \
+    fi && \
     /adcm/venv/2.9/bin/python -m pip uninstall -y pip && \
     /adcm/venv/2.16/bin/python -m pip uninstall -y pip
 
