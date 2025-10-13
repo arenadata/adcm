@@ -7,6 +7,7 @@ import { ConditionalWrapper, Tooltip } from '@uikit';
 import AboutAdcm from './AboutAdcm/AboutAdcm';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
 import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
+import { apiRedocHost } from '@constants';
 
 enum HelperLinkActions {
   Help = 'https://t.me/arenadata_cm',
@@ -46,6 +47,11 @@ const linkOptions = [
   {
     value: HelperLinkActions.Documentation,
     label: 'Documentation',
+    ItemComponent: LinkItem,
+  },
+  {
+    value: `${apiRedocHost}/api/v2/schema/redoc/`,
+    label: 'ADCM API',
     ItemComponent: LinkItem,
   },
 ];
