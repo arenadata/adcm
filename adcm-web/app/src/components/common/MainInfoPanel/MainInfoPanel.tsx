@@ -7,7 +7,6 @@ import s from './MainInfoPanel.module.scss';
 interface MainInfoPanelProps {
   className?: string;
   mainInfo?: string;
-  endAdornment?: React.ReactNode;
 }
 
 const parseOptions: HTMLReactParserOptions = {
