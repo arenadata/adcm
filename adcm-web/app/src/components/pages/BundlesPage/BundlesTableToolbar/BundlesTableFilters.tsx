@@ -1,8 +1,7 @@
-import type React from 'react';
 import { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter, resetSortParams } from '@store/adcm/bundles/bundlesTableSlice';
-import { Button, LabeledField, SearchInput, Select } from '@uikit';
+import { Button, LabeledField, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 
 const BundlesTableFilters = () => {
@@ -18,32 +17,22 @@ const BundlesTableFilters = () => {
     }));
   }, [products]);
 
-  const handleBundleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ displayName: event.target.value }));
-  };
-
   const handleResetClick = () => {
     dispatch(resetFilter());
     dispatch(resetSortParams());
   };
   const handleProductChange = (value: string | null) => {
-    dispatch(setFilter({ product: value ?? undefined }));
+    dispatch(setFilter({ displayName: value ?? undefined }));
   };
 
   return (
     <TableFilters>
-      <SearchInput
-        placeholder="Search bundle"
-        value={filter.displayName || ''}
-        variant="primary"
-        onChange={handleBundleNameChange}
-      />
       <LabeledField label="Product" direction="row">
         <Select
           isSearchable={true}
           maxHeight={200}
           placeholder="All"
-          value={filter.product ?? null}
+          value={filter.displayName ?? null}
           onChange={handleProductChange}
           options={productsOptions}
           noneLabel="All"
