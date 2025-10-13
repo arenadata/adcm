@@ -11,6 +11,7 @@ import ClusterDynamicActionWizardStep from '@pages/ClustersPage/Dialogs/ClusterD
 import ActionWizardConfigurationEditorContextProvider from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContextProvider';
 import { useStore } from '@hooks';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
+import ActionWizardLastStageContextProvider from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContextProvider';
 
 const getTitleIcon = (stage: AdcmWizardStage, isValid: boolean) => {
   if (stage.steps.some((step) => step.state === 'running')) {
@@ -81,7 +82,9 @@ const ActionWizard: React.FC<ActionWizardProps> = ({ stages, currentStep, proces
           </Button>
         </header>
         <ActionWizardConfigurationEditorContextProvider>
-          <ClusterDynamicActionWizardStep stageNumber={stageIndex + 1} />
+          <ActionWizardLastStageContextProvider>
+            <ClusterDynamicActionWizardStep stageNumber={stageIndex + 1} />
+          </ActionWizardLastStageContextProvider>
         </ActionWizardConfigurationEditorContextProvider>
       </div>
     </div>
