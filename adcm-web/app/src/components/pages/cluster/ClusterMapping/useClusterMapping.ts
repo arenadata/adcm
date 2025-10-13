@@ -82,7 +82,6 @@ export const useClusterMapping = (
     for (const mapping of servicesMapping) {
       mapping.hasErrors = mapping.componentsMapping.some((componentMapping) => !!errors[componentMapping.component.id]);
     }
-    servicesMapping.sort((a, b) => (a.hasErrors === b.hasErrors ? 0 : a.hasErrors ? 1 : -1));
     return errors;
   }, [componentsMapping, servicesMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
