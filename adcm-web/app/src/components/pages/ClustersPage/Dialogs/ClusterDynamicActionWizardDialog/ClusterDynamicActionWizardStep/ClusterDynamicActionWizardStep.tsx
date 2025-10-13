@@ -14,6 +14,7 @@ import { getProcess, getSteps, resetJobData, resetStep } from '@store/adcm/clust
 import type { RunClusterDynamicActionPayload } from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
+import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
 
 interface ClusterDynamicActionWizardStepProps {
   stageNumber: number;
@@ -43,6 +44,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   const stepsWithData = useStore(({ adcm }) => adcm.clustersWizard.steps);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
+  const { formData } = useActionWizardLastStageContext();
 
   const currentStep = selectedStep ?? process?.currentStep;
 
@@ -151,8 +153,8 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
         actionRunConfig: {
           configuration: null,
           hostComponentMap: [],
-          isVerbose: false,
-          shouldBlockObject: true,
+          isVerbose: formData.isVerbose,
+          shouldBlockObject: formData.shouldBlockObject,
           process: {
             id: process.id,
           },
