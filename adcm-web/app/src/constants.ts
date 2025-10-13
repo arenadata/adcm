@@ -5,6 +5,8 @@ export const adcmVersion = getEnv('ADCM_VERSION') ?? '';
 
 const defaultSocketSchema = window.location.protocol === 'https:' ? 'wss' : 'ws';
 export const wsHost = getEnv('ADCM_WS_HOST') ?? `${defaultSocketSchema}://${window.location.host}`;
+const isDevMode = import.meta.env.DEV;
+export const apiRedocHost = isDevMode ? 'http://localhost:8000' : '';
 
 export const defaultPerPagesList = [
   { value: 10, label: '10 per page' },
