@@ -52,7 +52,7 @@ const SubJobPage = () => {
       </div>
       <StopSubJobDialog />
       <div className={s.subJobLogAutoScroll}>
-        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-open" isToggled={isAutoScroll} />
+        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-scroll" isToggled={isAutoScroll} />
       </div>
     </>
   );

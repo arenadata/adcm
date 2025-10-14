@@ -38,7 +38,7 @@ const JobPage = () => {
       <SubJobsTable ref={subJobsTableRef} />
       <StopSubJobDialog />
       <div className={s.subJobsAutoScroll}>
-        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-open" isToggled={isAutoScroll} />
+        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-scroll" isToggled={isAutoScroll} />
       </div>
     </>
   );
