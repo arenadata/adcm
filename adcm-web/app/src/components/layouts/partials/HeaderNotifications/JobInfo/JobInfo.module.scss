@@ -2,11 +2,13 @@
   body.theme-dark {
     --job-border-bottom-color: var(--color-xdark);
     --bell-jobs-background: var(--color-xdark-new-50);
+    --job-object-name-delimiter-color: var(--color-xgreen-saturated);
   }
 
   body.theme-light {
     --job-border-bottom-color: var(--color-stroke-light);
     --bell-jobs-background: var(--color-xwhite-50);
+    --job-object-name-delimiter-color: var(--color-xgreen);
   }
 }
 
@@ -19,7 +21,12 @@
   background-color: var(--bell-jobs-background);
   border-radius: 8px;
 
+  &__toggleAllSwitch {
+    margin-top: 12px;
+  }
+
   td {
+    vertical-align: top;
     padding: 8px 12px;
   }
 
@@ -36,6 +43,15 @@
     text-align: end;
   }
 
+  &__objectName {
+    span:not(:last-child)::after {
+      content: '/';
+      margin: 0 5px;
+      color: var(--job-object-name-delimiter-color);
+    }
+  }
+
+  &__expandButton,
   &__icon {
     width: 14px;
   }
@@ -44,7 +60,14 @@
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
-    max-width: 0;
+  }
+
+  &__expandButton {
+    .button {
+      &:not(&_isExpanded) svg {
+        transform: rotate(-90deg);
+      }
+    }
   }
 }
 
