@@ -2,7 +2,7 @@ import type React from 'react';
 import { useState } from 'react';
 import cn from 'classnames';
 import type { SubJobLogNode } from '@commonComponents/job/SubJobLog/SubJobLogCheck/SubJobLogCheck.types';
-import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
+import JobsStatusIcon from '@commonComponents/JobsStatusIcon/JobsStatusIcon';
 import { AdcmJobStatus } from '@models/adcm';
 import s from './SubJobLogCheckNode.module.scss';
 import { Collapse, IconButton } from '@uikit';
@@ -39,7 +39,7 @@ const SubJobLogCheckNode: React.FC<SubJobLogCheckNodeProps> = ({ logNode: { data
     <div className={cn(s.subJobLogCheckNode, { 'is-open': isOpen, 'is-failed': !data.result })}>
       <div className={s.subJobLogCheckNode__header}>
         <span className={s.subJobLogCheckNode__iconWrapper}>
-          <JobsStatusIconCell status={status} size={14} />
+          <JobsStatusIcon status={status} size={14} />
         </span>
 
         <span className={s.subJobLogCheckNode__status}>{statusLabel}</span>
