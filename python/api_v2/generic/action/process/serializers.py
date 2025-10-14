@@ -35,6 +35,7 @@ import pydantic
 class StepFromStageSerializer(Serializer):
     id = IntegerField()
     state = CharField()
+    name = CharField()
     display_name = CharField()
     type = SerializerMethodField()
 
@@ -49,10 +50,10 @@ class StepFromStageSerializer(Serializer):
 
 
 class StageSerializer(Serializer):
+    name = CharField()
     display_name = CharField()
     steps = SerializerMethodField()
 
-    # D
     def get_steps(self, data: dict) -> list[dict]:
         steps = data["steps"]
         for step in steps:
@@ -83,6 +84,7 @@ class ProcessSerializer(ProcessShortSerializer):
 class StepSerializer(Serializer):
     id = IntegerField()
     display_name = CharField()
+    name = CharField()
     type = CharField()
     state = CharField()
 
