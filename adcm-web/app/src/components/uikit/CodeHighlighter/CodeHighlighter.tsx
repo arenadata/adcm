@@ -5,9 +5,11 @@ import './CodeHighlighterTheme.scss';
 import s from './CodeHighlighter.module.scss';
 import cn from 'classnames';
 import CopyButton from '@uikit/CodeHighlighter/SubComponents/CopyButton/CopyButton';
-import IconButton from '@uikit/IconButton/IconButton';
+import Button from '@uikit/Button/Button';
 import SyncScroll from '@uikit/SyncScroll/SyncScroll';
 import ScrollPane from '@uikit/SyncScroll/ScrollPane';
+import FlexGroup from '@uikit/FlexGroup/FlexGroup';
+import { useCodeHighlighterContext } from './context/CodeHighlighter.context';
 
 export interface CodeHighlighterProps {
   code: string;
@@ -33,6 +35,8 @@ const CodeHighlighter = ({
   const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
 
+  const { isFullScreen, setIsFullScreen } = useCodeHighlighterContext();
+
   const { parsedCode, lines, patchWidth } = useMemo(() => {
     const lines = getLines(prepCode);
     const charCount = lines[lines.length - 1].toString().length;
@@ -53,18 +57,35 @@ const CodeHighlighter = ({
     setIsSecretVisible((prevValue) => !prevValue);
   };
 
+  const handleExpandBtnClick = () => {
+    setIsFullScreen(true);
+  };
+
   return (
     <div className={cn(className, s.codeHighlighter)} style={wrapperStyles}>
-      {!isNotCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
-      {isSecret && (
-        <IconButton
-          className={s.codeHighlighter__showSecretBtn}
-          type="button"
-          icon={isSecretVisible ? 'eye' : 'eye-crossed'}
-          size={20}
-          onClick={toggleShowSecret}
-        />
-      )}
+      <div className={s.codeHighlighter__actions}>
+        <FlexGroup gap="4px">
+          {!isFullScreen && (
+            <Button
+              iconLeft="g2-expand"
+              variant="tertiary"
+              tooltipProps={{ placement: 'left' }}
+              title="Full screen"
+              onClick={handleExpandBtnClick}
+              className={s.codeHighlighter__expandBtn}
+            />
+          )}
+          {!isNotCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
+          {isSecret && (
+            <Button
+              variant="tertiary"
+              iconLeft={isSecretVisible ? 'eye' : 'eye-crossed'}
+              onClick={toggleShowSecret}
+              className={s.codeHighlighter__secretBtn}
+            />
+          )}
+        </FlexGroup>
+      </div>
       <SyncScroll>
         <div className={s.codeHighlighterWrapper} data-test={`${dataTestPrefix}_code-highlight`}>
           <ScrollPane hideScrollBars={true} syncHorizontal={false}>

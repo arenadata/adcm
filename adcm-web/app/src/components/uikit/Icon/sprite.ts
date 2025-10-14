@@ -51,6 +51,7 @@ export const allowIconsNames = [
   'g2-configuration',
   'g2-dashboard',
   'g2-exit',
+  'g2-expand',
   'g2-favorite',
   'g2-hosts',
   'g2-info',
