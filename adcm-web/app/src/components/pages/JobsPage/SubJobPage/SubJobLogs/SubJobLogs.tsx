@@ -5,6 +5,8 @@ import SubJobLog from '@commonComponents/job/SubJobLog/SubJobLog';
 import SubJobLogsTabs from '@commonComponents/job/SubJobLogsTabs/SubJobLogsTabs';
 import s from './SubJobLogs.module.scss';
 import { Spinner } from '@uikit';
+import Dialog from '@uikit/DialogV2/Dialog';
+import { useCodeHighlighterContext } from '@uikit/CodeHighlighter/context/CodeHighlighter.context';
 
 export interface SubJobLogsProps {
   isAutoScroll: boolean;
@@ -35,8 +37,14 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
     setCurrentLogId(id);
   };
 
-  return (
-    <div className={s.subJobLog}>
+  const { isFullScreen, setIsFullScreen } = useCodeHighlighterContext();
+
+  const handleCloseDialog = () => {
+    setIsFullScreen(false);
+  };
+
+  const content = (
+    <>
       {isSubJobLogsShown && (
         <SubJobLogsTabs
           subJobId={subJob?.id}
@@ -45,15 +53,26 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
           onChangeTab={onTabChange}
         />
       )}
-
       {!isSubJobLogsShown && (
         <div className={s.subJobLog__spinner}>
           <Spinner />
         </div>
       )}
-
       {subJob && log && (
         <SubJobLog isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} subJob={subJob} subJobLog={log} />
+      )}
+    </>
+  );
+
+  return (
+    <div className={s.subJobLog}>
+      {isFullScreen ? (
+        // biome-ignore lint/complexity/noUselessFragments: the hack in order not to display dialog actions
+        <Dialog onCancel={handleCloseDialog} width="100%" height="100%" dialogControls={<></>}>
+          {content}
+        </Dialog>
+      ) : (
+        content
       )}
     </div>
   );
