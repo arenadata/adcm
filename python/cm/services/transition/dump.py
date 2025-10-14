@@ -77,7 +77,7 @@ def dump(cluster_id: ClusterID) -> TransitionPayload:
     return TransitionPayload(
         adcm_version=settings.ADCM_VERSION,
         bundles=bundles_info,
-        hostproviders=providers,
+        providers=providers,
         hosts=list(hosts.values()),
         cluster=cluster,
     )
