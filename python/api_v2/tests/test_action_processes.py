@@ -258,6 +258,7 @@ class TestActionProcess(BaseAPITestCase):
                     self.assertEqual(response.status_code, HTTP_200_OK)
 
                     expected_response = {
+                        "name": "stage1_step1",
                         "displayName": "Stage1.Step1",
                         "id": target_step.id,
                         "type": "configuration",
@@ -431,6 +432,7 @@ class TestActionProcess(BaseAPITestCase):
                     self.assertEqual(response.status_code, HTTP_200_OK)
 
                     expected_response = {
+                        "name": "stage2_step2",
                         "displayName": "Stage2.Step2",
                         "id": target_step.id,
                         "state": "created",
