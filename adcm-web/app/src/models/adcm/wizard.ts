@@ -1,7 +1,15 @@
 import type { JSONObject } from '@models/json';
+import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm/jobs';
+import type { AdcmConfiguration } from '@models/adcm/configuration';
 
 export type AdcmWizardMappingStepOperationType = 'add' | 'remove';
 export type AdcmWizardProcessState = 'created' | 'completed' | 'broken';
+
+export enum AdcmWizardStepStates {
+  Created = 'created',
+  Completed = 'completed',
+  Running = 'running',
+}
 
 export enum AdcmWizardMethodType {
   Submit = 'submit_step',
@@ -173,3 +181,15 @@ export type AdcmWizardProcessOperationPayload =
   | AdcmWizardSubmitMappingStepPayload;
 
 export type AdcmWizardProcessOperation = AdcmActionWizardProcess;
+
+export type AdcmWizardJobsData = Record<
+  AdcmActionProcessStep['id'],
+  {
+    job?: AdcmJob;
+    subJobLog?: Record<AdcmSubJobDetails['id'], AdcmSubJobLogItem[]>;
+  }
+>;
+
+export interface ConfigurationMap {
+  [stepId: number]: AdcmConfiguration | null;
+}
