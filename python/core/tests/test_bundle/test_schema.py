@@ -1204,6 +1204,16 @@ class TestWizardSchema(TestCase):
     def test_correct_task_format_success(self):
         yaml_input_of_jinja = """
             stages:
+              - name: hc_apply_stage
+                display_name: "Host Component Apply"
+                steps:
+                  - name: mapping
+                    display_name: Host Component Apply
+                    hc_template:
+                      file:
+                        path: scripts/manage_hdfs_hc_step.j2
+                      engine:
+                        type: jinja2
               - name: manage_ssl_stage
                 display_name: "Manage SSL"
                 steps:

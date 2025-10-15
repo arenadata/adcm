@@ -209,3 +209,4 @@ class Job(BaseModel):
 class StepType(str, Enum):
     OPERATION = "operation"
     CONFIGURATION = "configuration"
+    MAPPING = "mapping"

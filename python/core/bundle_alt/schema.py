@@ -65,6 +65,7 @@ ScriptsTemplate = Annotated[
 ConfigTemplate = Annotated[
     Template, AfterValidator(partial(template_script_is_correct_path, field_name="config_template"))
 ]
+HCTemplate = Annotated[Template, AfterValidator(partial(template_script_is_correct_path, field_name="hc_template"))]
 
 
 class _BaseModel(BaseModel):
@@ -584,7 +585,19 @@ class ConfigurationStep(_Names):
         return self.config_template
 
 
-ActionProcessStep = OperationStep | ConfigurationStep
+class MappingStep(_Names):
+    hc_template: HCTemplate
+
+    @property
+    def type(self) -> StepType:
+        return StepType.MAPPING
+
+    @property
+    def template(self) -> Template:
+        return self.hc_template
+
+
+ActionProcessStep = OperationStep | ConfigurationStep | MappingStep
 
 
 # Stage & Action Process Schema

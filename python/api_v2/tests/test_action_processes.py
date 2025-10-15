@@ -66,8 +66,11 @@ class TestActionProcess(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
 
         cluster_bundle = self.test_bundles_dir / "wizard_action"
+        cluster_bundle_hc_apply = self.test_bundles_dir / "wizard_hc_apply"
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
+        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_hc_apply)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
+        self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
         self.cluster_with_action_process = self.get_object_action_with_process(self.cluster_1)
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
         self.component_1 = Component.objects.filter(service=self.service_1).first()
@@ -488,6 +491,30 @@ class TestActionProcess(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertEqual(len(response.json()["processes"]), 1)
                 self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.sync_key))
+
+    def test_submit_operation_hc_apply_fail(self):
+        process = self.get_process(self.start_process(self.cluster_2))
+        previous_step_names = {"stage1_step1"}
+
+        target_operation_step = ProcessStep.objects.get(process_id=process.id, name="hc_apply", display_name="hc apply")
+
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_operation_step.id)
+
+        fill_step_spec(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.cluster_with_action_process.pk,
+                object=orm_object_to_core_descriptor(self.cluster_1),
+            ),
+        )
+        target_operation_step.refresh_from_db()
+        self.assertEqual(target_operation_step.state, ProcessStepState.BROKEN.value)
 
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
