@@ -126,7 +126,7 @@ class TestBundleProcessingErrors(TestCase):
             self.assertIn('"scripts_jinja" has unsupported path format', err.exception.message)
 
     def test_config_jinja(self):
-        with self.subTest("mutualy exclusive with config"):
+        with self.subTest("mutually exclusive with config"):
             bundle = """
             - name: aaa
               type: cluster
