@@ -79,6 +79,7 @@ export const allowIconsNames = [
   'g3-delete',
   'g3-link',
   'g3-unlink',
+  'hint',
   'lamp',
   'marker',
   'marker-alert',
