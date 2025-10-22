@@ -119,24 +119,24 @@ class PrototypeDescriptor(NamedTuple):
 
 
 @dataclass(slots=True, frozen=True)
-class _Descriptor(Generic[T]):
+class Descriptor(Generic[T]):
     id: ObjectID
     type: T
 
 
 @dataclass(slots=True, frozen=True)
-class GeneralEntityDescriptor(_Descriptor[str]):
+class GeneralEntityDescriptor(Descriptor[str]):
     ...
 
 
 @dataclass(slots=True, frozen=True)
-class HostGroupDescriptor(_Descriptor[ADCMHostGroupType]):
+class HostGroupDescriptor(Descriptor[ADCMHostGroupType]):
     def __str__(self) -> str:
         return f"{self.type.value} #{self.id}"
 
 
 @dataclass(slots=True, frozen=True)
-class ActionTargetDescriptor(_Descriptor[ADCMCoreType | ExtraActionTargetType]):
+class ActionTargetDescriptor(Descriptor[ADCMCoreType | ExtraActionTargetType]):
     def __str__(self) -> str:
         return f"{self.type.value} #{self.id}"
 
@@ -144,7 +144,7 @@ class ActionTargetDescriptor(_Descriptor[ADCMCoreType | ExtraActionTargetType]):
 # inheritance from `ActionTargetDescriptor` is for convenience purposes,
 # because `CoreObjectDescriptor` is just a bit stricter than `ActionTargetDescriptor`
 @dataclass(slots=True, frozen=True)
-class CoreObjectDescriptor(_Descriptor[ADCMCoreType]):
+class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
     def __str__(self) -> str:
         return f"{self.type.value} #{self.id}"
 

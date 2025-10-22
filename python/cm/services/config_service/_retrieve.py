@@ -12,15 +12,16 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, TypeVar
+from typing import Any, Callable, Iterable, TypeAlias, TypeVar
 import re
 import json
 
 from core import config
-from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
+from core.config._spec.spec import FullSpec
+from core.types import ADCMCoreType, ADCMHostGroupType, ConfigID, CoreObjectDescriptor, HostGroupDescriptor, PrototypeID
 from django.conf import settings
 
-from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, PrototypeConfig
+from cm.models import ADCM, ConfigHostGroup, MainObject, PrototypeConfig
 from cm.services.config._base import convert_attr_to_adcm_meta
 from cm.services.config_service import _repo as repo
 from cm.services.config_service._secrets import AnsibleSecrets, encrypt_if_possible
@@ -39,7 +40,7 @@ def get_current_configuration(owner: MainObject | ADCM | ConfigHostGroup) -> con
         raise ValueError(message)
 
     current_id = owner.config.current
-    record = ConfigLog.objects.get(id=current_id)
+    record = repo.retrieve_configs_by_ids(ids=(current_id,))[current_id]
 
     return _to_configuration(values=record.config, attrs=record.attr)
 
@@ -58,6 +59,13 @@ def get_configurations_of_host_groups(owner: CoreObjectDescriptor) -> dict[HostG
     }
 
 
+def find_configurations(configurations: Iterable[ConfigID]) -> dict[ConfigID, config.Configuration]:
+    records = repo.retrieve_configs_by_ids(ids=configurations)
+    return {
+        config_id: _to_configuration(values=record.config, attrs=record.attr) for config_id, record in records.items()
+    }
+
+
 def get_specification(owner: CoreObjectDescriptor) -> tuple[config.spec.FullSpec, Defaults]:
     config_spec_info = repo.get_config_prototype_info(owner=owner)
     bundle_root = _build_path_to_bundle_root(owner=owner, bundle_hash=config_spec_info.bundle_hash)
@@ -65,6 +73,21 @@ def get_specification(owner: CoreObjectDescriptor) -> tuple[config.spec.FullSpec
         config_prototype=config_spec_info, secrets_service=AnsibleSecrets(), bundle_root=bundle_root
     )
     return spec, defaults
+
+
+def find_specifications_for_prototypes(prototypes: Iterable[PrototypeID]) -> dict[PrototypeID, FullSpec]:
+    # adaptation of retrieve_flat_spec_for_objects for FullSpec without defaults
+
+    # since defaults are ignored, bundle root is "faked"
+    bundle_root = Path()
+    secrets_service = AnsibleSecrets()
+
+    config_prototypes = repo.retrieve_config_prototype_info_by_ids(ids=prototypes)
+
+    return {
+        prototype_id: _build_spec(config_prototype=info, secrets_service=secrets_service, bundle_root=bundle_root)[0]
+        for prototype_id, info in config_prototypes.items()
+    }
 
 
 def build_specification_from_prototype_config_records(
@@ -220,7 +243,14 @@ def _register_simple_parameter_in_spec(
 
         case "boolean":
             parameter = config.spec.p.BooleanParameter(**default_kwargs)
-            default = _parse_default_if_not_none(default, lambda x: x.lower() in {"true", "yes"})
+            # todo: ternary required here,
+            #  because sometimes values are plain (after parsing), not string (from database);
+            #  most likely should be solved after spec-defaults separation or something
+            default = (
+                _parse_default_if_not_none(default, lambda x: x.lower() in {"true", "yes"})
+                if isinstance(default, str)
+                else default
+            )
 
         case "map" | "secretmap":
             parameter = config.spec.p.MapParameter(**default_kwargs)
@@ -242,9 +272,9 @@ def _register_simple_parameter_in_spec(
                 elif re.match(r"^\d+\.\d+$", default):
                     default = float(default)
         case "variant":
-            payload = config_proto_entry.limits["source"]
-            source_type = payload.pop("type")
-            is_strict = payload.pop("strict", False)
+            payload = {**config_proto_entry.limits["source"]}
+            source_type = payload["type"]
+            is_strict = payload.get("strict", False)
             parameter = config.spec.p.VariantParameter(
                 source=source_type, is_strict=is_strict, payload=payload, **default_kwargs
             )

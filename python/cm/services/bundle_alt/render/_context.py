@@ -12,6 +12,7 @@
 
 from dataclasses import dataclass, field
 
+from adcm.feature_flags import use_new_config_processing
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
@@ -31,16 +32,8 @@ from cm.models import (
     Service,
 )
 from cm.services.cluster import retrieve_related_cluster_topology
-from cm.services.job.inventory import (
-    ClusterNode,
-    HostGroupName,
-    ProcessContext,
-    ServiceNode,
-    detect_host_groups_for_cluster_bundle_action,
-    get_action_process_context,
-    get_cluster_vars,
-    sort_hosts_within_groups,
-)
+from cm.services.job import context as context_m
+from cm.services.job import inventory
 
 # For keeping garbage coupled
 
@@ -72,7 +65,7 @@ class _ActionContext(TypedDict):
 
 
 class _ActionWithProcessContext(_ActionContext):
-    process: ProcessContext
+    process: inventory.ProcessContext
 
 
 class _TaskContext(TypedDict):
@@ -81,9 +74,9 @@ class _TaskContext(TypedDict):
 
 
 class ActionRenderContext(BaseModel):
-    cluster: ClusterNode
-    services: dict[ServiceName, ServiceNode]
-    groups: dict[HostGroupName, list[HostName]]
+    cluster: inventory.ClusterNode
+    services: dict[ServiceName, inventory.ServiceNode]
+    groups: dict[inventory.HostGroupName, list[HostName]]
     action: _ActionContext | _ActionWithProcessContext
 
 
@@ -145,14 +138,16 @@ def _prepare_context_for_action(
 ) -> ActionRenderContext:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
 
-    clusters_vars = get_cluster_vars(topology=cluster_topology)
+    module = context_m if use_new_config_processing else inventory
+
+    clusters_vars = module.get_cluster_vars(topology=cluster_topology)
 
     groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology, hc_delta=delta or TaskMappingDelta())
 
     action_context = _get_action_info(action=action)
 
     if action_process:
-        process_context = get_action_process_context(action_process)
+        process_context = module.get_action_process_context(action_process)
         action_context = _ActionWithProcessContext(**action_context, process=process_context)
 
     return ActionRenderContext(
@@ -167,8 +162,8 @@ def _prepare_context_for_action(
 
 
 def _get_host_group_names_only(
-    host_groups: dict[HostGroupName, list[tuple[HostID, HostName]]],
-) -> dict[HostGroupName, list[HostName]]:
+    host_groups: dict[inventory.HostGroupName, list[tuple[HostID, HostName]]],
+) -> dict[inventory.HostGroupName, list[HostName]]:
     return {group_name: [host_name for _, host_name in group_data] for group_name, group_data in host_groups.items()}
 
 
@@ -188,14 +183,15 @@ def _get_action_info(action: Action) -> _ActionContext:
 
 def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology, hc_delta: TaskMappingDelta | None = None
-) -> dict[HostGroupName, list[HostName]]:
+) -> dict[inventory.HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    host_groups = sort_hosts_within_groups(
-        detect_host_groups_for_cluster_bundle_action(
+    module = context_m if use_new_config_processing() else inventory
+    host_groups = module.sort_hosts_within_groups(
+        module.detect_host_groups_for_cluster_bundle_action(
             cluster_topology=cluster_topology,
             hosts_in_maintenance_mode=hosts_in_maintenance_mode,
             hc_delta=hc_delta or TaskMappingDelta(),

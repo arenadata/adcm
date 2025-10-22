@@ -10,14 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict, deque
 from dataclasses import dataclass
+from typing import Iterable
 
-from core.types import CoreObjectDescriptor
+from core.types import ConfigID, CoreObjectDescriptor, PrototypeID
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 
 from cm import converters
-from cm.models import ConfigHostGroup, ConfigLog, PrototypeConfig
+from cm.models import ConfigHostGroup, ConfigLog, Prototype, PrototypeConfig
 
 
 @dataclass(slots=True)
@@ -50,6 +52,34 @@ def get_config_prototype_info(owner: CoreObjectDescriptor) -> ConfigPrototypeInf
         group_customization_flag=response["customization"],
         parameter_prototypes=parameter_prototypes,
     )
+
+
+def retrieve_configs_by_ids(ids: Iterable[ConfigID]) -> dict[ConfigID, ConfigLog]:
+    query = ConfigLog.objects.filter(id__in=ids)
+    return {record.pk: record for record in query}
+
+
+def retrieve_config_prototype_info_by_ids(ids: Iterable[PrototypeID]) -> dict[PrototypeID, ConfigPrototypeInfo]:
+    prototypes_query = Prototype.objects.filter(id__in=ids).values(
+        "id", customization=F("config_group_customization"), bundle_hash=F("bundle__hash")
+    )
+    records = {p["id"]: p for p in prototypes_query}
+
+    prototype_configs_query = PrototypeConfig.objects.filter(prototype_id__in=records.keys(), action_id=None).order_by(
+        "pk"
+    )
+    parameter_prototypes = defaultdict(deque)
+    for prototype_config in prototype_configs_query:
+        parameter_prototypes[prototype_config.prototype_id].append(prototype_config)  # pyright: ignore [reportAttributeAccessIssue]
+
+    return {
+        prototype_id: ConfigPrototypeInfo(
+            bundle_hash=info["bundle_hash"],
+            group_customization_flag=info["customization"],
+            parameter_prototypes=tuple(parameter_prototypes.get(prototype_id, ())),
+        )
+        for prototype_id, info in records.items()
+    }
 
 
 def get_configurations_of_host_groups(owner: CoreObjectDescriptor) -> tuple[HostGroupConfigRecord, ...]:

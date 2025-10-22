@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from typing import Callable, TypeVar
+import json
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
 
@@ -27,15 +28,23 @@ class AnsibleSecrets:
 
         secret = settings.ANSIBLE_SECRET
         if not secret:
-            message = "Ansible secret is undefined, work with secrets is impossible"
-            raise ValueError(message)
+            if settings.SECRETS_FILE.is_file():
+                # todo: temporal fallback to read secret from file,
+                #       shouldn't be that way
+                raw = settings.SECRETS_FILE.read_text()
+                content = json.loads(raw)
+                secret = content["adcmuser"]["password"]
+
+            if not secret:
+                message = "Ansible secret is undefined, work with secrets is impossible"
+                raise ValueError(message)
 
         self._vault = VaultAES256()
         self._secret = VaultSecret(_bytes=str(secret).encode("utf-8"))
         self._encrypted_header = settings.ANSIBLE_VAULT_HEADER
 
     def is_encrypted(self, value: str) -> bool:
-        return self._encrypted_header in value
+        return value.startswith(self._encrypted_header)
 
     def decrypt(self, value: str) -> str | None:
         """
