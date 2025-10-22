@@ -1709,3 +1709,4 @@ class ProcessStepInput(models.Model):
     configuration = models.JSONField(null=True)
     job = models.OneToOneField(TaskLog, null=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
+    mapping = models.JSONField(null=True, default=dict)

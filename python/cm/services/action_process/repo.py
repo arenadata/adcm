@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Generator, TypeAlias
 from uuid import UUID, uuid4
@@ -17,8 +18,9 @@ from uuid import UUID, uuid4
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID, TaskID
 from django.conf import settings
+from django.db.models import QuerySet
 
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, Prototype, PrototypeConfig, TaskLog
+from cm.models import Action, Component, Process, ProcessStep, ProcessStepInput, Prototype, PrototypeConfig, TaskLog
 from cm.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
 from cm.services.action_process.types import (
     ActionProcess,
@@ -150,6 +152,22 @@ def upsert_step_input(step_id: ActionProcessStepID, data: StepInputDTO) -> None:
         inputs_qs.update(**dto_data)
 
 
+def get_done_step_inputs_for_process(process_id: int) -> QuerySet[ProcessStepInput]:
+    # Get all previous step inputs for this process (ordered)
+    previous_step_ids = (
+        ProcessStep.objects.filter(
+            process_id=process_id,
+            state__in=[ProcessStepState.COMPLETED, ProcessStepState.RUNNING],
+        )
+        .order_by("id")
+        .values_list("id", flat=True)
+    )
+
+    return ProcessStepInput.objects.filter(step_id__in=previous_step_ids).order_by(
+        "step_id"
+    )  # Ensure chronological order
+
+
 def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
     Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
 
@@ -187,3 +205,31 @@ def serialize_prototype_configs(data: list[PrototypeConfig]) -> list[DBPrototype
 
 def convert_stages_to_db_format(stages: list[ActionProcessStage]) -> list[dict[str, Any]]:
     return [stage.model_dump() for stage in stages]
+
+
+def get_allowed_ops(step, cluster_id: int) -> dict[str, set[int]]:
+    allowed_ops = defaultdict(set)
+
+    # Collect all unique (component_name, service_name) pairs from step_spec
+    pairs = {(spec["component"], spec["service"]) for spec in step.step_spec}
+
+    components = (
+        Component.objects.filter(
+            cluster_id=cluster_id,
+            prototype__name__in=[c for c, _ in pairs],
+            service__prototype__name__in=[s for _, s in pairs],
+        )
+        .select_related("prototype", "service__prototype")
+        .values("id", "prototype__name", "service__prototype__name")
+    )
+    # Build a lookup: (component_name, service_name) → component_id
+    component_lookup = {(c["prototype__name"], c["service__prototype__name"]): c["id"] for c in components}
+
+    for spec in step.step_spec:
+        key = (spec["component"], spec["service"])
+        component_id = component_lookup.get(key)
+        if not component_id:
+            raise ValueError(f"Component {key} not found in cluster {cluster_id}.")
+        allowed_ops[spec["operation"]].add(component_id)
+
+    return allowed_ops

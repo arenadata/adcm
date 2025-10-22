@@ -52,6 +52,7 @@ from api_v2.generic.action.process.serializers import (
     OperationSerializer,
     ProcessSerializer,
     StepConfigurationSerializer,
+    StepMappingSerializer,
     StepOperationSerializer,
     StepSerializer,
 )
@@ -217,7 +218,7 @@ class ProcessStepViewSet(
 
 def serialize_step(
     step: Step, object_: CoreObjectDescriptor, base_data: dict
-) -> SerializedConfigStep | SerializedOperationStep:
+) -> SerializedConfigStep | SerializedOperationStep | StepMappingSerializer:
     if step.is_render_required:
         raise AdcmEx("ACTION_PROCESS_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
 
@@ -228,6 +229,8 @@ def serialize_step(
             return _serialize_config_step(step=step, object_=object_, step_input=step_input, base_data=base_data)
         case StepType.OPERATION:
             return _serialize_operation_step(step=step, step_input=step_input, base_data=base_data)
+        case StepType.MAPPING:
+            return _serialize_mapping_step(step=step, step_input=step_input, base_data=base_data)
         case _:
             raise NotImplementedError(f"Can't serialize {step.type} step.")
 
@@ -269,3 +272,19 @@ def _serialize_operation_step(
         task = {"id": step_input.job_id}
 
     return StepOperationSerializer(base_data | {"ui_options": ui_options, "task": task}).data
+
+
+def _serialize_mapping_step(
+    step: Step,  # noqa: ARG001
+    step_input: ProcessStepInput | None,  # noqa: ARG001
+    base_data: dict,
+) -> StepMappingSerializer:
+    mapping_step_data = {"rules": step.step_spec, "suggestions": []}
+
+    if step_input:
+        mapping_step_data |= {
+            "delta": step_input.mapping["delta"],
+            "cumulative_delta": step_input.mapping["cumulative_delta"],
+        }
+
+    return StepMappingSerializer(base_data | mapping_step_data).data

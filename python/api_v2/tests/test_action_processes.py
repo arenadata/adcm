@@ -67,13 +67,20 @@ class TestActionProcess(BaseAPITestCase):
 
         cluster_bundle = self.test_bundles_dir / "wizard_action"
         cluster_bundle_hc_apply = self.test_bundles_dir / "wizard_hc_apply"
+        cluster_bundle_mapping = self.test_bundles_dir / "wizard_mapping"
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_hc_apply)
+        self.bundle_3 = self.add_bundle(source_dir=cluster_bundle_mapping)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
         self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
+        self.cluster_3 = self.add_cluster(bundle=self.bundle_3, name="cluster_3", description="cluster_3")
         self.cluster_with_action_process = self.get_object_action_with_process(self.cluster_1)
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
         self.component_1 = Component.objects.filter(service=self.service_1).first()
+
+        provider_bundle_path = self.test_bundles_dir / "provider"
+        self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
 
         config_bundle = self.test_bundles_dir / "wizard_config"
         self.config_bundle = self.add_bundle(source_dir=config_bundle)
@@ -619,6 +626,159 @@ class TestActionProcess(BaseAPITestCase):
                 input_ = ProcessStepInput.objects.get(step_id=step.id)
                 self.assertDictEqual(input_.configuration, {"config": {}, "attr": {}})
                 self.assertIsNone(input_.job)
+
+    def test_submit_mapping_success(self):
+        self.add_services_to_cluster(["service_1", "service_2", "service_3"], cluster=self.cluster_3)
+        component_1_s_1 = Component.objects.filter(service__prototype__name="service_1", cluster=self.cluster_3).first()
+        component_1_s_2 = Component.objects.filter(service__prototype__name="service_2", cluster=self.cluster_3).first()
+        component_1_s_3 = Component.objects.filter(service__prototype__name="service_3", cluster=self.cluster_3).first()
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_3)
+        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        previous_step_names = {"stage1_step1"}
+
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_operation_step.id)
+
+        # rendering
+        fill_step_spec(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.cluster_with_action_process.pk,
+                object=orm_object_to_core_descriptor(self.cluster_3),
+            ),
+        )
+        with self.subTest("Submit mapping not comopnent in step spec (fail)"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_3.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Submit mapping not specified in step spec (fail)"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_3.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Submit 2 mapping steps"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+                    {"hostId": host_2.pk, "componentId": component_1_s_2.pk},
+                    {"hostId": host_3.pk, "componentId": component_1_s_2.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            process.refresh_from_db()
+
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_2.pk, "componentId": component_1_s_1.pk},
+                ],
+                "remove": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+                ],
+            }
+
+            target_operation_step = ProcessStep.objects.get(
+                process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
+            )
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        with self.subTest(f"retrieve process for {self.cluster_3}"):
+            response = self.client.v2[
+                self.cluster_3,
+                "actions",
+                self.get_object_action_with_process(self.cluster_3).pk,
+                "processes",
+                process.id,
+                "steps",
+                target_operation_step.pk,
+            ].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(
+                response.json()["delta"],
+                {
+                    "add": [{"componentId": component_1_s_1.pk, "hostId": host_2.pk}],
+                    "remove": [{"componentId": component_1_s_1.pk, "hostId": host_1.pk}],
+                },
+            )
+            self.assertCountEqual(
+                response.json()["cumulativeDelta"]["add"],
+                [
+                    {"componentId": component_1_s_1.pk, "hostId": host_2.pk},
+                    {"componentId": component_1_s_2.pk, "hostId": host_2.pk},
+                    {"componentId": component_1_s_2.pk, "hostId": host_3.pk},
+                ],
+            )
+            self.assertCountEqual(response.json()["cumulativeDelta"]["remove"], [])
 
     def test_submit_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))

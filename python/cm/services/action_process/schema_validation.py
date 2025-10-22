@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from enum import Enum
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 
 from core.types import ActionProcessStepID
@@ -39,6 +39,20 @@ class _StepIDParam(BaseModel):
     step_id: ActionProcessStepID
 
 
+class HCMappingRule(BaseModel):
+    host_id: int
+    component_id: int
+
+
+class HostComponentMapDelta(BaseModel):
+    add: Optional[list[HCMappingRule]] = Field(default_factory=list)
+    remove: Optional[list[HCMappingRule]] = Field(default_factory=list)
+
+
+class _HostComponentMapDelta(BaseModel):
+    host_component_map_delta: HostComponentMapDelta
+
+
 # Submit
 
 
@@ -54,9 +68,13 @@ class _SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam, _Configuration
     ...
 
 
+class _SubmitMappingStepParams(_SyncKeyParam, _StepIDParam, _HostComponentMapDelta):
+    ...
+
+
 class SubmitStepPayload(BaseModel):
     method: Literal[ProcessOperationType.SUBMIT]
-    params: _SubmitOperationStepParams | _SubmitConfigurationStepParams
+    params: _SubmitMappingStepParams | _SubmitOperationStepParams | _SubmitConfigurationStepParams
 
 
 # Complete

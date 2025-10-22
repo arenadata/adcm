@@ -12,7 +12,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
 from core.bundle_alt.schema import ActionProcessStage
@@ -20,6 +20,8 @@ from core.job.types import StepType
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID, TaskID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypedDict
+
+from cm.services.action_process.schema_validation import HostComponentMapDelta
 
 
 class ProcessState(str, Enum):
@@ -52,23 +54,30 @@ class _ConfigAttr(TypedDict):
     attr: dict
 
 
+class MappingInputDTO(BaseModel):
+    delta: HostComponentMapDelta
+    cumulative_delta: HostComponentMapDelta | None = None
+
+
 class StepInputDTO(BaseModel):
     configuration: _ConfigAttr | None = None
     job_id: TaskID | None = None
+    mapping: MappingInputDTO | None = None
     created_at: datetime
 
     @model_validator(mode="before")
     @classmethod
     def validate(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            config_specified = "configuration" in data
-            task_specified = "job_id" in data
+            config_specified = "configuration" in data and data.get("configuration") is not None
+            task_specified = "job_id" in data and data.get("job_id") is not None
+            mapping_specified = "mapping" in data and data.get("mapping") is not None
 
-            none_specified = not config_specified and not task_specified
-            both_specified = config_specified and task_specified
+            specified_fields = [config_specified, task_specified, mapping_specified]
+            num_specified = sum(specified_fields)
 
-            if none_specified or both_specified:
-                raise ValueError('Exactly one field of ("configuration", "job_id") must be specified.')
+            if num_specified != 1:
+                raise ValueError('Exactly one of ("configuration", "job_id", "mapping") must be specified.')
 
         return data
 
@@ -89,7 +98,7 @@ class Step(BaseModel):
     name: str
     display_name: str
     step_spec: Any = None
-    type: Literal[StepType.CONFIGURATION, StepType.OPERATION]
+    type: StepType
     state: ProcessStepState
 
     model_config = ConfigDict(extra="allow", use_enum_values=True)
