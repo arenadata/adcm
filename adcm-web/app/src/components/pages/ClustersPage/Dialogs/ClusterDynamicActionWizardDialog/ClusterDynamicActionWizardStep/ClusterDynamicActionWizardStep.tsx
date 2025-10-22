@@ -173,6 +173,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
           hostComponentMap: [],
           isVerbose: formData.isVerbose,
           shouldBlockObject: formData.shouldBlockObject,
+          description: formData.description,
           process: {
             id: process.id,
           },
