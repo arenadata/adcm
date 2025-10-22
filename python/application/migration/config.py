@@ -48,7 +48,7 @@ def update_configuration_of_object(
     config_owner = core.config.ConfigOwner(
         descriptor=owner_descriptor, info=core.config.ConfigOwnerObjectInfo(state=owner.state)
     )
-    file_owner_prefix = f"{owner_descriptor.type.value.lower()}.{owner_descriptor.id}"
+    file_owner_prefix = core.config.files.build_config_prefix(owner_descriptor)
 
     with atomic():
         specification, _ = config.retrieve.get_specification(owner=config_owner.descriptor)
