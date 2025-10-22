@@ -114,3 +114,28 @@
   font-weight: 400;
   font-size: 13px;
 }
+
+.virtualContainer {
+  position: relative;
+}
+
+.virtualLineNumber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.virtualCodeLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+
+  & pre {
+    margin: 0;
+  }
+}

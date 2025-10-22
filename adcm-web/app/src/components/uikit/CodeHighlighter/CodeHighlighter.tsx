@@ -1,6 +1,7 @@
-import { type ReactNode, type RefObject, useMemo, useState } from 'react';
+import { type ReactNode, type RefObject, useMemo, useState, useRef } from 'react';
 import { refractor } from 'refractor';
-import { getLines, getParsedCode } from '@uikit/CodeHighlighter/CodeHighlighterHelper';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { getParsedCode } from '@uikit/CodeHighlighter/CodeHighlighterHelper';
 import './CodeHighlighterTheme.scss';
 import s from './CodeHighlighter.module.scss';
 import cn from 'classnames';
@@ -10,6 +11,10 @@ import SyncScroll from '@uikit/SyncScroll/SyncScroll';
 import ScrollPane from '@uikit/SyncScroll/ScrollPane';
 import FlexGroup from '@uikit/FlexGroup/FlexGroup';
 import { useCodeHighlighterContext } from './context/CodeHighlighter.context';
+
+const virtualizerOverscan = 5;
+const virtualizerEstimateSize = 20;
+const patchPadding = 32;
 
 export interface CodeHighlighterProps {
   code: string;
@@ -30,28 +35,43 @@ const CodeHighlighter = ({
   className,
   dataTestPrefix = '',
   codeOverlay,
-  contentRef,
+  contentRef: externalContentRef,
 }: CodeHighlighterProps) => {
   const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
 
   const { isFullScreen, setIsFullScreen } = useCodeHighlighterContext();
 
-  const { parsedCode, lines, patchWidth } = useMemo(() => {
-    const lines = getLines(prepCode);
-    const charCount = lines[lines.length - 1].toString().length;
+  const { parsedCodeLines, lines, patchWidth } = useMemo(() => {
+    const codeLines = prepCode.split(/[\r\n]/);
+    const lines = codeLines.map((_, id) => id + 1);
+    const charCount = lines.length.toString().length;
+
+    const parsedCodeLines = codeLines.map((line) => {
+      try {
+        const highlighted = refractor.highlight(line, language);
+        return getParsedCode(highlighted);
+      } catch (_error) {
+        return [line];
+      }
+    });
 
     return {
-      parsedCode: getParsedCode(refractor.highlight(prepCode, language)),
+      parsedCodeLines,
       lines,
-      patchWidth: charCount * 7.8 - 1,
+      patchWidth: charCount * 7.8 + patchPadding,
     };
   }, [prepCode, language]);
 
-  const wrapperStyles = {
-    animation: 'none',
-    '--code-highlight-lines-width': `${patchWidth}px`,
-  };
+  const internalContentRef = useRef<HTMLDivElement>(null);
+  const contentRef = externalContentRef || internalContentRef;
+
+  const codeVirtualizer = useVirtualizer({
+    count: lines.length,
+    getScrollElement: () => contentRef.current,
+    estimateSize: () => virtualizerEstimateSize,
+    overscan: virtualizerOverscan,
+  });
 
   const toggleShowSecret = () => {
     setIsSecretVisible((prevValue) => !prevValue);
@@ -62,7 +82,7 @@ const CodeHighlighter = ({
   };
 
   return (
-    <div className={cn(className, s.codeHighlighter)} style={wrapperStyles}>
+    <div className={cn(className, s.codeHighlighter)}>
       <div className={s.codeHighlighter__actions}>
         <FlexGroup gap="4px">
           {!isFullScreen && (
@@ -89,15 +109,41 @@ const CodeHighlighter = ({
       <SyncScroll>
         <div className={s.codeHighlighterWrapper} data-test={`${dataTestPrefix}_code-highlight`}>
           <ScrollPane hideScrollBars={true} syncHorizontal={false}>
-            <div className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}>
-              {lines.map((lineNum) => (
-                <div key={lineNum}>{lineNum}</div>
-              ))}
+            <div
+              className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}
+              style={{ width: `${patchWidth}px` }}
+            >
+              <div className={s.virtualContainer} style={{ height: `${codeVirtualizer.getTotalSize()}px` }}>
+                {codeVirtualizer.getVirtualItems().map((virtualRow) => (
+                  <div
+                    key={virtualRow.key}
+                    className={s.virtualLineNumber}
+                    style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                  >
+                    {lines[virtualRow.index]}
+                  </div>
+                ))}
+              </div>
             </div>
           </ScrollPane>
           <ScrollPane ref={contentRef}>
             <div className={cn(s.codeHighlighterCode, s.codeHighlighterFontParams)}>
-              <pre className="language-">{parsedCode}</pre>
+              <div className={s.virtualContainer} style={{ height: `${codeVirtualizer.getTotalSize()}px` }}>
+                {codeVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const lineIndex = virtualRow.index;
+                  const lineContent = parsedCodeLines[lineIndex];
+
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      className={s.virtualCodeLine}
+                      style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                    >
+                      <pre className="language-">{lineContent}</pre>
+                    </div>
+                  );
+                })}
+              </div>
               {codeOverlay && <div className={s.codeHighlighterCodeOverlay}>{codeOverlay}</div>}
             </div>
           </ScrollPane>
