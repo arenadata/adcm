@@ -2,9 +2,9 @@ import { DynamicActionStep } from '@commonComponents/DynamicActionDialog/Dynamic
 import type {
   AdcmActionHostGroup,
   AdcmConfiguration,
-  ConfigurationData,
   AdcmDynamicActionDetails,
   AdcmDynamicActionRunConfig,
+  ConfigurationData,
 } from '@models/adcm';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
@@ -47,11 +47,16 @@ const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbo
   isVerbose: false,
 });
 
+const getDefaultDescriptionConfig = (): Pick<AdcmDynamicActionRunConfig, 'description'> => ({
+  description: '',
+});
+
 export const getDefaultRunConfig = (): AdcmDynamicActionRunConfig => ({
   ...getDefaultHostMappingRunConfig(),
   ...getDefaultConfigurationRunConfig(),
   ...getDefaultShouldBlockObjectConfig(),
   ...getDefaultVerboseRunConfig(),
+  ...getDefaultDescriptionConfig(),
 });
 
 export const prepareConfigurationFromActionDetails = (
@@ -62,7 +67,8 @@ export const prepareConfigurationFromActionDetails = (
   }
 
   const { adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
-  const configuration = {
+
+  return {
     configurationData:
       actionDetails.configuration.config ??
       generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ??
@@ -70,6 +76,4 @@ export const prepareConfigurationFromActionDetails = (
     attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
     schema: actionDetails.configuration.configSchema,
   };
-
-  return configuration;
 };
