@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button, ButtonGroup, Checkbox, MultilineInput } from '@uikit';
 import type { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 import dialogStyles from '../../DynamicActionDialog.module.scss';
@@ -9,22 +8,29 @@ interface DynamicActionConfirmProps {
   actionDetails: AdcmDynamicActionDetails;
   onRun: (changes: Partial<AdcmDynamicActionRunConfig>) => void;
   onCancel: () => void;
+  onStateChange: (data: Partial<AdcmDynamicActionRunConfig>) => void;
+  isVerbose: boolean;
+  description?: string;
 }
 
-const DynamicActionConfirm = ({ onRun, onCancel, actionDetails }: DynamicActionConfirmProps) => {
-  const [isVerbose, setIsVerbose] = useState(false);
-  const [description, setDescription] = useState('');
-
+const DynamicActionConfirm = ({
+  onRun,
+  onCancel,
+  actionDetails,
+  onStateChange,
+  description = '',
+  isVerbose,
+}: DynamicActionConfirmProps) => {
   const handleRun = () => {
     onRun({ isVerbose, description });
   };
 
   const handleVerboseChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsVerbose(event.target.checked);
+    onStateChange({ isVerbose: event.target.checked });
   };
 
   const handleDescriptionChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(event.target.value);
+    onStateChange({ description: event.target.value });
   };
 
   return (
