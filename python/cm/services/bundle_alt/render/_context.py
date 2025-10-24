@@ -41,6 +41,7 @@ from cm.services.job.inventory import (
     get_cluster_vars,
     sort_hosts_within_groups,
 )
+from cm.services.job.inventory._base import add_mapping_groups_from_process_steps
 
 # For keeping garbage coupled
 
@@ -147,13 +148,20 @@ def _prepare_context_for_action(
 
     clusters_vars = get_cluster_vars(topology=cluster_topology)
 
-    groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology, hc_delta=delta or TaskMappingDelta())
+    process_cumulative_delta = {}
 
     action_context = _get_action_info(action=action)
 
     if action_process:
-        process_context = get_action_process_context(action_process)
-        action_context = _ActionWithProcessContext(**action_context, process=process_context)
+        process_context = get_action_process_context(action_process, cluster_topology)
+        process_cumulative_delta = process_context.cumulative_delta
+        action_context = _ActionWithProcessContext(**action_context, process=process_context.to_context())
+
+    groups = _get_host_group_names_for_cluster(
+        cluster_topology=cluster_topology,
+        hc_delta=delta or TaskMappingDelta(),
+        process_cumulative_delta=process_cumulative_delta,
+    )
 
     return ActionRenderContext(
         cluster=clusters_vars.cluster,
@@ -187,21 +195,25 @@ def _get_action_info(action: Action) -> _ActionContext:
 
 
 def _get_host_group_names_for_cluster(
-    cluster_topology: ClusterTopology, hc_delta: TaskMappingDelta | None = None
+    cluster_topology: ClusterTopology,
+    hc_delta: TaskMappingDelta | None = None,
+    process_cumulative_delta: dict[str, set[str]] | None = None,
 ) -> dict[HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    host_groups = sort_hosts_within_groups(
-        detect_host_groups_for_cluster_bundle_action(
-            cluster_topology=cluster_topology,
-            hosts_in_maintenance_mode=hosts_in_maintenance_mode,
-            hc_delta=hc_delta or TaskMappingDelta(),
-        )
+    host_groups = detect_host_groups_for_cluster_bundle_action(
+        cluster_topology=cluster_topology,
+        hosts_in_maintenance_mode=hosts_in_maintenance_mode,
+        hc_delta=hc_delta or TaskMappingDelta(),
     )
-    return _get_host_group_names_only(host_groups=host_groups)
+
+    host_groups = add_mapping_groups_from_process_steps(
+        host_groups=host_groups, process_mapping_delta=process_cumulative_delta or {}
+    )
+    return _get_host_group_names_only(host_groups=sort_hosts_within_groups(host_groups))
 
 
 def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[HostName]:

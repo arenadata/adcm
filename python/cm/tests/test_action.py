@@ -464,6 +464,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
             owner_.related_objects = related_objects
 
         task.owner = owner_
+        task.action_process = None
 
         hostcomponent = DummyObject()
         hostcomponent.mapping_delta = delta

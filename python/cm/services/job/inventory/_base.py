@@ -70,6 +70,7 @@ def get_inventory_data(
     is_host_action: bool,
     delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
+    process_mapping_delta: dict[str, set[tuple[HostID, HostName]]] | None = None,
 ) -> dict:
     if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
         # Some time ago `_get_inventory_for_action_from_cluster_bundle` required full ORM object to proceed,
@@ -82,6 +83,7 @@ def get_inventory_data(
             cluster_id=group.object.id if isinstance(group.object, Cluster) else group.object.cluster_id,
             delta=delta or TaskMappingDelta(),
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.order_by("id").all()),
+            process_mapping_delta=process_mapping_delta or {},
         )
 
     if target.type == ADCMCoreType.PROVIDER or (target.type == ADCMCoreType.HOST and not is_host_action):
@@ -127,7 +129,10 @@ def get_inventory_data(
         raise RuntimeError(message)
 
     return _get_inventory_for_action_from_cluster_bundle(
-        cluster_id=cluster_id, delta=delta or TaskMappingDelta(), target_hosts=target_hosts
+        cluster_id=cluster_id,
+        delta=delta or TaskMappingDelta(),
+        target_hosts=target_hosts,
+        process_mapping_delta=process_mapping_delta or {},
     )
 
 
@@ -154,7 +159,10 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 
 def _get_inventory_for_action_from_cluster_bundle(
-    cluster_id: int, delta: TaskMappingDelta, target_hosts: Iterable[tuple[HostID, HostName]]
+    cluster_id: int,
+    delta: TaskMappingDelta,
+    target_hosts: Iterable[tuple[HostID, HostName]],
+    process_mapping_delta: dict[str, set[tuple[HostID, HostName]]],
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
@@ -170,6 +178,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     host_groups |= detect_host_groups_for_cluster_bundle_action(
         cluster_topology=cluster_topology, hosts_in_maintenance_mode=hosts_in_maintenance_mode, hc_delta=delta
     )
+    host_groups = add_mapping_groups_from_process_steps(host_groups, process_mapping_delta)
 
     objects_in_inventory = {
         ADCMCoreType.CLUSTER: {cluster_topology.cluster_id},
@@ -417,3 +426,19 @@ def sort_hosts_within_groups(
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]],
 ) -> dict[HostGroupName, list[tuple[HostID, HostName]]]:
     return {group_name: sorted(host_tuples, key=itemgetter(0)) for group_name, host_tuples in host_groups.items()}
+
+
+def add_mapping_groups_from_process_steps(
+    host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]],
+    process_mapping_delta: dict[HostGroupName, set[tuple[HostID, HostName]]],
+) -> dict[str, set[tuple[HostID, HostName]]]:
+    return host_groups | process_mapping_delta
+
+
+def convert_mapping_delta_to_host_groups(
+    cumulative_delta: dict[str, set[str]], topology: ClusterTopology
+) -> dict[HostGroupName, set[tuple[HostID, HostName]]]:
+    return {
+        key: {(host_id, host_obj.name) for host_id, host_obj in topology.hosts.items() if host_obj.name in host_names}
+        for key, host_names in cumulative_delta.items()
+    }

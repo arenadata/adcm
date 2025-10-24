@@ -21,13 +21,15 @@ import json
 import traceback
 
 from ansible_plugin.utils import finish_check
+from core.cluster.types import ClusterTopology
 from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
-from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
+from core.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
@@ -44,6 +46,7 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from cm.services.action_process.types import ProcessStepState
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import retrieve_flat_spec_for_objects
@@ -203,9 +206,19 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
-        delta_part = _extract_mapping_delta_part(
-            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply_rules=hc_apply_rules
-        )
+
+        if (
+            isinstance(task.action_process, AssociatedProcess)
+            and (process := Process.objects.filter(id=task.action_process.id)).exists()
+        ):
+            mapping_delta = _extract_hc_apply_delta_for_process(process.first())
+            #  hc rule for process are validated during step submissions hence cumulative delta is valid
+            delta_part = mapping_delta
+        else:
+            mapping_delta = task.hostcomponent.mapping_delta
+            delta_part = _extract_mapping_delta_part(
+                cluster_id=cluster_id, mapping_delta=mapping_delta, hc_apply_rules=hc_apply_rules
+            )
         change_host_component_mapping_no_lock(
             cluster_id=cluster_id,
             bundle_id=bundle_id,
@@ -256,6 +269,30 @@ def _apply_config_changes(
     )
 
     return changes.config, True
+
+
+def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
+    last_mapping_step = (
+        process.steps.filter(state=ProcessStepState.COMPLETED)
+        .exclude(Q(processstepinput__mapping__isnull=True) | Q(processstepinput__mapping={}))
+        .order_by("-id")
+        .first()
+    )
+
+    if not last_mapping_step:
+        return TaskMappingDelta(add={}, remove={})
+
+    cumulative_delta = last_mapping_step.processstepinput.mapping["cumulative_delta"]
+
+    add_mapping: dict[int, set[int]] = {}
+    for entry in cumulative_delta.get("add", []):
+        add_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
+
+    remove_mapping: dict[int, set[int]] = {}
+    for entry in cumulative_delta.get("remove", []):
+        remove_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
+
+    return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
 
 
 def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
@@ -365,13 +402,23 @@ class UiidJSONEncoder(json.JSONEncoder):
 
 
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
-    job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration)
+    cluster_id, topology = None, None
+    if task.action_process and task.owner:
+        if task.owner.type == ADCMCoreType.CLUSTER:
+            cluster_id = task.owner.id
+        elif task.owner.related_objects.cluster is not None:
+            cluster_id = task.owner.related_objects.cluster.id
+
+    if cluster_id:
+        topology = retrieve_cluster_topology(cluster_id)
+
+    job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration, topology=topology)
     job_run_dir = configuration.adcm.run_dir / str(job.id)
 
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    inventory = prepare_ansible_inventory(task=task)
+    inventory = prepare_ansible_inventory(task=task, topology=topology)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, cls=UiidJSONEncoder, separators=(",", ":"))
 
@@ -380,31 +427,36 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
         ansible_cfg_config_parser.write(config_file)
 
 
-def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
-    delta = None
-    if task.action.hc_acl:
-        cluster_id = None
-        if task.owner:
-            if task.owner.type == ADCMCoreType.CLUSTER:
-                cluster_id = task.owner.id
-            elif task.owner.related_objects.cluster:
-                cluster_id = task.owner.related_objects.cluster.id
+def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = None) -> dict[str, Any]:
+    delta, process_context, cluster_id, process_mapping_delta = None, None, None, {}
 
+    if task.owner and topology:
+        cluster_id = topology.cluster_id
+
+    if task.action.hc_acl:
         if not cluster_id:
             message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
             raise RuntimeError(message)
 
         delta = task.hostcomponent.mapping_delta
 
+    if task.action_process and topology:
+        process = Process.objects.get(id=task.action_process.id)
+        process_context = get_action_process_context(process, topology)
+        process_mapping_delta = process_context.cumulative_delta
+
     return get_inventory_data(
         target=task.target,
         is_host_action=task.action.is_host_action,
         delta=delta,
         related_objects=task.owner.related_objects,
+        process_mapping_delta=process_mapping_delta,
     )
 
 
-def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSettings) -> dict[str, Any]:
+def prepare_ansible_job_config(
+    task: Task, job: Job, configuration: ExternalSettings, topology: ClusterTopology | None = None
+) -> dict[str, Any]:
     # prepare context
     context = {f"{k}_id": v["id"] for k, v in task.selector.items() if k != "action_host_group"}
     context["type"] = task.owner.type.value.replace("hostp", "p")
@@ -420,11 +472,8 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
         action_type_specification=_get_owner_specific_data(task=task),
     )
 
-    if task.owner:
-        if task.owner.type == ADCMCoreType.CLUSTER:
-            job_data.cluster_id = task.owner.id
-        elif task.owner.related_objects.cluster is not None:
-            job_data.cluster_id = task.owner.related_objects.cluster.id
+    if task.owner and topology:
+        job_data.cluster_id = topology.cluster_id
 
     if task.config:
         job_data.config = task.config
@@ -440,8 +489,9 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
 
     process_context = None
 
-    if task.action_process:
-        process_context = get_action_process_context(process=Process.objects.get(id=task.action_process.id))
+    if task.action_process and topology:
+        process = Process.objects.get(id=task.action_process.id)
+        process_context = get_action_process_context(process, topology)
 
     adcm = ADCM.objects.select_related("config").get()
 
@@ -461,7 +511,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             consul_client_cacert_file=configuration.consul.client_cacert_file,
         ),
         job=job_data,
-        process=process_context,
+        process=process_context.to_context() if process_context else None,
     ).model_dump(exclude_unset=True)
 
 
