@@ -31,6 +31,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_action
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
@@ -262,7 +263,9 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
 
         return hc_request_data
 
-    def get_all_from_inventory(self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload) -> dict:
+    def get_all_from_inventory(
+        self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload, cluster_id: int
+    ) -> dict:
         from cm.services.job.run._target_factories import prepare_ansible_inventory
         from cm.services.job.run.repo import JobRepoImpl
 
@@ -272,7 +275,10 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         with RunTaskMock() as run_task:
             run_action(action=action, obj=object_, payload=payload)
 
-        inventory = prepare_ansible_inventory(task=JobRepoImpl.get_task(run_task.target_task.id))
+        inventory = prepare_ansible_inventory(
+            task=JobRepoImpl.get_task(run_task.target_task.id),
+            topology=retrieve_cluster_topology(cluster_id),
+        )
         return inventory["all"]
 
     def test_groups_remove_host_not_in_mm_success(self):
@@ -292,6 +298,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
                 },
                 verbose=False,
             ),
+            cluster_id=self.cluster_hc_acl.pk,
         )["children"]
 
         target_key_remove = (
@@ -340,6 +347,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
                 },
                 verbose=False,
             ),
+            cluster_id=self.cluster_hc_acl.pk,
         )["children"]
 
         target_key_remove = (
@@ -383,6 +391,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
             action=Action.objects.get(name="not_host_action"),
             object_=self.cluster_target_group,
             payload=ActionRunPayload(verbose=False),
+            cluster_id=self.cluster_target_group.pk,
         )["hosts"]
 
         self.assertDictEqual(
@@ -405,7 +414,10 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.host_target_group_1.save()
 
         target_hosts_data = self.get_all_from_inventory(
-            action=self.action_target_group, object_=self.host_target_group_1, payload=ActionRunPayload(verbose=False)
+            action=self.action_target_group,
+            object_=self.host_target_group_1,
+            payload=ActionRunPayload(verbose=False),
+            cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 
         self.assertIn(self.host_target_group_1.fqdn, target_hosts_data)
@@ -415,7 +427,10 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.host_target_group_2.save()
 
         target_hosts_data = self.get_all_from_inventory(
-            action=self.action_target_group, object_=self.host_target_group_2, payload=ActionRunPayload(verbose=False)
+            action=self.action_target_group,
+            object_=self.host_target_group_2,
+            payload=ActionRunPayload(verbose=False),
+            cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 
         self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)

@@ -21,6 +21,7 @@ from django.conf import settings
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
 from cm.models import Action, Component
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job.action import ActionRunPayload, prepare_task_for_action, run_action
 from cm.services.job.run._target_factories import prepare_ansible_job_config
 from cm.services.job.run.repo import JobRepoImpl
@@ -153,7 +154,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     file=self.templates_dir / "action_configs" / f"{type_name}.json.j2",
                     context={**self.context, "job_id": job.id, "task_id": task.id},
                 )
-                job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
+                topology = retrieve_cluster_topology(self.cluster.pk) if type_name != "provider" else None
+                job_config = prepare_ansible_job_config(
+                    task=task,
+                    job=job,
+                    configuration=self.configuration,
+                    topology=topology,
+                )
 
                 self.assertTrue(isinstance(UUID(job_config["adcm"]["uuid"]), UUID))
 
@@ -190,7 +197,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     file=self.templates_dir / "action_configs" / f"{type_name}_on_host.json.j2",
                     context={**self.context, "job_id": job.id, "task_id": task.id},
                 )
-                job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
+                job_config = prepare_ansible_job_config(
+                    task=task,
+                    job=job,
+                    configuration=self.configuration,
+                    topology=retrieve_cluster_topology(self.cluster.pk),
+                )
 
                 job_config = decrypt_secrets(job_config)
                 job_config["adcm"]["uuid"] = "uuid_stub"
@@ -242,7 +254,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
         job_config = prepare_ansible_job_config(
-            task=JobRepoImpl.get_task(task.id), job=job, configuration=self.configuration
+            task=JobRepoImpl.get_task(task.id),
+            job=job,
+            configuration=self.configuration,
+            topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
@@ -272,7 +287,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
         job_config = prepare_ansible_job_config(
-            task=JobRepoImpl.get_task(task.id), job=job, configuration=self.configuration
+            task=JobRepoImpl.get_task(task.id),
+            job=job,
+            configuration=self.configuration,
+            topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["reqsec"]["key"])
         self.assertEqual(
@@ -339,7 +357,10 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                             context={**self.context, "job_id": job.id},
                         )
                         job_config = prepare_ansible_job_config(
-                            task=JobRepoImpl.get_task(task.id), job=job, configuration=self.configuration
+                            task=JobRepoImpl.get_task(task.id),
+                            job=job,
+                            configuration=self.configuration,
+                            topology=retrieve_cluster_topology(self.cluster.pk),
                         )
 
                         self.assertTrue(isinstance(UUID(job_config["adcm"]["uuid"]), UUID))

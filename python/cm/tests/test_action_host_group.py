@@ -20,6 +20,7 @@ from django.conf import settings
 from cm.errors import AdcmEx
 from cm.models import Action, ActionHostGroup, Component
 from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.jinja_env import get_env_for_jinja_scripts
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.inventory import get_inventory_data
@@ -172,6 +173,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                     datacenter=settings.CONSUL_DATACENTER,
                 ),
             ),
+            topology=retrieve_cluster_topology(self.cluster.pk),
         )
 
         self.assertDictEqual(
