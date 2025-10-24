@@ -78,6 +78,6 @@ def _prepare_settings() -> ExternalSettings:
             datacenter=settings.CONSUL_DATACENTER,
             client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
             client_cacert_file=settings.CONSUL_CACERT_FILE,
-            client_cert_file=settings.CONSUL_CLIENT_KEY_FILE,
+            client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
         ),
     )
