@@ -10,7 +10,7 @@
 .actionWizardConfigurationEditorToolbar {
   display: flex;
   gap: 20px;
-  margin: 32px 0;
+  margin-bottom: var(--base-margin-v);
   top: 0;
   z-index: 2;
   backdrop-filter: blur(7px);

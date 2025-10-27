@@ -7,7 +7,7 @@ export const columns: TableColumn[] = [
     name: 'checkAll',
   },
   {
-    label: 'Name',
+    label: 'Product',
     name: 'displayName',
     isSortable: true,
   },

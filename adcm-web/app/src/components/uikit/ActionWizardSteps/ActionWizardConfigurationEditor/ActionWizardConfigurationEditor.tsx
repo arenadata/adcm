@@ -12,24 +12,32 @@ interface ActionWizardConfigurationEditorProps {
 }
 
 const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEditorProps) => {
-  const { configuration, setConfiguration } = useActionWizardConfigurationEditorContext();
+  const { configuration, setConfigurationForStep } = useActionWizardConfigurationEditorContext();
   const { setIsValid } = useActionWizardValidationContext();
 
   useEffect(() => {
     const preparedConfig = prepareConfigurationFromStepData(step.configuration);
-    setConfiguration(preparedConfig);
+
+    setConfigurationForStep(step.id, preparedConfig);
   }, [step.configuration]);
 
   const onReset = () => {
     const configuration = prepareConfigurationFromStepData(step.configuration);
-    setConfiguration(configuration);
+
+    setConfigurationForStep(step.id, configuration);
     setIsValid(true);
   };
+
+  const config = configuration[step.id];
+  if (!config) return null;
 
   return (
     <ConfigurationFormContextProvider>
       <ActionWizardConfigurationEditorToolbar onRevert={onReset} />
-      <ConfigurationMain configuration={configuration} onChangeConfiguration={setConfiguration} />
+      <ConfigurationMain
+        configuration={configuration[step.id]}
+        onChangeConfiguration={(configuration) => setConfigurationForStep(step.id, configuration)}
+      />
     </ConfigurationFormContextProvider>
   );
 };

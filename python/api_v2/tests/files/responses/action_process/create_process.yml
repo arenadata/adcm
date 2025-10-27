@@ -6,55 +6,65 @@
   "stages": [
     {
       "displayName": "First stage",
+      "name": "first_stage",
       "steps": [
         {
           "id": {{ stage1_step1_id }},
           "state": "created",
+          "name": "stage1_step1",
           "displayName": "Stage1.Step1",
           "type": "configuration"
         }
       ]
     },
     {
+      "name": "second_stage",
       "displayName": "Second stage",
       "steps": [
         {
           "id": {{ stage2_step1_id }},
           "state": "created",
+          "name": "stage2_step1",
           "displayName": "Stage2.Step1",
           "type": "configuration"
         },
         {
           "id": {{ stage2_step2_id }},
           "state": "created",
+          "name": "stage2_step2",
           "displayName": "Stage2.Step2",
           "type": "operation"
         }
       ]
     },
     {
+      "name": "third_stage",
       "displayName": "Third stage",
       "steps": [
         {
           "id": {{ stage3_step1_id }},
           "state": "created",
+          "name": "stage3_step1",
           "displayName": "Stage3.Step1",
           "type": "operation"
         },
       ]
     },
     {
+      "name": "fourth_stage",
       "displayName": "Fourth stage",
       "steps": [
         {
           "id": {{ stage4_step1_id }},
           "state": "created",
+          "name": "stage4_step1",
           "displayName": "Stage4.Step1",
           "type": "operation"
         },
         {
           "id": {{ stage4_step2_id }},
           "state": "created",
+          "name": "stage4_step2",
           "displayName": "Stage4.Step2",
           "type": "operation"
         }

@@ -14,7 +14,7 @@
     --map-items-index-color-normal: var(--color-xdark-metal);
     --map-items-index-background-normal: var(--color-xdark);
     --map-items-title-color-normal: var(--color-xdark-metal);
-    --map-items-stage-background-normal: #2F31364D;
+    --map-items-stage-background-normal: var(--color-new-light-30);
     --map-items-stage-border-normal: #353E47;
     --map-items-thread-color-normal: var(--color-xdark-metal);
 
@@ -26,15 +26,15 @@
     --map-items-index-color-error: var(--color-light-red);
     --map-items-index-background-error: #3A2427;
     --map-items-title-color-error: var(--color-light-red);
-    --map-items-stage-background-error: #3A2427;
-    --map-items-stage-border-error: #F2616126;
-    --map-items-thread-color-error: var(--color-light-red);
+    --map-items-stage-background-error: var(--color-light-red-10);
+    --map-items-stage-border-error: var(--color-light-red-30);
+    --map-items-thread-color-error: var(--color-light-red-15);
 
     // success
     --map-items-index-color-completed: var(--color-xgreen-saturated);
     --map-items-index-background-completed: #163531;
     --map-items-title-color-completed: var(--color-xgreen-saturated);
-    --map-items-stage-background-completed: #00D2A026;
+    --map-items-stage-background-completed: var(--color-green-full);
     --map-items-stage-border-completed: var(--color-green-full);
     --map-items-thread-color-completed: var(--color-xgreen-saturated);
 
@@ -42,8 +42,8 @@
     --map-items-index-color-running: var(--color-xblue);
     --map-items-index-background-running: #1F3242;
     --map-items-title-color-running: var(--color-xblue);
-    --map-items-stage-background-running: #1997E826;
-    --map-items-stage-border-running: #1997E826;
+    --map-items-stage-background-running: var(--color-xblue-15);
+    --map-items-stage-border-running: var(--color-xblue-15);
     --map-items-thread-color-running: var(--color-xblue);
   }
 
@@ -61,21 +61,21 @@
     // normal
     --map-items-index-color-normal: var(--color-adcmx);
     --map-items-index-background-normal: var(--color-stroke-light);
-    --map-items-title-color-normal: var(--color-xgray-new-darker);
-    --map-items-stage-background-normal: #E3EAEE4D;
+    --map-items-title-color-normal: var(--color-adcmx);
+    --map-items-stage-background-normal: var(--color-xgray-alt-77);
     --map-items-stage-border-normal: var(--color-stroke-light);
     --map-items-thread-color-normal: var(--color-stroke-light);
 
     // hover
-    --map-items-index-color-hover: var(--color-xwhite-off);
-    --map-items-title-color-hover: var(--color-xwhite-off);
+    --map-items-index-color-hover: var(--color-xblack);
+    --map-items-title-color-hover: var(--color-xblack);
 
     // error
     --map-items-index-color-error: var(--color-light-red);
     --map-items-index-background-error: #F6E2E3;
     --map-items-title-color-error: var(--color-light-red);
-    --map-items-stage-background-error: #F6E2E3;
-    --map-items-stage-border-error: #F2616126;
+    --map-items-stage-background-error: var(--color-light-red-15);
+    --map-items-stage-border-error: var(--color-light-red-15);
     --map-items-thread-color-error: var(--color-light-red);
 
     // success
@@ -91,7 +91,7 @@
     --map-items-index-background-running: #D1E7F4;
     --map-items-title-color-running: var(--color-xblue);
     --map-items-stage-background-running: #D1E7F4;
-    --map-items-stage-border-running: #1997E826;
+    --map-items-stage-border-running: var(--color-xblue-15);
     --map-items-thread-color-running: var(--color-xblue);
   }
 }
@@ -211,7 +211,7 @@
 
     &_error {
       --map-items-stage-background: var(--map-items-stage-background-error) !important;
-      --map-items-stage-border: var(--map-items-stage-background-error) !important;
+      --map-items-stage-border: var(--map-items-stage-border-error) !important;
     }
 
     &.active {

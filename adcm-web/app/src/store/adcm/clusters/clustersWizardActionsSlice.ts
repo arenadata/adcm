@@ -3,7 +3,12 @@ import type { AdcmActionWizardProcess, AdcmWizardProcessOperationPayload } from 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { cleanupClustersWizard, getProcess, getStep } from '@store/adcm/clusters/clustersWizardSlice';
+import {
+  cleanupClustersWizard,
+  getProcess,
+  getStep,
+  resetJobDataByStep,
+} from '@store/adcm/clusters/clustersWizardSlice';
 import {
   runClusterDynamicAction,
   type RunClusterDynamicActionPayload,
@@ -27,6 +32,11 @@ interface AdcmPostTaskOperationPayload {
 interface AdcmPostLastStepOperationPayload {
   postOperationPayload: AdcmPostOperationPayload;
   lastStepPayload: RunClusterDynamicActionPayload;
+}
+
+interface postOperationWithStepResetPayload {
+  postOperationPayload: AdcmPostOperationPayload;
+  stepId: number;
 }
 
 const postOperation = createAsyncThunk(
@@ -71,6 +81,14 @@ const postOperationWithLastStep = createAsyncThunk(
     await thunkAPI.dispatch(runClusterDynamicAction(payload.lastStepPayload));
     thunkAPI.dispatch(cleanupClustersWizard());
     thunkAPI.dispatch(closeClusterWizardDialog());
+  },
+);
+
+const postOperationWithStepReset = createAsyncThunk(
+  'adcm/clustersWizardActions/postOperationWithStepReset',
+  async (payload: postOperationWithStepResetPayload, thunkAPI) => {
+    await thunkAPI.dispatch(postOperation(payload.postOperationPayload));
+    thunkAPI.dispatch(resetJobDataByStep(payload.stepId));
   },
 );
 
@@ -133,6 +151,6 @@ export const {
   setSelectedStepId,
   resetSelectedStepId,
 } = clustersWizardActionsSlice.actions;
-export { postOperation, postOperationWithTask, postOperationWithLastStep };
+export { postOperation, postOperationWithTask, postOperationWithLastStep, postOperationWithStepReset };
 
 export default clustersWizardActionsSlice.reducer;

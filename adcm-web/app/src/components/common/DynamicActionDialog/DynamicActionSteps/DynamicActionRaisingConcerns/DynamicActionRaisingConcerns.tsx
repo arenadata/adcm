@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button, ButtonGroup, Switch, WarningMessage } from '@uikit';
 import type { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 import dialogStyles from '../../DynamicActionDialog.module.scss';
@@ -9,17 +8,24 @@ interface DynamicActionRaisingConcernsProps {
   actionDetails: AdcmDynamicActionDetails;
   onNext: (changes: Partial<AdcmDynamicActionRunConfig>) => void;
   onCancel: () => void;
+  onStateChange: (data: Partial<AdcmDynamicActionRunConfig>) => void;
+  shouldBlockObject: boolean;
 }
 
-const DynamicActionRaisingConcerns = ({ onNext, onCancel }: DynamicActionRaisingConcernsProps) => {
-  const [isRaiseNonBlockingConcerns, setIsRaiseNonBlockingConcerns] = useState(false);
+const DynamicActionRaisingConcerns = ({
+  onNext,
+  onCancel,
+  onStateChange,
+  shouldBlockObject,
+}: DynamicActionRaisingConcernsProps) => {
+  const isRaiseNonBlockingConcerns = !shouldBlockObject;
 
   const handleNext = () => {
-    onNext({ shouldBlockObject: !isRaiseNonBlockingConcerns });
+    onNext({ shouldBlockObject });
   };
 
   const handleRaiseConcernsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsRaiseNonBlockingConcerns(event.target.checked);
+    onStateChange({ shouldBlockObject: !event.target.checked });
   };
 
   return (

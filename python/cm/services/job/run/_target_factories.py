@@ -20,6 +20,7 @@ from uuid import UUID
 import json
 import traceback
 
+from adcm.feature_flags import use_new_config_processing
 from ansible_plugin.utils import finish_check
 from core.cluster.types import ClusterTopology
 from core.job.dto import TaskUpdateDTO
@@ -50,7 +51,8 @@ from cm.services.action_process.types import ProcessStepState
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import retrieve_flat_spec_for_objects
-from cm.services.job.inventory import get_action_process_context, get_adcm_configuration, get_inventory_data
+from cm.services.job import context as context_m
+from cm.services.job import inventory as inventory_m
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -445,7 +447,9 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
         process_context = get_action_process_context(process, topology)
         process_mapping_delta = process_context.cumulative_delta
 
-    return get_inventory_data(
+    module = context_m if use_new_config_processing() else inventory_m
+
+    return module.get_inventory_data(
         target=task.target,
         is_host_action=task.action.is_host_action,
         delta=delta,
@@ -489,14 +493,16 @@ def prepare_ansible_job_config(
 
     process_context = None
 
+    module = context_m if use_new_config_processing() else inventory_m
+
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = get_action_process_context(process, topology)
+        process_context = module.get_action_process_context(process, topology)
 
     adcm = ADCM.objects.select_related("config").get()
 
     return JobConfig(
-        adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=get_adcm_configuration(adcm)),
+        adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=module.get_adcm_configuration(adcm)),
         context=context,
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),

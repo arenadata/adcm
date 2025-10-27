@@ -90,6 +90,18 @@ class UploadBundleSerializer(EmptySerializer):
     file = FileField(help_text="bundle file for upload")
 
 
+class UpgradeListBundleSerializer(ModelSerializer):
+    display_name = SerializerMethodField()
+
+    class Meta:
+        model = Bundle
+        fields = ("id", "name", "display_name", "version", "edition")
+
+    @staticmethod
+    def get_display_name(bundle: Bundle) -> str:
+        return bundle.display_name
+
+
 class UpgradeServicePrototypeSerializer(ModelSerializer):
     license = SerializerMethodField()
 
@@ -118,10 +130,10 @@ class UpgradeBundleSerializer(ModelSerializer):
         fields = ["id", "prototype_id", "license_status", "unaccepted_services_prototypes"]
 
     def get_prototype_id(self, bundle: Bundle) -> int:
-        return bundle.prototype_set.filter(type__in=(ObjectType.CLUSTER, ObjectType.PROVIDER)).first().pk
+        return bundle.prototype_id
 
     def get_license_status(self, bundle: Bundle) -> str:
-        return bundle.prototype_set.filter(type__in=(ObjectType.CLUSTER, ObjectType.PROVIDER)).first().license
+        return bundle.license_statues
 
     def get_unaccepted_services_prototypes(self, bundle: Bundle) -> list:
         if isinstance(self.context["parent"], Provider):

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import WizardSteps from '@uikit/WizardSteps/WizardSteps';
 import { DynamicActionStep } from '../DynamicAction.types';
 import DynamicActionConfigSchema from './DynamicActionConfigSchema/DynamicActionConfigSchema';
@@ -61,6 +61,10 @@ const DynamicActionSteps = ({
     }
   };
 
+  const handleStateChange = useCallback((data: Partial<AdcmDynamicActionRunConfig>) => {
+    setLocalActionRunConfig((prev) => ({ ...prev, ...data }));
+  }, []);
+
   const isFewSteps = actionSteps.length > 1;
 
   return (
@@ -97,10 +101,23 @@ const DynamicActionSteps = ({
         />
       )}
       {currentStep === DynamicActionStep.RaisingConcerns && (
-        <DynamicActionRaisingConcerns actionDetails={actionDetails} onNext={handleStepChange} onCancel={onCancel} />
+        <DynamicActionRaisingConcerns
+          actionDetails={actionDetails}
+          onNext={handleStepChange}
+          onCancel={onCancel}
+          onStateChange={handleStateChange}
+          shouldBlockObject={localActionRunConfig.shouldBlockObject}
+        />
       )}
       {currentStep === DynamicActionStep.Confirm && (
-        <DynamicActionConfirm actionDetails={actionDetails} onRun={handleStepChange} onCancel={onCancel} />
+        <DynamicActionConfirm
+          actionDetails={actionDetails}
+          onRun={handleStepChange}
+          onCancel={onCancel}
+          onStateChange={handleStateChange}
+          description={localActionRunConfig.description}
+          isVerbose={localActionRunConfig.isVerbose}
+        />
       )}
     </div>
   );

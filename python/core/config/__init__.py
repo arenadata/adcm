@@ -26,6 +26,7 @@ from core.config._types import (
     ParameterLevelName,
 )
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations
+from core.config import _files as files
 
 __all__ = [
     "Attributes",
@@ -40,6 +41,7 @@ __all__ = [
     "Validators",
     "VariantValidator",
     "Violations",
+    "files",
     "flat_to_nested",
     "get_by_full_name",
     "names",

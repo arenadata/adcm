@@ -76,7 +76,8 @@
 }
 
 .bellPopoverPanel {
-  width: 315px;
+  min-width: 315px;
+  max-width: 100vw;
   min-height: 20px;
   border-radius: 15px;
   border: 1px solid var(--bell-popover-panel-border-color);

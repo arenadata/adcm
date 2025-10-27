@@ -6,8 +6,8 @@
     --code-highlight-numbersV2: var(--color-xgray-light);
     --code-highlight-numbers-backgroundV2: #181619;
     --code-highlight-scrollbar-thumbV2: var(--color-xdark);
-    --code-highlight-backgroundV2: rgba(17,15,18,1);
-    --code-highlight-background-hoverV2:  rgba(50,50,57,0.5);
+    --code-highlight-backgroundV2: rgba(17, 15, 18, 1);
+    --code-highlight-background-hoverV2: rgba(50, 50, 57, 0.5);
   }
   body.theme-light {
     --code-highlight-textV2: var(--color-xdark);
@@ -17,7 +17,7 @@
     --code-highlight-numbers-backgroundV2: var(--color-xgray-alt);
     --code-highlight-scrollbar-thumbV2: var(--color-xgray-alt);
     --code-highlight-backgroundV2: rgba(227, 234, 238, 0.5);
-    --code-highlight-background-hoverV2: rgba(255,255,255,1);
+    --code-highlight-background-hoverV2: rgba(255, 255, 255, 1);
   }
 }
 
@@ -34,19 +34,23 @@
     border: 1px solid var(--color-xblue);
   }
 
-  & .codeHighlighter__showSecretBtn {
-    display: none;
+  &__actions {
     position: absolute;
     top: 8px;
-    right: 80px;
+    right: 12px;
     z-index: 1;
-  }
-
-  & .codeHighlighter__copyBtn {
     display: none;
-    position: absolute;
-    top: 8px;
-    right: 8px;
+
+    .codeHighlighter__expandBtn,
+    .codeHighlighter__secretBtn {
+      width: 32px;
+      height: 32px;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 
   &:hover {
@@ -54,11 +58,7 @@
       background: var(--code-highlight-background-hoverV2);
     }
 
-    & .codeHighlighter__copyBtn {
-      display: block;
-    }
-
-    & .codeHighlighter__showSecretBtn {
+    .codeHighlighter__actions {
       display: block;
     }
   }
@@ -113,4 +113,29 @@
   font-variant-ligatures: none;
   font-weight: 400;
   font-size: 13px;
+}
+
+.virtualContainer {
+  position: relative;
+}
+
+.virtualLineNumber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.virtualCodeLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+
+  & pre {
+    margin: 0;
+  }
 }

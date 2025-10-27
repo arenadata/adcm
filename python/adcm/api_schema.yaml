@@ -3134,6 +3134,8 @@ components:
     Stage:
       type: object
       properties:
+        name:
+          type: string
         displayName:
           type: string
         steps:
@@ -3142,6 +3144,7 @@ components:
             type: object
           readOnly: true
       required:
+      - name
       - displayName
       - steps
     StepConfiguration:
@@ -3149,6 +3152,8 @@ components:
       properties:
         id:
           type: integer
+        name:
+          type: string
         displayName:
           type: string
         type:
@@ -3161,6 +3166,7 @@ components:
       - configuration
       - displayName
       - id
+      - name
       - state
       - type
     StepConfigurationInternals:
@@ -3184,6 +3190,8 @@ components:
       properties:
         id:
           type: integer
+        name:
+          type: string
         displayName:
           type: string
         type:
@@ -3199,6 +3207,7 @@ components:
       required:
       - displayName
       - id
+      - name
       - state
       - task
       - type
@@ -3500,8 +3509,35 @@ components:
         displayName:
           type: string
           maxLength: 1000
+        bundle:
+          $ref: '#/components/schemas/UpgradeListBundle'
       required:
+      - bundle
       - id
+    UpgradeListBundle:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 1000
+        displayName:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          maxLength: 1000
+        edition:
+          type: string
+          default: community
+          maxLength: 1000
+      required:
+      - displayName
+      - id
+      - name
+      - version
     UpgradeRetrieve:
       type: object
       properties:
@@ -5509,30 +5545,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5599,30 +5645,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5680,27 +5736,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 89ee5bdc-98f5-40f1-af2c-f53b8845c3bc
+                    processSyncKey: b6fb6389-bd4e-4ca7-9b7f-bec55cff17ca
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 2febbaea-0877-49aa-be6d-e80bca208676
+                    processSyncKey: 5b77fffd-4fbb-42f4-a21e-efe2d3a88e1b
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: f93e42dc-b850-480c-a172-f2958f1cc23e
+                    processSyncKey: bb354a8d-c273-4106-be01-b1f11c299bb4
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 33cc0763-0079-420c-94e0-2000dce61c4c
+                    processSyncKey: 98adb2c6-1799-4ba3-b01f-496c6a9d9f56
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5726,30 +5782,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5816,6 +5882,7 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    name: stage2_step2
                     displayName: Stage2.Step2
                     id: 1
                     state: created
@@ -5865,6 +5932,7 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                    name: stage1_step1
                     displayName: Stage1.Step1
                     id: 1
                     state: created
@@ -6027,9 +6095,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postClusterConfigGroups
-      description: Create new cluster's config-group.
-      summary: POST cluster's config-groups
+      operationId: postClusterConfigGroup
+      description: Create new cluster's config group.
+      summary: POST cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6263,7 +6331,7 @@ paths:
     get:
       operationId: getClusterConfigGroupHosts
       description: Get a list of hosts added to cluster's config-group.
-      summary: GET cluster's config-group hosts
+      summary: GET cluster's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -6331,8 +6399,8 @@ paths:
           description: ''
     post:
       operationId: postClusterConfigGroupHosts
-      description: Add host to cluster's config-group.
-      summary: POST cluster's config-group host
+      description: Add host to cluster's config group.
+      summary: POST cluster's config group host
       parameters:
       - in: path
         name: clusterId
@@ -6403,8 +6471,8 @@ paths:
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getClusterConfigGroupHost
-      description: Get information about a specific host of cluster's config-group.
-      summary: GET cluster's config-group host
+      description: Get information about a specific host of cluster's config group.
+      summary: GET cluster's config group host
       parameters:
       - in: path
         name: clusterId
@@ -6490,8 +6558,8 @@ paths:
           description: ''
     delete:
       operationId: deleteClusterConfigGroupHosts
-      description: Remove host from cluster's config-group.
-      summary: DELETE host from cluster's config-group
+      description: Remove host from cluster's config group.
+      summary: DELETE host from cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6581,8 +6649,8 @@ paths:
           description: ''
     patch:
       operationId: patchClusterConfigGroup
-      description: Change cluster's config-group's name and description.
-      summary: PATCH cluster's config-group
+      description: Change cluster's config group's name and description.
+      summary: PATCH cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6633,8 +6701,8 @@ paths:
           description: ''
     delete:
       operationId: deleteClusterConfigGroup
-      description: Delete specific cluster's config-group.
-      summary: DELETE cluster's config-group
+      description: Delete specific cluster's config group.
+      summary: DELETE cluster's config group
       parameters:
       - in: path
         name: clusterId
@@ -6670,35 +6738,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getClusterConfigGroupConfigSchema
+      description: Get cluster's config group's schema information.
+      summary: GET cluster's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -6722,7 +6764,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -9297,30 +9382,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -9393,30 +9488,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -9480,27 +9585,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: bb7537d1-271d-44d6-98e7-6fba4f15d99e
+                    processSyncKey: 27701bb6-e04b-4d15-95e1-5dbeafd9e01e
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 5e4c0c08-a7a4-4bbf-b265-4825b1aa0aa6
+                    processSyncKey: ccbe59b1-9708-4299-8ead-3b6b8dca4fb5
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: ba3df3d0-6a9e-4759-8928-edbd4cd8559f
+                    processSyncKey: 8817a927-7a4c-4f87-a88b-89660151db3d
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: cdb2ee03-66d5-4ccf-a2eb-f8d1157709eb
+                    processSyncKey: c06fa4a9-0f9c-4cd3-81ad-d3c7d5ffb33b
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -9526,30 +9631,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -9622,6 +9737,7 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    name: stage2_step2
                     displayName: Stage2.Step2
                     id: 1
                     state: created
@@ -9671,6 +9787,7 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                    name: stage1_step1
                     displayName: Stage1.Step1
                     id: 1
                     state: created
@@ -10927,30 +11044,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11029,30 +11156,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11122,27 +11259,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 3db389e1-d01a-4f42-8f3d-aa75f67da94a
+                    processSyncKey: 651c19a6-179d-4b6a-a83a-54f7082cb10c
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: d3285fdc-d073-4c5a-bda9-96fca32a1e12
+                    processSyncKey: efcccf43-ec5a-4153-aadb-ba0ef53d9cf7
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 2c4e0a2a-44eb-4392-bc66-96eeaa5279af
+                    processSyncKey: fe84f116-a213-4e1f-89d5-65a244e5be71
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: d1222499-b74d-418d-986a-fb0e4949597b
+                    processSyncKey: 76085b82-b072-4869-a570-296d65f3ea36
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11168,30 +11305,40 @@ paths:
                     createdAt: '2025-08-29T07:12:17.847185Z'
                     syncKey: c0ffead5-054f-4ef7-8776-607ea80812f2
                     stages:
-                    - displayName: First stage
+                    - name: first_stage
+                      displayName: First stage
                       steps:
                       - id: 1
+                        name: stage1_step1
                         displayName: Stage1.Step1
                         type: configuration
-                    - displayName: Second stage
+                    - name: second_stage
+                      displayName: Second stage
                       steps:
                       - id: 2
+                        name: stage2_step2
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
+                        name: stage2_step2
                         displayName: Stage2.Step2
                         type: operation
-                    - displayName: Third stage
+                    - name: third_stage
+                      displayName: Third stage
                       steps:
                       - id: 4
+                        name: stage3_step1
                         displayName: Stage3.Step1
                         type: operation
-                    - displayName: Fourth stage
+                    - name: fourth_stage
+                      displayName: Fourth stage
                       steps:
                       - id: 5
+                        name: stage4_step1
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
+                        name: stage4_step2
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11270,6 +11417,7 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    name: stage2_step2
                     displayName: Stage2.Step2
                     id: 1
                     state: created
@@ -11319,6 +11467,7 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                    name: stage1_step1
                     displayName: Stage1.Step1
                     id: 1
                     state: created
@@ -11517,9 +11666,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postComponentConfigGroups
-      description: Create new component's config-group.
-      summary: POST component's config-groups
+      operationId: postComponentConfigGroup
+      description: Create new component's config group.
+      summary: POST component's config group
       parameters:
       - in: path
         name: clusterId
@@ -11801,7 +11950,7 @@ paths:
     get:
       operationId: getComponentConfigGroupHosts
       description: Get a list of hosts added to component's config-group.
-      summary: GET component's config-group hosts
+      summary: GET component's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -11881,8 +12030,8 @@ paths:
           description: ''
     post:
       operationId: postComponentConfigGroupHosts
-      description: Add host to component's config-group.
-      summary: POST component's config-group host
+      description: Add host to component's config group.
+      summary: POST component's config group host
       parameters:
       - in: path
         name: clusterId
@@ -11965,8 +12114,8 @@ paths:
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getComponentConfigGroupHost
-      description: Get information about a specific host of component's config-group.
-      summary: GET component's config-group host
+      description: Get information about a specific host of component's config group.
+      summary: GET component's config group host
       parameters:
       - in: path
         name: clusterId
@@ -12064,8 +12213,8 @@ paths:
           description: ''
     delete:
       operationId: deleteComponentConfigGroupHosts
-      description: Remove host from component's config-group.
-      summary: DELETE host from component's config-group
+      description: Remove host from component's config group.
+      summary: DELETE host from component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12179,8 +12328,8 @@ paths:
           description: ''
     patch:
       operationId: patchComponentConfigGroup
-      description: Change component's config-group's name and description.
-      summary: PATCH component's config-group
+      description: Change component's config group's name and description.
+      summary: PATCH component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12243,8 +12392,8 @@ paths:
           description: ''
     delete:
       operationId: deleteComponentConfigGroup
-      description: Delete specific component's config-group.
-      summary: DELETE component's config-group
+      description: Delete specific component's config group.
+      summary: DELETE component's config group
       parameters:
       - in: path
         name: clusterId
@@ -12292,35 +12441,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_services_components_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getComponentConfigGroupConfigSchema
+      description: Get component's config group's schema information.
+      summary: GET component's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -12356,7 +12479,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -12772,9 +12938,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/components/{componentId}/config-schema/:
     get:
-      operationId: getConfigConfigSchema
-      description: Get config's config schema information.
-      summary: GET config's config schema
+      operationId: getComponentConfigSchema
+      description: Get component's config schema information.
+      summary: GET component's config schema
       parameters:
       - in: path
         name: clusterId
@@ -13028,9 +13194,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postServiceConfigGroups
-      description: Create new service's config-group.
-      summary: POST service's config-groups
+      operationId: postServiceConfigGroup
+      description: Create new service's config group.
+      summary: POST service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13288,7 +13454,7 @@ paths:
     get:
       operationId: getServiceConfigGroupHosts
       description: Get a list of hosts added to service's config-group.
-      summary: GET service's config-group hosts
+      summary: GET service's config group hosts
       parameters:
       - in: path
         name: clusterId
@@ -13362,8 +13528,8 @@ paths:
           description: ''
     post:
       operationId: postServiceConfigGroupHosts
-      description: Add host to service's config-group.
-      summary: POST service's config-group host
+      description: Add host to service's config group.
+      summary: POST service's config group host
       parameters:
       - in: path
         name: clusterId
@@ -13440,8 +13606,8 @@ paths:
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getServiceConfigGroupHost
-      description: Get information about a specific host of service's config-group.
-      summary: GET service's config-group host
+      description: Get information about a specific host of service's config group.
+      summary: GET service's config group host
       parameters:
       - in: path
         name: clusterId
@@ -13533,8 +13699,8 @@ paths:
           description: ''
     delete:
       operationId: deleteServiceConfigGroupHosts
-      description: Remove host from service's config-group.
-      summary: DELETE host from service's config-group
+      description: Remove host from service's config group.
+      summary: DELETE host from service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13636,8 +13802,8 @@ paths:
           description: ''
     patch:
       operationId: patchServiceConfigGroup
-      description: Change service's config-group's name and description.
-      summary: PATCH service's config-group
+      description: Change service's config group's name and description.
+      summary: PATCH service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13694,8 +13860,8 @@ paths:
           description: ''
     delete:
       operationId: deleteServiceConfigGroup
-      description: Delete specific service's config-group.
-      summary: DELETE service's config-group
+      description: Delete specific service's config group.
+      summary: DELETE service's config group
       parameters:
       - in: path
         name: clusterId
@@ -13737,35 +13903,9 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: clusters_services_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getServiceConfigGroupConfigSchema
+      description: Get service's config group's schema information.
+      summary: GET service's config group's config schema
       parameters:
       - in: path
         name: clusterId
@@ -13795,7 +13935,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/services/{serviceId}/config-groups/{configGroupId}/host-candidates/:
     get:
@@ -14796,35 +14979,8 @@ paths:
           description: ''
   /api/v2/clusters/{clusterId}/host-candidates/:
     get:
-      operationId: clusters_host_candidates_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getClusterHostCandidates
+      description: Get a list of hosts candidates.
       parameters:
       - in: path
         name: clusterId
@@ -14842,7 +14998,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Cluster'
+                type: array
+                items:
+                  $ref: '#/components/schemas/HostShort'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/clusters/{clusterId}/mapping/:
     get:
@@ -15730,9 +15900,9 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
     post:
-      operationId: postHostproviderConfigGroups
-      description: Create new hostprovider's config-group.
-      summary: POST hostprovider's config-groups
+      operationId: postHostproviderConfigGroup
+      description: Create new hostprovider's config group.
+      summary: POST hostprovider's config group
       parameters:
       - in: path
         name: providerId
@@ -15966,7 +16136,7 @@ paths:
     get:
       operationId: getHostproviderConfigGroupHosts
       description: Get a list of hosts added to hostprovider's config-group.
-      summary: GET hostprovider's config-group hosts
+      summary: GET hostprovider's config group hosts
       parameters:
       - in: path
         name: configGroupId
@@ -16034,8 +16204,8 @@ paths:
           description: ''
     post:
       operationId: postHostproviderConfigGroupHosts
-      description: Add host to hostprovider's config-group.
-      summary: POST hostprovider's config-group host
+      description: Add host to hostprovider's config group.
+      summary: POST hostprovider's config group host
       parameters:
       - in: path
         name: configGroupId
@@ -16106,8 +16276,9 @@ paths:
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/hosts/{hostId}/:
     get:
       operationId: getHostproviderConfigGroupHost
-      description: Get information about a specific host of hostprovider's config-group.
-      summary: GET hostprovider's config-group host
+      description: Get information about a specific host of hostprovider's config
+        group.
+      summary: GET hostprovider's config group host
       parameters:
       - in: path
         name: configGroupId
@@ -16193,8 +16364,8 @@ paths:
           description: ''
     delete:
       operationId: deleteHostproviderConfigGroupHosts
-      description: Remove host from hostprovider's config-group.
-      summary: DELETE host from hostprovider's config-group
+      description: Remove host from hostprovider's config group.
+      summary: DELETE host from hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16284,8 +16455,8 @@ paths:
           description: ''
     patch:
       operationId: patchHostproviderConfigGroup
-      description: Change hostprovider's config-group's name and description.
-      summary: PATCH hostprovider's config-group
+      description: Change hostprovider's config group's name and description.
+      summary: PATCH hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16336,8 +16507,8 @@ paths:
           description: ''
     delete:
       operationId: deleteHostproviderConfigGroup
-      description: Delete specific hostprovider's config-group.
-      summary: DELETE hostprovider's config-group
+      description: Delete specific hostprovider's config group.
+      summary: DELETE hostprovider's config group
       parameters:
       - in: path
         name: configGroupId
@@ -16373,35 +16544,9 @@ paths:
           description: ''
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/config-schema/:
     get:
-      operationId: hostproviders_config_groups_config_schema_retrieve
-      description: |-
-        A view mixin that filter object in queryset for the current logged by required permission.
-
-        **Example Usage**::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'articles.view_article'
-                ...
-
-        or::
-
-            class SecureView(PermissionListMixin, ListView):
-                ...
-                permission_required = 'auth.change_user'
-                get_objects_for_user_extra_kwargs = {'use_groups': False}
-                ...
-
-        **Class Settings**
-
-        ``PermissionListMixin.permission_required``
-
-            *Default*: ``None``, must be set to either a string or list of strings
-            in format: *<app_label>.<permission_codename>*.
-
-        ``PermissionListMixin.get_objects_for_user_extra_kwargs``
-
-            *Default*: ``{}``,  A extra params to pass for ```guardian.shortcuts.get_objects_for_user```
+      operationId: getHostproviderConfigGroupConfigSchema
+      description: Get hostprovider's config group's schema information.
+      summary: GET hostprovider's config group's config schema
       parameters:
       - in: path
         name: configGroupId
@@ -16425,7 +16570,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CHG'
+                type: object
+                additionalProperties: {}
+              examples:
+                SchemaExample:
+                  value:
+                    $schema: https://json-schema.org/draft/2020-12/schema
+                    title: Configuration
+                    description: ''
+                    readOnly: false
+                    adcmMeta:
+                      isAdvanced: false
+                      isInvisible: false
+                      activation: null
+                      synchronization: null
+                      nullValue: null
+                      isSecret: false
+                      stringExtra: null
+                      enumExtra: null
+                    type: object
+                    properties:
+                      param_1:
+                        title: Special Param
+                        type: string
+                        description: ''
+                        default: heh
+                        readOnly: true
+                        adcmMeta:
+                          isAdvanced: true
+                          isInvisible: false
+                    additionalProperties: false
+                    required: []
+                  summary: schema example
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v2/hostproviders/{providerId}/config-groups/{configGroupId}/host-candidates/:
     get:

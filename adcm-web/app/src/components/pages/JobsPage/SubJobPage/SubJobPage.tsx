@@ -10,6 +10,7 @@ import { openStopDialog } from '@store/adcm/jobs/subJobsActionsSlice';
 import { useRequestSubJob } from './useRequestSubJob';
 import { useAutoScrollLog } from './useAutoScrollLog';
 import s from './SubJobPage.module.scss';
+import { CodeHighlighterContextProvider } from '@uikit/CodeHighlighter/context/CodeHighlighterContextProvider';
 
 const SubJobPage = () => {
   const dispatch = useDispatch();
@@ -47,12 +48,14 @@ const SubJobPage = () => {
       <div className={s.subJobInfo}>
         <SubJobOverviewTable onStop={handleStop} />
         <div className={s.logsWrapper}>
-          <SubJobLogs isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} />
+          <CodeHighlighterContextProvider>
+            <SubJobLogs isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} />
+          </CodeHighlighterContextProvider>
         </div>
       </div>
       <StopSubJobDialog />
       <div className={s.subJobLogAutoScroll}>
-        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-open" isToggled={isAutoScroll} />
+        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-scroll" isToggled={isAutoScroll} />
       </div>
     </>
   );

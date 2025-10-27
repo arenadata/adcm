@@ -13,11 +13,6 @@
   border-radius: 15px;
   background: var(--mainInfoPanel-background-color);
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
   :global(.marked-list) {
     margin-left: 18px;
   }

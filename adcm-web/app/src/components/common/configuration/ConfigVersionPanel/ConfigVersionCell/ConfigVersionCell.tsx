@@ -49,7 +49,7 @@ const ConfigVersionCell: React.FC<ConfigVersionCellProps> = ({
         </div>
         <div onClick={(event) => event.stopPropagation()}>
           <ActionMenu placement="bottom-end" value={null} options={actionsOptions} onChange={handleSelectAction}>
-            <Button variant="tertiary" iconLeft="dots" />
+            <Button variant="tertiary" iconLeft="dots" disabled={isSelected} />
           </ActionMenu>
         </div>
       </div>

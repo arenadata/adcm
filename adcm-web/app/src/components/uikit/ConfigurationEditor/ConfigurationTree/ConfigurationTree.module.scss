@@ -35,7 +35,7 @@
   body.theme-light {
     // default
     --node-content-border-default: var(--color-xgray-lighter);
-    --node-content-background-title: #E3EAEE80;
+    --node-content-background-title: var(--color-xgray-alt-80);
     --node-content-background-default: var(--color-xgray-alt-30);
     --node-content-label-color-default: var(--color-adcmx);
     --node-content-value-color-default: var(--color-xgray-light);

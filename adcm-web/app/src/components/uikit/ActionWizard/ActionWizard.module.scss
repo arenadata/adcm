@@ -1,7 +1,7 @@
 :global {
   body.theme-dark {
     --left-sidebar-border: var(--color-xdark);
-    --left-sidebar-background: var(--color-new-light);
+    --left-sidebar-background: var(--color-new-light-30);
 
     --center-content-background: var(--color-xblack);
 
@@ -15,7 +15,7 @@
 
   body.theme-light {
     --left-sidebar-border: var(--color-stroke-light);
-    --left-sidebar-background: var(--color-xgray-alt);
+    --left-sidebar-background: var(--color-xgray-alt-30);
 
     --center-content-background: var(--color-xwhite);
 
@@ -36,6 +36,7 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
+  background: var(--body-background);
 
   &__leftSidebarWrap {
     min-width: 250px;

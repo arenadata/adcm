@@ -12,6 +12,7 @@
 
 from typing import Annotated
 
+from adcm.feature_flags import use_new_config_processing
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
@@ -32,14 +33,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.cluster import retrieve_related_cluster_topology
-from cm.services.job.inventory import (
-    ClusterNode,
-    ServiceNode,
-    detect_host_groups_for_cluster_bundle_action,
-    get_cluster_vars,
-)
-from cm.services.job.inventory._base import sort_hosts_within_groups
-from cm.services.job.inventory._types import HostGroupName
+from cm.services.job import context, inventory
 
 
 class ActionContext(TypedDict):
@@ -59,17 +53,17 @@ class TaskContext(TypedDict):
 
 
 class JinjaScriptsEnvironment(BaseModel):
-    cluster: Annotated[dict, ClusterNode]
-    services: dict[ServiceName, Annotated[dict, ServiceNode]]
-    groups: dict[HostGroupName, list[HostName]]
+    cluster: Annotated[dict, inventory.ClusterNode]
+    services: dict[ServiceName, Annotated[dict, inventory.ServiceNode]]
+    groups: dict[inventory.HostGroupName, list[HostName]]
     task: TaskContext
     action: ActionContext | ActionContextWithProcess
 
 
 class JinjaConfigsEnvironment(BaseModel):
-    cluster: ClusterNode
-    services: dict[str, ServiceNode]
-    groups: dict[HostGroupName, list[HostName]]
+    cluster: inventory.ClusterNode
+    services: dict[str, inventory.ServiceNode]
+    groups: dict[inventory.HostGroupName, list[HostName]]
     action: ActionContext | ActionContextWithProcess
 
 
@@ -83,8 +77,8 @@ def get_env_for_jinja_scripts(
         target_object = target_object.object
 
     cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
-
-    cluster_vars = get_cluster_vars(topology=cluster_topology)
+    module = context if use_new_config_processing() else inventory
+    cluster_vars = module.get_cluster_vars(topology=cluster_topology)
 
     host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=delta)
     if action_group:
@@ -112,7 +106,8 @@ def get_env_for_jinja_config(
     action: Action, cluster_relative_object: Cluster | Service | Component | Host, process: Process | None = None
 ) -> dict:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
-    clusters_vars = get_cluster_vars(topology=cluster_topology)
+    module = context if use_new_config_processing() else inventory
+    clusters_vars = module.get_cluster_vars(topology=cluster_topology)
     groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology)
     action = _get_action_info(action=action, process=process)
 
@@ -125,8 +120,8 @@ def get_env_for_jinja_config(
 
 
 def _get_host_group_names_only(
-    host_groups: dict[HostGroupName, list[tuple[HostID, HostName]]],
-) -> dict[HostGroupName, list[HostName]]:
+    host_groups: dict[inventory.HostGroupName, list[tuple[HostID, HostName]]],
+) -> dict[inventory.HostGroupName, list[HostName]]:
     return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
 
 
@@ -151,14 +146,15 @@ def _get_action_info(action: Action, process: Process = None) -> ActionContext:
 
 def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology, hc_delta: TaskMappingDelta | None = None
-) -> dict[HostGroupName, list[HostName]]:
+) -> dict[inventory.HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    host_groups = sort_hosts_within_groups(
-        detect_host_groups_for_cluster_bundle_action(
+    module = context if use_new_config_processing() else inventory
+    host_groups = module.sort_hosts_within_groups(
+        module.detect_host_groups_for_cluster_bundle_action(
             cluster_topology=cluster_topology,
             hosts_in_maintenance_mode=hosts_in_maintenance_mode,
             hc_delta=hc_delta or TaskMappingDelta(),

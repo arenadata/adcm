@@ -1,4 +1,12 @@
 .dynamicActionConfirm {
+  &__message {
+    padding: 24px 0 12px;
+  }
+
+  &__input {
+    min-height: 52px;
+  }
+
   &__footer {
     display: flex;
     justify-content: space-between;

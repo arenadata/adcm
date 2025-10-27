@@ -98,7 +98,9 @@ def _check_defaults_new(
         bundle_root=bundle_root,
     )
 
-    flat_defaults = core.config.FlatConfiguration(values=defaults, attributes={})
+    flat_defaults = core.config.FlatConfiguration(
+        values={k: v for k, v in defaults.items() if v is not None}, attributes={}
+    )
 
     validators = core.config.Validators(variant=DefaultsVariantResolver(), pattern=PlainValuePatternValidator())
 

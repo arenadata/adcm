@@ -2,7 +2,7 @@ import type { TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
-    label: 'Name',
+    label: 'Product',
     name: 'name',
     isSortable: false,
   },

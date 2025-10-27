@@ -209,7 +209,7 @@ class ProcessStepViewSet(
         object_ = orm_object_to_core_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        data = step.model_dump(include={"id", "display_name", "type", "state"})
+        data = step.model_dump(include={"id", "name", "display_name", "type", "state"})
 
         serialized_data = serialize_step(step=step, object_=object_, base_data=data)
 

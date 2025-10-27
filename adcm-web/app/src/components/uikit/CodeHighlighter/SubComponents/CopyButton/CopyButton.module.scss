@@ -2,27 +2,30 @@
   body.theme-dark {
     --button-copy-text: var(--color-xwhite-off);
     --button-copied-text: var(--color-xdark);
-    --button-copy-bg: var(--color-xgray-darker);
+    --button-copy-bg: var(--color-xblack);
+    --button-copy-border-color: var(--color-xdark);
   }
 
   body.theme-light {
     --button-copy-text: var(--color-xdark);
     --button-copied-text: var(--color-xwhite-off);
-    --button-copy-bg: var(--color-xgray-alt);
+    --button-copy-bg: var(--color-xwhite);
+    --button-copy-border-color: var(--color-xgray-lighter);
   }
 }
 
 .copyButton {
-  min-width: 56px;
-  height: 18px;
-  border: 0;
-  border-radius: 4px;
+  border: 2px solid var(--button-copy-border-color);
+  border-radius: 8px;
   background: var(--button-copy-bg);
   color: var(--button-copy-text);
   cursor: pointer;
   z-index: 1;
+  padding: 7px 16px;
 
-  transition: color 250ms, background 250ms;
+  transition:
+    color 250ms,
+    background 250ms;
 
   font-family: inherit;
   font-style: normal;
