@@ -87,8 +87,12 @@ const postOperationWithLastStep = createAsyncThunk(
 const postOperationWithStepReset = createAsyncThunk(
   'adcm/clustersWizardActions/postOperationWithStepReset',
   async (payload: postOperationWithStepResetPayload, thunkAPI) => {
+    thunkAPI.dispatch(setInProgress(true));
+
     await thunkAPI.dispatch(postOperation(payload.postOperationPayload));
     thunkAPI.dispatch(resetJobDataByStep(payload.stepId));
+
+    thunkAPI.dispatch(setInProgress(false));
   },
 );
 
@@ -97,6 +101,7 @@ interface AdcmClustersWizardActionsState {
     process: AdcmActionWizardProcess | null;
     actionId: number | null;
     clusterId: number | null;
+    inProgress: boolean;
   };
   selectedStepId?: number;
 }
@@ -106,6 +111,7 @@ const createInitialState = (): AdcmClustersWizardActionsState => ({
     process: null,
     actionId: null,
     clusterId: null,
+    inProgress: false,
   },
   selectedStepId: undefined,
 });
@@ -116,6 +122,9 @@ const clustersWizardActionsSlice = createSlice({
   reducers: {
     cleanupClustersWizardActions() {
       return createInitialState();
+    },
+    setInProgress(state, action) {
+      state.wizardDialog.inProgress = action.payload;
     },
     setSelectedStepId(state, action) {
       state.selectedStepId = action.payload;
@@ -149,6 +158,7 @@ export const {
   openClusterWizardDialog,
   closeClusterWizardDialog,
   setSelectedStepId,
+  setInProgress,
   resetSelectedStepId,
 } = clustersWizardActionsSlice.actions;
 export { postOperation, postOperationWithTask, postOperationWithLastStep, postOperationWithStepReset };

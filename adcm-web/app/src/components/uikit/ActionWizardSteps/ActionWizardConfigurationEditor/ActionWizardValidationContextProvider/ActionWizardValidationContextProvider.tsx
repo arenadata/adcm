@@ -10,8 +10,10 @@ export const ActionWizardValidationContextProvider: React.FC<ActionWizardValidat
   children,
 }) => {
   const [isValid, setIsValid] = useState(true);
+  const [isDraft, setIsDraft] = useState(false);
+
   return (
-    <ActionWizardValidationContext.Provider value={{ isValid, setIsValid }}>
+    <ActionWizardValidationContext.Provider value={{ isValid, isDraft, setIsValid, setIsDraft }}>
       {children}
     </ActionWizardValidationContext.Provider>
   );

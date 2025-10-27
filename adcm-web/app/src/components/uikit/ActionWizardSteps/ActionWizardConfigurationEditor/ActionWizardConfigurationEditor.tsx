@@ -6,6 +6,7 @@ import ActionWizardConfigurationEditorToolbar from '@uikit/ActionWizardSteps/Act
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
+import type { AdcmConfiguration } from '@models/adcm';
 
 interface ActionWizardConfigurationEditorProps {
   step: AdcmActionProcessConfigurationStep;
@@ -13,7 +14,7 @@ interface ActionWizardConfigurationEditorProps {
 
 const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEditorProps) => {
   const { configuration, setConfigurationForStep } = useActionWizardConfigurationEditorContext();
-  const { setIsValid } = useActionWizardValidationContext();
+  const { setIsDraft } = useActionWizardValidationContext();
 
   useEffect(() => {
     const preparedConfig = prepareConfigurationFromStepData(step.configuration);
@@ -21,11 +22,9 @@ const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEdit
     setConfigurationForStep(step.id, preparedConfig);
   }, [step.configuration]);
 
-  const onReset = () => {
-    const configuration = prepareConfigurationFromStepData(step.configuration);
-
+  const onConfigurationChange = (configuration: AdcmConfiguration) => {
     setConfigurationForStep(step.id, configuration);
-    setIsValid(true);
+    setIsDraft(true);
   };
 
   const config = configuration[step.id];
@@ -33,10 +32,10 @@ const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEdit
 
   return (
     <ConfigurationFormContextProvider>
-      <ActionWizardConfigurationEditorToolbar onRevert={onReset} />
+      <ActionWizardConfigurationEditorToolbar />
       <ConfigurationMain
         configuration={configuration[step.id]}
-        onChangeConfiguration={(configuration) => setConfigurationForStep(step.id, configuration)}
+        onChangeConfiguration={(configuration) => onConfigurationChange(configuration)}
       />
     </ConfigurationFormContextProvider>
   );

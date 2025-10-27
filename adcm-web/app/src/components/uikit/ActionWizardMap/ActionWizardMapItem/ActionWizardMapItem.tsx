@@ -23,16 +23,6 @@ const isStepFailed = (step: AdcmActionProcessStep, isValid: boolean, jobsData?: 
   return !isValid || jobsData?.status === AdcmJobStatus.Failed || step.state === 'broken';
 };
 
-const isStepActiveOrFailed = (
-  step: AdcmActionProcessStep,
-  currentStep: number,
-  isCurrentStepInCurrentStage: boolean,
-  isValid: boolean,
-  jobsData?: AdcmJob,
-): boolean => {
-  return step.id <= currentStep && isCurrentStepInCurrentStage && isStepFailed(step, isValid, jobsData);
-};
-
 const isStageActiveWithError = (
   stage: AdcmWizardStage,
   currentStep: number,
@@ -45,14 +35,8 @@ const isStageActiveWithError = (
   );
 };
 
-const getStepIcon = (
-  step: AdcmActionProcessStep,
-  currentStep: number,
-  isCurrentStepInCurrentStage: boolean,
-  isValid: boolean,
-  jobsData?: AdcmJob,
-) => {
-  if (isStepActiveOrFailed(step, currentStep, isCurrentStepInCurrentStage, isValid, jobsData)) {
+const getStepIcon = (step: AdcmActionProcessStep, isValid: boolean, jobsData?: AdcmJob) => {
+  if (isStepFailed(step, isValid, jobsData)) {
     return <MarkerIcon variant="round" type="alert" size={12} />;
   }
   if (step.state === AdcmWizardStepStates.Completed) {
@@ -90,16 +74,10 @@ const stageClassName = (
   });
 };
 
-const stepClassName = (
-  step: AdcmActionProcessStep,
-  currentStep: number,
-  isCurrentStepInCurrentStage: boolean,
-  isValid: boolean,
-  jobsData?: AdcmJob,
-) => {
+const stepClassName = (step: AdcmActionProcessStep, currentStep: number, isValid: boolean, jobsData?: AdcmJob) => {
   return cn(s.mapItem__step, {
     [s.mapItem__step_disabled]: step.state === AdcmWizardStepStates.Created && step.id > currentStep,
-    [s.mapItem__step_error]: isStepActiveOrFailed(step, currentStep, isCurrentStepInCurrentStage, isValid, jobsData),
+    [s.mapItem__step_error]: isStepFailed(step, isValid, jobsData),
     [s.mapItem__step_running]: step.state === AdcmWizardStepStates.Running,
     [s.mapItem__step_completed]: step.state === AdcmWizardStepStates.Completed,
   });
@@ -162,38 +140,27 @@ const MapItemSteps: React.FC<ActionWizardStepListProps> = ({ steps, stageIndex, 
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
 
   const { isValid } = useActionWizardValidationContext();
-  const stepsWithinStage = new Set(steps.map((step) => step.id));
-  const isCurrentStepInCurrentStage = stepsWithinStage.has(process?.currentStep);
 
   const handleSwitchStep = (step: AdcmActionProcessStep) => {
     if (step.id === selectedStep) return null;
+
     dispatch(setSelectedStepId(step.id));
   };
 
   return (
     <div key={stageIndex} className={s.mapItem__steps}>
       {steps.map((step, stepIndex) => {
-        const isStepValid = step.type === AdcmWizardStepType.Configuration ? isValid : true;
-        const stepClasses = stepClassName(
-          step,
-          process?.currentStep,
-          isCurrentStepInCurrentStage,
-          isStepValid,
-          jobsData[step.id]?.job,
-        );
+        const isCurrentStep = process?.currentStep === step.id;
+        const hasConflict = isCurrentStep && !isValid;
+        const isStepValid = step.type === AdcmWizardStepType.Configuration ? !hasConflict : true;
+        const stepClasses = stepClassName(step, process?.currentStep, isStepValid, jobsData[step.id]?.job);
         const stepNumber = `${stageIndex}.${stepIndex + 1}`;
 
         return (
           <div key={step.id} className={stepClasses} onClick={() => handleSwitchStep(step)}>
             <div className={s.mapItem__index}>
               {stepNumber}
-              {getStepIcon(
-                step,
-                process?.currentStep,
-                isCurrentStepInCurrentStage,
-                isStepValid,
-                jobsData[step.id]?.job,
-              )}
+              {getStepIcon(step, isStepValid, jobsData[step.id]?.job)}
             </div>
             <div className={s.mapItem__title}>{step.displayName}</div>
           </div>
