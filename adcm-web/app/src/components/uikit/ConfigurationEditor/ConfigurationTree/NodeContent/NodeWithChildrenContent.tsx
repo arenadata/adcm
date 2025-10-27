@@ -160,7 +160,9 @@ const NodeWithChildrenContent = ({
         {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
             isActive={fieldAttributes.isActive}
-            isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
+            isAllowChange={
+              !fieldNodeData.isReadonly && adcmMeta.activation.isAllowChange && !fieldAttributes.isSynchronized
+            }
             onToggle={handleIsActiveChange}
           />
         )}
