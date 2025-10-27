@@ -19,7 +19,6 @@ import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/Actio
 import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
 import ActionWizardLastStageContextProvider from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContextProvider';
 
-
 const tips = {
   [AdcmWizardStepStates.Created]: 'Fill inputs',
   [AdcmWizardStepStates.Completed]: 'Proceed to next step',

@@ -2,7 +2,9 @@
   body.theme-dark {
     --panel-background: var(--color-new-light-50);
     --panel-title-color: var(--color-xdark-metal);
+    --panel-title-hover-color: var(--color-xwhite-off);
     --panel-stage-number-color: var(--color-xdark);
+
 
     // success
     --panel-title-color-completed: var(--color-xgreen-saturated);
@@ -26,6 +28,7 @@
   body.theme-light {
     --panel-background: var(--color-xgray-alt-50);
     --panel-title-color: #A2AEB4;
+    --panel-title-hover-color: var(--color-xblack);
     --panel-stage-number-color: var(--color-stroke-light);
 
     // success
@@ -65,6 +68,17 @@
     backdrop-filter: blur(7px);
     background-color: var(--panel-background);
     padding: 8px 20px;
+  }
+
+  &__step {
+    &_isHidden {
+      flex: 0 !important;
+      margin-bottom: 10px;
+
+      .actionWizardSteps__content {
+        display: none;
+      }
+    }
   }
 
   &__step:not(:only-child) {
@@ -121,7 +135,7 @@
           display: block;
           position: absolute;
           left: 35px;
-          height: 16px;
+          height: 36px;
           width: 1px;
           border-left: 2px solid var(--panel-thread-color);
           box-sizing: content-box;
@@ -206,6 +220,11 @@
   &__stepLabel {
     font-size: 20px;
     font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--panel-title-hover-color);
+    }
   }
 
   &__buttons {

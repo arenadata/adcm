@@ -3,18 +3,11 @@ import { useEffect } from 'react';
 import Panel from '@uikit/Panel/Panel';
 import SearchInput from '@uikit/SearchInput/SearchInput';
 import { Switch } from '@uikit';
-import Button from '@uikit/Button/Button';
 import s from './ActionWizardConfigurationEditorToolbar.module.scss';
 import { useConfigurationFormContext } from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContext.context';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 
-interface ActionWizardConfigurationEditorToolbarProps {
-  onRevert: () => void;
-}
-
-const ActionWizardConfigurationEditorToolbar: React.FC<ActionWizardConfigurationEditorToolbarProps> = ({
-  onRevert,
-}) => {
+const ActionWizardConfigurationEditorToolbar: React.FC = () => {
   const { filter, onFilterChange, areExpandedAll, handleChangeExpandedAll } = useConfigurationFormContext();
   const { isValid } = useConfigurationFormContext();
   const { setIsValid } = useActionWizardValidationContext();
@@ -33,17 +26,14 @@ const ActionWizardConfigurationEditorToolbar: React.FC<ActionWizardConfiguration
 
   return (
     <Panel className={s.actionWizardConfigurationEditorToolbar} data-test="configuration-toolbar">
-      <div className={s.actionWizardConfigurationEditorToolbar__searchWrapper}>
-        <SearchInput
-          placeholder="Search"
-          value={filter.title}
-          onChange={handleSearch}
-          className={s.actionWizardConfigurationEditorToolbar__search}
-        />
-        <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Expand content" />
-        <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Advanced" />
-      </div>
-      <Button iconLeft="g1-return" variant="secondary" onClick={onRevert} />
+      <SearchInput
+        placeholder="Search"
+        value={filter.title}
+        onChange={handleSearch}
+        className={s.actionWizardConfigurationEditorToolbar__search}
+      />
+      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Expand content" />
+      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Advanced" />
     </Panel>
   );
 };
