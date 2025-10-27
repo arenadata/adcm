@@ -111,6 +111,7 @@ class StepConfigurationSerializer(StepSerializer):
 
 class StepOperationSerializer(StepSerializer):
     ui_options = DictField()
+    # should be actually TaskListSerializer, but not for now due to circular imports
     task = DictField(allow_null=True, required=False)
 
 

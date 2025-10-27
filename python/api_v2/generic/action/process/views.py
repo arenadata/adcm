@@ -15,7 +15,7 @@ from typing import Any
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig
+from cm.models import Action, JobLog, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
 from cm.services.action_process import repo
 from cm.services.action_process.errors import (
     ActionProcessDBError,
@@ -58,6 +58,7 @@ from api_v2.generic.action.process.serializers import (
 )
 from api_v2.generic.action.utils import get_schema_config_meta
 from api_v2.generic.action.views import ActionPermissionsMixin
+from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -267,11 +268,14 @@ def _serialize_operation_step(
     step_spec_declaration = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec)
     ui_options = step_spec_declaration.model_dump(include={"ui_options"}).get("ui_options")
 
-    task = None
+    task_data = None
     if step_input:
-        task = {"id": step_input.job_id}
+        task_id = JobLog.objects.values_list("task_id", flat=True).get(id=step_input.job_id)
+        task = TaskLog.objects.select_related("action").get(id=task_id)
+        task_serializer = TaskListSerializer(task)
+        task_data = task_serializer.data
 
-    return StepOperationSerializer(base_data | {"ui_options": ui_options, "task": task}).data
+    return StepOperationSerializer(base_data | {"ui_options": ui_options, "task": task_data}).data
 
 
 def _serialize_mapping_step(
