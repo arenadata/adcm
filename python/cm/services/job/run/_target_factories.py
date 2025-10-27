@@ -442,12 +442,12 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
 
         delta = task.hostcomponent.mapping_delta
 
+    module = context_m if use_new_config_processing() else inventory_m
+
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = get_action_process_context(process, topology)
+        process_context = module.get_action_process_context(process, topology)
         process_mapping_delta = process_context.cumulative_delta
-
-    module = context_m if use_new_config_processing() else inventory_m
 
     return module.get_inventory_data(
         target=task.target,

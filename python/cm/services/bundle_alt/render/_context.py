@@ -32,19 +32,13 @@ from cm.models import (
     Service,
 )
 from cm.services.cluster import retrieve_related_cluster_topology
+from cm.services.job import context as context_m
+from cm.services.job import inventory
 from cm.services.job.inventory import (
-    ClusterNode,
-    HostGroupName,
-    ProcessContext,
-    ServiceNode,
-    detect_host_groups_for_cluster_bundle_action,
     get_action_process_context,
-    get_cluster_vars,
     sort_hosts_within_groups,
 )
 from cm.services.job.inventory._base import add_mapping_groups_from_process_steps
-from cm.services.job import context as context_m
-from cm.services.job import inventory
 
 # For keeping garbage coupled
 
@@ -211,10 +205,10 @@ def _get_host_group_names_for_cluster(
     )
     module = context_m if use_new_config_processing() else inventory
     host_groups = module.detect_host_groups_for_cluster_bundle_action(
-            cluster_topology=cluster_topology,
-            hosts_in_maintenance_mode=hosts_in_maintenance_mode,
-            hc_delta=hc_delta or TaskMappingDelta(),
-        )
+        cluster_topology=cluster_topology,
+        hosts_in_maintenance_mode=hosts_in_maintenance_mode,
+        hc_delta=hc_delta or TaskMappingDelta(),
+    )
 
     host_groups = add_mapping_groups_from_process_steps(
         host_groups=host_groups, process_mapping_delta=process_cumulative_delta or {}
