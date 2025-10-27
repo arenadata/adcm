@@ -46,6 +46,9 @@ class StepFromStageSerializer(Serializer):
         if data.get("scripts_template"):
             return "operation"
 
+        if data.get("hc_template"):
+            return "mapping"
+
         raise ValueError(f"Unknown step type for {data.get('id')=} {data.get('display_name')=}")
 
 
@@ -108,4 +111,28 @@ class StepConfigurationSerializer(StepSerializer):
 
 class StepOperationSerializer(StepSerializer):
     ui_options = DictField()
+    # should be actually TaskListSerializer, but not for now due to circular imports
     task = DictField(allow_null=True, required=False)
+
+
+class MappingRuleSerializer(Serializer):
+    operation = CharField()
+    component = CharField()
+    service = CharField()
+
+
+class MappingDeltaItemSerializer(Serializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
+
+
+class MappingDeltaSerializer(Serializer):
+    add = MappingDeltaItemSerializer(many=True)
+    remove = MappingDeltaItemSerializer(many=True)
+
+
+class StepMappingSerializer(StepSerializer):
+    rules = MappingRuleSerializer(many=True)
+    delta = MappingDeltaSerializer()
+    cumulative_delta = MappingDeltaSerializer()
+    suggestions = MappingDeltaItemSerializer(many=True, required=False, default=list)

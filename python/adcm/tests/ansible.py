@@ -72,7 +72,9 @@ class ADCMAnsiblePluginTestMixin:
             task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
 
             context = prepare_ansible_job_config(
-                task=JobRepoImpl.get_task(id=task_id), job=JobRepoImpl.get_job(id=job_id), configuration=configuration
+                task=JobRepoImpl.get_task(id=task_id),
+                job=JobRepoImpl.get_job(id=job_id),
+                configuration=configuration,
             )
 
         return executor_type(arguments=arguments, runtime_vars=context)

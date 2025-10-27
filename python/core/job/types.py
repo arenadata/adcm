@@ -206,6 +206,15 @@ class Job(BaseModel):
     on_fail: StateChanges
 
 
+class MappingRule(BaseModel):
+    service: str
+    component: str
+    operation: Literal["add", "remove"]
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class StepType(str, Enum):
     OPERATION = "operation"
     CONFIGURATION = "configuration"
+    MAPPING = "mapping"

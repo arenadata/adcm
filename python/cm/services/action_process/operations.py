@@ -36,15 +36,18 @@ from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.action_process import repo
 from cm.services.action_process.errors import ActionProcessDBError, ActionProcessOperationError, SyncKeyMismatchError
 from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.services.action_process.repo import get_allowed_ops, get_done_step_inputs_for_process, upsert_step_input
 from cm.services.action_process.schema_validation import (
     CompleteStepPayload,
     Configuration,
+    HostComponentMapDelta,
     ProcessOperationType,
     ResetStepPayload,
     SubmitStepPayload,
 )
 from cm.services.action_process.types import (
     ActionProcess,
+    MappingInputDTO,
     ProcessState,
     ProcessStepState,
     ProcessUpdateDTO,
@@ -286,6 +289,36 @@ def submit_step(
                 parent_object=context.object,
                 action=context.action,
             )
+        case StepType.MAPPING:
+            _operation_submit_mapping(
+                process=process,
+                step=step,
+                hc_mapping_delta=payload.params.host_component_map_delta,
+                context=context,
+            )
+
+
+def _operation_submit_mapping(
+    process: ActionProcess,
+    step: Step,
+    hc_mapping_delta: HostComponentMapDelta,
+    *,
+    context: OperationContext,
+) -> None:
+    step_input_data = StepInputDTO(
+        configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
+    )
+    _check_hc_mapping_delta(step, hc_mapping_delta, cluster_id=context.object.id)
+
+    perform_mapping(process.id, step.id, step_input_data)
+
+    revoke_next_steps(process_id=process.id, step_id=step.id)
+    complete_step(
+        process_id=process.id,
+        step_id=step.id,
+        action_id=context.action.id,
+        object_=context.object,
+    )
 
 
 def reset_step(process: ActionProcess, payload: ResetStepPayload, context: OperationContext) -> None:
@@ -412,3 +445,85 @@ def _check_all_steps_completed(process: ActionProcess) -> None:
     for step in repo.retrieve_steps(process_id=process.id):
         if step.state != ProcessStepState.COMPLETED:
             raise ActionProcessOperationError("All steps must be completed")
+
+
+def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta, cluster_id: int) -> None:
+    # TO DO: ADCM-7264 for refactoring
+    allowed_ops = get_allowed_ops(step, cluster_id)
+
+    for rule in hc_mapping_delta.add or []:
+        if rule.component_id not in allowed_ops["add"]:
+            raise ActionProcessOperationError(
+                f"Add operation not allowed for component_id={rule.component_id}. "
+                f"Allowed components for add: {sorted(allowed_ops['add'])}"
+            )
+
+    for rule in hc_mapping_delta.remove or []:
+        if rule.component_id not in allowed_ops["remove"]:
+            raise ActionProcessOperationError(
+                f"Remove operation not allowed for component_id={rule.component_id}. "
+                f"Allowed components for remove: {sorted(allowed_ops['remove'])}"
+            )
+
+
+@convert_db_errors
+@atomic
+def perform_mapping(process_id: int, step_id: int, step_input_data: StepInputDTO) -> None:
+    mapping_input = step_input_data.mapping
+    if not mapping_input or not mapping_input.delta:
+        # Nothing to process — just upsert and return
+        upsert_step_input(step_id=step_id, data=step_input_data)
+        return
+
+    delta = mapping_input.delta.model_dump()
+    step_inputs = get_done_step_inputs_for_process(process_id)
+
+    cumulative_add = set()
+    cumulative_remove = set()
+
+    for step_input in step_inputs:
+        mapping = step_input.mapping or {}
+        step_delta = mapping.get("delta")
+
+        if not step_delta:
+            continue
+
+        # Apply current step's delta
+        for rule in step_delta.get("add", []):
+            tup = tuple(sorted(rule.items()))
+            cumulative_add.add(tup)
+            cumulative_remove.discard(tup)  # Cancel any previous removal
+
+        for rule in step_delta.get("remove", []):
+            tup = tuple(sorted(rule.items()))
+            if tup in cumulative_add:
+                cumulative_add.discard(tup)
+            else:
+                cumulative_remove.add(tup)
+
+    # Apply the new delta for the current step
+    for rule in delta["add"]:
+        tup = tuple(sorted(rule.items()))
+        cumulative_add.add(tup)
+        cumulative_remove.discard(tup)
+
+    for rule in delta["remove"]:
+        tup = tuple(sorted(rule.items()))
+        if tup in cumulative_add:
+            cumulative_add.discard(tup)
+        else:
+            cumulative_remove.add(tup)
+
+    # Convert sets back to list of dicts
+    new_cumulative = {
+        "add": [dict(pair) for pair in cumulative_add],
+        "remove": [dict(pair) for pair in cumulative_remove],
+    }
+
+    new_mapping = {
+        "delta": delta,
+        "cumulative_delta": new_cumulative,
+    }
+    step_input_data.mapping = MappingInputDTO(**new_mapping)
+
+    upsert_step_input(step_id=step_id, data=step_input_data)

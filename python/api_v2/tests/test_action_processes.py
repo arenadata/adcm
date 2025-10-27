@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Collection
 from unittest.mock import patch
 from uuid import uuid4
+import json
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.models import (
@@ -24,6 +25,7 @@ from cm.models import (
     Component,
     ConcernCause,
     ConcernItem,
+    HostComponent,
     Process,
     ProcessStep,
     ProcessStepInput,
@@ -38,7 +40,20 @@ from cm.services.action_process.operations import (
 from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.services.action_process.schema_validation import ProcessOperationType, SubmitStepPayload
 from cm.services.action_process.types import ProcessState, ProcessStepState
-from cm.services.job.run.repo import ActionRepoImpl
+from cm.services.bundle_alt.render import TaskArgs
+from cm.services.bundle_alt.render._context import prepare_context_for_task
+from cm.services.cluster import retrieve_cluster_topology
+from cm.services.job.action import ActionRunPayload, run_action
+from cm.services.job.run._target_factories import (
+    internal_script_hc_apply,
+    prepare_ansible_environment,
+    prepare_ansible_inventory,
+)
+from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
+from cm.tests.mocks.task_runner import RunTaskMock
+from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
+from core.job.types import AssociatedProcess
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 from rest_framework.response import Response
@@ -66,11 +81,21 @@ class TestActionProcess(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
 
         cluster_bundle = self.test_bundles_dir / "wizard_action"
+        cluster_bundle_hc_apply = self.test_bundles_dir / "wizard_hc_apply_bad_definition"
+        cluster_bundle_mapping = self.test_bundles_dir / "wizard_mapping"
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
+        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_hc_apply)
+        self.bundle_3 = self.add_bundle(source_dir=cluster_bundle_mapping)
         self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
-        self.cluster_with_action_process = self.get_object_action_with_process(self.cluster_1)
+        self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
+        self.cluster_3 = self.add_cluster(bundle=self.bundle_3, name="cluster_3", description="cluster_3")
+        self.process_action_of_cluster = self.get_object_action_with_process(self.cluster_1)
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
         self.component_1 = Component.objects.filter(service=self.service_1).first()
+
+        provider_bundle_path = self.test_bundles_dir / "provider"
+        self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
 
         config_bundle = self.test_bundles_dir / "wizard_config"
         self.config_bundle = self.add_bundle(source_dir=config_bundle)
@@ -91,6 +116,19 @@ class TestActionProcess(BaseAPITestCase):
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
+
+        self.wizard_action_conf = ExternalSettings(
+            adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
+            ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
+            integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+            consul=ConsulSettings(
+                url=settings.CONSUL_URL,
+                datacenter=settings.CONSUL_DATACENTER,
+                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
+                client_cacert_file=settings.CONSUL_CACERT_FILE,
+                client_cert_file=settings.CONSUL_CLIENT_KEY_FILE,
+            ),
+        )
 
     def initiate_process(self, owner, action, expected_status: int = HTTP_201_CREATED):
         response = self.client.v2[owner, "actions", action, "processes"].post(data={})
@@ -412,7 +450,7 @@ class TestActionProcess(BaseAPITestCase):
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
-                action_id=self.cluster_with_action_process.id,
+                action_id=self.process_action_of_cluster.id,
                 object=orm_object_to_core_descriptor(self.cluster_1),
             ),
         )
@@ -491,6 +529,30 @@ class TestActionProcess(BaseAPITestCase):
                 self.assertEqual(len(response.json()["processes"]), 1)
                 self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.sync_key))
 
+    def test_submit_operation_hc_apply_fail(self):
+        process = self.get_process(self.start_process(self.cluster_2))
+        previous_step_names = {"stage1_step1"}
+
+        target_operation_step = ProcessStep.objects.get(process_id=process.id, name="hc_apply", display_name="hc apply")
+
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_operation_step.id)
+
+        fill_step_spec(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.process_action_of_cluster.pk,
+                object=orm_object_to_core_descriptor(self.cluster_1),
+            ),
+        )
+        target_operation_step.refresh_from_db()
+        self.assertEqual(target_operation_step.state, ProcessStepState.BROKEN.value)
+
     def test_submit_operation_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
         initial_sync_key = process.sync_key
@@ -506,7 +568,7 @@ class TestActionProcess(BaseAPITestCase):
         with self.subTest("No view permissions"):
             # submit step
             response = self.client.v2[
-                self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+                self.cluster_1, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
             ].post(
                 data={
                     "method": ProcessOperationType.SUBMIT,
@@ -519,7 +581,7 @@ class TestActionProcess(BaseAPITestCase):
             with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
                 # submit step
                 response = self.client.v2[
-                    self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+                    self.cluster_1, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
                 ].post(
                     data={
                         "method": ProcessOperationType.SUBMIT,
@@ -540,17 +602,17 @@ class TestActionProcess(BaseAPITestCase):
                 step_id=current_step_id,
                 context=RenderStepContext(
                     process_id=process.id,
-                    action_id=self.cluster_with_action_process.pk,
+                    action_id=self.process_action_of_cluster.pk,
                     object=orm_object_to_core_descriptor(self.cluster_1),
                 ),
             )
 
             self.assertFalse(ProcessStepInput.objects.filter(step_id=target_operation_step.id).exists())
-            self.assertFalse(TaskLog.objects.filter(action=self.cluster_with_action_process).exists())
+            self.assertFalse(TaskLog.objects.filter(action=self.process_action_of_cluster).exists())
 
             # submit step
             response = self.client.v2[
-                self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+                self.cluster_1, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
             ].post(
                 data={
                     "method": ProcessOperationType.SUBMIT,
@@ -578,7 +640,7 @@ class TestActionProcess(BaseAPITestCase):
             ]
             self.assertListEqual(target_operation_step.step_spec, expected_spec)
 
-            task = TaskLog.objects.get(action=self.cluster_with_action_process)
+            task = TaskLog.objects.get(action=self.process_action_of_cluster)
             input_ = ProcessStepInput.objects.get(step_id=target_operation_step.id)
 
             self.assertIsNone(input_.configuration)
@@ -594,6 +656,340 @@ class TestActionProcess(BaseAPITestCase):
                 input_ = ProcessStepInput.objects.get(step_id=step.id)
                 self.assertDictEqual(input_.configuration, {"config": {}, "attr": {}})
                 self.assertIsNone(input_.job)
+
+    def test_submit_mapping_success(self):
+        self.add_services_to_cluster(["service_1", "service_2", "service_3"], cluster=self.cluster_3)
+        component_1_s_1 = Component.objects.filter(service__prototype__name="service_1", cluster=self.cluster_3).first()
+        component_1_s_2 = Component.objects.filter(service__prototype__name="service_2", cluster=self.cluster_3).first()
+        component_1_s_3 = Component.objects.filter(service__prototype__name="service_3", cluster=self.cluster_3).first()
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_3)
+        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        previous_step_names = {"stage1_step1"}
+
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_operation_step.id)
+
+        # rendering
+        fill_step_spec(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.process_action_of_cluster.pk,
+                object=orm_object_to_core_descriptor(self.cluster_3),
+            ),
+        )
+        with self.subTest("Submit mapping not comopnent in step spec (fail)"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_3.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Submit mapping not specified in step spec (fail)"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_3.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("Submit 2 mapping steps"):
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+                    {"hostId": host_2.pk, "componentId": component_1_s_2.pk},
+                    {"hostId": host_3.pk, "componentId": component_1_s_2.pk},
+                ],
+            }
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            process.refresh_from_db()
+
+            host_component_map_delta = {
+                "add": [
+                    {"hostId": host_2.pk, "componentId": component_1_s_1.pk},
+                ],
+                "remove": [
+                    {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+                ],
+            }
+
+            target_operation_step = ProcessStep.objects.get(
+                process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
+            )
+
+            response = self.client.v2[
+                self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+            ].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "step_id": target_operation_step.id,
+                        "process_sync_key": process.sync_key,
+                        "host_component_map_delta": host_component_map_delta,
+                    },
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        with self.subTest(f"retrieve process for {self.cluster_3}"):
+            response = self.client.v2[
+                self.cluster_3,
+                "actions",
+                self.get_object_action_with_process(self.cluster_3).pk,
+                "processes",
+                process.id,
+                "steps",
+                target_operation_step.pk,
+            ].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(
+                response.json()["delta"],
+                {
+                    "add": [{"componentId": component_1_s_1.pk, "hostId": host_2.pk}],
+                    "remove": [{"componentId": component_1_s_1.pk, "hostId": host_1.pk}],
+                },
+            )
+            self.assertCountEqual(
+                response.json()["cumulativeDelta"]["add"],
+                [
+                    {"componentId": component_1_s_1.pk, "hostId": host_2.pk},
+                    {"componentId": component_1_s_2.pk, "hostId": host_2.pk},
+                    {"componentId": component_1_s_2.pk, "hostId": host_3.pk},
+                ],
+            )
+            self.assertCountEqual(response.json()["cumulativeDelta"]["remove"], [])
+
+    def test_mapping_groups_success(self):
+        self.add_services_to_cluster(["service_1", "service_2"], cluster=self.cluster_3)
+        component_1_s_1 = Component.objects.filter(service__prototype__name="service_1", cluster=self.cluster_3).first()
+        component_1_s_2 = Component.objects.filter(service__prototype__name="service_2", cluster=self.cluster_3).first()
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_3)
+        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        previous_step_names = {"stage1_step1"}
+
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        self.set_completed_fill_specs_create_inputs_for_steps_by_name(process.id, previous_step_names)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_operation_step.id)
+
+        # rendering
+        fill_step_spec(
+            step_id=current_step_id,
+            context=RenderStepContext(
+                process_id=process.id,
+                action_id=self.process_action_of_cluster.pk,
+                object=orm_object_to_core_descriptor(self.cluster_3),
+            ),
+        )
+
+        host_component_map_delta = {
+            "add": [
+                {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+                {"hostId": host_2.pk, "componentId": component_1_s_2.pk},
+                {"hostId": host_3.pk, "componentId": component_1_s_2.pk},
+            ],
+        }
+
+        response = self.client.v2[
+            self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+        ].post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "step_id": target_operation_step.id,
+                    "process_sync_key": process.sync_key,
+                    "host_component_map_delta": host_component_map_delta,
+                },
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        process.refresh_from_db()
+
+        host_component_map_delta = {
+            "add": [
+                {"hostId": host_2.pk, "componentId": component_1_s_1.pk},
+            ],
+            "remove": [
+                {"hostId": host_1.pk, "componentId": component_1_s_1.pk},
+            ],
+        }
+
+        target_operation_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
+        )
+
+        response = self.client.v2[
+            self.cluster_3, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
+        ].post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "step_id": target_operation_step.id,
+                    "process_sync_key": process.sync_key,
+                    "host_component_map_delta": host_component_map_delta,
+                },
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        with self.subTest("Check process context for action"):
+            process.refresh_from_db()
+            process.state = ProcessState.COMPLETED
+            process.save()
+
+            action = self.get_object_action_with_process(self.cluster_3)
+
+            with RunTaskMock() as run_task:
+                run_action(
+                    action=action,
+                    obj=self.cluster_3,
+                    payload=ActionRunPayload(process=AssociatedProcess(id=process.pk)),
+                )
+
+            task = JobRepoImpl.get_task(run_task.target_task.id)
+            job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
+
+            job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+            job_dir.mkdir(parents=True)
+            prepare_ansible_environment(task=task, job=job, configuration=self.wizard_action_conf)
+
+            config_json = json.loads((job_dir / "config.json").read_text(encoding="utf-8"))
+
+            stage1_mapping = config_json["process"]["stages"]["mapping"]["stage1_mapping"]["groups"]
+            stage1_mapping_again = config_json["process"]["stages"]["mapping_again"]["stage1_mapping_again"]["groups"]
+
+            task_context = prepare_context_for_task(
+                TaskArgs(
+                    target_object=self.cluster_3,
+                    action=self.process_action_of_cluster,
+                    config={},
+                    verbose=False,
+                    delta=None,
+                    action_process=process,
+                )
+            )
+
+            self.assertDictEqual(
+                stage1_mapping,
+                {"service_1.component_1.add": ["host-1"], "service_2.component_1.add": ["host-2", "host-3"]},
+            )
+            self.assertDictEqual(
+                stage1_mapping_again,
+                {"service_1.component_1.add": ["host-2"], "service_1.component_1.remove": ["host-1"]},
+            )
+
+            stage1_mapping = task_context["action"]["process"]["stages"]["mapping"]["stage1_mapping"]["groups"]
+            stage1_mapping_again = task_context["action"]["process"]["stages"]["mapping_again"]["stage1_mapping_again"][
+                "groups"
+            ]
+
+            self.assertDictEqual(
+                stage1_mapping,
+                {"service_1.component_1.add": ["host-1"], "service_2.component_1.add": ["host-2", "host-3"]},
+            )
+            self.assertDictEqual(
+                stage1_mapping_again,
+                {"service_1.component_1.add": ["host-2"], "service_1.component_1.remove": ["host-1"]},
+            )
+            self.assertDictEqual(
+                task_context["groups"],
+                {
+                    "CLUSTER": ["host-1", "host-2", "host-3"],
+                    "service_1.component_1.add": ["host-2"],
+                    "service_2.component_1.add": ["host-2", "host-3"],
+                },
+            )
+
+        with self.subTest("Check mapping after hc_apply run"):
+            internal_script_hc_apply(task=task, job=job)
+
+            actual_hc = set(
+                HostComponent.objects.filter(cluster_id=self.cluster_3.pk).values_list("host_id", "component_id")
+            )
+            expected_hc = {
+                (host_2.pk, component_1_s_1.pk),
+                (host_2.pk, component_1_s_2.pk),
+                (host_3.pk, component_1_s_2.pk),
+            }
+            self.assertSetEqual(actual_hc, expected_hc)
+
+        with self.subTest("Check generated inventory for cumulative delta"):
+            inventory = prepare_ansible_inventory(
+                task=JobRepoImpl.get_task(run_task.target_task.id),
+                topology=retrieve_cluster_topology(self.cluster_3.pk),
+            )
+            self.assertDictEqual(
+                inventory["all"]["children"],
+                {
+                    "CLUSTER": {"hosts": {"host-1": {}, "host-2": {}, "host-3": {}}},
+                    "service_1": {"hosts": {"host-2": {}}},
+                    "service_1.component_1": {"hosts": {"host-2": {}}},
+                    "service_1.component_1.add": {"hosts": {"host-2": {}}},
+                    "service_2": {"hosts": {"host-2": {}, "host-3": {}}},
+                    "service_2.component_1": {"hosts": {"host-2": {}, "host-3": {}}},
+                    "service_2.component_1.add": {"hosts": {"host-2": {}, "host-3": {}}},
+                },
+            )
 
     def test_submit_config_step_success(self):
         process = self.get_process(self.start_process(self.cluster_1))
@@ -625,7 +1021,7 @@ class TestActionProcess(BaseAPITestCase):
             step_id=current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
-                action_id=self.cluster_with_action_process.pk,
+                action_id=self.process_action_of_cluster.pk,
                 object=orm_object_to_core_descriptor(self.cluster_1),
             ),
         )
@@ -636,7 +1032,7 @@ class TestActionProcess(BaseAPITestCase):
         for config, expected_code in ((wrong_config, HTTP_400_BAD_REQUEST), (new_config, HTTP_200_OK)):
             with self.subTest(f"Submit {config=}, {expected_code=}"):
                 response = self.client.v2[
-                    self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+                    self.cluster_1, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
                 ].post(
                     data={
                         "method": ProcessOperationType.SUBMIT,
@@ -747,7 +1143,7 @@ class TestActionProcess(BaseAPITestCase):
         )
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
-            action=ActionRepoImpl.get_action(id=self.cluster_with_action_process.id),
+            action=ActionRepoImpl.get_action(id=self.process_action_of_cluster.id),
             config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
@@ -778,7 +1174,7 @@ class TestActionProcess(BaseAPITestCase):
         )
         expected_context = OperationContext(
             object=orm_object_to_core_descriptor(self.cluster_1),
-            action=ActionRepoImpl.get_action(id=self.cluster_with_action_process.id),
+            action=ActionRepoImpl.get_action(id=self.process_action_of_cluster.id),
             config_processor=process_payload_config,
         )
         perform_operation_mock.assert_called_once_with(
@@ -809,7 +1205,7 @@ class TestActionProcess(BaseAPITestCase):
         ProcessStep.objects.filter(process_id=process.id, name__in=next_step_names).update(step_spec=test_spec)
 
         response = self.client.v2[
-            self.cluster_1, "actions", self.cluster_with_action_process.pk, "processes", process.id, "operation"
+            self.cluster_1, "actions", self.process_action_of_cluster.pk, "processes", process.id, "operation"
         ].post(
             data={
                 "method": ProcessOperationType.RESET,
@@ -1255,7 +1651,7 @@ class TestActionProcess(BaseAPITestCase):
 
     def test_adcm_7150_error_running_process_action_without_process(self):
         owner = self.cluster_1
-        action = self.cluster_with_action_process
+        action = self.process_action_of_cluster
 
         response = self.client.v2[owner, "actions", action, "run"].post()
 
@@ -1264,7 +1660,7 @@ class TestActionProcess(BaseAPITestCase):
 
     def test_adcm_7150_error_running_process_action_with_non_existent_process(self):
         owner = self.cluster_1
-        action = self.cluster_with_action_process
+        action = self.process_action_of_cluster
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": 4}})
 
@@ -1274,7 +1670,7 @@ class TestActionProcess(BaseAPITestCase):
 
     def test_adcm_7150_error_running_process_action_with_incomplete_process(self):
         owner = self.cluster_1
-        action = self.cluster_with_action_process
+        action = self.process_action_of_cluster
         process = self.initiate_process(owner, action).json()
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": process["id"]}})

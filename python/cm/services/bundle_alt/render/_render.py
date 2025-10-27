@@ -21,7 +21,7 @@ from core.bundle_alt.process import (
     parse_scripts,
 )
 from core.bundle_alt.schema import ActionProcessStage
-from core.job.types import JobSpec
+from core.job.types import JobSpec, MappingRule
 from core.templates import RendererEnv, Template, get_renderer
 
 from cm.models import PrototypeConfig
@@ -104,6 +104,21 @@ def render_scripts(
     scripts = parse_scripts(data=raw, context=parsing_context)
 
     return scripts  # noqa: RET504
+
+
+@convert_bundle_errors_to_adcm_ex
+def render_hc_template(
+    template: Template,
+    environment: Environment,
+    context_args: ActionArgs,
+) -> list[MappingRule]:
+    raw = _render_template(
+        template=template,
+        environment=environment,
+        build_context=prepare_context_for_task,
+        context_args=context_args,
+    )
+    return [MappingRule(**rule) for rule in raw]
 
 
 # Helper Functions
