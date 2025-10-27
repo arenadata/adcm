@@ -189,7 +189,9 @@ const FieldNodeContent = ({
         {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
             isActive={fieldAttributes.isActive}
-            isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
+            isAllowChange={
+              !fieldNodeData.isReadonly && adcmMeta.activation.isAllowChange && !fieldAttributes.isSynchronized
+            }
             onToggle={handleIsActiveChange}
           />
         )}
@@ -219,16 +221,18 @@ const FieldNodeContent = ({
             data-test="clear-btn"
           />
         )}
-        {fieldNodeData.defaultValue !== undefined && fieldNodeData.value !== fieldNodeData.defaultValue && (
-          <IconButton
-            className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
-            size={28}
-            icon="g1-return"
-            onClick={handleResetToDefaultClick}
-            data-test="reset-btn"
-            title="Reset to default"
-          />
-        )}
+        {!fieldNodeData.isReadonly &&
+          fieldNodeData.defaultValue !== undefined &&
+          fieldNodeData.value !== fieldNodeData.defaultValue && (
+            <IconButton
+              className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
+              size={28}
+              icon="g1-return"
+              onClick={handleResetToDefaultClick}
+              data-test="reset-btn"
+              title="Reset to default"
+            />
+          )}
         {fieldNodeData.isDeletable && (
           <IconButton
             className={cn(s.nodeContent, s.nodeContent__button)}

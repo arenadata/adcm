@@ -229,8 +229,9 @@ export const buildConfigurationNodes = (
   schema: ConfigurationSchema,
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
+  isReadOnly?: boolean,
 ): ConfigurationNode => {
-  const rootNode = buildRootNode(schema, configuration, attributes);
+  const rootNode = buildRootNode(schema, configuration, attributes, isReadOnly);
   return rootNode;
 };
 
@@ -258,6 +259,7 @@ const buildRootNode = (
   schema: ConfigurationSchema,
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
+  isReadOnly = false,
 ): ConfigurationNode => {
   const { fieldSchema } = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
@@ -271,7 +273,7 @@ const buildRootNode = (
       fieldSchema,
       isNullable: false,
       isDeletable: false,
-      isReadonly: false,
+      isReadonly: isReadOnly,
       isCleanable: false,
       isDraggable: false,
       objectType: 'structure',

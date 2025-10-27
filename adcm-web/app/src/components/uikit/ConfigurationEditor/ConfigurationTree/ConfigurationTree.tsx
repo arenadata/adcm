@@ -47,6 +47,7 @@ export interface ConfigurationTreeProps {
   onMoveArrayItem: MoveConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
   onChangeIsValid?: (isValid: boolean) => void;
+  isReadOnly?: boolean;
 }
 
 const getNodeClassName = (
@@ -85,9 +86,10 @@ const ConfigurationTree = ({
   onFieldAttributesChange,
   onMoveArrayItem,
   onChangeIsValid,
+  isReadOnly = false,
 }: ConfigurationTreeProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
+  const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes, isReadOnly);
   const nodeDictionary = buildNodeDictionary(configNode);
 
   const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
