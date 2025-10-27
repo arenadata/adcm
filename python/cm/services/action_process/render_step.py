@@ -12,7 +12,7 @@
 
 from dataclasses import dataclass
 
-from core.job.types import JobSpec, MappingRule, ScriptType
+from core.job.types import JobSpec, MappingRule
 from core.templates._errors import RenderError
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
 
@@ -74,10 +74,6 @@ def _render_step(
                 action_process=process_orm,
             )
             step_spec = render_scripts(template=template, environment=environment, context_args=task_args)
-
-            for spec in step_spec:
-                if spec.script_type == ScriptType.INTERNAL.value and spec.script == "hc_apply":
-                    raise RenderError
 
         case StepType.MAPPING:
             task_args = TaskArgs(
