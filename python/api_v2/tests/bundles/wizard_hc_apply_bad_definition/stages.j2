@@ -13,6 +13,8 @@
   steps:
     - name: hc_apply
       display_name: "hc apply"
+      ui_options:
+        button_name: "go"
       scripts_template:
         file:
           path: wizard_jinja/steps/hc_apply.j2

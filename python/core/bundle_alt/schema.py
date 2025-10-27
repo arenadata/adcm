@@ -562,7 +562,7 @@ class _StepOperationUIOptions(_BaseModel):
 
 class OperationStep(_Names):
     scripts_template: ScriptsTemplate
-    ui_options: _StepOperationUIOptions | None = None
+    ui_options: _StepOperationUIOptions
 
     @property
     def type(self) -> StepType:
