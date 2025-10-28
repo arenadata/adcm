@@ -20,7 +20,14 @@
     &:hover {
       .nodeContent__buttonWrapper {
         display: flex;
+        opacity: 1;
       }
+    }
+  }
+
+  @starting-style {
+    &__trigger:hover .nodeContent__buttonWrapper {
+      opacity: 0;
     }
   }
 

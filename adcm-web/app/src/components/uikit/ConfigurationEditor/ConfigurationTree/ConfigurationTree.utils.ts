@@ -817,16 +817,3 @@ export const getFailedNodeInfo = (
 
   return { failedIndices, lastFailedNodeIndex, beforeFailedIndices };
 };
-
-export const getViewNodeValue = (value: string, charsLimit: number = Number.POSITIVE_INFINITY): string => {
-  if (value.length <= charsLimit) return value;
-
-  const delimiter = ' <...> ';
-
-  const calcLimit = charsLimit - delimiter.length;
-
-  const leftPart = Math.ceil(calcLimit / 2);
-  const rightPart = calcLimit - leftPart;
-
-  return value.slice(0, leftPart) + delimiter + value.slice(-rightPart);
-};
