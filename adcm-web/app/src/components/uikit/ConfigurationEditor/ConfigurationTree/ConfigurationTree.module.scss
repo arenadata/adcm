@@ -79,6 +79,10 @@
   align-items: center;
   margin-right: 6px;
 
+  max-width: fit-content;
+  min-width: 0;
+  flex: 1;
+
   transition: background-color 250ms, border-color 250ms;
 
   background: var(--node-content-background);
@@ -148,9 +152,17 @@
 
   &__buttonWrapper {
     display: none;
+    opacity: 0;
+    transition: display 200ms ease-out allow-discrete, opacity 200ms ease-out;
 
     & > button {
       border-color: var(--node-content-border-default);
+    }
+  }
+
+  @starting-style {
+    &__buttonWrapper {
+      opacity: 0;
     }
   }
 
