@@ -10,9 +10,10 @@ import type { AdcmConfiguration } from '@models/adcm';
 
 interface ActionWizardConfigurationEditorProps {
   step: AdcmActionProcessConfigurationStep;
+  isReadOnly?: boolean;
 }
 
-const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEditorProps) => {
+const ActionWizardConfigurationEditor = ({ step, isReadOnly = false }: ActionWizardConfigurationEditorProps) => {
   const { configuration, setConfigurationForStep } = useActionWizardConfigurationEditorContext();
   const { setIsDraft } = useActionWizardValidationContext();
 
@@ -34,6 +35,7 @@ const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEdit
     <ConfigurationFormContextProvider>
       <ActionWizardConfigurationEditorToolbar />
       <ConfigurationMain
+        isReadOnly={isReadOnly}
         configuration={configuration[step.id]}
         onChangeConfiguration={(configuration) => onConfigurationChange(configuration)}
       />

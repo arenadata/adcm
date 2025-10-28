@@ -27,3 +27,8 @@ export enum ActionStatuses {
 }
 
 export const unlimitedRequestItems = 10000;
+
+export enum HelperLinkActions {
+  Help = 'https://t.me/arenadata_cm',
+  Documentation = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html',
+}

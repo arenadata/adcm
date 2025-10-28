@@ -7,12 +7,7 @@ import { ConditionalWrapper, Tooltip } from '@uikit';
 import AboutAdcm from './AboutAdcm/AboutAdcm';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
 import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
-import { apiRedocHost } from '@constants';
-
-enum HelperLinkActions {
-  Help = 'https://t.me/arenadata_cm',
-  Documentation = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html',
-}
+import { apiRedocHost, HelperLinkActions } from '@constants';
 
 const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
   const {

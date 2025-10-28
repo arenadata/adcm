@@ -5,7 +5,7 @@ import type { SingleSchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
 import { validate } from './StringControls.utils';
-import { CodeHighlighterContextProvider } from '@uikit/CodeHighlighter/context/CodeHighlighterContextProvider.tsx';
+import { CodeHighlighterContextProvider } from '@uikit/CodeHighlighter/context/CodeHighlighterContextProvider';
 
 const textTransformers: { [format: string]: (value: string) => string } = {
   json: prettifyJson,

@@ -9,6 +9,7 @@ export enum AdcmWizardStepStates {
   Created = 'created',
   Completed = 'completed',
   Running = 'running',
+  Broken = 'broken',
 }
 
 export enum AdcmWizardMethodType {
