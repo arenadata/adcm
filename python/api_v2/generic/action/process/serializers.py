@@ -133,6 +133,6 @@ class MappingDeltaSerializer(Serializer):
 
 class StepMappingSerializer(StepSerializer):
     rules = MappingRuleSerializer(many=True)
-    delta = MappingDeltaSerializer()
-    cumulative_delta = MappingDeltaSerializer()
-    suggestions = MappingDeltaItemSerializer(many=True, required=False, default=list)
+    delta = MappingDeltaSerializer(allow_null=True, default=None)
+    cumulative_delta = MappingDeltaSerializer(allow_null=True, default=None)
+    # suggestions = MappingDeltaItemSerializer(many=True, required=False, default=list)
