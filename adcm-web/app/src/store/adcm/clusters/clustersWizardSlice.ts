@@ -93,7 +93,9 @@ const getStep = createAsyncThunk(
       const step = await AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId);
       return step;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      const errorMessage = getErrorMessage(error as RequestError);
+      thunkAPI.dispatch(showError({ message: errorMessage }));
+      thunkAPI.dispatch(setBrokenStepError(errorMessage));
       return thunkAPI.rejectWithValue(error);
     }
   },
@@ -183,6 +185,7 @@ type AdcmClustersWizardState = {
   step: AdcmActionProcessStep | null;
   steps: AdcmActionProcessStep[];
   jobsData: AdcmWizardJobsData;
+  brokenStepError?: string;
   isLoading: boolean;
 };
 
@@ -191,6 +194,7 @@ const createInitialState = (): AdcmClustersWizardState => ({
   steps: [],
   step: null,
   jobsData: {},
+  brokenStepError: undefined,
   isLoading: false,
 });
 
@@ -198,8 +202,8 @@ const clustersWizardSlice = createSlice({
   name: 'adcm/clustersWizard',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setBrokenStepError(state, action) {
+      state.brokenStepError = action.payload;
     },
     cleanupClustersWizard() {
       return createInitialState();
@@ -283,7 +287,8 @@ const clustersWizardSlice = createSlice({
   },
 });
 
-export const { cleanupClustersWizard, resetStep, resetJobData, resetJobDataByStep } = clustersWizardSlice.actions;
+export const { cleanupClustersWizard, setBrokenStepError, resetStep, resetJobData, resetJobDataByStep } =
+  clustersWizardSlice.actions;
 export { getStep, getSteps, getProcess, getJob, loadSubJobLogFromBackend, refreshProcessStages };
 
 export default clustersWizardSlice.reducer;

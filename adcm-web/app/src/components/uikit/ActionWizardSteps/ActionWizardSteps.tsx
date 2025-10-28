@@ -15,7 +15,8 @@ import ActionWizardConfigurationEditor from '@uikit/ActionWizardSteps/ActionWiza
 import ActionWizardLastStage from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStage';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import { useEffect, useMemo, useState } from 'react';
-import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
+import type { AdcmJob } from '@models/adcm';
+import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 
 interface ActionWizardStepProps {
   jobsData: AdcmWizardJobsData;
@@ -29,8 +30,8 @@ interface ActionWizardStepProps {
   selectedStep?: number;
 }
 
-const getStepIcon = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
-  if (hasConflict || jobsData?.status === AdcmJobStatus.Failed || step.state === 'broken') {
+const getStepIcon = (step: AdcmActionProcessStep, isValid: boolean, jobsData?: AdcmJob) => {
+  if (isStepFailed(step, isValid, jobsData)) {
     return <MarkerIcon variant="round" type="alert" size={12} />;
   }
   if (step.state === AdcmWizardStepStates.Completed) {
@@ -40,11 +41,10 @@ const getStepIcon = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData
   return undefined;
 };
 
-const stepPanelLabelClassName = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
+const stepPanelLabelClassName = (step: AdcmActionProcessStep, isValid: boolean, jobsData?: AdcmJob) => {
   return cn(s.actionWizardSteps__stageInfo, {
     [s.actionWizardSteps__stageInfo_running]: step.state === AdcmWizardStepStates.Running,
-    [s.actionWizardSteps__stageInfo_error]:
-      hasConflict || jobsData?.status === AdcmJobStatus.Failed || step.state === 'broken',
+    [s.actionWizardSteps__stageInfo_error]: isStepFailed(step, isValid, jobsData),
     [s.actionWizardSteps__stageInfo_completed]: step.state === AdcmWizardStepStates.Completed,
   });
 };
@@ -174,7 +174,9 @@ const ActionWizardSteps = ({
               </ButtonGroup>
             </Panel>
             <div className={s.actionWizardSteps__content}>
-              {step.type === AdcmWizardStepType.Configuration && <ActionWizardConfigurationEditor step={step} />}
+              {step.type === AdcmWizardStepType.Configuration && (
+                <ActionWizardConfigurationEditor isReadOnly={!isCurrentStep} step={step} />
+              )}
               {step.type === AdcmWizardStepType.Operation && <ClusterDynamicActionWizardOperation step={step} />}
               {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
             </div>
