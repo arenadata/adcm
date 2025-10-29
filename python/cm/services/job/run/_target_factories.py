@@ -405,7 +405,7 @@ class UiidJSONEncoder(json.JSONEncoder):
 
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
     cluster_id, topology = None, None
-    if task.action_process and task.owner:
+    if task.owner:
         if task.owner.type == ADCMCoreType.CLUSTER:
             cluster_id = task.owner.id
         elif task.owner.related_objects.cluster is not None:
@@ -430,16 +430,9 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
 
 
 def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = None) -> dict[str, Any]:
-    delta, process_context, cluster_id, process_mapping_delta = None, None, None, {}
-
-    if task.owner and topology:
-        cluster_id = topology.cluster_id
+    delta, process_context, process_mapping_delta = None, None, {}
 
     if task.action.hc_acl:
-        if not cluster_id:
-            message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
-            raise RuntimeError(message)
-
         delta = task.hostcomponent.mapping_delta
 
     module = context_m if use_new_config_processing() else inventory_m
