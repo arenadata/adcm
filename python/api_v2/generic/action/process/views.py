@@ -15,7 +15,7 @@ from typing import Any
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, JobLog, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
 from cm.services.action_process import repo
 from cm.services.action_process.errors import (
     ActionProcessDBError,
@@ -270,7 +270,8 @@ def _serialize_operation_step(
 
     task_data = None
     if step_input:
-        task_id = JobLog.objects.values_list("task_id", flat=True).get(id=step_input.job_id)
+        # `job_id` is `task_id` for now
+        task_id = step_input.job_id  # JobLog.objects.values_list("task_id", flat=True).get(id=step_input.job_id)
         task = TaskLog.objects.select_related("action").get(id=task_id)
         task_serializer = TaskListSerializer(task)
         task_data = task_serializer.data
