@@ -68,7 +68,7 @@ RUN apk add --no-cache --virtual .build-deps \
     /adcm/venv/2.16/bin/ansible-galaxy collection install /community.general/community-general-8.6.8.tar.gz && \
     curl https://raw.githubusercontent.com/ansible-community/ansible-build-data/refs/heads/main/9/ansible-9.13.0.yaml -o /adcm/ansible-9.13.0.yaml && \
     for retry in $(seq 1 $ANSIBLE_GALAXY_RETRIES); do \
-      /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml || EXIT_CODE=$?; \
+      /adcm/venv/2.16/bin/ansible-galaxy install -r /adcm/ansible-9.13.0.yaml && EXIT_CODE=0 || EXIT_CODE=$?; \
       if [ "$EXIT_CODE" -eq 0 ]; then \
         break; \
       else \
