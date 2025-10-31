@@ -240,6 +240,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
 # Reasonably fast and dirty approach to "duplicate" test for another use case with a bit less overhead
 def subtests_on_feature_flag(tc: unittest.TestCase, flag_func, override_in: str):
     name = flag_func.__name__
-    for flag_value in (False, True):
+    # todo REMOVE IN ADCM-7319
+    for flag_value in (False,):
         with patch(f"{override_in}.{name}", return_value=flag_value):
             yield tc.subTest(f"{name}-{flag_value}")

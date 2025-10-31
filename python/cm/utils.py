@@ -90,7 +90,7 @@ def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
     return obj
 
 
-def obj_ref(obj: type["ADCMEntity"]) -> str:  # noqa: F821
+def obj_ref(obj: "ADCMEntity") -> str:  # noqa: F821
     if hasattr(obj, "name"):
         name = obj.name
     elif hasattr(obj, "fqdn"):

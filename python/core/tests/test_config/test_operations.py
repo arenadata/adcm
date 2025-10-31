@@ -13,8 +13,10 @@
 from copy import deepcopy
 from typing import Callable
 
+from core.config._config import detect_active_groups
 from core.config._operations import prepare_config_for_ansible, validate_new_changes_in_main_configuration
 from core.config._spec import FullSpec
+from core.config._spec.operations import detect_stateful_parameters
 from core.config._spec.parameters import (
     Activation,
     AnsibleOptions,
@@ -109,11 +111,17 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
         specification: FullSpec | None = None,
         validators: Validators | None = None,
     ):
+        active_groups = detect_active_groups(attributes=new.attributes)
+        stateful_parameters = detect_stateful_parameters(
+            spec=specification or self.simple_spec,
+            owner_state=self.created_owner_info.state,
+            active_groups=active_groups,
+        )
         return validate_new_changes_in_main_configuration(
             new=new,
             previous=previous or self.simple_config_empty,
             specification=specification or self.simple_spec,
-            owner_info=self.created_owner_info,
+            stateful_parameters=stateful_parameters,
             validators=validators or self.validators,
         )
 

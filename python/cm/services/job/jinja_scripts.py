@@ -15,13 +15,15 @@ from typing import Generator
 
 from core.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
+import core
 
 from cm.errors import AdcmEx
 from cm.models import (
     TaskLog,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.services.jinja_env import get_env_for_jinja_scripts
+from cm.services.bundle_alt.render import Environment, TaskArgs
+from cm.services.jinja_env import get_env_for_jinja_scripts, get_env_for_jinja_scripts_new
 from cm.services.template import TemplateBuilder
 from cm.utils import decrypt_secrets, get_on_fail_states
 
@@ -55,6 +57,40 @@ def get_job_specs_from_template(
         data=template_builder.data,
         template_dir=dir_with_jinja,
         action_allow_to_terminate=task.action.allow_to_terminate,
+    )
+
+
+def get_job_specs_from_template_new(
+    jinja_path: Path,
+    environment: Environment,
+    task_args: TaskArgs,
+    config_service: core.config.ConfigService,
+    allow_to_terminate: bool,
+) -> Generator[JobSpec, None, None]:
+    # dirty function just to unbind job specs build from task existence
+
+    scripts_jinja_file = environment.bundle_root / jinja_path
+
+    context = get_env_for_jinja_scripts_new(args=task_args, config_service=config_service)
+    # TO DO: get rid of using decrypt_secrets here
+    decrypted_context = decrypt_secrets(context)
+
+    template_builder = TemplateBuilder(
+        template_path=scripts_jinja_file,
+        context=decrypted_context,
+        bundle_path=environment.bundle_root,
+        error=AdcmEx(code="UNPROCESSABLE_ENTITY", msg="Can't render jinja template"),
+    )
+
+    if not template_builder.data:
+        raise RuntimeError(f'Template "{scripts_jinja_file}" has no jobs')
+
+    dir_with_jinja = scripts_jinja_file.parent.relative_to(environment.bundle_root)
+
+    yield from _get_job_specs(
+        data=template_builder.data,
+        template_dir=dir_with_jinja,
+        action_allow_to_terminate=allow_to_terminate,
     )
 
 

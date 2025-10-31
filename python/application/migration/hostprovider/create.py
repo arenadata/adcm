@@ -14,7 +14,6 @@ from cm import converters
 from cm.api import check_license
 from cm.errors import AdcmEx
 from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
-from cm.services import config_service as config
 from cm.services.concern._operations import create_issue
 from cm.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.services.concern.checks import object_configuration_has_issue
@@ -24,13 +23,15 @@ from cm.services.concern.distribution import (
 )
 from cm.services.status.notify import reset_hc_map
 from cm.status_api import notify_about_new_concern, notify_about_redistributed_concerns_from_maps
-from core.types import ADCMCoreType
-from django.conf import settings
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
+import core
 
 
-def create_hostprovider(prototype: Prototype, name: str, description: str) -> Provider:
+def create_hostprovider(
+    prototype: Prototype, name: str, description: str, config_service: core.config.ConfigService
+) -> Provider:
     if prototype.type != ADCMCoreType.PROVIDER.value:
         raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
@@ -38,7 +39,8 @@ def create_hostprovider(prototype: Prototype, name: str, description: str) -> Pr
 
     with atomic():
         provider = Provider.objects.create(prototype=prototype, name=name, description=description)
-        config.create.initial_config_if_required(provider, files_dir=settings.FILE_DIR)
+        descriptor = CoreObjectDescriptor(id=provider.pk, type=ADCMCoreType.PROVIDER)
+        config_service.create_initial_configuration_if_required(owner=descriptor)
 
         provider_cod = converters.orm_object_to_core_descriptor(provider)
         concern_id = None
@@ -54,7 +56,9 @@ def create_hostprovider(prototype: Prototype, name: str, description: str) -> Pr
     return provider
 
 
-def create_host(hostprovider: Provider, name: str, cluster: Cluster | None) -> Host:
+def create_host(
+    hostprovider: Provider, name: str, cluster: Cluster | None, config_service: core.config.ConfigService
+) -> Host:
     with atomic():
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=hostprovider.prototype_id)  # pyright: ignore [reportAttributeAccessIssue]
         host_prototype = Prototype.objects.get(type=ADCMCoreType.HOST.value, bundle_id=bundle_id)
@@ -62,8 +66,8 @@ def create_host(hostprovider: Provider, name: str, cluster: Cluster | None) -> H
         check_license(prototype=host_prototype)
 
         host = Host.objects.create(prototype=host_prototype, provider_id=hostprovider.pk, fqdn=name, cluster=cluster)
-
-        config.create.initial_config_if_required(owner_object=host, files_dir=settings.FILE_DIR)
+        descriptor = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST)
+        config_service.create_initial_configuration_if_required(owner=descriptor)
 
         concern_map = {ADCMCoreType.HOST: {host.pk: set()}}
         host_concern_map = recalculate_own_concerns_on_add_hosts(host=host)

@@ -22,11 +22,11 @@ from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definit
 from django.db.transaction import atomic
 
 from cm.errors import AdcmEx
+from cm.legacy.config import init_object_config
 from cm.models import ADCM, ConfigLog, ObjectConfig, Prototype, SignatureStatus
 from cm.services.bundle_alt import repo
 from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.services.bundle_alt.load import _get_rules_for_yspec_schema
-from cm.services.config_service import create
 
 logger = logging.getLogger("adcm")
 
@@ -82,7 +82,7 @@ def _upgrade_adcm(adcm: ADCM, old_prototype: Prototype, new_prototype: Prototype
 
 def _init_adcm(prototype: Prototype) -> None:
     adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
-    adcm.config = create.init_object_config(prototype, adcm)
+    adcm.config = init_object_config(prototype, adcm)
     adcm.save(update_fields=["config"])
     _set_adcm_url(adcm=adcm)
     logger.info("ADCM upgrade: version %s initialized.", prototype.version)

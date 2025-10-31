@@ -16,12 +16,10 @@ from pathlib import Path
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.test import TestCase
+from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 import core
-
-from cm.services import config_service as config
-from cm.services.config_service._secrets import AnsibleSecrets
 
 
 class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, TestCase):
@@ -31,6 +29,8 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
         init_roles()
         init()
 
+        self.config_service = get_config_service()
+
         self.bundle = self.add_bundle(Path(__file__).parent / "bundles" / "cluster_full_config")
         self.cluster = self.add_cluster(bundle=self.bundle, name="with-config")
 
@@ -38,7 +38,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
             descriptor=CoreObjectDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER),
             info=core.config.ConfigOwnerObjectInfo(state=self.cluster.state),
         )
-        self.cluster_spec, self.cluster_defaults = config.retrieve.get_specification(
+        self.cluster_spec, self.cluster_defaults = self.config_service.retrieve_specification(
             owner=self.cluster_owner_info.descriptor
         )
 
@@ -47,14 +47,13 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
             values=core.config.flat_to_nested(self.cluster_defaults),
             attributes={"/activatable_group": core.config.Attributes(is_active=True)},
         )
-        result = config.prepare.new_configuration(
+        result = self.config_service.prepare_new_configuration(
             new=input_config, previous=input_config, specification=self.cluster_spec, owner=self.cluster_owner_info
         )
 
         self.assertFalse(result.has_changed)
 
     def test_encryption_success(self):
-        secrets_service = AnsibleSecrets()
         secret_value = "verysecret"
         default_config = core.config.Configuration(
             values=core.config.flat_to_nested(self.cluster_defaults),
@@ -71,19 +70,19 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
             "secretfile": secret_value,
         }
 
-        result = config.prepare.new_configuration(
+        result = self.config_service.prepare_new_configuration(
             new=input_config, previous=default_config, specification=self.cluster_spec, owner=self.cluster_owner_info
         )
         encrypted_values = result.encrypted_config.values
 
         self.assertTrue(result.has_changed)
-        self.assertTrue(secrets_service.is_encrypted(encrypted_values["secrettext"]))
-        self.assertTrue(secrets_service.is_encrypted(encrypted_values["secretmap"]["key"]))
-        self.assertTrue(secrets_service.is_encrypted(encrypted_values["secretfile"]))
-        self.assertFalse(secrets_service.is_encrypted(encrypted_values["string"]))
-        self.assertFalse(secrets_service.is_encrypted(encrypted_values["map"]["key"]))
-        self.assertFalse(secrets_service.is_encrypted(encrypted_values["file"]))
-        self.assertFalse(secrets_service.is_encrypted(encrypted_values["text"]))
-        self.assertEqual(secrets_service.decrypt(encrypted_values["secrettext"]), secret_value)
-        self.assertEqual(secrets_service.decrypt(encrypted_values["secretmap"]["key"]), secret_value)
-        self.assertEqual(secrets_service.decrypt(encrypted_values["secretfile"]), secret_value)
+        self.assertTrue(self.config_service.secrets.is_encrypted(encrypted_values["secrettext"]))
+        self.assertTrue(self.config_service.secrets.is_encrypted(encrypted_values["secretmap"]["key"]))
+        self.assertTrue(self.config_service.secrets.is_encrypted(encrypted_values["secretfile"]))
+        self.assertFalse(self.config_service.secrets.is_encrypted(encrypted_values["string"]))
+        self.assertFalse(self.config_service.secrets.is_encrypted(encrypted_values["map"]["key"]))
+        self.assertFalse(self.config_service.secrets.is_encrypted(encrypted_values["file"]))
+        self.assertFalse(self.config_service.secrets.is_encrypted(encrypted_values["text"]))
+        self.assertEqual(self.config_service.secrets.decrypt(encrypted_values["secrettext"]), secret_value)
+        self.assertEqual(self.config_service.secrets.decrypt(encrypted_values["secretmap"]["key"]), secret_value)
+        self.assertEqual(self.config_service.secrets.decrypt(encrypted_values["secretfile"]), secret_value)

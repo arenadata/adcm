@@ -10,14 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from typing import Annotated
 
 from adcm.feature_flags import use_new_config_processing
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
+from infra.services import get_config_service
 from pydantic import BaseModel
 from typing_extensions import TypedDict
+import core
 
 from cm.models import (
     Action,
@@ -32,6 +35,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.services.bundle_alt.render import TaskArgs
 from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.job import context, inventory
 
@@ -77,8 +81,12 @@ def get_env_for_jinja_scripts(
         target_object = target_object.object
 
     cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
-    module = context if use_new_config_processing() else inventory
-    cluster_vars = module.get_cluster_vars(topology=cluster_topology)
+    if use_new_config_processing():
+        func = partial(context.get_cluster_vars, config_service=get_config_service())
+    else:
+        func = inventory.get_cluster_vars
+
+    cluster_vars = func(topology=cluster_topology)
 
     host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=delta)
     if action_group:
@@ -102,12 +110,52 @@ def get_env_for_jinja_scripts(
     ).model_dump(mode="python")
 
 
+def get_env_for_jinja_scripts_new(args: TaskArgs, config_service: core.config.ConfigService) -> dict:
+    action_group = None
+    target_object = args.target_object
+    if isinstance(target_object, ActionHostGroup):
+        action_group = target_object
+        target_object = target_object.object
+        if target_object is None:
+            raise RuntimeError("Object of action host group is None unexpectedly")
+
+    cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
+
+    cluster_vars = context.get_cluster_vars(topology=cluster_topology, config_service=config_service)
+
+    host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=args.delta)
+    if action_group:
+        host_groups |= {
+            "target": list(
+                Host.objects.values_list("fqdn", flat=True).filter(
+                    id__in=ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=action_group.pk).values_list(
+                        "host_id", flat=True
+                    )
+                )
+            )
+        }
+
+    return JinjaScriptsEnvironment(
+        cluster=cluster_vars.cluster.model_dump(by_alias=True),
+        services={
+            service_name: service_data.model_dump(by_alias=True)
+            for service_name, service_data in cluster_vars.services.items()
+        },
+        groups=host_groups,
+        task=TaskContext(config=args.config, verbose=args.verbose),
+        action=_get_action_info(action=args.action, process=args.action_process),
+    ).model_dump(mode="python")
+
+
 def get_env_for_jinja_config(
     action: Action, cluster_relative_object: Cluster | Service | Component | Host, process: Process | None = None
 ) -> dict:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
-    module = context if use_new_config_processing() else inventory
-    clusters_vars = module.get_cluster_vars(topology=cluster_topology)
+    if use_new_config_processing():
+        func = partial(context.get_cluster_vars, config_service=get_config_service())
+    else:
+        func = inventory.get_cluster_vars
+    clusters_vars = func(topology=cluster_topology)
     groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology)
     action = _get_action_info(action=action, process=process)
 
@@ -125,7 +173,7 @@ def _get_host_group_names_only(
     return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
 
 
-def _get_action_info(action: Action, process: Process = None) -> ActionContext:
+def _get_action_info(action: Action, process: Process | None = None) -> ActionContext:
     owner_prototype = action.prototype
 
     if owner_prototype.type == ObjectType.SERVICE:

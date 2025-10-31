@@ -13,7 +13,7 @@
 
 from typing import NoReturn
 
-from adcm.feature_flags import use_new_object_create_processing
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -36,6 +36,7 @@ from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -221,7 +222,7 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        func = self._create_host_new if use_new_object_create_processing(request.headers) else self._create_host_old
+        func = self._create_host_new if use_new_config_processing(request.headers) else self._create_host_old
         host = func(request_provider, serializer, request_cluster)
 
         return Response(
@@ -239,7 +240,12 @@ class HostViewSet(
             )
 
     def _create_host_new(self, provider, serializer, cluster):
-        return create_host_new(hostprovider=provider, name=serializer.validated_data["fqdn"], cluster=cluster)
+        return create_host_new(
+            hostprovider=provider,
+            name=serializer.validated_data["fqdn"],
+            cluster=cluster,
+            config_service=get_config_service(),
+        )
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002

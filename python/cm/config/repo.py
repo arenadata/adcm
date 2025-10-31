@@ -10,94 +10,177 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
+from collections import defaultdict, deque
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypeAlias, TypeVar
+from typing import Any, Callable, Iterable, TypeVar
 import re
 import json
 
 from core import config
-from core.config._spec.spec import FullSpec
-from core.types import ADCMCoreType, ADCMHostGroupType, ConfigID, CoreObjectDescriptor, HostGroupDescriptor, PrototypeID
+from core.types import (
+    ActionID,
+    ADCMCoreType,
+    ADCMHostGroupType,
+    ConfigID,
+    CoreObjectDescriptor,
+    HostGroupDescriptor,
+    ObjectOrGroup,
+    PrototypeID,
+)
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import F
 
-from cm.models import ADCM, ConfigHostGroup, MainObject, PrototypeConfig
-from cm.services.config._base import convert_attr_to_adcm_meta
-from cm.services.config_service import _repo as repo
-from cm.services.config_service._secrets import AnsibleSecrets, encrypt_if_possible
+from cm.converters import core_type_to_model
+from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
+from cm.services.config._base import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 
 _SECRET_TYPES = frozenset(("password", "secrettext", "secretfile", "secretmap"))
-
-
-Defaults: TypeAlias = dict[config.ParameterFullName, Any]
 
 T = TypeVar("T")
 
 
-def get_current_configuration(owner: MainObject | ADCM | ConfigHostGroup) -> config.Configuration:
-    if not owner.config:
-        message = f"Unexpectedly got object without configuration: {owner.__class__.__name__} #{owner.pk}"
-        raise ValueError(message)
-
-    current_id = owner.config.current
-    record = repo.retrieve_configs_by_ids(ids=(current_id,))[current_id]
-
-    return _to_configuration(values=record.config, attrs=record.attr)
+@dataclass(slots=True)
+class ConfigPrototypeInfo:
+    bundle_hash: str
+    group_customization_flag: bool
+    parameter_prototypes: tuple[PrototypeConfig, ...]
 
 
-def get_configurations_of_host_groups(owner: CoreObjectDescriptor) -> dict[HostGroupDescriptor, config.Configuration]:
-    if owner.type in (ADCMCoreType.HOST, ADCMCoreType.ADCM):
-        return {}
+@dataclass(slots=True)
+class ConfigRepo(config.ConfigRepoI):
+    secrets: config.secrets.AnsibleSecrets
+    # retrieve
 
-    records = repo.get_configurations_of_host_groups(owner)
+    def get_config(self, owner: ObjectOrGroup) -> config.ConfigurationWithID:
+        owner_model = _detect_owner_model(owner)
 
-    return {
-        HostGroupDescriptor(id=rec.group_id, type=ADCMHostGroupType.CONFIG): _to_configuration(
-            values=rec.values, attrs=rec.attrs
+        owner_orm = owner_model.objects.select_related("config").get(pk=owner.id)
+
+        if not owner_orm.config:
+            message = f"Unexpectedly got object without configuration: {owner}"
+            raise config.ObjectWithoutConfigError(message)
+
+        current_id = owner_orm.config.current
+
+        try:
+            record = self.find_configs_by_ids(ids=(current_id,))[current_id]
+        except KeyError as e:
+            raise config.NoConfigError(f"configuration unexpectedly missing: id={current_id}") from e
+
+        return config.ConfigurationWithID(id=current_id, values=record.values, attributes=record.attributes)
+
+    def get_spec_and_defaults(
+        self, owner: CoreObjectDescriptor, action_id: ActionID | None
+    ) -> tuple[config.spec.FullSpec, config.Defaults]:
+        config_spec_info = _get_config_prototype_info(owner=owner, action_id=action_id)
+        if not config_spec_info.parameter_prototypes:
+            message = f"Unexpectedly got object without configuration: {owner}"
+            raise config.ObjectWithoutConfigError(message)
+
+        bundle_root = _build_path_to_bundle_root(owner_type=owner.type, bundle_hash=config_spec_info.bundle_hash)
+        spec, defaults = _build_spec(
+            config_prototype=config_spec_info, secrets_service=self.secrets, bundle_root=bundle_root
         )
-        for rec in records
-    }
+        return spec, defaults
+
+    def find_configs_by_ids(self, ids: Iterable[ConfigID]) -> dict[ConfigID, config.Configuration]:
+        records = _get_configs_by_ids(ids=ids)
+        return {
+            config_id: _to_configuration(values=record.config, attrs=record.attr)
+            for config_id, record in records.items()
+        }
+
+    def find_specs_by_prototype_ids(
+        self, ids: Iterable[PrototypeID]
+    ) -> dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]:
+        ids_ = tuple(ids)
+
+        proto_dir_mapping_query = Prototype.objects.filter(id__in=ids_).values_list("id", "type", "bundle__hash")
+        proto_dir_map = {
+            prototype_id: _build_path_to_bundle_root(owner_type=ADCMCoreType(type_), bundle_hash=bundle_hash)
+            for prototype_id, type_, bundle_hash in proto_dir_mapping_query.all()
+        }
+
+        config_prototypes = _get_config_prototypes_info_by_ids(ids=ids_)
+
+        return {
+            prototype_id: _build_spec(
+                config_prototype=info, secrets_service=self.secrets, bundle_root=proto_dir_map[prototype_id]
+            )
+            for prototype_id, info in config_prototypes.items()
+        }
+
+    # todo: shouldn't be here, see service for more info
+    def find_host_group_configurations(
+        self, owner: CoreObjectDescriptor
+    ) -> dict[HostGroupDescriptor, config.Configuration]:
+        if owner.type in (ADCMCoreType.HOST, ADCMCoreType.ADCM):
+            return {}
+
+        model = core_type_to_model(owner.type)
+        content_type = ContentType.objects.get_for_model(model)
+
+        group_config_id_query = ConfigHostGroup.objects.filter(
+            object_id=owner.id, object_type=content_type
+        ).values_list("id", "config__current")
+        group_config_id_map: dict[int, int] = dict(group_config_id_query)
+
+        configs_query = ConfigLog.objects.filter(id__in=group_config_id_map.values())
+        configs = {config.pk: (config.config, config.attr) for config in configs_query}
+
+        records = ((group_id, *configs[config_id]) for group_id, config_id in group_config_id_map.items())
+
+        return {
+            HostGroupDescriptor(id=group_id, type=ADCMHostGroupType.CONFIG): _to_configuration(
+                values=values, attrs=attrs
+            )
+            for group_id, values, attrs in records
+        }
+
+    # change
+
+    def set_new_config_for_object(
+        self, config: config.Configuration, description: str, owner: ObjectOrGroup
+    ) -> ConfigID:
+        owner_model = _detect_owner_model(owner)
+        owner_orm = owner_model.objects.select_related("config").get(id=owner.id)
+        meta_like_attr = defaultdict(dict)
+        for name, value in config.attributes.items():
+            if value.activation:
+                meta_like_attr[name]["isActive"] = value.is_active
+
+            if value.synchronization:
+                meta_like_attr[name]["isSynchronized"] = value.is_synced
+
+        attr = convert_adcm_meta_to_attr(meta_like_attr)
+
+        # maybe shouldn't be in here
+        if not owner_orm.config:
+            owner_orm.config = ObjectConfig.objects.create(current=0, previous=0)
+            owner_orm.save(update_fields=["config"])
+
+        config_log = ConfigLog.objects.create(
+            obj_ref=owner_orm.config, config=config.values, attr=attr, description=description
+        )
+
+        owner_orm.config.previous = owner_orm.config.current
+        owner_orm.config.current = config_log.pk
+        owner_orm.config.save(update_fields=["previous", "current"])
+
+        return config_log.pk
 
 
-def find_configurations(configurations: Iterable[ConfigID]) -> dict[ConfigID, config.Configuration]:
-    records = repo.retrieve_configs_by_ids(ids=configurations)
-    return {
-        config_id: _to_configuration(values=record.config, attrs=record.attr) for config_id, record in records.items()
-    }
-
-
-def get_specification(owner: CoreObjectDescriptor) -> tuple[config.spec.FullSpec, Defaults]:
-    config_spec_info = repo.get_config_prototype_info(owner=owner)
-    bundle_root = _build_path_to_bundle_root(owner=owner, bundle_hash=config_spec_info.bundle_hash)
-    spec, defaults = _build_spec(
-        config_prototype=config_spec_info, secrets_service=AnsibleSecrets(), bundle_root=bundle_root
-    )
-    return spec, defaults
-
-
-def find_specifications_for_prototypes(prototypes: Iterable[PrototypeID]) -> dict[PrototypeID, FullSpec]:
-    # adaptation of retrieve_flat_spec_for_objects for FullSpec without defaults
-
-    # since defaults are ignored, bundle root is "faked"
-    bundle_root = Path()
-    secrets_service = AnsibleSecrets()
-
-    config_prototypes = repo.retrieve_config_prototype_info_by_ids(ids=prototypes)
-
-    return {
-        prototype_id: _build_spec(config_prototype=info, secrets_service=secrets_service, bundle_root=bundle_root)[0]
-        for prototype_id, info in config_prototypes.items()
-    }
-
-
+# todo temporal, should be moved in repo or service
 def build_specification_from_prototype_config_records(
     records: tuple[PrototypeConfig, ...],
     group_customization_flag: bool,
-    secrets_service: AnsibleSecrets,
+    secrets_service: config.secrets.AnsibleSecrets,
     bundle_root: Path,
-) -> tuple[config.spec.FullSpec, Defaults]:
+) -> tuple[config.spec.FullSpec, config.Defaults]:
     return _build_spec(
-        config_prototype=repo.ConfigPrototypeInfo(
+        config_prototype=ConfigPrototypeInfo(
             bundle_hash="", group_customization_flag=group_customization_flag, parameter_prototypes=records
         ),
         bundle_root=bundle_root,
@@ -105,20 +188,77 @@ def build_specification_from_prototype_config_records(
     )
 
 
-def _build_path_to_bundle_root(owner: CoreObjectDescriptor, bundle_hash: str) -> Path:
-    if owner.type == ADCMCoreType.ADCM:
+def _detect_owner_model(owner: ObjectOrGroup) -> type[MainObject | ADCM | ConfigHostGroup]:
+    match owner:
+        case CoreObjectDescriptor(type=type_):
+            return core_type_to_model(type_)
+        case HostGroupDescriptor():
+            return ConfigHostGroup
+
+
+def _get_config_prototype_info(owner: CoreObjectDescriptor, action_id: int | None) -> ConfigPrototypeInfo:
+    model = core_type_to_model(owner.type)
+    response = model.objects.values(
+        "prototype_id",
+        customization=F("prototype__config_group_customization"),
+        bundle_hash=F("prototype__bundle__hash"),
+    ).get(id=owner.id)
+    parameter_prototypes = tuple(
+        PrototypeConfig.objects.filter(prototype_id=response["prototype_id"], action_id=action_id).order_by("pk")
+    )
+
+    return ConfigPrototypeInfo(
+        bundle_hash=response["bundle_hash"],
+        group_customization_flag=response["customization"],
+        parameter_prototypes=parameter_prototypes,
+    )
+
+
+def _get_configs_by_ids(ids: Iterable[ConfigID]) -> dict[ConfigID, ConfigLog]:
+    query = ConfigLog.objects.filter(id__in=ids)
+    return {record.pk: record for record in query}
+
+
+def _get_config_prototypes_info_by_ids(ids: Iterable[PrototypeID]) -> dict[PrototypeID, ConfigPrototypeInfo]:
+    prototypes_query = Prototype.objects.filter(id__in=ids).values(
+        "id", customization=F("config_group_customization"), bundle_hash=F("bundle__hash")
+    )
+    records = {p["id"]: p for p in prototypes_query}
+
+    prototype_configs_query = PrototypeConfig.objects.filter(prototype_id__in=records.keys(), action_id=None).order_by(
+        "pk"
+    )
+    parameter_prototypes = defaultdict(deque)
+    for prototype_config in prototype_configs_query:
+        parameter_prototypes[prototype_config.prototype_id].append(prototype_config)  # pyright: ignore [reportAttributeAccessIssue]
+
+    return {
+        prototype_id: ConfigPrototypeInfo(
+            bundle_hash=info["bundle_hash"],
+            group_customization_flag=info["customization"],
+            parameter_prototypes=tuple(parameter_prototypes.get(prototype_id, ())),
+        )
+        for prototype_id, info in records.items()
+    }
+
+
+# todo put to repo dependencies
+def _build_path_to_bundle_root(owner_type: ADCMCoreType, bundle_hash: str) -> Path:
+    if owner_type == ADCMCoreType.ADCM:
         return Path(settings.BASE_DIR, "conf", "adcm")
 
     return Path(settings.BUNDLE_DIR, bundle_hash)
 
 
 def _build_spec(
-    config_prototype: repo.ConfigPrototypeInfo,
+    config_prototype: ConfigPrototypeInfo,
     # most likely it's correct to put encrypt in here instead of service,
     # because not in all cases encryption is required
-    secrets_service: AnsibleSecrets,
+    secrets_service: config.secrets.AnsibleSecrets,
     bundle_root: Path,
-) -> tuple[config.spec.FullSpec, Defaults]:
+    # adjustment for times when defaults are ignored, so bundle root may be a dummy => files can't be read
+    ignore_missing_files: bool = False,
+) -> tuple[config.spec.FullSpec, config.Defaults]:
     result_spec = config.spec.FullSpec()
 
     group_members: dict[str, list[str]] = defaultdict(list)
@@ -133,6 +273,7 @@ def _build_spec(
                 prototype_group_customization=prototype_group_customization,
                 encrypt=secrets_service.encrypt,
                 bundle_root=bundle_root,
+                ignore_missing_files=ignore_missing_files,
             )
 
             level_name = param.identifier.name
@@ -189,6 +330,8 @@ def _register_simple_parameter_in_spec(
     prototype_group_customization: bool,
     encrypt: Callable[[str], str],
     bundle_root: Path,
+    # adjustment for times when defaults are ignored, so bundle root may be a dummy => files can't be read
+    ignore_missing_files: bool = False,
 ) -> tuple[config.spec.p.SimpleParameter, Any]:
     is_desyncable = config_proto_entry.group_customization
     if is_desyncable is None:
@@ -225,9 +368,16 @@ def _register_simple_parameter_in_spec(
                 supports_multiline=as_file or ("text" in type_),
                 **default_kwargs,
             )
-            if parameter.as_file:
-                # Temporal patch, because defaults for files are paths, but we want content
-                default = (bundle_root / str(default)).read_text(encoding="utf-8") if default is not None else default
+            # Temporal patch, because defaults for files are paths, but we want content
+            if parameter.as_file and default is not None:
+                path = bundle_root / str(default)
+                if path.is_file():
+                    default = path.read_text(encoding="utf-8")
+                elif ignore_missing_files:
+                    default = ""
+                else:
+                    message = f"Missing file for {parameter.identifier.full} at {path}"
+                    raise RuntimeError(message)
 
         case "integer" | "float":
             is_float = type_ == "float"
@@ -299,7 +449,7 @@ def _register_simple_parameter_in_spec(
     # improve when possible, is_secret is no more part of base parameter,
     # probably should just use `encrypt_secrets`
     if getattr(parameter, "is_secret", False) and default:
-        default = encrypt_if_possible(value=default, encryptor=encrypt)
+        default = config.secrets.encrypt_if_possible(value=default, encryptor=encrypt)
 
     if parameter.identifier.name == "__main_info":
         parameter.extra.ui_options["invisible"] = True

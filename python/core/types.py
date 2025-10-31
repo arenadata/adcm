@@ -149,6 +149,12 @@ class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
         return f"{self.type.value} #{self.id}"
 
 
+ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor
+
+ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
+ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+
+
 class HostGroupOfObject:
     group: HostGroupDescriptor
     owner: CoreObjectDescriptor

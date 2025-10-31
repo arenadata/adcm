@@ -12,7 +12,7 @@
 
 from typing import Collection
 
-from adcm.feature_flags import use_new_object_create_processing
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -32,7 +32,7 @@ from audit.alt.hooks import (
     extract_previous_from_object,
     only_on_success,
 )
-from cm.api import add_cluster, delete_cluster, remove_host_from_cluster
+from cm.api import add_cluster, delete_cluster, partial, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
@@ -68,6 +68,7 @@ from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -374,7 +375,11 @@ class ClusterViewSet(
         if not prototype:
             raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-        func = create_cluster if use_new_object_create_processing(request.headers) else add_cluster
+        func = (
+            partial(create_cluster, config_service=get_config_service())
+            if use_new_config_processing(request.headers)
+            else add_cluster
+        )
         cluster = func(prototype=prototype, name=valid["name"], description=valid["description"])
 
         return Response(

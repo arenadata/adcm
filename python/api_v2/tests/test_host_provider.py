@@ -12,7 +12,7 @@
 
 from functools import partial
 
-from adcm.feature_flags import use_new_object_create_processing
+from adcm.feature_flags import use_new_config_processing
 from cm.models import Action, ConfigHostGroup, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.status import (
@@ -26,7 +26,7 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
 
 subtest_on_new_config_processing = partial(
-    subtests_on_feature_flag, flag_func=use_new_object_create_processing, override_in="api_v2.provider.views"
+    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.provider.views"
 )
 
 

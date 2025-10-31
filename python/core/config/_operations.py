@@ -26,20 +26,22 @@ from core.config._config import (
     get_by_full_name,
     nested_to_flat,
     set_by_full_name,
+    set_by_full_name_returning_old,
 )
 from core.config._names import full_name_to_file_name
 from core.config._predicates import is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
     ConfigFlatValues,
-    ConfigOwnerObjectInfo,
     Configuration,
     ConfigValues,
+    Defaults,
     FlatConfiguration,
     ParameterFullName,
 )
 from core.config._validate import (
     Validators,
+    Violation,
     Violations,
     validate_changes_are_allowed,
     validate_configuration_is_consistent,
@@ -74,6 +76,8 @@ without bounds to config owner / caller environment
 _FileTextContent: TypeAlias = str
 _FileIdentifier = TypeVar("_FileIdentifier")
 _ParameterPathBuilder: TypeAlias = Callable[[_FileParameterIdentifier], str]
+
+_HasChanged: TypeAlias = bool
 
 
 # Public
@@ -135,7 +139,7 @@ def validate_new_changes_in_main_configuration(
     new: Configuration,
     previous: Configuration,
     specification: spec.FullSpec,
-    owner_info: ConfigOwnerObjectInfo,
+    stateful_parameters: spec.StatefulParameters,
     validators: Validators,
 ) -> Success[ValidationResult] | Fail[Violations]:
     """
@@ -147,6 +151,7 @@ def validate_new_changes_in_main_configuration(
     - `previous` configuration is expected to be valid and not checked
     - Both `new` and `previous` configurations should be based on same `specification` and belong to the same `owner`
     - Configurations values are plain, no encryption/decryption is performed
+      (otherwise should be handled in validators)
     """
 
     validate_consistency_result = validate_configuration_is_consistent(configuration=new, specification=specification)
@@ -155,10 +160,6 @@ def validate_new_changes_in_main_configuration(
         return validate_consistency_result
 
     changes = detect_changes(previous=previous, new=new, specification=specification)
-    active_groups = detect_active_groups(attributes=new.attributes)
-    stateful_parameters = spec.detect_stateful_parameters(
-        spec=specification, owner_state=owner_info.state, active_groups=active_groups
-    )
 
     violations: Violations = []
 
@@ -187,6 +188,41 @@ def validate_new_changes_in_main_configuration(
     return Success(ValidationResult(config=new, changes=changes))
 
 
+def validate_action_configuration(
+    configuration: Configuration, specification: spec.FullSpec, validators: Validators
+) -> Success[Configuration] | Fail[Violations]:
+    """
+    Validate given configuration, ensuring that:
+    - it is consistent with specification
+    - parameters have valid and correct values/attributes
+
+    Restrictions:
+    - Configurations values are plain, no encryption/decryption is performed
+      (otherwise should be handled in validators)
+    """
+    validate_consistency_result = validate_configuration_is_consistent(
+        configuration=configuration, specification=specification
+    )
+    if is_fail(validate_consistency_result):
+        # no point in gathering other errors if input is inconsistent
+        return validate_consistency_result
+
+    active_groups = detect_active_groups(attributes=configuration.attributes)
+    deactivated_parameters = spec.detect_deactivated_parameters(spec=specification, active_groups=active_groups)
+
+    flat_new_config = nested_to_flat(configuration=configuration, specification=specification)
+    validate_values_result = validate_values_are_correct(
+        values=flat_new_config.values,
+        specification=specification,
+        deactivated_parameters=deactivated_parameters,
+        validators=validators,
+    )
+    if is_fail(validate_values_result):
+        return Fail(validate_values_result.value)
+
+    return Success(configuration)
+
+
 def update_config_of_host_group(
     main: Configuration,
     host_group: Configuration,
@@ -202,6 +238,14 @@ def update_config_of_host_group(
         else:
             value = get_by_full_name(param_name, values=source.values)
             set_by_full_name(new_value=value, name=param_name, values=target.values)
+
+    # recover sync values for attributes,
+    # because they are missing in main config
+    for param_name, attr in source.attributes.items():
+        if param_name not in target.attributes:
+            target.attributes[param_name] = Attributes(is_synced=attr.is_synced)
+        else:
+            target.attributes[param_name].is_synced = attr.is_synced
 
     return Success(target)
 
@@ -298,6 +342,63 @@ def prepare_config_for_ansible(
         set_by_full_name(name=group_name, new_value=None, values=target.values)
 
     return Success(target)
+
+
+def apply_changes(
+    changes: FlatConfiguration, configuration: Configuration
+) -> Success[tuple[Configuration, _HasChanged]] | Fail[Violations]:
+    target = deepcopy(configuration)
+
+    has_changed = False
+    violations = []
+
+    for key, value in changes.values.items():
+        try:
+            previous = set_by_full_name_returning_old(name=key, new_value=value, values=target.values)
+            if previous != value:
+                has_changed = True
+        except KeyError:
+            violation = Violation(parameter=key, check="structure", reason="no such key in configuration's values")
+            violations.append(violation)
+
+    for key, attributes in changes.attributes.items():
+        try:
+            previous = target.attributes[key]
+            target.attributes[key] = attributes
+            if previous != attributes:
+                has_changed = True
+        except KeyError:
+            violation = Violation(parameter=key, check="structure", reason="no such key in configuration's attributes")
+            violations.append(violation)
+
+    if violations:
+        return Fail(violations)
+
+    return Success((target, has_changed))
+
+
+def adapt_configuration_for_new_specification(
+    configuration: Configuration,
+    specification: spec.FullSpec,
+    defaults: Defaults,
+    new_specification: spec.FullSpec,
+    new_defaults: Defaults,
+) -> Success[Configuration]:
+    flat_config = nested_to_flat(configuration=configuration, specification=specification)
+
+    non_default_values_in_config = {k: v for k, v in flat_config.values.items() if v != defaults.get(k)}
+    new_values = new_defaults | non_default_values_in_config
+
+    new_default_attributes = {
+        k: Attributes(is_active=v.activation.is_active_by_default)
+        for k, v in new_specification.groups.items()
+        if v.activation
+    }
+    new_attributes = new_default_attributes | flat_config.attributes
+
+    adapted_config = Configuration(values=flat_to_nested(new_values), attributes=new_attributes)
+
+    return Success(adapted_config)
 
 
 # Overrides

@@ -10,9 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
 from typing import NoReturn, cast
-import json
 
 from adcm.feature_flags import use_new_config_processing
 from adcm.mixins import GetParentObjectMixin, ParentObject
@@ -28,11 +26,12 @@ from cm.services.config import (
 from cm.services.config._base import convert_adcm_meta_to_attr, represent_string_as_json_type
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.serializers import BaseSerializer, ValidationError
+from rest_framework.serializers import BaseSerializer
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -41,6 +40,7 @@ import core
 
 from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
+from api_v2.utils.config import convert_group_config, convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -78,6 +78,12 @@ class ConfigLogViewSet(
 
         return ConfigLogSerializer
 
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, core.config.OperationError):
+            exc = AdcmEx(code="CONFIG_OPERATION_ERROR", msg=exc.args[0])
+
+        return super().handle_exception(exc)
+
     def old_create(self, parent_object, serializer):
         prototype_configs = tuple(
             PrototypeConfig.objects.filter(prototype=parent_object.prototype, type="json", action=None)
@@ -93,84 +99,33 @@ class ConfigLogViewSet(
         )
 
     def new_create(self, parent_object: MainObject | ADCM | ConfigHostGroup, serializer: BaseSerializer):
+        service = get_config_service()
+
         if isinstance(parent_object, ConfigHostGroup):
             owner = cast(MainObject, parent_object.object)
             group = parent_object
-            convert_serialized_config = self.convert_group_config
-            return update_configuration_of_host_group(
+            convert_serialized_config = convert_group_config
+            config_id = update_configuration_of_host_group(
                 input_config=serializer.validated_data,
                 convert=convert_serialized_config,
                 description=serializer.validated_data.get("description", ""),
                 owner=owner,
                 group=group,
+                config_service=service,
+            )
+        else:
+            owner: MainObject | ADCM | ConfigHostGroup = parent_object
+            convert_serialized_config = convert_main_config
+
+            config_id = update_configuration_of_object(
+                input_config=serializer.validated_data,
+                convert=convert_serialized_config,
+                description=serializer.validated_data.get("description", ""),
+                owner=owner,
+                config_service=service,
             )
 
-        owner: MainObject | ADCM | ConfigHostGroup = parent_object
-        convert_serialized_config = self.convert_main_config
-
-        return update_configuration_of_object(
-            input_config=serializer.validated_data,
-            convert=convert_serialized_config,
-            description=serializer.validated_data.get("description", ""),
-            owner=owner,
-        )
-
-    def convert_main_config(
-        self, configuration: dict, specification: core.config.spec.FullSpec
-    ) -> core.config.Configuration:
-        attributes = self.convert_to_attributes(attr=configuration["attr"], allowed_keys={"isActive"})
-        values = self.convert_values(input_values=configuration["config"], specification=specification)
-        return core.config.Configuration(values=values, attributes=attributes)
-
-    def convert_group_config(
-        self, configuration: dict, specification: core.config.spec.FullSpec
-    ) -> core.config.Configuration:
-        attributes = self.convert_to_attributes(attr=configuration["attr"], allowed_keys={"isActive", "isSynchronized"})
-        values = self.convert_values(input_values=configuration["config"], specification=specification)
-        return core.config.Configuration(values=values, attributes=attributes)
-
-    def convert_values(self, input_values: dict, specification: core.config.spec.FullSpec):
-        values = deepcopy(input_values)
-
-        for name, param in specification.parameters.items():
-            if param.type == core.config.spec.p.ParameterType.JSON:
-                json_value = core.config.get_by_full_name(name=name, values=values)
-                if json_value is not None:
-                    try:
-                        parsed_value = json.loads(json_value)
-                    except (json.JSONDecodeError, TypeError) as e:
-                        raise AdcmEx(
-                            code="CONFIG_KEY_ERROR",
-                            msg=f"Value of '{name}' must be correct json string.",
-                        ) from e
-
-                    core.config.set_by_full_name(new_value=parsed_value, name=name, values=values)
-
-        return values
-
-    def convert_to_attributes(
-        self, attr: dict, allowed_keys: set[str]
-    ) -> dict[core.config.ParameterFullName, core.config.Attributes]:
-        attributes = {}
-
-        for name, value in attr.items():
-            if not isinstance(value, dict):
-                raise ValidationError("adcmMeta values should be dictionaries")
-
-            if not (value.keys() and allowed_keys.issuperset(value.keys())):
-                raise AdcmEx(
-                    code="ATTRIBUTE_ERROR",
-                    msg=f"Incorrect attributes, at least one of {', '.join(sorted(allowed_keys))}, extra not allowed",
-                )
-
-            try:
-                attributes[name] = core.config.Attributes(
-                    is_active=value.get("isActive"), is_synced=value.get("isSynchronized")
-                )
-            except ValueError as e:
-                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=str(e)) from e
-
-        return attributes
+        return ConfigLog.objects.get(id=config_id)
 
     def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object(raise_=NotFound())

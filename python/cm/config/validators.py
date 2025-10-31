@@ -17,7 +17,6 @@ from core import config
 from core.types import CoreObjectDescriptor
 
 from cm.converters import core_type_to_model
-from cm.services.config_service._secrets import AnsibleSecrets
 from cm.variant import get_builtin_variant
 
 
@@ -31,18 +30,8 @@ class DefaultsVariantResolver(config.VariantValidator):
         return value in parameter.payload["value"]
 
 
-class AlwaysPassValidator(config.VariantValidator, config.PatternValidator):
-    def is_value_allowed(self, value: Any, parameter: config.spec.p.VariantParameter) -> bool:
-        _ = value, parameter
-        return True
-
-    def is_match(self, value: str, pattern: str) -> bool:
-        _ = value, pattern
-        return True
-
-
 @dataclass(slots=True)
-class MainConfigVariantResolver(config.VariantValidator):
+class MainConfigVariantResolver(config.MainConfigVariantResolver):
     owner: CoreObjectDescriptor
     reference_config: config.Configuration
 
@@ -62,24 +51,3 @@ class MainConfigVariantResolver(config.VariantValidator):
                 choices = tuple(parameter.payload["value"])
 
         return value in choices
-
-
-class PlainValuePatternValidator(config.PatternValidator):
-    __slots__ = ()
-
-    def is_match(self, value: str, pattern: str) -> bool:
-        pattern_validator = config.pattern.Pattern(regex_pattern=pattern)
-        return pattern_validator.matches(value)
-
-
-@dataclass(slots=True)
-class PossiblyEncryptedPatternValidator(config.PatternValidator):
-    secrets: AnsibleSecrets
-
-    def is_match(self, value: str, pattern: str) -> bool:
-        # "hack" for no force decryption of configuration, cause it's the only point where secrets effect validation
-        if self.secrets.is_encrypted(value):
-            return True
-
-        pattern_validator = config.pattern.Pattern(regex_pattern=pattern)
-        return pattern_validator.matches(value)

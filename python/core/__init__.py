@@ -10,6 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core import bundle_alt, config
+from core import bundle_alt, config, job
 
-__all__ = ["config", "bundle_alt"]
+__all__ = ["config", "bundle_alt", "job"]

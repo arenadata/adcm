@@ -15,7 +15,7 @@ from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName
 
 from cm.services.job.context._constants import MAINTENANCE_MODE_GROUP_SUFFIX
-from cm.services.job.context._types import HostGroupName
+from cm.services.job.inventory._types import HostGroupName
 
 
 def detect_host_groups_for_cluster_bundle_action(

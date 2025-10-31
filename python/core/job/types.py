@@ -13,7 +13,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, NamedTuple
+from typing import Annotated, Generic, Literal, NamedTuple, TypeAlias, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,6 +30,9 @@ from core.types import (
     PrototypeDescriptor,
     PrototypeID,
 )
+
+T = TypeVar("T")
+V = TypeVar("V")
 
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
@@ -59,6 +62,71 @@ class ActionInfo(BaseModel):
     scripts_jinja: str
     wizard_template: Template | None
     scripts_template: Template | None = None
+
+
+ClusterActionTarget: TypeAlias = Literal["owner", "host", "host-group"]
+
+
+@dataclass(slots=True)
+class DynamicSection(Generic[T, V]):
+    type: T
+    value: V
+
+
+StaticScripts: TypeAlias = Literal["static"]
+StaticConfig: TypeAlias = Literal["static"]
+
+ActionScripts: TypeAlias = (
+    StaticScripts | DynamicSection[Literal["jinja"], str] | DynamicSection[Literal["template"], Template]
+)
+ActionConfig: TypeAlias = (
+    StaticConfig | DynamicSection[Literal["jinja"], str] | DynamicSection[Literal["template"], Template]
+)
+
+
+class _ClusterAction(BaseModel):
+    id: ActionID
+    name: str
+
+    owner_prototype: PrototypeDescriptor
+
+    scripts: ActionScripts
+    config: ActionConfig
+
+
+class ClusterRegularAction(_ClusterAction):
+    target: ClusterActionTarget
+    process: Template | None
+
+
+class ClusterUpgradeAction(_ClusterAction):
+    ...
+
+
+class _StaticAction(BaseModel):
+    id: ActionID
+    name: str
+
+    owner_prototype: PrototypeDescriptor
+
+    scripts: StaticScripts
+    config: StaticConfig
+
+
+class ProviderRegularAction(_StaticAction):
+    ...
+
+
+class ProviderUpgradeAction(_StaticAction):
+    ...
+
+
+class ADCMAction(_StaticAction):
+    ...
+
+
+ClusterAction: TypeAlias = ClusterRegularAction | ClusterUpgradeAction
+ProviderAction: TypeAlias = ProviderRegularAction | ProviderUpgradeAction
 
 
 class StateChanges(NamedTuple):

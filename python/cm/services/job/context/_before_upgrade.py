@@ -29,9 +29,8 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services import config_service as config
 from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
-from cm.services.job.context._types import ObjectsInInventoryMap
+from cm.services.job.inventory._types import ObjectsInInventoryMap
 
 
 @dataclass(slots=True)
@@ -110,6 +109,7 @@ def extract_objects_before_upgrade(
 
 def get_before_upgrades(
     before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade],
+    config_service: core.config.ConfigService,
     config_host_groups: Iterable[ConfigHostGroupInfo] = (),
 ) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict]:
     required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]] = defaultdict(set)
@@ -140,7 +140,7 @@ def get_before_upgrades(
 
         return result
 
-    configurations = config.retrieve.find_configurations(required_configs.values())
+    configurations = config_service.retrieve_configurations_by_id(required_configs.values())
 
     existing_prototypes: dict[tuple[ADCMCoreType, str, str | None], PrototypeID] = {
         (db_record_type_to_core_type(proto["type"]), proto["name"], proto["parent__name"]): proto["id"]
@@ -165,7 +165,7 @@ def get_before_upgrades(
             )
         )
     }
-    specifications_for_prototypes = config.retrieve.find_specifications_for_prototypes(
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
         prototypes=existing_prototypes.values()
     )
 

@@ -20,6 +20,7 @@ from core.job.types import StepType
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID, TaskID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypedDict
+import core
 
 from cm.services.action_process.schema_validation import HostComponentMapDelta
 
@@ -60,7 +61,7 @@ class MappingInputDTO(BaseModel):
 
 
 class StepInputDTO(BaseModel):
-    configuration: _ConfigAttr | None = None
+    configuration: core.config.Configuration | None = None
     job_id: TaskID | None = None
     mapping: MappingInputDTO | None = None
     created_at: datetime

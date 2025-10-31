@@ -29,9 +29,8 @@ from django.db.models.functions import Coalesce
 import core
 
 from cm.models import ADCM, Cluster, Component, Host, Provider, Service, partial
-from cm.services import config_service as config
 from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
-from cm.services.job.context._types import ObjectsInInventoryMap
+from cm.services.job.inventory._types import ObjectsInInventoryMap
 
 
 class _ObjectRequiredConfigInfo(NamedTuple):
@@ -44,13 +43,14 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
     cluster_vars: dict,
     objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
     topology: ClusterTopology,
+    config_service: core.config.ConfigService,
 ) -> dict[str, dict]:
     groups_with_hosts = tuple(group for group in config_host_groups if group.hosts)
 
     if not groups_with_hosts:
         return {}
 
-    configurations = config.retrieve.find_configurations(
+    configurations = config_service.retrieve_configurations_by_id(
         configurations=(group.current_config_id for group in groups_with_hosts)
     )
 
@@ -60,7 +60,7 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
 
     objects_config_info = get_config_info(objects=objects_with_groups)
 
-    specifications_for_prototypes = config.retrieve.find_specifications_for_prototypes(
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
     )
 
@@ -110,6 +110,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     config_host_groups: Iterable[ConfigHostGroupInfo],
     provider_vars: dict,
     objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
+    config_service: core.config.ConfigService,
 ) -> dict[str, dict]:
     groups_of_provider_with_hosts = tuple(
         group for group in config_host_groups if group.hosts and group.owner.type == ADCMCoreType.PROVIDER
@@ -118,7 +119,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     if not groups_of_provider_with_hosts:
         return {}
 
-    configurations = config.retrieve.find_configurations(
+    configurations = config_service.retrieve_configurations_by_id(
         configurations=(group.current_config_id for group in groups_of_provider_with_hosts)
     )
 
@@ -128,7 +129,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
 
     objects_config_info = get_config_info(objects=objects_with_groups)
 
-    specifications_for_prototypes = config.retrieve.find_specifications_for_prototypes(
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
     )
 
@@ -159,17 +160,17 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
 
 
 def get_objects_configurations(
-    objects: ObjectsInInventoryMap,
+    objects: ObjectsInInventoryMap, config_service: core.config.ConfigService
 ) -> dict[tuple[ADCMCoreType, ObjectID], dict]:
     objects_config_info = get_config_info(objects=objects)
 
     if not objects_config_info:
         return {(type_, object_id): {} for type_, ids in objects.items() for object_id in ids}
 
-    configurations = config.retrieve.find_configurations(
+    configurations = config_service.retrieve_configurations_by_id(
         configurations=(entry.config_id for entry in objects_config_info.values())
     )
-    specifications_for_prototypes = config.retrieve.find_specifications_for_prototypes(
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
     )
 
@@ -193,9 +194,11 @@ def get_objects_configurations(
     }
 
 
-def get_adcm_configuration(adcm: ADCM) -> dict[str, Any]:
-    configuration = config.retrieve.find_configurations(configurations=(adcm.config.current,))[adcm.config.current]
-    specification = config.retrieve.find_specifications_for_prototypes(prototypes=(adcm.prototype_id,))[
+def get_adcm_configuration(adcm: ADCM, config_service: core.config.ConfigService) -> dict[str, Any]:
+    configuration = config_service.retrieve_configurations_by_id(configurations=(adcm.config.current,))[
+        adcm.config.current
+    ]
+    specification = config_service.retrieve_specifications_by_prototypes(prototypes=(adcm.prototype_id,))[
         adcm.prototype_id
     ]
 

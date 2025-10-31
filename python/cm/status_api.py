@@ -130,6 +130,10 @@ def send_config_creation_event(object_: ADCMEntity) -> None:
     )
 
 
+def send_config_creation_event_by_descriptor(object_: CoreObjectDescriptor) -> None:
+    post_event(event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.type.value)), object_id=object_.id)
+
+
 def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
     post_event(
         event=EventTypes.UPDATE.format(fix_object_type(type_=object_.type.value)), object_id=object_.id, changes=changes

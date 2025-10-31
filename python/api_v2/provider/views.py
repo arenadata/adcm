@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_object_create_processing
+from functools import partial
+
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import VIEW_PROVIDER_PERM
 from application.migration.hostprovider.create import create_hostprovider
 from audit.alt.api import audit_create, audit_delete
@@ -21,6 +23,7 @@ from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -129,7 +132,10 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         name = serializer.validated_data["name"]
         description = serializer.validated_data.get("description", "")
 
-        func = add_host_provider if use_new_object_create_processing(request.headers) else create_hostprovider
+        if use_new_config_processing(request.headers):
+            func = partial(create_hostprovider, config_service=get_config_service())
+        else:
+            func = add_host_provider
 
         try:
             prototype = Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER)
