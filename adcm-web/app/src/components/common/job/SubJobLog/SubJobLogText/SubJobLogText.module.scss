@@ -2,8 +2,5 @@
   margin-top: var(--page-padding-v);
   height: calc(100vh - 490px);
   display: flex;
-
-  &_expanded {
-    height: calc(100vh - 150px);
-  }
+  --fullscreen-offset: 150px;
 }

@@ -30,6 +30,10 @@
   background: var(--code-highlight-backgroundV2);
   overflow: hidden;
 
+  &.codeHighlighter_expanded {
+    height: calc(100vh - var(--fullscreen-offset));
+  }
+
   &:has(.codeHighlighter__copyBtn:hover) {
     border: 1px solid var(--color-xblue);
   }
@@ -43,6 +47,7 @@
 
     .codeHighlighter__expandBtn,
     .codeHighlighter__secretBtn {
+      background: var(--body-background);
       width: 32px;
       height: 32px;
 

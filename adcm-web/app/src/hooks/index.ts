@@ -22,3 +22,4 @@ export { usePrevious } from './usePrevious';
 export { useOutsideClick } from './useOutsideClick';
 export { useClipboardCopy } from './useClipboardCopy/useClipboardCopy';
 export { useContextHelper } from './useContextHelper';
+export { useFullscreen } from './useFullscreen';
