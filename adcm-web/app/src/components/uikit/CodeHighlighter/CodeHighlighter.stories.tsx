@@ -1,7 +1,6 @@
 /* eslint-disable spellcheck/spell-checker */
 import CodeHighlighter from './CodeHighlighter';
 import type { StoryFn, Meta } from '@storybook/react';
-import { CodeHighlighterContextProvider } from './context/CodeHighlighterContextProvider';
 
 export default {
   title: 'uikit/CodeHighlighter',
@@ -27,11 +26,9 @@ export default {
 
 const Template: StoryFn<typeof CodeHighlighter> = (args) => {
   return (
-    <CodeHighlighterContextProvider>
-      <div style={{ height: '500px', maxWidth: '1100px' }}>
-        <CodeHighlighter code={args.code} language={args.language} isNotCopy={args.isNotCopy} />
-      </div>
-    </CodeHighlighterContextProvider>
+    <div style={{ height: '500px', maxWidth: '1100px' }}>
+      <CodeHighlighter code={args.code} language={args.language} isNotCopy={args.isNotCopy} />
+    </div>
   );
 };
 

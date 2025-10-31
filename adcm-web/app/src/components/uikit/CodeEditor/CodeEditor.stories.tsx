@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import CodeEditor from './CodeEditor';
 import type { Meta, StoryObj } from '@storybook/react';
-import { CodeHighlighterContextProvider } from '@uikit/CodeHighlighter/context/CodeHighlighterContextProvider';
 
 type Story = StoryObj<typeof CodeEditor>;
 
@@ -40,11 +39,9 @@ export default {
 const CodeEditorExample = ({ ...args }) => {
   const [code, setCode] = useState(args.code);
   return (
-    <CodeHighlighterContextProvider>
-      <div style={{ height: '500px', maxWidth: '1100px' }}>
-        <CodeEditor code={code} language={args.language} isSecret={args.isSecret} onChange={setCode} />
-      </div>
-    </CodeHighlighterContextProvider>
+    <div style={{ height: '500px', maxWidth: '1100px' }}>
+      <CodeEditor code={code} language={args.language} isSecret={args.isSecret} onChange={setCode} />
+    </div>
   );
 };
 

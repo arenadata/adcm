@@ -10,7 +10,8 @@ import Button from '@uikit/Button/Button';
 import SyncScroll from '@uikit/SyncScroll/SyncScroll';
 import ScrollPane from '@uikit/SyncScroll/ScrollPane';
 import FlexGroup from '@uikit/FlexGroup/FlexGroup';
-import { useCodeHighlighterContext } from './context/CodeHighlighter.context';
+import { useFullscreen } from '@hooks/useFullscreen';
+import { useFullscreenContext } from './SubComponents/FullscreenContainer/FullscreenContainer';
 
 const virtualizerOverscan = 5;
 const virtualizerEstimateSize = 20;
@@ -40,7 +41,10 @@ const CodeHighlighter = ({
   const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
 
-  const { isFullScreen, setIsFullScreen } = useCodeHighlighterContext();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+
+  const parentFullscreenContext = useFullscreenContext();
 
   const { parsedCodeLines, lines, patchWidth } = useMemo(() => {
     const codeLines = prepCode.split(/[\r\n]/);
@@ -77,15 +81,19 @@ const CodeHighlighter = ({
     setIsSecretVisible((prevValue) => !prevValue);
   };
 
-  const handleExpandBtnClick = () => {
-    setIsFullScreen(true);
-  };
+  const handleExpandBtnClick = () =>
+    parentFullscreenContext ? parentFullscreenContext.toggleFullscreen() : toggleFullscreen();
 
   return (
-    <div className={cn(className, s.codeHighlighter)}>
+    <div
+      ref={containerRef}
+      className={cn(s.codeHighlighter, className, {
+        [s.codeHighlighter_expanded]: isFullscreen,
+      })}
+    >
       <div className={s.codeHighlighter__actions}>
         <FlexGroup gap="4px">
-          {!isFullScreen && (
+          {!isFullscreen && (
             <Button
               iconLeft="g2-expand"
               variant="tertiary"

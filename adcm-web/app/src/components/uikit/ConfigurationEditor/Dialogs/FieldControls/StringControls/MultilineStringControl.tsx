@@ -5,7 +5,6 @@ import type { SingleSchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
 import { validate } from './StringControls.utils';
-import { CodeHighlighterContextProvider } from '@uikit/CodeHighlighter/context/CodeHighlighterContextProvider';
 
 const textTransformers: { [format: string]: (value: string) => string } = {
   json: prettifyJson,
@@ -69,16 +68,14 @@ const MultilineStringControl = ({
       error={error}
       onResetToDefault={onChange}
     >
-      <CodeHighlighterContextProvider>
-        <CodeEditor
-          isSecret={fieldSchema.adcmMeta.isSecret}
-          language={format}
-          code={code}
-          isReadonly={isReadonly}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-        />
-      </CodeHighlighterContextProvider>
+      <CodeEditor
+        isSecret={fieldSchema.adcmMeta.isSecret}
+        language={format}
+        code={code}
+        isReadonly={isReadonly}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+      />
     </ConfigurationField>
   );
 };
