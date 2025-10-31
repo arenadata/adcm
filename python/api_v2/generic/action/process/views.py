@@ -12,11 +12,11 @@
 
 from typing import Any
 
+from adcm.feature_flags import use_new_config_processing
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
-from cm.services.action_process import repo
 from cm.services.action_process.errors import (
     ActionProcessDBError,
     ActionProcessNotFoundError,
@@ -24,14 +24,7 @@ from cm.services.action_process.errors import (
     ActionProcessStepNotFoundError,
     SyncKeyMismatchError,
 )
-from cm.services.action_process.operations import (
-    OperationContext,
-    SerializedConfigStep,
-    SerializedOperationStep,
-    initiate_process,
-    perform_operation,
-    process_payload_config,
-)
+from cm.services.action_process.schema_validation import Configuration
 from cm.services.action_process.types import Step, StepType
 from cm.services.bundle import BundlePathResolver
 from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy_for_flag
@@ -42,11 +35,13 @@ from core.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.db.transaction import atomic
 from django.http.response import Http404
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+import core
 
 from api_v2.generic.action.process.serializers import (
     OperationSerializer,
@@ -59,6 +54,7 @@ from api_v2.generic.action.process.serializers import (
 from api_v2.generic.action.utils import get_schema_config_meta
 from api_v2.generic.action.views import ActionPermissionsMixin
 from api_v2.task.serializers import TaskListSerializer
+from api_v2.utils.config import convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -107,6 +103,10 @@ class ActionProcessViewSet(
         return parent_object, action
 
     def retrieve(self, request, *args, pk: str, **kwargs):  # noqa: ARG002
+        if use_new_config_processing():
+            from cm.services.action_process import repo
+        else:
+            from cm.services.action_process import repo_old as repo
         parent_object, action_info = self.get_parent_and_action_supporting_process()
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
@@ -124,6 +124,17 @@ class ActionProcessViewSet(
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):  # noqa: ARG002
+        if use_new_config_processing(headers=request.headers):
+            from cm.services.action_process import repo
+            from cm.services.action_process.operations import (
+                initiate_process,
+            )
+        else:
+            from cm.services.action_process import repo_old as repo
+            from cm.services.action_process.operations_old import (
+                initiate_process,
+            )
+
         parent_object, action_info = self.get_parent_and_action_supporting_process()
 
         self.check_permissions_for_run(
@@ -166,12 +177,35 @@ class ActionProcessViewSet(
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
-        context = OperationContext(
-            object=orm_object_to_core_descriptor(object_=parent_object),
-            action=action_info,
-            config_processor=process_payload_config,
-        )
-        perform_operation(process_id=process_id, payload=payload, context=context)
+        if use_new_config_processing(headers=request.headers):
+            from cm.services.action_process import repo
+            from cm.services.action_process.operations import (
+                OperationContext,
+                perform_operation,
+            )
+
+            config_service = get_config_service()
+
+            context = OperationContext(
+                object=orm_object_to_core_descriptor(object_=parent_object),
+                action=action_info,
+                config_processor=self._convert_configuration,
+            )
+            perform_operation(process_id=process_id, payload=payload, context=context, config_service=config_service)
+        else:
+            from cm.services.action_process import repo_old as repo
+            from cm.services.action_process.operations_old import (
+                OperationContext,
+                perform_operation,
+                process_payload_config,
+            )
+
+            context = OperationContext(
+                object=orm_object_to_core_descriptor(object_=parent_object),
+                action=action_info,
+                config_processor=process_payload_config,
+            )
+            perform_operation(process_id=process_id, payload=payload, context=context)
 
         return Response(
             status=HTTP_200_OK,
@@ -179,6 +213,13 @@ class ActionProcessViewSet(
                 Process.objects.get(pk=process_id),
                 context={"step_names_id_state_map": repo.retrieve_step_names_id_state_map(process_id=process_id)},
             ).data,
+        )
+
+    def _convert_configuration(
+        self, configuration: Configuration, specification: core.config.spec.FullSpec
+    ) -> core.config.Configuration:
+        return convert_main_config(
+            configuration={"attr": configuration.adcm_meta, "config": configuration.config}, specification=specification
         )
 
 
@@ -197,6 +238,10 @@ class ProcessStepViewSet(
     }
 
     def retrieve(self, request, *args, **kwargs):
+        if use_new_config_processing():
+            from cm.services.action_process import repo
+        else:
+            from cm.services.action_process import repo_old as repo
         _ = request, args
 
         process_id, step_id, action_id = kwargs["process_pk"], kwargs["pk"], kwargs["action_pk"]
@@ -219,7 +264,7 @@ class ProcessStepViewSet(
 
 def serialize_step(
     step: Step, object_: CoreObjectDescriptor, base_data: dict
-) -> SerializedConfigStep | SerializedOperationStep | StepMappingSerializer:
+) -> Any:  # SerializedConfigStep | SerializedOperationStep | StepMappingSerializer:
     if step.is_render_required:
         raise AdcmEx("ACTION_PROCESS_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
 
@@ -241,7 +286,7 @@ def _serialize_config_step(
     object_: CoreObjectDescriptor,
     step_input: ProcessStepInput | None,
     base_data: dict,
-) -> SerializedConfigStep:
+) -> Any:  # SerializedConfigStep:
     object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
     path_resolver = BundlePathResolver(bundle_hash=object_orm.prototype.bundle.hash)
 
@@ -262,8 +307,16 @@ def _serialize_config_step(
 
 
 def _serialize_operation_step(
-    step: Step, step_input: ProcessStepInput | None, base_data: dict
-) -> SerializedOperationStep:
+    step: Step,
+    step_input: ProcessStepInput | None,
+    base_data: dict,
+    # Any returned for faster development until feature flag is removed
+) -> Any:  # SerializedOperationStep:
+    if use_new_config_processing():
+        from cm.services.action_process import repo
+    else:
+        from cm.services.action_process import repo_old as repo
+
     process = repo.retrieve_process(process_id=step.process_id)
     step_spec_declaration = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec)
     ui_options = step_spec_declaration.model_dump(include={"ui_options"}).get("ui_options")

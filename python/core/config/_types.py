@@ -13,7 +13,7 @@
 from dataclasses import dataclass, field
 from typing import Any, TypeAlias
 
-from core.types import CoreObjectDescriptor
+from core.types import ConfigID, CoreObjectDescriptor
 
 ParameterFullName: TypeAlias = str
 """
@@ -71,11 +71,20 @@ ConfigValues: TypeAlias = dict[ParameterLevelName, Any]
 ConfigFlatValues: TypeAlias = dict[ParameterFullName, Any]
 ConfigAttrs: TypeAlias = dict[ParameterFullName, Attributes]
 
+Defaults: TypeAlias = dict[ParameterFullName, Any]
+
 
 @dataclass(slots=True)
 class Configuration:
     values: ConfigValues = field(default_factory=dict)
     attributes: ConfigAttrs = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ConfigurationWithID(Configuration):
+    # keep that way while it's direct dataclass descendant of `Configuration`
+    # for inheritance simplicity
+    id: ConfigID = 0
 
 
 @dataclass(slots=True)

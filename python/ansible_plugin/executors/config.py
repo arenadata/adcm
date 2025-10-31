@@ -12,17 +12,15 @@
 
 from typing import Any, Collection, TypeAlias, TypedDict
 
-from cm.api import set_object_config_with_plugin
-from cm.converters import CoreObject, core_type_to_model
-from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigLog
-from cm.services.config import ConfigAttrPair
-from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
+from application.migration.config import update_configuration_from_job
+from cm.converters import core_type_to_model
 from core.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
+from infra.services import get_config_service
 from pydantic import model_validator
 from typing_extensions import Self
+import core
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -35,12 +33,10 @@ from ansible_plugin.base import (
     from_arguments_root,
 )
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
-from ansible_plugin.utils import cast_to_type
 
 # don't want to typehint due to serialization problems and serialization priority
 # (e.g. bool casted successfully to float, etc.)
 ParamValue: TypeAlias = Any
-OriginalValues: TypeAlias = ConfigAttrPair
 
 
 class AdcmConfigParameterPluginItem(ConfigApplyParameterItem):
@@ -117,121 +113,51 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value={}, changed=False, error=error)
 
-        model = core_type_to_model(core_type=target.type)
-        db_object = model.objects.select_related("config").get(id=target.id)
+        config_service = get_config_service()
 
-        changes_config, changed = apply_config_changes(
-            runtime.vars.job.id, db_object, arguments.get_changes(), "ansible update"
+        original_changes = arguments.get_changes()
+
+        model = core_type_to_model(core_type=target.type)
+        db_object = model.objects.get(id=target.id)
+
+        changes, has_changed = update_configuration_from_job(
+            owner=target,
+            changes_input=original_changes,
+            convert=to_flat_configuration,
+            description="ansible update",
+            job_id=runtime.vars.job.id,
+            config_service=config_service,
+            owner_orm=db_object,
         )
 
-        return_value = self._prepare_return_value(changes_config)
+        return_value = to_return_value(changes=changes)
 
-        if not changed:
-            return CallResult(value=return_value, changed=False, error=None)
+        return CallResult(value=return_value, changed=has_changed, error=None)
 
-        return CallResult(value=return_value, changed=True, error=None)
 
-    @staticmethod
-    def _prepare_return_value(config: dict) -> ChangeConfigReturn:
-        # todo what should be returned in `value`??
-        #  originally the same data that was passed was returned
-        #  WITHOUT type casting
-        if len(config) == 1:
-            config_params = next(iter(config.values()))
+def to_flat_configuration(input_changes: list[dict], _) -> core.config.FlatConfiguration:
+    target = core.config.FlatConfiguration()
+
+    for parameter_change in input_changes:
+        full_name = core.config.names.ensure_full_name(parameter_change["key"])
+
+        if (is_active := parameter_change.get("active")) is not None:
+            target.attributes[full_name] = core.config.Attributes(is_active=is_active)
         else:
-            # removing trailing "/" to return to keys to input format
-            config_params = {key.rstrip("/"): value for key, value in config.items()}
+            target.values[full_name] = parameter_change["value"]
 
-        # putting result under the "value" key, because during result parsing dicts are merged into response,
-        # return of this plugin should always have `value` key
-        return ChangeConfigReturn(value=config_params)
+    return target
 
 
-def apply_config_changes(
-    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
-) -> tuple[dict, bool]:
-    changes = ConfigAttrPair(config={}, attr={})
-    for parameter in parameters:
-        key = parameter["key"]
-        if "/" not in key:
-            key = f"{key}/"
+def to_return_value(changes: core.config.FlatConfiguration) -> ChangeConfigReturn:
+    values = changes.values
 
-        if parameter.get("active") is not None:
-            changes.attr[key] = {"active": parameter["active"]}
-        else:
-            changes.config[key] = parameter["value"]
+    if len(values) == 1:
+        config_params = next(iter(values.values()))
+    else:
+        # removing trailing and prefixing "/" to return to keys to input format
+        config_params = {key.strip("/"): value for key, value in values.items()}
 
-    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
-    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
-
-    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
-
-    if not changed:
-        return changes.config, False
-
-    set_object_config_with_plugin(
-        job_id=job_id,
-        obj=db_object,
-        config=configuration.config,
-        attr=configuration.attr,
-        description=changes_description,
-    )
-
-    return changes.config, True
-
-
-def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:
-    """
-    Fill `target` with values from `changes` in-place
-
-    :param target: Values for complex structures are nested (e.g. ["groupkey"]["valingorupkey"])
-    :param changes: Keys must have the same format as flatspec (e.g. ["groupkey/subgroupkey"])
-    :param spec: Flat specification for the changing config
-    :returns: Changed flag that's true if either param in config/attr has changed
-    """
-
-    keys_to_change = set(changes.config.keys()) | set(changes.attr.keys())
-    if missing_keys := keys_to_change - spec.keys():
-        message = f"Some keys aren't presented in specification: {', '.join(sorted(missing_keys))}"
-        raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
-
-    changed = False
-
-    for key, value in changes.config.items():
-        param_spec = spec[key]
-        cast_value = cast_to_type(field_type=param_spec.type, value=value, limits=param_spec.limits)
-
-        key, *subs = key.split("/", maxsplit=1)
-        subkey = subs[0] if subs else None
-
-        if subkey:
-            if target.config[key][subkey] == cast_value:
-                continue
-
-            target.config[key][subkey] = cast_value
-            changed = True
-        else:
-            if target.config[key] == cast_value:
-                continue
-
-            target.config[key] = cast_value
-            changed = True
-
-    # here we consider key full key
-    for key, value in changes.attr.items():
-        param_spec = spec[key]
-        if "activatable" not in param_spec.limits:
-            message = (
-                "`active` parameter can be changed only for activatable group. " f"Group {key} is not one of them."
-            )
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
-
-        attr_key = key.rstrip("/")
-        # we want to directly compare "active"'s since it's the only thing we may change via plugin
-        if target.attr[attr_key].get("active") == value["active"]:
-            continue
-
-        target.attr[attr_key] |= value
-        changed = True
-
-    return changed
+    # putting result under the "value" key, because during result parsing dicts are merged into response,
+    # return of this plugin should always have `value` key
+    return ChangeConfigReturn(value=config_params)

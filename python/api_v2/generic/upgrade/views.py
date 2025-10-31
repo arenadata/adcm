@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -19,11 +20,16 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.dto import ConfigurationDTO, UpgradeActionDTO
+from application.migration.upgrade import upgrade_object
 from cm.errors import AdcmEx
 from cm.models import Bundle, Cluster, ObjectType, Prototype, PrototypeConfig, Provider, TaskLog, Upgrade
 from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
+from cm.services.job.run import start_task
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
+from core.cluster.types import HostComponentEntry
 from django.db.models import OuterRef, Prefetch, Subquery
+from infra.services import get_config_service, get_job_service
 from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -31,7 +37,9 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
+import core
 
 from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
@@ -39,6 +47,7 @@ from api_v2.generic.upgrade.filters import UpgradeFilter
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
+from api_v2.utils.config import convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -166,6 +175,59 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
         upgrade = self.get_upgrade(parent=parent)
 
+        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
+
+        func = self._run_new if use_new_config_processing() else self._run_old
+
+        return func(serializer, upgrade, parent)
+
+    def _run_new(self, serializer: Serializer, upgrade: Upgrade, parent: Cluster | Provider) -> Response:
+        data = serializer.validated_data
+
+        configuration = None
+        if data["configuration"] is not None:
+            config_data = data["configuration"]
+            # only when both are not empty, we consider it specified configuration
+            if config_data["config"] or config_data["adcm_meta"]:
+                configuration = ConfigurationDTO(
+                    convert=convert_main_config,
+                    input_config={"config": config_data["config"], "attr": config_data["adcm_meta"]},
+                )
+
+        mapping = (
+            {
+                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                for entry in data["host_component_map"]
+            }
+            if data["host_component_map"] is None
+            else None
+        )
+
+        payload = UpgradeActionDTO(
+            configuration=configuration,
+            mapping=mapping,
+            launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
+        )
+
+        result = upgrade_object(
+            obj=parent,
+            upgrade=upgrade,
+            payload=payload,
+            job_service=get_job_service(),
+            config_service=get_config_service(),
+        )
+
+        match result:
+            case ("plain", _):
+                return Response(status=HTTP_204_NO_CONTENT)
+            case ("task", task_id):
+                task_orm = TaskLog.objects.get(pk=task_id)
+                if not use_new_job_scheduler():
+                    start_task(task_orm)
+
+                return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task_orm).data)
+
+    def _run_old(self, serializer: Serializer, upgrade: Upgrade, parent: Cluster | Provider) -> Response:
         configuration = serializer.validated_data["configuration"]
         verbose = serializer.validated_data["is_verbose"]
         config = {}
@@ -182,9 +244,6 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
 
         attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
-
-        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
-
         result = do_upgrade(
             obj=parent,
             upgrade=upgrade,

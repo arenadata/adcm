@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.config import _files as files  # noqa
 from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
@@ -17,30 +18,50 @@ from core.config import _pattern as pattern
 from core.config._config import flat_to_nested, get_by_full_name, nested_to_flat, set_by_full_name, change_by_full_name
 from core.config._types import (
     Attributes,
+    ConfigAttrs,
     ConfigFlatValues,
     ConfigOwner,
     ConfigOwnerObjectInfo,
+    ConfigValues,
     Configuration,
+    ConfigurationWithID,
+    Defaults,
     FlatConfiguration,
     ParameterFullName,
     ParameterLevelName,
 )
-from core.config._validate import PatternValidator, Validators, VariantValidator, Violations
-from core.config import _files as files
+from core.config import _secrets as secrets
+from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
+from core.config._service import ConfigService, Settings, Directories, VariantValidators, OperationError
+from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError
 
 __all__ = [
     "Attributes",
+    "ConfigAttrs",
+    "ConfigFlatValues",
     "ConfigOwner",
     "ConfigOwnerObjectInfo",
-    "ConfigFlatValues",
+    "ConfigRepoI",
+    "ConfigService",
+    "ConfigValues",
     "Configuration",
+    "ConfigurationWithID",
+    "Defaults",
+    "Directories",
     "FlatConfiguration",
+    "NoConfigError",
+    "ObjectWithoutConfigError",
+    "OperationError",
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",
+    "Settings",
+    "MainConfigVariantResolver",
     "Validators",
     "VariantValidator",
+    "VariantValidators",
     "Violations",
+    "change_by_full_name",
     "files",
     "flat_to_nested",
     "get_by_full_name",
@@ -48,7 +69,7 @@ __all__ = [
     "nested_to_flat",
     "operations",
     "pattern",
+    "secrets",
     "set_by_full_name",
-    "change_by_full_name",
     "spec",
 ]

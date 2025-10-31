@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import ABC
 from dataclasses import dataclass
 from itertools import chain
 from typing import Any, Protocol, TypeAlias
@@ -25,6 +26,7 @@ from core.config._types import (
     ParameterLevelName,
 )
 from core.result import Fail, Success
+from core.types import CoreObjectDescriptor
 
 # External Interface
 
@@ -39,10 +41,26 @@ class PatternValidator(Protocol):
         ...
 
 
+class AlwaysPassValidator(VariantValidator, PatternValidator):
+    def is_value_allowed(self, value: Any, parameter: spec.p.VariantParameter) -> bool:
+        _ = value, parameter
+        return True
+
+    def is_match(self, value: str, pattern: str) -> bool:
+        _ = value, pattern
+        return True
+
+
 @dataclass(slots=True)
 class Validators:
     variant: VariantValidator
     pattern: PatternValidator
+
+
+@dataclass(slots=True)
+class MainConfigVariantResolver(ABC, VariantValidator):
+    owner: CoreObjectDescriptor
+    reference_config: Configuration
 
 
 # Types

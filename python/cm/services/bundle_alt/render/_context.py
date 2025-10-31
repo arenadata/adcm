@@ -11,11 +11,13 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
+from functools import partial
 
 from adcm.feature_flags import use_new_config_processing
 from core.cluster.types import ClusterTopology
 from core.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
+from infra.services import get_config_service
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -35,7 +37,6 @@ from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.job import context as context_m
 from cm.services.job import inventory
 from cm.services.job.inventory import (
-    get_action_process_context,
     sort_hosts_within_groups,
 )
 from cm.services.job.inventory._base import add_mapping_groups_from_process_steps
@@ -143,9 +144,14 @@ def _prepare_context_for_action(
 ) -> ActionRenderContext:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
 
-    module = context_m if use_new_config_processing else inventory
+    if use_new_config_processing():
+        get_cluster_vars = partial(context_m.get_cluster_vars, config_service=get_config_service())
+        get_action_process_context = context_m.get_action_process_context
+    else:
+        get_cluster_vars = inventory.get_cluster_vars
+        get_action_process_context = inventory.get_action_process_context
 
-    clusters_vars = module.get_cluster_vars(topology=cluster_topology)
+    clusters_vars = get_cluster_vars(topology=cluster_topology)
 
     process_cumulative_delta = {}
 

@@ -16,10 +16,10 @@ from pathlib import Path
 from cm import models
 from cm.services import adcm
 from cm.services import bundle_alt as bundle
-from cm.services import config_service as config
 from django.conf import settings
 from django.core.files import File
 from django.db.transaction import atomic
+from infra.services import get_config_service
 from rbac.upgrade.role import prepare_action_roles
 import core
 
@@ -39,7 +39,7 @@ def parse_bundle_from_request_to_db(
         unpacking_info = bundle.load.unpack_bundle(
             archive=archive, bundles_dir=settings.BUNDLE_DIR, files_dir=settings.FILE_DIR
         )
-        check_defaults = partial(_check_defaults_new, bundle_root=unpacking_info.root, secrets=config.AnsibleSecrets())
+        check_defaults = partial(_check_defaults_new, bundle_root=unpacking_info.root)
         with bundle.load.cleanup_on_fail(unpacking_info.root):
             bundle.load.verify_signature(unpacking_info.signature, verified_signature_only)
             definitions = bundle.load.retrieve_bundle_definitions_from_archive(
@@ -63,7 +63,7 @@ def process_adcm_bundle(adcm_config_file: Path) -> None:
     adcm_object = models.ADCM.objects.first()
     current_version = adcm_object.prototype.version if adcm_object is not None else "0"
 
-    check_defaults = partial(_check_defaults_new, bundle_root=adcm_config_file.parent, secrets=config.AnsibleSecrets())
+    check_defaults = partial(_check_defaults_new, bundle_root=adcm_config_file.parent)
 
     adcm_definition = bundle.adcm.retrieve_adcm_definition(
         adcm_config_file=adcm_config_file, current_version=current_version, check_defaults=check_defaults
@@ -77,20 +77,21 @@ def process_adcm_bundle(adcm_config_file: Path) -> None:
         )
 
 
-def _check_defaults_new(
-    configuration: core.bundle_alt.ConfigDefinition, secrets: config.AnsibleSecrets, bundle_root: Path
-) -> None:
+def _check_defaults_new(configuration: core.bundle_alt.ConfigDefinition, bundle_root: Path) -> None:
     # the whole function shouldn't be on this level,
     # but it can be moved only after direct conversion from bundle DSL to spec is available
-    from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
-    from cm.services.config_service import retrieve
+    from cm.config.repo import build_specification_from_prototype_config_records
 
     # validate defaults should be added to config service, so this import won't be nessesary
-    from cm.services.config_service._validators import DefaultsVariantResolver, PlainValuePatternValidator
+    from cm.config.validators import DefaultsVariantResolver
+    from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
+    from core.config._validate import AlwaysPassValidator
     from core.result import is_fail
 
+    secrets = get_config_service().secrets
+
     records = tuple(convert_config_definition_to_orm_model(configuration, prototype=None, action=None))
-    specification, defaults = retrieve.build_specification_from_prototype_config_records(
+    specification, defaults = build_specification_from_prototype_config_records(
         records=records,
         # can't detect customization flag in here and it's not important for validation
         group_customization_flag=False,
@@ -102,7 +103,7 @@ def _check_defaults_new(
         values={k: v for k, v in defaults.items() if v is not None}, attributes={}
     )
 
-    validators = core.config.Validators(variant=DefaultsVariantResolver(), pattern=PlainValuePatternValidator())
+    validators = core.config.Validators(variant=DefaultsVariantResolver(), pattern=AlwaysPassValidator())
 
     result = core.config.operations.validate_values(
         # for now attributes feel unimportant for defaults

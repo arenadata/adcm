@@ -90,6 +90,13 @@ def set_by_full_name(name: ParameterFullName, new_value: Any, values: ConfigValu
     group[own_name] = new_value
 
 
+def set_by_full_name_returning_old(name: ParameterFullName, new_value: Any, values: ConfigValues) -> Any:
+    own_name, group = get_group_with_value(name=name, values=values)
+    previous = group[own_name]
+    group[own_name] = new_value
+    return previous
+
+
 def change_by_full_name(name: ParameterFullName, func: Callable[[Any], New], values: ConfigValues) -> None:
     own_name, group = get_group_with_value(name=name, values=values)
     new_value = func(group[own_name])

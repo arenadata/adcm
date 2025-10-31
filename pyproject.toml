@@ -160,7 +160,7 @@ exclude = [
     "python/check_adcm_config.py",
     "python/migration_checker.py",
     "python/adcm/",
-    "python/ansible/",
+    "python/ansible_share/",
     "python/ansible_plugin/",
     "python/api_v2/",
     "python/audit/",
@@ -190,12 +190,13 @@ executionEnvironments = [
 # The main package to lint
 root_packages = [
     "adcm",
-    "ansible",
     "ansible_plugin",
-    "core",
-    "cm",
     "api_v2",
+    "application",
     "audit",
+    "cm",
+    "core",
+    "infra",
     "jobs",
     "rbac"
 ]
@@ -208,8 +209,14 @@ include_external_packages = true
 name = "core must not import other modules"
 type = "forbidden"
 source_modules = ["core"]
-forbidden_modules = ["cm", "rbac", "api_v2", "ansible", "ansible_plugin", "audit", "jobs", "django"]
+forbidden_modules = ["cm", "rbac", "api_v2", "ansible_share", "ansible_plugin", "audit", "jobs", "django", "application", "infra"]
 
+[[tool.importlinter.contracts]]
+name = "core.* modules must not import core.bundle"
+type = "forbidden"
+source_modules = ["core.*"]
+forbidden_submodules = ["core.bundle"]
+forbidden_modules = []
 
 # After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
 
@@ -241,9 +248,3 @@ forbidden_modules = ["cm", "rbac", "api_v2", "ansible", "ansible_plugin", "audit
 # forbidden_modules = ["audit"]
 
 
-[[tool.importlinter.contracts]]
-name = "core.* modules must not import core.bundle"
-type = "forbidden"
-source_modules = ["core.*"]
-forbidden_submodules = ["core.bundle"]
-forbidden_modules = []

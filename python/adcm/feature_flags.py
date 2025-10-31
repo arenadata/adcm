@@ -41,7 +41,3 @@ def use_new_config_processing(headers: Mapping | None = None) -> bool:
         return header_value == "new"
 
     return os.environ.get(FLAG_CONFIG_PROCESSING.env) == "new"
-
-
-def use_new_object_create_processing(headers: Mapping | None = None) -> bool:
-    return use_new_config_processing(headers)

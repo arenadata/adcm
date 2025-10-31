@@ -22,7 +22,6 @@ import core
 
 from cm.converters import db_record_type_to_core_type
 from cm.models import Cluster, ClusterBind, PrototypeExport, PrototypeImport, Service
-from cm.services import config_service as config
 
 ImportedObjectName: TypeAlias = str
 
@@ -33,7 +32,7 @@ class _ImportTarget(NamedTuple):
     default: tuple[str, ...] | None
 
 
-def get_imports_for_inventory(cluster_id: int) -> dict:
+def get_imports_for_inventory(cluster_id: int, config_service: core.config.ConfigService) -> dict:
     targets = _get_import_targets_for_bundle(
         bundle_id=Cluster.objects.values_list("prototype__bundle_id", flat=True).get(id=cluster_id)
     )
@@ -55,7 +54,7 @@ def get_imports_for_inventory(cluster_id: int) -> dict:
 
     binds_info: dict[tuple[ADCMCoreType, str], list[dict]] = _get_binds_for_cluster(cluster_id=cluster_id)
 
-    configurations = _get_configurations_prepared_for_inventory(binds=binds_info)
+    configurations = _get_configurations_prepared_for_inventory(binds=binds_info, config_service=config_service)
 
     # values are names of fields to export
     exports_info = defaultdict(set)
@@ -94,7 +93,9 @@ def get_imports_for_inventory(cluster_id: int) -> dict:
         )
 
     if fill_with_defaults:
-        _fill_imports_with_defaults_inplace(imports=imports, fill_with_defaults=fill_with_defaults)
+        _fill_imports_with_defaults_inplace(
+            imports=imports, fill_with_defaults=fill_with_defaults, config_service=config_service
+        )
 
     return imports
 
@@ -146,12 +147,14 @@ def _get_binds_for_cluster(cluster_id: int) -> dict[tuple[ADCMCoreType, str], li
     return available_sources
 
 
-def _get_configurations_prepared_for_inventory(binds: dict[tuple[ADCMCoreType, str], list[dict]]):
+def _get_configurations_prepared_for_inventory(
+    binds: dict[tuple[ADCMCoreType, str], list[dict]], config_service: core.config.ConfigService
+):
     config_ids = map(itemgetter("config_id"), chain.from_iterable(binds.values()))
-    configurations = config.retrieve.find_configurations(configurations=config_ids)
+    configurations = config_service.retrieve_configurations_by_id(configurations=config_ids)
 
     prototype_ids = map(itemgetter("prototype_id"), chain.from_iterable(binds.values()))
-    specifications_for_prototypes = config.retrieve.find_specifications_for_prototypes(prototypes=prototype_ids)
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(prototypes=prototype_ids)
 
     # actually we don't need to process the whole configurations here, just exported fields,
     # but currently types are too complex to write this selection in an understandable way
@@ -182,14 +185,16 @@ def _extract_required_fields(config: dict, fields: Collection[str]) -> dict:
 
 
 def _fill_imports_with_defaults_inplace(
-    imports: dict, fill_with_defaults: set[tuple[ImportedObjectName, _ImportTarget]]
+    imports: dict,
+    fill_with_defaults: set[tuple[ImportedObjectName, _ImportTarget]],
+    config_service: core.config.ConfigService,
 ):
     still_required_to_fill = {entry for entry in fill_with_defaults if entry[0] not in imports}
     if not still_required_to_fill:
         return imports
 
     required_prototypes = set(map(itemgetter(1), still_required_to_fill))
-    specifications = config.retrieve.find_specifications_for_prototypes(prototypes=required_prototypes)
+    specifications = config_service.retrieve_specifications_by_prototypes(prototypes=required_prototypes)
 
     cluster_query = Cluster.objects.values(
         "id", "config__current", "prototype_id", type=Value(ADCMCoreType.CLUSTER.value)
@@ -203,7 +208,7 @@ def _fill_imports_with_defaults_inplace(
         for row in cluster_query.union(service_query)
     }
     config_ids = map(itemgetter(1), objects.values())
-    configurations = config.retrieve.find_configurations(configurations=config_ids)
+    configurations = config_service.retrieve_configurations_by_id(configurations=config_ids)
 
     for import_name, target in still_required_to_fill:
         object_, config_id = objects[target.prototype_id]

@@ -12,7 +12,8 @@
 
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Literal, TypeAlias
+from pathlib import Path
+from typing import Callable, Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
@@ -23,13 +24,9 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.db.utils import DatabaseError
 from django.utils import timezone
+import core
 
-from cm.adcm_config.checks import check_attr
-from cm.adcm_config.config import (
-    check_config_spec,
-    get_spec_flat_spec_config_attr_from_prototype_configs,
-    process_config_spec,
-)
+from cm.config.repo import build_specification_from_prototype_config_records
 from cm.converters import core_type_to_model
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
@@ -61,7 +58,6 @@ from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.job.run import start_task
 from cm.services.job.run.repo import JobRepoImpl
-from cm.variant import process_variant
 
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -72,12 +68,19 @@ OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetSte
 
 ConfigProcessor = Callable[[Step, Configuration], ConfigAttrPair]
 
+T = TypeVar("T", contravariant=True)
+
+
+class ConfigInputProcessor(Protocol[T]):
+    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration:
+        ...
+
 
 @dataclass(frozen=True, slots=True)
 class OperationContext:
     object: CoreObjectDescriptor
     action: ActionInfo
-    config_processor: ConfigProcessor
+    config_processor: ConfigInputProcessor
 
 
 def find_current_and_last_completed_steps(
@@ -243,7 +246,12 @@ def convert_db_errors(func):
 
 @convert_db_errors
 @atomic
-def perform_operation(process_id: ActionProcessID, payload: OperationPayload, context: OperationContext) -> None:
+def perform_operation(
+    process_id: ActionProcessID,
+    payload: OperationPayload,
+    context: OperationContext,
+    config_service: core.config.ConfigService,
+) -> None:
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
 
@@ -251,7 +259,13 @@ def perform_operation(process_id: ActionProcessID, payload: OperationPayload, co
 
     match payload.method:
         case ProcessOperationType.SUBMIT:
-            submit_step(process=process, payload=payload, context=context, new_process_sync_key=new_process_sync_key)
+            submit_step(
+                process=process,
+                payload=payload,
+                context=context,
+                new_process_sync_key=new_process_sync_key,
+                config_service=config_service,
+            )
 
         case ProcessOperationType.RESET:
             reset_step(process=process, payload=payload, context=context)
@@ -266,7 +280,11 @@ def perform_operation(process_id: ActionProcessID, payload: OperationPayload, co
 
 
 def submit_step(
-    process: ActionProcess, new_process_sync_key: UUID, payload: SubmitStepPayload, context: OperationContext
+    process: ActionProcess,
+    new_process_sync_key: UUID,
+    payload: SubmitStepPayload,
+    context: OperationContext,
+    config_service: core.config.ConfigService,
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
@@ -277,8 +295,9 @@ def submit_step(
             _operation_submit_config(
                 process=process,
                 step=step,
-                configuration=payload.params.configuration,
+                input_config=payload.params.configuration,
                 context=context,
+                config_service=config_service,
             )
 
         case StepType.OPERATION:
@@ -388,41 +407,42 @@ def _operation_submit_job(
 def _operation_submit_config(
     process: ActionProcess,
     step: Step,
-    configuration: Configuration,
+    input_config: Configuration,
     *,
     context: OperationContext,
+    config_service: core.config.ConfigService,
 ) -> None:
-    config_attr_pair = context.config_processor(step, configuration)
-    _validate_config(config=config_attr_pair, step=step, context=context)
+    prototype_conifgs = tuple(PrototypeConfig(**cfg) for cfg in step.step_spec)
+    specification, _ = build_specification_from_prototype_config_records(
+        records=prototype_conifgs,
+        group_customization_flag=False,
+        secrets_service=config_service.secrets,
+        # not interested in defaults
+        bundle_root=Path(),
+    )
 
-    step_input_data = StepInputDTO(configuration=config_attr_pair._asdict(), created_at=timezone.now())
+    try:
+        owner_config = config_service.retrieve_current_configuration(owner=context.object)
+    except core.config.ObjectWithoutConfigError:
+        owner_config = None
+
+    configuration = context.config_processor(input_config, specification)
+    step_configuration = config_service.prepare_action_configuration(
+        configuration=configuration,
+        specification=specification,
+        owner_descriptor=context.object,
+        owner_configuration=owner_config,
+    )
+    prefix = core.config.files.build_action_process_step_prefix(process_id=process.id, step_id=step.id)
+    config_service.prepare_file_parameter_values_on_fs(
+        configuration=step_configuration, specification=specification, owner_prefix=prefix
+    )
+
+    step_input_data = StepInputDTO(configuration=step_configuration, created_at=timezone.now())
     repo.upsert_step_input(step_id=step.id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step.id)
-    complete_step(
-        process_id=process.id,
-        step_id=step.id,
-        action_id=context.action.id,
-        object_=context.object,
-    )
-
-
-def _validate_config(config: ConfigAttrPair, step: Step, context: OperationContext) -> None:
-    object_orm = core_type_to_model(context.object.type).objects.get(id=context.object.id)
-    action_orm = repo.retrieve_action_orm(action_id=context.action.id)
-    step_orm = repo.retrieve_step_orm(step_id=step.id)
-
-    prototype_configs = [PrototypeConfig(**config) for config in step.step_spec]
-    spec, flat_spec, _, _ = get_spec_flat_spec_config_attr_from_prototype_configs(
-        prototype=object_orm.prototype, prototype_configs=prototype_configs
-    )
-
-    check_attr(proto=action_orm.prototype, obj=action_orm, attr=config.attr, spec=flat_spec)
-    process_variant(obj=object_orm, spec=spec, conf=config.config)
-    check_config_spec(
-        proto=action_orm.prototype, obj=action_orm, spec=spec, flat_spec=flat_spec, conf=config.config, attr=config.attr
-    )
-    process_config_spec(obj=step_orm, spec=spec, new_config=config.config)
+    complete_step(process_id=process.id, step_id=step.id, action_id=context.action.id, object_=context.object)
 
 
 def _check_step_is_current(process: ActionProcess, payload: SubmitStepPayload) -> None:

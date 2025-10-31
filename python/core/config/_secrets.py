@@ -11,37 +11,19 @@
 # limitations under the License.
 
 from typing import Callable, TypeVar
-import json
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
 
 T = TypeVar("T")
 
+ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
+
 
 class AnsibleSecrets:
-    def __init__(self) -> None:
-        # Import it locally for laziness support.
-        # There's no major need in django initialization for this init:
-        # 1. Secret may be read independently
-        # 2. Ansible secret header is constant, not an actual setting
-        from django.conf import settings
-
-        secret = settings.ANSIBLE_SECRET
-        if not secret:
-            if settings.SECRETS_FILE.is_file():
-                # todo: temporal fallback to read secret from file,
-                #       shouldn't be that way
-                raw = settings.SECRETS_FILE.read_text()
-                content = json.loads(raw)
-                secret = content["adcmuser"]["password"]
-
-            if not secret:
-                message = "Ansible secret is undefined, work with secrets is impossible"
-                raise ValueError(message)
-
+    def __init__(self, secret: str) -> None:
         self._vault = VaultAES256()
         self._secret = VaultSecret(_bytes=str(secret).encode("utf-8"))
-        self._encrypted_header = settings.ANSIBLE_VAULT_HEADER
+        self._encrypted_header = ANSIBLE_VAULT_HEADER
 
     def is_encrypted(self, value: str) -> bool:
         return value.startswith(self._encrypted_header)
@@ -83,7 +65,8 @@ def encrypt_if_possible(value: T, encryptor: Callable[[str], str]) -> T:
         return encryptor(value)
 
     if isinstance(value, dict):
-        return {k: encrypt_if_possible(value=v, encryptor=encryptor) for k, v in value.items()}
+        # review within ADCM-7284
+        return {k: encrypt_if_possible(value=v, encryptor=encryptor) for k, v in value.items()}  # pyright: ignore [reportReturnType]
 
     return value
 
@@ -93,6 +76,7 @@ def decrypt_if_possible(value: T, decryptor: Callable[[str], str | None]) -> T:
         return decryptor(value)
 
     if isinstance(value, dict):
-        return {k: decrypt_if_possible(value=v, decryptor=decryptor) for k, v in value.items()}
+        # review within ADCM-7284
+        return {k: decrypt_if_possible(value=v, decryptor=decryptor) for k, v in value.items()}  # pyright: ignore [reportReturnType]
 
     return value

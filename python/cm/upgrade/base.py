@@ -36,6 +36,7 @@ from cm.api import (
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
+from cm.legacy.config import init_object_config
 from cm.logger import logger
 from cm.models import (
     ActionHostGroup,
@@ -71,7 +72,6 @@ from cm.services.concern.distribution import (
     distribute_concern_on_related_objects,
     redistribute_issues_and_flags,
 )
-from cm.services.config_service import create
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.types import HcAclAction
 from cm.services.mapping import check_nothing, set_host_component_mapping
@@ -269,7 +269,7 @@ def bundle_revert(obj: Cluster | Provider) -> None:
                         service=service,
                         prototype=component_prototype,
                     )
-                    obj_conf = create.init_object_config(proto=component_prototype, obj=component)
+                    obj_conf = init_object_config(proto=component_prototype, obj=component)
                     component.config = obj_conf
                     component.save(update_fields=["config"])
                     _restore_deleted_objects(
@@ -727,7 +727,7 @@ class _ClusterBundleSwitch(_BundleSwitch):
                     # this code was taken from service creation from `cm.api` skipping checks, concerns, etc.
                     check_license(prototype=proto_service)
                     service = Service.objects.create(cluster=self._target, prototype=proto_service)
-                    service.config = create.init_object_config(proto=proto_service, obj=service)
+                    service.config = init_object_config(proto=proto_service, obj=service)
                     service.save(update_fields=["config"])
 
                 if not Component.objects.filter(cluster=self._target, service=service).exists():

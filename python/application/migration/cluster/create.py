@@ -14,7 +14,7 @@ from typing import Iterable
 
 from cm import errors, models
 from cm.api import check_license
-from cm.services import config_service as config
+from cm.converters import orm_object_to_core_descriptor
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.cases import recalculate_own_concerns_on_add_clusters, recalculate_own_concerns_on_add_services
 from cm.services.concern.distribution import redistribute_issues_and_flags
@@ -22,20 +22,24 @@ from cm.services.status.notify import reset_hc_map
 from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core import result as r
 from core import types
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, QuerySet
 from rbac.models import re_apply_object_policy
+import core
 
 
-def create_cluster(prototype: models.Prototype, name: str, description: str) -> models.Cluster:
+def create_cluster(
+    prototype: models.Prototype, name: str, description: str, config_service: core.config.ConfigService
+) -> models.Cluster:
     if prototype.type != types.ADCMCoreType.CLUSTER:
         raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
     check_license(prototype)
 
     with transaction.atomic():
-        cluster = _create_cluster(prototype=prototype, name=name, description=description)
+        cluster = _create_cluster(
+            prototype=prototype, name=name, description=description, config_service=config_service
+        )
         _create_ansible_config(cluster_id=cluster.pk)
 
         added, removed = {}, {}
@@ -49,8 +53,7 @@ def create_cluster(prototype: models.Prototype, name: str, description: str) -> 
 
 
 def create_services_from_prototypes(
-    cluster: models.Cluster,
-    prototype_ids: Iterable[types.PrototypeID],
+    cluster: models.Cluster, prototype_ids: Iterable[types.PrototypeID], config_service: core.config.ConfigService
 ) -> tuple[models.Service, ...]:
     result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
     match result:
@@ -60,7 +63,7 @@ def create_services_from_prototypes(
     prototypes = result.value
 
     with transaction.atomic():
-        services = _bulk_add_services_to_cluster(cluster=cluster, prototypes=prototypes)
+        services = _bulk_add_services_to_cluster(cluster=cluster, prototypes=prototypes, config_service=config_service)
 
         recalculate_own_concerns_on_add_services(
             cluster=cluster,
@@ -113,7 +116,7 @@ def _validate_service_prototypes(
 # This function is not truly bulk add due to sequential config init,
 # but for now it's too costly to implement bulk config init
 def _bulk_add_services_to_cluster(
-    cluster: models.Cluster, prototypes: tuple[models.Prototype, ...]
+    cluster: models.Cluster, prototypes: tuple[models.Prototype, ...], config_service: core.config.ConfigService
 ) -> QuerySet[models.Service]:
     models.Service.objects.bulk_create(objs=[models.Service(cluster=cluster, prototype=proto) for proto in prototypes])
     services = (
@@ -123,7 +126,8 @@ def _bulk_add_services_to_cluster(
     )
 
     for target in services:
-        config.create.initial_config_if_required(owner_object=target, files_dir=settings.FILE_DIR)
+        descriptor = orm_object_to_core_descriptor(target)
+        config_service.create_initial_configuration_if_required(owner=descriptor)
 
     service_proto_service_map = {service.prototype.pk: service for service in services}
     models.Component.objects.bulk_create(
@@ -142,7 +146,8 @@ def _bulk_add_services_to_cluster(
         .select_related("prototype")
     )
     for target in components:
-        config.create.initial_config_if_required(owner_object=target, files_dir=settings.FILE_DIR)
+        descriptor = orm_object_to_core_descriptor(target)
+        config_service.create_initial_configuration_if_required(owner=descriptor)
 
     return services
 
@@ -156,9 +161,12 @@ def _bulk_add_services_to_cluster(
 DEFAULT_FORKS_AMOUNT: str = "5"
 
 
-def _create_cluster(prototype: models.Prototype, name: str, description: str):
+def _create_cluster(
+    prototype: models.Prototype, name: str, description: str, config_service: core.config.ConfigService
+):
     cluster = models.Cluster.objects.create(prototype=prototype, name=name, description=description)
-    config.create.initial_config_if_required(owner_object=cluster, files_dir=settings.FILE_DIR)
+    descriptor = types.CoreObjectDescriptor(id=cluster.pk, type=types.ADCMCoreType.CLUSTER)
+    config_service.create_initial_configuration_if_required(owner=descriptor)
     return cluster
 
 
