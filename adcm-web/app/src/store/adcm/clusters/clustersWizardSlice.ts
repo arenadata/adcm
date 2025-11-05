@@ -94,7 +94,6 @@ const getStep = createAsyncThunk(
       return step;
     } catch (error) {
       const errorMessage = getErrorMessage(error as RequestError);
-      thunkAPI.dispatch(showError({ message: errorMessage }));
       thunkAPI.dispatch(setBrokenStepError(errorMessage));
       return thunkAPI.rejectWithValue(error);
     }
@@ -110,10 +109,9 @@ const getSteps = createAsyncThunk(
       const stepPromises = stepIds.map((stepId) =>
         AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId),
       );
-      const steps = await Promise.all(stepPromises);
-      return steps;
+      const steps = await Promise.allSettled(stepPromises);
+      return fulfilledFilter(steps);
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     }
   },
