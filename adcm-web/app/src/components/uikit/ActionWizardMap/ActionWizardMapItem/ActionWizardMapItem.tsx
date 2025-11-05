@@ -89,11 +89,14 @@ const MapItemStages: React.FC<MapItemStagesProps> = ({ process }: MapItemStagesP
   const { isValid } = useActionWizardValidationContext();
   const currentStep = selectedStep ?? process?.currentStep;
 
-  const handleSwitchStage = (stage: AdcmWizardStage, currentStep: number) => {
-    const hasCurrentStep = stage.steps.some((step) => step.id === currentStep);
-    const isDisabled = stage.steps.every((step) => step.state === AdcmWizardStepStates.Created);
+  const handleSwitchStage = (stage: AdcmWizardStage, currentStepId: number) => {
+    const currentStep = stage.steps.find((step) => step.id === currentStepId);
+    const currentStepBroken = currentStep ? currentStep.state === AdcmWizardStepStates.Broken : false;
+    const isDisabled = stage.steps.every(
+      (step) => step.state === AdcmWizardStepStates.Created && step.id > process?.currentStep,
+    );
 
-    if (hasCurrentStep || isDisabled) {
+    if (currentStep || currentStepBroken || isDisabled) {
       return null;
     }
 
@@ -135,13 +138,12 @@ interface ActionWizardStepListProps {
 
 const MapItemSteps: React.FC<ActionWizardStepListProps> = ({ steps, stageIndex, process }) => {
   const dispatch = useDispatch();
-  const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
 
   const { isValid } = useActionWizardValidationContext();
 
   const handleSwitchStep = (step: AdcmActionProcessStep) => {
-    if (step.id === selectedStep) return null;
+    if (step.state === AdcmWizardStepStates.Broken || step.id > process?.currentStep) return null;
     dispatch(setBrokenStepError(undefined));
     dispatch(setSelectedStepId(step.id));
   };

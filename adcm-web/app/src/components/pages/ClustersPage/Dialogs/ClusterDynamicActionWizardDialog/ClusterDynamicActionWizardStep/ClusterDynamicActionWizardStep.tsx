@@ -100,8 +100,46 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     }
   }, [stepsWithData, currentStep, process?.stages]);
 
+  const stepToStageMap = useMemo(() => {
+    return new Map<number, string>(
+      process?.stages.flatMap((stage) => stage.steps.map((step) => [step.id, stage.displayName])),
+    );
+  }, [process?.stages]);
+
+  const isCurrentStepBroken = useMemo(() => {
+    if (!process) return false;
+
+    const allSteps = process.stages.flatMap((stage) => stage.steps);
+    const step = allSteps.find((step) => step.id === process.currentStep);
+
+    return step?.state === AdcmWizardStepStates.Broken;
+  }, [process]);
+
+  const neededStageName = useMemo(() => {
+    if (currentStep) {
+      return stepToStageMap.get(currentStep);
+    }
+  }, [currentStep, stepToStageMap]);
+
+  const loadedStageName = useMemo(() => {
+    if (stepsWithData.length > 0) {
+      const firstStepId = stepsWithData[0].id;
+      return stepToStageMap.get(firstStepId);
+    }
+  }, [stepsWithData, stepToStageMap]);
+
+  // we need to check if selectedStep(clicked) is in the different stage with current step
+  // lint doesn't react to deps
+  const isNeedToLoadSteps = useMemo(() => {
+    if (selectedStep) {
+      return neededStageName !== loadedStageName;
+    }
+
+    return true;
+  }, [selectedStep]);
+
   useEffect(() => {
-    if (process && clusterId && actionId) {
+    if ((isCurrentStepBroken || isNeedToLoadSteps) && process && clusterId && actionId && stepIds.length > 0) {
       dispatch(
         getSteps({
           clusterId,
