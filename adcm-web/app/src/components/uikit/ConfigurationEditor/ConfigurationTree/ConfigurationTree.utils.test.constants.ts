@@ -492,3 +492,36 @@ export const validateInactiveGroupSchema: ConfigurationSchema = {
     },
   },
 };
+
+export const validateNestedErrorsSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  required: ['structure', 'structure_2'],
+  ...defaultProps,
+  properties: {
+    list: {
+      oneOf: [
+        {
+          type: 'null',
+        },
+        {
+          type: 'array',
+          ...defaultProps,
+          title: '',
+          description: '',
+          default: [],
+          readOnly: false,
+          items: {
+            ...defaultProps,
+            type: 'string',
+            title: '',
+            description: '',
+            default: null,
+            readOnly: false,
+          },
+          minItems: 1,
+        },
+      ],
+    },
+  },
+};

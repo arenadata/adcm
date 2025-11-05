@@ -25,6 +25,7 @@ import {
   validateInactiveGroupSchema,
   emptyFilter,
   defaultProps,
+  validateNestedErrorsSchema,
 } from './ConfigurationTree.utils.test.constants';
 import {
   buildConfigurationNodes,
@@ -34,7 +35,7 @@ import {
   getDefaultValue,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
-import { rootNodeKey } from './ConfigurationTree.constants';
+import { nestedPropsErrorKeyword, nestedPropsErrorMessage, rootNodeKey } from './ConfigurationTree.constants';
 import type { ConfigurationErrors, FieldErrors, SingleSchemaDefinition } from '@models/adcm';
 
 describe('structure node tests', () => {
@@ -432,6 +433,17 @@ describe('validate', () => {
     expect(configurationErrors['/cluster_config']).toBe(true);
     expect(configurationErrors['/cluster_config/cluster']).not.toBe(undefined);
     expect(configurationErrors['/cluster_config/cluster/cluster_name']).not.toBe(undefined);
+  });
+
+  test('validate nested props errors', () => {
+    const attributes = {};
+    const configuration = { list: [1] };
+
+    const { isValid, configurationErrors } = validate(validateNestedErrorsSchema, configuration, attributes);
+    expect(isValid).toBe(false);
+
+    const fieldErrors = configurationErrors['/list'];
+    expect((fieldErrors as FieldErrors).messages[nestedPropsErrorKeyword]).toBe(nestedPropsErrorMessage);
   });
 });
 

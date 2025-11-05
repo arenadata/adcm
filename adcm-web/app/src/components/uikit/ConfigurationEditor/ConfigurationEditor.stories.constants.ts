@@ -3875,3 +3875,61 @@ export const readOnlyConfig = {
   },
   some_array: [{ field: 'value' }],
 };
+
+export const testArrayItemSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  adcmMeta: {
+    isAdvanced: false,
+    isInvisible: false,
+    activation: null,
+    synchronization: null,
+    isSecret: false,
+    stringExtra: null,
+    enumExtra: null,
+  },
+  type: 'object',
+  properties: {
+    'dfs.namenode.name.dir': {
+      title: 'dfs.namenode.name.dir',
+      type: 'array',
+      description:
+        'Determines where on the local filesystem the DFS name node should store the name table(fsimage). If multiple directories added then the name table is replicated in all of the directories, for redundancy',
+      default: ['/srv/hadoop-hdfs/name'],
+      readOnly: false,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      items: {
+        type: 'string',
+        title: '',
+        description: '',
+        default: null,
+        readOnly: false,
+        adcmMeta: {
+          isAdvanced: false,
+          isInvisible: false,
+          activation: null,
+          synchronization: null,
+          isSecret: false,
+          stringExtra: null,
+          enumExtra: null,
+        },
+      },
+      minItems: 1,
+    },
+  },
+  required: ['dfs.namenode.name.dir'],
+};
+
+export const testArrayItemConfig = {
+  'dfs.namenode.name.dir': ['aaa'],
+};

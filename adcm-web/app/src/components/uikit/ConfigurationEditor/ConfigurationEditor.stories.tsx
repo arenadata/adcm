@@ -9,6 +9,8 @@ import {
   readOnlySchema,
   nullableConfig,
   nullableSchema,
+  testArrayItemSchema,
+  testArrayItemConfig,
 } from './ConfigurationEditor.stories.constants';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type { ConfigurationTreeFilter } from './ConfigurationEditor.types';
@@ -193,6 +195,16 @@ export const ConfigurationEditorDragNDropStory: Story = {
     <ConfigurationEditorStoryWithHooks
       schema={clusterConfigurationSchema}
       initialConfigurationData={initialClusterConfiguration}
+      initialAttributes={attributes}
+    />
+  ),
+};
+
+export const TestArrayItemStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={testArrayItemSchema}
+      initialConfigurationData={testArrayItemConfig}
       initialAttributes={attributes}
     />
   ),

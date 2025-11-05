@@ -22,6 +22,8 @@ import type {
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
+  nestedPropsErrorKeyword,
+  nestedPropsErrorMessage,
   primitiveFieldTypes,
   rootNodeKey,
   rootNodeTitle,
@@ -129,6 +131,12 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
 
       if (!errors[path]) {
         errors[path] = true;
+      } else {
+        const parentError = errors[path];
+        // if parent error already exists, add information about child errors
+        if (typeof parentError === 'object') {
+          parentError.messages[nestedPropsErrorKeyword] = nestedPropsErrorMessage;
+        }
       }
     }
   }
