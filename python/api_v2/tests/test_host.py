@@ -560,6 +560,91 @@ class TestClusterHost(BaseAPITestCase):
 
         self.check_control_hosts()
 
+    def test_adcm_7228_add_originals_with_duplicates_fail(self):
+        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
+        h2_dup = Host.objects.get(id=create_duplicate(host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup"))
+        hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
+
+        data = [{"hostId": host.id} for host in hosts_to_add]
+        response = self.client.v2[self.cluster_1, "hosts"].post(data=data)
+
+        hosts_repr = ", ".join(sorted(f"<Host #{host.id} {host.fqdn}>" for host in hosts_to_add))
+        expected_response = {
+            "code": "HOST_CONFLICT",
+            "level": "error",
+            "desc": f"Only one copy of a host can be added to the cluster. Errors: {hosts_repr}",
+        }
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+        self.check_control_hosts()
+
+    def test_adcm_7228_add_original_and_copy_of_host_fail(self):
+        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
+        h2_dup = Host.objects.get(id=create_duplicate(host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup"))
+
+        # cluster with original host; add the duplicate
+        response = self.client.v2[self.cluster_1, "hosts"].post(data={"hostId": self.host.pk})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.v2[self.cluster_1, "hosts"].post(data={"hostId": h1_dup.id})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        expected_response = {
+            "code": "HOST_CONFLICT",
+            "level": "error",
+            "desc": f"Only one copy of a host can be added to the cluster. Errors: <Host #{h1_dup.id} {h1_dup.fqdn}>",
+        }
+        self.assertDictEqual(response.json(), expected_response)
+
+        # cluster with duplicate; add the original host
+        response = self.client.v2[self.cluster_2, "hosts"].post(data={"hostId": h2_dup.id})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.v2[self.cluster_2, "hosts"].post(data={"hostId": self.host_2.id})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        expected_response = {
+            "code": "HOST_CONFLICT",
+            "level": "error",
+            "desc": "Only one copy of a host can be added to the cluster. "
+            f"Errors: <Host #{self.host_2.id} {self.host_2.fqdn}>",
+        }
+        self.assertDictEqual(response.json(), expected_response)
+
+        self.check_control_hosts()
+
+    def test_adcm_7228_add_two_duplicates_fail(self):
+        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
+        h1_dup_2 = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup-dup"))
+        hosts_to_add = (h1_dup, h1_dup_2)
+
+        # add two duplicates together
+        response = self.client.v2[self.cluster_2, "hosts"].post(data=[{"hostId": host.id} for host in hosts_to_add])
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        hosts_repr = ", ".join(sorted(f"<Host #{host.id} {host.fqdn}>" for host in hosts_to_add))
+        expected_response = {
+            "code": "HOST_CONFLICT",
+            "level": "error",
+            "desc": f"Only one copy of a host can be added to the cluster. Errors: {hosts_repr}",
+        }
+        self.assertDictEqual(response.json(), expected_response)
+
+        # add two duplicates one by one
+        response = self.client.v2[self.cluster_2, "hosts"].post(data={"hostId": h1_dup.id})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.v2[self.cluster_2, "hosts"].post(data={"hostId": h1_dup_2.id})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        expected_response = {
+            "code": "HOST_CONFLICT",
+            "level": "error",
+            "desc": "Only one copy of a host can be added to the cluster. "
+            f"Errors: <Host #{h1_dup_2.id} {h1_dup_2.fqdn}>",
+        }
+        self.assertDictEqual(response.json(), expected_response)
+
+        self.check_control_hosts()
+
     def test_maintenance_mode(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response = self.client.v2[self.cluster_1, "hosts", self.host, "maintenance-mode"].post(

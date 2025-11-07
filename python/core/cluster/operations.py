@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Collection, Generator, Iterable, Protocol
 
 from core.cluster.rules import (
+    HostCandidateDTO,
     check_all_hosts_exist,
     check_hosts_can_be_added_to_cluster,
     filter_host_candidates,
@@ -284,13 +285,12 @@ def add_hosts_to_cluster(
     hosts_info: tuple[HostAddInfo, ...] = tuple(
         db.get_info_for_hosts(include=SearchConditions(with_id=hosts, bound_to_cluster=cluster_id))
     )
+    check_all_hosts_exist(hosts_to_add=hosts, existing_hosts=hosts_info)
+
     hosts_to_add = tuple(host for host in hosts_info if host.id in hosts)
     hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
-
-    check_all_hosts_exist(hosts_to_add=hosts, existing_hosts=hosts_info)
-    check_hosts_can_be_added_to_cluster(
-        hosts_to_add=hosts_to_add, cluster_id=cluster_id, hosts_in_cluster=hosts_in_cluster
-    )
+    payload = HostCandidateDTO(cluster_id=cluster_id, in_cluster=list(hosts_in_cluster), candidates=list(hosts_to_add))
+    check_hosts_can_be_added_to_cluster(payload=payload)
 
     db.set_cluster_id_for_hosts(cluster_id, hosts)
 
@@ -304,9 +304,8 @@ def find_host_candidates_for_cluster(cluster_id: ClusterID, db: HostClusterDBPro
     unbound_hosts = tuple(host for host in hosts_info if host.cluster_id is None)
     hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
 
-    candidates = filter_host_candidates(
-        unbound_hosts=unbound_hosts, cluster_id=cluster_id, hosts_in_cluster=hosts_in_cluster
-    )
+    payload = HostCandidateDTO(cluster_id=cluster_id, in_cluster=list(hosts_in_cluster), candidates=list(unbound_hosts))
+    candidates = filter_host_candidates(payload=payload)
 
     return tuple(candidates)
 
