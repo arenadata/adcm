@@ -1,13 +1,13 @@
 import Concern from '@commonComponents/Concern/Concern';
 import type { AdcmHostDuplicate } from '@models/adcm';
-import { IconButton, Table, TableCell, TableRow } from '@uikit';
+import { FlexGroup, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import type React from 'react';
 import { Link } from 'react-router-dom';
 import { columns } from './HostsTableExpandedContent.constants';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { useDispatch } from '@hooks';
-import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import { openDeleteDialog, openMaintenanceModeDialog, openUpdateDialog } from '@store/adcm/hosts/hostsActionsSlice';
 import UnlinkHostDuplicateToggleButton from './UnlinkHostDuplicateToggleButton/UnlinkHostDuplicateToggleButton';
 
 interface HostsTableExpandedContentProps {
@@ -27,6 +27,10 @@ const HostsTableExpandedContent: React.FC<HostsTableExpandedContentProps> = ({ d
     dispatch(openDeleteDialog(host));
   };
 
+  const handleUpdateClick = (host: AdcmHostDuplicate) => {
+    dispatch(openUpdateDialog(host));
+  };
+
   return (
     <Table columns={columns} variant="secondary">
       {duplicates.map((host: AdcmHostDuplicate) => {
@@ -35,9 +39,20 @@ const HostsTableExpandedContent: React.FC<HostsTableExpandedContentProps> = ({ d
         return (
           <TableRow key={host.id}>
             <TableCell>
-              <Link to={`/hosts/${host.id}`} className="text-link">
-                {host.name}
-              </Link>
+              <FlexGroup>
+                <Link to={`/hosts/${host.id}`} className="text-link">
+                  {host.name}
+                </Link>
+                {!host.cluster?.id && (
+                  <IconButton
+                    icon="g1-edit"
+                    size={32}
+                    title="Edit"
+                    className="rename-button"
+                    onClick={() => handleUpdateClick(host)}
+                  />
+                )}
+              </FlexGroup>
             </TableCell>
             <TableCell>
               {orElseGet(host.cluster, (cluster) => (
