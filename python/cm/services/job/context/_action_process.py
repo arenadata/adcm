@@ -80,7 +80,7 @@ def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
         secrets_service=config_service.secrets,
     )
 
-    attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"]}
+    attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"].items()}
 
     configuration = config_service.prepare_config_for_ansible(
         configuration=core.config.Configuration(values=config_input["values"], attributes=attributes),
