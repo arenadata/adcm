@@ -73,8 +73,8 @@ class TestActionProcessAudit(BaseAPITestCase):
 
     def test_audit_record_process_operation(self):
         test_spec, test_input, previous_step_names = (
-            [{"name": "spec", "subname": ""}],
-            {"config": {}, "attr": {}},
+            [{"name": "spec", "subname": "", "type": "string"}],
+            {"values": {}, "attributes": {}},
             {"stage1_step1", "stage2_step1"},
         )
 

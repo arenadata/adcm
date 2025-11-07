@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from typing import Iterable, NamedTuple, TypeAlias
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
@@ -45,6 +44,7 @@ from cm.services.config.jinja import get_jinja_config
 from cm.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.jinja_scripts import get_job_specs_from_template_new
+from cm.services.job.run import start_task
 from cm.services.job.types import ActionHCRule
 from cm.services.mapping import check_no_host_in_mm
 from cm.status_api import send_task_status_update_event
@@ -61,6 +61,7 @@ from core.types import (
     ADCMHostGroupType,
     BundleID,
     CoreObjectDescriptor,
+    Descriptor,
     HostGroupDescriptor,
     HostID,
 )
@@ -93,6 +94,7 @@ def schedule_task(
     payload: RunActionDTO,
     job_service: core.job.JobService,
     config_service: core.config.ConfigService,
+    start_task_after_schedule: bool,
 ) -> TaskLog:
     action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
@@ -164,15 +166,12 @@ def schedule_task(
                 )
 
         if job_config:
-            construct_parameter_path = partial(
-                core.config.files.construct_parameter_file_name_for_task, task_id=task_id
-            )
-            update_result = core.config.operations.prepare_config_for_ansible(
+            update_result = config_service.prepare_config_for_ansible(
                 configuration=job_config.configuration,
                 specification=job_config.specification,
-                construct_parameter_path=construct_parameter_path,
+                file_owner=Descriptor(id=task_id, type="task"),
             )
-            config_to_set = update_result.value.values
+            config_to_set = update_result.values
             config_service.prepare_file_parameter_values_on_fs(
                 configuration=job_config.configuration,
                 specification=job_config.specification,
@@ -232,6 +231,9 @@ def schedule_task(
         re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
     send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
+
+    if start_task_after_schedule:
+        start_task(orm_task)
 
     return orm_task
 
@@ -342,9 +344,8 @@ def _resolve_scripts(
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
 
     else:
-        script_generator = render_scripts(
-            template=action.scripts_template, environment=environment, context_args=task_args
-        )
+        template = parse_template(action.scripts_template)
+        script_generator = render_scripts(template=template, environment=environment, context_args=task_args)
         scripts = tuple(script_generator)
 
     return scripts

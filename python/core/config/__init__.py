@@ -21,6 +21,7 @@ from core.config._types import (
     ConfigAttrs,
     ConfigFlatValues,
     ConfigOwner,
+    HostGroupConfigOwner,
     ConfigOwnerObjectInfo,
     ConfigValues,
     Configuration,
@@ -33,7 +34,7 @@ from core.config._types import (
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
 from core.config._service import ConfigService, Settings, Directories, VariantValidators, OperationError
-from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError
+from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError, ObjectDiscoveryError
 
 __all__ = [
     "Attributes",
@@ -49,14 +50,16 @@ __all__ = [
     "Defaults",
     "Directories",
     "FlatConfiguration",
+    "HostGroupConfigOwner",
+    "MainConfigVariantResolver",
     "NoConfigError",
+    "ObjectDiscoveryError",
     "ObjectWithoutConfigError",
     "OperationError",
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",
     "Settings",
-    "MainConfigVariantResolver",
     "Validators",
     "VariantValidator",
     "VariantValidators",

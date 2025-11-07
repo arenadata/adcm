@@ -12,11 +12,20 @@
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from functools import partial, reduce
+from functools import reduce
 from operator import or_
 from typing import Iterable
 
-from core.types import ADCMCoreType, BundleID, ConfigID, CoreObjectDescriptor, ObjectID, PrototypeID
+from core.types import (
+    ADCMCoreType,
+    ADCMHostGroupType,
+    BundleID,
+    ConfigID,
+    CoreObjectDescriptor,
+    HostGroupDescriptor,
+    ObjectID,
+    PrototypeID,
+)
 from django.db.models import F, JSONField, Q, Value
 import core
 
@@ -195,12 +204,11 @@ def get_before_upgrades(
         except KeyError:
             continue
 
-        construct_parameter_path = partial(core.config.files.construct_parameter_file_name, owner=unprocessed_object)
-        result[unprocessed_object]["config"] = core.config.operations.prepare_config_for_ansible(
+        result[unprocessed_object]["config"] = config_service.prepare_config_for_ansible(
             configuration=configuration,
             specification=specification,
-            construct_parameter_path=construct_parameter_path,
-        ).value.values
+            file_owner=unprocessed_object,
+        ).values
 
         for host_group_name, config_id in before_upgrade_info.config_host_groups_info.items():
             if host_group_name not in host_group_name_id_map:
@@ -213,20 +221,18 @@ def get_before_upgrades(
                 # here nothing should be added to result dict
                 continue
 
-            construct_parameter_path = partial(
-                core.config.files.construct_parameter_file_name_for_host_group,
-                owner=unprocessed_object,
-                group_id=host_group_name_id_map[host_group_name],
-            )
-            update_result = core.config.operations.prepare_config_for_ansible(
+            updated_configuration = config_service.prepare_config_for_ansible(
                 configuration=configuration,
                 specification=specification,
-                construct_parameter_path=construct_parameter_path,
+                file_owner=(
+                    unprocessed_object,
+                    HostGroupDescriptor(id=host_group_name_id_map[host_group_name], type=ADCMHostGroupType.CONFIG),
+                ),
             )
 
             result[unprocessed_object, host_group_name] = {
                 "state": before_upgrade_info.before_upgrade.get("state"),
-                "config": update_result.value.values,
+                "config": updated_configuration.values,
             }
 
     return result

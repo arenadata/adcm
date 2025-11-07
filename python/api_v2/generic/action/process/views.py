@@ -61,7 +61,13 @@ from api_v2.views import ADCMGenericViewSet
 class ProcessStepHandleExceptionMixin:
     def handle_exception(self, exc: Any):
         if exc_code := self.exc_conversion_map.get(exc.__class__):
-            exc = AdcmEx(code=exc_code, msg=exc.msg)
+            # hacker mode ON, rework it
+            try:
+                message = exc.msg
+            except AttributeError:
+                message = exc.args[0]
+
+            exc = AdcmEx(code=exc_code, msg=message)
 
         return super().handle_exception(exc)
 
@@ -75,6 +81,7 @@ class ActionProcessViewSet(
         ActionProcessDBError: "ACTION_PROCESS_UPDATE_CONFLICT",
         ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
         ActionProcessNotFoundError: "ACTION_PROCESS_NOT_FOUND",
+        core.config.OperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
     }
 
     def get_serializer_class(self):

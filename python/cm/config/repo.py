@@ -24,6 +24,7 @@ from core.types import (
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
+    Descriptor,
     HostGroupDescriptor,
     ObjectOrGroup,
     PrototypeID,
@@ -39,6 +40,7 @@ from cm.services.config._base import convert_adcm_meta_to_attr, convert_attr_to_
 _SECRET_TYPES = frozenset(("password", "secrettext", "secretfile", "secretmap"))
 
 T = TypeVar("T")
+V = TypeVar("V")
 
 
 @dataclass(slots=True)
@@ -110,6 +112,11 @@ class ConfigRepo(config.ConfigRepoI):
                 config_prototype=info, secrets_service=self.secrets, bundle_root=proto_dir_map[prototype_id]
             )
             for prototype_id, info in config_prototypes.items()
+            # REDACTED: for now we need to return all specifications,
+            #           because of some upgrade cases when configuration is removed
+            #
+            # don't want to return "non-existent" specifications
+            # if info.parameter_prototypes
         }
 
     # todo: shouldn't be here, see service for more info
@@ -192,7 +199,7 @@ def _detect_owner_model(owner: ObjectOrGroup) -> type[MainObject | ADCM | Config
     match owner:
         case CoreObjectDescriptor(type=type_):
             return core_type_to_model(type_)
-        case HostGroupDescriptor():
+        case HostGroupDescriptor() | Descriptor(type=ADCMHostGroupType.CONFIG):
             return ConfigHostGroup
 
 
@@ -203,13 +210,15 @@ def _get_config_prototype_info(owner: CoreObjectDescriptor, action_id: int | Non
         customization=F("prototype__config_group_customization"),
         bundle_hash=F("prototype__bundle__hash"),
     ).get(id=owner.id)
-    parameter_prototypes = tuple(
-        PrototypeConfig.objects.filter(prototype_id=response["prototype_id"], action_id=action_id).order_by("pk")
+
+    query_filter = (
+        {"action_id": action_id} if action_id else {"prototype_id": response["prototype_id"], "action_id": None}
     )
+    parameter_prototypes = tuple(PrototypeConfig.objects.filter(**query_filter).order_by("pk"))
 
     return ConfigPrototypeInfo(
         bundle_hash=response["bundle_hash"],
-        group_customization_flag=response["customization"],
+        group_customization_flag=response["customization"] if not action_id else False,
         parameter_prototypes=parameter_prototypes,
     )
 
@@ -362,10 +371,12 @@ def _register_simple_parameter_in_spec(
     match type_:
         case "string" | "password" | "text" | "secrettext" | "file" | "secretfile":
             as_file = "file" in type_
+            unsafe = (config_proto_entry.ansible_options or {}).get("unsafe", False)
             parameter = config.spec.p.StringParameter(
                 pattern=config_proto_entry.limits.get("pattern"),
                 as_file=as_file,
                 supports_multiline=as_file or ("text" in type_),
+                ansible=config.spec.p.AnsibleOptions(unsafe=unsafe),
                 **default_kwargs,
             )
             # Temporal patch, because defaults for files are paths, but we want content
@@ -389,32 +400,28 @@ def _register_simple_parameter_in_spec(
                 **default_kwargs,
             )
 
-            default = _parse_default_if_not_none(default, float if is_float else int)
+            default = _parse_default_if_is_str(default, float if is_float else int)
 
         case "boolean":
             parameter = config.spec.p.BooleanParameter(**default_kwargs)
-            # todo: ternary required here,
-            #  because sometimes values are plain (after parsing), not string (from database);
-            #  most likely should be solved after spec-defaults separation or something
-            default = (
-                _parse_default_if_not_none(default, lambda x: x.lower() in {"true", "yes"})
-                if isinstance(default, str)
-                else default
-            )
+            default = _parse_default_if_is_str(default, lambda x: x.lower() in {"true", "yes"})
 
         case "map" | "secretmap":
             parameter = config.spec.p.MapParameter(**default_kwargs)
-            default = _parse_default_if_not_none(default, json.loads)
+            default = _parse_default_if_is_str(default, json.loads)
         case "list":
             parameter = config.spec.p.ListParameter(**default_kwargs)
-            default = _parse_default_if_not_none(default, json.loads)
+            default = _parse_default_if_is_str(default, json.loads)
         case "json":
             parameter = config.spec.p.JSONParameter(**default_kwargs)
-            default = _parse_default_if_not_none(default, json.loads)
+            default = _parse_default_if_is_str(default, json.loads)
         case "option":
             parameter = config.spec.p.OptionParameter(options=config_proto_entry.limits["option"], **default_kwargs)
             if default is not None:
                 # patch due to default type (string) possible incompatibility with options
+                #
+                # todo see similar typecase in ansible config plugin:
+                #  maybe it's worth moving this case to core.config.spec somewhere
                 if default in parameter.options.values():
                     default = default
                 elif re.match(r"^\d+$", default):
@@ -438,9 +445,9 @@ def _register_simple_parameter_in_spec(
 
         case "structure":
             parameter = config.spec.p.StructureParameter(yspec=config_proto_entry.limits["yspec"], **default_kwargs)
-            default = _parse_default_if_not_none(default, json.loads)
+            default = _parse_default_if_is_str(default, json.loads)
         case _:
-            message = f"Unsupported type for conversion: {type_.value}"
+            message = f"Unsupported type for conversion: {type_}"
             raise TypeError(message)
 
     if parameter.is_desyncable:
@@ -469,9 +476,12 @@ def _detect_read_only_rule(limits: dict) -> config.spec.p.WritableRule | config.
     return config.spec.p.WritableRule(writable="any")
 
 
-def _parse_default_if_not_none(default: str | None, convert: Callable[[str], T]) -> T | None:
-    if default is None:
-        return None
+def _parse_default_if_is_str(default: str | V, convert: Callable[[str], T]) -> T | V:
+    # todo: made it str-based,
+    #  because sometimes values are plain (after parsing), not string (from database);
+    #  most likely should be solved after spec-defaults separation or something
+    if not isinstance(default, str):
+        return default
 
     return convert(default)
 

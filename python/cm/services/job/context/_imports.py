@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from collections import defaultdict
-from functools import partial
 from itertools import chain
 from operator import itemgetter
 from typing import Collection, NamedTuple, TypeAlias
@@ -165,13 +164,11 @@ def _get_configurations_prepared_for_inventory(
             continue
 
         owner = CoreObjectDescriptor(id=source["object_id"], type=source["object_type"])
-        construct_parameter_path = partial(core.config.files.construct_parameter_file_name, owner=owner)
 
-        core.config.operations.prepare_config_for_ansible(
-            # if no config it'll fail, but it's abnormal
+        config_service.prepare_config_for_ansible(
             configuration=configurations[config_id],
             specification=specifications_for_prototypes[source["prototype_id"]],
-            construct_parameter_path=construct_parameter_path,
+            file_owner=owner,
             inplace=True,
         )
 
@@ -212,13 +209,12 @@ def _fill_imports_with_defaults_inplace(
 
     for import_name, target in still_required_to_fill:
         object_, config_id = objects[target.prototype_id]
-        construct_parameter_path = partial(core.config.files.construct_parameter_file_name, owner=object_)
-        result = core.config.operations.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_config_for_ansible(
             configuration=configurations[config_id],
             specification=specifications[target.prototype_id],
-            construct_parameter_path=construct_parameter_path,
+            file_owner=object_,
         )
-        config_ = result.value.values
+        config_ = updated_configuration.values
         imports[import_name] = [config_] if target.multibind else config_
 
     return imports

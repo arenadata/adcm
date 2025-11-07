@@ -14,9 +14,13 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from application.dto import RunActionDTO
+from application.migration.job.schedule import schedule_task
 from core.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
+from infra.services import get_config_service, get_job_service
 from init_db import init as init_adcm
+import core
 
 from cm.api import add_service_to_cluster, update_obj_config
 from cm.converters import model_name_to_core_type
@@ -32,7 +36,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_action
+from cm.services.job.action import ObjectWithAction
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.types import HcAclAction
@@ -264,7 +268,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         return hc_request_data
 
     def get_all_from_inventory(
-        self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload, cluster_id: int
+        self, action: Action, object_: ObjectWithAction, payload: RunActionDTO, cluster_id: int
     ) -> dict:
         from cm.services.job.run._target_factories import prepare_ansible_inventory
         from cm.services.job.run.repo import JobRepoImpl
@@ -273,7 +277,14 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.assertEqual(JobLog.objects.count(), 0)
 
         with RunTaskMock() as run_task:
-            run_action(action=action, obj=object_, payload=payload)
+            schedule_task(
+                action_orm=action,
+                target=object_,
+                payload=payload,
+                job_service=get_job_service(),
+                config_service=get_config_service(),
+                start_task_after_schedule=True,
+            )
 
         inventory = prepare_ansible_inventory(
             task=JobRepoImpl.get_task(run_task.target_task.id),
@@ -291,12 +302,14 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         inventory_data = self.get_all_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
-            payload=ActionRunPayload(
-                hostcomponent={
+            payload=RunActionDTO(
+                mapping={
                     HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
                     for entry in hc_request_data
                 },
-                verbose=False,
+                launch=core.job.dto.LaunchOptions(
+                    is_verbose=False,
+                ),
             ),
             cluster_id=self.cluster_hc_acl.pk,
         )["children"]
@@ -340,12 +353,12 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         inventory_data = self.get_all_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
-            payload=ActionRunPayload(
-                hostcomponent={
+            payload=RunActionDTO(
+                mapping={
                     HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
                     for entry in hc_request_data
                 },
-                verbose=False,
+                launch=core.job.dto.LaunchOptions(is_verbose=False),
             ),
             cluster_id=self.cluster_hc_acl.pk,
         )["children"]
@@ -390,7 +403,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         inventory_data = self.get_all_from_inventory(
             action=Action.objects.get(name="not_host_action"),
             object_=self.cluster_target_group,
-            payload=ActionRunPayload(verbose=False),
+            payload=RunActionDTO(launch=core.job.dto.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
         )["hosts"]
 
@@ -416,7 +429,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group,
             object_=self.host_target_group_1,
-            payload=ActionRunPayload(verbose=False),
+            payload=RunActionDTO(launch=core.job.dto.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 
@@ -429,7 +442,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group,
             object_=self.host_target_group_2,
-            payload=ActionRunPayload(verbose=False),
+            payload=RunActionDTO(launch=core.job.dto.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 

@@ -29,6 +29,7 @@ from cm.config.repo import convert_attr_to_adcm_meta
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.logger import logger
 from cm.models import (
+    ActionHostGroup,
     Bundle,
     Cluster,
     Component,
@@ -70,6 +71,7 @@ from cm.utils import obj_ref
 
 OT = TypeVar("OT", Cluster, Provider)
 MT = TypeVar("MT")
+
 
 # COPIED FROM cm.upgrade.base FOR ADCM-7093
 # and altered for config rework purposes
@@ -495,13 +497,15 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
 
     obj.prototype = old_proto
     obj.state = obj.before_upgrade["state"]
-    obj.before_upgrade = {"state": None}
-    obj.save(update_fields=["prototype", "state", "before_upgrade"])
+    obj.save(update_fields=["prototype", "state"])
 
     if "config_id" in obj.before_upgrade and (config_id := obj.before_upgrade["config_id"]):
         owner = orm_object_to_core_descriptor(obj)
         config = config_service.retrieve_configurations_by_id(configurations=(config_id,))[config_id]
         _restore_config_of_main_object(owner=owner, config=config, config_service=config_service)
+
+    obj.before_upgrade = {"state": None}
+    obj.save(update_fields=["before_upgrade"])
 
 
 def _restore_deleted_objects(
@@ -534,6 +538,18 @@ def _restore_deleted_objects(
             _restore_config_of_host_group(
                 owner=owner, config_service=config_service, config=config, group_id=config_host_group.pk
             )
+
+    for group_name, group in before_upgrade.action_host_groups.items():
+        # Here you need to use the service layer.
+        # But the current implementation is not ready. Since we have a lot of checks, as well as
+        # the order in which the objects are prepared, it matters.
+        action_host_group = ActionHostGroup.objects.create(
+            name=group_name,
+            description="revert_upgrade",
+            object_id=obj.pk,
+            object_type=ContentType.objects.get_for_model(obj),
+        )
+        action_host_group.hosts.set(Host.objects.filter(fqdn__in=group.hosts))
 
 
 def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Configuration:
@@ -609,50 +625,66 @@ def switch_config(
     old_prototype: Prototype,
     config_service: core.config.ConfigService,
 ):
-    # todo cover case when new object has configuration
-    #  ADCM-7319
-    if not obj.config:
-        return
-
-    owner = orm_object_to_core_descriptor(obj)
-
-    configuration = config_service.retrieve_current_configuration(owner=owner)
-
     specs_and_defaults = config_service.retrieve_specifications_by_prototypes_with_defaults(
         prototypes=(new_prototype.pk, old_prototype.pk)
     )
 
-    old_spec, old_defaults = specs_and_defaults[old_prototype.pk]
-    new_spec, new_defaults = specs_and_defaults[new_prototype.pk]
+    old = specs_and_defaults[old_prototype.pk]
+    new = specs_and_defaults[new_prototype.pk]
 
-    result = core.config.operations.adapt_configuration_for_new_specification(
-        configuration=configuration,
+    owner = orm_object_to_core_descriptor(obj)
+
+    # REDACTED: empty configuration (spec) may be received in order to "work correctly"
+    #           when configuration is removed from object
+    try:
+        _switch_configuration_version(owner, old=old, new=new, config_service=config_service)
+    except core.config.ObjectWithoutConfigError:
+        # no current config
+        new_spec, new_defaults = new
+        if new_defaults:
+            # assume it's non-empty config
+            config_service.create_initial_configuration(owner=owner, specification=new_spec, defaults=new_defaults)
+
+
+def _switch_configuration_version(
+    owner: CoreObjectDescriptor,
+    old: tuple[core.config.spec.FullSpec, core.config.Defaults],
+    new: tuple[core.config.spec.FullSpec, core.config.Defaults],
+    config_service: core.config.ConfigService,
+):
+    old_spec, old_defaults = old
+    new_spec, new_defaults = new
+
+    configuration = config_service.retrieve_current_configuration(owner=owner)
+
+    update_for_new_spec = partial(
+        core.config.operations.adapt_configuration_for_new_specification,
         specification=old_spec,
         defaults=old_defaults,
         new_specification=new_spec,
         new_defaults=new_defaults,
     )
 
-    config = result.value
-
+    config = update_for_new_spec(configuration=configuration, include_synchronization=False).value
     config_service.create_new_configuration_by_descriptor(configuration=config, description="upgrade", owner=owner)
+
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
+    adapted_configs_of_host_groups = {
+        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True).value
+        for group, config_of_group in configs_of_host_groups.items()
+    }
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=configs_of_host_groups
+        main=config, groups=adapted_configs_of_host_groups
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
             configuration=updated_configuration, description="upgrade", owner=owner_group
         )
-    prepare_files = partial(
-        config_service.prepare_file_parameter_values_on_fs,
-        specification=new_spec,
-    )
 
-    # since we have no "fallback" mechanism for write failures, have to write files within transaction
+    prepare_files = partial(config_service.prepare_file_parameter_values_on_fs, specification=new_spec)
+
     prepare_files(configuration=config, owner_prefix=core.config.files.build_config_prefix(owner))
 
     for owner_group, updated_configuration in updated_host_group_configs.items():
         group_file_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=owner_group.id)
-        # since we have no "fallback" mechanism for write failures, have to write files within transaction
         prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)

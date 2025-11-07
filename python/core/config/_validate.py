@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from itertools import chain
 from typing import Any, Protocol, TypeAlias
@@ -61,6 +61,12 @@ class Validators:
 class MainConfigVariantResolver(ABC, VariantValidator):
     owner: CoreObjectDescriptor
     reference_config: Configuration
+
+    # todo rethink variant validator interface,
+    #  maybe it'll actually work with `resolve` method and check in validation
+    @abstractmethod
+    def resolve(self, parameter: spec.p.VariantParameter) -> tuple:
+        ...
 
 
 # Types
@@ -192,7 +198,10 @@ def validate_values_are_correct(
             case spec.p.OptionParameter(options=options):
                 allowed_values = options.values()
                 if value not in allowed_values:
-                    _add_value_violation(name=name, reason=f'not in option list: "{allowed_values}"', errors=errors)
+                    allowed_values_repr = ", ".join(sorted(map(str, allowed_values)))
+                    _add_value_violation(
+                        name=name, reason=f'not in option list: "{allowed_values_repr}"', errors=errors
+                    )
 
             case spec.p.StructureParameter(yspec=schema):
                 reason = None

@@ -13,7 +13,7 @@
 from dataclasses import dataclass, field
 from typing import Any, TypeAlias
 
-from core.types import ConfigID, CoreObjectDescriptor
+from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
 
 ParameterFullName: TypeAlias = str
 """
@@ -49,7 +49,21 @@ class ConfigOwner:
 
 
 @dataclass(slots=True)
+class HostGroupConfigOwner:
+    descriptor: CoreObjectDescriptor
+    info: ConfigOwnerObjectInfo
+    group: ConfigHostGroupDesc
+
+
+@dataclass(slots=True)
 class Attributes:
+    # todo: inconvenient design
+    #       always having to check both synchronization and is_synced
+    #       (same for is_active);
+    #       maybe make regular class with protected values
+    #       and make reasonable defaults available via properties;
+    #       on the other hand, it only makes sense for `synced`
+    #       when `is_active` makes sense only for activatable groups
     is_active: bool | None = None
     is_synced: bool | None = None
 

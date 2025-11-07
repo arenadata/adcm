@@ -10,11 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Protocol, TypeAlias
+from typing import Iterable, Literal, Protocol, TypeAlias
 
 from core.config import spec
 from core.config._types import Configuration, ConfigurationWithID, Defaults
-from core.types import ActionID, ConfigID, CoreObjectDescriptor, HostGroupDescriptor, PrototypeID
+from core.types import (
+    ActionID,
+    ADCMHostGroupType,
+    ConfigID,
+    CoreObjectDescriptor,
+    Descriptor,
+    HostGroupDescriptor,
+    PrototypeID,
+)
 
 # todo improve
 
@@ -31,7 +39,11 @@ class ObjectWithoutConfigError(RepoError):
     ...
 
 
-ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor
+class ObjectDiscoveryError(RepoError):
+    ...
+
+
+ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | Descriptor[Literal[ADCMHostGroupType.CONFIG]]
 
 
 class ConfigRepoI(Protocol):

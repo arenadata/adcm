@@ -15,7 +15,7 @@ from itertools import chain
 from typing import Iterable
 
 from core.config._names import is_part_of_group
-from core.config._spec.parameters import ReadOnlyRule, WritableRule
+from core.config._spec.rules import is_read_only
 from core.config._spec.spec import FullSpec
 from core.config._types import ParameterFullName
 
@@ -50,7 +50,7 @@ def detect_stateful_parameters(
     groups_activation = {param.identifier.full: param.activation for param in spec.groups.values() if param.activation}
     with_edit_rule = chain(spec.parameters.items(), groups_activation.items())
     read_only_parameters = {
-        name for name, param in with_edit_rule if _is_read_only(rule=param.edit_rule, owner_state=owner_state)
+        name for name, param in with_edit_rule if is_read_only(rule=param.edit_rule, owner_state=owner_state)
     }
 
     deactivated_parameters = detect_deactivated_parameters(spec=spec, active_groups=active_groups)
@@ -73,19 +73,3 @@ def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[Parame
         for group_name in deactivated_groups
         if is_part_of_group(parameter=parameter_name, group=group_name)
     }
-
-
-# May be it should be placed in "rules" module if split will be required
-def _is_read_only(rule: ReadOnlyRule | WritableRule, owner_state: str) -> bool:
-    match rule:
-        case ReadOnlyRule(read_only="any"):
-            return True
-
-        case ReadOnlyRule(read_only=states):
-            return owner_state in states
-
-        case WritableRule(writable="any"):
-            return False
-
-        case WritableRule(writable=states):
-            return owner_state not in states

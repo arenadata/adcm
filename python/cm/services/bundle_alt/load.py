@@ -83,7 +83,7 @@ def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: 
     # Thou it's a bit of strange to remove archive in here,
     # but it's the original process,
     # required by upload-load separation in v1
-    with _cleanup_on_fail(archive):
+    with cleanup_on_fail(archive):
         return process_bundle_from_archive(
             archive=archive,
             bundles_dir=directories.bundles,
@@ -162,7 +162,7 @@ def process_bundle_from_archive(
         archive=archive, bundles_dir=bundles_dir, bundle_hash=bundle_hash, files_dir=files_dir
     )
 
-    with _cleanup_on_fail(unpacking_info.root):
+    with cleanup_on_fail(unpacking_info.root):
         verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
         with localize_error(f"Bundle from {archive.name}"):
@@ -325,11 +325,6 @@ def _find_signature_file(directory: Path) -> Path | None:
 
 @contextmanager
 def cleanup_on_fail(*paths: Path):
-    yield _cleanup_on_fail(*paths)
-
-
-@contextmanager
-def _cleanup_on_fail(*paths: Path):
     try:
         yield
     except Exception:

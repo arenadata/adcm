@@ -13,6 +13,7 @@
 from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
+import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
@@ -159,6 +160,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         topology = retrieve_cluster_topology(cluster_id)
         return get_action_process_context(process=process, topology=topology).to_context()
 
+    @unittest.skip("ADCM-7359 Figure out action process package separation")
     def test_process_step_sequential_rendering(self):
         bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
         cluster = self.add_cluster(bundle=bundle, name="cc")

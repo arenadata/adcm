@@ -13,9 +13,12 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from application.dto import ConfigurationDTO, RunActionDTO
+from application.migration.job.schedule import schedule_task
+from infra.services import get_config_service, get_job_service
+import core
 
 from cm.models import Action, JobLog
-from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import RunTaskMock
 
 
@@ -36,10 +39,17 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         input_config = {"config": {"field": "something"}, "attr": {}}
 
         with RunTaskMock() as task_mock:
-            run_action(
-                action=action,
-                obj=self.cluster,
-                payload=ActionRunPayload(conf=input_config["config"], attr=input_config["attr"]),
+            configuration = ConfigurationDTO(
+                convert=lambda x, _: x,
+                input_config=core.config.Configuration(values=input_config["config"], attributes=input_config["attr"]),
+            )
+            schedule_task(
+                action_orm=action,
+                target=self.cluster,
+                payload=RunActionDTO(configuration=configuration),
+                job_service=get_job_service(),
+                config_service=get_config_service(),
+                start_task_after_schedule=True,
             )
 
         self.assertIsNotNone(task_mock.target_task)

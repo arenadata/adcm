@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from typing import Any, Collection, TypeAlias, TypedDict
+import re
 
 from application.migration.config import update_configuration_from_job
 from cm.converters import core_type_to_model
@@ -37,6 +38,9 @@ from ansible_plugin.executors._validators import validate_target_allowed_for_con
 # don't want to typehint due to serialization problems and serialization priority
 # (e.g. bool casted successfully to float, etc.)
 ParamValue: TypeAlias = Any
+
+INTEGER_LIKE_STRING = re.compile(r"^\d+$")
+FLOAT_LIKE_STRING = re.compile(r"^\d+\.\d+$")
 
 
 class AdcmConfigParameterPluginItem(ConfigApplyParameterItem):
@@ -135,7 +139,7 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         return CallResult(value=return_value, changed=has_changed, error=None)
 
 
-def to_flat_configuration(input_changes: list[dict], _) -> core.config.FlatConfiguration:
+def to_flat_configuration(input_changes: list[dict], spec: core.config.spec.FullSpec) -> core.config.FlatConfiguration:
     target = core.config.FlatConfiguration()
 
     for parameter_change in input_changes:
@@ -144,7 +148,13 @@ def to_flat_configuration(input_changes: list[dict], _) -> core.config.FlatConfi
         if (is_active := parameter_change.get("active")) is not None:
             target.attributes[full_name] = core.config.Attributes(is_active=is_active)
         else:
-            target.values[full_name] = parameter_change["value"]
+            raw_value = parameter_change["value"]
+            if not isinstance(raw_value, str):
+                target.values[full_name] = raw_value
+            else:
+                parameter = spec.parameters.get(full_name)
+                parsed_value = parse_string_value(value=raw_value, parameter=parameter)
+                target.values[full_name] = parsed_value
 
     return target
 
@@ -161,3 +171,37 @@ def to_return_value(changes: core.config.FlatConfiguration) -> ChangeConfigRetur
     # putting result under the "value" key, because during result parsing dicts are merged into response,
     # return of this plugin should always have `value` key
     return ChangeConfigReturn(value=config_params)
+
+
+def parse_string_value(value: str, parameter: core.config.spec.p.SimpleParameter) -> int | float | str | bool:
+    # shortcut for most generic case
+    if parameter.type == core.config.spec.p.ParameterType.STRING:
+        return value
+
+    match parameter:
+        case core.config.spec.p.NumberParameter(is_float=is_float):
+            if is_float:
+                return float(value)
+
+            return int(value)
+
+        # case core.config.spec.p.BooleanParameter():
+        #    truth_literal = "true"
+        #    lower_value = value.lower()
+        #    if lower_value not in (truth_literal, "false"):
+        #        raise ValueError(f"can't parse {value} as boolean")
+
+        #    return value == "true"
+
+        case core.config.spec.p.OptionParameter(options=options):
+            # strange patch retrieved from original plugin
+            if value in options.values():
+                return value
+
+            if INTEGER_LIKE_STRING.match(value):
+                return int(value)
+
+            if FLOAT_LIKE_STRING.match(value):
+                return float(value)
+
+    return value

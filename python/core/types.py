@@ -149,12 +149,15 @@ class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
         return f"{self.type.value} #{self.id}"
 
 
-ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor
-
 ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
 ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
+
+ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
+TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]
 
 
+@dataclass(slots=True, frozen=True)
 class HostGroupOfObject:
     group: HostGroupDescriptor
     owner: CoreObjectDescriptor

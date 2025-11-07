@@ -33,7 +33,6 @@ from cm.models import (
 from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.job.run import start_task
 from core.cluster.types import HostComponentEntry
 from core.job.types import AssociatedProcess
 from core.types import ADCMCoreType
@@ -247,7 +246,7 @@ class ActionViewSet(
                 HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
                 for entry in data["host_component_map"]
             }
-            if data["host_component_map"] is None
+            if data["host_component_map"] is not None
             else None
         )
 
@@ -264,18 +263,14 @@ class ActionViewSet(
             description=data["description"],
         )
 
-        task_orm = schedule_task(
+        return schedule_task(
             action_orm=target_action,
             target=self.parent_object,
             payload=payload,
             job_service=job_service,
             config_service=config_service,
+            start_task_after_schedule=not use_new_job_scheduler(),
         )
-
-        if not use_new_job_scheduler():
-            start_task(task_orm)
-
-        return task_orm
 
     def _run_old(self, serializer: Serializer, target_action: Action):
         configuration = serializer.validated_data["configuration"]

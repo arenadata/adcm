@@ -200,7 +200,8 @@ class RunTaskMock:
             self.runner = get_default_runner()
 
     def __enter__(self):
-        self._run_patch = patch("cm.services.job.action.start_task", new=self)
+        self._run_patch = patch("application.migration.job.schedule.start_task", new=self)
+        # self._run_patch = patch("cm.services.job.action.start_task", new=self)
         return self._run_patch.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

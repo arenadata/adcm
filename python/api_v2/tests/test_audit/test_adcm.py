@@ -58,6 +58,7 @@ class TestADCMAudit(BaseAPITestCase):
                     "user_search_filter": "https://test_ldap.url",
                     "user_object_class": "user",
                     "user_name_attribute": "sAMAccountName",
+                    "group_dn_adcm_admin": None,
                     "group_search_base": None,
                     "group_search_filter": None,
                     "group_object_class": "group",
@@ -86,7 +87,7 @@ class TestADCMAudit(BaseAPITestCase):
     def test_adcm_config_change_success(self):
         self.data["config"]["global"]["accept_only_verified_bundles"] = False
         response = self.client.v2["adcm", CONFIGS].post(data=self.data)
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
         self.check_last_audit_record(
             operation_name="ADCM configuration updated",
             operation_type="update",

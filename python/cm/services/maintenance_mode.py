@@ -10,7 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
+from application.dto import RunActionDTO
+from application.migration.job.schedule import schedule_task
 from django.conf import settings
+from infra.services import get_config_service, get_job_service
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
@@ -38,11 +42,24 @@ def _change_mm_via_action(
 ) -> Serializer:
     action = Action.objects.filter(prototype=prototype, name=action_name).first()
     if action:
-        run_action(
-            action=action,
-            obj=obj,
-            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
-        )
+        if use_new_config_processing():
+            job_service = get_job_service()
+            config_service = get_config_service()
+            schedule_task(
+                action_orm=action,
+                target=obj,
+                payload=RunActionDTO(),
+                job_service=job_service,
+                config_service=config_service,
+                start_task_after_schedule=not use_new_job_scheduler(),
+            )
+
+        else:
+            run_action(
+                action=action,
+                obj=obj,
+                payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
+            )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 
     return serializer
