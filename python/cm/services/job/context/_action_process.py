@@ -12,10 +12,10 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 
 from core.cluster.types import ClusterTopology
+from core.types import Descriptor
 from infra.services import get_config_service
 import core
 
@@ -82,18 +82,12 @@ def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
 
     attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"]}
 
-    construct_parameter_path = partial(
-        core.config.files.construct_parameter_file_name_for_action_process_step,
-        process_id=process.pk,
-        step_id=step_obj.pk,
-    )
-
-    configuration = core.config.operations.prepare_config_for_ansible(
+    configuration = config_service.prepare_config_for_ansible(
         configuration=core.config.Configuration(values=config_input["values"], attributes=attributes),
         specification=specification,
-        construct_parameter_path=construct_parameter_path,
+        file_owner=(Descriptor(id=process.pk, type="process"), Descriptor(id=step_obj.pk, type="step")),
         inplace=True,
-    ).value
+    )
 
     return {"config": configuration.values}
 

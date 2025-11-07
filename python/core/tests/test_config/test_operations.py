@@ -14,7 +14,11 @@ from copy import deepcopy
 from typing import Callable
 
 from core.config._config import detect_active_groups
-from core.config._operations import prepare_config_for_ansible, validate_new_changes_in_main_configuration
+from core.config._operations import (
+    adapt_configuration_for_new_specification,
+    prepare_config_for_ansible,
+    validate_new_changes_in_main_configuration,
+)
 from core.config._spec import FullSpec
 from core.config._spec.operations import detect_stateful_parameters
 from core.config._spec.parameters import (
@@ -544,3 +548,31 @@ class TestPrepareConfigForAnsible(ConfigTestCase):
         }
 
         self.expect_correct_values(params=params, values=values, expected_values=expected_values)
+
+
+class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
+    def test_change_values_with_nones_in_defaults(self):
+        old_spec = FullSpec.from_parameters(
+            StringParameter(identifier=name_id("will_have_default"), is_required=False),
+            StringParameter(identifier=name_id("have_default"), is_required=True),
+        )
+        new_spec = FullSpec.from_parameters(
+            StringParameter(identifier=name_id("will_have_default"), is_required=True),
+            StringParameter(identifier=name_id("have_default"), is_required=False),
+        )
+        old_defaults = {"/will_have_default": None, "/have_default": 12}
+        new_defaults = {"/will_have_default": 54, "/have_default": None}
+        configuration = Configuration(values={k.strip("/"): v for k, v in old_defaults.items()}, attributes={})
+
+        expected_config = {"will_have_default": 54, "have_default": 12}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=configuration,
+            specification=old_spec,
+            new_specification=new_spec,
+            defaults=old_defaults,
+            new_defaults=new_defaults,
+            include_synchronization=False,
+        )
+
+        self.assertDictEqual(result.value.values, expected_config)

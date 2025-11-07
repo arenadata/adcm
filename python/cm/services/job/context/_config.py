@@ -19,8 +19,10 @@ from core.cluster.types import ClusterTopology
 from core.config.types import ConfigDict
 from core.types import (
     ADCMCoreType,
+    ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
+    HostGroupDescriptor,
     ObjectID,
     PrototypeID,
 )
@@ -28,7 +30,7 @@ from django.db.models import F, Q, QuerySet, Value
 from django.db.models.functions import Coalesce
 import core
 
-from cm.models import ADCM, Cluster, Component, Host, Provider, Service, partial
+from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 from cm.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
 from cm.services.job.inventory._types import ObjectsInInventoryMap
 
@@ -67,13 +69,11 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
     result = defaultdict(lambda: deepcopy(cluster_vars))
 
     for group in groups_with_hosts:
-        construct_parameter_path = partial(
-            core.config.files.construct_parameter_file_name_for_host_group, owner=group.owner, group_id=group.id
-        )
-        update_result = core.config.operations.prepare_config_for_ansible(
+        file_owner = (group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG))
+        updated_configuration = config_service.prepare_config_for_ansible(
             configuration=configurations[group.current_config_id],
             specification=specifications_for_prototypes[objects_config_info[group.owner].prototype_id],
-            construct_parameter_path=construct_parameter_path,
+            file_owner=file_owner,
         )
 
         group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
@@ -101,7 +101,7 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
             if group_before_upgrade:
                 node["before_upgrade"] = group_before_upgrade
 
-            node["config"] = update_result.value.values
+            node["config"] = updated_configuration.values
 
     return result
 
@@ -136,13 +136,10 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     result = defaultdict(lambda: deepcopy(provider_vars))
 
     for group in groups_of_provider_with_hosts:
-        construct_parameter_path = partial(
-            core.config.files.construct_parameter_file_name_for_host_group, owner=group.owner, group_id=group.id
-        )
-        update_result = core.config.operations.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_config_for_ansible(
             configuration=configurations[group.current_config_id],
             specification=specifications_for_prototypes[objects_config_info[group.owner].prototype_id],
-            construct_parameter_path=construct_parameter_path,
+            file_owner=(group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG)),
             inplace=True,
         )
 
@@ -154,7 +151,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
             if group_before_upgrade:
                 node["before_upgrade"] = group_before_upgrade
 
-            node["config"] = update_result.value.values
+            node["config"] = updated_configuration.values
 
     return result
 
@@ -178,14 +175,13 @@ def get_objects_configurations(
 
     for object_, info in objects_config_info.items():
         # what to do if one of them is absent? looks like error in storage, so I think just fail with key error
-        construct_parameter_path = partial(core.config.files.construct_parameter_file_name, owner=object_)
-        update_result = core.config.operations.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_config_for_ansible(
             configuration=configurations[info.config_id],
             specification=specifications_for_prototypes[info.prototype_id],
-            construct_parameter_path=construct_parameter_path,
+            file_owner=object_,
             inplace=True,
         )
-        objects_configurations[object_] = update_result.value.values
+        objects_configurations[object_] = updated_configuration.values
 
     return {
         (type_, object_id): objects_configurations.get(CoreObjectDescriptor(object_id, type_), {})
@@ -202,16 +198,12 @@ def get_adcm_configuration(adcm: ADCM, config_service: core.config.ConfigService
         adcm.prototype_id
     ]
 
-    construct_parameter_path = partial(
-        core.config.files.construct_parameter_file_name, owner=CoreObjectDescriptor(id=adcm.pk, type=ADCMCoreType.ADCM)
-    )
-
-    return core.config.operations.prepare_config_for_ansible(
+    return config_service.prepare_config_for_ansible(
         configuration=configuration,
         specification=specification,
-        construct_parameter_path=construct_parameter_path,
+        file_owner=CoreObjectDescriptor(id=adcm.pk, type=ADCMCoreType.ADCM),
         inplace=True,
-    ).value.values
+    ).values
 
 
 def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]:

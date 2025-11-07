@@ -25,7 +25,6 @@ from application.migration.upgrade import upgrade_object
 from cm.errors import AdcmEx
 from cm.models import Bundle, Cluster, ObjectType, Prototype, PrototypeConfig, Provider, TaskLog, Upgrade
 from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
-from cm.services.job.run import start_task
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from core.cluster.types import HostComponentEntry
 from django.db.models import OuterRef, Prefetch, Subquery
@@ -215,6 +214,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             payload=payload,
             job_service=get_job_service(),
             config_service=get_config_service(),
+            start_task_after_schedule=not use_new_job_scheduler(),
         )
 
         match result:
@@ -222,9 +222,6 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
                 return Response(status=HTTP_204_NO_CONTENT)
             case ("task", task_id):
                 task_orm = TaskLog.objects.get(pk=task_id)
-                if not use_new_job_scheduler():
-                    start_task(task_orm)
-
                 return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task_orm).data)
 
     def _run_old(self, serializer: Serializer, upgrade: Upgrade, parent: Cluster | Provider) -> Response:

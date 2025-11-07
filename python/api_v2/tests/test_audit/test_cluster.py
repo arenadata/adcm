@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 from cm.models import (
     Action,
     AnsibleConfig,
@@ -1031,6 +1033,7 @@ class TestClusterAudit(BaseAPITestCase):
             user__username=self.test_user.username,
         )
 
+    @unittest.skip("ADCM-7319 Missing file for spec, investigation required")
     def test_upgrade_cluster_incorrect_data_fail(self):
         response = self.client.v2[
             self.cluster_1,

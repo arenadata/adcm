@@ -38,6 +38,6 @@ def use_new_job_scheduler() -> bool:
 def use_new_config_processing(headers: Mapping | None = None) -> bool:
     header_value = (headers or {}).get(FLAG_CONFIG_PROCESSING.header)
     if header_value is not None:
-        return header_value == "new"
+        return header_value != "old"
 
-    return os.environ.get(FLAG_CONFIG_PROCESSING.env) == "new"
+    return os.environ.get(FLAG_CONFIG_PROCESSING.env) != "old"

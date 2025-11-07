@@ -37,6 +37,7 @@ def upgrade_object(
     payload: UpgradeActionDTO,
     job_service: core.job.JobService,
     config_service: core.config.ConfigService,
+    start_task_after_schedule: bool,
 ) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
     with atomic():
         check_license(prototype=obj.prototype)
@@ -71,6 +72,7 @@ def upgrade_object(
             payload=payload.to_run_action_dto(),
             job_service=job_service,
             config_service=config_service,
+            start_task_after_schedule=start_task_after_schedule,
         )
 
         return "task", task.pk

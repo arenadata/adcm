@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, Protocol, TypeAlias, TypeVar
+from typing import Callable, Iterable, Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
 from core.config._config import detect_active_groups, nested_to_flat
@@ -28,6 +28,7 @@ from core.config._types import (
     ConfigurationWithID,
     Defaults,
     FlatConfiguration,
+    HostGroupConfigOwner,
 )
 from core.config._validate import (
     AlwaysPassValidator,
@@ -37,7 +38,16 @@ from core.config._validate import (
     Violations,
 )
 from core.result import Fail, Success, is_fail
-from core.types import ActionID, ConfigID, CoreObjectDescriptor, HostGroupDescriptor, PrototypeID
+from core.types import (
+    ActionID,
+    ConfigID,
+    CoreObjectDescriptor,
+    Descriptor,
+    HostGroupDescriptor,
+    ObjectOrGroup,
+    PrototypeID,
+    TaskDescriptor,
+)
 
 T = TypeVar("T")
 
@@ -55,7 +65,12 @@ class ConfigLogAlike(Protocol):
     description: str
 
 
-CoreObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor
+FileOwner = (
+    CoreObjectDescriptor
+    | tuple[CoreObjectDescriptor, HostGroupDescriptor]
+    | TaskDescriptor
+    | tuple[Descriptor[Literal["process"]], Descriptor[Literal["step"]]]
+)
 
 
 @dataclass(slots=True)
@@ -87,11 +102,39 @@ class ConfigService:
 
     # retrieve
 
-    def retrieve_current_configuration(self, owner: CoreObjectOrGroup) -> ConfigurationWithID:
+    def retrieve_current_configuration(self, owner: ObjectOrGroup) -> ConfigurationWithID:
         return self.repo.get_config(owner=owner)
 
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
         return self.repo.get_spec_and_defaults(owner=owner, action_id=None)
+
+    def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
+        # scenario-like method, may be moved
+
+        specification, defaults = self.retrieve_specification(owner=owner.descriptor)
+
+        match owner:
+            case ConfigOwner(descriptor=config_source):
+                configuration = self.retrieve_current_configuration(config_source)
+                is_host_group = False
+            case HostGroupConfigOwner(group=config_source):
+                configuration = self.retrieve_current_configuration(config_source)
+                is_host_group = True
+
+        active_groups = operations.detect_active_groups(attributes=configuration.attributes)
+        stateful_parameters = spec.detect_stateful_parameters(
+            spec=specification, active_groups=active_groups, owner_state=owner.info.state
+        )
+
+        variant_resolver = self.variant_validators.main(owner=owner.descriptor, reference_config=configuration)
+
+        return spec.spec_to_jsonschema(
+            spec=specification,
+            defaults=defaults,
+            stateful_parameters=stateful_parameters,
+            is_group_config=is_host_group,
+            resolve_variant=variant_resolver.resolve,
+        )
 
     def retrieve_specification_for_action(
         self, owner: CoreObjectDescriptor, action_id: ActionID
@@ -124,7 +167,7 @@ class ConfigService:
         self,
         configuration: Configuration,
         description: str,
-        owner: CoreObjectOrGroup,
+        owner: ObjectOrGroup,
     ) -> ConfigID:
         return self.repo.set_new_config_for_object(owner=owner, config=configuration, description=description)
 
@@ -134,6 +177,11 @@ class ConfigService:
         except ObjectWithoutConfigError:
             return None
 
+        return self.create_initial_configuration(owner=owner, specification=specification, defaults=defaults)
+
+    def create_initial_configuration(
+        self, owner: CoreObjectDescriptor, specification: spec.FullSpec, defaults: Defaults
+    ) -> ConfigID:
         default_config = self.prepare_default_configuration(default_values=defaults, specification=specification)
 
         config_id = self.create_new_configuration_by_descriptor(
@@ -260,6 +308,23 @@ class ConfigService:
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
 
+    def prepare_config_for_ansible(
+        self,
+        configuration: Configuration,
+        specification: spec.FullSpec,
+        file_owner: FileOwner,
+        *,
+        inplace: bool = False,
+    ) -> Configuration:
+        file_name_constructor = _choose_file_name_builder(file_owner)
+        result = operations.prepare_config_for_ansible(
+            configuration=configuration,
+            specification=specification,
+            construct_parameter_path=lambda name: str(self.settings.directories.files / file_name_constructor(name)),
+            inplace=inplace,
+        )
+        return result.value
+
     # inspect
 
     def inspect_has_invalid_configuration(self, owner: CoreObjectDescriptor) -> bool:
@@ -321,6 +386,20 @@ class ConfigService:
             encrypted_config=Configuration(values=encrypted_values, attributes=new.attributes),
             has_changed=validation_result.value.has_changed,
         )
+
+
+def _choose_file_name_builder(owner: FileOwner) -> Callable[[str], str]:
+    match owner:
+        case CoreObjectDescriptor():
+            return partial(files.construct_parameter_file_name, owner=owner)
+        case (CoreObjectDescriptor(), HostGroupDescriptor(id=group_id)):
+            return partial(files.construct_parameter_file_name_for_host_group, owner=owner[0], group_id=group_id)
+        case Descriptor(id=task_id, type="task"):
+            return partial(files.construct_parameter_file_name_for_task, task_id=task_id)
+        case (Descriptor(id=process_id, type="process"), Descriptor(id=step_id, type="step")):
+            return partial(
+                files.construct_parameter_file_name_for_action_process_step, process_id=process_id, step_id=step_id
+            )
 
 
 def _format_validation_violations_to_error(violations: Violations) -> OperationError:

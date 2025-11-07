@@ -85,7 +85,7 @@ def _check_defaults_new(configuration: core.bundle_alt.ConfigDefinition, bundle_
     # validate defaults should be added to config service, so this import won't be nessesary
     from cm.config.validators import DefaultsVariantResolver
     from cm.services.bundle_alt.repo import convert_config_definition_to_orm_model
-    from core.config._validate import AlwaysPassValidator
+    from core.config._pattern_validators import PossiblyEncryptedPatternValidator
     from core.result import is_fail
 
     secrets = get_config_service().secrets
@@ -103,7 +103,9 @@ def _check_defaults_new(configuration: core.bundle_alt.ConfigDefinition, bundle_
         values={k: v for k, v in defaults.items() if v is not None}, attributes={}
     )
 
-    validators = core.config.Validators(variant=DefaultsVariantResolver(), pattern=AlwaysPassValidator())
+    validators = core.config.Validators(
+        variant=DefaultsVariantResolver(), pattern=PossiblyEncryptedPatternValidator(secrets=secrets)
+    )
 
     result = core.config.operations.validate_values(
         # for now attributes feel unimportant for defaults

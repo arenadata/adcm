@@ -35,7 +35,7 @@ class MainConfigVariantResolver(config.MainConfigVariantResolver):
     owner: CoreObjectDescriptor
     reference_config: config.Configuration
 
-    def is_value_allowed(self, value: Any, parameter: config.spec.p.VariantParameter) -> bool:
+    def resolve(self, parameter: config.spec.p.VariantParameter) -> tuple:
         match parameter.source:
             case "config":
                 source_param = parameter.payload["name"]
@@ -50,4 +50,8 @@ class MainConfigVariantResolver(config.MainConfigVariantResolver):
             case "inline":
                 choices = tuple(parameter.payload["value"])
 
+        return choices
+
+    def is_value_allowed(self, value: Any, parameter: config.spec.p.VariantParameter) -> bool:
+        choices = self.resolve(parameter)
         return value in choices

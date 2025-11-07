@@ -19,7 +19,7 @@ from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog
 from cm.services.concern import delete_issue
 from cm.services.job.run import update_related_configs
 from cm.status_api import notify_about_new_concern, send_config_creation_event, send_config_creation_event_by_descriptor
-from core.types import ConfigID, CoreObjectDescriptor, JobID
+from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
 from rbac.roles import apply_policy_for_new_config
 import core
@@ -131,19 +131,25 @@ def update_configuration_of_host_group(
     with atomic():
         specification, _ = config_service.retrieve_specification(owner=config_owner.descriptor)
         new_config = convert(input_config, specification)
-        current_config = config_service.retrieve_current_configuration(owner=owner_descriptor)
+        current_config = config_service.retrieve_current_configuration(
+            owner=Descriptor(id=group.pk, type=ADCMHostGroupType.CONFIG)
+        )
 
         result = config_service.prepare_new_configuration(
             new=new_config, previous=current_config, specification=specification, owner=config_owner
         )
 
+        main_object_config = config_service.retrieve_current_configuration(owner=owner_descriptor)
+
         # sync with changes from main config
         updated_configuration = config_service.prepare_updated_configurations_of_host_groups(
-            main=current_config, groups={0: result.encrypted_config}
+            main=main_object_config, groups={0: result.encrypted_config}
         )[0]
 
         config_id = config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration, description=description, owner=owner_descriptor
+            configuration=updated_configuration,
+            description=description,
+            owner=HostGroupDescriptor(id=group.pk, type=ADCMHostGroupType.CONFIG),
         )
 
         delete_issue(owner=owner_descriptor, cause=ConcernCause.CONFIG)

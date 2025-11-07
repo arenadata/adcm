@@ -13,6 +13,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
+from itertools import chain
 from typing import Callable, Literal, TypeAlias, TypeVar
 import logging
 
@@ -227,6 +228,11 @@ def update_config_of_host_group(
     main: Configuration,
     host_group: Configuration,
 ) -> Success[Configuration]:
+    """
+    It is expected that both configurations are based on same schema,
+    so in cases like upgrade both should be converted to one format first,
+    only then updated with this function
+    """
     target = deepcopy(main)
     source = host_group
 
@@ -368,7 +374,7 @@ def apply_changes(
             if previous != attributes:
                 has_changed = True
         except KeyError:
-            violation = Violation(parameter=key, check="structure", reason="no such key in configuration's attributes")
+            violation = Violation(parameter=key, check="structure", reason="no such key i=n configuration's attributes")
             violations.append(violation)
 
     if violations:
@@ -383,18 +389,52 @@ def adapt_configuration_for_new_specification(
     defaults: Defaults,
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
+    # now I don't see another approach  to distinct cases of host group / main config
+    # without guessing, so made a flag
+    include_synchronization: bool,
 ) -> Success[Configuration]:
+    # todo: clarify this function after logic confirmed by tests,
+    #       now it's a bit of mess and joggling
+
+    parameter_and_group_names = set(chain(new_specification.parameters, new_specification.groups))
+
     flat_config = nested_to_flat(configuration=configuration, specification=specification)
 
-    non_default_values_in_config = {k: v for k, v in flat_config.values.items() if v != defaults.get(k)}
+    desynced_parameters = {
+        key for key, attr in configuration.attributes.items() if attr.synchronization and not attr.is_synced
+    }
+
+    non_default_values_in_config = {
+        parameter_name: value
+        for parameter_name, value in flat_config.values.items()
+        if (
+            (
+                (value != defaults.get(parameter_name))
+                or (new_defaults.get(parameter_name) is None)
+                or (parameter_name in desynced_parameters)
+            )
+            and parameter_name in parameter_and_group_names
+        )
+    }
     new_values = new_defaults | non_default_values_in_config
 
-    new_default_attributes = {
-        k: Attributes(is_active=v.activation.is_active_by_default)
-        for k, v in new_specification.groups.items()
-        if v.activation
+    new_default_group_attributes = {
+        name: Attributes(
+            is_active=param.activation.is_active_by_default,
+            is_synced=param.activation.is_desyncable if include_synchronization else None,
+        )
+        for name, param in new_specification.groups.items()
+        if param.activation
     }
-    new_attributes = new_default_attributes | flat_config.attributes
+    new_parameter_attributes = {}
+    if include_synchronization:
+        new_parameter_attributes = {
+            name: Attributes(is_active=None, is_synced=param.is_desyncable)
+            for name, param in new_specification.parameters.items()
+        }
+
+    updated_attributes = new_parameter_attributes | new_default_group_attributes | flat_config.attributes
+    new_attributes = {k: v for k, v in updated_attributes.items() if k in parameter_and_group_names}
 
     adapted_config = Configuration(values=flat_to_nested(new_values), attributes=new_attributes)
 
