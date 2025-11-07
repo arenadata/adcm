@@ -302,12 +302,17 @@ class TestDuplicateHost(BaseAPITestCase):
     def test_create_duplicate_and_add_to_cluster_with_same_duplicate_added_fail(self):
         self.create_duplicate(origin=self.host_1, name=self.host_1.fqdn, cluster=self.cluster_1)
 
+        self.cluster_1.refresh_from_db()
         response = self.client.v2[self.host_1, "duplicates"].post(
             data={"name": self.host_1.fqdn, "clusterId": self.cluster_1.id}
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
-        self.assertEqual("Host with the same origin is already added to cluster", response.json()["desc"])
+        response = response.json()
+        self.assertEqual(response["code"], "HOST_CONFLICT")
+        self.assertEqual(response["level"], "error")
+        # here we can not know host_id, it existed only in rolled back transaction
+        self.assertIn("Only one copy of a host can be added to the cluster. Errors: <Host #", response["desc"])
 
     def test_adcm_7132_create_duplicate_from_duplicate_fail(self):
         duplicate = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate")
