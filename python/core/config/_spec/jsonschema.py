@@ -330,7 +330,7 @@ def _fill_type_specifics_to_schema_node(
 
             for label, value in parameter.options.items():
                 enum.append(value)
-                labels.append(label)
+                labels.append(str(label))
 
             schema["enum"] = enum
             schema["adcmMeta"]["enumExtra"] = {"labels": labels}
