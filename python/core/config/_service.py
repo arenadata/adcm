@@ -432,5 +432,6 @@ def _write_to_files_dir_with_prefix(
     decoded_content = decrypt(content)
 
     filepath.write_text(data=decoded_content, encoding="utf-8")
+    filepath.chmod(0o0600)
 
     return fullname
