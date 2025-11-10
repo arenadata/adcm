@@ -305,8 +305,20 @@ def _serialize_config_step(
     )
 
     if step_input:
-        config = step_input.configuration["config"]
-        meta = convert_attr_to_adcm_meta(step_input.configuration["attr"])
+        if use_new_config_processing():
+            config = step_input.configuration["values"]
+            meta = {}
+            for name, attrs in step_input.configuration["attributes"].items():
+                meta[name] = {}
+
+                if (is_active := attrs.get("is_active")) is not None:
+                    meta[name]["isActive"] = is_active
+
+                if (is_synced := attrs.get("is_synced")) is not None:
+                    meta[name]["isSynchronized"] = is_synced
+        else:
+            config = step_input.configuration["config"]
+            meta = convert_attr_to_adcm_meta(step_input.configuration["attr"])
 
     return StepConfigurationSerializer(
         base_data | {"configuration": {"config_schema": schema, "adcm_meta": meta, "config": config}}
