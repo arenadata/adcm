@@ -84,6 +84,8 @@ const CodeHighlighter = ({
   const handleExpandBtnClick = () =>
     parentFullscreenContext ? parentFullscreenContext.toggleFullscreen() : toggleFullscreen();
 
+  const items = codeVirtualizer.getVirtualItems();
+
   return (
     <div
       ref={containerRef}
@@ -122,7 +124,7 @@ const CodeHighlighter = ({
               style={{ width: `${patchWidth}px` }}
             >
               <div className={s.virtualContainer} style={{ height: `${codeVirtualizer.getTotalSize()}px` }}>
-                {codeVirtualizer.getVirtualItems().map((virtualRow) => (
+                {items.map((virtualRow) => (
                   <div
                     key={virtualRow.key}
                     className={s.virtualLineNumber}
@@ -137,7 +139,7 @@ const CodeHighlighter = ({
           <ScrollPane ref={contentRef}>
             <div className={cn(s.codeHighlighterCode, s.codeHighlighterFontParams)}>
               <div className={s.virtualContainer} style={{ height: `${codeVirtualizer.getTotalSize()}px` }}>
-                {codeVirtualizer.getVirtualItems().map((virtualRow) => {
+                {items.map((virtualRow) => {
                   const lineIndex = virtualRow.index;
                   const lineContent = parsedCodeLines[lineIndex];
 
