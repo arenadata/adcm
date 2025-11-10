@@ -126,7 +126,7 @@ class JSONParameter(_SimpleParameterBase):
 
 
 class OptionParameter(_SimpleParameterBase):
-    options: dict[str, Any]
+    options: dict[str | int, Any]
     type: Literal[ParameterType.OPTION] = ParameterType.OPTION
 
 
