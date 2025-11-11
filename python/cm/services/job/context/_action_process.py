@@ -82,7 +82,7 @@ def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
 
     attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"].items()}
 
-    configuration = config_service.prepare_config_for_ansible(
+    configuration = config_service.prepare_configuration_for_ansible(
         configuration=core.config.Configuration(values=config_input["values"], attributes=attributes),
         specification=specification,
         file_owner=(Descriptor(id=process.pk, type="process"), Descriptor(id=step_obj.pk, type="step")),

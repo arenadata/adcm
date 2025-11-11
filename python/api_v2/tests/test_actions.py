@@ -528,6 +528,8 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
+        self.maxDiff = None
+
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
@@ -688,6 +690,8 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 class TestAction(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
+
+        self.maxDiff = None
 
         self.action_with_config = Action.objects.filter(name="with_config", prototype=self.cluster_1.prototype).first()
 

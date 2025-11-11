@@ -20,6 +20,7 @@ from adcm.permissions import RUN_ACTION_PERM_PREFIX
 from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
 from cm.models import (
+    ADCM,
     Action,
     ADCMEntity,
     Cluster,
@@ -85,7 +86,7 @@ def insert_service_ids(
 
 
 def get_action_configuration(
-    action_: Action, object_: Cluster | Service | Component | Provider | Host
+    action_: Action, object_: Cluster | Service | Component | Provider | Host | ADCM
 ) -> tuple[dict | None, dict | None, dict | None]:
     if action_.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)

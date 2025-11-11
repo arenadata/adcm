@@ -70,7 +70,7 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
 
     for group in groups_with_hosts:
         file_owner = (group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG))
-        updated_configuration = config_service.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_configuration_for_ansible(
             configuration=configurations[group.current_config_id],
             specification=specifications_for_prototypes[objects_config_info[group.owner].prototype_id],
             file_owner=file_owner,
@@ -136,7 +136,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     result = defaultdict(lambda: deepcopy(provider_vars))
 
     for group in groups_of_provider_with_hosts:
-        updated_configuration = config_service.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_configuration_for_ansible(
             configuration=configurations[group.current_config_id],
             specification=specifications_for_prototypes[objects_config_info[group.owner].prototype_id],
             file_owner=(group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG)),
@@ -175,7 +175,7 @@ def get_objects_configurations(
 
     for object_, info in objects_config_info.items():
         # what to do if one of them is absent? looks like error in storage, so I think just fail with key error
-        updated_configuration = config_service.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_configuration_for_ansible(
             configuration=configurations[info.config_id],
             specification=specifications_for_prototypes[info.prototype_id],
             file_owner=object_,
@@ -198,7 +198,7 @@ def get_adcm_configuration(adcm: ADCM, config_service: core.config.ConfigService
         adcm.prototype_id
     ]
 
-    return config_service.prepare_config_for_ansible(
+    return config_service.prepare_configuration_for_ansible(
         configuration=configuration,
         specification=specification,
         file_owner=CoreObjectDescriptor(id=adcm.pk, type=ADCMCoreType.ADCM),

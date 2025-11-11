@@ -17,6 +17,7 @@ from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from application.migration.config import update_configuration_of_host_group, update_configuration_of_object
 from cm.api import update_obj_config
+from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, PrototypeConfig
 from cm.services.config import (
@@ -40,7 +41,7 @@ import core
 
 from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.utils.config import convert_group_config, convert_main_config
+from api_v2.utils.config import convert_group_config, convert_json_fields_to_strings, convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -136,21 +137,26 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
-        func = self.new_create if use_new_config_processing(headers=request.headers) else self.old_create
+        if use_new_config_processing(headers=request.headers):
+            create_new = self.new_create
+            convert = self.new_convert
+        else:
+            create_new = self.old_create
+            convert = self.old_convert
 
-        config_log = func(parent_object=parent_object, serializer=serializer)
-
-        config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
-        config_log.config = represent_json_type_as_string(prototype=parent_object.prototype, value=config_log.config)
+        config_log = create_new(parent_object=parent_object, serializer=serializer)
+        config_log = convert(config_log, parent_object)
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
-        parent_object = self.get_parent_object()
+        parent_object = self.get_parent_object(raise_=NotFound())
         self._check_parent_permissions(parent_object)
+
         instance = self.get_object()
-        instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)
-        instance.config = represent_json_type_as_string(prototype=parent_object.prototype, value=instance.config)
+        func = self.new_convert if use_new_config_processing(headers=request.headers) else self.old_convert
+
+        instance = func(instance, parent_object)
         serializer = self.get_serializer(instance)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
@@ -158,6 +164,32 @@ class ConfigLogViewSet(
     def list(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         self._check_parent_permissions()
         return super().list(request, *args, **kwargs)
+
+    def old_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
+        config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
+        config_log.config = represent_json_type_as_string(prototype=parent_object.prototype, value=config_log.config)
+        return config_log
+
+    def new_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
+        match parent_object:
+            case ConfigHostGroup():
+                object_ = parent_object.object
+                if not object_:
+                    raise RuntimeError(f"Host group does not have owner: {parent_object}")
+
+                owner = orm_object_to_core_descriptor(object_)
+            case _:
+                owner = orm_object_to_core_descriptor(parent_object)
+
+        config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
+
+        config_service = get_config_service()
+        specification = config_service.retrieve_partial_specification(
+            owner=owner, only_for_types=(core.config.spec.p.JSONParameter,)
+        )
+        config_log.config = convert_json_fields_to_strings(values=config_log.config, spec=specification)
+
+        return config_log
 
     def _check_create_permissions(self, request: Request, parent_object: ParentObject) -> None:
         owner_object = parent_object.object if isinstance(parent_object, ConfigHostGroup) else parent_object

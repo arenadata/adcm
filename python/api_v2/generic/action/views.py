@@ -14,7 +14,13 @@ from itertools import compress
 
 from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
-from application.migration.job.schedule import ConfigurationDTO, RunActionDTO, schedule_task
+from application.migration.job.schedule import (
+    ActionTarget,
+    ConfigurationDTO,
+    RunActionDTO,
+    retrieve_configuration_for_action,
+    schedule_task,
+)
 from cm.converters import (
     orm_object_to_action_target_descriptor,
     orm_object_to_action_target_type,
@@ -65,7 +71,7 @@ from api_v2.generic.action.utils import (
 )
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
-from api_v2.utils.config import convert_main_config
+from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -167,7 +173,13 @@ class ActionViewSet(
 
         self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
-        config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self._get_actions_owner())
+        get_configuration = (
+            self.get_action_configuration_new
+            if use_new_config_processing(headers=request.headers)
+            else self.get_action_configuration_old
+        )
+
+        config_schema, config, adcm_meta = get_configuration(action=action_, target=self._get_actions_owner())
 
         # processes = None - If processes are not supported by the action.
         # processes = [] - If processes is supported by the action, but there are no created processes yet.
@@ -193,6 +205,34 @@ class ActionViewSet(
         )
 
         return Response(data=serializer.data)
+
+    def get_action_configuration_old(self, action: Action, target: ADCMEntity):
+        return get_action_configuration(action_=action, object_=target)
+
+    def get_action_configuration_new(self, action: Action, target: ADCMEntity):
+        if not isinstance(target, ActionTarget):
+            raise TypeError(f"Can't get configuration for {target=}")
+
+        config_service = get_config_service()
+
+        result = retrieve_configuration_for_action(action_orm=action, target=target, config_service=config_service)
+
+        if not result:
+            return None, None, None
+
+        spec, defaults, owner = result
+
+        jsonschema = config_service.retrieve_jsonschema_for_action(
+            action_specification=spec, action_config_defaults=defaults, action_owner=owner
+        )
+        attributes = {
+            name: {"isActive": group.activation.is_active_by_default}
+            for name, group in spec.groups.items()
+            if group.activation
+        }
+        values = convert_json_fields_to_strings(values=core.config.flat_to_nested(defaults), spec=spec, inplace=True)
+
+        return jsonschema, values, attributes
 
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002

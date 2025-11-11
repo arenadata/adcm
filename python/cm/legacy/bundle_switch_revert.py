@@ -566,7 +566,7 @@ def _restore_config_of_main_object(
 ):
     description = "revert_upgrade"
 
-    specification, _ = config_service.retrieve_specification(owner=owner)
+    specification = config_service.retrieve_specification(owner=owner)
 
     config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
@@ -600,7 +600,7 @@ def _restore_config_of_host_group(
     description = "revert_upgrade"
     file_owner_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=group_id)
 
-    specification, _ = config_service.retrieve_specification(owner=owner)
+    specification = config_service.retrieve_specification(owner=owner)
     owner_config = config_service.retrieve_current_configuration(owner=owner)
 
     # sync with changes from main config

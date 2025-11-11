@@ -11,6 +11,8 @@
 # limitations under the License.
 
 """
+DEPRECATED
+
 Copy-pasted for ADCM-6355.
 
 Should be moved to a specific `core` module/package later.

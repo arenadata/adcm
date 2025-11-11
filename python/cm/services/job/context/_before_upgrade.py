@@ -204,7 +204,7 @@ def get_before_upgrades(
         except KeyError:
             continue
 
-        result[unprocessed_object]["config"] = config_service.prepare_config_for_ansible(
+        result[unprocessed_object]["config"] = config_service.prepare_configuration_for_ansible(
             configuration=configuration,
             specification=specification,
             file_owner=unprocessed_object,
@@ -221,7 +221,7 @@ def get_before_upgrades(
                 # here nothing should be added to result dict
                 continue
 
-            updated_configuration = config_service.prepare_config_for_ansible(
+            updated_configuration = config_service.prepare_configuration_for_ansible(
                 configuration=configuration,
                 specification=specification,
                 file_owner=(

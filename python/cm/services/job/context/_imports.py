@@ -165,7 +165,7 @@ def _get_configurations_prepared_for_inventory(
 
         owner = CoreObjectDescriptor(id=source["object_id"], type=source["object_type"])
 
-        config_service.prepare_config_for_ansible(
+        config_service.prepare_configuration_for_ansible(
             configuration=configurations[config_id],
             specification=specifications_for_prototypes[source["prototype_id"]],
             file_owner=owner,
@@ -209,7 +209,7 @@ def _fill_imports_with_defaults_inplace(
 
     for import_name, target in still_required_to_fill:
         object_, config_id = objects[target.prototype_id]
-        updated_configuration = config_service.prepare_config_for_ansible(
+        updated_configuration = config_service.prepare_configuration_for_ansible(
             configuration=configurations[config_id],
             specification=specifications[target.prototype_id],
             file_owner=object_,

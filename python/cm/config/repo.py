@@ -13,9 +13,7 @@
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypeVar
-import re
-import json
+from typing import Iterable, Literal, overload
 
 from core import config
 from core.types import (
@@ -31,16 +29,12 @@ from core.types import (
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F
+from django.db.models import F, Q
 
+from cm.config._repo_spec import build_defaults, build_specification
 from cm.converters import core_type_to_model
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
 from cm.services.config._base import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-
-_SECRET_TYPES = frozenset(("password", "secrettext", "secretfile", "secretmap"))
-
-T = TypeVar("T")
-V = TypeVar("V")
 
 
 @dataclass(slots=True)
@@ -73,17 +67,57 @@ class ConfigRepo(config.ConfigRepoI):
 
         return config.ConfigurationWithID(id=current_id, values=record.values, attributes=record.attributes)
 
-    def get_spec_and_defaults(
-        self, owner: CoreObjectDescriptor, action_id: ActionID | None
+    # those overloads are required for some reason for pyright to understand it correctly,
+    # see related case (not protocols, so it's different) in https://github.com/microsoft/pyright/issues/5718
+    # maybe it's unexpected behavior
+    @overload
+    def get_spec(
+        self,
+        owner: CoreObjectDescriptor,
+        action_id: ActionID | None,
+        *,
+        with_defaults: Literal[False],
+        only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
+    ) -> config.spec.FullSpec:
+        ...
+
+    @overload
+    def get_spec(
+        self,
+        owner: CoreObjectDescriptor,
+        action_id: ActionID | None,
+        *,
+        with_defaults: Literal[True],
+        only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
     ) -> tuple[config.spec.FullSpec, config.Defaults]:
-        config_spec_info = _get_config_prototype_info(owner=owner, action_id=action_id)
-        if not config_spec_info.parameter_prototypes:
+        ...
+
+    def get_spec(
+        self,
+        owner: CoreObjectDescriptor,
+        action_id: ActionID | None,
+        *,
+        with_defaults: bool = False,
+        only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
+    ) -> config.spec.FullSpec | tuple[config.spec.FullSpec, config.Defaults]:
+        config_spec_info = _get_config_prototype_info(owner=owner, action_id=action_id, only_for=only_for)
+        if not config_spec_info.parameter_prototypes and not only_for:
             message = f"Unexpectedly got object without configuration: {owner}"
             raise config.ObjectWithoutConfigError(message)
 
         bundle_root = _build_path_to_bundle_root(owner_type=owner.type, bundle_hash=config_spec_info.bundle_hash)
-        spec, defaults = _build_spec(
-            config_prototype=config_spec_info, secrets_service=self.secrets, bundle_root=bundle_root
+        spec = build_specification(
+            records=config_spec_info.parameter_prototypes,
+            group_customization_flag=config_spec_info.group_customization_flag,
+        )
+        if not with_defaults:
+            return spec
+
+        defaults = build_defaults(
+            records=config_spec_info.parameter_prototypes,
+            spec=spec,
+            bundle_root=bundle_root,
+            encrypt=self.secrets.encrypt,
         )
         return spec, defaults
 
@@ -107,17 +141,27 @@ class ConfigRepo(config.ConfigRepoI):
 
         config_prototypes = _get_config_prototypes_info_by_ids(ids=ids_)
 
-        return {
-            prototype_id: _build_spec(
-                config_prototype=info, secrets_service=self.secrets, bundle_root=proto_dir_map[prototype_id]
-            )
-            for prototype_id, info in config_prototypes.items()
+        result = {}
+
+        for prototype_id, info in config_prototypes.items():
             # REDACTED: for now we need to return all specifications,
             #           because of some upgrade cases when configuration is removed
             #
             # don't want to return "non-existent" specifications
-            # if info.parameter_prototypes
-        }
+            # if not info.parameter_prototypes: continue
+
+            specification = build_specification(
+                records=info.parameter_prototypes, group_customization_flag=info.group_customization_flag
+            )
+            defaults = build_defaults(
+                records=info.parameter_prototypes,
+                spec=specification,
+                bundle_root=proto_dir_map[prototype_id],
+                encrypt=self.secrets.encrypt,
+            )
+            result[prototype_id] = (specification, defaults)
+
+        return result
 
     # todo: shouldn't be here, see service for more info
     def find_host_group_configurations(
@@ -186,13 +230,12 @@ def build_specification_from_prototype_config_records(
     secrets_service: config.secrets.AnsibleSecrets,
     bundle_root: Path,
 ) -> tuple[config.spec.FullSpec, config.Defaults]:
-    return _build_spec(
-        config_prototype=ConfigPrototypeInfo(
-            bundle_hash="", group_customization_flag=group_customization_flag, parameter_prototypes=records
-        ),
-        bundle_root=bundle_root,
-        secrets_service=secrets_service,
+    specification = build_specification(records=records, group_customization_flag=group_customization_flag)
+    defaults = build_defaults(
+        records=records, spec=specification, bundle_root=bundle_root, encrypt=secrets_service.encrypt
     )
+
+    return specification, defaults
 
 
 def _detect_owner_model(owner: ObjectOrGroup) -> type[MainObject | ADCM | ConfigHostGroup]:
@@ -203,7 +246,11 @@ def _detect_owner_model(owner: ObjectOrGroup) -> type[MainObject | ADCM | Config
             return ConfigHostGroup
 
 
-def _get_config_prototype_info(owner: CoreObjectDescriptor, action_id: int | None) -> ConfigPrototypeInfo:
+def _get_config_prototype_info(
+    owner: CoreObjectDescriptor,
+    action_id: int | None,
+    only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
+) -> ConfigPrototypeInfo:
     model = core_type_to_model(owner.type)
     response = model.objects.values(
         "prototype_id",
@@ -211,10 +258,13 @@ def _get_config_prototype_info(owner: CoreObjectDescriptor, action_id: int | Non
         bundle_hash=F("prototype__bundle__hash"),
     ).get(id=owner.id)
 
-    query_filter = (
-        {"action_id": action_id} if action_id else {"prototype_id": response["prototype_id"], "action_id": None}
-    )
-    parameter_prototypes = tuple(PrototypeConfig.objects.filter(**query_filter).order_by("pk"))
+    query_filter = Q(action_id=action_id) if action_id else Q(prototype_id=response["prototype_id"], action_id=None)
+
+    # now implemented for one type only, since others aren't required yet
+    if only_for and config.spec.p.JSONParameter in only_for:
+        query_filter &= Q(type="json")
+
+    parameter_prototypes = tuple(PrototypeConfig.objects.filter(query_filter).order_by("pk"))
 
     return ConfigPrototypeInfo(
         bundle_hash=response["bundle_hash"],
@@ -257,233 +307,6 @@ def _build_path_to_bundle_root(owner_type: ADCMCoreType, bundle_hash: str) -> Pa
         return Path(settings.BASE_DIR, "conf", "adcm")
 
     return Path(settings.BUNDLE_DIR, bundle_hash)
-
-
-def _build_spec(
-    config_prototype: ConfigPrototypeInfo,
-    # most likely it's correct to put encrypt in here instead of service,
-    # because not in all cases encryption is required
-    secrets_service: config.secrets.AnsibleSecrets,
-    bundle_root: Path,
-    # adjustment for times when defaults are ignored, so bundle root may be a dummy => files can't be read
-    ignore_missing_files: bool = False,
-) -> tuple[config.spec.FullSpec, config.Defaults]:
-    result_spec = config.spec.FullSpec()
-
-    group_members: dict[str, list[str]] = defaultdict(list)
-    prototype_group_customization = config_prototype.group_customization_flag
-    defaults = {}
-
-    for orm_spec in config_prototype.parameter_prototypes:
-        if orm_spec.type != "group":
-            param, default = _register_simple_parameter_in_spec(
-                config_proto_entry=orm_spec,
-                spec=result_spec,
-                prototype_group_customization=prototype_group_customization,
-                encrypt=secrets_service.encrypt,
-                bundle_root=bundle_root,
-                ignore_missing_files=ignore_missing_files,
-            )
-
-            level_name = param.identifier.name
-
-            if orm_spec.subname:
-                group_members[orm_spec.name].append(level_name)
-            else:
-                result_spec.hierarchy.fields.append(level_name)
-
-            defaults[param.identifier.full] = default
-
-            continue
-
-        identifier = config.spec.p.Identifier(
-            name=orm_spec.subname or orm_spec.name,
-            full=config.names.level_names_to_full_name_safe((orm_spec.name, orm_spec.subname)),
-        )
-        extra = config.spec.p.ExtraProperties(
-            display_name=orm_spec.display_name, description=orm_spec.description, ui_options=orm_spec.ui_options
-        )
-
-        activation = None
-        if orm_spec.limits.get("activatable"):
-            is_desyncable = orm_spec.group_customization
-            if is_desyncable is None:
-                is_desyncable = prototype_group_customization
-
-            activation = config.spec.p.Activation(
-                edit_rule=_detect_read_only_rule(orm_spec.limits),
-                is_desyncable=is_desyncable,
-                is_active_by_default=orm_spec.limits.get("active", False),
-            )
-
-        group = config.spec.p.ParameterGroup(identifier=identifier, extra=extra, activation=activation)
-
-        result_spec.groups[group.identifier.full] = group
-        result_spec.hierarchy.child_groups[group.identifier.name] = config.spec.SpecHierarchyLevel()
-        result_spec.hierarchy.fields.append(group.identifier.name)
-
-        if group.is_activatable:
-            result_spec.attributes.activatable_groups.add(group.identifier.full)
-            if group.activation and group.activation.is_desyncable:
-                result_spec.attributes.desyncable_parameters.add(group.identifier.full)
-
-    for group_name, children_names in group_members.items():
-        result_spec.hierarchy.child_groups[group_name].fields = children_names
-
-    return result_spec, defaults
-
-
-def _register_simple_parameter_in_spec(
-    config_proto_entry,
-    spec: config.spec.FullSpec,
-    prototype_group_customization: bool,
-    encrypt: Callable[[str], str],
-    bundle_root: Path,
-    # adjustment for times when defaults are ignored, so bundle root may be a dummy => files can't be read
-    ignore_missing_files: bool = False,
-) -> tuple[config.spec.p.SimpleParameter, Any]:
-    is_desyncable = config_proto_entry.group_customization
-    if is_desyncable is None:
-        is_desyncable = prototype_group_customization
-
-    type_ = config_proto_entry.type
-    default_kwargs = {
-        "identifier": config.spec.p.Identifier(
-            name=config_proto_entry.subname or config_proto_entry.name,
-            full=config.names.level_names_to_full_name_safe((config_proto_entry.name, config_proto_entry.subname)),
-        ),
-        "extra": config.spec.p.ExtraProperties(
-            display_name=config_proto_entry.display_name,
-            description=config_proto_entry.description,
-            ui_options=config_proto_entry.ui_options,
-        ),
-        "edit_rule": _detect_read_only_rule(config_proto_entry.limits),
-        "is_required": config_proto_entry.required,
-        "is_desyncable": is_desyncable,
-        "is_secret": type_ in _SECRET_TYPES,
-    }
-
-    # In orm spec default is always a string, so empty string is None
-    #
-    # Note: during bundle parsing condider even specified default="" as default=None
-    default = config_proto_entry.default if config_proto_entry.default else None
-
-    match type_:
-        case "string" | "password" | "text" | "secrettext" | "file" | "secretfile":
-            as_file = "file" in type_
-            unsafe = (config_proto_entry.ansible_options or {}).get("unsafe", False)
-            parameter = config.spec.p.StringParameter(
-                pattern=config_proto_entry.limits.get("pattern"),
-                as_file=as_file,
-                supports_multiline=as_file or ("text" in type_),
-                ansible=config.spec.p.AnsibleOptions(unsafe=unsafe),
-                **default_kwargs,
-            )
-            # Temporal patch, because defaults for files are paths, but we want content
-            if parameter.as_file and default is not None:
-                path = bundle_root / str(default)
-                if path.is_file():
-                    default = path.read_text(encoding="utf-8")
-                elif ignore_missing_files:
-                    default = ""
-                else:
-                    message = f"Missing file for {parameter.identifier.full} at {path}"
-                    raise RuntimeError(message)
-
-        case "integer" | "float":
-            is_float = type_ == "float"
-
-            parameter = config.spec.p.NumberParameter(
-                is_float=type_ == "float",
-                min=config_proto_entry.limits.get("min"),
-                max=config_proto_entry.limits.get("max"),
-                **default_kwargs,
-            )
-
-            default = _parse_default_if_is_str(default, float if is_float else int)
-
-        case "boolean":
-            parameter = config.spec.p.BooleanParameter(**default_kwargs)
-            default = _parse_default_if_is_str(default, lambda x: x.lower() in {"true", "yes"})
-
-        case "map" | "secretmap":
-            parameter = config.spec.p.MapParameter(**default_kwargs)
-            default = _parse_default_if_is_str(default, json.loads)
-        case "list":
-            parameter = config.spec.p.ListParameter(**default_kwargs)
-            default = _parse_default_if_is_str(default, json.loads)
-        case "json":
-            parameter = config.spec.p.JSONParameter(**default_kwargs)
-            default = _parse_default_if_is_str(default, json.loads)
-        case "option":
-            parameter = config.spec.p.OptionParameter(options=config_proto_entry.limits["option"], **default_kwargs)
-            if default is not None:
-                # patch due to default type (string) possible incompatibility with options
-                #
-                # todo see similar typecase in ansible config plugin:
-                #  maybe it's worth moving this case to core.config.spec somewhere
-                if default in parameter.options.values():
-                    default = default
-                elif re.match(r"^\d+$", default):
-                    default = int(default)
-                elif re.match(r"^\d+\.\d+$", default):
-                    default = float(default)
-        case "variant":
-            payload = {**config_proto_entry.limits["source"]}
-            source_type = payload["type"]
-            is_strict = payload.get("strict", False)
-            parameter = config.spec.p.VariantParameter(
-                source=source_type, is_strict=is_strict, payload=payload, **default_kwargs
-            )
-
-            # temporarily disabled; maybe not required
-            # if source_type == "config":
-            #    source_param_name = config.names.ensure_full_name(payload["name"])
-            #    spec.dependencies.internal.setdefault(source_param_name, set()).add(parameter.identifier.full)
-            # elif source_type == "builtin":
-            #    spec.dependencies.external.add(parameter.identifier.full)
-
-        case "structure":
-            parameter = config.spec.p.StructureParameter(yspec=config_proto_entry.limits["yspec"], **default_kwargs)
-            default = _parse_default_if_is_str(default, json.loads)
-        case _:
-            message = f"Unsupported type for conversion: {type_}"
-            raise TypeError(message)
-
-    if parameter.is_desyncable:
-        spec.attributes.desyncable_parameters.add(parameter.identifier.full)
-
-    # improve when possible, is_secret is no more part of base parameter,
-    # probably should just use `encrypt_secrets`
-    if getattr(parameter, "is_secret", False) and default:
-        default = config.secrets.encrypt_if_possible(value=default, encryptor=encrypt)
-
-    if parameter.identifier.name == "__main_info":
-        parameter.extra.ui_options["invisible"] = True
-
-    spec.parameters[parameter.identifier.full] = parameter
-
-    return parameter, default
-
-
-def _detect_read_only_rule(limits: dict) -> config.spec.p.WritableRule | config.spec.p.ReadOnlyRule:
-    if read_only := limits.get("read_only"):
-        return config.spec.p.ReadOnlyRule(read_only=read_only)
-
-    if (writable := limits.get("writable")) and writable != "any":
-        return config.spec.p.WritableRule(writable=writable)
-
-    return config.spec.p.WritableRule(writable="any")
-
-
-def _parse_default_if_is_str(default: str | V, convert: Callable[[str], T]) -> T | V:
-    # todo: made it str-based,
-    #  because sometimes values are plain (after parsing), not string (from database);
-    #  most likely should be solved after spec-defaults separation or something
-    if not isinstance(default, str):
-        return default
-
-    return convert(default)
 
 
 def _to_configuration(values: dict, attrs: dict) -> config.Configuration:

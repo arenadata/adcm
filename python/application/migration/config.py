@@ -59,7 +59,7 @@ def update_configuration_of_object(
     file_owner_prefix = core.config.files.build_config_prefix(owner_descriptor)
 
     with atomic():
-        specification, _ = config_service.retrieve_specification(owner=config_owner.descriptor)
+        specification = config_service.retrieve_specification(owner=config_owner.descriptor)
         new_config = convert(input_config, specification)
         current_config = config_service.retrieve_current_configuration(owner=owner_descriptor)
 
@@ -129,7 +129,7 @@ def update_configuration_of_host_group(
     file_owner_prefix = core.config.files.build_config_host_group_prefix(owner=owner_descriptor, group_id=group.pk)
 
     with atomic():
-        specification, _ = config_service.retrieve_specification(owner=config_owner.descriptor)
+        specification = config_service.retrieve_specification(owner=config_owner.descriptor)
         new_config = convert(input_config, specification)
         current_config = config_service.retrieve_current_configuration(
             owner=Descriptor(id=group.pk, type=ADCMHostGroupType.CONFIG)
@@ -184,7 +184,7 @@ def update_configuration_from_job(
     owner_orm: ADCMEntity,
 ) -> tuple[core.config.FlatConfiguration, HasChanged]:
     with atomic():
-        specification, _ = config_service.retrieve_specification(owner=owner)
+        specification = config_service.retrieve_specification(owner=owner)
         changes = convert(changes_input, specification)
 
         configuration = config_service.retrieve_current_configuration(owner=owner)

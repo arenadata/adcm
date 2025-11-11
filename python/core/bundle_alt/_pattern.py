@@ -11,6 +11,8 @@
 # limitations under the License.
 
 """
+DEPRECATED
+
 Copy-pasted from cm for ACDM-6355
 
 Should be moved to core.config or smt
