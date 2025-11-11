@@ -1199,6 +1199,39 @@ class TestBundleSchema(TestCase):
             with self.assertRaises(ValidationError):
                 self.validate_schema(raw)
 
+    def test_nested_groups_allowed(self):
+        yaml_schema = """
+        - type: cluster
+          name: some_cluster
+          version: 3
+          config: &config
+            - name: g1
+              type: group
+              subs:
+                - name: g2
+                  type: group
+                  subs:
+                    - name: g3
+                      type: group
+                      subs:
+                        - name: s
+                          type: string
+          actions:
+            with_config:
+              type: job
+              script: aa.py
+              script_type: python
+              config: *config
+        """
+
+        raw = yaml.safe_load(yaml_schema)
+        result = self.validate_schema(raw)
+
+        field_name = result[0]["config"][0]["subs"][0]["subs"][0]["subs"][0]["name"]
+        self.assertEqual(field_name, "s")
+        field_name = result[0]["actions"]["with_config"]["config"][0]["subs"][0]["subs"][0]["subs"][0]["name"]
+        self.assertEqual(field_name, "s")
+
 
 class TestWizardSchema(TestCase):
     def test_correct_task_format_success(self):

@@ -267,10 +267,10 @@ def _fill_type_specifics_to_schema_node(
         return
 
     if isinstance(parameter, NumberParameter):
-        if parameter.max:
+        if parameter.max is not None:
             schema["maximum"] = parameter.max
 
-        if parameter.min:
+        if parameter.min is not None:
             schema["minimum"] = parameter.min
 
         return
@@ -306,6 +306,9 @@ def _fill_type_specifics_to_schema_node(
 
             if schema.get("default") is None:
                 schema["default"] = []
+
+            if parameter.is_required:
+                schema["minItems"] = 1
 
         case VariantParameter(is_strict=is_strict):
             choices = resolve_variant(parameter)

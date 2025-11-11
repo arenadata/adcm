@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from copy import deepcopy
+from typing import Any, Callable
 import json
 
 from cm.errors import AdcmEx
@@ -73,3 +74,36 @@ def convert_group_config(configuration: dict, specification: core.config.spec.Fu
     attributes = convert_to_attributes(attr=configuration["attr"], allowed_keys={"isActive", "isSynchronized"})
     values = convert_values(input_values=configuration["config"], specification=specification)
     return core.config.Configuration(values=values, attributes=attributes)
+
+
+def convert_json_fields_to_strings(values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False) -> dict:
+    return _apply_to_json_fields(func=_to_string, values=values, spec=spec, inplace=inplace)
+
+
+def parse_json_fields_from_strings(values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False) -> dict:
+    return _apply_to_json_fields(func=_from_string, values=values, spec=spec, inplace=inplace)
+
+
+def _apply_to_json_fields(
+    func: Callable[[Any], Any], values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False
+) -> dict:
+    json_params = tuple(
+        name for name, param in spec.parameters.items() if isinstance(param, core.config.spec.p.JSONParameter)
+    )
+    if not json_params:
+        return values
+
+    values_copy = deepcopy(values) if not inplace else values
+
+    for json_param_name in json_params:
+        core.config.change_by_full_name(name=json_param_name, func=func, values=values_copy)
+
+    return values_copy
+
+
+def _to_string(x: Any) -> Any:
+    return x if x is None else json.dumps(x)
+
+
+def _from_string(x: Any) -> Any:
+    return x if isinstance(x, str) else json.loads(x)

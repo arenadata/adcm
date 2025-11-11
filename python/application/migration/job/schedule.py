@@ -166,7 +166,7 @@ def schedule_task(
                 )
 
         if job_config:
-            update_result = config_service.prepare_config_for_ansible(
+            update_result = config_service.prepare_configuration_for_ansible(
                 configuration=job_config.configuration,
                 specification=job_config.specification,
                 file_owner=Descriptor(id=task_id, type="task"),
@@ -238,11 +238,50 @@ def schedule_task(
     return orm_task
 
 
+# todo should be moved out of here, just a "simple" cover-up of most cornerstones
+#      when we are working with action's configuration.
+#      not even a use case.
+def retrieve_configuration_for_action(
+    *, action_orm: Action, target: ActionTarget, config_service: core.config.ConfigService
+) -> tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.ConfigOwner] | None:
+    action_objects = _ActionLaunchObjects(target=target, action=action_orm)
+
+    descriptor = orm_object_to_core_descriptor(action_objects.owner)
+
+    match action_objects.owner:
+        case Provider() | Host() | ADCM():
+            spec_pair = _retrieve_static_spec(owner=descriptor, action_id=action_orm.pk, config_service=config_service)
+
+        case Cluster() | Service() | Component():
+            environment = Environment(bundle_root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash)
+            spec_pair = _resolve_spec(
+                owner=descriptor,
+                action=action_orm,
+                cluster_related_object=action_objects.owner,
+                process=None,
+                environment=environment,
+                config_service=config_service,
+            )
+
+    if not spec_pair:
+        return None
+
+    return (
+        spec_pair.spec,
+        spec_pair.defaults,
+        core.config.ConfigOwner(
+            descriptor=descriptor, info=core.config.ConfigOwnerObjectInfo(state=action_objects.owner.state)
+        ),
+    )
+
+
 def _retrieve_static_spec(
     owner: CoreObjectDescriptor, action_id: ActionID, config_service: core.config.ConfigService
 ) -> SpecPair | None:
     try:
-        specification, defaults = config_service.retrieve_specification_for_action(owner=owner, action_id=action_id)
+        specification, defaults = config_service.retrieve_specification_with_defaults_for_action(
+            owner=owner, action_id=action_id
+        )
         return SpecPair(spec=specification, defaults=defaults)
     except core.config.ObjectWithoutConfigError:
         return None

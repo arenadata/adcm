@@ -38,7 +38,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
             descriptor=CoreObjectDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER),
             info=core.config.ConfigOwnerObjectInfo(state=self.cluster.state),
         )
-        self.cluster_spec, self.cluster_defaults = self.config_service.retrieve_specification(
+        self.cluster_spec, self.cluster_defaults = self.config_service.retrieve_specification_with_defaults(
             owner=self.cluster_owner_info.descriptor
         )
 

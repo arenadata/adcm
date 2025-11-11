@@ -105,13 +105,29 @@ class ConfigService:
     def retrieve_current_configuration(self, owner: ObjectOrGroup) -> ConfigurationWithID:
         return self.repo.get_config(owner=owner)
 
-    def retrieve_specification(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec_and_defaults(owner=owner, action_id=None)
+    def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
+        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=False)
+
+    def retrieve_specification_with_defaults(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
+        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=True)
+
+    def retrieve_partial_specification(
+        self,
+        owner: CoreObjectDescriptor,
+        only_for_types: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]],
+    ) -> spec.FullSpec:
+        """
+        This is convenience function to "possibly" optimize specification retrieval for cases
+        where we don't need full spec or defaults AND don't care if object even has config/spec.
+        Don't overuse this function, ensure that you are out of other options and no new mechanism is required.
+        Can return "empty" spec.
+        """
+        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=False, only_for=only_for_types)
 
     def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
         # scenario-like method, may be moved
 
-        specification, defaults = self.retrieve_specification(owner=owner.descriptor)
+        specification, defaults = self.retrieve_specification_with_defaults(owner=owner.descriptor)
 
         match owner:
             case ConfigOwner(descriptor=config_source):
@@ -136,10 +152,44 @@ class ConfigService:
             resolve_variant=variant_resolver.resolve,
         )
 
-    def retrieve_specification_for_action(
+    def retrieve_jsonschema_for_action(
+        self,
+        action_specification: spec.FullSpec,
+        action_config_defaults: Defaults,
+        action_owner: ConfigOwner,
+    ) -> dict:
+        # scenario-like method, may be moved
+
+        active_groups = tuple(
+            name
+            for name, group in action_specification.groups.items()
+            if group.activation and group.activation.is_active_by_default
+        )
+        stateful_parameters = spec.detect_stateful_parameters(
+            spec=action_specification, active_groups=active_groups, owner_state=action_owner.info.state
+        )
+
+        try:
+            owner_configuration = self.retrieve_current_configuration(owner=action_owner.descriptor)
+        except ObjectWithoutConfigError:
+            owner_configuration = Configuration()
+
+        variant_resolver = self.variant_validators.main(
+            owner=action_owner.descriptor, reference_config=owner_configuration
+        )
+
+        return spec.spec_to_jsonschema(
+            spec=action_specification,
+            defaults=action_config_defaults,
+            stateful_parameters=stateful_parameters,
+            is_group_config=False,
+            resolve_variant=variant_resolver.resolve,
+        )
+
+    def retrieve_specification_with_defaults_for_action(
         self, owner: CoreObjectDescriptor, action_id: ActionID
     ) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec_and_defaults(owner=owner, action_id=action_id)
+        return self.repo.get_spec(owner=owner, action_id=action_id, with_defaults=True)
 
     def retrieve_configurations_by_id(self, configurations: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
         return self.repo.find_configs_by_ids(ids=configurations)
@@ -173,7 +223,7 @@ class ConfigService:
 
     def create_initial_configuration_if_required(self, owner: CoreObjectDescriptor) -> ConfigID | None:
         try:
-            specification, defaults = self.repo.get_spec_and_defaults(owner=owner, action_id=None)
+            specification, defaults = self.retrieve_specification_with_defaults(owner=owner)
         except ObjectWithoutConfigError:
             return None
 
@@ -308,7 +358,7 @@ class ConfigService:
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
 
-    def prepare_config_for_ansible(
+    def prepare_configuration_for_ansible(
         self,
         configuration: Configuration,
         specification: spec.FullSpec,
@@ -329,7 +379,7 @@ class ConfigService:
 
     def inspect_has_invalid_configuration(self, owner: CoreObjectDescriptor) -> bool:
         try:
-            specification, _ = self.retrieve_specification(owner=owner)
+            specification = self.retrieve_specification(owner=owner)
         except ObjectWithoutConfigError:
             return False
 

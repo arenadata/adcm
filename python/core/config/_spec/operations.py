@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from itertools import chain
 from typing import Iterable
 
-from core.config._names import is_part_of_group
+from core.config._names import is_part_of_group, level_name_from_full_name
+from core.config._spec.parameters import Identifier
 from core.config._spec.rules import is_read_only
 from core.config._spec.spec import FullSpec
 from core.config._types import ParameterFullName
@@ -73,3 +74,8 @@ def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[Parame
         for group_name in deactivated_groups
         if is_part_of_group(parameter=parameter_name, group=group_name)
     }
+
+
+def build_identifier_from_name(full_name: ParameterFullName) -> Identifier:
+    name = level_name_from_full_name(full_name)
+    return Identifier(name=name, full=full_name)

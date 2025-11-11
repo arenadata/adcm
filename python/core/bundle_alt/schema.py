@@ -23,7 +23,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import TypedDict
+from typing_extensions import Self, TypedDict
 
 from core.bundle_alt.errors import BundleParsingError, convert_validation_to_bundle_error
 from core.bundle_alt.schema_validation import (
@@ -285,7 +285,7 @@ CONFIG_ITEMS: TypeAlias = (
 
 class ConfigItemGroupSchema(_BaseConfigItemSchema):
     type: Literal["group"]
-    subs: list[Annotated[CONFIG_ITEMS, Field(discriminator="type")]]
+    subs: list[Annotated[CONFIG_ITEMS | Self, Field(discriminator="type")]]
     activatable: Annotated[bool | None, Field(default=None)]
     active: Annotated[bool | None, Field(default=None)]
 

@@ -151,14 +151,16 @@ def save_definitions(
     return bundle
 
 
+# todo should be moved to core.config.repo interface after definition generalization
 def convert_config_definition_to_orm_model(
     definition: ConfigDefinition, prototype: Prototype | None, action: Action | None
 ) -> Generator[PrototypeConfig, None, None]:
     # prototype is optional for the sake of jinja-config generation
     # should be made mandatory after its refactoring
     for param_key, param_spec in definition.parameters.items():
-        name = param_spec.key[0]
-        subname = param_spec.name if len(param_key) != 1 else ""
+        root_name, *subnames = param_spec.key
+        name = root_name
+        subname = "/".join(subnames)
 
         default = ""
         if (value := definition.default_values.get(param_key, None)) is not None:

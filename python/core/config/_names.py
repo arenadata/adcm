@@ -22,10 +22,12 @@ from core.config._types import (
 
 
 def ensure_full_name(name: str) -> ParameterFullName:
-    if not name.startswith(PARAMETER_NAME_ROOT_PREFIX):
-        return f"{PARAMETER_NAME_ROOT_PREFIX}{name}"
+    name_ = name.rstrip("/")
 
-    return name
+    if not name_.startswith(PARAMETER_NAME_ROOT_PREFIX):
+        return f"{PARAMETER_NAME_ROOT_PREFIX}{name_}"
+
+    return name_
 
 
 def full_name_to_level_names(full: ParameterFullName) -> tuple[ParameterLevelName, ...]:
@@ -34,6 +36,11 @@ def full_name_to_level_names(full: ParameterFullName) -> tuple[ParameterLevelNam
 
 def level_names_to_full_name(levels: Iterable[ParameterLevelName]) -> ParameterFullName:
     return ensure_full_name(PARAMETER_NAME_SEPARATOR.join(levels))
+
+
+def level_name_from_full_name(full: ParameterFullName) -> ParameterLevelName:
+    *_, name = full.rsplit("/", maxsplit=1)
+    return name
 
 
 def level_names_to_full_name_safe(levels: Iterable[ParameterLevelName | None]) -> ParameterFullName:
