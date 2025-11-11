@@ -118,10 +118,7 @@ def validate_values(
         deactivated_parameters = set()
     else:
         active_groups = detect_active_groups(attributes=configuration.attributes)
-        change_restrictions = spec.detect_stateful_parameters(
-            spec=specification, owner_state="", active_groups=active_groups
-        )
-        deactivated_parameters = change_restrictions.deactivated
+        deactivated_parameters = spec.detect_deactivated_parameters(spec=specification, active_groups=active_groups)
 
     result = validate_values_are_correct(
         values=configuration.values,
@@ -140,7 +137,7 @@ def validate_new_changes_in_main_configuration(
     new: Configuration,
     previous: Configuration,
     specification: spec.FullSpec,
-    stateful_parameters: spec.StatefulParameters,
+    deactivated_parameters: set[ParameterFullName],
     validators: Validators,
 ) -> Success[ValidationResult] | Fail[Violations]:
     """
@@ -167,7 +164,6 @@ def validate_new_changes_in_main_configuration(
     validate_changes_result = validate_changes_are_allowed(
         changes=changes,
         attributes=new.attributes,
-        read_only=stateful_parameters.read_only,
         desync_allowed=specification.attributes.desyncable_parameters,
     )
     if is_fail(validate_changes_result):
@@ -177,7 +173,7 @@ def validate_new_changes_in_main_configuration(
     validate_values_result = validate_values_are_correct(
         values=flat_new_config.values,
         specification=specification,
-        deactivated_parameters=stateful_parameters.deactivated,
+        deactivated_parameters=deactivated_parameters,
         validators=validators,
     )
     if is_fail(validate_values_result):

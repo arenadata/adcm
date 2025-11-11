@@ -19,7 +19,6 @@ import json
 from typing_extensions import NotRequired, Self
 
 from core.config._names import level_names_to_full_name
-from core.config._spec.operations import StatefulParameters
 from core.config._spec.parameters import (
     ListParameter,
     MapParameter,
@@ -27,10 +26,12 @@ from core.config._spec.parameters import (
     OptionParameter,
     ParameterGroup,
     ParameterType,
+    ReadOnlyRule,
     SimpleParameter,
     StringParameter,
     StructureParameter,
     VariantParameter,
+    WritableRule,
 )
 from core.config._spec.spec import FullSpec, SpecHierarchyLevel
 from core.config._types import (
@@ -105,7 +106,7 @@ class SchemaGenerationContext(Protocol):
 class _Context:
     spec: FullSpec
     defaults: Defaults
-    stateful_parameters: StatefulParameters
+    owner_state: str
     is_group_config: bool
     resolve_variant: _VariantResolver
 
@@ -113,14 +114,14 @@ class _Context:
 def spec_to_jsonschema(
     spec: FullSpec,
     defaults: Defaults,
-    stateful_parameters: StatefulParameters,
+    owner_state: str,
     is_group_config: bool,
     resolve_variant: _VariantResolver,
 ) -> dict:
     context = _Context(
         spec=spec,
         defaults=defaults,
-        stateful_parameters=stateful_parameters,
+        owner_state=owner_state,
         is_group_config=is_group_config,
         resolve_variant=resolve_variant,
     )
@@ -185,7 +186,7 @@ def _hierarchy_level_to_jsonschema(
 
 
 def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -> OptionalNode:
-    read_only = parameter.identifier.full in context.stateful_parameters.read_only
+    read_only = _is_read_only_parameter(parameter=parameter, owner_state=context.owner_state)
     schema = _get_basic_schema(parameter=parameter, read_only=read_only)
 
     type_ = _TYPE_MAPPING.get(parameter.type)
@@ -209,7 +210,7 @@ def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -
 
 
 def _group_parameter_to_schema(group: ParameterGroup, context: _Context) -> JSONSchemaNodeDict:
-    read_only = group.identifier.name in context.stateful_parameters.read_only
+    read_only = _is_read_only_group(group=group, owner_state=context.owner_state)
     schema: JSONSchemaNodeDict = _get_basic_schema(parameter=group, read_only=read_only)
 
     schema["type"] = "object"
@@ -465,3 +466,26 @@ def _get_structure_item_schema(
         schema["properties"] = properties
 
     return schema
+
+
+def _is_read_only_parameter(parameter: SimpleParameter, owner_state: str) -> bool:
+    return _is_read_only(rule=parameter.extra.edit_rule, owner_state=owner_state)
+
+
+def _is_read_only_group(group: ParameterGroup, owner_state: str) -> bool:
+    return bool(group.activation and _is_read_only(rule=group.extra.edit_rule, owner_state=owner_state))
+
+
+def _is_read_only(rule: ReadOnlyRule | WritableRule, owner_state: str) -> bool:
+    match rule:
+        case ReadOnlyRule(read_only="any"):
+            return True
+
+        case ReadOnlyRule(read_only=states):
+            return owner_state in states
+
+        case WritableRule(writable="any"):
+            return False
+
+        case WritableRule(writable=states):
+            return owner_state not in states

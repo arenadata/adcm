@@ -346,7 +346,7 @@ def _prepare_configuration(
             configuration = config_service.prepare_action_configuration(
                 configuration=input_configuration,
                 specification=specification,
-                owner_descriptor=owner,
+                owner=owner,
                 owner_configuration=owner_configuration,
             )
             return JobConfig(configuration=configuration, specification=specification)

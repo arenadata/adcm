@@ -34,12 +34,9 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
         self.bundle = self.add_bundle(Path(__file__).parent / "bundles" / "cluster_full_config")
         self.cluster = self.add_cluster(bundle=self.bundle, name="with-config")
 
-        self.cluster_owner_info = core.config.ConfigOwner(
-            descriptor=CoreObjectDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER),
-            info=core.config.ConfigOwnerObjectInfo(state=self.cluster.state),
-        )
+        self.cluster_owner = CoreObjectDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)
         self.cluster_spec, self.cluster_defaults = self.config_service.retrieve_specification_with_defaults(
-            owner=self.cluster_owner_info.descriptor
+            owner=self.cluster_owner
         )
 
     def test_same_as_default_success(self):
@@ -48,7 +45,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
             attributes={"/activatable_group": core.config.Attributes(is_active=True)},
         )
         result = self.config_service.prepare_new_configuration(
-            new=input_config, previous=input_config, specification=self.cluster_spec, owner=self.cluster_owner_info
+            new=input_config, previous=input_config, specification=self.cluster_spec, owner=self.cluster_owner
         )
 
         self.assertFalse(result.has_changed)
@@ -71,7 +68,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
         }
 
         result = self.config_service.prepare_new_configuration(
-            new=input_config, previous=default_config, specification=self.cluster_spec, owner=self.cluster_owner_info
+            new=input_config, previous=default_config, specification=self.cluster_spec, owner=self.cluster_owner
         )
         encrypted_values = result.encrypted_config.values
 

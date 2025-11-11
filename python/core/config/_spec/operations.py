@@ -10,57 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
-from itertools import chain
 from typing import Iterable
 
 from core.config._names import is_part_of_group, level_name_from_full_name
 from core.config._spec.parameters import Identifier
-from core.config._spec.rules import is_read_only
 from core.config._spec.spec import FullSpec
 from core.config._types import ParameterFullName
-
-
-@dataclass(slots=True)
-class StatefulParameters:
-    read_only: set[ParameterFullName] = field(default_factory=set)
-    """
-    Names for parameters and activatable groups
-    """
-
-    desync_allowed: set[ParameterFullName] = field(default_factory=set)
-    """
-    Names for parameters and activatable groups
-    """
-
-    deactivated: set[ParameterFullName] = field(default_factory=set)
-    """
-    Names for parameters in activatable groups, group names excluded
-    """
-
-
-def detect_stateful_parameters(
-    spec: FullSpec, owner_state: str, active_groups: Iterable[ParameterFullName]
-) -> StatefulParameters:
-    """
-    Gather information about "state" of parameters.
-    State means that parameters have properties dependable on things like owner state or user input.
-    Desync info also included for convenience reasons.
-    Prefer using this function instead of figuring out what is allowed or not manually.
-    """
-    groups_activation = {param.identifier.full: param.activation for param in spec.groups.values() if param.activation}
-    with_edit_rule = chain(spec.parameters.items(), groups_activation.items())
-    read_only_parameters = {
-        name for name, param in with_edit_rule if is_read_only(rule=param.edit_rule, owner_state=owner_state)
-    }
-
-    deactivated_parameters = detect_deactivated_parameters(spec=spec, active_groups=active_groups)
-
-    return StatefulParameters(
-        read_only=read_only_parameters,
-        desync_allowed=spec.attributes.desyncable_parameters,
-        deactivated=deactivated_parameters,
-    )
 
 
 def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[ParameterFullName]) -> set[ParameterFullName]:

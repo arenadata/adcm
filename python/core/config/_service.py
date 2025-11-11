@@ -137,17 +137,12 @@ class ConfigService:
                 configuration = self.retrieve_current_configuration(config_source)
                 is_host_group = True
 
-        active_groups = operations.detect_active_groups(attributes=configuration.attributes)
-        stateful_parameters = spec.detect_stateful_parameters(
-            spec=specification, active_groups=active_groups, owner_state=owner.info.state
-        )
-
         variant_resolver = self.variant_validators.main(owner=owner.descriptor, reference_config=configuration)
 
         return spec.spec_to_jsonschema(
             spec=specification,
             defaults=defaults,
-            stateful_parameters=stateful_parameters,
+            owner_state=owner.info.state,
             is_group_config=is_host_group,
             resolve_variant=variant_resolver.resolve,
         )
@@ -159,15 +154,6 @@ class ConfigService:
         action_owner: ConfigOwner,
     ) -> dict:
         # scenario-like method, may be moved
-
-        active_groups = tuple(
-            name
-            for name, group in action_specification.groups.items()
-            if group.activation and group.activation.is_active_by_default
-        )
-        stateful_parameters = spec.detect_stateful_parameters(
-            spec=action_specification, active_groups=active_groups, owner_state=action_owner.info.state
-        )
 
         try:
             owner_configuration = self.retrieve_current_configuration(owner=action_owner.descriptor)
@@ -181,7 +167,7 @@ class ConfigService:
         return spec.spec_to_jsonschema(
             spec=action_specification,
             defaults=action_config_defaults,
-            stateful_parameters=stateful_parameters,
+            owner_state=action_owner.info.state,
             is_group_config=False,
             resolve_variant=variant_resolver.resolve,
         )
@@ -258,22 +244,39 @@ class ConfigService:
         new: Configuration,
         previous: Configuration,
         specification: spec.FullSpec,
-        owner: ConfigOwner,
+        owner: CoreObjectDescriptor,
     ) -> NewConfigurationResult:
         """
         Validate config changes from previous to new and encrypt values
         """
-        active_groups = detect_active_groups(attributes=new.attributes)
-        stateful_parameters = spec.detect_stateful_parameters(
-            spec=specification, owner_state=owner.info.state, active_groups=active_groups
+        variant_validator = self.variant_validators.main(owner=owner, reference_config=new)
+        validators = Validators(
+            variant=variant_validator, pattern=PossiblyEncryptedPatternValidator(secrets=self.secrets)
         )
 
-        return self._prepare_configuration(
+        active_groups = detect_active_groups(attributes=new.attributes)
+        deactivated_parameters = spec.detect_deactivated_parameters(spec=specification, active_groups=active_groups)
+
+        validation_result = operations.validate_new_changes_in_main_configuration(
             new=new,
             previous=previous,
             specification=specification,
-            stateful_parameters=stateful_parameters,
-            owner=owner.descriptor,
+            deactivated_parameters=deactivated_parameters,
+            validators=validators,
+        )
+        match validation_result:
+            case Fail(value=violations):
+                err = _format_validation_violations_to_error(violations)
+                raise err
+
+        encryption_result = operations.encrypt_secrets(
+            values=new.values, specification=specification, encrypt=self.secrets.encrypt
+        )
+        encrypted_values = encryption_result.value
+
+        return NewConfigurationResult(
+            encrypted_config=Configuration(values=encrypted_values, attributes=new.attributes),
+            has_changed=validation_result.value.has_changed,
         )
 
     def prepare_new_configuration_from_changes(
@@ -281,21 +284,12 @@ class ConfigService:
         changes: FlatConfiguration,
         configuration: Configuration,
         specification: spec.FullSpec,
-        owner_descriptor: CoreObjectDescriptor,
+        owner: CoreObjectDescriptor,
     ) -> NewConfigurationResult:
         match operations.apply_changes(changes=changes, configuration=configuration):
             case Success(value=(new_config, changed)) if changed:
-                active_groups = detect_active_groups(attributes=new_config.attributes)
-                deactivated_parameters = spec.detect_deactivated_parameters(
-                    spec=specification, active_groups=active_groups
-                )
-                stateful_parameters = spec.StatefulParameters(deactivated=deactivated_parameters)
-                return self._prepare_configuration(
-                    new=new_config,
-                    previous=configuration,
-                    specification=specification,
-                    stateful_parameters=stateful_parameters,
-                    owner=owner_descriptor,
+                return self.prepare_new_configuration(
+                    new=new_config, previous=configuration, specification=specification, owner=owner
                 )
 
             case Success():
@@ -309,7 +303,7 @@ class ConfigService:
         self,
         configuration: Configuration,
         specification: spec.FullSpec,
-        owner_descriptor: CoreObjectDescriptor,
+        owner: CoreObjectDescriptor,
         owner_configuration: Configuration | None,
     ) -> Configuration:
         """
@@ -319,7 +313,7 @@ class ConfigService:
         if owner_config is None:
             owner_config = Configuration()
 
-        variant_validator = self.variant_validators.main(owner=owner_descriptor, reference_config=owner_config)
+        variant_validator = self.variant_validators.main(owner=owner, reference_config=owner_config)
         validators = Validators(
             variant=variant_validator, pattern=PossiblyEncryptedPatternValidator(secrets=self.secrets)
         )
@@ -399,43 +393,6 @@ class ConfigService:
         )
 
         return is_fail(result)
-
-    # configurable implementations
-
-    def _prepare_configuration(
-        self,
-        new: Configuration,
-        previous: Configuration,
-        specification: spec.FullSpec,
-        owner: CoreObjectDescriptor,
-        stateful_parameters: spec.StatefulParameters,
-    ) -> NewConfigurationResult:
-        variant_validator = self.variant_validators.main(owner=owner, reference_config=new)
-        validators = Validators(
-            variant=variant_validator, pattern=PossiblyEncryptedPatternValidator(secrets=self.secrets)
-        )
-
-        validation_result = operations.validate_new_changes_in_main_configuration(
-            new=new,
-            previous=previous,
-            specification=specification,
-            stateful_parameters=stateful_parameters,
-            validators=validators,
-        )
-        match validation_result:
-            case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
-                raise err
-
-        encryption_result = operations.encrypt_secrets(
-            values=new.values, specification=specification, encrypt=self.secrets.encrypt
-        )
-        encrypted_values = encryption_result.value
-
-        return NewConfigurationResult(
-            encrypted_config=Configuration(values=encrypted_values, attributes=new.attributes),
-            has_changed=validation_result.value.has_changed,
-        )
 
 
 def _choose_file_name_builder(owner: FileOwner) -> Callable[[str], str]:

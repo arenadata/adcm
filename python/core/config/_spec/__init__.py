@@ -19,10 +19,8 @@ Parameters are accessible via `p` (e.g. `spec.p.SimpleParameter`)
 from core.config._spec import parameters as p
 from core.config._spec.jsonschema import spec_to_jsonschema
 from core.config._spec.operations import (
-    StatefulParameters,
     build_identifier_from_name,
     detect_deactivated_parameters,
-    detect_stateful_parameters,
 )
 from core.config._spec.spec import FullSpec, SpecAttributes, SpecHierarchyLevel
 
@@ -30,10 +28,8 @@ __all__ = [
     "FullSpec",
     "SpecAttributes",
     "SpecHierarchyLevel",
-    "StatefulParameters",
     "build_identifier_from_name",
     "detect_deactivated_parameters",
-    "detect_stateful_parameters",
     "p",
     "spec_to_jsonschema",
 ]

@@ -136,9 +136,11 @@ def _convert_parameter(
     default_kwargs: Final = {
         "identifier": config.spec.build_identifier_from_name(full_name),
         "extra": config.spec.p.ExtraProperties(
-            display_name=record.display_name, description=record.description, ui_options=record.ui_options
+            display_name=record.display_name,
+            description=record.description,
+            ui_options=record.ui_options,
+            edit_rule=_detect_read_only_rule(record.limits),
         ),
-        "edit_rule": _detect_read_only_rule(record.limits),
         "is_required": record.required,
         "is_secret": type_ in _SECRET_TYPES,
         "is_desyncable": is_desyncable,
@@ -190,7 +192,6 @@ def _convert_parameter(
             activation = None
             if record.limits.get("activatable"):
                 activation = config.spec.p.Activation(
-                    edit_rule=default_kwargs["edit_rule"],
                     is_desyncable=is_desyncable,
                     is_active_by_default=record.limits.get("active", False),
                 )

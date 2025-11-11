@@ -20,7 +20,7 @@ from core.config._operations import (
     validate_new_changes_in_main_configuration,
 )
 from core.config._spec import FullSpec
-from core.config._spec.operations import detect_stateful_parameters
+from core.config._spec.operations import detect_deactivated_parameters
 from core.config._spec.parameters import (
     Activation,
     AnsibleOptions,
@@ -67,12 +67,11 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
             StringParameter(identifier=name_id("group", "another"), pattern=r"eq-\d{4}"),
             ParameterGroup(
                 identifier=name_id("act"),
-                extra=ExtraProperties(display_name="act"),
-                activation=Activation(
+                extra=ExtraProperties(
+                    display_name="act",
                     edit_rule=ReadOnlyRule(read_only=[READ_ONLY_STATUS]),
-                    is_desyncable=False,
-                    is_active_by_default=True,
                 ),
+                activation=Activation(is_desyncable=False, is_active_by_default=True),
             ),
             MapParameter(identifier=name_id("act", "secrets"), is_secret=True),
             StringParameter(identifier=name_id("act", "file"), as_file=True, supports_multiline=True),
@@ -116,16 +115,14 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
         validators: Validators | None = None,
     ):
         active_groups = detect_active_groups(attributes=new.attributes)
-        stateful_parameters = detect_stateful_parameters(
-            spec=specification or self.simple_spec,
-            owner_state=self.created_owner_info.state,
-            active_groups=active_groups,
+        deactivated_parameters = detect_deactivated_parameters(
+            spec=specification or self.simple_spec, active_groups=active_groups
         )
         return validate_new_changes_in_main_configuration(
             new=new,
             previous=previous or self.simple_config_empty,
             specification=specification or self.simple_spec,
-            stateful_parameters=stateful_parameters,
+            deactivated_parameters=deactivated_parameters,
             validators=validators or self.validators,
         )
 
@@ -222,7 +219,7 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
         self.assertEqual(violation.check, "attribute")
         self.assertIn("unexpected", violation.reason)
 
-    def test_change_readonly_parameter_fail(self):
+    def test_change_readonly_parameter_success(self):
         name = name_id("deeply", "nested", "group", "value")
 
         read_only_any = "read_only-any", ReadOnlyRule(read_only="any")
@@ -236,15 +233,12 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
 
         for case_name, rule in (read_only_any, read_only_at_state, writable_at_state):
             with self.subTest(case_name):
-                ro_parameter = StringParameter(identifier=name, edit_rule=rule)
+                ro_parameter = StringParameter(identifier=name, extra=ExtraProperties(edit_rule=rule))
                 specification = FullSpec.from_parameters(*self.simple_parameters, ro_parameter)
 
                 result = self.validate_changes(new=new_config, previous=old_config, specification=specification)
 
-                violation = self.expect_exactly_one_violation(result)
-                self.assertEqual(violation.parameter, ro_parameter.identifier.full)
-                self.assertEqual(violation.check, "change")
-                self.assertIn("is read-only", violation.reason)
+                self.expect_success(result)
 
     def test_values_required_in_root_is_empty_fail(self):
         cases = self.prepare_empty_cases("justval")

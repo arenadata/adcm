@@ -53,18 +53,15 @@ def update_configuration_of_object(
     concern_id, related_objects = None, {}
 
     owner_descriptor = converters.orm_object_to_core_descriptor(owner)
-    config_owner = core.config.ConfigOwner(
-        descriptor=owner_descriptor, info=core.config.ConfigOwnerObjectInfo(state=owner.state)
-    )
     file_owner_prefix = core.config.files.build_config_prefix(owner_descriptor)
 
     with atomic():
-        specification = config_service.retrieve_specification(owner=config_owner.descriptor)
+        specification = config_service.retrieve_specification(owner=owner_descriptor)
         new_config = convert(input_config, specification)
         current_config = config_service.retrieve_current_configuration(owner=owner_descriptor)
 
         result = config_service.prepare_new_configuration(
-            new=new_config, previous=current_config, specification=specification, owner=config_owner
+            new=new_config, previous=current_config, specification=specification, owner=owner_descriptor
         )
 
         main_config_log_id = config_service.create_new_configuration_by_descriptor(
@@ -123,20 +120,17 @@ def update_configuration_of_host_group(
     concern_id, related_objects = None, {}
 
     owner_descriptor = converters.orm_object_to_core_descriptor(owner)
-    config_owner = core.config.ConfigOwner(
-        descriptor=owner_descriptor, info=core.config.ConfigOwnerObjectInfo(state=owner.state)
-    )
     file_owner_prefix = core.config.files.build_config_host_group_prefix(owner=owner_descriptor, group_id=group.pk)
 
     with atomic():
-        specification = config_service.retrieve_specification(owner=config_owner.descriptor)
+        specification = config_service.retrieve_specification(owner=owner_descriptor)
         new_config = convert(input_config, specification)
         current_config = config_service.retrieve_current_configuration(
             owner=Descriptor(id=group.pk, type=ADCMHostGroupType.CONFIG)
         )
 
         result = config_service.prepare_new_configuration(
-            new=new_config, previous=current_config, specification=specification, owner=config_owner
+            new=new_config, previous=current_config, specification=specification, owner=owner_descriptor
         )
 
         main_object_config = config_service.retrieve_current_configuration(owner=owner_descriptor)
@@ -190,7 +184,7 @@ def update_configuration_from_job(
         configuration = config_service.retrieve_current_configuration(owner=owner)
 
         result = config_service.prepare_new_configuration_from_changes(
-            changes=changes, configuration=configuration, specification=specification, owner_descriptor=owner
+            changes=changes, configuration=configuration, specification=specification, owner=owner
         )
 
         if not result.has_changed:
