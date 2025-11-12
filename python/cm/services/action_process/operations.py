@@ -430,7 +430,7 @@ def _operation_submit_config(
     step_configuration = config_service.prepare_action_configuration(
         configuration=configuration,
         specification=specification,
-        owner_descriptor=context.object,
+        owner=context.object,
         owner_configuration=owner_config,
     )
     prefix = core.config.files.build_action_process_step_prefix(process_id=process.id, step_id=step.id)

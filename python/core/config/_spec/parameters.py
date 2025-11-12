@@ -46,13 +46,6 @@ class Identifier:
 
 
 @dataclass(slots=True)
-class ExtraProperties:
-    display_name: str = ""
-    description: str = ""
-    ui_options: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(slots=True)
 class WritableRule:
     writable: Literal["any"] | list[str]
 
@@ -63,13 +56,20 @@ class ReadOnlyRule:
 
 
 @dataclass(slots=True)
+class ExtraProperties:
+    display_name: str = ""
+    description: str = ""
+    edit_rule: WritableRule | ReadOnlyRule = field(default_factory=lambda: WritableRule(writable="any"))
+    ui_options: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class AnsibleOptions:
     unsafe: bool = False
 
 
 @dataclass(slots=True)
 class Activation:
-    edit_rule: WritableRule | ReadOnlyRule = field(default_factory=lambda: WritableRule(writable="any"))
     is_desyncable: bool = False
     is_active_by_default: bool = False
 
@@ -86,7 +86,6 @@ class ParameterGroup(BaseModel):
 
 class _SimpleParameterBase(BaseModel):
     identifier: Identifier
-    edit_rule: WritableRule | ReadOnlyRule = Field(default_factory=lambda: WritableRule(writable="any"))
     extra: ExtraProperties = Field(default_factory=ExtraProperties)
     is_required: bool = True
     is_desyncable: bool = False

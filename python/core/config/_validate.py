@@ -108,32 +108,22 @@ def validate_configuration_is_consistent(
 def validate_changes_are_allowed(
     changes: set[ParameterFullName],
     attributes: ConfigAttrs,
-    read_only: set[ParameterFullName],
     desync_allowed: set[ParameterFullName],
 ) -> Success[None] | Fail[Violations]:
     """
     Check if changes performed on two configurations are allowed based on restrictions.
     """
-    check = "change"
-    read_only_reason = "parameter is read-only"
-    sync_only_reason = "parameter can not be desynchronized with configuration"
-    errors = []
 
-    for name in changes:
-        if name in read_only:
-            err = Violation(parameter=name, check=check, reason=read_only_reason)
-            errors.append(err)
-
-        desync_is_not_allowed = name not in desync_allowed
-        if desync_is_not_allowed:
-            param_attrs = attributes.get(name)
-            if param_attrs is not None:
-                desynced = param_attrs.synchronization and not param_attrs.is_synced
-                if desynced:
-                    err = Violation(parameter=name, check=check, reason=sync_only_reason)
-                    errors.append(err)
-
-    if errors:
+    desync_disallowed = changes.difference(desync_allowed)
+    desync_disallowed_attrs = {name: attributes[name] for name in desync_disallowed if name in attributes}
+    changed_but_synced = tuple(
+        name for name, attrs in desync_disallowed_attrs.items() if attrs.synchronization and not attrs.is_synced
+    )
+    if changed_but_synced:
+        errors = [
+            Violation(parameter=name, check="change", reason="parameter can not be desynchronized with configuration")
+            for name in changed_but_synced
+        ]
         return Fail(errors)
 
     return Success(None)
