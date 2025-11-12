@@ -42,9 +42,11 @@ const CodeHighlighter = ({
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+  const { isFullscreen: localIsFullScreen, toggleFullscreen } = useFullscreen(containerRef);
 
   const parentFullscreenContext = useFullscreenContext();
+
+  const isFullscreen = parentFullscreenContext?.isFullscreen ?? localIsFullScreen;
 
   const { parsedCodeLines, lines, patchWidth } = useMemo(() => {
     const codeLines = prepCode.split(/[\r\n]/);
