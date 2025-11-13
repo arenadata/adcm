@@ -6,21 +6,21 @@ import type { JSONPrimitive } from '@models/json';
 export interface NumberControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
   onApply: () => void;
+  onResetToDefault: () => void;
 }
 
 const NumberControl = ({
   fieldName,
   fieldSchema,
-  defaultValue,
   value,
   isReadonly,
   onChange,
   onApply,
+  onResetToDefault,
 }: NumberControlProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value === '') {
@@ -39,10 +39,9 @@ const NumberControl = ({
   return (
     <ConfigurationField
       label={fieldName}
-      defaultValue={defaultValue}
       fieldSchema={fieldSchema}
       disabled={isReadonly}
-      onResetToDefault={onChange}
+      onResetToDefault={onResetToDefault}
     >
       <InputNumber
         value={(value as number) ?? ''}
