@@ -34,3 +34,7 @@ class ActionProcessNotFoundError(ActionProcessError):
 
 class ActionProcessStepNotFoundError(ActionProcessError):
     pass
+
+
+class ActionProcessPayloadError(ActionProcessError):
+    pass

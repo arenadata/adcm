@@ -21,6 +21,7 @@ from cm.services.action_process.errors import (
     ActionProcessDBError,
     ActionProcessNotFoundError,
     ActionProcessOperationError,
+    ActionProcessPayloadError,
     ActionProcessStepNotFoundError,
     SyncKeyMismatchError,
 )
@@ -82,6 +83,7 @@ class ActionProcessViewSet(
         ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
         ActionProcessNotFoundError: "ACTION_PROCESS_NOT_FOUND",
         core.config.OperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
+        ActionProcessPayloadError: "BAD_REQUEST",
     }
 
     def get_serializer_class(self):

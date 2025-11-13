@@ -38,7 +38,7 @@ from cm.services.action_process.errors import ActionProcessDBError, ActionProces
 from cm.services.action_process.render_step_old import RenderStepContext, fill_step_spec
 from cm.services.action_process.repo_old import get_allowed_ops, get_done_step_inputs_for_process, upsert_step_input
 from cm.services.action_process.schema_validation import (
-    CompleteStepPayload,
+    CompleteProcessPayload,
     Configuration,
     HostComponentMapDelta,
     ProcessOperationType,
@@ -67,7 +67,7 @@ SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
 ]
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
-OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetStepPayload
+OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload
 
 
 ConfigProcessor = Callable[[Step, Configuration], ConfigAttrPair]

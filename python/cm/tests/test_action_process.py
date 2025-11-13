@@ -29,8 +29,8 @@ from cm.services.action_process.operations_old import (
 from cm.services.action_process.schema_validation import (
     Configuration,
     ProcessOperationType,
+    SubmitConfigurationStepParams,
     SubmitStepPayload,
-    _SubmitConfigurationStepParams,
 )
 from cm.services.action_process.types_old import ProcessStepState
 from cm.services.cluster import retrieve_cluster_topology
@@ -187,7 +187,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         )
         payload = SubmitStepPayload(
             method=ProcessOperationType.SUBMIT,
-            params=_SubmitConfigurationStepParams(
+            params=SubmitConfigurationStepParams(
                 process_sync_key=process.sync_key,
                 step_id=process.current_step_id,
                 configuration=Configuration(config=config, adcm_meta={}),
