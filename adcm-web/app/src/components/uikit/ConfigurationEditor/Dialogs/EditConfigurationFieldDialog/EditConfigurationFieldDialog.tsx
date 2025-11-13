@@ -45,6 +45,10 @@ const EditConfigurationFieldDialog = ({
     [fieldNode.data.value],
   );
 
+  const handleResetToDefault = useCallback(() => {
+    handleValueChange(fieldNode.data.defaultValue);
+  }, [handleValueChange, fieldNode.data.defaultValue]);
+
   const handleCancel = () => {
     onOpenChange(false);
   };
@@ -107,11 +111,11 @@ const EditConfigurationFieldDialog = ({
           <Control
             fieldName={fieldNode.data.title}
             fieldSchema={fieldNode.data.fieldSchema}
-            defaultValue={fieldNode.data.defaultValue}
             value={value}
             isReadonly={fieldNode.data.isReadonly}
             onChange={handleValueChange}
             onApply={handleApply}
+            onResetToDefault={handleResetToDefault}
           />
         )}
       </ConfigurationEditorDialog>

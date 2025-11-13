@@ -7,21 +7,21 @@ import s from './ConfigurationField.module.scss';
 export interface BooleanControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
   onApply: () => void;
+  onResetToDefault: () => void;
 }
 
 const BooleanControl = ({
   fieldName,
   fieldSchema,
-  defaultValue,
   value,
   isReadonly,
   onChange,
   onApply,
+  onResetToDefault,
 }: BooleanControlProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
@@ -37,9 +37,8 @@ const BooleanControl = ({
     <ConfigurationField
       label={fieldName}
       fieldSchema={fieldSchema}
-      defaultValue={defaultValue}
       disabled={isReadonly}
-      onResetToDefault={onChange}
+      onResetToDefault={onResetToDefault}
     >
       <Checkbox
         className={s.configurationField__checkbox}

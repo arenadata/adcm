@@ -1,5 +1,4 @@
 import type { SingleSchemaDefinition } from '@models/adcm';
-import type { JSONPrimitive } from '@models/json';
 import FormField from '@uikit/FormField/FormField';
 import Button from '@uikit/Button/Button';
 import s from './ConfigurationField.module.scss';
@@ -9,29 +8,23 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   error?: string;
   children: React.ReactElement<{ hasError?: boolean }>;
   fieldSchema: SingleSchemaDefinition;
-  defaultValue: JSONPrimitive;
   disabled: boolean;
-  onResetToDefault: (value: JSONPrimitive) => void;
+  onResetToDefault?: () => void;
 }
 
 const ConfigurationField = ({
   label,
   error,
   fieldSchema,
-  defaultValue,
   children,
   disabled,
   onResetToDefault,
-}: ConfigurationFieldProps) => {
-  const handleResetToDefaultClick = () => {
-    onResetToDefault(defaultValue);
-  };
-
-  return (
-    <div className={s.configurationField}>
-      <FormField className={s.configurationField__control} label={label} error={error} hint={fieldSchema.description}>
-        {children}
-      </FormField>
+}: ConfigurationFieldProps) => (
+  <div className={s.configurationField}>
+    <FormField className={s.configurationField__control} label={label} error={error} hint={fieldSchema.description}>
+      {children}
+    </FormField>
+    {onResetToDefault && (
       <div className={s.configurationField__actions}>
         <Button
           variant="tertiary"
@@ -39,12 +32,12 @@ const ConfigurationField = ({
           disabled={disabled}
           title="Reset to default"
           tooltipProps={{ placement: 'bottom' }}
-          onClick={handleResetToDefaultClick}
+          onClick={onResetToDefault}
           tabIndex={-1}
         />
       </div>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 export default ConfigurationField;

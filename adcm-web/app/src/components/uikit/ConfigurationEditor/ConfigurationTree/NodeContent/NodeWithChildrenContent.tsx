@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { isValueSet } from '@models/json';
+import { type JSONPrimitive, isValueSet } from '@models/json';
 import type { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
@@ -21,6 +21,7 @@ interface NodeWithChildrenContentProps {
   isExpanded: boolean;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
+  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
@@ -33,6 +34,7 @@ const NodeWithChildrenContent = ({
   errors,
   onClear,
   onDelete,
+  onChange,
   onExpand,
   onFieldAttributeChange,
   onDragStart,
@@ -43,6 +45,11 @@ const NodeWithChildrenContent = ({
   const adcmMeta = node.data.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
   const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
+  const isResetable =
+    !fieldNodeData.isReadonly &&
+    fieldNodeData.type === 'array' &&
+    fieldNodeData.defaultValue !== undefined &&
+    fieldNodeData.value !== fieldNodeData.defaultValue;
 
   const [initialIsActive] = useState(fieldAttributes?.isActive);
   const [isOverDragHandle, setIsOverDragHandle] = useState(false);
@@ -77,6 +84,10 @@ const NodeWithChildrenContent = ({
 
   const handleDeleteClick = () => {
     onDelete(node, ref);
+  };
+
+  const handleResetToDefaultClick = () => {
+    onChange(node, fieldNodeData.defaultValue);
   };
 
   const handleExpandClick = () => {
@@ -180,6 +191,16 @@ const NodeWithChildrenContent = ({
             icon="g3-clear"
             onClick={handleClearClick}
             data-test="clear-btn"
+          />
+        )}
+        {isResetable && (
+          <IconButton
+            className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
+            size={28}
+            icon="g1-return"
+            onClick={handleResetToDefaultClick}
+            data-test="reset-btn"
+            title="Reset to default"
           />
         )}
         {isDeletable && (

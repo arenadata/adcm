@@ -190,6 +190,7 @@ const ConfigurationTree = ({
             errors={errors}
             onClear={onClear}
             onDelete={onDelete}
+            onChange={onChange}
             onExpand={onExpand}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}
