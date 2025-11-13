@@ -24,3 +24,11 @@ export interface AdcmBundle {
   signatureStatus: AdcmBundleSignatureStatus;
   category?: number;
 }
+
+export interface AdcmBundleShort {
+  id: number;
+  name: string;
+  displayName: string;
+  version: string;
+  edition: string;
+}

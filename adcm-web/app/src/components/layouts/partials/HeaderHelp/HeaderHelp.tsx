@@ -4,7 +4,6 @@ import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
-import AboutAdcm from './AboutAdcm/AboutAdcm';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
 import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import { apiRedocHost, HelperLinkActions } from '@constants';
@@ -32,7 +31,6 @@ const linkOptions = [
   {
     value: 'aboutAdcm',
     label: 'About ADCM',
-    ItemComponent: AboutAdcm,
   },
   {
     value: HelperLinkActions.Help,

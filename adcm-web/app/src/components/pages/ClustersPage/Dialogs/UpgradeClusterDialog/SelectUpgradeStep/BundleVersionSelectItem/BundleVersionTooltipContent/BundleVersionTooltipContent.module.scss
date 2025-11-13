@@ -1,0 +1,25 @@
+:global {
+  body.theme-dark {
+    --bundleVersionTooltipContent-label-color: var(--color-xwhite-off);
+    --bundleVersionTooltipContent-value-color: var(--color-xdark-metal);
+  }
+
+  body.theme-light {
+    --bundleVersionTooltipContent-label-color: var(--color-xdark);
+    --bundleVersionTooltipContent-value-color: var(--color-adcmx);
+  }
+}
+
+.bundleVersionTooltipContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    color: var(--bundleVersionTooltipContent-label-color);
+  }
+
+  &__value {
+    color: var(--bundleVersionTooltipContent-value-color);
+  }
+}

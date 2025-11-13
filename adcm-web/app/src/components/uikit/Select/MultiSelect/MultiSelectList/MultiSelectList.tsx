@@ -1,10 +1,10 @@
-import type { ChangeEvent } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context';
 import Checkbox from '@uikit/Checkbox/Checkbox';
+import MultiSelectListItem from './MultiSelectListItem/MultiSelectListItem';
+import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import s from './MultiSelectList.module.scss';
 import cn from 'classnames';
-import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
-import Tooltip from '@uikit/Tooltip/Tooltip';
 
 const MultiSelectList = <T,>() => {
   const {
@@ -15,42 +15,50 @@ const MultiSelectList = <T,>() => {
     maxHeight,
   } = useMultiSelectContext<T>();
 
-  const getHandleChange = (value: T) => (e: ChangeEvent<HTMLInputElement>) => {
-    const valueIndex = selectedValues.indexOf(value);
-    const newSelectedValues = [...selectedValues];
+  const selectedValuesSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 
-    if (e.target.checked && valueIndex === -1) {
-      newSelectedValues.push(value);
-    } else if (!e.target.checked && valueIndex > -1) {
-      newSelectedValues.splice(valueIndex, 1);
-    }
+  const handleSelectItem = useCallback(
+    (value: T | null) => {
+      if (value === null) {
+        return;
+      }
 
-    onChange(newSelectedValues);
-  };
+      const changedSet = new Set(selectedValuesSet);
+
+      if (selectedValuesSet.has(value)) {
+        changedSet.delete(value);
+      } else {
+        changedSet.add(value);
+      }
+
+      onChange([...changedSet]);
+    },
+    [selectedValuesSet, onChange],
+  );
 
   return (
     <ul className={cn(s.multiSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
-      {options.map(({ value, label, disabled, title }) => (
-        <ConditionalWrapper
-          key={label?.toString() + value}
-          Component={Tooltip}
-          isWrap={!!title}
-          label={title}
-          placement="bottom-start"
-        >
-          <li className={s.multiSelectList__item}>
-            <Checkbox
-              label={label}
-              disabled={disabled}
-              checked={selectedValues.includes(value)}
-              onChange={getHandleChange(value)}
-              className={s.multiSelectList__checkbox}
-            />
-          </li>
-        </ConditionalWrapper>
-      ))}
+      {options.map((optionProps) => {
+        const { value, label, ItemComponent = DefaultMultiSelectListItem } = optionProps;
+        const isSelected = selectedValuesSet.has(value);
+        return <ItemComponent key={label} onSelect={handleSelectItem} isSelected={isSelected} option={optionProps} />;
+      })}
     </ul>
   );
 };
 
 export default MultiSelectList;
+
+const DefaultMultiSelectListItem = <T,>(props: DefaultSelectListItemProps<T>) => {
+  const { disabled, label, value } = props.option;
+
+  const handleChange = () => {
+    props.onSelect?.(value);
+  };
+
+  return (
+    <MultiSelectListItem {...props}>
+      <Checkbox label={label} disabled={disabled} checked={props.isSelected} onChange={handleChange} />
+    </MultiSelectListItem>
+  );
+};
