@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
@@ -17,6 +18,7 @@ from typing import Callable, Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
+from core.cluster.types import ClusterTopology
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.types import ActionInfo, CallingProcess, JobSpec
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
@@ -31,15 +33,23 @@ from cm.converters import core_type_to_model
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
 from cm.services.action_process import repo
-from cm.services.action_process.errors import ActionProcessDBError, ActionProcessOperationError, SyncKeyMismatchError
+from cm.services.action_process.errors import (
+    ActionProcessDBError,
+    ActionProcessOperationError,
+    ActionProcessPayloadError,
+    SyncKeyMismatchError,
+)
 from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
-from cm.services.action_process.repo import get_allowed_ops, get_done_step_inputs_for_process, upsert_step_input
+from cm.services.action_process.repo import get_done_step_inputs_for_process, upsert_step_input
 from cm.services.action_process.schema_validation import (
-    CompleteStepPayload,
+    CompleteProcessPayload,
     Configuration,
     HostComponentMapDelta,
     ProcessOperationType,
     ResetStepPayload,
+    SubmitConfigurationStepParams,
+    SubmitMappingStepParams,
+    SubmitOperationStepParams,
     SubmitStepPayload,
 )
 from cm.services.action_process.types import (
@@ -54,6 +64,7 @@ from cm.services.action_process.types import (
     StepUpdateDTO,
 )
 from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.job.run import start_task
@@ -63,7 +74,7 @@ SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
 ]
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
-OperationPayload: TypeAlias = SubmitStepPayload | CompleteStepPayload | ResetStepPayload
+OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload
 
 
 ConfigProcessor = Callable[[Step, Configuration], ConfigAttrPair]
@@ -290,8 +301,13 @@ def submit_step(
     _check_no_running_steps(process=process)
 
     step = repo.retrieve_step(process_id=process.id, step_id=payload.params.step_id)
+    msg_wrong_payload = f"Wrong params for {step.type} step"
+
     match step.type:
         case StepType.CONFIGURATION:
+            if not isinstance(payload.params, SubmitConfigurationStepParams):
+                raise ActionProcessPayloadError(msg_wrong_payload)
+
             _operation_submit_config(
                 process=process,
                 step=step,
@@ -301,6 +317,9 @@ def submit_step(
             )
 
         case StepType.OPERATION:
+            if not isinstance(payload.params, SubmitOperationStepParams):
+                raise ActionProcessPayloadError(msg_wrong_payload)
+
             _operation_submit_job(
                 process=process,
                 step_id=payload.params.step_id,
@@ -309,6 +328,9 @@ def submit_step(
                 action=context.action,
             )
         case StepType.MAPPING:
+            if not isinstance(payload.params, SubmitMappingStepParams):
+                raise ActionProcessPayloadError(msg_wrong_payload)
+
             _operation_submit_mapping(
                 process=process,
                 step=step,
@@ -327,9 +349,9 @@ def _operation_submit_mapping(
     step_input_data = StepInputDTO(
         configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
     )
-    _check_hc_mapping_delta(step, hc_mapping_delta, cluster_id=context.object.id)
+    _check_hc_mapping_delta(step=step, hc_mapping_delta=hc_mapping_delta, cluster_id=context.object.id)
 
-    perform_mapping(process.id, step.id, step_input_data)
+    perform_mapping(process_id=process.id, step_id=step.id, step_input_data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step.id)
     complete_step(
@@ -467,27 +489,59 @@ def _check_all_steps_completed(process: ActionProcess) -> None:
             raise ActionProcessOperationError("All steps must be completed")
 
 
-def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta, cluster_id: int) -> None:
-    # TO DO: ADCM-7264 for refactoring
-    allowed_ops = get_allowed_ops(step, cluster_id)
+def _check_hc_mapping_delta(
+    step: Step, hc_mapping_delta: HostComponentMapDelta, cluster_id: core.types.ClusterID
+) -> None:
+    topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    _check_mapping_delta_objects_exists_and_in_cluster(delta=hc_mapping_delta, topology=topology)
+    # TODO: make one check-hc-distribution interface
+    #       see core.concern.checks._mapping.find_cluster_mapping_issues (+ ADCM-7264)
+    _check_component_operation_distribution(step=step, delta=hc_mapping_delta, topology=topology)
 
-    for rule in hc_mapping_delta.add or []:
-        if rule.component_id not in allowed_ops["add"]:
+
+def _check_mapping_delta_objects_exists_and_in_cluster(delta: HostComponentMapDelta, topology: ClusterTopology) -> None:
+    host_ids, component_ids = set(), set()
+    for hc_pair in delta.add + delta.remove:
+        host_ids.add(hc_pair.host_id)
+        component_ids.add(hc_pair.component_id)
+
+    if host_errors := host_ids.difference(set(topology.hosts)):
+        hosts_repr = ", ".join(f"#{id_}" for id_ in sorted(host_errors))
+        err_msg = f"Host(s) {hosts_repr} not found in cluster #{topology.cluster_id}"
+        raise ActionProcessOperationError(err_msg)
+
+    if component_errors := component_ids.difference(set(topology.component_ids)):
+        components_repr = ", ".join(f"#{id_}" for id_ in sorted(component_errors))
+        err_msg = f"Component(s) {components_repr} not found in cluster #{topology.cluster_id}"
+        raise ActionProcessOperationError(err_msg)
+
+
+def _check_component_operation_distribution(
+    step: Step, delta: HostComponentMapDelta, topology: ClusterTopology
+) -> None:
+    comp_full_name_id_map = topology.component_full_name_id_mapping
+    rules = defaultdict(set)
+    for spec in step.step_spec:
+        key = core.types.ComponentNameKey(service=spec["service"], component=spec["component"])
+        if component_id := comp_full_name_id_map.get(key):
+            rules[spec["operation"]].add(component_id)
+
+    for rule_ in delta.add or []:
+        if rule_.component_id not in rules["add"]:
             raise ActionProcessOperationError(
-                f"Add operation not allowed for component_id={rule.component_id}. "
-                f"Allowed components for add: {sorted(allowed_ops['add'])}"
+                f"Add operation not allowed for component_id={rule_.component_id}. "
+                f"Allowed components for add: {sorted(rules['add'])}"
             )
 
-    for rule in hc_mapping_delta.remove or []:
-        if rule.component_id not in allowed_ops["remove"]:
+    for rule_ in delta.remove or []:
+        if rule_.component_id not in rules["remove"]:
             raise ActionProcessOperationError(
-                f"Remove operation not allowed for component_id={rule.component_id}. "
-                f"Allowed components for remove: {sorted(allowed_ops['remove'])}"
+                f"Remove operation not allowed for component_id={rule_.component_id}. "
+                f"Allowed components for remove: {sorted(rules['remove'])}"
             )
 
 
 @convert_db_errors
-@atomic
 def perform_mapping(process_id: int, step_id: int, step_input_data: StepInputDTO) -> None:
     mapping_input = step_input_data.mapping
     if not mapping_input or not mapping_input.delta:

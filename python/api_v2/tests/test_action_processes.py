@@ -691,7 +691,7 @@ class TestActionProcess(BaseAPITestCase):
                 object=orm_object_to_core_descriptor(self.cluster_3),
             ),
         )
-        with self.subTest("Submit mapping not comopnent in step spec (fail)"):
+        with self.subTest("Submit mapping not component in step spec (fail)"):
             host_component_map_delta = {
                 "add": [
                     {"hostId": host_1.pk, "componentId": component_1_s_3.pk},
@@ -1346,8 +1346,8 @@ class TestActionProcess(BaseAPITestCase):
             response = endpoint.post(data=payload)
             self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
             error = response.json()["desc"]
-            self.assertIn("step_id", error)
-            self.assertIn("Field required [type=missing", error)  # TODO: not informative description (3 errors)
+            # TODO: not informative error msg
+            self.assertIn("5 validation errors for OperationPayloadSchema\npayload.submit_step.params.", error)
 
         with self.subTest("Incorrect payload for complete: wrong sync key"):
             wrong_sync_key = uuid4()
@@ -1690,3 +1690,109 @@ class TestActionProcess(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
         self.assertIn("completed state", response.json()["desc"])
+
+    def test_adcm_7298_submit_mapping_not_add_service_in_step_spec_success(self):
+        self.add_services_to_cluster(["service_1"], cluster=self.cluster_3)
+        component_1_s_1 = Component.objects.get(service__prototype__name="service_1", cluster=self.cluster_3)
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        cfg_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
+        target_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
+        response = self.submit_config_step(
+            obj=self.cluster_3, process=process, step_id=cfg_step.id, config_payload=payload
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_mapping_step.id)
+        self.assertEqual(last_completed_step_id, cfg_step.id)
+
+        inputs_count = ProcessStepInput.objects.filter(step_id=target_mapping_step.id).count()
+        self.assertEqual(inputs_count, 0)
+
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
+        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s_1.pk}]}
+        response = endpoint.post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "step_id": target_mapping_step.id,
+                    "process_sync_key": process.sync_key,
+                    "host_component_map_delta": hc_delta,
+                },
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        step_input = ProcessStepInput.objects.get(step_id=target_mapping_step.id)
+        add_delta = {"add": [{"host_id": host_1.pk, "component_id": component_1_s_1.pk}]}
+        expected_input_mapping = {"delta": {"remove": [], **add_delta}, "cumulative_delta": {"remove": [], **add_delta}}
+        self.assertDictEqual(step_input.mapping, expected_input_mapping)
+        self.assertIsNone(step_input.configuration)
+        self.assertIsNone(step_input.job)
+
+        process.refresh_from_db()
+        self.assertTrue(process.current_step.id > target_mapping_step.id)
+
+    def test_adcm_7295_submit_mapping_payload_validation(self):
+        self.add_services_to_cluster(["service_1"], cluster=self.cluster_3)
+        component_1_s_1 = Component.objects.get(service__prototype__name="service_1", cluster=self.cluster_3)
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        cfg_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
+        target_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
+        response = self.submit_config_step(
+            obj=self.cluster_3, process=process, step_id=cfg_step.id, config_payload=payload
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, target_mapping_step.id)
+        self.assertEqual(last_completed_step_id, cfg_step.id)
+
+        inputs_count = ProcessStepInput.objects.filter(step_id=target_mapping_step.id).count()
+        self.assertEqual(inputs_count, 0)
+
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
+        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s_1.pk}]}
+
+        correct_payload = {
+            "method": ProcessOperationType.SUBMIT,
+            "params": {
+                "stepId": target_mapping_step.id,
+                "processSyncKey": process.sync_key,
+                "hostComponentMapDelta": hc_delta,
+            },
+        }
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        for param in ("stepId", "processSyncKey", "hostComponentMapDelta"):
+            with self.subTest(f"{param} -> {param}New"):
+                wrong_payload = deepcopy(correct_payload)
+                wrong_payload["params"][f"{param}New"] = wrong_payload["params"].pop(param)
+
+                response = endpoint.post(data=wrong_payload)
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+            with self.subTest(f"Missing `{param}`"):
+                wrong_payload = deepcopy(correct_payload)
+                del wrong_payload["params"][param]
+
+                response = endpoint.post(data=wrong_payload)
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)

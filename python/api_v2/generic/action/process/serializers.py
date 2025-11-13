@@ -14,7 +14,7 @@ from typing import Any
 
 from cm.models import Process
 from cm.services.action_process.schema_validation import (
-    CompleteStepPayload,
+    CompleteProcessPayload,
     OperationPayloadSchema,
     ResetStepPayload,
     SubmitStepPayload,
@@ -96,7 +96,7 @@ class OperationSerializer(Serializer):
     method = CharField()
     params = DictField()
 
-    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteStepPayload | ResetStepPayload:
+    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteProcessPayload | ResetStepPayload:
         try:
             validated = OperationPayloadSchema.model_validate({"payload": attrs}).payload
         except pydantic.ValidationError as e:
