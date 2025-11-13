@@ -347,6 +347,10 @@ def _fill_type_specifics_to_schema_node(
         message = f"Failed to prepare schema for parameter {parameter.identifier.full}"
         raise RuntimeError(message)
 
+    if schema.get("enum") == []:
+        # empty choices/options are possible, yet empty enum is incorrect for UI rendering
+        schema["enum"] = [None]
+
 
 def _fill_structure_parameter_node(schema: JSONSchemaNodeDict, parameter: StructureParameter) -> None:
     root_type = schema["type"] = _get_schema_type(parameter.yspec["root"]["match"])
