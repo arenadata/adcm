@@ -74,10 +74,20 @@ class Activation:
     is_active_by_default: bool = False
 
 
+@dataclass(slots=True)
+class Selection:
+    is_required: bool = True
+    # thou defaults aren't stored within spec,
+    # this one is controlling defaults generation process,
+    # yet isn't value itself
+    use_as_default: str | None = None
+
+
 class ParameterGroup(BaseModel):
     identifier: Identifier
     extra: ExtraProperties = Field(default_factory=ExtraProperties)
     activation: Activation | None = None
+    selection: Selection | None = None
 
     @property
     def is_activatable(self) -> bool:

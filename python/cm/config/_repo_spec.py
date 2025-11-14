@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from pathlib import Path
 from typing import Callable, Final, Iterable, TypeVar
 import re
@@ -26,23 +27,16 @@ V = TypeVar("V")
 
 
 def build_specification(records: Iterable[PrototypeConfig], group_customization_flag: bool) -> config.spec.FullSpec:
-    result_spec = config.spec.FullSpec()
+    convert = partial(_convert_parameter, parent_group_customization_flag=group_customization_flag)
 
-    for record in records:
-        parameter = _convert_parameter(record, parent_group_customization_flag=group_customization_flag)
+    parameters = tuple(map(convert, records))
 
-        result_spec.hierarchy.register(config.names.full_name_to_level_names(parameter.identifier.full))
+    specification = config.spec.FullSpec.from_parameters(*parameters)
 
-        match parameter:
-            case config.spec.p.ParameterGroup():
-                result_spec.groups[parameter.identifier.full] = parameter
-            case _:
-                if parameter.identifier.name == "__main_info":
-                    parameter.extra.ui_options["invisible"] = True
+    if main_info := specification.parameters.get("/__main_info"):
+        main_info.extra.ui_options["invisible"] = True
 
-                result_spec.parameters[parameter.identifier.full] = parameter
-
-    return result_spec
+    return specification
 
 
 def build_defaults(
@@ -198,6 +192,13 @@ def _convert_parameter(
 
             return config.spec.p.ParameterGroup(
                 identifier=default_kwargs["identifier"], extra=default_kwargs["extra"], activation=activation
+            )
+
+        case "selection_group":
+            return config.spec.p.ParameterGroup(
+                identifier=default_kwargs["identifier"],
+                extra=default_kwargs["extra"],
+                selection=config.spec.p.Selection(use_as_default=record.default or None, is_required=record.required),
             )
 
         case _:

@@ -22,10 +22,11 @@ from core.config._spec.operations import (
     build_identifier_from_name,
     detect_deactivated_parameters,
 )
-from core.config._spec.spec import FullSpec, SpecAttributes, SpecHierarchyLevel
+from core.config._spec.spec import FullSpec, HierarchyValidationRule, SpecAttributes, SpecHierarchyLevel
 
 __all__ = [
     "FullSpec",
+    "HierarchyValidationRule",
     "SpecAttributes",
     "SpecHierarchyLevel",
     "build_identifier_from_name",

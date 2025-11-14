@@ -72,7 +72,7 @@ def detect_changes(previous: Configuration, new: Configuration, specification: s
 def get_by_full_name_or_none(name: ParameterFullName, values: ConfigValues) -> None | Any:
     try:
         return get_by_full_name(name=name, values=values)
-    except KeyError:
+    except (KeyError, TypeError):
         return None
 
 
@@ -129,7 +129,10 @@ def nested_to_flat(configuration: Configuration, specification: spec.FullSpec) -
     result = FlatConfiguration(attributes=configuration.attributes)
 
     for name in specification.parameters:
-        with suppress(KeyError):
+        # Key error will be on absence
+        # Type error can be when value is within selection group
+        # while it's parent group can be "absent"
+        with suppress(KeyError, TypeError):
             value = get_by_full_name(name=name, values=configuration.values)
             result.values[name] = value
 

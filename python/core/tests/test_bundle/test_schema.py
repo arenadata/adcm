@@ -1232,6 +1232,50 @@ class TestBundleSchema(TestCase):
         field_name = result[0]["actions"]["with_config"]["config"][0]["subs"][0]["subs"][0]["subs"][0]["name"]
         self.assertEqual(field_name, "s")
 
+    def test_selection_groups_allowed(self):
+        yaml_schema = """
+        - type: cluster
+          name: some_cluster
+          version: 3
+          config: &config
+            - &sg
+              name: choose
+              type: selection_group
+              subs:
+                - name: first
+                  type: group
+                  subs:
+                    - name: some
+                      type: float
+                      required: false
+                - name: second
+                  type: group
+                  subs:
+                    - name: second-1
+                      type: string
+                      default: "aa"
+            - name: with_selection_group
+              type: group
+              subs:
+                - <<: *sg
+          actions:
+            some:
+              type: job
+              script: aa.yaml
+              script_type: ansible
+              config: *config
+        """
+
+        raw = yaml.safe_load(yaml_schema)
+        result = self.validate_schema(raw)
+
+        field_name = result[0]["config"][0]["name"]
+        self.assertEqual(field_name, "choose")
+        field_name = result[0]["config"][1]["subs"][0]["name"]
+        self.assertEqual(field_name, "choose")
+        field_name = result[0]["actions"]["some"]["config"][0]["name"]
+        self.assertEqual(field_name, "choose")
+
 
 class TestWizardSchema(TestCase):
     def test_correct_task_format_success(self):

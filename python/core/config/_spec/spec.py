@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
+from enum import Enum
 from functools import cached_property
 
 from pydantic import BaseModel, Field
@@ -40,10 +41,17 @@ class SpecAttributes:
     """
 
 
+class HierarchyValidationRule(str, Enum):
+    ALL = "all"
+    AT_MOST_ONE = "at-most-one"
+    EXACTLY_ONE = "exactly-one"
+
+
 @dataclass(slots=True)
 class SpecHierarchyLevel:
     fields: list[ParameterLevelName] = field(default_factory=list)
     child_groups: dict[ParameterLevelName, Self] = field(default_factory=dict)
+    rule: HierarchyValidationRule = HierarchyValidationRule.ALL
 
     def register(self, name: list[ParameterLevelName] | tuple[ParameterLevelName, ...]) -> None:
         *groups, own_name = name
@@ -63,6 +71,23 @@ class SpecHierarchyLevel:
             self.child_groups[first_group] = self.__class__()
 
         self.child_groups[first_group].register((*rest_groups, own_name))
+
+    def set_rule(
+        self, group: list[ParameterLevelName] | tuple[ParameterLevelName, ...], rule: HierarchyValidationRule
+    ) -> None:
+        *groups, own_name = group
+
+        if not groups:
+            if own_name not in self.child_groups:
+                # rule can be set only for groups, we trust caller on that,
+                # so we create it if it's missing
+                self.child_groups[own_name] = self.__class__()
+
+            self.child_groups[own_name].rule = rule
+            return
+
+        first_group, *rest_groups = groups
+        self.child_groups[first_group].set_rule(group=(*rest_groups, own_name), rule=rule)
 
 
 class FullSpec(BaseModel):
@@ -99,6 +124,13 @@ class FullSpec(BaseModel):
 
             if isinstance(param, ParameterGroup):
                 instance.groups[param.identifier.full] = param
+                if param.selection:
+                    rule = (
+                        HierarchyValidationRule.EXACTLY_ONE
+                        if param.selection.is_required
+                        else HierarchyValidationRule.AT_MOST_ONE
+                    )
+                    instance.hierarchy.set_rule(group=names, rule=rule)
             else:
                 instance.parameters[param.identifier.full] = param
 

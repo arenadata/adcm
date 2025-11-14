@@ -27,7 +27,7 @@ def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[Parame
         parameter_name
         for parameter_name in spec.parameters
         for group_name in deactivated_groups
-        if is_part_of_group(parameter=parameter_name, group=group_name)
+        if is_part_of_group(parameter_name, group=group_name)
     }
 
 

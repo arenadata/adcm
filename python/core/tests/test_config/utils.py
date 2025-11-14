@@ -75,7 +75,7 @@ class ConfigTestCase(TestCase):
     def expect_exactly_one_violation_for(
         self,
         result: r.Success | r.Fail[Violations],
-        param_is: spec.p.SimpleParameter,
+        param_is: spec.p.SimpleParameter | spec.p.ParameterGroup,
         check_is: str,
         reason_contains: str,
     ) -> Violation:
