@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from functools import partial
-from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias
+from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias, Union
 
 from pydantic import (
     AfterValidator,
@@ -285,13 +285,67 @@ CONFIG_ITEMS: TypeAlias = (
 
 class ConfigItemGroupSchema(_BaseConfigItemSchema):
     type: Literal["group"]
-    subs: list[Annotated[CONFIG_ITEMS | Self, Field(discriminator="type")]]
+    subs: list[Annotated[Union[CONFIG_ITEMS, Self, "ConfigItemSelectionGroupSchema"], Field(discriminator="type")]]
     activatable: Annotated[bool | None, Field(default=None)]
     active: Annotated[bool | None, Field(default=None)]
 
+    @field_validator("name", mode="after")
+    @classmethod
+    def name_is_allowed(cls, value: str) -> str:
+        if value == "_selection":
+            message = 'Group is not allowed to be named "_selection"'
+            raise ValueError(message)
+
+        return value
+
+
+class ConfigItemSelectionGroupSchema(_BaseConfigItemSchema):
+    type: Literal["selection_group"]
+    subs: Annotated[list[ConfigItemGroupSchema], Field(min_length=1)]
+    default: Annotated[str | None, Field(default=None)]
+
+    @field_validator("subs", mode="after")
+    @classmethod
+    def child_groups_are_regular(cls, groups: list[ConfigItemGroupSchema]) -> list[ConfigItemGroupSchema]:
+        activatable_group_names = {group.name for group in groups if group.activatable}
+        if activatable_group_names:
+            message = (
+                "Activatable groups aren't allowed as children "
+                f"of selection groups: {', '.join(sorted(activatable_group_names))}"
+            )
+            raise ValueError(message)
+
+        return groups
+
+    @model_validator(mode="after")
+    def default_is_one_of_subs(self) -> Self:
+        if self.default is None:
+            return self
+
+        sub_group_names = {group.name for group in self.subs}
+        if self.default not in sub_group_names:
+            allowed_values_repr = ", ".join(sorted(sub_group_names))
+            message = (
+                f'Default (value="{self.default}") for selection group '
+                f"must be name of one of it's subgroups: {allowed_values_repr}"
+            )
+            raise ValueError(message)
+
+        return self
+
+    @model_validator(mode="after")
+    def default_not_none_if_set(self) -> Self:
+        if "default" in self.model_fields_set and self.default is None:
+            message = "Default must be string, even for non-required selectable groups"
+            raise ValueError(message)
+
+        return self
+
 
 # TODO: move to schema_validation.py
-def config_duplicates(parameters: Sequence[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
+def config_duplicates(
+    parameters: Sequence[CONFIG_ITEMS | ConfigItemGroupSchema | ConfigItemSelectionGroupSchema] | None,
+):
     # at least ADS has duplicates in config
     if not parameters:
         return None
@@ -304,13 +358,15 @@ def config_duplicates(parameters: Sequence[CONFIG_ITEMS | ConfigItemGroupSchema]
 
         names.add(param.name)
 
-        if isinstance(param, ConfigItemGroupSchema):
+        if isinstance(param, ConfigItemGroupSchema | ConfigItemSelectionGroupSchema):
             config_duplicates(param.subs)
 
     return parameters
 
 
-CONFIG_LIST: TypeAlias = list[Annotated[CONFIG_ITEMS | ConfigItemGroupSchema, Field(discriminator="type")]]
+CONFIG_LIST: TypeAlias = list[
+    Annotated[CONFIG_ITEMS | ConfigItemGroupSchema | ConfigItemSelectionGroupSchema, Field(discriminator="type")]
+]
 CONFIG_TYPE: TypeAlias = Annotated[
     CONFIG_LIST | None,
     Field(default=None),

@@ -243,7 +243,7 @@ def schedule_task(
 #      not even a use case.
 def retrieve_configuration_for_action(
     *, action_orm: Action, target: ActionTarget, config_service: core.config.ConfigService
-) -> tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.ConfigOwner] | None:
+) -> tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.Configuration, core.config.ConfigOwner] | None:
     action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
     descriptor = orm_object_to_core_descriptor(action_objects.owner)
@@ -266,9 +266,14 @@ def retrieve_configuration_for_action(
     if not spec_pair:
         return None
 
+    configuration = config_service.prepare_default_configuration(
+        default_values=spec_pair.defaults, specification=spec_pair.spec
+    )
+
     return (
         spec_pair.spec,
         spec_pair.defaults,
+        configuration,
         core.config.ConfigOwner(
             descriptor=descriptor, info=core.config.ConfigOwnerObjectInfo(state=action_objects.owner.state)
         ),

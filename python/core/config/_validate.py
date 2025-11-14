@@ -13,10 +13,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Callable, Iterable, Protocol, TypeAlias
 
 from core.config import _yspec, spec
-from core.config._names import level_names_to_full_name
+from core.config._names import is_part_of_group, join_level_name_with_group_name, level_names_to_full_name
 from core.config._types import (
     ConfigAttrs,
     ConfigFlatValues,
@@ -97,10 +97,20 @@ def validate_configuration_is_consistent(
     """
 
     values_violations = _find_values_violations(configuration=configuration.values, hierarchy=specification.hierarchy)
-    attribute_violations = _find_attribute_violations(attributes=configuration.attributes, specification=specification)
+    if values_violations:
+        # can't continue if values aren't correct
+        return Fail(values_violations)
 
-    if errors := values_violations + attribute_violations:
-        return Fail(errors)
+    excluded_groups = _detect_excluded_groups_from_values(
+        values=configuration.values, hierarchy=specification.hierarchy
+    )
+
+    attribute_violations = _find_attribute_violations(
+        attributes=configuration.attributes, specification=specification, excluded_groups=set(excluded_groups)
+    )
+
+    if attribute_violations:
+        return Fail(attribute_violations)
 
     return Success(None)
 
@@ -218,62 +228,134 @@ def validate_values_are_correct(
 
 # Steps And Utilities
 
+_AnyAsConfigValues = ConfigValues | Any
+_ValuesStructureValidator = Callable[
+    [_AnyAsConfigValues, spec.SpecHierarchyLevel, tuple[ParameterLevelName, ...]], Violations
+]
+
 
 def _find_values_violations(
-    configuration: ConfigValues, hierarchy: spec.SpecHierarchyLevel, group_prefix: tuple[ParameterLevelName, ...] = ()
+    configuration: _AnyAsConfigValues,
+    hierarchy: spec.SpecHierarchyLevel,
+    group_prefix: tuple[ParameterLevelName, ...] = (),
 ) -> Violations:
+    validate = _detect_values_validator_for_level_rule(hierarchy.rule)
+    violations = validate(configuration, hierarchy, group_prefix)
+
+    if not isinstance(configuration, dict):
+        return violations
+
+    for child_name, child_hierarchy in hierarchy.child_groups.items():
+        if child_name in configuration:
+            child_configuration = configuration[child_name]
+            violations += _find_values_violations(
+                configuration=child_configuration, hierarchy=child_hierarchy, group_prefix=(*group_prefix, child_name)
+            )
+
+    return violations
+
+
+def _detect_values_validator_for_level_rule(rule: spec.HierarchyValidationRule) -> _ValuesStructureValidator:
+    match rule:
+        case spec.HierarchyValidationRule.ALL:
+            return _find_values_violations_rule_all
+        case spec.HierarchyValidationRule.EXACTLY_ONE:
+            return _find_values_violations_rule_exactly_one
+        case spec.HierarchyValidationRule.AT_MOST_ONE:
+            return _find_values_violations_rule_at_most_one
+
+
+def _find_values_violations_rule_all(
+    configuration: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group_prefix: tuple[ParameterLevelName, ...]
+) -> Violations:
+    if not isinstance(configuration, dict):
+        violation = Violation(
+            parameter=level_names_to_full_name(group_prefix),
+            check="structure",
+            reason="incorrect group value type, expected dict",
+        )
+        return [violation]
+
     required_fields = set(hierarchy.fields)
     present_fields = set(configuration.keys())
 
     missing_fields = required_fields - present_fields
     unexpected_fields = present_fields - required_fields
 
-    missing_violations = tuple(
+    missing_violations = [
         Violation(
             parameter=level_names_to_full_name((*group_prefix, name)),
             check="structure",
             reason="value is missing",
         )
         for name in missing_fields
-    )
-    unexpected_violations = tuple(
+    ]
+    unexpected_violations = [
         Violation(
             parameter=level_names_to_full_name((*group_prefix, name)),
             check="structure",
             reason="value is unexpected",
         )
         for name in unexpected_fields
-    )
+    ]
 
-    non_missing_groups = (
-        ((*group_prefix, name), child_hierarchy, configuration[name])
-        for name, child_hierarchy in hierarchy.child_groups.items()
-        if name not in missing_fields
-    )
+    return missing_violations + unexpected_violations
 
-    violations_in_child_groups = tuple(
-        chain.from_iterable(
-            _find_values_violations(configuration=child_values, hierarchy=child_hierarchy, group_prefix=prefix)
-            for prefix, child_hierarchy, child_values in non_missing_groups
-            if isinstance(child_values, dict)
+
+def _find_values_violations_rule_exactly_one(
+    configuration: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group_prefix: tuple[ParameterLevelName, ...]
+) -> Violations:
+    if not isinstance(configuration, dict):
+        violation = Violation(
+            parameter=level_names_to_full_name(group_prefix),
+            check="structure",
+            reason="incorrect group value type, expected dict",
         )
-    )
+        return [violation]
 
-    return [*missing_violations, *unexpected_violations, *violations_in_child_groups]
+    if len(configuration) != 1:
+        violation = Violation(
+            parameter=level_names_to_full_name(group_prefix), check="structure", reason="only one child expected"
+        )
+        return [violation]
+
+    chosen_name = next(iter(configuration))
+    if chosen_name not in hierarchy.fields:
+        violation = Violation(
+            parameter=level_names_to_full_name((*group_prefix, chosen_name)),
+            check="structure",
+            reason="value is unexpected",
+        )
+        return [violation]
+
+    return []
 
 
-def _find_attribute_violations(attributes: ConfigAttrs, specification: spec.FullSpec) -> Violations:
+def _find_values_violations_rule_at_most_one(
+    configuration: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group_prefix: tuple[ParameterLevelName, ...]
+) -> Violations:
+    if configuration is None:
+        return []
+
+    return _find_values_violations_rule_exactly_one(configuration, hierarchy, group_prefix)
+
+
+def _find_attribute_violations(
+    attributes: ConfigAttrs, specification: spec.FullSpec, excluded_groups: set[ParameterFullName]
+) -> Violations:
     violations = []
 
     attr_spec = specification.attributes
     with_activation = {name for name, attr in attributes.items() if attr.activation}
 
-    if with_activation != attr_spec.activatable_groups:
-        for missing in attr_spec.activatable_groups - with_activation:
+    expected_with_activation = set(_remove_excluded(attr_spec.activatable_groups, excluded_groups=excluded_groups))
+
+    if with_activation != expected_with_activation:
+        for missing in expected_with_activation - with_activation:
             violation = Violation(parameter=missing, check="attribute", reason="missing activation attribute")
             violations.append(violation)
 
-        for extra in with_activation - attr_spec.activatable_groups:
+        for extra in with_activation - expected_with_activation:
             violation = Violation(parameter=extra, check="attribute", reason="unexpected activation attribute")
             violations.append(violation)
 
@@ -284,7 +366,11 @@ def _find_attribute_violations(attributes: ConfigAttrs, specification: spec.Full
 
         # Maybe this set should be bound to FullSpec since it's business-bound in some sense.
         # On another hand, this check is too specific for input, only desyncable parameters are of interest.
-        expected_with_sync = set(chain(specification.parameters.keys(), attr_spec.activatable_groups))
+        expected_with_sync = set(
+            _remove_excluded(
+                chain(specification.parameters.keys(), attr_spec.activatable_groups), excluded_groups=excluded_groups
+            )
+        )
 
         for missing in expected_with_sync - with_synchronization:
             violation = Violation(parameter=missing, check="attribute", reason="missing synchronization attribute")
@@ -295,6 +381,40 @@ def _find_attribute_violations(attributes: ConfigAttrs, specification: spec.Full
             violations.append(violation)
 
     return violations
+
+
+def _detect_excluded_groups_from_values(
+    values: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group: ParameterFullName = ""
+) -> list[ParameterFullName]:
+    excluded = []
+
+    if hierarchy.rule in (spec.HierarchyValidationRule.AT_MOST_ONE, spec.HierarchyValidationRule.EXACTLY_ONE):
+        fields_to_exclude = [*hierarchy.fields]
+
+        if isinstance(values, dict):
+            fields_to_exclude.remove(next(iter(values.keys())))
+
+        excluded.extend(join_level_name_with_group_name(field, group=group) for field in fields_to_exclude)
+
+    if isinstance(values, dict):
+        for child_name, child_hierarchy in hierarchy.child_groups.items():
+            if child_name in values:
+                child_values = values[child_name]
+                group_name = join_level_name_with_group_name(child_name, group)
+                excluded += _detect_excluded_groups_from_values(
+                    values=child_values, hierarchy=child_hierarchy, group=group_name
+                )
+
+    return excluded
+
+
+def _remove_excluded(
+    names: Iterable[ParameterFullName], excluded_groups: set[ParameterFullName]
+) -> set[ParameterFullName]:
+    if not excluded_groups:
+        return set(names)
+
+    return {name for name in names if not any(is_part_of_group(name, group=group) for group in excluded_groups)}
 
 
 def _is_empty(value: Any, param: spec.p.SimpleParameter) -> bool:

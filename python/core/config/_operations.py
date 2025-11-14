@@ -13,7 +13,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from itertools import chain
+from itertools import chain, filterfalse
 from typing import Callable, Literal, TypeAlias, TypeVar
 import logging
 
@@ -29,7 +29,7 @@ from core.config._config import (
     set_by_full_name,
     set_by_full_name_returning_old,
 )
-from core.config._names import full_name_to_file_name
+from core.config._names import full_name_to_file_name, is_part_of_group, join_level_name_with_group_name
 from core.config._predicates import is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
@@ -92,6 +92,29 @@ def prepare_config_from_defaults(default_values: ConfigFlatValues, specification
     }
 
     flat_values = {name: default_values.get(name, None) for name in specification.parameters}
+
+    groups_selections = {name: group.selection for name, group in specification.groups.items() if group.selection}
+
+    for group_name, selection in groups_selections.items():
+        is_in_selection_group = partial(is_part_of_group, group=group_name)
+        selection_group_children = set(filter(is_in_selection_group, chain(flat_values, attributes)))
+
+        if selection.use_as_default:
+            default_group_name = join_level_name_with_group_name(name=selection.use_as_default, group=group_name)
+            is_in_default_group = partial(is_part_of_group, group=default_group_name)
+            to_remove = set(filterfalse(is_in_default_group, selection_group_children))
+        else:
+            to_remove = selection_group_children
+            # it's "sort of" hack, because usually group values aren't `None`s in any case,
+            # yet for selection group `None` is a possible value instead of `{}`,
+            # so this assignment is OK if no other code uses this "hack"
+            flat_values[group_name] = None
+
+        for param_name in to_remove:
+            # may be absent, since selection_group_children is build from both flat values and attributes
+            flat_values.pop(param_name, None)
+            attributes.pop(param_name, None)
+
     values = flat_to_nested(flat_values)
 
     return Configuration(values=values, attributes=attributes)

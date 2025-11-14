@@ -577,7 +577,7 @@ def __iterate_parameters(group: list[dict], key: ParameterKey) -> Iterable[tuple
 
         yield param_key, param
 
-        if param["type"] == "group":
+        if param["type"] in ("group", "selection_group"):
             yield from __iterate_parameters(group=param["subs"], key=param_key)
 
 

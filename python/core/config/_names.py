@@ -52,6 +52,10 @@ def join_full_name_with_group_name(full: ParameterFullName, group: ParameterLeve
     return ensure_full_name(f"{group}{full}")
 
 
+def join_level_name_with_group_name(name: ParameterLevelName, group: ParameterFullName) -> ParameterFullName:
+    return ensure_full_name(f"{group}/{name}")
+
+
 def full_name_to_file_name(full: ParameterFullName) -> str:
     """
     Convert full name of parameter to "own name" of file (indifferent to object)
@@ -70,5 +74,5 @@ def is_parameter_file_name_startswith(file_name: str, name: ParameterLevelName) 
     return file_name.startswith(f"{name}{PARAMETER_FILE_NAME_SEPARATOR}")
 
 
-def is_part_of_group(parameter: ParameterFullName, group: ParameterFullName) -> bool:
-    return parameter.startswith(group)
+def is_part_of_group(name: ParameterFullName, group: ParameterFullName) -> bool:
+    return name.startswith(f"{group}/")

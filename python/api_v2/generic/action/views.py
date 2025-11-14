@@ -220,17 +220,13 @@ class ActionViewSet(
         if not result:
             return None, None, None
 
-        spec, defaults, owner = result
+        spec, defaults, default_config, owner = result
 
         jsonschema = config_service.retrieve_jsonschema_for_action(
             action_specification=spec, action_config_defaults=defaults, action_owner=owner
         )
-        attributes = {
-            name: {"isActive": group.activation.is_active_by_default}
-            for name, group in spec.groups.items()
-            if group.activation
-        }
-        values = convert_json_fields_to_strings(values=core.config.flat_to_nested(defaults), spec=spec, inplace=True)
+        attributes = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
+        values = convert_json_fields_to_strings(values=default_config.values, spec=spec, inplace=True)
 
         return jsonschema, values, attributes
 

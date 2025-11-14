@@ -17,6 +17,7 @@ from core.config._config import detect_active_groups
 from core.config._operations import (
     adapt_configuration_for_new_specification,
     prepare_config_for_ansible,
+    prepare_config_from_defaults,
     validate_new_changes_in_main_configuration,
 )
 from core.config._spec import FullSpec
@@ -33,13 +34,14 @@ from core.config._spec.parameters import (
     OptionParameter,
     ParameterGroup,
     ReadOnlyRule,
+    Selection,
     SimpleParameter,
     StringParameter,
     StructureParameter,
     VariantParameter,
     WritableRule,
 )
-from core.config._types import Attributes, ConfigOwnerObjectInfo, Configuration
+from core.config._types import Attributes, ConfigOwnerObjectInfo, Configuration, Defaults
 from core.config._validate import Validators
 from core.tests.test_config.utils import (
     READ_ONLY_STATUS,
@@ -570,3 +572,51 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
         )
 
         self.assertDictEqual(result.value.values, expected_config)
+
+
+class TestPrepareConfigFromDefaults(ConfigTestCase):
+    def prepare_spec_and_raw_defaults(self, as_default: str | None) -> tuple[FullSpec, Defaults]:
+        spec = FullSpec.from_parameters(
+            StringParameter(identifier=name_id("g1")),
+            ParameterGroup(identifier=name_id("g"), selection=Selection(use_as_default=as_default)),
+            ParameterGroup(identifier=name_id("g", "g1")),
+            StringParameter(identifier=name_id("g", "g1", "a")),
+            ParameterGroup(identifier=name_id("g", "g2")),
+            StringParameter(identifier=name_id("g", "g2", "a")),
+            ParameterGroup(identifier=name_id("g", "act")),
+            ParameterGroup(identifier=name_id("g", "act", "a")),
+            ParameterGroup(identifier=name_id("g", "act", "a", "b"), activation=Activation()),
+            StringParameter(identifier=name_id("g", "act", "a", "b", "c")),
+            StringParameter(identifier=name_id("a")),
+        )
+        defaults = {"/g1": "1", "/g/g1/a": "2", "/g/g2/a": "3", "/g/act/a/b/c": "2", "/a": "4"}
+
+        return spec, defaults
+
+    def test_selection_group_with_default(self):
+        spec, raw_defaults = self.prepare_spec_and_raw_defaults(as_default="g1")
+        expected_values = {"g1": "1", "g": {"g1": {"a": "2"}}, "a": "4"}
+
+        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+
+        self.assertDictEqual(configuration.values, expected_values)
+        self.assertDictEqual(configuration.attributes, {})
+
+    def test_selection_group_with_activatable_groups(self):
+        spec, raw_defaults = self.prepare_spec_and_raw_defaults(as_default="act")
+        expected_values = {"g1": "1", "g": {"act": {"a": {"b": {"c": "2"}}}}, "a": "4"}
+        expected_attributes = {"/g/act/a/b": Attributes(is_active=False)}
+
+        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+
+        self.assertDictEqual(configuration.values, expected_values)
+        self.assertDictEqual(configuration.attributes, expected_attributes)
+
+    def test_selection_group_without_default(self):
+        spec, raw_defaults = self.prepare_spec_and_raw_defaults(as_default=None)
+        expected_values = {"g1": "1", "g": None, "a": "4"}
+
+        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+
+        self.assertDictEqual(configuration.values, expected_values)
+        self.assertDictEqual(configuration.attributes, {})
