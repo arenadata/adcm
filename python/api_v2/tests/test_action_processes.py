@@ -18,6 +18,7 @@ import json
 import unittest
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.issue import add_concern_to_object
 from cm.models import (
     ADCM,
     Action,
@@ -41,6 +42,7 @@ from cm.services.action_process.types import ProcessState, ProcessStepState
 from cm.services.bundle_alt.render import TaskArgs
 from cm.services.bundle_alt.render._context import prepare_context_for_task
 from cm.services.cluster import retrieve_cluster_topology
+from cm.services.concern import create_issue
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.run._target_factories import (
     internal_script_hc_apply,
@@ -51,6 +53,7 @@ from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
 from core.job.types import AssociatedProcess
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -993,6 +996,18 @@ class TestActionProcess(BaseAPITestCase):
                     "service_2.component_1.add": {"hosts": {"host-2": {}, "host-3": {}}},
                 },
             )
+
+    def test_wizard_action_run_with_object_concern_success(self):
+        issue = create_issue(
+            owner=CoreObjectDescriptor(id=self.cluster_1.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.CONFIG
+        )
+        add_concern_to_object(object_=self.cluster_1, concern=issue)
+
+        endpoint = self.get_endpoint_to_processes(self.cluster_1)
+        response = endpoint.post(data={})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn(f"object {self.cluster_1} has issues", response.json()["desc"])
 
     @unittest.skip("ADCM-7359 Too custom data preparation, need patch / test case update")
     def test_submit_config_step_success(self):

@@ -30,6 +30,7 @@ from cm.services.action_process.types import Step, StepType
 from cm.services.bundle import BundlePathResolver
 from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy_for_flag
 from cm.services.config import convert_attr_to_adcm_meta
+from cm.services.job.action import check_no_blocking_concerns
 from cm.services.job.run.repo import ActionRepoImpl
 from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core.job.types import ActionInfo
@@ -149,6 +150,7 @@ class ActionProcessViewSet(
         self.check_permissions_for_run(
             request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
         )
+        check_no_blocking_concerns(lock_owner=parent_object, action_name=action_info.name)
 
         # TODO: check if Process already exists
         with atomic():
