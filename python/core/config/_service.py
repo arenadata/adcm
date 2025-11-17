@@ -22,6 +22,7 @@ from core.config._pattern_validators import PossiblyEncryptedPatternValidator
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
 from core.config._secrets import AnsibleSecrets
 from core.config._types import (
+    Attributes,
     ConfigFlatValues,
     ConfigOwner,
     Configuration,
@@ -40,6 +41,7 @@ from core.config._validate import (
 from core.result import Fail, Success, is_fail
 from core.types import (
     ActionID,
+    ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
     Descriptor,
@@ -228,6 +230,34 @@ class ConfigService:
 
         self.prepare_file_parameter_values_on_fs(
             configuration=default_config, specification=specification, owner_prefix=files.build_config_prefix(owner)
+        )
+
+        return config_id
+
+    def create_initial_configuration_of_host_group(
+        self, group: Descriptor[Literal[ADCMHostGroupType.CONFIG]], owner: CoreObjectDescriptor
+    ) -> ConfigID:
+        # scenario-like case, same as `create_initial_config`, may be moved
+
+        owner_configuration = self.retrieve_current_configuration(owner=owner)
+        specification = self.retrieve_specification(owner=owner)
+
+        owner_attrs = {
+            k: Attributes(is_active=attrs.is_active, is_synced=True)
+            for k, attrs in owner_configuration.attributes.items()
+        }
+        parameter_attrs = {k: Attributes(is_synced=True) for k in specification.parameters}
+
+        group_configuration = Configuration(values=owner_configuration.values, attributes=owner_attrs | parameter_attrs)
+
+        config_id = self.create_new_configuration_by_descriptor(
+            configuration=group_configuration, description=owner_configuration.description, owner=group
+        )
+
+        self.prepare_file_parameter_values_on_fs(
+            configuration=group_configuration,
+            specification=specification,
+            owner_prefix=files.build_config_host_group_prefix(owner, group_id=group.id),
         )
 
         return config_id

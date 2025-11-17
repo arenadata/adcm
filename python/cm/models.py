@@ -20,9 +20,10 @@ import time
 import signal
 import os.path
 
+from adcm.feature_flags import use_new_config_processing
 from core.action.process.types import ProcessState, ProcessStepState
 from core.job.types import ScriptType
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -1014,24 +1015,38 @@ class ConfigHostGroup(ADCMModel):
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
-        if self._state.adding:
-            obj = self.object_type.model_class().obj.get(id=self.object_id)
-            if obj.config is not None:
-                parent_config_log = ConfigLog.obj.get(id=obj.config.current)
-                self.config = ObjectConfig.objects.create(current=0, previous=0)
-                config_log = ConfigLog()
-                config_log.obj_ref = self.config
-                config_log.config = deepcopy(parent_config_log.config)
-                attr = deepcopy(parent_config_log.attr)
-                group_keys, custom_group_keys = self.create_group_keys(self.get_config_spec())
-                attr.update({"group_keys": group_keys, "custom_group_keys": custom_group_keys})
-                config_log.attr = attr
-                config_log.description = parent_config_log.description
-                config_log.save()
-                self.config.current = config_log.pk
-                self.config.save()
-        super().save(*args, **kwargs)
-        self.prepare_files_for_config()
+        if use_new_config_processing():
+            from infra.services import get_config_service
+
+            from cm.converters import orm_object_to_core_descriptor
+
+            super().save(*args, **kwargs)
+            config_service = get_config_service()
+            config_service.create_initial_configuration_of_host_group(
+                group=Descriptor(id=self.pk, type=ADCMHostGroupType.CONFIG),
+                owner=orm_object_to_core_descriptor(self.object),
+            )
+            self.refresh_from_db(fields=("config",))
+
+        else:
+            if self._state.adding:
+                obj = self.object_type.model_class().obj.get(id=self.object_id)
+                if obj.config is not None:
+                    parent_config_log = ConfigLog.obj.get(id=obj.config.current)
+                    self.config = ObjectConfig.objects.create(current=0, previous=0)
+                    config_log = ConfigLog()
+                    config_log.obj_ref = self.config
+                    config_log.config = deepcopy(parent_config_log.config)
+                    attr = deepcopy(parent_config_log.attr)
+                    group_keys, custom_group_keys = self.create_group_keys(self.get_config_spec())
+                    attr.update({"group_keys": group_keys, "custom_group_keys": custom_group_keys})
+                    config_log.attr = attr
+                    config_log.description = parent_config_log.description
+                    config_log.save()
+                    self.config.current = config_log.pk
+                    self.config.save()
+            super().save(*args, **kwargs)
+            self.prepare_files_for_config()
 
 
 class ActionType(models.TextChoices):

@@ -20,11 +20,6 @@ from cm.api import update_obj_config
 from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, PrototypeConfig
-from cm.services.config import (
-    convert_attr_to_adcm_meta,
-    represent_json_type_as_string,
-)
-from cm.services.config._base import convert_adcm_meta_to_attr, represent_string_as_json_type
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from infra.services import get_config_service
@@ -86,6 +81,8 @@ class ConfigLogViewSet(
         return super().handle_exception(exc)
 
     def old_create(self, parent_object, serializer):
+        from cm.services.config._base import convert_adcm_meta_to_attr, represent_string_as_json_type
+
         prototype_configs = tuple(
             PrototypeConfig.objects.filter(prototype=parent_object.prototype, type="json", action=None)
         )
@@ -166,11 +163,15 @@ class ConfigLogViewSet(
         return super().list(request, *args, **kwargs)
 
     def old_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
+        from cm.services.config import convert_attr_to_adcm_meta, represent_json_type_as_string
+
         config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
         config_log.config = represent_json_type_as_string(prototype=parent_object.prototype, value=config_log.config)
         return config_log
 
     def new_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
+        from cm.config.convert import convert_attr_to_adcm_meta
+
         match parent_object:
             case ConfigHostGroup():
                 object_ = parent_object.object

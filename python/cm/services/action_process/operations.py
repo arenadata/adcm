@@ -14,7 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Literal, Protocol, TypeAlias, TypeVar
+from typing import Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
@@ -66,7 +66,6 @@ from cm.services.action_process.types import (
 from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.flags import BuiltInFlag, lower_flag
-from cm.services.config import ConfigAttrPair, convert_adcm_meta_to_attr, represent_string_as_json_type
 from cm.services.job.run import start_task
 from cm.services.job.run.repo import JobRepoImpl
 
@@ -76,8 +75,6 @@ SerializedConfigStep: TypeAlias = dict[
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
 OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload
 
-
-ConfigProcessor = Callable[[Step, Configuration], ConfigAttrPair]
 
 T = TypeVar("T", contravariant=True)
 
@@ -377,14 +374,6 @@ def reset_step(process: ActionProcess, payload: ResetStepPayload, context: Opera
     if current_id:
         render_context = RenderStepContext(process_id=process.id, action_id=context.action.id, object=context.object)
         fill_step_spec(step_id=current_id, context=render_context)
-
-
-def process_payload_config(step: Step, config: Configuration) -> ConfigAttrPair:
-    json_proto_configs = [PrototypeConfig(**cfg) for cfg in step.step_spec if cfg["type"] == "json"]
-    config_ = represent_string_as_json_type(prototype_configs=json_proto_configs, value=config.config)
-    attr_ = convert_adcm_meta_to_attr(adcm_meta=config.adcm_meta)
-
-    return ConfigAttrPair(config=config_, attr=attr_)
 
 
 def _operation_submit_job(

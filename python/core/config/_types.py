@@ -99,6 +99,7 @@ class ConfigurationWithID(Configuration):
     # keep that way while it's direct dataclass descendant of `Configuration`
     # for inheritance simplicity
     id: ConfigID = 0
+    description: str = ""
 
 
 @dataclass(slots=True)
