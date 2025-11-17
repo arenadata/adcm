@@ -106,8 +106,14 @@ class TemplateRendererJinja2(TemplateRenderer):
 
         loader = FileSystemLoader(paths_to_load)
         autoescape = select_autoescape(default_for_string=False, enabled_extensions=("html", "htm"))
-        # S701 suggests to use select autoescape, but not smart enough to check out that it's used
-        return Environment(loader=loader, autoescape=bool(autoescape))  # noqa: S701
+        # Looks like typehints in jinja2.Environment doesn't work too well,
+        # because in fact this function accepts callable, yet typehint says different.
+        #
+        # ruff have a problem with this one too, yet it's how it is working for now, can't change it
+        return Environment(
+            loader=loader,
+            autoescape=autoescape,  # pyright: ignore [reportArgumentType] # noqa: S701
+        )
 
 
 # Helpers
