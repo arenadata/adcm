@@ -417,7 +417,7 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
 class TestPrepareConfigForAnsible(ConfigTestCase):
     def expect_correct_values(
         self,
-        params: tuple[SimpleParameter, ...],
+        params: tuple[SimpleParameter | ParameterGroup, ...],
         values: dict,
         expected_values: dict,
         path_constructor: Callable | None = None,
@@ -541,6 +541,36 @@ class TestPrepareConfigForAnsible(ConfigTestCase):
         expected_values = {
             "plain": "aa",
             "group": {"nested": {"uns": {ansible_unsafe: "f"}}, "uns-none": None},
+        }
+
+        self.expect_correct_values(params=params, values=values, expected_values=expected_values)
+
+    def test_selection_group_none(self):
+        params = (
+            StringParameter(identifier=name_id("plain")),
+            ParameterGroup(identifier=name_id("sel_group"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("sel_group", "nested")),
+            StringParameter(identifier=name_id("sel_group", "nested", "a")),
+            ParameterGroup(identifier=name_id("group")),
+            StringParameter(identifier=name_id("group", "a")),
+        )
+        values = {"plain": "aa", "sel_group": None, "group": {"a": "vv"}}
+        expected_values = values
+
+        self.expect_correct_values(params=params, values=values, expected_values=expected_values)
+
+    def test_selection_group_value(self):
+        params = (
+            StringParameter(identifier=name_id("plain")),
+            ParameterGroup(identifier=name_id("sel_group"), selection=Selection()),
+            ParameterGroup(identifier=name_id("sel_group", "nested")),
+            StringParameter(identifier=name_id("sel_group", "nested", "a")),
+            ParameterGroup(identifier=name_id("group")),
+            StringParameter(identifier=name_id("group", "a")),
+        )
+        values = {"plain": "aa", "sel_group": {"nested": {"a": {"b"}}}, "group": {"a": "vv"}}
+        expected_values = values | {
+            "sel_group": {"nested": {"a": {"b"}}, "_selection": "nested"},
         }
 
         self.expect_correct_values(params=params, values=values, expected_values=expected_values)

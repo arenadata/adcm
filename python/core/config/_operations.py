@@ -333,6 +333,7 @@ def prepare_config_for_ansible(
 
     to_empty_dict_if_is_none = build_apply_if(func=lambda _: {}, when=is_none)
     to_empty_list_if_is_none = build_apply_if(func=lambda _: [], when=is_none)
+    add_selection_if_is_not_none = build_apply_if(func=_add_selection, when=is_not_none)
 
     for name, param in specification.parameters.items():
         if name in deactivated:
@@ -361,6 +362,10 @@ def prepare_config_for_ansible(
                 _change_value_ignoring_missing(name=name, func=to_empty_list_if_is_none, values=target.values)
             case spec.p.MapParameter(is_secret=False):
                 _change_value_ignoring_missing(name=name, func=to_empty_dict_if_is_none, values=target.values)
+
+    for name, group in specification.groups.items():
+        if group.selection:
+            change_by_full_name(name=name, func=add_selection_if_is_not_none, values=target.values)
 
     deactivated_groups = specification.attributes.activatable_groups - active_groups
     for group_name in deactivated_groups:
@@ -474,6 +479,12 @@ We could reconstruct config on inventory operations, but for now we just log and
 """
 
 # Utilities
+
+
+def _add_selection(value: dict) -> dict:
+    # we expect value to have exactly one key here
+    chosen_value = next(iter(value.keys()))
+    return value | {"_selection": chosen_value}
 
 
 def _encrypt_dict(value: dict, encrypt: _EncryptFunc) -> dict:
