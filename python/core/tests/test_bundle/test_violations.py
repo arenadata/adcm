@@ -542,3 +542,47 @@ class TestBundleProcessingErrors(TestCase):
             self.parse(bundle)
 
         self.assertIn("Min version should be less or equal max version", err.exception.message)
+
+    def test_group_customization_true_for_selection_group(self):
+        bundle = """
+        - name: aaa
+          type: cluster
+          version: 2
+          config:
+            - name: g
+              type: selection_group
+              group_customization: true
+              subs:
+                - name: g
+                  type: group
+                  subs:
+                    - name: a
+                      type: string
+        """
+
+        with self.assertRaises(BundleValidationError) as err:
+            self.parse(bundle)
+
+        self.assertIn("isn't allowed to be desynchronized", err.exception.message)
+
+    def test_group_customization_true_for_parent_of_selection_group(self):
+        bundle = """
+        - name: aaa
+          type: cluster
+          version: 2
+          config_group_customization: true
+          config:
+            - name: g
+              type: selection_group
+              subs:
+                - name: g
+                  type: group
+                  subs:
+                    - name: a
+                      type: string
+        """
+
+        with self.assertRaises(BundleValidationError) as err:
+            self.parse(bundle)
+
+        self.assertIn("isn't allowed to be desynchronized", err.exception.message)

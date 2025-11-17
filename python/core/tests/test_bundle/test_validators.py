@@ -13,13 +13,13 @@
 from unittest import TestCase
 
 from core.bundle_alt.errors import BundleValidationError
-from core.bundle_alt.types import Definition
+from core.bundle_alt.types import Definition, DefinitionsMap
 from core.bundle_alt.validation import check_display_names_are_unique
 
 
 class TestCheckDisplayNamesAreUnique(TestCase):
     def test_component_in_different_services_named_as_service(self):
-        definitions = {
+        definitions: DefinitionsMap = {
             ("service", "main"): Definition(type="service", name="main", version="4", display_name="main"),
             ("component", "main", "main"): Definition(type="component", name="main", version="4", display_name="main"),
             ("service", "another"): Definition(type="service", name="another", version="4", display_name="another"),
@@ -31,7 +31,7 @@ class TestCheckDisplayNamesAreUnique(TestCase):
         check_display_names_are_unique(definitions)
 
     def test_duplicated_display_names_within_one_service(self):
-        definitions = {
+        definitions: DefinitionsMap = {
             ("service", "main"): Definition(type="service", name="main", version="4", display_name="main"),
             ("component", "main", "main"): Definition(type="component", name="main", version="4", display_name="cool"),
             ("component", "main", "another"): Definition(

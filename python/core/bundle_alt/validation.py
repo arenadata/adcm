@@ -173,6 +173,13 @@ def check_config(
                         message = f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported"
                         raise BundleValidationError(message)
 
+            if parameter.type == "selection_group" and parameter.group_customization:
+                message = (
+                    "Selection group isn't allowed to be desynchronized from main configuration: "
+                    "group_customization must be false"
+                )
+                raise BundleValidationError(message)
+
     check_defaults(config)
 
 
