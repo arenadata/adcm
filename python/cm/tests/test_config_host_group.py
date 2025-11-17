@@ -44,7 +44,7 @@ class ConfigHostGroupTest(BaseTestCase):
             name="activatable_group",
             field_type="group",
             display_name="activatable_group",
-            limits="{'activatable': true, 'active': true}",
+            limits={"activatable": True, "active": True},
             group_customization=True,
         )
         gen_prototype_config(
@@ -73,10 +73,6 @@ class ConfigHostGroupTest(BaseTestCase):
                 "group": {"value": None, "fields": {"string": False}},
                 "activatable_group": {"value": False, "fields": {"integer": False}},
             },
-            "custom_group_keys": {
-                "group": {"value": True, "fields": {"string": True}},
-                "activatable_group": {"value": True, "fields": {"integer": True}},
-            },
         }
 
         self.assertDictEqual(config_log.attr, cl_attr)
@@ -99,7 +95,7 @@ class ConfigHostGroupTest(BaseTestCase):
             "activatable_group": {
                 "type": "group",
                 "group_customization": True,
-                "limits": "{'activatable': true, 'active': true}",
+                "limits": {"activatable": True, "active": True},
                 "fields": {
                     "integer": {
                         "type": "integer",

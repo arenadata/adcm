@@ -2759,11 +2759,6 @@ class TestCHGUpgrade(BaseAPITestCase):
                     "boolean": False,
                     "group": {"fields": {"float": False}, "value": None},
                 },
-                "custom_group_keys": {
-                    "boolean": True,
-                    "group": {"value": True, "fields": {"float": True}},
-                    "activatable_group": {"value": True, "fields": {"integer": True}},
-                },
             },
         )
 
@@ -2787,11 +2782,6 @@ class TestCHGUpgrade(BaseAPITestCase):
                     "activatable_group": {"fields": {"text": False}, "value": True},
                     "group": {"fields": {"password": True}, "value": None},
                     "string": True,
-                },
-                "custom_group_keys": {
-                    "string": True,
-                    "group": {"value": True, "fields": {"password": True}},
-                    "activatable_group": {"value": True, "fields": {"text": True}},
                 },
             },
         )
@@ -2819,11 +2809,6 @@ class TestCHGUpgrade(BaseAPITestCase):
                     "activatable_group": {"fields": {"secretfile": True}, "value": True},
                     "group": {"fields": {"file": False}, "value": None},
                     "secrettext": False,
-                },
-                "custom_group_keys": {
-                    "secrettext": True,
-                    "group": {"value": True, "fields": {"file": True}},
-                    "activatable_group": {"value": True, "fields": {"secretfile": True}},
                 },
             },
         )

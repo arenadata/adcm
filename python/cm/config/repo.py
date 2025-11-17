@@ -32,9 +32,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
 
 from cm.config._repo_spec import build_defaults, build_specification
+from cm.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.converters import core_type_to_model
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
-from cm.services.config._base import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 
 
 @dataclass(slots=True)
@@ -61,11 +61,18 @@ class ConfigRepo(config.ConfigRepoI):
         current_id = owner_orm.config.current
 
         try:
-            record = self.find_configs_by_ids(ids=(current_id,))[current_id]
+            record = _get_configs_by_ids(ids=(current_id,))[current_id]
         except KeyError as e:
             raise config.NoConfigError(f"configuration unexpectedly missing: id={current_id}") from e
 
-        return config.ConfigurationWithID(id=current_id, values=record.values, attributes=record.attributes)
+        configuration = _to_configuration(values=record.config, attrs=record.attr)
+
+        return config.ConfigurationWithID(
+            id=current_id,
+            description=record.description,
+            values=configuration.values,
+            attributes=configuration.attributes,
+        )
 
     # those overloads are required for some reason for pyright to understand it correctly,
     # see related case (not protocols, so it's different) in https://github.com/microsoft/pyright/issues/5718
@@ -210,7 +217,8 @@ class ConfigRepo(config.ConfigRepoI):
         # maybe shouldn't be in here
         if not owner_orm.config:
             owner_orm.config = ObjectConfig.objects.create(current=0, previous=0)
-            owner_orm.save(update_fields=["config"])
+            # need to update to not trigger "save" for ConfigHostGroup case
+            owner_model.objects.filter(id=owner_orm.pk).update(config_id=owner_orm.config.pk)
 
         config_log = ConfigLog.objects.create(
             obj_ref=owner_orm.config, config=config.values, attr=attr, description=description
