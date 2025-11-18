@@ -806,6 +806,13 @@ class TestClusterHost(BaseAPITestCase):
                 host_1, host_duplicate_1, host_duplicate_named_as_host_2, candidates=candidates
             )
 
+        with self.subTest("verify ordering"):
+            candidates = self.get_host_candidates(self.cluster_1)
+            self.assertListEqual(
+                candidates,
+                sorted(candidates, key=lambda h: h[1]),
+            )
+
     def test_host_candidates_not_allowed_without_cluster_admin_permissions(self):
         credentials = {"username": "aaaa", "password": secrets.token_hex(8)}
         user = self.create_user(user_data=credentials)
