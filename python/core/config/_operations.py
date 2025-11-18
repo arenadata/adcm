@@ -14,7 +14,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain, filterfalse
-from typing import Callable, Literal, TypeAlias, TypeVar
+from typing import Any, Callable, Literal, TypeAlias, TypeVar
 import logging
 
 from core.config import spec
@@ -29,10 +29,17 @@ from core.config._config import (
     set_by_full_name,
     set_by_full_name_returning_old,
 )
-from core.config._names import full_name_to_file_name, is_part_of_group, join_level_name_with_group_name
+from core.config._names import (
+    full_name_to_file_name,
+    full_name_to_level_names,
+    is_part_of_group,
+    join_level_name_with_group_name,
+    remove_group_from_name,
+)
 from core.config._predicates import is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
+    ChangeRequest,
     ConfigFlatValues,
     Configuration,
     ConfigValues,
@@ -64,6 +71,8 @@ class ValidationResult:
     def has_changed(self) -> bool:
         return bool(self.changes)
 
+
+ChangesToApply = list[ChangeRequest]
 
 T = TypeVar("T")
 
@@ -375,31 +384,34 @@ def prepare_config_for_ansible(
 
 
 def apply_changes(
-    changes: FlatConfiguration, configuration: Configuration
+    changes: ChangesToApply, configuration: Configuration, defaults: Defaults
 ) -> Success[tuple[Configuration, _HasChanged]] | Fail[Violations]:
     target = deepcopy(configuration)
+
+    ordered_changes = sorted(changes, key=lambda change: len(full_name_to_level_names(change.parameter)))
 
     has_changed = False
     violations = []
 
-    for key, value in changes.values.items():
-        try:
-            previous = set_by_full_name_returning_old(name=key, new_value=value, values=target.values)
-            if previous != value:
-                has_changed = True
-        except KeyError:
-            violation = Violation(parameter=key, check="structure", reason="no such key in configuration's values")
-            violations.append(violation)
+    for change in ordered_changes:
+        match change.type:
+            case "value":
+                change_registered = _apply_value_change_registering_violation(
+                    key=change.parameter, value=change.value, target=target, violations=violations
+                )
 
-    for key, attributes in changes.attributes.items():
-        try:
-            previous = target.attributes[key]
-            target.attributes[key] = attributes
-            if previous != attributes:
-                has_changed = True
-        except KeyError:
-            violation = Violation(parameter=key, check="structure", reason="no such key i=n configuration's attributes")
-            violations.append(violation)
+            case "selection":
+                change_registered = _apply_selection_group_change_registering_violation(
+                    key=change.parameter, value=change.value, target=target, defaults=defaults, violations=violations
+                )
+
+            case "activation":
+                change_registered = _apply_activation_change_registering_violation(
+                    key=change.parameter, value=change.value, target=target, violations=violations
+                )
+
+        if change_registered:
+            has_changed = True
 
     if violations:
         return Fail(violations)
@@ -479,6 +491,64 @@ We could reconstruct config on inventory operations, but for now we just log and
 """
 
 # Utilities
+
+
+def _apply_value_change_registering_violation(
+    key: ParameterFullName, value: Any, target: Configuration, violations: Violations
+) -> _HasChanged:
+    try:
+        previous = set_by_full_name_returning_old(name=key, new_value=value, values=target.values)
+        if previous != value:
+            return True
+
+    except (KeyError, TypeError):
+        violation = Violation(parameter=key, check="structure", reason="no such key in configuration's values")
+        violations.append(violation)
+
+    return False
+
+
+def _apply_selection_group_change_registering_violation(
+    key: ParameterFullName, value: Any, target: Configuration, defaults: Defaults, violations: Violations
+) -> _HasChanged:
+    if value is not None:
+        # detect if changes are required, otherwise skip change
+        current_value = get_by_full_name(name=key, values=target.values)
+        if not (isinstance(current_value, dict) or current_value is None):
+            message = (
+                "Don't know how to apply selection group change to value that isn't dict or None, "
+                f"got {type(current_value)=}"
+            )
+            raise TypeError(message)
+
+        if value in (current_value or ()):
+            # current choice is one's to set, so no need in changes
+            return False
+
+        new_group_key = join_level_name_with_group_name(name=value, group=key)
+        group_defaults = {
+            remove_group_from_name(name=param, group=key): default_value
+            for param, default_value in defaults.items()
+            if is_part_of_group(name=param, group=new_group_key)
+        }
+        value = flat_to_nested(group_defaults)
+
+    return _apply_value_change_registering_violation(key=key, value=value, target=target, violations=violations)
+
+
+def _apply_activation_change_registering_violation(
+    key: ParameterFullName, value: bool, target: Configuration, violations: Violations
+):
+    try:
+        previous = target.attributes[key].is_active
+        target.attributes[key].is_active = value
+        if previous != value:
+            return True
+    except KeyError:
+        violation = Violation(parameter=key, check="structure", reason="no such key in configuration's attributes")
+        violations.append(violation)
+
+    return False
 
 
 def _add_selection(value: dict) -> dict:

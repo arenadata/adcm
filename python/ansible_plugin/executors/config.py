@@ -127,46 +127,52 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         changes, has_changed = update_configuration_from_job(
             owner=target,
             changes_input=original_changes,
-            convert=to_flat_configuration,
+            convert=to_changes,
             description="ansible update",
             job_id=runtime.vars.job.id,
             config_service=config_service,
             owner_orm=db_object,
         )
 
-        return_value = to_return_value(changes=changes)
+        return_value = to_return_value(changes)
 
         return CallResult(value=return_value, changed=has_changed, error=None)
 
 
-def to_flat_configuration(input_changes: list[dict], spec: core.config.spec.FullSpec) -> core.config.FlatConfiguration:
-    target = core.config.FlatConfiguration()
+def to_changes(input_changes: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
+    changes = []
 
     for parameter_change in input_changes:
         full_name = core.config.names.ensure_full_name(parameter_change["key"])
 
+        if (group := spec.groups.get(full_name)) and group.selection:
+            message = f'Can\'t change selectable group "{full_name}" from plugin'
+            raise ValueError(message)
+
         if (is_active := parameter_change.get("active")) is not None:
-            target.attributes[full_name] = core.config.Attributes(is_active=is_active)
+            change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=is_active)
+            changes.append(change)
         else:
             raw_value = parameter_change["value"]
             if not isinstance(raw_value, str):
-                target.values[full_name] = raw_value
+                value_to_set = raw_value
             else:
-                parameter = spec.parameters.get(full_name)
+                parameter = spec.parameters[full_name]
                 parsed_value = parse_string_value(value=raw_value, parameter=parameter)
-                target.values[full_name] = parsed_value
+                value_to_set = parsed_value
 
-    return target
+            change = core.config.ChangeRequest.for_value(name=full_name, value=value_to_set)
+            changes.append(change)
+
+    return changes
 
 
-def to_return_value(changes: core.config.FlatConfiguration) -> ChangeConfigReturn:
-    values = changes.values
-
-    if len(values) == 1:
-        config_params = next(iter(values.values()))
+def to_return_value(changes: list[core.config.ChangeRequest]) -> ChangeConfigReturn:
+    value_changes = [change for change in changes if change.type == "value"]
+    if len(value_changes) == 1:
+        config_params = value_changes[0].value
     else:
-        # removing trailing and prefixing "/" to return to keys to input format
-        config_params = {key.strip("/"): value for key, value in values.items()}
+        config_params = {change.parameter.lstrip("/"): change.value for change in value_changes}
 
     # putting result under the "value" key, because during result parsing dicts are merged into response,
     # return of this plugin should always have `value` key

@@ -23,12 +23,12 @@ from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
 from core.config._secrets import AnsibleSecrets
 from core.config._types import (
     Attributes,
+    ChangeRequest,
     ConfigFlatValues,
     ConfigOwner,
     Configuration,
     ConfigurationWithID,
     Defaults,
-    FlatConfiguration,
     HostGroupConfigOwner,
 )
 from core.config._validate import (
@@ -311,12 +311,14 @@ class ConfigService:
 
     def prepare_new_configuration_from_changes(
         self,
-        changes: FlatConfiguration,
+        changes: list[ChangeRequest],
         configuration: Configuration,
         specification: spec.FullSpec,
+        defaults: Defaults,
         owner: CoreObjectDescriptor,
     ) -> NewConfigurationResult:
-        match operations.apply_changes(changes=changes, configuration=configuration):
+        result = operations.apply_changes(changes=changes, configuration=configuration, defaults=defaults)
+        match result:
             case Success(value=(new_config, changed)) if changed:
                 return self.prepare_new_configuration(
                     new=new_config, previous=configuration, specification=specification, owner=owner

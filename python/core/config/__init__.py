@@ -18,6 +18,7 @@ from core.config import _pattern as pattern
 from core.config._config import flat_to_nested, get_by_full_name, nested_to_flat, set_by_full_name, change_by_full_name
 from core.config._types import (
     Attributes,
+    ChangeRequest,
     ConfigAttrs,
     ConfigFlatValues,
     ConfigOwner,
@@ -38,6 +39,7 @@ from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigErr
 
 __all__ = [
     "Attributes",
+    "ChangeRequest",
     "ConfigAttrs",
     "ConfigFlatValues",
     "ConfigOwner",

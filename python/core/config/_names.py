@@ -56,6 +56,10 @@ def join_level_name_with_group_name(name: ParameterLevelName, group: ParameterFu
     return ensure_full_name(f"{group}/{name}")
 
 
+def remove_group_from_name(name: ParameterFullName, group: ParameterFullName) -> ParameterFullName:
+    return name.lstrip(group)
+
+
 def full_name_to_file_name(full: ParameterFullName) -> str:
     """
     Convert full name of parameter to "own name" of file (indifferent to object)

@@ -19,6 +19,7 @@ from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog
 from cm.services.concern import delete_issue
 from cm.services.job.run import update_related_configs
 from cm.status_api import notify_about_new_concern, send_config_creation_event, send_config_creation_event_by_descriptor
+from core.config._types import ChangeRequest
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
 from rbac.roles import apply_policy_for_new_config
@@ -33,7 +34,9 @@ class InputConfigConverter(Protocol[T]):
 
 
 class ChangesConverter(Protocol[T]):
-    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.FlatConfiguration:
+    def __call__(
+        self, configuration: T, specification: core.config.spec.FullSpec, /
+    ) -> list[core.config.ChangeRequest]:
         ...
 
 
@@ -176,15 +179,15 @@ def update_configuration_from_job(
     config_service: core.config.ConfigService,
     # possible BS arguments, need to rethink them
     owner_orm: ADCMEntity,
-) -> tuple[core.config.FlatConfiguration, HasChanged]:
+) -> tuple[list[ChangeRequest], HasChanged]:
     with atomic():
-        specification = config_service.retrieve_specification(owner=owner)
+        specification, defaults = config_service.retrieve_specification_with_defaults(owner=owner)
         changes = convert(changes_input, specification)
 
         configuration = config_service.retrieve_current_configuration(owner=owner)
 
         result = config_service.prepare_new_configuration_from_changes(
-            changes=changes, configuration=configuration, specification=specification, owner=owner
+            changes=changes, configuration=configuration, specification=specification, defaults=defaults, owner=owner
         )
 
         if not result.has_changed:
