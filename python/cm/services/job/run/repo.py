@@ -531,7 +531,13 @@ class ActionRepoImpl(ActionRepoInterface):
     @staticmethod
     def get_action(id: ActionID) -> ActionInfo:  # noqa: A002
         action = Action.objects.values(
-            "id", "name", "prototype_id", "prototype__type", "scripts_jinja", "wizard_template", "scripts_template"
+            "id",
+            "name",
+            "prototype_id",
+            "prototype__type",
+            "scripts_jinja",
+            "wizard_template",
+            "scripts_template",
         ).get(id=id)
         return ActionInfo(
             id=action["id"],

@@ -13,24 +13,26 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from functools import reduce
+from functools import partial, reduce
 from itertools import chain
 from operator import or_
-from typing import Collection
+from typing import Callable, Collection
 
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 from cm.converters import core_type_to_model, model_name_to_core_type
-from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
+from cm.models import Action, ADCMEntity, ConcernCause, ConcernItem, ConcernType
 from cm.services.concern.distribution import AffectedObjectConcernMap, distribute_concern_on_related_objects
 from cm.services.concern.messages import (
     ADCM_ENTITY_AS_PLACEHOLDERS,
     ConcernMessage,
     ConcernMessageTemplate,
     PlaceholderObjectsDTO,
+    Placeholders,
     build_concern_reason,
+    build_placeholders_for_process,
 )
 
 
@@ -46,62 +48,36 @@ class BuiltInFlag(Enum):
         name="adcm_outdated_config", message="outdated config", cause=ConcernCause.CONFIG
     )
     ACTION_PROCESS_RUNNING = ConcernFlag(
-        name="action_process_running", message="configuring  process", cause=ConcernCause.CONFIGURING_PROCESS
+        name="action_process_running", message="configuring process ${target}", cause=ConcernCause.CONFIGURING_PROCESS
     )
+
+
+def raise_flag_for_process(
+    action: Action,
+    flag: ConcernFlag,
+    on_objects: Collection[CoreObjectDescriptor],
+    action_owner: ADCMEntity,
+) -> bool:
+    """Raise flag for objects within a specific action context."""
+    placeholders = build_placeholders_for_process(action_owner)
+
+    reason_builder = partial(
+        _build_reason,
+        placeholders=placeholders,
+        target=action,
+    )
+    return _raise_flag(flag, on_objects, reason_builder)
 
 
 def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> bool:
-    """Returns whether any objects were affected or not"""
-    message_template = ConcernMessageTemplate(
-        message=f"{ConcernMessage.FLAG.value.message}{flag.message}".rstrip(": "),
+    """Raise flag for objects not related to an action."""
+
+    reason_builder = partial(
+        _build_reason,
         placeholders=ADCM_ENTITY_AS_PLACEHOLDERS,
+        target=None,
     )
-
-    content_type_id_map = _get_owner_ids_grouped_by_content_type(objects=on_objects)
-
-    existing_concerns = ConcernItem.objects.filter(
-        Q(name=flag.name) & _get_filter_for_flags_of_objects(content_type_id_map=content_type_id_map)
-    )
-
-    processed_objects: dict[ContentType, set[int]] = {content_type: set() for content_type in content_type_id_map}
-    concerns_to_update = []
-    for concern in existing_concerns:
-        if concern.reason["message"] != message_template.message:
-            concern.reason["message"] = message_template.message
-            concerns_to_update.append(concern)
-
-        processed_objects[concern.owner_type].add(concern.owner_id)
-
-    if concerns_to_update:
-        ConcernItem.objects.bulk_update(objs=concerns_to_update, fields=["reason"])
-
-    objects_without_flags: tuple[ADCMEntity, ...] = tuple(
-        chain.from_iterable(
-            content_type.model_class().objects.filter(id__in=requested_ids - processed_objects[content_type])
-            for content_type, requested_ids in content_type_id_map.items()
-        )
-    )
-
-    if not objects_without_flags:
-        return bool(concerns_to_update)
-
-    ConcernItem.objects.bulk_create(
-        objs=(
-            ConcernItem(
-                owner=object_,
-                type=ConcernType.FLAG,
-                cause=flag.cause,
-                name=flag.name,
-                blocking=False,
-                reason=build_concern_reason(
-                    template=message_template, placeholder_objects=PlaceholderObjectsDTO(source=object_)
-                ),
-            )
-            for object_ in objects_without_flags
-        )
-    )
-
-    return bool(concerns_to_update or objects_without_flags)
+    return _raise_flag(flag, on_objects, reason_builder)
 
 
 def lower_flag(name: str, on_objects: Collection[CoreObjectDescriptor]) -> bool:
@@ -167,3 +143,77 @@ def _get_owner_ids_grouped_by_content_type(objects: Collection[CoreObjectDescrip
         result[model_content_type_map[model.__name__.lower()]].add(object_.id)
 
     return result
+
+
+def _raise_flag(
+    flag: ConcernFlag,
+    on_objects: Collection[CoreObjectDescriptor],
+    reason_builder: Callable[[ConcernFlag, ADCMEntity], dict],
+) -> bool:
+    """Shared logic for raising flags, returns True if any changes were made."""
+
+    message_template = ConcernMessageTemplate(
+        message=f"{ConcernMessage.FLAG.value.message}{flag.message}".rstrip(": "),
+        placeholders=ADCM_ENTITY_AS_PLACEHOLDERS,
+    )
+    content_type_id_map = _get_owner_ids_grouped_by_content_type(objects=on_objects)
+
+    existing_concerns = ConcernItem.objects.filter(
+        Q(name=flag.name) & _get_filter_for_flags_of_objects(content_type_id_map=content_type_id_map)
+    )
+
+    processed_objects: dict[ContentType, set[int]] = {content_type: set() for content_type in content_type_id_map}
+    concerns_to_update = []
+    for concern in existing_concerns:
+        if concern.reason["message"] != message_template.message:
+            concern.reason["message"] = message_template.message
+            concerns_to_update.append(concern)
+
+        processed_objects[concern.owner_type].add(concern.owner_id)
+
+    if concerns_to_update:
+        ConcernItem.objects.bulk_update(objs=concerns_to_update, fields=["reason"])
+
+    # Find objects that don't yet have this flag
+    objects_without_flags: tuple[ADCMEntity, ...] = tuple(
+        chain.from_iterable(
+            content_type.model_class().objects.filter(id__in=requested_ids - processed_objects[content_type])
+            for content_type, requested_ids in content_type_id_map.items()
+        )
+    )
+
+    if not objects_without_flags:
+        return bool(concerns_to_update)
+
+    # Create missing concerns
+    ConcernItem.objects.bulk_create(
+        objs=[
+            ConcernItem(
+                owner=obj,
+                type=ConcernType.FLAG,
+                cause=flag.cause,
+                name=flag.name,
+                blocking=False,
+                reason=reason_builder(flag, obj),
+            )
+            for obj in objects_without_flags
+        ]
+    )
+
+    return bool(concerns_to_update or objects_without_flags)
+
+
+def _build_reason(
+    flag: ConcernFlag,
+    obj: ADCMEntity,
+    placeholders: Placeholders,
+    target: Action | None,
+) -> dict:
+    template = ConcernMessageTemplate(
+        message=f"{ConcernMessage.FLAG.value.message}{flag.message}".rstrip(": "),
+        placeholders=placeholders,
+    )
+    return build_concern_reason(
+        template=template,
+        placeholder_objects=PlaceholderObjectsDTO(source=obj, target=target),
+    )

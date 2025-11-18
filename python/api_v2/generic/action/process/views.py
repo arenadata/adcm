@@ -28,7 +28,7 @@ from cm.services.action_process.errors import (
 from cm.services.action_process.schema_validation import Configuration
 from cm.services.action_process.types import Step, StepType
 from cm.services.bundle import BundlePathResolver
-from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy_for_flag
+from cm.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.services.config import convert_attr_to_adcm_meta
 from cm.services.job.action import check_no_blocking_concerns
 from cm.services.job.run.repo import ActionRepoImpl
@@ -146,10 +146,9 @@ class ActionProcessViewSet(
             )
 
         parent_object, action_info = self.get_parent_and_action_supporting_process()
+        action = Action.objects.get(pk=action_info.id)
 
-        self.check_permissions_for_run(
-            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
-        )
+        self.check_permissions_for_run(request=request, action=action, parent_object=parent_object)
         check_no_blocking_concerns(lock_owner=parent_object, action_name=action_info.name)
 
         # TODO: check if Process already exists
@@ -157,7 +156,7 @@ class ActionProcessViewSet(
             process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action_info)
             flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
             targets = [CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))]
-            changed = raise_flag(flag=flag, on_objects=targets)
+            changed = raise_flag_for_process(flag=flag, on_objects=targets, action=action, action_owner=parent_object)
 
             if changed:
                 added = update_hierarchy_for_flag(flag=flag, on_objects=targets)

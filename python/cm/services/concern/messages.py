@@ -12,16 +12,29 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import partial
 from typing import Callable, Generic, NamedTuple, TypeVar
 
-from cm.models import ADCM, ADCMEntity, Cluster, Component, Host, JobLog, Prototype, Provider, Service
+from cm.models import (
+    ADCM,
+    Action,
+    ADCMEntity,
+    Cluster,
+    Component,
+    Host,
+    JobLog,
+    ObjectType,
+    Prototype,
+    Provider,
+    Service,
+)
 
 _PlaceholderObjectT = TypeVar("_PlaceholderObjectT", bound=Callable)
 
 
 class PlaceholderObjectsDTO(NamedTuple):
     source: ADCMEntity | None = None
-    target: ADCMEntity | Prototype | None = None
+    target: ADCMEntity | Prototype | Action | None = None
     job: JobLog | None = None
 
 
@@ -74,6 +87,14 @@ def _retrieve_placeholder_from_adcm_entity(
     }
 
 
+def _retrieve_process_placeholder_from_action(action: Action, target_ids: dict, owner_type: ObjectType) -> dict:
+    return {
+        "type": owner_type,
+        "name": action.display_name or action.name,
+        "params": {"action_id": action.id} | target_ids,
+    }
+
+
 def _retrieve_placeholder_from_prototype(entity: Prototype) -> dict:
     if not isinstance(entity, Prototype):
         message = f"Expected instance of Prototype, not {type(entity)}"
@@ -96,6 +117,17 @@ def _retrieve_placeholder_from_job(entity: JobLog) -> dict:
 
 
 ADCM_ENTITY_AS_PLACEHOLDERS = Placeholders(retrieve_source=_retrieve_placeholder_from_adcm_entity)
+
+
+def build_placeholders_for_process(process_owner: ADCMEntity) -> Placeholders:
+    return Placeholders(
+        retrieve_source=_retrieve_placeholder_from_adcm_entity,
+        retrieve_target=partial(
+            _retrieve_process_placeholder_from_action,
+            target_ids=process_owner.get_id_chain(),
+            owner_type=process_owner.prototype.type,
+        ),
+    )
 
 
 class ConcernMessage(Enum):
@@ -147,6 +179,7 @@ def build_concern_reason(
     placeholder_types: PlaceholderTypeDTO = NO_TYPES_IN_PLACEHOLDERS,
 ) -> dict:
     resolved_placeholders = {}
+
     for placeholder_name in ("source", "target", "job"):
         placeholder: Placeholder = getattr(template.placeholders, placeholder_name)
         if not placeholder.is_required:
@@ -154,9 +187,7 @@ def build_concern_reason(
 
         entity = getattr(placeholder_objects, placeholder_name)
         if entity is None:
-            # if there will be cases when those can be null, set placeholder to `{}` instead of error
-            # check out commit history for more info
-            message = f"Concern message '{template.message}' requires `{placeholder_name}` to fill placeholders"
+            message = f"Concern message '{template.message}' requires `{placeholder_name}` " "to fill placeholders"
             raise RuntimeError(message)
 
         resolved_placeholders[placeholder_name] = placeholder.retrieve(entity)
