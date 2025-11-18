@@ -13,8 +13,9 @@
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
-from cm.models import TaskLog
+from cm.models import ProcessStepInput, TaskLog
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import OuterRef, QuerySet, Subquery
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -129,7 +130,16 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
         queryset = super().get_queryset(*args, **kwargs)
         if not self.request.user.is_superuser:
             queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
-        return queryset
+
+        return self._annotate_queryset_with_step_display_names(queryset)
+
+    @staticmethod
+    def _annotate_queryset_with_step_display_names(qs: QuerySet[TaskLog]) -> QuerySet[TaskLog]:
+        inputs_qs = ProcessStepInput.objects.filter(
+            job=OuterRef("pk"), job_id__in=qs.values_list("id", flat=True)
+        ).select_related("step")
+
+        return qs.annotate(step_display_name=Subquery(inputs_qs.values("step__display_name")[:1]))
 
     @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
     @action(methods=["post"], detail=True, serializer_class=EmptySerializer)

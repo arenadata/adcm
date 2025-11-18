@@ -1811,3 +1811,36 @@ class TestActionProcess(BaseAPITestCase):
 
                 response = endpoint.post(data=wrong_payload)
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_adcm_7151_task_display_name_success(self):
+        action = self.get_object_action_with_process(obj=self.cluster_3)
+        process = self.get_process(self.start_process(self.cluster_3))
+        step = ProcessStep.objects.create(process=process, name="1", display_name="Step's display_name")
+
+        task_with_step = TaskLog.objects.create(task_object=self.cluster_3, action=action, status="created")
+        ProcessStepInput.objects.create(step=step, job=task_with_step)
+
+        plain_task = TaskLog.objects.create(task_object=self.cluster_3, action=action, status="created")
+
+        # get task with step
+        response = self.client.v2[task_with_step].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["displayName"], f"{task_with_step.action.display_name} ({step.display_name})")
+
+        # get plain task
+        response = self.client.v2[plain_task].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["displayName"], task_with_step.action.display_name)
+
+        # get tasks list
+        response = (self.client.v2 / "tasks").get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        response = response.json()["results"]
+
+        task_with_step_response = [task for task in response if task["id"] == task_with_step.id][0]
+        self.assertEqual(
+            task_with_step_response["displayName"], f"{task_with_step.action.display_name} ({step.display_name})"
+        )
+
+        plain_task_response = [task for task in response if task["id"] == plain_task.id][0]
+        self.assertEqual(plain_task_response["displayName"], task_with_step.action.display_name)
