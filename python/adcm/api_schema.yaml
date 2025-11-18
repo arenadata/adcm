@@ -3254,6 +3254,7 @@ components:
         displayName:
           type: string
           nullable: true
+          readOnly: true
         action:
           allOf:
           - $ref: '#/components/schemas/ActionName'
@@ -3349,6 +3350,7 @@ components:
         displayName:
           type: string
           nullable: true
+          readOnly: true
         action:
           allOf:
           - $ref: '#/components/schemas/ActionName'
@@ -5736,27 +5738,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: b6fb6389-bd4e-4ca7-9b7f-bec55cff17ca
+                    processSyncKey: 0fbe474f-1ded-4d23-8b4d-f9ba0367b87f
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 5b77fffd-4fbb-42f4-a21e-efe2d3a88e1b
+                    processSyncKey: 73596055-f295-4047-bfa5-ef1cd144d9b1
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: bb354a8d-c273-4106-be01-b1f11c299bb4
+                    processSyncKey: d8ebd777-e479-439b-aaed-937d06d82195
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 98adb2c6-1799-4ba3-b01f-496c6a9d9f56
+                    processSyncKey: 1a5afb92-0369-4e4e-a082-50603bd9ae80
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -9585,27 +9587,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 27701bb6-e04b-4d15-95e1-5dbeafd9e01e
+                    processSyncKey: b1e0df3b-1aa7-42ff-a726-a2040c6f83a6
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: ccbe59b1-9708-4299-8ead-3b6b8dca4fb5
+                    processSyncKey: 75bd12d3-f302-4e1e-83b3-501782182860
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 8817a927-7a4c-4f87-a88b-89660151db3d
+                    processSyncKey: f750b29f-1943-4ec2-995e-d4334b601281
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: c06fa4a9-0f9c-4cd3-81ad-d3c7d5ffb33b
+                    processSyncKey: 27a1e4f9-f901-4c6f-b762-f963cc11405b
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11259,27 +11261,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 651c19a6-179d-4b6a-a83a-54f7082cb10c
+                    processSyncKey: ec0e51bc-ad1b-421c-a146-86c78842118e
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: efcccf43-ec5a-4153-aadb-ba0ef53d9cf7
+                    processSyncKey: dcf83a35-a74e-4817-81a6-fe90ec2529fb
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: fe84f116-a213-4e1f-89d5-65a244e5be71
+                    processSyncKey: 65cd9e4e-b363-4182-b5c7-61a2213f6c18
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 76085b82-b072-4869-a570-296d65f3ea36
+                    processSyncKey: 2aab5e95-41b0-442a-ad96-133bd830361c
                 summary: Complete operation
           multipart/form-data:
             schema:
