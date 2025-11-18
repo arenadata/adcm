@@ -274,6 +274,8 @@ def _apply_config_changes_new(
 ) -> None:
     from application.migration.config import update_configuration_from_job
 
+    _check_parameters_unique(parameters)
+
     config_service = get_config_service()
     update_configuration_from_job(
         owner=orm_object_to_core_descriptor(db_object),
@@ -338,15 +340,33 @@ def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
     return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
 
 
-def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec) -> core.config.FlatConfiguration:
-    target = core.config.FlatConfiguration()
+def _check_parameters_unique(parameters: list[dict]) -> None:
+    checked = set()
+
+    for entry in parameters:
+        key = entry["key"]
+        if key not in checked:
+            checked.add(key)
+        else:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{key} is not unique within parameters")
+
+
+def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
+    changes = []
 
     for parameter_change in parameters:
         full_name = core.config.names.ensure_full_name(parameter_change["key"])
         value = parameter_change["value"]
 
         if full_name not in spec.groups:
-            target.values[full_name] = value
+            change = core.config.ChangeRequest.for_value(name=full_name, value=value)
+            changes.append(change)
+            continue
+
+        group_spec = spec.groups[full_name]
+        if group_spec.selection:
+            change = core.config.ChangeRequest.for_group_selection(name=full_name, value=value)
+            changes.append(change)
             continue
 
         if not spec.groups[full_name].is_activatable:
@@ -355,9 +375,10 @@ def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec
         if not isinstance(value, bool):
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: value expected to be boolean")
 
-        target.attributes[full_name] = core.config.Attributes(is_active=value)
+        change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=value)
+        changes.append(change)
 
-    return target
+    return changes
 
 
 def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:

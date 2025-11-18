@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
+
+from typing_extensions import Self
 
 from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
 
@@ -106,3 +108,22 @@ class ConfigurationWithID(Configuration):
 class FlatConfiguration:
     values: ConfigFlatValues = field(default_factory=dict)
     attributes: ConfigAttrs = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ChangeRequest:
+    type: Literal["value", "activation", "selection"]
+    parameter: ParameterFullName
+    value: Any
+
+    @classmethod
+    def for_value(cls, name: ParameterFullName, value: Any) -> Self:
+        return cls(type="value", parameter=name, value=value)
+
+    @classmethod
+    def for_activation_attribute(cls, name: ParameterFullName, value: bool) -> Self:
+        return cls(type="activation", parameter=name, value=value)
+
+    @classmethod
+    def for_group_selection(cls, name: ParameterFullName, value: str | None) -> Self:
+        return cls(type="selection", parameter=name, value=value)

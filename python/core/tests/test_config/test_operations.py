@@ -15,7 +15,9 @@ from typing import Callable
 
 from core.config._config import detect_active_groups
 from core.config._operations import (
+    ValidationResult,
     adapt_configuration_for_new_specification,
+    apply_changes,
     prepare_config_for_ansible,
     prepare_config_from_defaults,
     validate_new_changes_in_main_configuration,
@@ -41,8 +43,15 @@ from core.config._spec.parameters import (
     VariantParameter,
     WritableRule,
 )
-from core.config._types import Attributes, ConfigOwnerObjectInfo, Configuration, Defaults
-from core.config._validate import Validators
+from core.config._types import (
+    Attributes,
+    ChangeRequest,
+    ConfigOwnerObjectInfo,
+    Configuration,
+    Defaults,
+)
+from core.config._validate import AlwaysPassValidator, Validators, Violations
+from core.result import Fail, Success
 from core.tests.test_config.utils import (
     READ_ONLY_STATUS,
     ConfigTestCase,
@@ -650,3 +659,129 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
 
         self.assertDictEqual(configuration.values, expected_values)
         self.assertDictEqual(configuration.attributes, {})
+
+
+class TestSelectionGroupApplyAndValidate(ConfigTestCase):
+    def apply_changes(
+        self, changes: list[ChangeRequest], config: Configuration, defaults: Defaults
+    ) -> Success[tuple[Configuration, bool]] | Fail[Violations]:
+        return apply_changes(changes=changes, configuration=config, defaults=defaults)
+
+    def validate(
+        self, new: Configuration, previous: Configuration, spec: FullSpec
+    ) -> Success[ValidationResult] | Fail[Violations]:
+        validators = Validators(variant=AlwaysPassValidator(), pattern=AlwaysPassValidator())
+        return validate_new_changes_in_main_configuration(
+            new=new, previous=previous, specification=spec, deactivated_parameters=set(), validators=validators
+        )
+
+    def build_spec_and_defaults_simple(self) -> tuple[FullSpec, Defaults]:
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("s", "g1")),
+            StringParameter(identifier=name_id("s", "g1", "a")),
+            ParameterGroup(identifier=name_id("s", "g2")),
+            StringParameter(identifier=name_id("s", "g2", "b")),
+        )
+        defaults = {"/s/g1/a": "1", "/s/g2/b": "2"}
+
+        return spec, defaults
+
+    def assert_success_on_apply_and_validate(
+        self,
+        changes: list[ChangeRequest],
+        config: Configuration,
+        spec: FullSpec,
+        defaults: Defaults,
+        expected_config: Configuration,
+    ) -> None:
+        apply_result = self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+        new_config, _ = self.expect_success(apply_result).value
+
+        self.assertDictEqual(new_config.values, expected_config.values)
+        self.assertDictEqual(new_config.attributes, expected_config.attributes)
+
+        validate_result = self.validate(new=new_config, previous=config, spec=spec)
+
+        self.expect_success(validate_result)
+
+    def test_from_none_to_valid_defaults(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": None})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g2")]
+
+        expected_config = Configuration(values={"s": {"g2": {"b": "2"}}})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_from_another_group_to_valid_defaults(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g2")]
+
+        expected_config = Configuration(values={"s": {"g2": {"b": "2"}}})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_from_same_group_no_changes(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        expected_config = config
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_to_none(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value=None)]
+
+        expected_config = Configuration(values={"s": None})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_set_value_and_changing_group(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [
+            ChangeRequest.for_value(name="/s/g2/b", value="40"),
+            ChangeRequest.for_group_selection(name="/s", value="g2"),
+        ]
+
+        expected_config = Configuration(values={"s": {"g2": {"b": "40"}}})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_change_group_and_set_value_when_nones_in_defaults(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("s", "g1")),
+            StringParameter(identifier=name_id("s", "g1", "a")),
+            StringParameter(identifier=name_id("s", "g1", "c"), is_required=False),
+            ParameterGroup(identifier=name_id("s", "g2")),
+            StringParameter(identifier=name_id("s", "g2", "b")),
+        )
+        defaults = {"/s/g1/a": "1", "/s/g1/c": None, "/s/g2/b": "2"}
+        config = Configuration(values={"s": {"g2": {"b": "4"}}})
+        changes = [
+            ChangeRequest.for_group_selection(name="/s", value="g1"),
+            ChangeRequest.for_value(name="/s/g1/a", value="40"),
+        ]
+
+        expected_config = Configuration(values={"s": {"g1": {"a": "40", "c": None}}})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
