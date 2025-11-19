@@ -71,7 +71,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  border: 2px solid var(--node-content-border);
+  border: 2px solid var(--node-content-border) !important;
   border-radius: 8px;
   padding: 5px 10px;
   display: flex;
@@ -156,6 +156,7 @@
     transition: display 200ms ease-out allow-discrete, opacity 200ms ease-out;
 
     & > button {
+      border-radius: 8px;
       border-color: var(--node-content-border-default);
     }
   }
