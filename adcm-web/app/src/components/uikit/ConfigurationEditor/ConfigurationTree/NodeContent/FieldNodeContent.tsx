@@ -235,6 +235,17 @@ const FieldNodeContent = ({
             data-test="delete-btn"
           />
         )}
+        {fieldNodeData.fieldSchema.description && (
+          <Tooltip label={fieldNodeData.fieldSchema.description} placement="right-start">
+            <IconButton
+              type="button"
+              className={cn(s.nodeContent, s.nodeContent__button)}
+              size={18}
+              icon="marker-info"
+              data-test="description-btn"
+            />
+          </Tooltip>
+        )}
       </div>
     </>
   );
