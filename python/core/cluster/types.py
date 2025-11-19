@@ -99,6 +99,14 @@ class ClusterTopology(NamedTuple):
             for component in service.components.values()
         }
 
+    @property
+    def component_host_id_map(self) -> dict[ComponentID, set[HostID]]:
+        return {
+            component_id: set(component.hosts)
+            for service in self.services.values()
+            for component_id, component in service.components.items()
+        }
+
 
 K = TypeVar("K")
 V = TypeVar("V")
