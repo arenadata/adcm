@@ -1708,7 +1708,9 @@ class TestActionProcess(BaseAPITestCase):
 
     def test_adcm_7298_submit_mapping_not_add_service_in_step_spec_success(self):
         self.add_services_to_cluster(["service_1"], cluster=self.cluster_3)
-        component_1_s_1 = Component.objects.get(service__prototype__name="service_1", cluster=self.cluster_3)
+        component_1_s1 = Component.objects.get(
+            prototype__name="component_1_s1", service__prototype__name="service_1", cluster=self.cluster_3
+        )
         host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
 
         process = self.get_process(self.start_process(self.cluster_3))
@@ -1734,7 +1736,7 @@ class TestActionProcess(BaseAPITestCase):
 
         process.refresh_from_db()
         endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
-        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s_1.pk}]}
+        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}]}
         response = endpoint.post(
             data={
                 "method": ProcessOperationType.SUBMIT,
@@ -1748,7 +1750,7 @@ class TestActionProcess(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         step_input = ProcessStepInput.objects.get(step_id=target_mapping_step.id)
-        add_delta = {"add": [{"host_id": host_1.pk, "component_id": component_1_s_1.pk}]}
+        add_delta = {"add": [{"host_id": host_1.pk, "component_id": component_1_s1.pk}]}
         expected_input_mapping = {"delta": {"remove": [], **add_delta}, "cumulative_delta": {"remove": [], **add_delta}}
         self.assertDictEqual(step_input.mapping, expected_input_mapping)
         self.assertIsNone(step_input.configuration)
@@ -1759,7 +1761,9 @@ class TestActionProcess(BaseAPITestCase):
 
     def test_adcm_7295_submit_mapping_payload_validation(self):
         self.add_services_to_cluster(["service_1"], cluster=self.cluster_3)
-        component_1_s_1 = Component.objects.get(service__prototype__name="service_1", cluster=self.cluster_3)
+        component_1_s1 = Component.objects.get(
+            prototype__name="component_1_s1", service__prototype__name="service_1", cluster=self.cluster_3
+        )
         host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
 
         process = self.get_process(self.start_process(self.cluster_3))
@@ -1785,7 +1789,7 @@ class TestActionProcess(BaseAPITestCase):
 
         process.refresh_from_db()
         endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
-        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s_1.pk}]}
+        hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}]}
 
         correct_payload = {
             "method": ProcessOperationType.SUBMIT,
@@ -1844,3 +1848,155 @@ class TestActionProcess(BaseAPITestCase):
 
         plain_task_response = [task for task in response if task["id"] == plain_task.id][0]
         self.assertEqual(plain_task_response["displayName"], task_with_step.action.display_name)
+
+    def test_adcm_7302_submit_mapping_step_restrictions_fail(self):
+        self.add_services_to_cluster(["service_1", "service_2"], cluster=self.cluster_3)
+        component_1_s1 = Component.objects.get(
+            prototype__name="component_1_s1", service__prototype__name="service_1", cluster=self.cluster_3
+        )
+        component_free_s1 = Component.objects.get(
+            prototype__name="free_component_s1", service__prototype__name="service_1", cluster=self.cluster_3
+        )
+        component_1_s2 = Component.objects.get(
+            prototype__name="component_1_s2", service__prototype__name="service_2", cluster=self.cluster_3
+        )
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+
+        process = self.get_process(self.start_process(self.cluster_3))
+        cfg_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
+        first_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+
+        payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
+        response = self.submit_config_step(
+            obj=self.cluster_3, process=process, step_id=cfg_step.id, config_payload=payload
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        self.assertEqual(current_step_id, first_mapping_step.id)
+        self.assertEqual(last_completed_step_id, cfg_step.id)
+
+        inputs_count = ProcessStepInput.objects.filter(step_id=first_mapping_step.id).count()
+        self.assertEqual(inputs_count, 0)
+
+        first_mapping_step.refresh_from_db()
+        expected_step_spec = [
+            {
+                "service": component_1_s1.service.prototype.name,
+                "component": component_1_s1.prototype.name,
+                "operation": "add",
+            },
+            {
+                "service": component_1_s2.service.prototype.name,
+                "component": component_1_s2.prototype.name,
+                "operation": "add",
+            },
+        ]
+        self.assertListEqual(first_mapping_step.step_spec, expected_step_spec)
+
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
+
+        with self.subTest("Submit `add not specified` payload"):
+            hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_free_s1.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": first_mapping_step.id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "ACTION_PROCESS_OPERATION_CONFLICT",
+                "level": "error",
+                "desc": "Add operation is not allowed for "
+                f'"{component_free_s1.service.prototype.name}.{component_free_s1.prototype.name}". '
+                'Allowed components for add: "service_1.component_1_s1", "service_2.component_1_s2".',
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        with self.subTest("Submit `remove not specified` payload"):
+            hc_delta = {"remove": [{"hostId": host_1.pk, "componentId": component_free_s1.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": first_mapping_step.id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "ACTION_PROCESS_OPERATION_CONFLICT",
+                "level": "error",
+                "desc": "Remove operation is not allowed for "
+                f'"{component_free_s1.service.prototype.name}.{component_free_s1.prototype.name}". '
+                "Allowed components for remove: none.",
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        with self.subTest("Submit `add already existing` payload"):
+            hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s2.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": first_mapping_step.id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+
+            self.set_hostcomponent(cluster=self.cluster_3, entries=[(host_1, component_1_s2)])
+            response = endpoint.post(data=payload)  # submit add already existing mapping
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "ACTION_PROCESS_OPERATION_CONFLICT",
+                "level": "error",
+                "desc": "Add operation is not allowed for "
+                f'"{component_1_s2.service.prototype.name}.{component_1_s2.prototype.name}". Already mapped.',
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+        HostComponent.objects.filter(cluster_id=self.cluster_3.id).delete()
+        response = endpoint.post(data=payload)  # proceed to the next step
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        second_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
+        )
+        process.refresh_from_db()
+        self.assertEqual(process.current_step_id, second_mapping_step.id)
+        target_hc_rule = {
+            "service": component_1_s1.service.prototype.name,
+            "component": component_1_s1.prototype.name,
+            "operation": "remove",
+        }
+        self.assertIn(target_hc_rule, second_mapping_step.step_spec)
+
+        with self.subTest("Submit `remove absent` payload"):
+            hc_delta = {"remove": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": second_mapping_step.id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "ACTION_PROCESS_OPERATION_CONFLICT",
+                "level": "error",
+                "desc": "Remove operation is not allowed for "
+                f'"{component_1_s1.service.prototype.name}.{component_1_s1.prototype.name}". Not mapped.',
+            }
+            self.assertDictEqual(response.json(), expected_response)

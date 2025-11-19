@@ -189,6 +189,10 @@ class ComponentNameKey(NamedTuple):
     def __str__(self) -> str:
         return f'component "{self.component}" of service "{self.service}"'
 
+    @property
+    def full_name(self) -> str:
+        return f"{self.service}.{self.component}"
+
 
 class Concern(NamedTuple):
     id: ObjectID

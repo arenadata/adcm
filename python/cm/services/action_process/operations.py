@@ -12,6 +12,7 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
+from enum import Enum
 from functools import wraps
 from pathlib import Path
 from typing import Literal, Protocol, TypeAlias, TypeVar
@@ -21,11 +22,20 @@ import uuid
 from core.cluster.types import ClusterTopology
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.types import ActionInfo, CallingProcess, JobSpec
-from core.types import ActionID, ActionProcessID, ActionProcessStepID, ActionTargetDescriptor, CoreObjectDescriptor
+from core.types import (
+    ActionID,
+    ActionProcessID,
+    ActionProcessStepID,
+    ActionTargetDescriptor,
+    ComponentID,
+    CoreObjectDescriptor,
+    HostID,
+)
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.db.utils import DatabaseError
 from django.utils import timezone
+from typing_extensions import Self
 import core
 
 from cm.config.repo import build_specification_from_prototype_config_records
@@ -74,9 +84,45 @@ SerializedConfigStep: TypeAlias = dict[
 ]
 SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
 OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload
+MappingRules: TypeAlias = dict[Literal["add", "remove"], set[ComponentID]]
 
 
 T = TypeVar("T", contravariant=True)
+
+
+class HCViolationType(Enum):
+    HOSTS_ABSENT = 0
+    COMPONENTS_ABSENT = 1
+    ADD_RULE = 2
+    ADD_SANITY = 3
+    REMOVE_RULE = 4
+    REMOVE_SANITY = 5
+
+
+class HCErrorFormatter(Protocol):
+    def __call__(
+        self,
+        ids: set[HostID | ComponentID],
+        type_: HCViolationType,
+        topology: ClusterTopology,
+        hc_rules: MappingRules | None,
+    ) -> str:
+        ...
+
+
+@dataclass(slots=True, frozen=True)
+class HCViolation:
+    ids: set[HostID | ComponentID]
+    type_: HCViolationType
+    topology: ClusterTopology
+    formatter: HCErrorFormatter
+    hc_rules: MappingRules | None = None
+    err_cls: type[Exception] = ActionProcessOperationError
+
+    def raise_error(self: Self) -> None:
+        raise self.err_cls(
+            self.formatter(ids=self.ids, type_=self.type_, topology=self.topology, hc_rules=self.hc_rules)
+        )
 
 
 class ConfigInputProcessor(Protocol[T]):
@@ -482,52 +528,146 @@ def _check_hc_mapping_delta(
     step: Step, hc_mapping_delta: HostComponentMapDelta, cluster_id: core.types.ClusterID
 ) -> None:
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
-    _check_mapping_delta_objects_exists_and_in_cluster(delta=hc_mapping_delta, topology=topology)
+    mapping_rules = _prepare_mapping_rules(step=step, topology=topology)
+
+    violations: list[HCViolation] = []
+    violations.extend(_find_mapping_delta_objects_existence_violations(delta=hc_mapping_delta, topology=topology))
     # TODO: make one check-hc-distribution interface
     #       see core.concern.checks._mapping.find_cluster_mapping_issues (+ ADCM-7264)
-    _check_component_operation_distribution(step=step, delta=hc_mapping_delta, topology=topology)
+    violations.extend(
+        _find_hc_operation_distribution_violations(delta=hc_mapping_delta, rules=mapping_rules, topology=topology)
+    )
+
+    if violations:
+        raise violations[0].raise_error()
 
 
-def _check_mapping_delta_objects_exists_and_in_cluster(delta: HostComponentMapDelta, topology: ClusterTopology) -> None:
+def _prepare_mapping_rules(step: Step, topology: ClusterTopology) -> MappingRules:
+    comp_full_name_id_map = topology.component_full_name_id_mapping
+    rules = defaultdict(set)
+
+    for spec in step.step_spec:
+        key = core.types.ComponentNameKey(service=spec["service"], component=spec["component"])
+        if component_id := comp_full_name_id_map.get(key):
+            rules[spec["operation"]].add(component_id)
+
+    return rules
+
+
+def _format_hc_existence_error(
+    ids: set[HostID | ComponentID],
+    type_: HCViolationType,
+    topology: ClusterTopology,
+    hc_rules: MappingRules | None,
+) -> str:
+    _ = hc_rules
+
+    match type_:
+        case HCViolationType.HOSTS_ABSENT:
+            obj_cls_repr = "Host"
+        case HCViolationType.COMPONENTS_ABSENT:
+            obj_cls_repr = "Component"
+        case _:
+            raise NotImplementedError(f"Unexpected violation type for existence violation: {type_}")
+
+    ids_repr = ", ".join(f"#{id_}" for id_ in sorted(ids))
+
+    return f"{obj_cls_repr}(s) {ids_repr} not found in cluster #{topology.cluster_id}"
+
+
+def _find_mapping_delta_objects_existence_violations(
+    delta: HostComponentMapDelta, topology: ClusterTopology
+) -> list[HCViolation]:
+    violations = []
+
     host_ids, component_ids = set(), set()
     for hc_pair in delta.add + delta.remove:
         host_ids.add(hc_pair.host_id)
         component_ids.add(hc_pair.component_id)
 
     if host_errors := host_ids.difference(set(topology.hosts)):
-        hosts_repr = ", ".join(f"#{id_}" for id_ in sorted(host_errors))
-        err_msg = f"Host(s) {hosts_repr} not found in cluster #{topology.cluster_id}"
-        raise ActionProcessOperationError(err_msg)
+        violations.append(
+            HCViolation(
+                ids=host_errors,
+                type_=HCViolationType.HOSTS_ABSENT,
+                topology=topology,
+                formatter=_format_hc_existence_error,
+            )
+        )
 
     if component_errors := component_ids.difference(set(topology.component_ids)):
-        components_repr = ", ".join(f"#{id_}" for id_ in sorted(component_errors))
-        err_msg = f"Component(s) {components_repr} not found in cluster #{topology.cluster_id}"
-        raise ActionProcessOperationError(err_msg)
-
-
-def _check_component_operation_distribution(
-    step: Step, delta: HostComponentMapDelta, topology: ClusterTopology
-) -> None:
-    comp_full_name_id_map = topology.component_full_name_id_mapping
-    rules = defaultdict(set)
-    for spec in step.step_spec:
-        key = core.types.ComponentNameKey(service=spec["service"], component=spec["component"])
-        if component_id := comp_full_name_id_map.get(key):
-            rules[spec["operation"]].add(component_id)
-
-    for rule_ in delta.add or []:
-        if rule_.component_id not in rules["add"]:
-            raise ActionProcessOperationError(
-                f"Add operation not allowed for component_id={rule_.component_id}. "
-                f"Allowed components for add: {sorted(rules['add'])}"
+        violations.append(
+            HCViolation(
+                ids=component_errors,
+                type_=HCViolationType.COMPONENTS_ABSENT,
+                topology=topology,
+                formatter=_format_hc_existence_error,
             )
+        )
 
-    for rule_ in delta.remove or []:
-        if rule_.component_id not in rules["remove"]:
-            raise ActionProcessOperationError(
-                f"Remove operation not allowed for component_id={rule_.component_id}. "
-                f"Allowed components for remove: {sorted(rules['remove'])}"
-            )
+    return violations
+
+
+def _format_hc_distribution_error(
+    ids: set[HostID | ComponentID],
+    type_: HCViolationType,
+    topology: ClusterTopology,
+    hc_rules: MappingRules | None,
+) -> str:
+    err_template = "{operation} operation is not allowed for {component_names}. {detail}."
+    comp_id_full_name_map = {v: k for k, v in topology.component_full_name_id_mapping.items()}
+    names = sorted(comp_id_full_name_map[id_].full_name for id_ in ids)
+    names_repr = ", ".join(f'"{name}"' for name in names)
+
+    match type_:
+        case HCViolationType.ADD_RULE:
+            operation = "Add"
+            names = sorted(comp_id_full_name_map[id_].full_name for id_ in hc_rules.get("add", ()))
+            allowed_for_add = ", ".join(f'"{name}"' for name in names) or "none"
+            detail = f"Allowed components for add: {allowed_for_add}"
+        case HCViolationType.ADD_SANITY:
+            operation = "Add"
+            detail = "Already mapped"
+        case HCViolationType.REMOVE_RULE:
+            operation = "Remove"
+            names = sorted(comp_id_full_name_map[id_].full_name for id_ in hc_rules.get("remove", ()))
+            allowed_for_remove = ", ".join(f'"{name}"' for name in names) or "none"
+            detail = f"Allowed components for remove: {allowed_for_remove}"
+        case HCViolationType.REMOVE_SANITY:
+            operation = "Remove"
+            detail = "Not mapped"
+        case _:
+            raise NotImplementedError(f"Unexpected violation type for distribution violation: {type_}")
+
+    return err_template.format(operation=operation, component_names=names_repr, detail=detail)
+
+
+def _find_hc_operation_distribution_violations(
+    delta: HostComponentMapDelta, rules: MappingRules, topology: ClusterTopology
+) -> list[HCViolation]:
+    comp_id_host_ids_map = topology.component_host_id_map
+    violations: dict[HCViolationType, set[ComponentID]] = defaultdict(set)
+
+    for hc_pair in delta.add or []:
+        if hc_pair.component_id not in rules["add"]:
+            violations[HCViolationType.ADD_RULE].add(hc_pair.component_id)
+
+        if hc_pair.host_id in comp_id_host_ids_map[hc_pair.component_id]:
+            violations[HCViolationType.ADD_SANITY].add(hc_pair.component_id)
+
+    for hc_pair in delta.remove or []:
+        if hc_pair.component_id not in rules["remove"]:
+            violations[HCViolationType.REMOVE_RULE].add(hc_pair.component_id)
+
+        if hc_pair.host_id not in comp_id_host_ids_map[hc_pair.component_id]:
+            violations[HCViolationType.REMOVE_SANITY].add(hc_pair.component_id)
+
+    return [
+        HCViolation(
+            ids=ids, type_=violation_type, topology=topology, formatter=_format_hc_distribution_error, hc_rules=rules
+        )
+        for violation_type, ids in violations.items()
+    ]
 
 
 @convert_db_errors

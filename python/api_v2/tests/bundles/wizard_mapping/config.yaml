@@ -32,7 +32,12 @@
   config: *config
 
   components:
-    component_1:
+    component_1_s1:
+      actions:
+        <<: *actions
+      config: *config
+
+    free_component_s1:
       actions:
         <<: *actions
       config: *config
@@ -48,7 +53,7 @@
   config: *config
 
   components:
-    component_1:
+    component_1_s2:
       actions:
         <<: *actions
       config: *config
@@ -64,7 +69,7 @@
   config: *config
 
   components:
-    component_1:
+    component_1_s3:
       actions:
         <<: *actions
       config: *config
