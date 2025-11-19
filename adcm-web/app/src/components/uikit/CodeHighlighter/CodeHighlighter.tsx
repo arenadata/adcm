@@ -120,7 +120,7 @@ const CodeHighlighter = ({
       </div>
       <SyncScroll>
         <div className={s.codeHighlighterWrapper} data-test={`${dataTestPrefix}_code-highlight`}>
-          <ScrollPane hideScrollBars={true} syncHorizontal={false}>
+          <ScrollPane scrollPaneId="sp1" hideScrollBars={true} syncHorizontal={false}>
             <div
               className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}
               style={{ width: `${patchWidth}px` }}
@@ -138,7 +138,7 @@ const CodeHighlighter = ({
               </div>
             </div>
           </ScrollPane>
-          <ScrollPane ref={contentRef}>
+          <ScrollPane scrollPaneId="sp2" ref={contentRef}>
             <div className={cn(s.codeHighlighterCode, s.codeHighlighterFontParams)}>
               <div className={s.virtualContainer} style={{ height: `${codeVirtualizer.getTotalSize()}px` }}>
                 {items.map((virtualRow) => {

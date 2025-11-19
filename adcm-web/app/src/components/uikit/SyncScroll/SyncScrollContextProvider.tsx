@@ -4,43 +4,72 @@ import { SyncScrollContext, type SyncScrollContextProps } from './SyncScroll.con
 import { syncScrollPosition } from './SyncScroll.utils';
 import type { SyncScrollPaneOptions } from './ScrollPane.types';
 
-const SyncScrollContextProvider = ({ children }: React.PropsWithChildren) => {
-  const panes = useRef<{ pane: HTMLElement; options: SyncScrollPaneOptions }[]>([]);
+type PaneState = {
+  pane: HTMLElement;
+  options: SyncScrollPaneOptions;
+  isDisableScroll: boolean;
+};
 
-  const handlePaneScroll = (e: Event) => {
-    const scrolledPane = e.target as HTMLElement;
+const SyncScrollContextProvider = ({ children }: React.PropsWithChildren) => {
+  const panes = useRef<Map<string, PaneState>>(new Map());
+
+  const syncOtherPanes = (scrolledPane: HTMLElement) => {
+    const scrolledPaneId = scrolledPane.dataset.scrollpaneid!;
+
+    if (panes.current.get(scrolledPaneId)?.isDisableScroll) {
+      return;
+    }
+
+    for (const [paneId, state] of panes.current) {
+      if (paneId !== scrolledPaneId) {
+        state.isDisableScroll = true;
+      }
+    }
 
     if (scrolledPane) {
       window.requestAnimationFrame(() => {
-        for (let i = 0; i < panes.current.length; i++) {
-          const { pane, options } = panes.current[i];
-          if (scrolledPane !== pane) {
-            /* Remove event listeners from the node before sync */
-            pane.removeEventListener('scroll', handlePaneScroll);
+        for (const [paneId, { pane, options }] of panes.current) {
+          if (paneId !== scrolledPaneId) {
             syncScrollPosition(scrolledPane, pane, options);
-            /* Re-attach event listeners after we're done scrolling */
-            window.requestAnimationFrame(() => {
-              pane.addEventListener('scroll', handlePaneScroll);
-            });
           }
         }
       });
     }
   };
 
+  const handlePaneScroll = (e: Event) => {
+    syncOtherPanes(e.target as HTMLElement);
+  };
+
+  const handlePaneScrollEnd = (e: Event) => {
+    syncOtherPanes(e.target as HTMLElement);
+
+    for (const [, state] of panes.current) {
+      state.isDisableScroll = false;
+    }
+  };
+
   const handleObservePane = (pane: HTMLElement, options: SyncScrollPaneOptions) => {
-    const alreadyObservedPane = panes.current.find((x) => x.pane === pane);
-    if (!alreadyObservedPane) {
-      panes.current.push({ pane, options });
+    const paneId = pane.dataset.scrollpaneid;
+
+    if (!paneId) return;
+
+    if (!panes.current.has(paneId)) {
+      panes.current.set(paneId, { pane, options, isDisableScroll: false });
       pane.addEventListener('scroll', handlePaneScroll);
+      pane.addEventListener('scrollend', handlePaneScrollEnd);
     }
   };
 
   const handleUnobservePane = (pane: HTMLElement) => {
-    const paneIndex = panes.current.findIndex((x) => x.pane === pane);
-    if (paneIndex !== -1) {
+    const paneId = pane.dataset.scrollpaneid;
+
+    if (!paneId) return;
+
+    if (panes.current.has(paneId)) {
       pane.removeEventListener('scroll', handlePaneScroll);
-      panes.current.splice(paneIndex, 1);
+      pane.removeEventListener('scrollend', handlePaneScrollEnd);
+      panes.current.delete(paneId);
     }
   };
 

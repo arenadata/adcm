@@ -25,7 +25,7 @@ const SubJobLogText: React.FC<SubJobLogTextProps> = ({ log, isAutoScroll, setIsA
       if (!isAutoScroll) return;
       requestAnimationFrame(() => {
         isUserScrollRef.current = false;
-        highlighterRef?.current?.scrollTo({ left: 0, top: highlighterRef?.current.scrollHeight, behavior: 'auto' });
+        highlighterRef?.current?.scrollTo({ left: 0, top: highlighterRef?.current.scrollHeight, behavior: 'smooth' });
       });
     }, 260);
 
