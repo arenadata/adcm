@@ -36,7 +36,12 @@ import core
 
 from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.utils.config import convert_group_config, convert_json_fields_to_strings, convert_main_config
+from api_v2.utils.config import (
+    add_selection_for_selectable_groups,
+    convert_group_config,
+    convert_json_fields_to_strings,
+    convert_main_config,
+)
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -186,9 +191,12 @@ class ConfigLogViewSet(
 
         config_service = get_config_service()
         specification = config_service.retrieve_partial_specification(
-            owner=owner, only_for_types=(core.config.spec.p.JSONParameter,)
+            owner=owner, only_for_types=(core.config.spec.p.JSONParameter, core.config.spec.p.ParameterGroup)
         )
         config_log.config = convert_json_fields_to_strings(values=config_log.config, spec=specification)
+        config_log.config = add_selection_for_selectable_groups(
+            values=config_log.config, spec=specification, inplace=True
+        )
 
         return config_log
 

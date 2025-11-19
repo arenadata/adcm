@@ -71,7 +71,7 @@ from api_v2.generic.action.utils import (
 )
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
-from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
+from api_v2.utils.config import add_selection_for_selectable_groups, convert_json_fields_to_strings, convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -227,6 +227,7 @@ class ActionViewSet(
         )
         attributes = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
         values = convert_json_fields_to_strings(values=default_config.values, spec=spec, inplace=True)
+        add_selection_for_selectable_groups(values=values, spec=spec, inplace=True)
 
         return jsonschema, values, attributes
 
