@@ -11,7 +11,7 @@ export default {
 const Template: StoryFn<typeof SyncScroll> = () => {
   return (
     <SyncScroll>
-      <ScrollPane>
+      <ScrollPane scrollPaneId="sp1">
         <div style={{ width: '500px', height: '300px', border: '1px solid' }}>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras maximus tincidunt est, facilisis tempus odio
           accumsan ac. Etiam fringilla mattis ex vitae commodo. Duis malesuada quis justo id facilisis. In rhoncus
@@ -41,7 +41,7 @@ const Template: StoryFn<typeof SyncScroll> = () => {
         </div>
       </ScrollPane>
 
-      <ScrollPane>
+      <ScrollPane scrollPaneId="sp2">
         <div style={{ width: '500px', height: '300px', border: '1px solid' }}>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras maximus tincidunt est, facilisis tempus odio
           accumsan ac. Etiam fringilla mattis ex vitae commodo. Duis malesuada quis justo id facilisis. In rhoncus

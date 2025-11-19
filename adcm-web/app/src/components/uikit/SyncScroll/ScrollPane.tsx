@@ -5,6 +5,7 @@ import s from './ScrollPane.module.scss';
 import cn from 'classnames';
 
 export interface ScrollPaneProps {
+  scrollPaneId: string;
   children: React.ReactElement;
   hideScrollBars?: boolean;
   syncVertical?: boolean;
@@ -12,11 +13,11 @@ export interface ScrollPaneProps {
 }
 
 const ScrollPane = forwardRef(
-  ({ children, hideScrollBars, syncHorizontal = true, syncVertical = true }: ScrollPaneProps, ref) => {
+  ({ children, scrollPaneId, hideScrollBars, syncHorizontal = true, syncVertical = true }: ScrollPaneProps, ref) => {
     const { observePane, unobservePane } = useSyncScrollContext();
 
     const localRef = useRef<HTMLElement>(null);
-    const inputRef = useForwardRef(ref, localRef);
+    const scrollRef = useForwardRef(ref, localRef);
 
     useEffect(() => {
       const instance = localRef.current;
@@ -31,7 +32,11 @@ const ScrollPane = forwardRef(
       scroll: !hideScrollBars,
     });
 
-    const clonedChildren = React.cloneElement(React.Children.only(children), { ref: inputRef, className });
+    const clonedChildren = React.cloneElement(React.Children.only(children), {
+      ref: scrollRef,
+      className,
+      'data-scrollpaneid': scrollPaneId,
+    });
     return clonedChildren;
   },
 );
