@@ -13,7 +13,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Collection, Generator, Literal, Mapping, Protocol, TypeAlias, TypedDict
+from typing import Any, Callable, Collection, Generator, Literal, Mapping, Protocol, TypeAlias, TypedDict, Union
 import json
 
 from typing_extensions import NotRequired, Self
@@ -33,7 +33,7 @@ from core.config._spec.parameters import (
     VariantParameter,
     WritableRule,
 )
-from core.config._spec.spec import FullSpec, SpecHierarchyLevel
+from core.config._spec.spec import FullSpec, HierarchyValidationRule, SpecHierarchyLevel
 from core.config._types import (
     ConfigOwnerObjectInfo,
     Defaults,
@@ -65,6 +65,12 @@ class ADCMMetaDict(TypedDict):
 NoneNode: TypeAlias = dict[Literal["type"], Literal["null"]]
 
 
+class GroupOneOfNode(TypedDict):
+    required: list[str]
+    additionalProperties: Literal[False]
+    properties: dict[str, Union["JSONSchemaNodeDict", NoneNode, dict[Literal["const", "title"], str]]]
+
+
 class JSONSchemaNodeDict(TypedDict):
     title: str
     # type and enum disallow one another
@@ -90,6 +96,10 @@ class JSONSchemaNodeDict(TypedDict):
 
     maximum: NotRequired[int | float]
     minimum: NotRequired[int | float]
+
+    # for some types like selection group
+    oneOf: NotRequired[list[GroupOneOfNode] | list[dict | NoneNode]]
+    discriminator: NotRequired[dict[Literal["propertyName"], Literal["_selection"]]]
 
 
 OptionalNode: TypeAlias = JSONSchemaNodeDict | dict[Literal["oneOf"], list[JSONSchemaNodeDict | NoneNode]]
@@ -169,14 +179,47 @@ def _hierarchy_level_to_jsonschema(
             group_spec = context.spec.groups[full_name]
             schema = _group_parameter_to_schema(group=group_spec, context=context)
 
+            group_level = level.child_groups[parameter_level_name]
+
             properties = OrderedDict()
             for child_name, child_schema in _hierarchy_level_to_jsonschema(
-                level=level.child_groups[parameter_level_name], previous_levels=levels, context=context
+                level=group_level, previous_levels=levels, context=context
             ):
                 properties[child_name] = child_schema
 
-            schema["properties"] = properties
-            schema["required"] = list(properties)
+            if group_level.rule == HierarchyValidationRule.ALL:
+                schema["properties"] = properties
+                schema["required"] = list(properties)
+            else:
+                if not group_spec.selection:
+                    raise TypeError(f"Got group ({full_name}) without selection for rule {level.rule}")
+
+                if group_spec.selection.use_as_default is not None:
+                    schema["default"] = {"_selection": group_spec.selection.use_as_default}
+                else:
+                    schema["default"] = None
+
+                schema["discriminator"] = {"propertyName": "_selection"}
+
+                schema.pop("additionalProperties", None)
+
+                schema["oneOf"] = [
+                    GroupOneOfNode(
+                        required=["_selection", name],
+                        additionalProperties=False,
+                        properties={"_selection": {"const": name, "title": name}, name: group_node},
+                    )
+                    for name, group_node in properties.items()
+                ]
+                if not group_spec.selection.is_required:
+                    schema["oneOf"] = [
+                        {
+                            "type": schema.pop("type"),
+                            "discriminator": schema.pop("discriminator"),
+                            "oneOf": schema["oneOf"],
+                        },
+                        {"type": "null"},
+                    ]
 
         else:
             param_spec = context.spec.parameters[full_name]

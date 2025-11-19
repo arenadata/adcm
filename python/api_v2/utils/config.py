@@ -47,6 +47,10 @@ def convert_to_attributes(
 def convert_values(input_values: dict, specification: core.config.spec.FullSpec):
     values = deepcopy(input_values)
 
+    for name, group in specification.groups.items():
+        if group.selection:
+            core.config.change_by_full_name(name=name, values=values, func=_remove_selection)
+
     for name, param in specification.parameters.items():
         if param.type == core.config.spec.p.ParameterType.JSON:
             json_value = core.config.get_by_full_name(name=name, values=values)
@@ -76,12 +80,33 @@ def convert_group_config(configuration: dict, specification: core.config.spec.Fu
     return core.config.Configuration(values=values, attributes=attributes)
 
 
+def add_selection_for_selectable_groups(
+    values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False
+) -> dict:
+    return _apply_to_selection_groups(func=_add_selection, values=values, spec=spec, inplace=inplace)
+
+
 def convert_json_fields_to_strings(values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False) -> dict:
     return _apply_to_json_fields(func=_to_string, values=values, spec=spec, inplace=inplace)
 
 
 def parse_json_fields_from_strings(values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False) -> dict:
     return _apply_to_json_fields(func=_from_string, values=values, spec=spec, inplace=inplace)
+
+
+def _apply_to_selection_groups(
+    func: Callable[[Any], Any], values: dict, spec: core.config.spec.FullSpec, *, inplace: bool = False
+):
+    selection_groups = tuple(name for name, group in spec.groups.items() if group.selection)
+    if not selection_groups:
+        return values
+
+    values_copy = deepcopy(values) if not inplace else values
+
+    for selection_group_name in selection_groups:
+        core.config.change_by_full_name(name=selection_group_name, func=func, values=values_copy)
+
+    return values_copy
 
 
 def _apply_to_json_fields(
@@ -99,6 +124,22 @@ def _apply_to_json_fields(
         core.config.change_by_full_name(name=json_param_name, func=func, values=values_copy)
 
     return values_copy
+
+
+def _add_selection(x: Any) -> Any:
+    if not isinstance(x, dict):
+        return x
+
+    # must fail if no key
+    key = next(iter(x.keys()))
+    return {"_selection": key} | x
+
+
+def _remove_selection(x: Any) -> Any:
+    if not isinstance(x, dict):
+        return x
+
+    return {k: v for k, v in x.items() if k != "_selection"}
 
 
 def _to_string(x: Any) -> Any:

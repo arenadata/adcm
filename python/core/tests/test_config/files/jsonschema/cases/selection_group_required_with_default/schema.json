@@ -1,0 +1,228 @@
+{
+    "title": "Configuration",
+    "description": "",
+    "readOnly": false,
+    "type": "object",
+    "properties": {
+        "sg": {
+            "title": "",
+            "description": "",
+            "readOnly": false,
+            "default": {
+                "_selection": "df"
+            },
+            "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "isSecret": false,
+                "activation": null,
+                "synchronization": null,
+                "stringExtra": null,
+                "enumExtra": null
+            },
+            "type": "object",
+            "discriminator": {
+                "propertyName": "_selection"
+            },
+            "oneOf":[
+                {
+                    "required": [
+                        "_selection", 
+                        "nondef"
+                    ],
+                    "additionalProperties": false,
+                    "properties":{
+                        "_selection": {
+                            "const": "nondef",
+                            "title": "nondef"
+                        },
+                        "nondef": {
+                            "title": "",
+                            "description": "",
+                            "readOnly": false,
+                            "default": {},
+                            "adcmMeta": {
+                                "isAdvanced": false,
+                                "isInvisible": false,
+                                "isSecret": false,
+                                "activation": null,
+                                "synchronization": null,
+                                "stringExtra": null,
+                                "enumExtra": null
+                            },
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "with_default": {
+                                    "title": "",
+                                    "description": "",
+                                    "readOnly": false,
+                                    "default": "sg-nondef-val",
+                                    "adcmMeta": {
+                                        "isAdvanced": false,
+                                        "isInvisible": false,
+                                        "isSecret": false,
+                                        "activation": null,
+                                        "synchronization": null,
+                                        "stringExtra": {
+                                            "isMultiline": false
+                                        },
+                                        "enumExtra": null
+                                    },
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            },
+                            "required": [
+                                "with_default"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "required": [
+                        "_selection", 
+                        "df"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "_selection": {
+                            "const": "df",
+                            "title": "df"
+                        },
+                        "df": {
+                            "title": "",
+                            "description": "",
+                            "readOnly": false,
+                            "default": {},
+                            "adcmMeta": {
+                                "isAdvanced": false,
+                                "isInvisible": false,
+                                "isSecret": false,
+                                "activation": null,
+                                "synchronization": null,
+                                "stringExtra": null,
+                                "enumExtra": null
+                            },
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "with_default": {
+                                    "title": "",
+                                    "description": "",
+                                    "readOnly": false,
+                                    "default": "sg-df-val",
+                                    "adcmMeta": {
+                                        "isAdvanced": false,
+                                        "isInvisible": false,
+                                        "isSecret": false,
+                                        "activation": null,
+                                        "synchronization": null,
+                                        "stringExtra": {
+                                            "isMultiline": false
+                                        },
+                                        "enumExtra": null
+                                    },
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "no_default": {
+                                    "title": "",
+                                    "description": "",
+                                    "readOnly": false,
+                                    "default": null,
+                                    "adcmMeta": {
+                                        "isAdvanced": false,
+                                        "isInvisible": false,
+                                        "isSecret": false,
+                                        "activation": null,
+                                        "synchronization": null,
+                                        "stringExtra": {
+                                            "isMultiline": false
+                                        },
+                                        "enumExtra": null
+                                    },
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            },
+                            "required": [
+                                "with_default",
+                                "no_default"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "required": [
+                        "_selection", 
+                        "a"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "_selection": {
+                            "const": "a",
+                            "title": "a"
+                        },
+                        "a": {
+                            "title": "",
+                            "description": "",
+                            "readOnly": false,
+                            "default": {},
+                            "adcmMeta": {
+                                "isAdvanced": false,
+                                "isInvisible": false,
+                                "isSecret": false,
+                                "activation": null,
+                                "synchronization": null,
+                                "stringExtra": null,
+                                "enumExtra": null
+                            },
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "no_default": {
+                                    "title": "",
+                                    "description": "",
+                                    "readOnly": false,
+                                    "default": null,
+                                    "adcmMeta": {
+                                        "isAdvanced": false,
+                                        "isInvisible": false,
+                                        "isSecret": false,
+                                        "activation": null,
+                                        "synchronization": null,
+                                        "stringExtra": {
+                                            "isMultiline": false
+                                        },
+                                        "enumExtra": null
+                                    },
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            },
+                            "required": [
+                                "no_default"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "required": [
+        "sg"
+    ],
+    "additionalProperties": false,
+    "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "nullValue": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

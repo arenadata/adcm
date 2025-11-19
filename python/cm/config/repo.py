@@ -12,6 +12,7 @@
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path
 from typing import Iterable, Literal, overload
 
@@ -268,9 +269,15 @@ def _get_config_prototype_info(
 
     query_filter = Q(action_id=action_id) if action_id else Q(prototype_id=response["prototype_id"], action_id=None)
 
-    # now implemented for one type only, since others aren't required yet
-    if only_for and config.spec.p.JSONParameter in only_for:
-        query_filter &= Q(type="json")
+    # now implemented for two only, since others aren't required yet
+    if only_for:
+        type_map: dict = {
+            config.spec.p.JSONParameter: ("json",),
+            config.spec.p.ParameterGroup: ("group", "selection_group"),
+        }
+        types = set(chain.from_iterable(type_map.get(entry, ()) for entry in only_for))
+        if types:
+            query_filter &= Q(type__in=types)
 
     parameter_prototypes = tuple(PrototypeConfig.objects.filter(query_filter).order_by("pk"))
 
