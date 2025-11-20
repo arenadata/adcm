@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from traceback import format_exception
 from typing import Callable
 
 from core.job.executors import (
@@ -21,6 +22,7 @@ from core.job.executors import (
     ProcessExecutor,
     WithErrOutLogsMixin,
 )
+from core.types import ADCMMessageError
 from typing_extensions import Self
 
 from cm.errors import AdcmEx
@@ -88,13 +90,26 @@ class InternalExecutor(Executor, WithErrOutLogsMixin):
         self._script = script
 
     def execute(self) -> Self:
-        self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
+        _, err_log = self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
 
         try:
             return_code = self._script()
-        except AdcmEx as err:
-            self._err_log.write(err.msg)
+        except Exception as e:  # noqa: BLE001
+            if isinstance(e, AdcmEx):
+                message = e.msg
+            elif isinstance(e, ADCMMessageError):
+                message = e.message
+            else:
+                message = str(e)
+
+            traceback_repr = "".join(format_exception(type(e), e, e.__traceback__))
+
+            message_with_traceback = f"\nFailed due to error: {message}\n\nTraceback:\n{traceback_repr}\n"
+
+            err_log.write(message_with_traceback)
+
             return_code = 1
+
         finally:
             self._close_logs()
 

@@ -15,7 +15,15 @@ from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
 from core.config import _pattern as pattern
-from core.config._config import flat_to_nested, get_by_full_name, nested_to_flat, set_by_full_name, change_by_full_name
+from core.config._config import (
+    flat_to_nested,
+    get_by_full_name,
+    get_by_full_name_or_none,
+    nested_to_flat,
+    set_by_full_name,
+    change_by_full_name,
+    change_by_full_name_skip_missing,
+)
 from core.config._types import (
     Attributes,
     ChangeRequest,
@@ -67,9 +75,11 @@ __all__ = [
     "VariantValidators",
     "Violations",
     "change_by_full_name",
+    "change_by_full_name_skip_missing",
     "files",
     "flat_to_nested",
     "get_by_full_name",
+    "get_by_full_name_or_none",
     "names",
     "nested_to_flat",
     "operations",

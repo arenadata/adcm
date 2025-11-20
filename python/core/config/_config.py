@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from functools import partial
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Generator, TypeVar
 
 from core.config import spec
 from core.config._names import full_name_to_level_names
@@ -26,12 +26,22 @@ from core.config._types import (
     ParameterFullName,
     ParameterLevelName,
 )
+from core.result import Fail, Success
+from core.types import ADCMMessageError
 
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
 New = TypeVar("New")
 Old = TypeVar("Old")
+
+
+class MissingKeyError(ADCMMessageError):
+    """
+    Error to reraise on absence of key in config.
+
+    Shouldn't be catched outside `core.config` package.
+    """
 
 
 def detect_changes(previous: Configuration, new: Configuration, specification: spec.FullSpec) -> set[ParameterFullName]:
@@ -70,36 +80,50 @@ def detect_changes(previous: Configuration, new: Configuration, specification: s
 
 
 def get_by_full_name_or_none(name: ParameterFullName, values: ConfigValues) -> None | Any:
-    try:
+    with suppress(MissingKeyError):
         return get_by_full_name(name=name, values=values)
-    except (KeyError, TypeError):
-        return None
+
+    return None
 
 
 def get_by_full_name(name: ParameterFullName, values: ConfigValues) -> Any:
-    level_name, group_values = get_group_with_value(name=name, values=values)
-    return group_values[level_name]
-
-
-def get_group_with_value(name: ParameterFullName, values: ConfigValues) -> tuple[ParameterLevelName, ConfigValues]:
-    return _get_group_with_value(level_names=full_name_to_level_names(name), values=values)
+    level_name, group_values = _get_group_with_value_by_full_name(name=name, values=values)
+    with _convert_node_access_errors_to_missing_key(name=name):
+        return group_values[level_name]
 
 
 def set_by_full_name(name: ParameterFullName, new_value: Any, values: ConfigValues) -> None:
-    own_name, group = get_group_with_value(name=name, values=values)
-    group[own_name] = new_value
+    own_name, group = _get_group_with_value_by_full_name(name=name, values=values)
+    with _convert_node_access_errors_to_missing_key(name=name):
+        group[own_name] = new_value
 
 
 def set_by_full_name_returning_old(name: ParameterFullName, new_value: Any, values: ConfigValues) -> Any:
-    own_name, group = get_group_with_value(name=name, values=values)
-    previous = group[own_name]
+    own_name, group = _get_group_with_value_by_full_name(name=name, values=values)
+
+    with _convert_node_access_errors_to_missing_key(name=name):
+        previous = group[own_name]
+
     group[own_name] = new_value
     return previous
 
 
+def change_by_full_name_skip_missing(
+    name: ParameterFullName, func: Callable[[Any], New], values: ConfigValues
+) -> Success[None] | Fail[None]:
+    with suppress(MissingKeyError):
+        change_by_full_name(name=name, func=func, values=values)
+        return Success(None)
+
+    return Fail(None)
+
+
 def change_by_full_name(name: ParameterFullName, func: Callable[[Any], New], values: ConfigValues) -> None:
-    own_name, group = get_group_with_value(name=name, values=values)
-    new_value = func(group[own_name])
+    own_name, group = _get_group_with_value_by_full_name(name=name, values=values)
+
+    with _convert_node_access_errors_to_missing_key(name=name):
+        new_value = func(group[own_name])
+
     group[own_name] = new_value
 
 
@@ -129,10 +153,7 @@ def nested_to_flat(configuration: Configuration, specification: spec.FullSpec) -
     result = FlatConfiguration(attributes=configuration.attributes)
 
     for name in specification.parameters:
-        # Key error will be on absence
-        # Type error can be when value is within selection group
-        # while it's parent group can be "absent"
-        with suppress(KeyError, TypeError):
+        with suppress(MissingKeyError):
             value = get_by_full_name(name=name, values=configuration.values)
             result.values[name] = value
 
@@ -143,10 +164,17 @@ def flat_to_nested(flat_config: dict[ParameterFullName, Any]) -> ConfigValues:
     result = _recursive_defaultdict()
 
     for name, value in flat_config.items():
-        own_name, group = get_group_with_value(name=name, values=result)
+        own_name, group = _get_group_with_value_by_full_name(name=name, values=result)
         group[own_name] = value
 
     return _recursive_defaultdict_to_dict(result)
+
+
+def _get_group_with_value_by_full_name(
+    name: ParameterFullName, values: ConfigValues
+) -> tuple[ParameterLevelName, ConfigValues]:
+    with _convert_node_access_errors_to_missing_key(name=name):
+        return _get_group_with_value(level_names=full_name_to_level_names(name), values=values)
 
 
 def _get_group_with_value(
@@ -157,6 +185,14 @@ def _get_group_with_value(
         return level_name, values
 
     return _get_group_with_value(values=values[level_name], level_names=rest)
+
+
+@contextmanager
+def _convert_node_access_errors_to_missing_key(name: ParameterFullName) -> Generator[None, None, None]:
+    try:
+        yield
+    except (KeyError, TypeError) as e:
+        raise MissingKeyError(message=f'Value is missing for full name: "{name}"') from e
 
 
 def _recursive_defaultdict():

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from copy import deepcopy
+from functools import partial
 from typing import Any, Callable
 import json
 
@@ -49,21 +50,12 @@ def convert_values(input_values: dict, specification: core.config.spec.FullSpec)
 
     for name, group in specification.groups.items():
         if group.selection:
-            core.config.change_by_full_name(name=name, values=values, func=_remove_selection)
+            core.config.change_by_full_name_skip_missing(name=name, values=values, func=_remove_selection)
 
     for name, param in specification.parameters.items():
         if param.type == core.config.spec.p.ParameterType.JSON:
-            json_value = core.config.get_by_full_name(name=name, values=values)
-            if json_value is not None:
-                try:
-                    parsed_value = json.loads(json_value)
-                except (json.JSONDecodeError, TypeError) as e:
-                    raise AdcmEx(
-                        code="CONFIG_KEY_ERROR",
-                        msg=f"Value of '{name}' must be correct json string.",
-                    ) from e
-
-                core.config.set_by_full_name(new_value=parsed_value, name=name, values=values)
+            convert = partial(_convert_or_raise_error, name=name)
+            core.config.change_by_full_name_skip_missing(name=name, values=values, func=convert)
 
     return values
 
@@ -104,7 +96,7 @@ def _apply_to_selection_groups(
     values_copy = deepcopy(values) if not inplace else values
 
     for selection_group_name in selection_groups:
-        core.config.change_by_full_name(name=selection_group_name, func=func, values=values_copy)
+        core.config.change_by_full_name_skip_missing(name=selection_group_name, func=func, values=values_copy)
 
     return values_copy
 
@@ -121,9 +113,22 @@ def _apply_to_json_fields(
     values_copy = deepcopy(values) if not inplace else values
 
     for json_param_name in json_params:
-        core.config.change_by_full_name(name=json_param_name, func=func, values=values_copy)
+        core.config.change_by_full_name_skip_missing(name=json_param_name, func=func, values=values_copy)
 
     return values_copy
+
+
+def _convert_or_raise_error(value: Any, name: core.config.ParameterFullName) -> str | None:
+    if value is None:
+        return None
+
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise AdcmEx(
+            code="CONFIG_KEY_ERROR",
+            msg=f"Value of '{name}' must be correct json string.",
+        ) from e
 
 
 def _add_selection(x: Any) -> Any:

@@ -30,9 +30,10 @@ class WithErrOutLogsMixin:
     _out_log: TextIO | None = None
     _err_log: TextIO | None = None
 
-    def _open_logs(self, log_dir: Path, log_prefix: str) -> None:
+    def _open_logs(self, log_dir: Path, log_prefix: str) -> tuple[TextIO, TextIO]:
         self._out_log = (log_dir / f"{log_prefix}-stdout.txt").open(mode="a+", encoding="utf-8")
         self._err_log = (log_dir / f"{log_prefix}-stderr.txt").open(mode="a+", encoding="utf-8")
+        return self._out_log, self._err_log
 
     def _close_logs(self) -> None:
         if self._out_log:

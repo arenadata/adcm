@@ -313,9 +313,11 @@ def _find_values_violations_rule_exactly_one(
         )
         return [violation]
 
-    if len(configuration) != 1:
+    if (children_amount := len(configuration)) != 1:
         violation = Violation(
-            parameter=level_names_to_full_name(group_prefix), check="structure", reason="only one child expected"
+            parameter=level_names_to_full_name(group_prefix),
+            check="structure",
+            reason=f"exactly one child expected, found: {children_amount}",
         )
         return [violation]
 
