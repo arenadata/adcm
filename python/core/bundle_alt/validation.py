@@ -318,7 +318,7 @@ def check_file_is_correct_jinja_template(bundle_root: Path, relative_template_pa
 def check_file_is_correct_template(bundle_root: Path, template: Template) -> None:
     renderer = get_renderer(template=template, environment=RendererEnv(discovery_root=bundle_root))
     if not renderer.can_be_rendered():
-        message = f"Incorrect template for *_template at {template.file.path.relative_to(bundle_root)}"
+        message = f"Incorrect template for *_template at {template.file.path}"
         raise BundleValidationError(message)
 
 

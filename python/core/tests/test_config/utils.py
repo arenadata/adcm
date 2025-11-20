@@ -75,13 +75,13 @@ class ConfigTestCase(TestCase):
     def expect_exactly_one_violation_for(
         self,
         result: r.Success | r.Fail[Violations],
-        param_is: spec.p.SimpleParameter | spec.p.ParameterGroup,
+        param_is: spec.p.SimpleParameter | spec.p.ParameterGroup | ParameterFullName,
         check_is: str,
         reason_contains: str,
     ) -> Violation:
         violation = self.expect_exactly_one_violation(result=result)
 
-        self.assertEqual(violation.parameter, param_is.identifier.full)
+        self.assertEqual(violation.parameter, param_is.identifier.full if not isinstance(param_is, str) else param_is)
         self.assertEqual(violation.check, check_is)
         self.assertIn(reason_contains, violation.reason)
 

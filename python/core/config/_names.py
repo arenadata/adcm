@@ -57,7 +57,7 @@ def join_level_name_with_group_name(name: ParameterLevelName, group: ParameterFu
 
 
 def remove_group_from_name(name: ParameterFullName, group: ParameterFullName) -> ParameterFullName:
-    return name.lstrip(group)
+    return name.removeprefix(group)
 
 
 def full_name_to_file_name(full: ParameterFullName) -> str:

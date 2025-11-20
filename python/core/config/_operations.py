@@ -19,8 +19,10 @@ import logging
 
 from core.config import spec
 from core.config._config import (
+    MissingKeyError,
     build_apply_if,
     change_by_full_name,
+    change_by_full_name_skip_missing,
     detect_active_groups,
     detect_changes,
     flat_to_nested,
@@ -55,7 +57,7 @@ from core.config._validate import (
     validate_configuration_is_consistent,
     validate_values_are_correct,
 )
-from core.result import Fail, Success, fail_with_call_on_error, is_fail, log_and_ignore
+from core.result import Fail, Success, is_fail
 
 log = logging.getLogger("core.config")
 
@@ -103,8 +105,13 @@ def prepare_config_from_defaults(default_values: ConfigFlatValues, specification
     flat_values = {name: default_values.get(name, None) for name in specification.parameters}
 
     groups_selections = {name: group.selection for name, group in specification.groups.items() if group.selection}
+    # in order to keep algorithm working, ensure groups are patched from "deepest" to closest to root
+    # see ADCM-7418 for problematic case
+    selections_ordered_by_level = sorted(
+        groups_selections.items(), key=lambda kv: len(full_name_to_level_names(kv[0])), reverse=True
+    )
 
-    for group_name, selection in groups_selections.items():
+    for group_name, selection in selections_ordered_by_level:
         is_in_selection_group = partial(is_part_of_group, group=group_name)
         selection_group_children = set(filter(is_in_selection_group, chain(flat_values, attributes)))
 
@@ -355,30 +362,31 @@ def prepare_config_for_ansible(
                     func=lambda _, name_=name: construct_parameter_path(full_name_to_file_name(full=name_)),
                     when=is_not_none,
                 )
-                _change_value_ignoring_missing(name=name, func=construct_path_if_not_none, values=target.values)
+                change_by_full_name_skip_missing(name=name, func=construct_path_if_not_none, values=target.values)
             # set secret
             case spec.p.StringParameter(is_secret=True):
-                _change_value_ignoring_missing(name=name, func=_to_ansible_vault_dict_if_is_str, values=target.values)
+                change_by_full_name_skip_missing(name=name, func=_to_ansible_vault_dict_if_is_str, values=target.values)
             case spec.p.MapParameter(is_secret=True):
-                _change_value_ignoring_missing(
+                change_by_full_name_skip_missing(
                     name=name, func=_nested_dict_values_to_ansible_vault, values=target.values
                 )
             # set unsafe
             case spec.p.StringParameter(ansible=spec.p.AnsibleOptions(unsafe=True)):
-                _change_value_ignoring_missing(name=name, func=_to_ansible_unsafe_dict_if_is_str, values=target.values)
+                change_by_full_name_skip_missing(
+                    name=name, func=_to_ansible_unsafe_dict_if_is_str, values=target.values
+                )
             # set empty
             case spec.p.ListParameter():
-                _change_value_ignoring_missing(name=name, func=to_empty_list_if_is_none, values=target.values)
+                change_by_full_name_skip_missing(name=name, func=to_empty_list_if_is_none, values=target.values)
             case spec.p.MapParameter(is_secret=False):
-                _change_value_ignoring_missing(name=name, func=to_empty_dict_if_is_none, values=target.values)
-
-    for name, group in specification.groups.items():
-        if group.selection:
-            change_by_full_name(name=name, func=add_selection_if_is_not_none, values=target.values)
+                change_by_full_name_skip_missing(name=name, func=to_empty_dict_if_is_none, values=target.values)
 
     deactivated_groups = specification.attributes.activatable_groups - active_groups
-    for group_name in deactivated_groups:
-        set_by_full_name(name=group_name, new_value=None, values=target.values)
+    for name, group in specification.groups.items():
+        if group.selection:
+            change_by_full_name_skip_missing(name=name, func=add_selection_if_is_not_none, values=target.values)
+        elif group.activation and name in deactivated_groups:
+            change_by_full_name_skip_missing(name=name, func=_set_none, values=target.values)
 
     return Success(target)
 
@@ -454,41 +462,38 @@ def adapt_configuration_for_new_specification(
     }
     new_values = new_defaults | non_default_values_in_config
 
-    new_default_group_attributes = {
-        name: Attributes(
-            is_active=param.activation.is_active_by_default,
-            is_synced=param.activation.is_desyncable if include_synchronization else None,
-        )
-        for name, param in new_specification.groups.items()
-        if param.activation
-    }
-    new_parameter_attributes = {}
+    groups_activation = {name: group.activation for name, group in new_specification.groups.items() if group.activation}
+
+    attributes = {}
+
+    for name, activation in groups_activation.items():
+        previous = configuration.attributes.get(name)
+        if previous and previous.is_active is not None:
+            attributes[name] = Attributes(is_active=previous.is_active)
+        else:
+            attributes[name] = Attributes(is_active=activation.is_active_by_default)
+
     if include_synchronization:
-        new_parameter_attributes = {
-            name: Attributes(is_active=None, is_synced=param.is_desyncable)
-            for name, param in new_specification.parameters.items()
-        }
+        # sync groups
+        for name, attrs in attributes.items():
+            attrs.is_synced = _detect_is_synced_value(
+                name=name,
+                is_desyncable=groups_activation[name].is_desyncable,
+                previous_attributes=configuration.attributes,
+            )
 
-    updated_attributes = new_parameter_attributes | new_default_group_attributes | flat_config.attributes
-    new_attributes = {k: v for k, v in updated_attributes.items() if k in parameter_and_group_names}
+        # sync for parameters
+        for name, param in new_specification.parameters.items():
+            attributes[name] = Attributes(
+                is_synced=_detect_is_synced_value(
+                    name=name, is_desyncable=param.is_desyncable, previous_attributes=configuration.attributes
+                )
+            )
 
-    adapted_config = Configuration(values=flat_to_nested(new_values), attributes=new_attributes)
+    adapted_config = Configuration(values=flat_to_nested(new_values), attributes=attributes)
 
     return Success(adapted_config)
 
-
-# Overrides
-
-
-_log_exception = partial(
-    log_and_ignore,
-    log_func=partial(log.exception, "failed to change value, probably non-required field is missing: %s"),
-)
-_change_value_ignoring_missing = fail_with_call_on_error(on_error=_log_exception)(change_by_full_name)
-"""
-In old versions it was possible to save configuration without required fields.
-We could reconstruct config on inventory operations, but for now we just log and ignore errors.
-"""
 
 # Utilities
 
@@ -501,7 +506,7 @@ def _apply_value_change_registering_violation(
         if previous != value:
             return True
 
-    except (KeyError, TypeError):
+    except MissingKeyError:
         violation = Violation(parameter=key, check="structure", reason="no such key in configuration's values")
         violations.append(violation)
 
@@ -512,6 +517,12 @@ def _apply_selection_group_change_registering_violation(
     key: ParameterFullName, value: Any, target: Configuration, defaults: Defaults, violations: Violations
 ) -> _HasChanged:
     if value is not None:
+        if not isinstance(value, str):
+            message = (
+                f"Don't know how to apply selection group change for value that isn't string or None: {type(value)=}"
+            )
+            raise TypeError(message)
+
         # detect if changes are required, otherwise skip change
         current_value = get_by_full_name(name=key, values=target.values)
         if not (isinstance(current_value, dict) or current_value is None):
@@ -531,7 +542,9 @@ def _apply_selection_group_change_registering_violation(
             for param, default_value in defaults.items()
             if is_part_of_group(name=param, group=new_group_key)
         }
-        value = flat_to_nested(group_defaults)
+        # else required for case when non-existent group is specified or no default found for some reason,
+        # yet we need to consider provided name as group in order to process it as valid entry
+        value = flat_to_nested(group_defaults) if group_defaults else {value: {}}
 
     return _apply_value_change_registering_violation(key=key, value=value, target=target, violations=violations)
 
@@ -551,6 +564,18 @@ def _apply_activation_change_registering_violation(
     return False
 
 
+def _detect_is_synced_value(
+    name: ParameterFullName, is_desyncable: bool, previous_attributes: dict[ParameterFullName, Attributes]
+) -> bool:
+    if not is_desyncable:
+        return True
+
+    if (previous := previous_attributes.get(name)) and previous.is_synced is not None:
+        return previous.is_synced
+
+    return True
+
+
 def _add_selection(value: dict) -> dict:
     # we expect value to have exactly one key here
     chosen_value = next(iter(value.keys()))
@@ -559,6 +584,10 @@ def _add_selection(value: dict) -> dict:
 
 def _encrypt_dict(value: dict, encrypt: _EncryptFunc) -> dict:
     return {key: encrypt(val) if isinstance(val, str) else val for key, val in value.items()}
+
+
+def _set_none(_: Any) -> None:
+    return None
 
 
 def _to_ansible_vault_dict_if_is_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:

@@ -410,6 +410,16 @@ class ConfigService:
             return False
 
         configuration = self.retrieve_current_configuration(owner=owner)
+
+        # structure (consistency) violations may be present at this point
+        # if stuff like selection groups is in play,
+        # buf it it'll be too much, look into values validation used in it
+        result = operations.validate_configuration_is_consistent(
+            configuration=configuration, specification=specification
+        )
+        if is_fail(result):
+            return True
+
         flat_configuration = nested_to_flat(configuration=configuration, specification=specification)
 
         # for issues we sort of rely on defaults validation,
