@@ -42,6 +42,7 @@ from core.bundle_alt.schema import (
     HostSchema,
     ProviderSchema,
     ServiceSchema,
+    WizardScriptsSchema,
     parse,
 )
 from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
@@ -197,8 +198,10 @@ def parse_action_process_stages(data: list[dict]) -> list[ActionProcessStage]:
 
 
 @convert_validation_to_bundle_error
-def parse_scripts(data: list[dict], context: ScriptsConversionContext) -> list[JobSpec]:
-    scripts = DynamicScriptsSchema.model_validate({"scripts": data}, strict=True)
+def parse_scripts(
+    data: list[dict], context: ScriptsConversionContext, schema: type[DynamicScriptsSchema | WizardScriptsSchema]
+) -> list[JobSpec]:
+    scripts = schema.model_validate({"scripts": data}, strict=True)
     scripts = scripts.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
     for script in scripts:  # propagate `allow_to_terminate` attr from action if not set

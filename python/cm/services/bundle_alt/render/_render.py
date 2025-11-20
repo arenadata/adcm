@@ -20,7 +20,7 @@ from core.bundle_alt.process import (
     parse_action_process_stages,
     parse_scripts,
 )
-from core.bundle_alt.schema import ActionProcessStage
+from core.bundle_alt.schema import ActionProcessStage, DynamicScriptsSchema, WizardScriptsSchema
 from core.job.types import JobSpec, MappingRule
 from core.templates import RendererEnv, Template, get_renderer
 
@@ -96,12 +96,14 @@ def render_scripts(
         context_args=context_args,
     )
 
+    schema = DynamicScriptsSchema if context_args.action_process is None else WizardScriptsSchema
+
     allow_to_terminate_from_action = context_args.action.allow_to_terminate
     parsing_context = ScriptsConversionContext(
         source_dir=template.file.path.parent, action_allow_to_terminate=allow_to_terminate_from_action
     )
 
-    scripts = parse_scripts(data=raw, context=parsing_context)
+    scripts = parse_scripts(data=raw, context=parsing_context, schema=schema)
 
     return scripts  # noqa: RET504
 

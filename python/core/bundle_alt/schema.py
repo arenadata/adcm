@@ -861,6 +861,9 @@ class InternalBundleRevertJobSchema(_BaseJobSchema, _InternalBundleRevertScript)
 class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
+        if self.wizard_template is not None:
+            return self
+
         if self.hc_acl is None:
             raise ValueError('"hc_apply" requires "hc_acl" declaration')
 
@@ -925,6 +928,11 @@ INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     Field(discriminator="script"),
 ]
 
+INTERNAL_TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA = Annotated[
+    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalConfigApplyTaskScriptSchema,
+    Field(discriminator="script"),
+]
+
 
 TASK_SCRIPTS_SCHEMA = Annotated[
     INTERNAL_TASK_SCRIPTS_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema, Field(discriminator="script_type")
@@ -933,6 +941,12 @@ TASK_SCRIPTS_SCHEMA = Annotated[
 
 TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema,
+    Field(discriminator="script_type"),
+]
+
+
+TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA = Annotated[
+    INTERNAL_TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema,
     Field(discriminator="script_type"),
 ]
 
@@ -975,6 +989,9 @@ class TaskSchema(_BaseTaskSchema):
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
         if self.scripts is None:
+            return self
+
+        if self.wizard_template is not None:
             return self
 
         for script in self.scripts:
@@ -1167,6 +1184,15 @@ def parse(
 
 class DynamicScriptsSchema(_BaseModel):
     scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
+
+
+##############
+# scripts_template in Wizard
+##############
+
+
+class WizardScriptsSchema(_BaseModel):
+    scripts: Annotated[list[TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA], Field(min_length=1)]
 
 
 ##############
