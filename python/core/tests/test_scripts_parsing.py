@@ -15,6 +15,7 @@ from unittest import TestCase
 
 from core.bundle_alt.errors import BundleParsingError
 from core.bundle_alt.process import ScriptsConversionContext, parse_scripts
+from core.bundle_alt.schema import DynamicScriptsSchema, WizardScriptsSchema
 
 data = {
     "correct_script": {
@@ -87,14 +88,32 @@ class TestScriptsRendering(TestCase):
                     parse_scripts(
                         [data["correct_script"]],
                         context=ScriptsConversionContext(source_dir=Path(), action_allow_to_terminate=True),
+                        schema=DynamicScriptsSchema,
                     )
                 else:
                     with self.assertRaises(BundleParsingError) as cm:
                         parse_scripts(
                             [case_data],
                             context=ScriptsConversionContext(source_dir=Path(), action_allow_to_terminate=True),
+                            schema=DynamicScriptsSchema,
                         )
 
                     err_msg = str(cm.exception)
 
                     self.assertIn(expected_fragment, err_msg)
+
+    def test_parse_script_hc_apply(self):
+        data = {"name": "hc_apply", "script": "hc_apply", "script_type": "internal"}
+
+        with self.assertRaises(BundleParsingError) as error:
+            parse_scripts(
+                [data],
+                context=ScriptsConversionContext(source_dir=Path(), action_allow_to_terminate=True),
+                schema=WizardScriptsSchema,
+            )
+
+        expected_msg = (
+            "Input tag 'hc_apply' found using 'script' does not match any of the expected tags:"
+            " 'bundle_switch', 'bundle_revert', 'config_apply'"
+        )
+        self.assertIn(expected_msg, error.exception.message)

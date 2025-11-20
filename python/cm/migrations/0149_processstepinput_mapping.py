@@ -24,6 +24,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="processstepinput",
             name="mapping",
-            field=models.JSONField(null=True),
+            field=models.JSONField(default=dict, null=True),
         ),
     ]
