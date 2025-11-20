@@ -495,6 +495,9 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
     if obj.prototype == old_proto:
         return
 
+    previous_prototype_id = obj.prototype_id
+    new_prototype_id = old_proto.pk
+
     obj.prototype = old_proto
     obj.state = obj.before_upgrade["state"]
     obj.save(update_fields=["prototype", "state"])
@@ -502,7 +505,20 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
     if "config_id" in obj.before_upgrade and (config_id := obj.before_upgrade["config_id"]):
         owner = orm_object_to_core_descriptor(obj)
         config = config_service.retrieve_configurations_by_id(configurations=(config_id,))[config_id]
-        _restore_config_of_main_object(owner=owner, config=config, config_service=config_service)
+        specs = config_service.retrieve_specifications_by_prototypes_with_defaults(
+            prototypes=(previous_prototype_id, new_prototype_id)
+        )
+        # it is expected to be present since config_id is specified
+        new_spec = specs[new_prototype_id]
+
+        try:
+            previous_spec = specs[previous_prototype_id]
+        except KeyError:
+            previous_spec = (core.config.spec.FullSpec(), {})
+
+        _restore_config_of_main_object_and_update_host_groups(
+            owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service
+        )
 
     obj.before_upgrade = {"state": None}
     obj.save(update_fields=["before_upgrade"])
@@ -561,17 +577,36 @@ def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Con
     return core.config.Configuration(values=raw_values, attributes=attributes)
 
 
-def _restore_config_of_main_object(
-    owner: CoreObjectDescriptor, config_service: core.config.ConfigService, config: core.config.Configuration
+def _restore_config_of_main_object_and_update_host_groups(
+    owner: CoreObjectDescriptor,
+    config: core.config.Configuration,
+    old: tuple[core.config.spec.FullSpec, core.config.Defaults],
+    new: tuple[core.config.spec.FullSpec, core.config.Defaults],
+    config_service: core.config.ConfigService,
 ):
     description = "revert_upgrade"
 
-    specification = config_service.retrieve_specification(owner=owner)
-
+    # create main config based on input
     config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+
+    # update all existing configurations of host groups
+    old_spec, old_defaults = old
+    new_spec, new_defaults = new
+    update_for_new_spec = partial(
+        core.config.operations.adapt_configuration_for_new_specification,
+        specification=old_spec,
+        defaults=old_defaults,
+        new_specification=new_spec,
+        new_defaults=new_defaults,
+    )
+
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
+    adapted_configs_of_host_groups = {
+        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True).value
+        for group, config_of_group in configs_of_host_groups.items()
+    }
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=configs_of_host_groups
+        main=config, groups=adapted_configs_of_host_groups
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
@@ -579,7 +614,7 @@ def _restore_config_of_main_object(
         )
     prepare_files = partial(
         config_service.prepare_file_parameter_values_on_fs,
-        specification=specification,
+        specification=new_spec,
     )
 
     # since we have no "fallback" mechanism for write failures, have to write files within transaction
@@ -589,6 +624,24 @@ def _restore_config_of_main_object(
         group_file_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=owner_group.id)
         # since we have no "fallback" mechanism for write failures, have to write files within transaction
         prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)
+
+
+def _restore_config_of_main_object(
+    owner: CoreObjectDescriptor,
+    config: core.config.Configuration,
+    config_service: core.config.ConfigService,
+):
+    description = "revert_upgrade"
+
+    # create main config based on input
+    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+
+    specification = config_service.retrieve_specification(owner=owner)
+
+    prepare_files = partial(config_service.prepare_file_parameter_values_on_fs, specification=specification)
+
+    # since we have no "fallback" mechanism for write failures, have to write files within transaction
+    prepare_files(configuration=config, owner_prefix=core.config.files.build_config_prefix(owner))
 
 
 def _restore_config_of_host_group(
@@ -652,6 +705,8 @@ def _switch_configuration_version(
     new: tuple[core.config.spec.FullSpec, core.config.Defaults],
     config_service: core.config.ConfigService,
 ):
+    description = "upgrade"
+
     old_spec, old_defaults = old
     new_spec, new_defaults = new
 
@@ -666,7 +721,7 @@ def _switch_configuration_version(
     )
 
     config = update_for_new_spec(configuration=configuration, include_synchronization=False).value
-    config_service.create_new_configuration_by_descriptor(configuration=config, description="upgrade", owner=owner)
+    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
 
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
     adapted_configs_of_host_groups = {
