@@ -2,7 +2,7 @@ import { AdcmClustersApi, type RequestError } from '@api';
 import type { AdcmActionWizardProcess, AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
-import { getErrorMessage } from '@utils/httpResponseUtils';
+import { getErrorMessage, isErrorConflict } from '@utils/httpResponseUtils';
 import {
   cleanupClustersWizard,
   getProcess,
@@ -13,6 +13,11 @@ import {
   runClusterDynamicAction,
   type RunClusterDynamicActionPayload,
 } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+
+interface AdcmCreateProcessPayload {
+  clusterId: number;
+  actionId: number;
+}
 
 export interface AdcmPostOperationPayload {
   clusterId: number;
@@ -39,6 +44,20 @@ interface postOperationWithStepResetPayload {
   stepId: number;
 }
 
+const createProcess = createAsyncThunk(
+  'adcm/clustersWizardActions/createProcess',
+  async ({ clusterId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    try {
+      const process = await AdcmClustersApi.createClusterActionWizardProcess(clusterId, actionId);
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const postOperation = createAsyncThunk(
   'adcm/clustersWizardActions/postOperation',
   async ({ clusterId, actionId, processId, operation }: AdcmPostOperationPayload, thunkAPI) => {
@@ -54,7 +73,11 @@ const postOperation = createAsyncThunk(
 
       return process;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      if (isErrorConflict(error as RequestError)) {
+        thunkAPI.dispatch(setHasConflictError(true));
+      } else {
+        thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      }
       return thunkAPI.rejectWithValue(error);
     }
   },
@@ -96,12 +119,32 @@ const postOperationWithStepReset = createAsyncThunk(
   },
 );
 
+const startNewProcess = createAsyncThunk(
+  'adcm/clustersWizardActions/startNewProcess',
+  async ({ clusterId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    try {
+      const process = await AdcmClustersApi.createClusterActionWizardProcess(clusterId, actionId);
+
+      thunkAPI.dispatch(getProcess({ clusterId, actionId, processId: process.id }));
+      thunkAPI.dispatch(setIsContinueProcessModal(false));
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 interface AdcmClustersWizardActionsState {
   wizardDialog: {
     process: AdcmActionWizardProcess | null;
+    processId: number | null;
     actionId: number | null;
     clusterId: number | null;
     inProgress: boolean;
+    hasConflictError: boolean;
+    isContinueProcessModal: boolean;
   };
   selectedStepId?: number;
 }
@@ -109,9 +152,12 @@ interface AdcmClustersWizardActionsState {
 const createInitialState = (): AdcmClustersWizardActionsState => ({
   wizardDialog: {
     process: null,
+    processId: null,
     actionId: null,
     clusterId: null,
     inProgress: false,
+    hasConflictError: false,
+    isContinueProcessModal: false,
   },
   selectedStepId: undefined,
 });
@@ -129,11 +175,17 @@ const clustersWizardActionsSlice = createSlice({
     setSelectedStepId(state, action) {
       state.selectedStepId = action.payload;
     },
+    setHasConflictError(state, action) {
+      state.wizardDialog.hasConflictError = action.payload;
+    },
+    setIsContinueProcessModal(state, action) {
+      state.wizardDialog.isContinueProcessModal = action.payload;
+    },
     resetSelectedStepId(state) {
       state.selectedStepId = undefined;
     },
     openClusterWizardDialog(state, action) {
-      state.wizardDialog.process = action.payload.process;
+      state.wizardDialog.processId = action.payload.processId;
       state.wizardDialog.clusterId = action.payload.clusterId;
       state.wizardDialog.actionId = action.payload.actionId;
     },
@@ -144,6 +196,13 @@ const clustersWizardActionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(createProcess.fulfilled, (state, action) => {
+      state.wizardDialog.process = action.payload;
+    });
+    builder.addCase(startNewProcess.fulfilled, (state, action) => {
+      state.wizardDialog.process = action.payload;
+      state.wizardDialog.processId = action.payload.id;
+    });
     builder.addCase(postOperation.fulfilled, (state, action) => {
       if (state.wizardDialog.process) {
         state.wizardDialog.process.syncKey = action.payload.syncKey;
@@ -157,10 +216,19 @@ export const {
   cleanupClustersWizardActions,
   openClusterWizardDialog,
   closeClusterWizardDialog,
+  setHasConflictError,
+  setIsContinueProcessModal,
   setSelectedStepId,
   setInProgress,
   resetSelectedStepId,
 } = clustersWizardActionsSlice.actions;
-export { postOperation, postOperationWithTask, postOperationWithLastStep, postOperationWithStepReset };
+export {
+  createProcess,
+  postOperation,
+  postOperationWithTask,
+  postOperationWithLastStep,
+  postOperationWithStepReset,
+  startNewProcess,
+};
 
 export default clustersWizardActionsSlice.reducer;

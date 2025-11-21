@@ -47,7 +47,7 @@ const Dialog: React.FC<DialogProps> = ({
   dataTest = 'dialog-container',
 }) => {
   const handleClose = () => {
-    onOpenChange(false);
+    onOpenChange?.(false);
     onCancel?.();
   };
 

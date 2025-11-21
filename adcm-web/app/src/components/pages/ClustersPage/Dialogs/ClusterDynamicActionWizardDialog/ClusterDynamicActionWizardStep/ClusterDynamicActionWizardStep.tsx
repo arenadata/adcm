@@ -57,7 +57,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
 
   const clusterId = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.clusterId);
   const actionId = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.actionId);
-  const process = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.process);
+  const process = useStore((s) => s.adcm.clustersWizard.process);
   const inProgress = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.inProgress);
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
   const stepsWithData = useStore(({ adcm }) => adcm.clustersWizard.steps);
@@ -115,6 +115,14 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     return step?.state === AdcmWizardStepStates.Broken;
   }, [process]);
 
+  const isCurrentStepRunning = useMemo(() => {
+    if (!steps) return false;
+
+    const step = steps.find((step) => step.id === process?.currentStep);
+
+    return step?.state === AdcmWizardStepStates.Running;
+  }, [selectedStep]);
+
   const neededStageName = useMemo(() => {
     if (currentStep) {
       return stepToStageMap.get(currentStep);
@@ -131,12 +139,12 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   // we need to check if selectedStep(clicked) is in the different stage with current step
   // lint doesn't react to deps
   const isNeedToLoadSteps = useMemo(() => {
-    if (selectedStep) {
+    if (selectedStep && !isCurrentStepRunning) {
       return neededStageName !== loadedStageName;
     }
 
     return true;
-  }, [selectedStep]);
+  }, [selectedStep, steps]);
 
   useEffect(() => {
     if ((isCurrentStepBroken || isNeedToLoadSteps) && process && clusterId && actionId && stepIds.length > 0) {

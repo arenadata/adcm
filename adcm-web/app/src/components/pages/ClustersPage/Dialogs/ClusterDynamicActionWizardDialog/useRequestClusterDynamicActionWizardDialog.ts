@@ -19,8 +19,8 @@ export const useRequestClusterDynamicActionWizardDialog = (step: AdcmActionProce
 
   const clusterId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.clusterId);
   const actionId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.actionId);
-  const processId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.process)?.id;
-  const currentStep = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.process)?.currentStep;
+  const processId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.processId);
+  const currentStep = useStore((s) => s.adcm.clustersWizard.process)?.currentStep;
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
 
   useEffect(() => {
