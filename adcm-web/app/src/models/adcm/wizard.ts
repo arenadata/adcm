@@ -58,7 +58,7 @@ export interface AdcmActionProcessOperationStep {
   uiOptions: {
     buttonName: string;
   };
-  state: string;
+  state: AdcmWizardStepStates;
   task: { id: number };
 }
 
@@ -83,7 +83,7 @@ export interface AdcmActionProcessConfigurationStep {
   processSyncKey: string;
   displayName: string;
   type: AdcmWizardStepType.Configuration;
-  state: string;
+  state: AdcmWizardStepStates;
   configuration: AdcmWizardConfiguration;
 }
 
@@ -92,7 +92,7 @@ export interface AdcmActionProcessMappingStep {
   processSyncKey: string;
   displayName: string;
   type: AdcmWizardStepType.Mapping;
-  state: string;
+  state: AdcmWizardStepStates;
   mapping: {
     rule: {
       operation: AdcmWizardMappingStepOperationType;
@@ -115,7 +115,7 @@ export interface AdcmActionProcessLastStep {
   displayName: string;
   id: number;
   type: AdcmWizardStepType.LastStep;
-  state: string;
+  state: AdcmWizardStepStates;
 }
 
 export type AdcmActionProcessStep =

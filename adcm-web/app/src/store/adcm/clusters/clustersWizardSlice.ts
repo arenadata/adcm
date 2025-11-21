@@ -13,6 +13,7 @@ import {
 import { AdcmWizardStepType } from '@models/adcm/wizard';
 import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm';
 import { fulfilledFilter } from '@utils/promiseUtils';
+import { setIsContinueProcessModal } from '@store/adcm/clusters/clustersWizardActionsSlice';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -65,6 +66,24 @@ const getProcess = createAsyncThunk(
   async ({ clusterId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const getProcessOnActionClick = createAsyncThunk(
+  'adcm/clustersWizard/getProcessOnActionClick',
+  async ({ clusterId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
+    try {
+      const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
+
+      if (process && process.currentStep !== process.stages[0].steps[0].id) {
+        thunkAPI.dispatch(setIsContinueProcessModal(true));
+      }
+
       return process;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -230,6 +249,17 @@ const clustersWizardSlice = createSlice({
     builder.addCase(getProcess.rejected, (state) => {
       state.process = null;
     });
+    builder.addCase(getProcessOnActionClick.fulfilled, (state, action) => {
+      // @ts-ignore
+      state.process = action.payload;
+
+      // adding last stage with step, which is will always be shown in map
+      // @ts-ignore
+      addLastStage(state);
+    });
+    builder.addCase(getProcessOnActionClick.rejected, (state) => {
+      state.process = null;
+    });
     builder.addCase(refreshProcessStages.fulfilled, (state, action) => {
       if (state.process) {
         state.process.stages = action.payload.stages;
@@ -287,6 +317,14 @@ const clustersWizardSlice = createSlice({
 
 export const { cleanupClustersWizard, setBrokenStepError, resetStep, resetJobData, resetJobDataByStep } =
   clustersWizardSlice.actions;
-export { getStep, getSteps, getProcess, getJob, loadSubJobLogFromBackend, refreshProcessStages };
+export {
+  getStep,
+  getSteps,
+  getProcess,
+  getJob,
+  getProcessOnActionClick,
+  loadSubJobLogFromBackend,
+  refreshProcessStages,
+};
 
 export default clustersWizardSlice.reducer;

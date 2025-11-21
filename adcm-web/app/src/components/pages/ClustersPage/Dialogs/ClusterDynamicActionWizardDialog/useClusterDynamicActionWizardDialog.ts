@@ -1,5 +1,5 @@
 import { createClusterDynamicActionProcess } from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import { cleanupClustersWizard, getProcess } from '@store/adcm/clusters/clustersWizardSlice';
+import { cleanupClustersWizard, getProcessOnActionClick } from '@store/adcm/clusters/clustersWizardSlice';
 import { closeClusterWizardDialog, openClusterWizardDialog } from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useDispatch, useStore } from '@hooks';
 import { useEffect, useState } from 'react';
@@ -31,7 +31,7 @@ export const useClusterDynamicActionWizardDialog = () => {
       dispatch(createClusterDynamicActionProcess({ clusterId: cluster.id, actionId: actionDetails.id }));
     } else if (!processWithStages) {
       dispatch(
-        getProcess({
+        getProcessOnActionClick({
           clusterId: cluster.id,
           actionId: actionDetails.id,
           processId: actionDetails.processes[0].id,
@@ -41,16 +41,21 @@ export const useClusterDynamicActionWizardDialog = () => {
   }, [dispatch, actionDetails, cluster?.id]);
 
   useEffect(() => {
-    if (processWithStages && savedActionData.clusterId && savedActionData.actionId) {
+    if (
+      actionDetails?.processes &&
+      actionDetails?.processes.length > 0 &&
+      savedActionData.clusterId &&
+      savedActionData.actionId
+    ) {
       dispatch(
         openClusterWizardDialog({
-          process: processWithStages,
+          processId: actionDetails?.processes[0].id,
           clusterId: savedActionData.clusterId,
           actionId: savedActionData.actionId,
         }),
       );
     }
-  }, [dispatch, processWithStages, savedActionData]);
+  }, [dispatch, actionDetails?.processes, savedActionData]);
 
   const handleClose = () => {
     dispatch(closeClusterWizardDialog());

@@ -3,7 +3,7 @@ import type { AdcmWizardConfiguration } from '@models/adcm/wizard';
 import type { AdcmConfiguration, ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 
 export const prepareConfigurationFromStepData = (configuration: AdcmWizardConfiguration): AdcmConfiguration | null => {
-  if (configuration === null) {
+  if (!configuration) {
     return null;
   }
 

@@ -18,6 +18,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AdcmJob } from '@models/adcm';
 import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 
+const wizardStepStates = new Set([AdcmWizardStepStates.Running, AdcmWizardStepStates.Completed]);
+
+const wizardStepType = new Set([AdcmWizardStepType.Operation, AdcmWizardStepType.Configuration]);
+
 interface ActionWizardStepProps {
   jobsData: AdcmWizardJobsData;
   currentStep: number;
@@ -59,7 +63,7 @@ const isFirstButtonDisabled = (
     return (isCurrentStep && !isDraft) || isInRunningState;
   }
 
-  return step.state === AdcmWizardStepStates.Completed;
+  return wizardStepStates.has(step.state);
 };
 
 const isSecondButtonDisabled = (step: AdcmActionProcessStep) => {
@@ -71,7 +75,7 @@ const isSecondButtonDisabled = (step: AdcmActionProcessStep) => {
 };
 
 const isFirstButtonVisible = (stepType: AdcmWizardStepType) => {
-  return [AdcmWizardStepType.Operation, AdcmWizardStepType.Configuration].includes(stepType);
+  return wizardStepType.has(stepType);
 };
 
 const ActionWizardSteps = ({
@@ -167,7 +171,7 @@ const ActionWizardSteps = ({
                     disabled={isFirstButtonDisabled(step, isCurrentStep, isDraft, isInRunningState)}
                     onClick={() => handleFirstButtonClick(step.type, step.id)}
                   >
-                    {step.type === AdcmWizardStepType.Operation ? step.uiOptions.buttonName : 'Discard changes'}
+                    {step.type === AdcmWizardStepType.Operation ? step?.uiOptions?.buttonName : 'Discard changes'}
                   </Button>
                 )}
                 <Button
