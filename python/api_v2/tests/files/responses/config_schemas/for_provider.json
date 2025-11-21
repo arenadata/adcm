@@ -16,6 +16,7 @@
   "type": "object",
   "properties": {
     "json": {
+      "default": "{\"key\": \"value\"}",
       "oneOf": [
         {
           "title": "json",
@@ -59,6 +60,10 @@
       "additionalProperties": false,
       "properties": {
         "map": {
+          "default": {
+            "integer_key": "10",
+            "string_key": "string"
+          },
           "oneOf": [
             {
               "title": "map",
@@ -111,6 +116,10 @@
       "additionalProperties": false,
       "properties": {
         "secretmap": {
+          "default":  {
+            "integer_key": "10",
+            "string_key": "string"
+          },
           "oneOf": [
             {
               "title": "secretmap",

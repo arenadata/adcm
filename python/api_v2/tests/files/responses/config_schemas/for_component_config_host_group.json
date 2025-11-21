@@ -54,6 +54,7 @@
       "additionalProperties": false,
       "properties": {
         "file": {
+          "default": "content",
           "oneOf": [
             {
               "title": "file",

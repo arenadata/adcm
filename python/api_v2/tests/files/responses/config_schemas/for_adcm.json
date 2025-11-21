@@ -341,6 +341,7 @@
           "minLength": 1
         },
         "user_search_filter": {
+          "default": null,
           "oneOf": [
             {
               "title": "User search filter",
@@ -404,6 +405,7 @@
           "minLength": 1
         },
         "group_search_base": {
+          "default": null,
           "oneOf": [
             {
               "title": "Group search base",
@@ -429,6 +431,7 @@
           ]
         },
         "group_search_filter": {
+          "default": null,
           "oneOf": [
             {
               "title": "Group search filter",
@@ -528,6 +531,7 @@
           }
         },
         "tls_ca_cert_file": {
+          "default": null,
           "oneOf": [
             {
               "title": "TLS CA certificate file path",
@@ -553,6 +557,7 @@
           ]
         },
         "group_dn_adcm_admin": {
+          "default": [],
           "oneOf": [
             {
               "title": "Group DN for granting ADCM Administrator rights",

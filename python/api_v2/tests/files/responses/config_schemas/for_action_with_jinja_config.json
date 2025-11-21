@@ -16,6 +16,7 @@
   "type": "object",
   "properties": {
     "boolean": {
+      "default": true,
       "oneOf": [
         {
           "title": "boolean",
@@ -39,6 +40,7 @@
       ]
     },
     "float": {
+      "default": 2.0,
       "oneOf": [
         {
           "title": "float",
@@ -105,6 +107,7 @@
       ]
     },
     "boolean1": {
+      "default": false,
       "oneOf": [
         {
           "title": "boolean1",

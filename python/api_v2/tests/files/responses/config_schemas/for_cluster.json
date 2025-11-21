@@ -49,6 +49,7 @@
       "additionalProperties": false,
       "properties": {
         "float": {
+          "default": 0.1,
           "oneOf": [
             {
               "title": "float",
@@ -77,6 +78,7 @@
       ]
     },
     "variant_not_strict": {
+      "default": "value1",
       "oneOf": [
         {
           "title": "variant_not_strict",
@@ -107,6 +109,11 @@
       ]
     },
     "list": {
+      "default": [
+        "value1",
+        "value2",
+        "value3"
+      ],
       "oneOf": [
         {
           "title": "list",
@@ -170,6 +177,7 @@
       "additionalProperties": false,
       "properties": {
         "integer": {
+          "default": 10,
           "oneOf": [
             {
               "title": "integer",
