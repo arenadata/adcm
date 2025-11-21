@@ -102,7 +102,12 @@ class JSONSchemaNodeDict(TypedDict):
     discriminator: NotRequired[dict[Literal["propertyName"], Literal["_selection"]]]
 
 
-OptionalNode: TypeAlias = JSONSchemaNodeDict | dict[Literal["oneOf"], list[JSONSchemaNodeDict | NoneNode]]
+class OneOfWithDefaultNode(TypedDict):
+    oneOf: list[JSONSchemaNodeDict | NoneNode]
+    default: NotRequired[Any]
+
+
+OptionalNode: TypeAlias = JSONSchemaNodeDict | OneOfWithDefaultNode
 
 
 class SchemaGenerationContext(Protocol):
@@ -247,7 +252,11 @@ def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -
 
     # check for type is required, because "enum" based parameters' nullability is different
     if not parameter.is_required and "type" in schema:
-        schema: OptionalNode = {"oneOf": [schema, {"type": "null"}]}
+        one_of_node: OptionalNode = {"oneOf": [schema, {"type": "null"}]}
+        if "default" in schema:
+            one_of_node["default"] = schema["default"]
+
+        schema = one_of_node
 
     return schema
 

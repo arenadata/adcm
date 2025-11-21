@@ -1694,6 +1694,8 @@ class TestComponentCHG(BaseAPITestCase):
 
 
 class TestProviderConfig(BaseAPITestCase):
+    maxDiff = None
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -1810,6 +1812,9 @@ class TestProviderConfig(BaseAPITestCase):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+            "integer_key"
+        ] = integer_key
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"
@@ -1818,6 +1823,7 @@ class TestProviderConfig(BaseAPITestCase):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "string_key"
         ] = string_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"] = string_key
 
         self.assertDictEqual(actual_data, expected_data)
 
@@ -1907,6 +1913,8 @@ class TestProviderConfig(BaseAPITestCase):
 
 
 class TestProviderCHG(BaseAPITestCase):
+    maxDiff = None
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -2182,6 +2190,9 @@ class TestProviderCHG(BaseAPITestCase):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+            "integer_key"
+        ] = integer_key
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"
@@ -2190,6 +2201,7 @@ class TestProviderCHG(BaseAPITestCase):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "string_key"
         ] = string_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"] = string_key
 
         self.assertDictEqual(actual_data, expected_data)
 

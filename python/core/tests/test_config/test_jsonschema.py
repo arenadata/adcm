@@ -53,5 +53,6 @@ class TestJsonSchemaGeneration(TestCase):
                 self.assertDictEqual(
                     actual_schema_as_regular_dict,
                     expected_schema,
-                    f"\n=== ACTUAL ===\n{json.dumps(actual_schema_as_regular_dict, indent=4)}",
+                    # keep it, uncomment for debug
+                    # f"\n=== ACTUAL ===\n{json.dumps(actual_schema_as_regular_dict, indent=4)}",
                 )
