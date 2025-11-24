@@ -361,9 +361,9 @@ def _find_attribute_violations(
             violation = Violation(parameter=extra, check="attribute", reason="unexpected activation attribute")
             violations.append(violation)
 
-    with_synchronization = {name for name, attr in attributes.items() if attr.synchronization}
+    synchronization = {name: attr.is_synced for name, attr in attributes.items() if attr.synchronization}
 
-    if with_synchronization:
+    if synchronization:
         # means it's config group
 
         # Maybe this set should be bound to FullSpec since it's business-bound in some sense.
@@ -374,12 +374,22 @@ def _find_attribute_violations(
             )
         )
 
-        for missing in expected_with_sync - with_synchronization:
+        for missing in expected_with_sync.difference(synchronization):
             violation = Violation(parameter=missing, check="attribute", reason="missing synchronization attribute")
             violations.append(violation)
 
-        for extra in with_synchronization - expected_with_sync:
+        for extra in set(synchronization).difference(expected_with_sync):
             violation = Violation(parameter=extra, check="attribute", reason="unexpected synchronization attribute")
+            violations.append(violation)
+
+        allowed_to_be_desynced = {name for name, param in specification.parameters.items() if param.is_desyncable} | {
+            name for name, group in specification.groups.items() if group.activation and group.activation.is_desyncable
+        }
+        desynced = {name for name, is_synced in synchronization.items() if not is_synced}
+        for wrongly_desynced in desynced.difference(allowed_to_be_desynced):
+            violation = Violation(
+                parameter=wrongly_desynced, check="attribute", reason="not allowed to be desynchronized"
+            )
             violations.append(violation)
 
     return violations

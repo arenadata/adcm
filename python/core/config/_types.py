@@ -84,6 +84,11 @@ class Attributes:
 
 
 ConfigValues: TypeAlias = dict[ParameterLevelName, Any]
+"""
+Config values in "nested" format,
+e.g. `{"a": {"b": {"c": 4}}}` instead of `{"/a/b/c": 4}` (flat format)
+"""
+
 ConfigFlatValues: TypeAlias = dict[ParameterFullName, Any]
 ConfigAttrs: TypeAlias = dict[ParameterFullName, Attributes]
 
