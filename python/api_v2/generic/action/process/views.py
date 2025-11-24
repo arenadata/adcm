@@ -344,5 +344,12 @@ def _serialize_mapping_step(
             "delta": step_input.mapping["delta"],
             "cumulative_delta": step_input.mapping["cumulative_delta"],
         }
+    else:
+        # todo overkill, since we need only latest mapping step,
+        #   requires action processing rework to get in here Process "meta" repr
+        completed_steps = repo.get_done_step_inputs_for_process(process_id=step.process_id)
+        latest_mapping_step = next(filter(lambda x: x.mapping is not None, reversed(completed_steps)), None)
+        if latest_mapping_step:
+            mapping_step_data["cumulative_delta"] = latest_mapping_step.mapping["cumulative_delta"]
 
     return StepMappingSerializer(base_data | mapping_step_data).data
