@@ -59,6 +59,8 @@ class ReadOnlyRule:
 class ExtraProperties:
     display_name: str = ""
     description: str = ""
+    # edit rule is not universal: it doesn't apply for regular group, for example,
+    # yet see no big profits in separating properties into multiple variants
     edit_rule: WritableRule | ReadOnlyRule = field(default_factory=lambda: WritableRule(writable="any"))
     ui_options: dict[str, Any] = field(default_factory=dict)
 

@@ -529,7 +529,9 @@ def _is_read_only_parameter(parameter: SimpleParameter, owner_state: str) -> boo
 
 
 def _is_read_only_group(group: ParameterGroup, owner_state: str) -> bool:
-    return bool(group.activation and _is_read_only(rule=group.extra.edit_rule, owner_state=owner_state))
+    return bool(
+        (group.activation or group.selection) and _is_read_only(rule=group.extra.edit_rule, owner_state=owner_state)
+    )
 
 
 def _is_read_only(rule: ReadOnlyRule | WritableRule, owner_state: str) -> bool:
