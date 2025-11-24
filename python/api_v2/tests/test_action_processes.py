@@ -1834,7 +1834,7 @@ class TestActionProcess(BaseAPITestCase):
         # get plain task
         response = self.client.v2[plain_task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["displayName"], task_with_step.action.display_name)
+        self.assertEqual(response.json()["displayName"], plain_task.action.display_name)
 
         # get tasks list
         response = (self.client.v2 / "tasks").get()
@@ -2000,3 +2000,45 @@ class TestActionProcess(BaseAPITestCase):
                 f'"{component_1_s1.service.prototype.name}.{component_1_s1.prototype.name}". Not mapped.',
             }
             self.assertDictEqual(response.json(), expected_response)
+
+    def test_adcm_7393_invalid_mapping_template_fail(self):
+        bundle_dir = self.test_bundles_dir / "wizard_broken_hc_step"
+        bundle = self.add_bundle(source_dir=bundle_dir)
+        cluster = self.add_cluster(bundle=bundle, name="cluster_with_broken_hc_step")
+
+        action_first_step_fail = Action.objects.get(prototype=cluster.prototype, name="wizard_first_step_broken")
+        action_second_step_fail = Action.objects.get(prototype=cluster.prototype, name="wizard_second_step_broken")
+
+        # first step
+        response = self.initiate_process(owner=cluster, action=action_first_step_fail).json()
+        process_id, current_step_id = response["id"], response["currentStep"]
+        target_step = ProcessStep.objects.get(process_id=process_id, name="first_broken_mapping_step")
+
+        self.assertEqual(target_step.id, current_step_id)
+        self.assertEqual(target_step.state, ProcessStepState.BROKEN)
+
+        # second step after submitting first
+        response = self.initiate_process(owner=cluster, action=action_second_step_fail).json()
+        process_id, current_step_id = response["id"], response["currentStep"]
+        config_step = ProcessStep.objects.get(id=current_step_id, process_id=process_id, name="first_config_step")
+        target_step = ProcessStep.objects.get(process_id=process_id, name="second_broken_mapping_step")
+        process = Process.objects.get(id=process_id)
+
+        self.assertEqual(config_step.id, current_step_id)
+        endpoint = self.client.v2[cluster, "actions", action_second_step_fail.pk, "processes"] / process / "operation"
+        payload = {
+            "method": "submit_step",
+            "params": {
+                "processSyncKey": process.sync_key,
+                "stepId": config_step.id,
+                "configuration": {"config": {"float": 0.3}, "adcmMeta": {}},
+            },
+        }
+        response = endpoint.post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        config_step.refresh_from_db()
+        self.assertEqual(config_step.state, ProcessStepState.COMPLETED)
+
+        target_step.refresh_from_db()
+        self.assertEqual(response.json()["currentStep"], target_step.id)
+        self.assertEqual(target_step.state, ProcessStepState.BROKEN)

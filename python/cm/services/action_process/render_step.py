@@ -12,6 +12,7 @@
 
 from dataclasses import dataclass
 
+from core.bundle_alt.errors import BundleValidationError
 from core.job.types import JobSpec, MappingRule
 from core.templates._errors import RenderError
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
@@ -36,7 +37,7 @@ def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext) -> 
     try:
         spec = _render_step(step_id=step_id, context=context)
         repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
-    except (RenderError, AdcmEx):
+    except (RenderError, AdcmEx, BundleValidationError):
         logger.exception(f"Failed to render step {step_id}")
         repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.BROKEN))
 
@@ -84,8 +85,7 @@ def _render_step(
                 delta=None,
                 action_process=process_orm,
             )
-
-            return render_hc_template(template=template, environment=environment, context_args=task_args)
+            step_spec = render_hc_template(template=template, environment=environment, context_args=task_args)
 
         case _:
             raise NotImplementedError(f"Unexpected step type {step.type}")

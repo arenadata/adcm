@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Any, Generator, TypeAlias
+from typing import Any, Generator, Literal, TypeAlias
 from uuid import UUID, uuid4
 
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
@@ -19,6 +19,7 @@ from core.types import (
     ActionID,
     ActionProcessID,
     ActionProcessStepID,
+    ClusterID,
     CoreObjectDescriptor,
     PrototypeID,
     TaskID,
@@ -28,6 +29,8 @@ from django.db.models import QuerySet
 
 from cm.models import (
     Action,
+    Cluster,
+    ObjectType,
     Process,
     ProcessStep,
     ProcessStepInput,
@@ -219,3 +222,14 @@ def serialize_prototype_configs(data: list[PrototypeConfig]) -> list[DBPrototype
 
 def convert_stages_to_db_format(stages: list[ActionProcessStage]) -> list[dict[str, Any]]:
     return [stage.model_dump() for stage in stages]
+
+
+def retrieve_cluster_component_definition_keys(cluster_id: ClusterID) -> set[tuple[Literal["component"], str, str]]:
+    """returns set of component names in format `("component", service_name, component_name)`"""
+
+    bundle_id = Cluster.objects.values_list("prototype__bundle_id", flat=True).get(id=cluster_id)
+    prototype_qs = Prototype.objects.values_list("name", "parent__name").filter(
+        bundle_id=bundle_id, type=ObjectType.COMPONENT
+    )
+
+    return {("component", parent_name, name) for name, parent_name in prototype_qs}
