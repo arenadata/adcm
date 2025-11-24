@@ -635,7 +635,8 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             include_synchronization=False,
         )
 
-        self.assertDictEqual(result.value.values, expected_config)
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, expected_config)
 
     def test_activation_gone_after_upgrade(self):
         old_spec = FullSpec.from_parameters(
@@ -658,9 +659,10 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             include_synchronization=False,
         )
 
-        self.assertDictEqual(result.value.attributes, {})
+        actual_attributes = self.expect_success(result).value.attributes
+        self.assertDictEqual(actual_attributes, {})
 
-    def test_activation_appear_after_upgrade_with_correct_sync(self):
+    def test_adcm_7429_activation_same_after_upgrade_with_correct_sync(self):
         old_spec = FullSpec.from_parameters(
             ParameterGroup(identifier=name_id("a")),
             StringParameter(identifier=name_id("a", "b")),
@@ -694,7 +696,7 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             "/c": Attributes(is_active=True, is_synced=True),
             "/c/b": Attributes(is_synced=True),
             "/d": Attributes(is_active=True, is_synced=True),
-            "/e": Attributes(is_active=False, is_synced=True),
+            "/e": Attributes(is_active=False, is_synced=False),
         }
 
         result = adapt_configuration_for_new_specification(
@@ -706,7 +708,54 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             include_synchronization=True,
         )
 
-        self.assertDictEqual(result.value.attributes, expected_attributes)
+        actual_attributes = self.expect_success(result).value.attributes
+        self.assertDictEqual(actual_attributes, expected_attributes)
+
+    def test_unchanged_with_selection_group(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(use_as_default="a")),
+            ParameterGroup(identifier=name_id("s", "a")),
+            StringParameter(identifier=name_id("s", "a", "av")),
+            ParameterGroup(identifier=name_id("s", "b")),
+            StringParameter(identifier=name_id("s", "b", "bv")),
+        )
+        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        values = {"s": {"a": {"av": "1"}}}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=Configuration(values=values),
+            specification=spec,
+            new_specification=spec,
+            defaults=defaults,
+            new_defaults=defaults,
+            include_synchronization=False,
+        )
+
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, values)
+
+    def test_unchanged_with_selection_group_value_none(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(use_as_default="a")),
+            ParameterGroup(identifier=name_id("s", "a")),
+            StringParameter(identifier=name_id("s", "a", "av")),
+            ParameterGroup(identifier=name_id("s", "b")),
+            StringParameter(identifier=name_id("s", "b", "bv")),
+        )
+        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        values = {"s": None}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=Configuration(values=values),
+            specification=spec,
+            new_specification=spec,
+            defaults=defaults,
+            new_defaults=defaults,
+            include_synchronization=False,
+        )
+
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, values)
 
 
 class TestPrepareConfigFromDefaults(ConfigTestCase):

@@ -14,7 +14,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain, filterfalse
-from typing import Any, Callable, Literal, TypeAlias, TypeVar
+from typing import Any, Callable, Generator, Literal, TypeAlias, TypeVar
 import logging
 
 from core.config import spec
@@ -36,6 +36,7 @@ from core.config._names import (
     full_name_to_level_names,
     is_part_of_group,
     join_level_name_with_group_name,
+    level_names_to_full_name,
     remove_group_from_name,
 )
 from core.config._predicates import is_none, is_not_none, is_str
@@ -48,6 +49,7 @@ from core.config._types import (
     Defaults,
     FlatConfiguration,
     ParameterFullName,
+    ParameterLevelName,
 )
 from core.config._validate import (
     Validators,
@@ -436,63 +438,70 @@ def adapt_configuration_for_new_specification(
     # now I don't see another approach  to distinct cases of host group / main config
     # without guessing, so made a flag
     include_synchronization: bool,
-) -> Success[Configuration]:
+) -> Success[Configuration] | Fail[Violations]:
     # todo: clarify this function after logic confirmed by tests,
     #       now it's a bit of mess and joggling
 
-    parameter_and_group_names = set(chain(new_specification.parameters, new_specification.groups))
+    previous_default_config = prepare_config_from_defaults(default_values=defaults, specification=specification)
 
-    flat_config = nested_to_flat(configuration=configuration, specification=specification)
+    groups_with_selection = {name for name, group in new_specification.groups.items() if group.selection}
+    parameters_and_groups_with_selection = groups_with_selection | set(new_specification.parameters)
 
-    desynced_parameters = {
-        key for key, attr in configuration.attributes.items() if attr.synchronization and not attr.is_synced
+    relevant_changes = []
+    for change in _find_changes_from_level(
+        values=configuration.values, reference=previous_default_config.values, level=new_specification.hierarchy
+    ):
+        is_existing_selection_change = change.type == "selection" and change.parameter in groups_with_selection
+        is_existing_value_change = change.type == "value" and change.parameter in parameters_and_groups_with_selection
+        if is_existing_selection_change or is_existing_value_change:
+            relevant_changes.append(change)
+
+    # if default became None, old default should be kept
+    new_none_defaults = {
+        name for name, value in new_defaults.items() if value is None and defaults.get(name) is not None
     }
+    changed_parameters = {change.parameter for change in relevant_changes}
+    keep_old_default_changes = [
+        ChangeRequest.for_value(name=name, value=defaults[name]) for name in new_none_defaults - changed_parameters
+    ]
 
-    non_default_values_in_config = {
-        parameter_name: value
-        for parameter_name, value in flat_config.values.items()
-        if (
-            (
-                (value != defaults.get(parameter_name))
-                or (new_defaults.get(parameter_name) is None)
-                or (parameter_name in desynced_parameters)
-            )
-            and parameter_name in parameter_and_group_names
-        )
-    }
-    new_values = new_defaults | non_default_values_in_config
+    new_configuration = prepare_config_from_defaults(default_values=new_defaults, specification=new_specification)
 
-    groups_activation = {name: group.activation for name, group in new_specification.groups.items() if group.activation}
+    apply_result = apply_changes(
+        changes=relevant_changes + keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
+    )
 
-    attributes = {}
+    match apply_result:
+        case Success((config_with_changed_values, _)):
+            new_configuration = config_with_changed_values
+        case Fail():
+            return apply_result
 
-    for name, activation in groups_activation.items():
-        previous = configuration.attributes.get(name)
-        if previous and previous.is_active is not None:
-            attributes[name] = Attributes(is_active=previous.is_active)
-        else:
-            attributes[name] = Attributes(is_active=activation.is_active_by_default)
+    # todo sync "default became None" case
+
+    for name, old_attributes in configuration.attributes.items():
+        if not old_attributes.activation:
+            continue
+
+        new_attributes = new_configuration.attributes.get(name)
+        if new_attributes and new_attributes.activation:
+            new_attributes.is_active = old_attributes.is_active
 
     if include_synchronization:
         # sync groups
-        for name, attrs in attributes.items():
+        for name, attrs in new_configuration.attributes.items():
             attrs.is_synced = _detect_is_synced_value(
                 name=name,
-                is_desyncable=groups_activation[name].is_desyncable,
                 previous_attributes=configuration.attributes,
             )
 
         # sync for parameters
-        for name, param in new_specification.parameters.items():
-            attributes[name] = Attributes(
-                is_synced=_detect_is_synced_value(
-                    name=name, is_desyncable=param.is_desyncable, previous_attributes=configuration.attributes
-                )
+        for name in new_specification.parameters:
+            new_configuration.attributes[name] = Attributes(
+                is_synced=_detect_is_synced_value(name=name, previous_attributes=configuration.attributes)
             )
 
-    adapted_config = Configuration(values=flat_to_nested(new_values), attributes=attributes)
-
-    return Success(adapted_config)
+    return Success(new_configuration)
 
 
 # Utilities
@@ -564,11 +573,64 @@ def _apply_activation_change_registering_violation(
     return False
 
 
-def _detect_is_synced_value(
-    name: ParameterFullName, is_desyncable: bool, previous_attributes: dict[ParameterFullName, Attributes]
-) -> bool:
-    if not is_desyncable:
-        return True
+def _find_changes_from_level(
+    values: ConfigValues,
+    reference: ConfigValues,
+    level: spec.SpecHierarchyLevel,
+    level_names: tuple[ParameterLevelName, ...] = (),
+) -> Generator[ChangeRequest, None, None]:
+    match level.rule:
+        case spec.HierarchyValidationRule.ALL:
+            present_at_level = set(reference.keys())
+
+            present_parameters = present_at_level.difference(level.child_groups.keys()).intersection(values.keys())
+            for name in present_parameters:
+                new_value = values[name]
+                if new_value != reference[name]:
+                    full_name = level_names_to_full_name((*level_names, name))
+                    yield ChangeRequest.for_value(name=full_name, value=new_value)
+
+            present_groups = present_at_level.intersection(level.child_groups).intersection(values.keys())
+            for name in present_groups:
+                child_level = level.child_groups[name]
+                child_values = values[name]
+                if not isinstance(child_values, dict):
+                    # todo check AT MOST ONE
+                    if (
+                        child_level.rule != spec.HierarchyValidationRule.ALL
+                        and child_values is None
+                        and reference[name] is not None
+                    ):
+                        full_name = level_names_to_full_name((*level_names, name))
+                        yield ChangeRequest.for_group_selection(name=full_name, value=None)
+
+                    continue
+
+                yield from _find_changes_from_level(
+                    values=child_values, reference=reference[name], level=child_level, level_names=(*level_names, name)
+                )
+
+        case spec.HierarchyValidationRule.AT_MOST_ONE | spec.HierarchyValidationRule.EXACTLY_ONE:
+            if values == reference:
+                return
+
+            name = next(iter(values.keys()), None)
+            if name not in level.child_groups:
+                # either incorrect data came or option is invalid for new hierarchy
+                return
+
+            full_name = level_names_to_full_name((*level_names, name))
+            # it is based on current apply implementation, you may need a separate type for it later,
+            # if you'll need to distinguish cases or add more clarity in what's happening
+            yield ChangeRequest.for_value(name=full_name, value=values)
+
+
+def _detect_is_synced_value(name: ParameterFullName, previous_attributes: dict[ParameterFullName, Attributes]) -> bool:
+    # As part of ADCM-7429 it was discussed and decided that we want to keep old behavior
+    # that has no implicit conversion of desyncable attribute during upgrade
+    #
+    # if not is_desyncable:
+    #     return True
 
     if (previous := previous_attributes.get(name)) and previous.is_synced is not None:
         return previous.is_synced
