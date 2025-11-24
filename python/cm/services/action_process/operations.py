@@ -14,7 +14,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from pathlib import Path
 from typing import Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
@@ -38,7 +37,7 @@ from django.utils import timezone
 from typing_extensions import Self
 import core
 
-from cm.config.repo import build_specification_from_prototype_config_records
+from cm.config.repo import build_specification
 from cm.converters import core_type_to_model
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
@@ -470,13 +469,7 @@ def _operation_submit_config(
     config_service: core.config.ConfigService,
 ) -> None:
     prototype_conifgs = tuple(PrototypeConfig(**cfg) for cfg in step.step_spec)
-    specification, _ = build_specification_from_prototype_config_records(
-        records=prototype_conifgs,
-        group_customization_flag=False,
-        secrets_service=config_service.secrets,
-        # not interested in defaults
-        bundle_root=Path(),
-    )
+    specification = build_specification(records=prototype_conifgs, group_customization_flag=False)
 
     try:
         owner_config = config_service.retrieve_current_configuration(owner=context.object)
