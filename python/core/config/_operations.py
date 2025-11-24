@@ -21,12 +21,12 @@ from core.config import spec
 from core.config._config import (
     MissingKeyError,
     build_apply_if,
-    change_by_full_name,
     change_by_full_name_skip_missing,
     detect_active_groups,
     detect_changes,
     flat_to_nested,
     get_by_full_name,
+    get_by_full_name_or_none,
     nested_to_flat,
     set_by_full_name,
     set_by_full_name_returning_old,
@@ -304,7 +304,7 @@ def store_files(
     for parameter in specification.parameters.values():
         match parameter:
             case spec.p.StringParameter(identifier=name, as_file=True):
-                content = get_by_full_name(name=name.full, values=values)
+                content = get_by_full_name_or_none(name=name.full, values=values)
                 if content is not None:
                     param_filename = full_name_to_file_name(full=name.full)
                     file_identifier = write(param_filename, content)
@@ -318,9 +318,11 @@ def encrypt_secrets(
 ) -> Success[ConfigValues]:
     out: ConfigValues = values if inplace else deepcopy(values)
 
-    encrypt_str = partial(change_by_full_name, func=build_apply_if(func=encrypt, when=is_not_none), values=out)
+    encrypt_str = partial(
+        change_by_full_name_skip_missing, func=build_apply_if(func=encrypt, when=is_not_none), values=out
+    )
     encrypt_dict = partial(
-        change_by_full_name,
+        change_by_full_name_skip_missing,
         func=build_apply_if(func=partial(_encrypt_dict, encrypt=encrypt), when=is_not_none),
         values=out,
     )

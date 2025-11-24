@@ -12,14 +12,13 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-from pathlib import Path
 
 from core.cluster.types import ClusterTopology
 from core.types import Descriptor
 from infra.services import get_config_service
 import core
 
-from cm.config.repo import build_specification_from_prototype_config_records
+from cm.config.repo import build_specification
 from cm.models import Process, ProcessStep, PrototypeConfig
 from cm.services.job.inventory._types import CurrentStep, ProcessContext
 
@@ -72,13 +71,7 @@ def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
     config_service = get_config_service()
 
     prototype_configs = tuple(PrototypeConfig(**config) for config in step_obj.step_spec)
-    specification, _ = build_specification_from_prototype_config_records(
-        records=prototype_configs,
-        group_customization_flag=False,
-        # not interested in defaults
-        bundle_root=Path(),
-        secrets_service=config_service.secrets,
-    )
+    specification = build_specification(records=prototype_configs, group_customization_flag=False)
 
     attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"].items()}
 

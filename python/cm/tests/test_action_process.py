@@ -19,8 +19,8 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
 
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.action_process import repo_old as repo
-from cm.services.action_process.operations_old import (
+from cm.services.action_process import repo
+from cm.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     initiate_process,
@@ -32,7 +32,7 @@ from cm.services.action_process.schema_validation import (
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.services.action_process.types_old import ProcessStepState
+from cm.services.action_process.types import ProcessStepState
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config._base import ConfigAttrPair
 from cm.services.job.run.repo import ActionRepoImpl
