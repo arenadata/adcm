@@ -267,8 +267,7 @@ class TestBundle(BaseAPITestCase):
             response.json(),
             {
                 "code": "BUNDLE_ERROR",
-                "desc": "Bundle already exists: Bundle with the same content is already "
-                f"uploaded {settings.DOWNLOAD_DIR / self.new_bundle_file}",
+                "desc": "Bundle already exists. Name: cluster_two, version: 1.0, edition: community",
                 "level": "error",
             },
         )

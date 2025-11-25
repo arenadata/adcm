@@ -16,7 +16,7 @@ from functools import cache
 from operator import methodcaller
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Callable, NamedTuple
+from typing import Callable, Iterable, NamedTuple
 import os
 import fcntl
 import shutil
@@ -83,7 +83,7 @@ def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: 
     # Thou it's a bit of strange to remove archive in here,
     # but it's the original process,
     # required by upload-load separation in v1
-    with cleanup_on_fail(archive):
+    with cleanup(on_fail=[archive]):
         return process_bundle_from_archive(
             archive=archive,
             bundles_dir=directories.bundles,
@@ -162,7 +162,7 @@ def process_bundle_from_archive(
         archive=archive, bundles_dir=bundles_dir, bundle_hash=bundle_hash, files_dir=files_dir
     )
 
-    with cleanup_on_fail(unpacking_info.root):
+    with cleanup(on_fail=[unpacking_info.root], on_exit=[archive]):
         verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
         with localize_error(f"Bundle from {archive.name}"):
@@ -324,19 +324,24 @@ def _find_signature_file(directory: Path) -> Path | None:
 
 
 @contextmanager
-def cleanup_on_fail(*paths: Path):
+def cleanup(*, on_fail: Iterable[Path] = (), on_exit: Iterable[Path] = ()):
     try:
         yield
     except Exception:
-        for path in paths:
-            if path.is_file():
-                path.unlink()
-            elif path.is_dir():
-                shutil.rmtree(path, ignore_errors=True)
-            else:
-                logger.warning(f"Path assigned for cleanup on error, but it's neither existing file or dir: {path}")
-
+        cleanup_by_remove_from_fs(on_fail)
         raise
+    finally:
+        cleanup_by_remove_from_fs(on_exit)
+
+
+def cleanup_by_remove_from_fs(paths: Iterable[Path]) -> None:
+    for path in paths:
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            logger.warning(f"Path assigned for cleanup on error, but it's neither existing file or dir: {path}")
 
 
 def verify_signature(bundle_signature: SignatureStatus, verified_signature_only: bool) -> None:
