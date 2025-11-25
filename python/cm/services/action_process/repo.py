@@ -15,18 +15,21 @@ from typing import Any, Generator, Literal, TypeAlias
 from uuid import UUID, uuid4
 
 from core.bundle_alt.schema import ActionProcessStage, ActionProcessStep
+from core.job.types import StepType
 from core.types import (
     ActionID,
     ActionProcessID,
     ActionProcessStepID,
+    ADCMCoreType,
+    BundleID,
     ClusterID,
     CoreObjectDescriptor,
     PrototypeID,
     TaskID,
 )
 from django.conf import settings
-from django.db.models import QuerySet
 
+from cm.converters import core_type_to_model
 from cm.models import (
     Action,
     Cluster,
@@ -42,6 +45,7 @@ from cm.services.action_process.errors import ActionProcessNotFoundError, Action
 from cm.services.action_process.types import (
     ActionProcess,
     DBPrototypeConfig,
+    MappingStepInput,
     ProcessState,
     ProcessStepState,
     ProcessUpdateDTO,
@@ -169,20 +173,24 @@ def upsert_step_input(step_id: ActionProcessStepID, data: StepInputDTO) -> None:
         inputs_qs.update(**dto_data)
 
 
-def get_done_step_inputs_for_process(process_id: int) -> QuerySet[ProcessStepInput]:
-    # Get all previous step inputs for this process (ordered)
-    previous_step_ids = (
-        ProcessStep.objects.filter(
-            process_id=process_id,
-            state__in=[ProcessStepState.COMPLETED, ProcessStepState.RUNNING],
-        )
-        .order_by("id")
-        .values_list("id", flat=True)
-    )
+def retrieve_previous_mapping_step_input_with_cumulative_delta(
+    process_id: ActionProcessID, step_id: ActionProcessStepID
+) -> MappingStepInput | None:
+    candidates: set[ActionProcessStepID] = set()
+    for step in retrieve_steps(
+        process_id=process_id, id__lt=step_id, state__in=[ProcessStepState.COMPLETED, ProcessStepState.RUNNING]
+    ):
+        if step.type == StepType.MAPPING:
+            candidates.add(step.id)
 
-    return ProcessStepInput.objects.filter(step_id__in=previous_step_ids).order_by(
-        "step_id"
-    )  # Ensure chronological order
+    if (
+        input_ := ProcessStepInput.objects.filter(step_id__in=candidates, mapping__isnull=False)
+        .order_by("-created_at")
+        .first()
+    ):
+        return MappingStepInput.model_validate(input_, from_attributes=True)
+
+    return None
 
 
 def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
@@ -233,3 +241,11 @@ def retrieve_cluster_component_definition_keys(cluster_id: ClusterID) -> set[tup
     )
 
     return {("component", parent_name, name) for name, parent_name in prototype_qs}
+
+
+def retrieve_related_cluster_id_and_cluster_bundle_id(object_: CoreObjectDescriptor) -> tuple[ClusterID, BundleID]:
+    values = ("cluster_id", "cluster__prototype__bundle_id")
+    if object_.type == ADCMCoreType.CLUSTER:
+        values = ("id", "prototype__bundle_id")
+
+    return core_type_to_model(object_.type).objects.values_list(*values).get(id=object_.id)

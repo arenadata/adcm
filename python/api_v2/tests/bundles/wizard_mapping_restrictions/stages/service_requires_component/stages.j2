@@ -1,0 +1,10 @@
+- name: stage_service_requires_component
+  display_name: Stage service requires component
+  steps:
+    - name: step_service_requires_component
+      display_name: step_service_requires_component
+      hc_template:
+        file:
+          path: stages/service_requires_component/step.j2
+        engine:
+          type: jinja2

@@ -1,0 +1,10 @@
+- name: stage_bound_component
+  display_name: Stage bound component
+  steps:
+    - name: step_bound_component
+      display_name: step_bound_component
+      hc_template:
+        file:
+          path: stages/bound_component/step.j2
+        engine:
+          type: jinja2

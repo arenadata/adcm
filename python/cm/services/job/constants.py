@@ -11,5 +11,5 @@
 # limitations under the License.
 
 HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE = (
-    "Host-component map of upgraded cluster should satisfy constraints of new bundle. " "Now error is: {}"
+    "Host-component map of upgraded cluster should satisfy constraints of new bundle. Now error is: {}"
 )

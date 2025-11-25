@@ -1,0 +1,10 @@
+- name: stage_constraint_zero_one
+  display_name: Stage constraint zero one
+  steps:
+    - name: step_constraint_zero_one
+      display_name: step_constraint_zero_one
+      hc_template:
+        file:
+          path: stages/constraint_zero_one/step.j2
+        engine:
+          type: jinja2

@@ -84,6 +84,7 @@ def check_all(
     check_only_mapping(
         bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
     )
+    # TODO: forbid to `add` components in MM, `remove` is allowed
     check_no_host_in_mm(host_difference.mapped.all)
 
 

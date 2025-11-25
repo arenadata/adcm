@@ -60,6 +60,11 @@ class MappingInputDTO(BaseModel):
     cumulative_delta: HostComponentMapDelta | None = None
 
 
+class MappingStepInput(BaseModel):
+    step_id: ActionProcessStepID
+    mapping: MappingInputDTO
+
+
 class StepInputDTO(BaseModel):
     configuration: core.config.Configuration | None = None
     job_id: TaskID | None = None
