@@ -1,0 +1,17 @@
+- name: stage_two_mapping_steps
+  display_name: Stage two mapping steps
+  steps:
+    - name: mapping_step_one
+      display_name: mapping_step_one
+      hc_template:
+        file:
+          path: stages/two_mapping_steps/step.j2
+        engine:
+          type: jinja2
+    - name: mapping_step_two
+      display_name: mapping_step_two
+      hc_template:
+        file:
+          path: stages/two_mapping_steps/step.j2
+        engine:
+          type: jinja2

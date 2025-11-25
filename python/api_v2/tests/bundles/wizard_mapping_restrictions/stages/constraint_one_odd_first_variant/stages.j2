@@ -1,0 +1,10 @@
+- name: stage_constraint_one_odd_first_variant
+  display_name: Stage constraint one odd first variant
+  steps:
+    - name: step_constraint_one_odd_first_variant
+      display_name: step_constraint_one_odd_first_variant
+      hc_template:
+        file:
+          path: stages/constraint_one_odd_first_variant/step.j2
+        engine:
+          type: jinja2

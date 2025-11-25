@@ -12,11 +12,12 @@
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Collection
+from typing import Any, Collection, Literal
 from uuid import uuid4
 import json
 import unittest
 
+from adcm.tests.client import APINode
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.issue import add_concern_to_object
 from cm.models import (
@@ -26,6 +27,7 @@ from cm.models import (
     Component,
     ConcernCause,
     ConcernItem,
+    Host,
     HostComponent,
     Process,
     ProcessStep,
@@ -61,6 +63,7 @@ from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -131,6 +134,12 @@ class TestActionProcess(BaseAPITestCase):
             ),
         )
 
+        bundle_hc_restrictions_dir = self.test_bundles_dir / "wizard_mapping_restrictions"
+        bundle = self.add_bundle(source_dir=bundle_hc_restrictions_dir)
+        self.cluster_with_mapping_restrictions = self.add_cluster(
+            bundle=bundle, name="cluster with mapping restrictions"
+        )
+
     def initiate_process(self, owner, action, expected_status: int = HTTP_201_CREATED):
         response = self.client.v2[owner, "actions", action, "processes"].post(data={})
         self.assertEqual(response.status_code, expected_status, response.json())
@@ -176,6 +185,16 @@ class TestActionProcess(BaseAPITestCase):
             step.state = ProcessStepState.COMPLETED
             step.save(update_fields=["step_spec", "state"])
             ProcessStepInput.objects.create(step_id=step.id, job=None, configuration={"config": {}, "attr": {}})
+
+    def cleanup_process_hc_service(self, cluster_id: int, service_ids: list[int], process_id: int):
+        HostComponent.objects.filter(cluster_id=cluster_id).delete()
+        for service in Service.objects.filter(cluster_id=cluster_id, id__in=service_ids):
+            response = self.client.v2[service].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        steps_qs = ProcessStep.objects.filter(process_id=process_id)
+        ProcessStepInput.objects.filter(step_id__in=steps_qs.values_list("id", flat=True)).delete()
+        steps_qs.delete()
+        Process.objects.get(id=process_id).delete()
 
     def test_create_process_success(self):
         self.assertEqual(Process.objects.count(), 0)
@@ -2042,3 +2061,432 @@ class TestActionProcess(BaseAPITestCase):
         target_step.refresh_from_db()
         self.assertEqual(response.json()["currentStep"], target_step.id)
         self.assertEqual(target_step.state, ProcessStepState.BROKEN)
+
+    def _test_adcm_7308_submit_mapping_component_constraint(
+        self,
+        cluster: Cluster,
+        action: str,
+        service: str,
+        component: str,
+        initial_hc: list[Host],
+        hc: dict[Literal["add", "remove"], list[Host]],
+    ):
+        action = Action.objects.get(prototype=cluster.prototype, name=action)
+        service = self.add_services_to_cluster(service_names=[service], cluster=cluster).get()
+        component = Component.objects.get(prototype__name=component, service=service, cluster=cluster)
+
+        # set initial hc mapping
+        initial_hc = initial_hc or []
+        response = self.client.v2[cluster, "mapping"].post(
+            data=[{"hostId": host.pk, "componentId": component.pk} for host in initial_hc],
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        # init process
+        response = self.client.v2[cluster, "actions", action.pk, "processes"].post()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        process = self.get_process(process_id=response.json()["id"])
+        step = process.steps.get()
+
+        # submit mapping step
+        operations_endpoint = self.client.v2[cluster, "actions", action.id, "processes", process.id, "operation"]
+        hc_delta = {
+            op: [{"hostId": host.pk, "componentId": component.pk} for host in hosts] for op, hosts in hc.items()
+        }
+        payload = {
+            "method": ProcessOperationType.SUBMIT,
+            "params": {
+                "stepId": step.id,
+                "processSyncKey": process.sync_key,
+                "hostComponentMapDelta": hc_delta,
+            },
+        }
+
+        response = operations_endpoint.post(data=payload)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        response = response.json()
+        self.assertEqual(response["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertEqual(response["level"], "error")
+        self.assertRegex(response["desc"], r'Component ".*" of service ".*" has unsatisfied constraint:')
+
+        # cleanup
+        self.cleanup_process_hc_service(cluster_id=cluster.id, service_ids=[service.id], process_id=process.id)
+
+    def test_adcm_7308_submit_mapping_component_constraints_fail(self):
+        cluster = self.cluster_with_mapping_restrictions
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=cluster)
+        host_3 = self.add_host(provider=self.provider, fqdn="host-3", cluster=cluster)
+
+        for action, service, component, initial_hc, hc in (
+            ("action_c_one", "service_with_one_component_constraint", "one", [host_1], {"add": [host_2]}),
+            ("action_c_one", "service_with_one_component_constraint", "one", [host_1], {"remove": [host_1]}),
+            (
+                "action_c_one_odd_first_variant",
+                "service_with_one_odd_component_constraint_1",
+                "one_odd_first_variant",
+                [host_1],
+                {"add": [host_2]},
+            ),
+            (
+                "action_c_one_odd_first_variant",
+                "service_with_one_odd_component_constraint_1",
+                "one_odd_first_variant",
+                [host_1],
+                {"remove": [host_1]},
+            ),
+            (
+                "action_c_one_odd_second_variant",
+                "service_with_one_odd_component_constraint_2",
+                "one_odd_second_variant",
+                [host_1],
+                {"add": [host_2]},
+            ),
+            (
+                "action_c_one_odd_second_variant",
+                "service_with_one_odd_component_constraint_2",
+                "one_odd_second_variant",
+                [host_1],
+                {"remove": [host_1]},
+            ),
+            (
+                "action_c_one_plus",
+                "service_with_one_plus_component_constraint",
+                "one_plus",
+                [host_1, host_2],
+                {"remove": [host_1, host_2]},
+            ),
+            (
+                "action_c_one_two",
+                "service_with_one_two_component_constraint",
+                "one_two",
+                [host_1],
+                {"remove": [host_1]},
+            ),
+            (
+                "action_c_one_two",
+                "service_with_one_two_component_constraint",
+                "one_two",
+                [host_1],
+                {"add": [host_2, host_3]},
+            ),
+            (
+                "action_c_plus",
+                "service_with_plus_component_constraint",
+                "plus",
+                [host_1, host_2, host_3],
+                {"remove": [host_1]},
+            ),
+            (
+                "action_c_zero_odd",
+                "service_with_zero_odd_component_constraint",
+                "zero_odd",
+                [],
+                {"add": [host_1, host_2]},
+            ),
+            (
+                "action_c_zero_odd",
+                "service_with_zero_odd_component_constraint",
+                "zero_odd",
+                [host_1],
+                {"add": [host_3]},
+            ),
+            (
+                "action_c_zero_odd",
+                "service_with_zero_odd_component_constraint",
+                "zero_odd",
+                [host_1, host_2, host_3],
+                {"remove": [host_2]},
+            ),
+            (
+                "action_c_zero_one",
+                "service_with_zero_one_component_constraint",
+                "zero_one",
+                [],
+                {"add": [host_1, host_2]},
+            ),
+            (
+                "action_c_zero_one",
+                "service_with_zero_one_component_constraint",
+                "zero_one",
+                [host_1],
+                {"add": [host_2]},
+            ),
+        ):
+            # check delta component constraint violations on first step
+            with self.subTest(f"{action=}, {service=}, {component=}, {initial_hc=}, {hc=}"):
+                self._test_adcm_7308_submit_mapping_component_constraint(
+                    cluster=cluster, action=action, service=service, component=component, initial_hc=initial_hc, hc=hc
+                )
+
+        # scenario: there is previous mapping step with correct cumulative_delta.
+        # This delta must be considered in new step checks
+        with self.subTest("Check delta constraint violations on second step"):
+            action = Action.objects.get(prototype=cluster.prototype, name="action_two_mapping_steps")
+            service = self.add_services_to_cluster(
+                service_names=["service_with_zero_one_component_constraint"], cluster=cluster
+            ).get()
+            component = Component.objects.get(prototype__name="zero_one", service=service, cluster=cluster)
+
+            # init process
+            response = self.client.v2[cluster, "actions", action.pk, "processes"].post()
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            process = self.get_process(process_id=response.json()["id"])
+            step_id = process.current_step.id
+
+            # submit first mapping step
+            operations_endpoint = self.client.v2[cluster, "actions", action.id, "processes", process.id, "operation"]
+            hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+            response = operations_endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # submit second step violating (considering previous step's cumulative_delta) component constraint
+            process.refresh_from_db()
+            self.assertNotEqual(process.current_step_id, step_id)
+            self.assertEqual(process.last_completed_step_id, step_id)
+
+            hc_delta = {"add": [{"hostId": host_2.pk, "componentId": component.pk}]}
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": process.current_step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": hc_delta,
+                },
+            }
+            response = operations_endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            response = response.json()
+            self.assertEqual(response["code"], "COMPONENT_CONSTRAINT_ERROR")
+            self.assertEqual(response["level"], "error")
+            self.assertRegex(response["desc"], r'Component ".*" of service ".*" has unsatisfied constraint:')
+
+    def test_adcm_7310_submit_mapping_with_mm_fail(self):
+        cluster = self.cluster_with_mapping_restrictions
+        service = self.add_services_to_cluster(["service_with_zero_one_component_constraint"], cluster=cluster).get()
+        component = Component.objects.get(prototype__name="zero_one", service=service, cluster=cluster)
+        action = Action.objects.get(name="action_c_zero_one", prototype=cluster.prototype)
+        host = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
+
+        # init process
+        response = self.client.v2[cluster, "actions", action.pk, "processes"].post()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        process = self.get_process(process_id=response.json()["id"])
+
+        with self.subTest("Host in mm"):
+            response = self.client.v2[host, "maintenance-mode"].post(data={"maintenanceMode": "on"})
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            operations_endpoint = self.client.v2[cluster, "actions", action.id, "processes", process.id, "operation"]
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": process.current_step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": {"add": [{"hostId": host.pk, "componentId": component.pk}]},
+                },
+            }
+            response = operations_endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            expected_response = {
+                "code": "INVALID_HC_HOST_IN_MM",
+                "level": "error",
+                "desc": "You can't save hc with hosts in maintenance mode",
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+            response = self.client.v2[host, "maintenance-mode"].post(data={"maintenanceMode": "off"})
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # TODO: uncomment when "forbid-to-map-MM-components" functionality is ready
+        # with self.subTest("Service in mm"):
+        #     response = self.client.v2[component, "maintenance-mode"].post(data={"maintenanceMode": "on"})
+        #     self.assertEqual(response.status_code, HTTP_200_OK)
+        #
+        #     response = operations_endpoint.post(data=payload)
+        #     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        #
+        #     expected_response = {}
+        #     self.assertDictEqual(response.json(), expected_response)
+        #
+        #     response = self.client.v2[component, "maintenance-mode"].post(data={"maintenanceMode": "off"})
+        #     self.assertEqual(response.status_code, HTTP_200_OK)
+        #
+        # with self.subTest("Component in mm"):
+        #     response = self.client.v2[service, "maintenance-mode"].post(data={"maintenanceMode": "on"})
+        #     self.assertEqual(response.status_code, HTTP_200_OK)
+        #
+        #     response = operations_endpoint.post(data=payload)
+        #     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        #
+        #     expected_response = {}
+        #     self.assertDictEqual(response.json(), expected_response)
+        #
+        #     response = self.client.v2[service, "maintenance-mode"].post(data={"maintenanceMode": "off"})
+        #     self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def _7313_prepare_env_get_operation_endpoint_and_process(
+        self, cluster: Cluster, action_name: str
+    ) -> tuple[APINode, Process]:
+        action = Action.objects.get(name=action_name, prototype=cluster.prototype)
+        response = self.client.v2[cluster, "actions", action.pk, "processes"].post()
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        process = self.get_process(process_id=response.json()["id"])
+
+        return self.client.v2[cluster, "actions", action.id, "processes", process.id, "operation"], process
+
+    def test_7313_submit_mapping_step_dependencies_fail(self):
+        cluster = self.cluster_with_mapping_restrictions
+        host = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
+
+        with self.subTest("Service requires service"):
+            endpoint, process = self._7313_prepare_env_get_operation_endpoint_and_process(
+                cluster=cluster, action_name="action_service_requires_service"
+            )
+            service = self.add_services_to_cluster(service_names=["service_requires_service"], cluster=cluster).get()
+            component = Component.objects.get(prototype__name="component_1", service=service, cluster=cluster)
+
+            # submit with unsatisfied requirement
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": process.current_step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": {"add": [{"hostId": host.pk, "componentId": component.pk}]},
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "SERVICE_CONFLICT",
+                "level": "error",
+                "desc": 'No required service "service_required" for service "service_requires_service"',
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+            # satisfy requirements, try again
+            required_service = self.add_services_to_cluster(service_names=["service_required"], cluster=cluster).get()
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.cleanup_process_hc_service(
+                cluster_id=cluster.id, service_ids=[service.id, required_service.id], process_id=process.id
+            )
+
+        with self.subTest("Service requires component"):
+            endpoint, process = self._7313_prepare_env_get_operation_endpoint_and_process(
+                cluster=cluster, action_name="action_service_requires_component"
+            )
+            service = self.add_services_to_cluster(service_names=["service_requires_component"], cluster=cluster).get()
+            component = Component.objects.get(prototype__name="component_1", service=service, cluster=cluster)
+            service_with_required_component = self.add_services_to_cluster(
+                service_names=["service_with_component_required"], cluster=cluster
+            ).get()
+            required_component = Component.objects.get(
+                prototype__name="required_component", service=service_with_required_component, cluster=cluster
+            )
+            not_required_component = Component.objects.get(
+                prototype__name="not_required_component", service=service_with_required_component, cluster=cluster
+            )
+
+            # submit with unsatisfied requirement
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": process.current_step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": {
+                        "add": [
+                            {"hostId": host.pk, "componentId": component.pk},
+                            {"hostId": host.pk, "componentId": not_required_component.pk},
+                        ]
+                    },
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "COMPONENT_CONSTRAINT_ERROR",
+                "level": "error",
+                "desc": 'No required component "required_component" of service "service_with_component_required" for '
+                'service "service_requires_component"',
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+            # satisfy requirements, try again
+            payload["params"]["hostComponentMapDelta"]["add"] = [
+                {"hostId": host.pk, "componentId": component.pk},
+                {"hostId": host.pk, "componentId": required_component.pk},
+            ]
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.cleanup_process_hc_service(
+                cluster_id=cluster.id,
+                service_ids=[service.id, service_with_required_component.id],
+                process_id=process.id,
+            )
+
+        with self.subTest("Service with bound component"):
+            host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=cluster)
+
+            endpoint, process = self._7313_prepare_env_get_operation_endpoint_and_process(
+                cluster=cluster, action_name="action_bound_component"
+            )
+            service = self.add_services_to_cluster(
+                service_names=["service_with_bound_component"], cluster=cluster
+            ).get()
+            component = Component.objects.get(prototype__name="bound_component", service=service, cluster=cluster)
+            bound_target_service = self.add_services_to_cluster(
+                service_names=["bound_target_service"], cluster=cluster
+            ).get()
+            bound_target_component = Component.objects.get(
+                prototype__name="bound_target_component", service=bound_target_service, cluster=cluster
+            )
+
+            # submit with unsatisfied requirement
+            payload = {
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "stepId": process.current_step_id,
+                    "processSyncKey": process.sync_key,
+                    "hostComponentMapDelta": {
+                        "add": [
+                            {"hostId": host.pk, "componentId": component.pk},
+                            {"hostId": host_2.pk, "componentId": component.pk},
+                            {"hostId": host.pk, "componentId": bound_target_component.pk},
+                        ]
+                    },
+                },
+            }
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            expected_response = {
+                "code": "COMPONENT_CONSTRAINT_ERROR",
+                "level": "error",
+                "desc": 'Component `bound_to` restriction violated.\nEach host with component "bound_target_component" '
+                'of service "bound_target_service" should have mapped component "bound_component" of service '
+                '"service_with_bound_component".',
+            }
+            self.assertDictEqual(response.json(), expected_response)
+
+            # satisfy requirements, try again
+            payload["params"]["hostComponentMapDelta"]["add"].append(
+                {"hostId": host_2.pk, "componentId": bound_target_component.pk}
+            )
+            response = endpoint.post(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.cleanup_process_hc_service(
+                cluster_id=cluster.id, service_ids=[service.id, bound_target_service.id], process_id=process.id
+            )

@@ -1,0 +1,214 @@
+---
+- type: cluster
+  name: wizard_mapping_with_restrictions
+  version: &version '1.0'
+  edition: community
+  allow_maintenance_mode: true
+
+  actions:
+    action_c_one: &action
+      type: job
+      script: ./sleep.yaml
+      script_type: ansible
+      states:
+        available: any
+      wizard_template: &template
+        file:
+          path: stages/constraint_one/stages.j2
+        engine:
+          type: jinja2
+
+    action_c_one_odd_first_variant:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_one_odd_first_variant/stages.j2
+
+    action_c_one_odd_second_variant:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_one_odd_second_variant/stages.j2
+
+    action_c_one_plus:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_one_plus/stages.j2
+
+    action_c_one_two:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_one_two/stages.j2
+
+    action_c_plus:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_plus/stages.j2
+
+    action_c_zero_odd:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_zero_odd/stages.j2
+
+    action_c_zero_one:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/constraint_zero_one/stages.j2
+
+    action_two_mapping_steps:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/two_mapping_steps/stages.j2
+
+    action_service_requires_service:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/service_requires_service/stages.j2
+
+    action_service_requires_component:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/service_requires_component/stages.j2
+
+    action_bound_component:
+      <<: *action
+      wizard_template:
+        <<: *template
+        file:
+          path: stages/bound_component/stages.j2
+
+  config: &config
+    - name: float
+      type: float
+      required: false
+      default: 0.1
+
+- name: service_requires_service
+  type: service
+  version: *version
+  requires:
+    - service: service_required
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_requires_component
+  type: service
+  version: *version
+  requires:
+    - service: service_with_component_required
+      component: required_component
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_no_requires
+  type: service
+  version: *version
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_required
+  type: service
+  version: *version
+
+- name: service_with_component_required
+  type: service
+  version: *version
+  components:
+    required_component:
+      constraint: [ 0, + ]
+    not_required_component:
+      constraint: [ 0, + ]
+
+- name: bound_target_service
+  type: service
+  version: *version
+  components:
+    bound_target_component:
+      constraint: [ 0, + ]
+
+- name: service_with_bound_component
+  type: service
+  version: *version
+  components:
+    bound_component:
+      constraint: [ 0, + ]
+      bound_to:
+        service: bound_target_service
+        component: bound_target_component
+
+- name: service_with_one_component_constraint
+  type: service
+  version: *version
+  components:
+    one:
+      constraint: [1]
+
+- name: service_with_zero_one_component_constraint
+  type: service
+  version: *version
+  components:
+    zero_one:
+      constraint: [0,1]
+
+- name: service_with_one_two_component_constraint
+  type: service
+  version: *version
+  components:
+    one_two:
+      constraint: [1,2]
+
+- name: service_with_one_odd_component_constraint_1
+  type: service
+  version: *version
+  components:
+    one_odd_first_variant:
+      constraint: [1,odd]
+
+- name: service_with_one_odd_component_constraint_2
+  type: service
+  version: *version
+  components:
+    one_odd_second_variant:
+      constraint: [odd]
+
+- name: service_with_zero_odd_component_constraint
+  type: service
+  version: *version
+  components:
+    zero_odd:
+      constraint: [0,odd]
+
+- name: service_with_one_plus_component_constraint
+  type: service
+  version: *version
+  components:
+    one_plus:
+      constraint: [1,+]
+
+- name: service_with_plus_component_constraint
+  type: service
+  version: *version
+  components:
+    plus:
+      constraint: [+]

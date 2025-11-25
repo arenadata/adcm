@@ -12,13 +12,14 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from functools import wraps
 from typing import Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
-from core.cluster.types import ClusterTopology
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.types import ActionInfo, CallingProcess, JobSpec
 from core.types import (
@@ -41,6 +42,7 @@ from cm.config.repo import build_specification
 from cm.converters import core_type_to_model
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
+from cm.services import mapping
 from cm.services.action_process import repo
 from cm.services.action_process.errors import (
     ActionProcessDBError,
@@ -49,7 +51,6 @@ from cm.services.action_process.errors import (
     SyncKeyMismatchError,
 )
 from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
-from cm.services.action_process.repo import get_done_step_inputs_for_process, upsert_step_input
 from cm.services.action_process.schema_validation import (
     CompleteProcessPayload,
     Configuration,
@@ -72,6 +73,7 @@ from cm.services.action_process.types import (
     StepType,
     StepUpdateDTO,
 )
+from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.bundle_alt.render import ActionArgs, Environment, render_process
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.flags import BuiltInFlag, lower_flag
@@ -90,12 +92,12 @@ T = TypeVar("T", contravariant=True)
 
 
 class HCViolationType(Enum):
-    HOSTS_ABSENT = 0
-    COMPONENTS_ABSENT = 1
-    ADD_RULE = 2
-    ADD_SANITY = 3
-    REMOVE_RULE = 4
-    REMOVE_SANITY = 5
+    HOSTS_ABSENT = auto()
+    COMPONENTS_ABSENT = auto()
+    ADD_RULE = auto()
+    ADD_SANITY = auto()
+    REMOVE_RULE = auto()
+    REMOVE_SANITY = auto()
 
 
 class HCErrorFormatter(Protocol):
@@ -391,7 +393,7 @@ def _operation_submit_mapping(
     step_input_data = StepInputDTO(
         configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
     )
-    _check_hc_mapping_delta(step=step, hc_mapping_delta=hc_mapping_delta, cluster_id=context.object.id)
+    _check_hc_mapping_delta(step=step, hc_mapping_delta=hc_mapping_delta, object_=context.object)
 
     perform_mapping(process_id=process.id, step_id=step.id, step_input_data=step_input_data)
 
@@ -517,25 +519,64 @@ def _check_all_steps_completed(process: ActionProcess) -> None:
             raise ActionProcessOperationError("All steps must be completed")
 
 
-def _check_hc_mapping_delta(
-    step: Step, hc_mapping_delta: HostComponentMapDelta, cluster_id: core.types.ClusterID
-) -> None:
+def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta, object_: CoreObjectDescriptor) -> None:
+    cluster_id, bundle_id = repo.retrieve_related_cluster_id_and_cluster_bundle_id(object_=object_)
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
-    mapping_rules = _prepare_mapping_rules(step=step, topology=topology)
 
-    violations: list[HCViolation] = []
-    violations.extend(_find_mapping_delta_objects_existence_violations(delta=hc_mapping_delta, topology=topology))
-    # TODO: make one check-hc-distribution interface
-    #       see core.concern.checks._mapping.find_cluster_mapping_issues (+ ADCM-7264)
-    violations.extend(
-        _find_hc_operation_distribution_violations(delta=hc_mapping_delta, rules=mapping_rules, topology=topology)
+    if existence_violations := _find_mapping_delta_objects_existence_violations(
+        delta=hc_mapping_delta, topology=topology
+    ):
+        existence_violations[0].raise_error()
+
+    # TODO: unite with cm.services.job._utils.check_delta_is_allowed
+    mapping_rules = _prepare_mapping_rules(step=step, topology=topology)
+    if distribution_violations := _find_hc_operation_distribution_violations(
+        delta=hc_mapping_delta, rules=mapping_rules, topology=topology
+    ):
+        distribution_violations[0].raise_error()
+
+    # if there is previous mapping step with cumulative_delta: "apply" cumulative_delta to topology
+    if previous_mapping_input := repo.retrieve_previous_mapping_step_input_with_cumulative_delta(
+        process_id=step.process_id, step_id=step.id
+    ):
+        mapping_considering_cumulative_delta = _get_new_flat_mapping_from_delta_and_topology(
+            delta=previous_mapping_input.mapping.cumulative_delta, topology=topology
+        )
+        topology = create_topology_with_new_mapping(topology=topology, new_mapping=mapping_considering_cumulative_delta)
+
+    new_mapping = _get_new_flat_mapping_from_delta_and_topology(delta=hc_mapping_delta, topology=topology)
+    new_topology = create_topology_with_new_mapping(topology=topology, new_mapping=new_mapping)
+    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
+
+    mapping.check_all(
+        bundle_restrictions=bundle_restrictions,
+        new_topology=new_topology,
+        host_difference=host_difference,
     )
 
-    if violations:
-        raise violations[0].raise_error()
+
+def _get_new_flat_mapping_from_delta_and_topology(
+    delta: HostComponentMapDelta, topology: ClusterTopology
+) -> list[HostComponentEntry]:
+    flat_hc: set[tuple[HostID, ComponentID]] = {
+        (host_id, component_id)
+        for component_id, host_ids in topology.component_host_id_map.items()
+        for host_id in host_ids
+    }
+
+    for hc_entry in delta.add:
+        flat_hc.add((hc_entry.host_id, hc_entry.component_id))
+
+    for hc_entry in delta.remove:
+        flat_hc.discard((hc_entry.host_id, hc_entry.component_id))
+
+    return [HostComponentEntry(host_id=host_id, component_id=component_id) for host_id, component_id in flat_hc]
 
 
 def _prepare_mapping_rules(step: Step, topology: ClusterTopology) -> MappingRules:
+    """Filter mapping rules from step_spec by existing in topology components"""
+
     comp_full_name_id_map = topology.component_full_name_id_mapping
     rules = defaultdict(set)
 
@@ -668,58 +709,34 @@ def perform_mapping(process_id: int, step_id: int, step_input_data: StepInputDTO
     mapping_input = step_input_data.mapping
     if not mapping_input or not mapping_input.delta:
         # Nothing to process — just upsert and return
-        upsert_step_input(step_id=step_id, data=step_input_data)
+        repo.upsert_step_input(step_id=step_id, data=step_input_data)
         return
 
+    cumulative_delta = {"add": set(), "remove": set()}
+    input_ = repo.retrieve_previous_mapping_step_input_with_cumulative_delta(process_id=process_id, step_id=step_id)
+    if input_ and input_.mapping.cumulative_delta:
+        cumulative_delta = {
+            op: {tuple(sorted(hc.items())) for hc in hc_list}
+            for op, hc_list in input_.mapping.cumulative_delta.model_dump().items()
+        }
+
     delta = mapping_input.delta.model_dump()
-    step_inputs = get_done_step_inputs_for_process(process_id)
-
-    cumulative_add = set()
-    cumulative_remove = set()
-
-    for step_input in step_inputs:
-        mapping = step_input.mapping or {}
-        step_delta = mapping.get("delta")
-
-        if not step_delta:
-            continue
-
-        # Apply current step's delta
-        for rule in step_delta.get("add", []):
-            tup = tuple(sorted(rule.items()))
-            cumulative_add.add(tup)
-            cumulative_remove.discard(tup)  # Cancel any previous removal
-
-        for rule in step_delta.get("remove", []):
-            tup = tuple(sorted(rule.items()))
-            if tup in cumulative_add:
-                cumulative_add.discard(tup)
-            else:
-                cumulative_remove.add(tup)
 
     # Apply the new delta for the current step
     for rule in delta["add"]:
         tup = tuple(sorted(rule.items()))
-        cumulative_add.add(tup)
-        cumulative_remove.discard(tup)
+        cumulative_delta["add"].add(tup)
+        cumulative_delta["remove"].discard(tup)
 
     for rule in delta["remove"]:
         tup = tuple(sorted(rule.items()))
-        if tup in cumulative_add:
-            cumulative_add.discard(tup)
+        if tup in cumulative_delta["add"]:
+            cumulative_delta["add"].discard(tup)
         else:
-            cumulative_remove.add(tup)
+            cumulative_delta["remove"].add(tup)
 
     # Convert sets back to list of dicts
-    new_cumulative = {
-        "add": [dict(pair) for pair in cumulative_add],
-        "remove": [dict(pair) for pair in cumulative_remove],
-    }
+    cumulative_delta = {op: [dict(hc) for hc in hc_set] for op, hc_set in cumulative_delta.items()}
+    step_input_data.mapping = MappingInputDTO(delta=delta, cumulative_delta=cumulative_delta)
 
-    new_mapping = {
-        "delta": delta,
-        "cumulative_delta": new_cumulative,
-    }
-    step_input_data.mapping = MappingInputDTO(**new_mapping)
-
-    upsert_step_input(step_id=step_id, data=step_input_data)
+    repo.upsert_step_input(step_id=step_id, data=step_input_data)
