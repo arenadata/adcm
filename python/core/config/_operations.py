@@ -80,7 +80,7 @@ ChangesToApply = list[ChangeRequest]
 
 T = TypeVar("T")
 
-_EncryptFunc: TypeAlias = Callable[[str], str]
+_StrToStr: TypeAlias = Callable[[str], str]
 
 _FileParameterIdentifier: TypeAlias = str
 """
@@ -136,6 +136,20 @@ def prepare_config_from_defaults(default_values: ConfigFlatValues, specification
     values = flat_to_nested(flat_values)
 
     return Configuration(values=values, attributes=attributes)
+
+
+def prepare_initial_config_of_host_group(
+    configuration: Configuration, specification: spec.FullSpec
+) -> Success[Configuration]:
+    present_parameter_values = set(
+        nested_to_flat(configuration=configuration, specification=specification).values.keys()
+    )
+    owner_attrs = {
+        k: Attributes(is_active=attrs.is_active, is_synced=True) for k, attrs in configuration.attributes.items()
+    }
+    parameter_attrs = {k: Attributes(is_synced=True) for k in specification.parameters if k in present_parameter_values}
+
+    return Success(Configuration(values=configuration.values, attributes=owner_attrs | parameter_attrs))
 
 
 def validate_values(
@@ -314,29 +328,15 @@ def store_files(
 
 
 def encrypt_secrets(
-    values: ConfigValues, specification: spec.FullSpec, *, encrypt: _EncryptFunc, inplace: bool = False
+    values: ConfigValues, specification: spec.FullSpec, *, encrypt: _StrToStr, inplace: bool = False
 ) -> Success[ConfigValues]:
-    out: ConfigValues = values if inplace else deepcopy(values)
+    return _apply_to_secrets(values=values, specification=specification, func=encrypt, inplace=inplace)
 
-    encrypt_str = partial(
-        change_by_full_name_skip_missing, func=build_apply_if(func=encrypt, when=is_not_none), values=out
-    )
-    encrypt_dict = partial(
-        change_by_full_name_skip_missing,
-        func=build_apply_if(func=partial(_encrypt_dict, encrypt=encrypt), when=is_not_none),
-        values=out,
-    )
 
-    for name, param in specification.parameters.items():
-        match param:
-            case spec.p.StringParameter(is_secret=True):
-                encrypt_str(name=name)
-            case spec.p.MapParameter(is_secret=True):
-                encrypt_dict(name=name)
-            case _:
-                continue
-
-    return Success(out)
+def decrypt_secrets(
+    values: ConfigValues, specification: spec.FullSpec, *, decrypt: _StrToStr, inplace: bool = False
+) -> Success[ConfigValues]:
+    return _apply_to_secrets(values=values, specification=specification, func=decrypt, inplace=inplace)
 
 
 def prepare_config_for_ansible(
@@ -455,23 +455,13 @@ def adapt_configuration_for_new_specification(
     ):
         is_existing_selection_change = change.type == "selection" and change.parameter in groups_with_selection
         is_existing_value_change = change.type == "value" and change.parameter in parameters_and_groups_with_selection
+
         if is_existing_selection_change or is_existing_value_change:
             relevant_changes.append(change)
 
-    # if default became None, old default should be kept
-    new_none_defaults = {
-        name for name, value in new_defaults.items() if value is None and defaults.get(name) is not None
-    }
-    changed_parameters = {change.parameter for change in relevant_changes}
-    keep_old_default_changes = [
-        ChangeRequest.for_value(name=name, value=defaults[name]) for name in new_none_defaults - changed_parameters
-    ]
-
     new_configuration = prepare_config_from_defaults(default_values=new_defaults, specification=new_specification)
 
-    apply_result = apply_changes(
-        changes=relevant_changes + keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
-    )
+    apply_result = apply_changes(changes=relevant_changes, configuration=new_configuration, defaults=new_defaults)
 
     match apply_result:
         case Success((config_with_changed_values, _)):
@@ -479,7 +469,29 @@ def adapt_configuration_for_new_specification(
         case Fail():
             return apply_result
 
-    # todo sync "default became None" case
+    # if default became None, old default should be kept
+    new_none_defaults = {
+        name for name, value in new_defaults.items() if value is None and defaults.get(name) is not None
+    }
+    if new_none_defaults:
+        changed_parameters = {change.parameter for change in relevant_changes}
+        present_in_new_config = set(
+            nested_to_flat(configuration=new_configuration, specification=new_specification).values
+        )
+        present_and_change_required = (new_none_defaults - changed_parameters) & present_in_new_config
+        keep_old_default_changes = [
+            ChangeRequest.for_value(name=name, value=defaults[name]) for name in present_and_change_required
+        ]
+
+        apply_result = apply_changes(
+            changes=keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
+        )
+
+        match apply_result:
+            case Success((config_with_changed_values, _)):
+                new_configuration = config_with_changed_values
+            case Fail():
+                return apply_result
 
     for name, old_attributes in configuration.attributes.items():
         if not old_attributes.activation:
@@ -589,8 +601,8 @@ def _find_changes_from_level(
             for name in present_parameters:
                 new_value = values[name]
                 if new_value != reference[name]:
-                    full_name = level_names_to_full_name((*level_names, name))
-                    yield ChangeRequest.for_value(name=full_name, value=new_value)
+                    chosen_group_name = level_names_to_full_name((*level_names, name))
+                    yield ChangeRequest.for_value(name=chosen_group_name, value=new_value)
 
             present_groups = present_at_level.intersection(level.child_groups).intersection(values.keys())
             for name in present_groups:
@@ -603,8 +615,8 @@ def _find_changes_from_level(
                         and child_values is None
                         and reference[name] is not None
                     ):
-                        full_name = level_names_to_full_name((*level_names, name))
-                        yield ChangeRequest.for_group_selection(name=full_name, value=None)
+                        chosen_group_name = level_names_to_full_name((*level_names, name))
+                        yield ChangeRequest.for_group_selection(name=chosen_group_name, value=None)
 
                     continue
 
@@ -621,10 +633,10 @@ def _find_changes_from_level(
                 # either incorrect data came or option is invalid for new hierarchy
                 return
 
-            full_name = level_names_to_full_name((*level_names, name))
+            group_name = level_names_to_full_name(level_names)
             # it is based on current apply implementation, you may need a separate type for it later,
             # if you'll need to distinguish cases or add more clarity in what's happening
-            yield ChangeRequest.for_value(name=full_name, value=values)
+            yield ChangeRequest.for_value(name=group_name, value=values)
 
 
 def _detect_is_synced_value(name: ParameterFullName, previous_attributes: dict[ParameterFullName, Attributes]) -> bool:
@@ -646,8 +658,34 @@ def _add_selection(value: dict) -> dict:
     return value | {"_selection": chosen_value}
 
 
-def _encrypt_dict(value: dict, encrypt: _EncryptFunc) -> dict:
-    return {key: encrypt(val) if isinstance(val, str) else val for key, val in value.items()}
+def _apply_to_secrets(
+    values: ConfigValues, specification: spec.FullSpec, *, func: _StrToStr, inplace: bool = False
+) -> Success[ConfigValues]:
+    out: ConfigValues = values if inplace else deepcopy(values)
+
+    apply_to_str = partial(
+        change_by_full_name_skip_missing, func=build_apply_if(func=func, when=is_not_none), values=out
+    )
+    apply_to_dict_values = partial(
+        change_by_full_name_skip_missing,
+        func=build_apply_if(func=partial(_apply_to_dict_values, func=func), when=is_not_none),
+        values=out,
+    )
+
+    for name, param in specification.parameters.items():
+        match param:
+            case spec.p.StringParameter(is_secret=True):
+                apply_to_str(name=name)
+            case spec.p.MapParameter(is_secret=True):
+                apply_to_dict_values(name=name)
+            case _:
+                continue
+
+    return Success(out)
+
+
+def _apply_to_dict_values(value: dict, func: _StrToStr) -> dict:
+    return {key: func(val) if isinstance(val, str) else val for key, val in value.items()}
 
 
 def _set_none(_: Any) -> None:

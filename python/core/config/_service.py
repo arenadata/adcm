@@ -22,7 +22,6 @@ from core.config._pattern_validators import PossiblyEncryptedPatternValidator
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
 from core.config._secrets import AnsibleSecrets
 from core.config._types import (
-    Attributes,
     ChangeRequest,
     ConfigFlatValues,
     ConfigOwner,
@@ -95,6 +94,10 @@ class OperationError(Exception):
     ...
 
 
+def return_as_is(x: str) -> str:
+    return x
+
+
 @dataclass(slots=True)
 class ConfigService:
     repo: ConfigRepoI
@@ -108,10 +111,13 @@ class ConfigService:
         return self.repo.get_config(owner=owner)
 
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
-        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=False)
+        return self.repo.get_spec(owner=owner, action_id=None, defaults=False)
 
-    def retrieve_specification_with_defaults(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=True)
+    def retrieve_specification_with_defaults(
+        self, owner: CoreObjectDescriptor, *, encrypt_defaults: bool = True
+    ) -> tuple[spec.FullSpec, Defaults]:
+        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
+        return self.repo.get_spec(owner=owner, action_id=None, defaults=encrypt)
 
     def retrieve_partial_specification(
         self,
@@ -124,7 +130,7 @@ class ConfigService:
         Don't overuse this function, ensure that you are out of other options and no new mechanism is required.
         Can return "empty" spec.
         """
-        return self.repo.get_spec(owner=owner, action_id=None, with_defaults=False, only_for=only_for_types)
+        return self.repo.get_spec(owner=owner, action_id=None, defaults=False, only_for=only_for_types)
 
     def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
         # scenario-like method, may be moved
@@ -177,20 +183,25 @@ class ConfigService:
     def retrieve_specification_with_defaults_for_action(
         self, owner: CoreObjectDescriptor, action_id: ActionID
     ) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec(owner=owner, action_id=action_id, with_defaults=True)
+        return self.repo.get_spec(owner=owner, action_id=action_id, defaults=self.secrets.encrypt)
 
     def retrieve_configurations_by_id(self, configurations: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
         return self.repo.find_configs_by_ids(ids=configurations)
 
     def retrieve_specifications_by_prototypes(
-        self, prototypes: Iterable[PrototypeID]
+        self, prototypes: Iterable[PrototypeID], encrypt_defaults: bool = True
     ) -> dict[PrototypeID, spec.FullSpec]:
-        return {id_: spec for id_, (spec, _) in self.repo.find_specs_by_prototype_ids(ids=prototypes).items()}
+        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
+        return {
+            id_: spec
+            for id_, (spec, _) in self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt).items()
+        }
 
     def retrieve_specifications_by_prototypes_with_defaults(
-        self, prototypes: Iterable[PrototypeID]
+        self, prototypes: Iterable[PrototypeID], *, encrypt_defaults: bool = True
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        return self.repo.find_specs_by_prototype_ids(ids=prototypes)
+        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt)
 
     # todo: bad, should accept host groups or direct ids,
     # host groups retrieval should be in separate service/repo
@@ -242,13 +253,9 @@ class ConfigService:
         owner_configuration = self.retrieve_current_configuration(owner=owner)
         specification = self.retrieve_specification(owner=owner)
 
-        owner_attrs = {
-            k: Attributes(is_active=attrs.is_active, is_synced=True)
-            for k, attrs in owner_configuration.attributes.items()
-        }
-        parameter_attrs = {k: Attributes(is_synced=True) for k in specification.parameters}
-
-        group_configuration = Configuration(values=owner_configuration.values, attributes=owner_attrs | parameter_attrs)
+        group_configuration = operations.prepare_initial_config_of_host_group(
+            configuration=owner_configuration, specification=specification
+        ).value
 
         config_id = self.create_new_configuration_by_descriptor(
             configuration=group_configuration, description=owner_configuration.description, owner=group

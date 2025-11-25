@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, TypeAlias
+from typing import Any, Callable, Literal, TypeAlias
 
 from typing_extensions import Self
 
 from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
+
+EncryptFunc: TypeAlias = Callable[[str], str]
+DecryptFunc: TypeAlias = Callable[[str], str]
 
 ParameterFullName: TypeAlias = str
 """

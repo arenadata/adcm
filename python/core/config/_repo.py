@@ -13,7 +13,7 @@
 from typing import Iterable, Literal, Protocol, TypeAlias, overload
 
 from core.config import spec
-from core.config._types import Configuration, ConfigurationWithID, Defaults
+from core.config._types import Configuration, ConfigurationWithID, Defaults, EncryptFunc
 from core.types import (
     ActionID,
     ADCMHostGroupType,
@@ -58,7 +58,7 @@ class ConfigRepoI(Protocol):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: Literal[False],
+        defaults: Literal[False],
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
     ) -> spec.FullSpec:
         ...
@@ -69,7 +69,7 @@ class ConfigRepoI(Protocol):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: Literal[True],
+        defaults: EncryptFunc,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
     ) -> tuple[spec.FullSpec, Defaults]:
         ...
@@ -79,14 +79,14 @@ class ConfigRepoI(Protocol):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: bool = False,
+        defaults: Literal[False] | EncryptFunc = False,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
     ) -> spec.FullSpec | tuple[spec.FullSpec, Defaults]:
         """
         Retrieve specification for owner or action of this owner (owner-action relation may not be checked).
         If specification is missing, an error will be raised (except some cases, see `only_for`).
 
-        Specifying `with_defaults` will resolve defaults for specification.
+        Specifying `defautls` with encryption func will resolve defaults for specification.
 
         Specifying `only_for` allows to retrieve partial spec (with parameters/groups only matching ones specified),
         BUT it's not guaranteed that only them will be included
@@ -99,7 +99,7 @@ class ConfigRepoI(Protocol):
         ...
 
     def find_specs_by_prototype_ids(
-        self, ids: Iterable[PrototypeID]
+        self, ids: Iterable[PrototypeID], encrypt: EncryptFunc
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
         ...
 
