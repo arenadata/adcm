@@ -35,12 +35,12 @@ def parse_bundle_from_request_to_db(
         file_from_request=file_from_request, downloads_dir=settings.DOWNLOAD_DIR
     )
 
-    with bundle.load.cleanup_on_fail(archive):
+    with bundle.load.cleanup(on_exit=[archive]):
         unpacking_info = bundle.load.unpack_bundle(
             archive=archive, bundles_dir=settings.BUNDLE_DIR, files_dir=settings.FILE_DIR
         )
         check_defaults = partial(_check_defaults_new, bundle_root=unpacking_info.root)
-        with bundle.load.cleanup_on_fail(unpacking_info.root):
+        with bundle.load.cleanup(on_fail=[unpacking_info.root]):
             bundle.load.verify_signature(unpacking_info.signature, verified_signature_only)
             definitions = bundle.load.retrieve_bundle_definitions_from_archive(
                 archive=archive,

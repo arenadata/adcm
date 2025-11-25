@@ -16,7 +16,9 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Callable, Iterable
+import uuid
 import random
+import shutil
 import string
 import tarfile
 
@@ -239,7 +241,9 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         return policy.pk
 
     def upload_and_load_bundle(self, path: Path) -> Bundle:
-        return self.add_bundle(source_dir=path)
+        downloaded_archive = Path(path.parent, str(uuid.uuid4()) + ".temp")
+        shutil.copy2(path, downloaded_archive)
+        return self.add_bundle(source_dir=downloaded_archive)
 
     def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
         prototype = Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER)
