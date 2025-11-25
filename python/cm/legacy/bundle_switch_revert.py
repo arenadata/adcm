@@ -17,6 +17,7 @@ from functools import partial
 from typing import Callable, Generic, TypeVar
 
 from core.cluster.types import HostComponentEntry
+from core.result import Fail
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -506,7 +507,7 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         owner = orm_object_to_core_descriptor(obj)
         config = config_service.retrieve_configurations_by_id(configurations=(config_id,))[config_id]
         specs = config_service.retrieve_specifications_by_prototypes_with_defaults(
-            prototypes=(previous_prototype_id, new_prototype_id)
+            prototypes=(previous_prototype_id, new_prototype_id), encrypt_defaults=False
         )
         # it is expected to be present since config_id is specified
         new_spec = specs[new_prototype_id]
@@ -601,10 +602,16 @@ def _restore_config_of_main_object_and_update_host_groups(
     )
 
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
-    adapted_configs_of_host_groups = {
-        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True).value
+    adaptation_results = {
+        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True)
         for group, config_of_group in configs_of_host_groups.items()
     }
+    adapted_configs_of_host_groups = {}
+    for group, result in adaptation_results.items():
+        if isinstance(result, Fail):
+            raise core.config.OperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
+
+        adapted_configs_of_host_groups[group] = result.value
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
         main=config, groups=adapted_configs_of_host_groups
     )
@@ -679,7 +686,7 @@ def switch_config(
     config_service: core.config.ConfigService,
 ):
     specs_and_defaults = config_service.retrieve_specifications_by_prototypes_with_defaults(
-        prototypes=(new_prototype.pk, old_prototype.pk)
+        prototypes=(new_prototype.pk, old_prototype.pk), encrypt_defaults=False
     )
 
     old = specs_and_defaults[old_prototype.pk]
@@ -720,14 +727,26 @@ def _switch_configuration_version(
         new_defaults=new_defaults,
     )
 
-    config = update_for_new_spec(configuration=configuration, include_synchronization=False).value
+    update_result = update_for_new_spec(configuration=configuration, include_synchronization=False)
+    if isinstance(update_result, Fail):
+        raise core.config.OperationError(f"Failed to adapt config: {str(update_result.value)}")
+
+    config = update_result.value
+
     config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
 
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
-    adapted_configs_of_host_groups = {
-        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True).value
+    adaptation_results = {
+        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True)
         for group, config_of_group in configs_of_host_groups.items()
     }
+    adapted_configs_of_host_groups = {}
+    for group, result in adaptation_results.items():
+        if isinstance(result, Fail):
+            raise core.config.OperationError(f"Failed to adapt config of host group: {str(result.value)}")
+
+        adapted_configs_of_host_groups[group] = result.value
+
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
         main=config, groups=adapted_configs_of_host_groups
     )

@@ -37,7 +37,7 @@ def get_config_service():
             raise ValueError(message)
 
     secrets_service = core.config.secrets.AnsibleSecrets(secret=secret)
-    repo = ConfigRepo(secrets=secrets_service)
+    repo = ConfigRepo()
 
     validators = core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
     # shouldn't work like that, but no other way for now

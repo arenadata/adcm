@@ -39,6 +39,8 @@ from core.config._types import (
     FlatConfiguration,
     ParameterFullName,
     ParameterLevelName,
+    EncryptFunc,
+    DecryptFunc,
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
@@ -57,8 +59,10 @@ __all__ = [
     "ConfigValues",
     "Configuration",
     "ConfigurationWithID",
+    "DecryptFunc",
     "Defaults",
     "Directories",
+    "EncryptFunc",
     "FlatConfiguration",
     "HostGroupConfigOwner",
     "MainConfigVariantResolver",

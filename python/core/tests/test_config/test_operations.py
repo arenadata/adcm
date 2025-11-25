@@ -757,6 +757,53 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
         actual_values = self.expect_success(result).value.values
         self.assertDictEqual(actual_values, values)
 
+    def test_changed_with_selection_group(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection()),
+            ParameterGroup(identifier=name_id("s", "a")),
+            StringParameter(identifier=name_id("s", "a", "av")),
+            ParameterGroup(identifier=name_id("s", "b")),
+            StringParameter(identifier=name_id("s", "b", "bv")),
+        )
+        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        values = {"s": {"b": {"bv": "1"}}}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=Configuration(values=values),
+            specification=spec,
+            new_specification=spec,
+            defaults=defaults,
+            new_defaults=defaults,
+            include_synchronization=False,
+        )
+
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, values)
+
+    def test_changed_with_selection_group_defaulted_value(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection()),
+            ParameterGroup(identifier=name_id("s", "a")),
+            StringParameter(identifier=name_id("s", "a", "av")),
+            ParameterGroup(identifier=name_id("s", "b")),
+            StringParameter(identifier=name_id("s", "b", "bv")),
+        )
+        defaults_old = {"/s/a/av": "1", "/s/b/bv": "2"}
+        defaults_new = {"/s/a/av": None, "/s/b/bv": "2"}
+        values = {"s": {"b": {"bv": "1"}}}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=Configuration(values=values),
+            specification=spec,
+            new_specification=spec,
+            defaults=defaults_old,
+            new_defaults=defaults_new,
+            include_synchronization=False,
+        )
+
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, values)
+
 
 class TestPrepareConfigFromDefaults(ConfigTestCase):
     def prepare_spec_and_raw_defaults(self, as_default: str | None) -> tuple[FullSpec, Defaults]:

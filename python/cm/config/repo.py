@@ -47,7 +47,6 @@ class ConfigPrototypeInfo:
 
 @dataclass(slots=True)
 class ConfigRepo(config.ConfigRepoI):
-    secrets: config.secrets.AnsibleSecrets
     # retrieve
 
     def get_config(self, owner: ObjectOrGroup) -> config.ConfigurationWithID:
@@ -84,7 +83,7 @@ class ConfigRepo(config.ConfigRepoI):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: Literal[False],
+        defaults: Literal[False],
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
     ) -> config.spec.FullSpec:
         ...
@@ -95,7 +94,7 @@ class ConfigRepo(config.ConfigRepoI):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: Literal[True],
+        defaults: config.EncryptFunc,
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
     ) -> tuple[config.spec.FullSpec, config.Defaults]:
         ...
@@ -105,7 +104,7 @@ class ConfigRepo(config.ConfigRepoI):
         owner: CoreObjectDescriptor,
         action_id: ActionID | None,
         *,
-        with_defaults: bool = False,
+        defaults: Literal[False] | config.EncryptFunc = False,
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
     ) -> config.spec.FullSpec | tuple[config.spec.FullSpec, config.Defaults]:
         config_spec_info = _get_config_prototype_info(owner=owner, action_id=action_id, only_for=only_for)
@@ -118,16 +117,16 @@ class ConfigRepo(config.ConfigRepoI):
             records=config_spec_info.parameter_prototypes,
             group_customization_flag=config_spec_info.group_customization_flag,
         )
-        if not with_defaults:
+        if defaults is False:
             return spec
 
-        defaults = build_defaults(
+        spec_defaults = build_defaults(
             records=config_spec_info.parameter_prototypes,
             spec=spec,
             bundle_root=bundle_root,
-            encrypt=self.secrets.encrypt,
+            encrypt=defaults,
         )
-        return spec, defaults
+        return spec, spec_defaults
 
     def find_configs_by_ids(self, ids: Iterable[ConfigID]) -> dict[ConfigID, config.Configuration]:
         records = _get_configs_by_ids(ids=ids)
@@ -137,7 +136,7 @@ class ConfigRepo(config.ConfigRepoI):
         }
 
     def find_specs_by_prototype_ids(
-        self, ids: Iterable[PrototypeID]
+        self, ids: Iterable[PrototypeID], encrypt: config.EncryptFunc
     ) -> dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]:
         ids_ = tuple(ids)
 
@@ -165,7 +164,7 @@ class ConfigRepo(config.ConfigRepoI):
                 records=info.parameter_prototypes,
                 spec=specification,
                 bundle_root=proto_dir_map[prototype_id],
-                encrypt=self.secrets.encrypt,
+                encrypt=encrypt,
             )
             result[prototype_id] = (specification, defaults)
 
