@@ -17,10 +17,15 @@ import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/Actio
 import { useEffect, useMemo, useState } from 'react';
 import type { AdcmJob } from '@models/adcm';
 import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
+import ClusterDynamicActionWizardMapping from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardMapping/ClusterDynamicActionWizardMapping';
 
 const wizardStepStates = new Set([AdcmWizardStepStates.Running, AdcmWizardStepStates.Completed]);
 
-const wizardStepType = new Set([AdcmWizardStepType.Operation, AdcmWizardStepType.Configuration]);
+const wizardStepType = new Set([
+  AdcmWizardStepType.Operation,
+  AdcmWizardStepType.Configuration,
+  AdcmWizardStepType.Mapping,
+]);
 
 interface ActionWizardStepProps {
   jobsData: AdcmWizardJobsData;
@@ -59,7 +64,7 @@ const isFirstButtonDisabled = (
   isDraft: boolean,
   isInRunningState: boolean,
 ) => {
-  if (step.type === AdcmWizardStepType.Configuration) {
+  if ([AdcmWizardStepType.Configuration, AdcmWizardStepType.Mapping].includes(step.type)) {
     return (isCurrentStep && !isDraft) || isInRunningState;
   }
 
@@ -188,6 +193,9 @@ const ActionWizardSteps = ({
                 <ActionWizardConfigurationEditor isReadOnly={!isCurrentStep} step={step} />
               )}
               {step.type === AdcmWizardStepType.Operation && <ClusterDynamicActionWizardOperation step={step} />}
+              {step.type === AdcmWizardStepType.Mapping && (
+                <ClusterDynamicActionWizardMapping isReadOnly={!isCurrentStep} step={step} />
+              )}
               {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
             </div>
           </div>

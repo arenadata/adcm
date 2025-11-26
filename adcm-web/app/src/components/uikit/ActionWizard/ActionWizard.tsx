@@ -70,9 +70,11 @@ interface ActionWizardProps {
   onClose: () => void;
   selectedStep?: number;
   brokenStepError?: string;
+  wizardTitle: string;
 }
 
 const ActionWizard: React.FC<ActionWizardProps> = ({
+  wizardTitle,
   stages,
   selectedStep,
   brokenStepError,
@@ -94,7 +96,7 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
   return (
     <div className={s.actionWizardLayout}>
       <aside className={s.actionWizardLayout__leftSidebarWrap} data-test="nav-menu">
-        <ActionWizardMap process={process} />
+        <ActionWizardMap wizardTitle={wizardTitle} process={process} />
       </aside>
       <div className={s.actionWizardLayout__content}>
         {brokenStepError && <ActionWizardBrokenStage brokenStepError={brokenStepError} onClose={onClose} />}

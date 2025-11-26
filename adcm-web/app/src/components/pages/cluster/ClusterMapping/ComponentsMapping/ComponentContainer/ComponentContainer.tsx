@@ -27,6 +27,7 @@ export interface ComponentContainerProps {
   checkComponentMappingAvailability: (component: AdcmMappingComponent) => ComponentAvailabilityErrors;
   checkHostMappingAvailability: (host: AdcmHostShortView) => string | undefined;
   checkHostUnmappingAvailability: (host: AdcmHostShortView) => string | undefined;
+  isReadOnly?: boolean;
 }
 
 const ComponentContainer = ({
@@ -40,6 +41,7 @@ const ComponentContainer = ({
   checkComponentMappingAvailability,
   checkHostMappingAvailability,
   checkHostUnmappingAvailability,
+  isReadOnly = false,
 }: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
@@ -77,7 +79,7 @@ const ComponentContainer = ({
           return {
             label: host.name,
             value: host,
-            disabled: !isEnabled,
+            disabled: isReadOnly ?? !isEnabled,
             title: hostsErrors[host.id].allowMapError ?? hostsErrors[host.id].allowUnmapError,
           };
         })
@@ -119,7 +121,7 @@ const ComponentContainer = ({
     [s.componentContainer_error]: !isMappingValid,
     [s.componentContainer_notRequired]: isNotRequired,
     [s.componentContainer_optional]: isOptional,
-    [s.componentContainer_disabled]: componentNotAvailableError,
+    [s.componentContainer_disabled]: isReadOnly ?? componentNotAvailableError,
   });
 
   const titleClassName = cn(s.componentContainerHeader__title, {
@@ -143,7 +145,7 @@ const ComponentContainer = ({
             label="Add hosts"
             onClick={handleAddClick}
             tooltip={componentMapError}
-            isDisabled={Boolean(componentMapError)}
+            isDisabled={isReadOnly || Boolean(componentMapError)}
           />
         </div>
         <div className={s.componentContainerContent}>
@@ -169,7 +171,7 @@ const ComponentContainer = ({
                       label={host.name}
                       onDeleteClick={handleDelete}
                       deleteButtonTooltip={error}
-                      isDisabled={Boolean(error)}
+                      isDisabled={isReadOnly || Boolean(error)}
                     />
                   );
                 })}

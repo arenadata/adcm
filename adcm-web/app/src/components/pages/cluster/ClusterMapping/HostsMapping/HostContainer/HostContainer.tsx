@@ -18,6 +18,7 @@ export interface HostContainerProps {
   className?: string;
   onMap: (components: AdcmMappingComponent[], host: AdcmHostShortView) => void;
   onUnmap: (hostId: number, componentId: number) => void;
+  isReadOnly?: boolean;
 }
 
 const HostContainer = ({
@@ -28,6 +29,7 @@ const HostContainer = ({
   className,
   onMap,
   onUnmap,
+  isReadOnly = false,
 }: HostContainerProps) => {
   const { host, components } = hostMapping;
   const [isSelectOpen, setIsSelectOpen] = useState(false);
@@ -43,7 +45,7 @@ const HostContainer = ({
           return {
             label: component.displayName,
             value: component,
-            disabled: Boolean(componentNotAvailableError),
+            disabled: isReadOnly || Boolean(componentNotAvailableError),
             title: componentNotAvailableError,
           };
         })
@@ -64,7 +66,7 @@ const HostContainer = ({
   }
 
   const hostClassName = cn(className, s.hostContainer, {
-    [s.hostContainer_disabled]: hostNotAvailableError,
+    [s.hostContainer_disabled]: isReadOnly || hostNotAvailableError,
   });
 
   const handleAddClick = () => {
@@ -92,7 +94,7 @@ const HostContainer = ({
             label="Add components"
             onClick={handleAddClick}
             tooltip={hostNotAvailableError}
-            isDisabled={Boolean(hostNotAvailableError)}
+            isDisabled={isReadOnly || Boolean(hostNotAvailableError)}
           />
         </div>
         {visibleHostComponents.length > 0 && (
@@ -107,7 +109,7 @@ const HostContainer = ({
                   mappingErrors={mappingErrors[component.id]}
                   onDeleteClick={handleDelete}
                   deleteButtonTooltip={hostNotAvailableError ?? componentNotAvailableError}
-                  isDisabled={Boolean(hostNotAvailableError ?? componentNotAvailableError)}
+                  isDisabled={isReadOnly || Boolean(hostNotAvailableError || componentNotAvailableError)}
                 />
               );
             })}

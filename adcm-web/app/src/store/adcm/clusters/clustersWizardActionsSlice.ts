@@ -1,14 +1,19 @@
 import { AdcmClustersApi, type RequestError } from '@api';
-import type { AdcmActionWizardProcess, AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
+import type {
+  AdcmActionWizardProcess,
+  AdcmWizardMappingChangeHistory,
+  AdcmWizardProcessOperationPayload,
+} from '@models/adcm/wizard';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage, isErrorConflict } from '@utils/httpResponseUtils';
 import {
   cleanupClustersWizard,
   getProcess,
+  getProcessOnActionClick,
   getStep,
   resetJobDataByStep,
-} from '@store/adcm/clusters/clustersWizardSlice';
+} from './clustersWizardSlice';
 import {
   runClusterDynamicAction,
   type RunClusterDynamicActionPayload,
@@ -127,6 +132,7 @@ const startNewProcess = createAsyncThunk(
 
       thunkAPI.dispatch(getProcess({ clusterId, actionId, processId: process.id }));
       thunkAPI.dispatch(setIsContinueProcessModal(false));
+      thunkAPI.dispatch(setBrokenStepError(undefined));
 
       return process;
     } catch (error) {
@@ -145,7 +151,9 @@ interface AdcmClustersWizardActionsState {
     inProgress: boolean;
     hasConflictError: boolean;
     isContinueProcessModal: boolean;
+    brokenStepError?: string;
   };
+  hostComponentMapDelta?: AdcmWizardMappingChangeHistory;
   selectedStepId?: number;
 }
 
@@ -158,7 +166,9 @@ const createInitialState = (): AdcmClustersWizardActionsState => ({
     inProgress: false,
     hasConflictError: false,
     isContinueProcessModal: false,
+    brokenStepError: undefined,
   },
+  hostComponentMapDelta: undefined,
   selectedStepId: undefined,
 });
 
@@ -169,11 +179,17 @@ const clustersWizardActionsSlice = createSlice({
     cleanupClustersWizardActions() {
       return createInitialState();
     },
+    setBrokenStepError(state, action) {
+      state.wizardDialog.brokenStepError = action.payload;
+    },
     setInProgress(state, action) {
       state.wizardDialog.inProgress = action.payload;
     },
     setSelectedStepId(state, action) {
       state.selectedStepId = action.payload;
+    },
+    setHostComponentMapDelta(state, action) {
+      state.hostComponentMapDelta = action.payload;
     },
     setHasConflictError(state, action) {
       state.wizardDialog.hasConflictError = action.payload;
@@ -209,6 +225,12 @@ const clustersWizardActionsSlice = createSlice({
       }
       state.selectedStepId = undefined;
     });
+    builder.addCase(getProcessOnActionClick.fulfilled, (state, action) => {
+      const process = action.payload;
+      if (process && process.currentStep !== process.stages[0].steps[0].id) {
+        state.wizardDialog.isContinueProcessModal = true;
+      }
+    });
   },
 });
 
@@ -216,10 +238,12 @@ export const {
   cleanupClustersWizardActions,
   openClusterWizardDialog,
   closeClusterWizardDialog,
+  setBrokenStepError,
   setHasConflictError,
   setIsContinueProcessModal,
   setSelectedStepId,
   setInProgress,
+  setHostComponentMapDelta,
   resetSelectedStepId,
 } = clustersWizardActionsSlice.actions;
 export {

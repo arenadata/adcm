@@ -4,6 +4,8 @@ import { closeClusterWizardDialog, openClusterWizardDialog } from '@store/adcm/c
 import { useDispatch, useStore } from '@hooks';
 import { useEffect, useState } from 'react';
 
+let wizardTitle = 'Manage install';
+
 export const useClusterDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
   const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
@@ -26,6 +28,7 @@ export const useClusterDynamicActionWizardDialog = () => {
 
   useEffect(() => {
     if (!actionDetails || actionDetails.processes === null || !cluster) return;
+    wizardTitle = actionDetails.displayName;
 
     if (actionDetails.processes.length === 0) {
       dispatch(createClusterDynamicActionProcess({ clusterId: cluster.id, actionId: actionDetails.id }));
@@ -63,6 +66,7 @@ export const useClusterDynamicActionWizardDialog = () => {
   };
 
   return {
+    wizardTitle,
     onClose: handleClose,
   };
 };

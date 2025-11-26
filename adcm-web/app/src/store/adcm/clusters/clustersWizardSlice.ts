@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmJobsApi, type RequestError } from '@api';
+import { AdcmClusterMappingApi, AdcmJobsApi, type RequestError } from '@api';
 import { AdcmClustersApi } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -11,9 +11,20 @@ import {
   AdcmWizardStepStates,
 } from '@models/adcm/wizard';
 import { AdcmWizardStepType } from '@models/adcm/wizard';
-import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm';
+import type {
+  AdcmHostShortView,
+  AdcmJob,
+  AdcmMapping,
+  AdcmMappingComponent,
+  AdcmSubJobDetails,
+  AdcmSubJobLogItem,
+  NotAddedServicesDictionary,
+} from '@models/adcm';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { setIsContinueProcessModal } from '@store/adcm/clusters/clustersWizardActionsSlice';
+import { LoadState, RequestState } from '@models/loadState';
+import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
+import { arrayToHash } from '@utils/arrayUtils';
+import { setBrokenStepError } from '@store/adcm/clusters/clustersWizardActionsSlice';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -34,6 +45,8 @@ interface AdcmGetStepsPayload {
   processId: number;
   stepIds: number[];
 }
+
+let getStepsAbortController: AbortController = new AbortController();
 
 const addLastStage = (state: AdcmClustersWizardState) => {
   if (state.process && state.process.stages.length > 0) {
@@ -80,10 +93,6 @@ const getProcessOnActionClick = createAsyncThunk(
     try {
       const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
 
-      if (process && process.currentStep !== process.stages[0].steps[0].id) {
-        thunkAPI.dispatch(setIsContinueProcessModal(true));
-      }
-
       return process;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -123,12 +132,18 @@ const getSteps = createAsyncThunk(
   'adcm/clustersWizard/getSteps',
   async ({ clusterId, actionId, processId, stepIds }: AdcmGetStepsPayload, thunkAPI) => {
     try {
+      getStepsAbortController.abort();
+      getStepsAbortController = new AbortController();
+
       if (stepIds.length === 0) return [];
 
       const stepPromises = stepIds.map((stepId) =>
-        AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId),
+        AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId, {
+          signal: getStepsAbortController.signal,
+        }),
       );
       const steps = await Promise.allSettled(stepPromises);
+
       return fulfilledFilter(steps);
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -197,12 +212,72 @@ const loadSubJobLogFromBackend = createAsyncThunk(
   },
 );
 
+type GetClustersWizardMappingArg = {
+  clusterId: number;
+};
+
+const loadMappings = createAsyncThunk(
+  'adcm/clustersWizard/loadMappings',
+  async ({ clusterId }: GetClustersWizardMappingArg, thunkAPI) => {
+    try {
+      const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+      const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+      const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+      const notAddedServices = await AdcmClusterServicesApi.getClusterServiceCandidates(clusterId);
+      return { mapping, components, hosts, notAddedServices };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const getMappings = createAsyncThunk(
+  'adcm/clustersWizard/getMappings',
+  async (arg: GetClustersWizardMappingArg, thunkAPI) => {
+    await thunkAPI.dispatch(loadMappings(arg));
+  },
+);
+
+const refreshMapping = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMapping',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+    return mapping;
+  },
+);
+
+const refreshMappingHosts = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMappingHosts',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+    return hosts;
+  },
+);
+
+const refreshMappingComponents = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMappingComponents',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+    return components;
+  },
+);
+
 type AdcmClustersWizardState = {
   process: AdcmActionWizardProcess | null;
   step: AdcmActionProcessStep | null;
   steps: AdcmActionProcessStep[];
   jobsData: AdcmWizardJobsData;
-  brokenStepError?: string;
+  mapping: {
+    mapping: AdcmMapping[];
+    hosts: AdcmHostShortView[];
+    components: AdcmMappingComponent[];
+    loadState: LoadState;
+    notAddedServicesDictionary: NotAddedServicesDictionary;
+    requiredServicesDialog: {
+      component: AdcmMappingComponent | null;
+    };
+    accessCheckStatus: RequestState;
+  };
   isLoading: boolean;
 };
 
@@ -211,7 +286,17 @@ const createInitialState = (): AdcmClustersWizardState => ({
   steps: [],
   step: null,
   jobsData: {},
-  brokenStepError: undefined,
+  mapping: {
+    mapping: [],
+    hosts: [],
+    components: [],
+    loadState: LoadState.NotLoaded,
+    notAddedServicesDictionary: {},
+    requiredServicesDialog: {
+      component: null,
+    },
+    accessCheckStatus: RequestState.NotRequested,
+  },
   isLoading: false,
 });
 
@@ -219,11 +304,14 @@ const clustersWizardSlice = createSlice({
   name: 'adcm/clustersWizard',
   initialState: createInitialState(),
   reducers: {
-    setBrokenStepError(state, action) {
-      state.brokenStepError = action.payload;
-    },
     cleanupClustersWizard() {
       return createInitialState();
+    },
+    openRequiredServicesDialog(state, action) {
+      state.mapping.requiredServicesDialog.component = action.payload;
+    },
+    closeRequiredServicesDialog(state) {
+      state.mapping.requiredServicesDialog.component = null;
     },
     resetStep(state) {
       state.step = null;
@@ -312,11 +400,38 @@ const clustersWizardSlice = createSlice({
         action.meta.arg.subJobIds.map((id) => delete subJobLog[id]);
       }
     });
+    builder.addCase(loadMappings.fulfilled, (state, action) => {
+      state.mapping.mapping = action.payload.mapping;
+      state.mapping.hosts = action.payload.hosts;
+      state.mapping.components = action.payload.components;
+      state.mapping.notAddedServicesDictionary = arrayToHash(action.payload.notAddedServices, (s) => s.id);
+    });
+    builder.addCase(getMappings.pending, (state) => {
+      state.mapping.loadState = LoadState.Loading;
+    });
+    builder.addCase(getMappings.fulfilled, (state) => {
+      state.mapping.loadState = LoadState.Loaded;
+    });
+    builder.addCase(refreshMapping.fulfilled, (state, action) => {
+      state.mapping.mapping = action.payload;
+    });
+    builder.addCase(refreshMappingHosts.fulfilled, (state, action) => {
+      state.mapping.hosts = action.payload;
+    });
+    builder.addCase(refreshMappingComponents.fulfilled, (state, action) => {
+      state.mapping.components = action.payload;
+    });
   },
 });
 
-export const { cleanupClustersWizard, setBrokenStepError, resetStep, resetJobData, resetJobDataByStep } =
-  clustersWizardSlice.actions;
+export const {
+  cleanupClustersWizard,
+  openRequiredServicesDialog,
+  closeRequiredServicesDialog,
+  resetStep,
+  resetJobData,
+  resetJobDataByStep,
+} = clustersWizardSlice.actions;
 export {
   getStep,
   getSteps,
@@ -325,6 +440,7 @@ export {
   getProcessOnActionClick,
   loadSubJobLogFromBackend,
   refreshProcessStages,
+  getMappings,
 };
 
 export default clustersWizardSlice.reducer;

@@ -13,6 +13,7 @@ export interface HostsMappingProps {
   onMap: (components: AdcmMappingComponent[], host: AdcmHostShortView) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   onInstallServices: (component: AdcmMappingComponent) => void;
+  isReadOnly?: boolean;
 }
 
 const HostsMapping = ({
@@ -23,6 +24,7 @@ const HostsMapping = ({
   onMap,
   onUnmap,
   onInstallServices,
+  isReadOnly = false,
 }: HostsMappingProps) => {
   const filteredHostsMapping = useMemo(() => {
     return hostsMapping.filter((hostMapping) =>
@@ -43,6 +45,7 @@ const HostsMapping = ({
             className={s.hostContainer}
             onMap={onMap}
             onUnmap={onUnmap}
+            isReadOnly={isReadOnly}
           />
         ))}
       </div>

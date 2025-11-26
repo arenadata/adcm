@@ -6,10 +6,11 @@ import { useClusterDynamicActionWizardDialog } from '@pages/ClustersPage/Dialogs
 import ActionWizard from '@uikit/ActionWizard/ActionWizard';
 import { ActionWizardValidationContextProvider } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContextProvider';
 import Modal from '@uikit/Modal/Modal';
-import { getProcess, getStep, setBrokenStepError } from '@store/adcm/clusters/clustersWizardSlice';
+import { getProcess, getStep } from '@store/adcm/clusters/clustersWizardSlice';
 import ActionWizardConflictProcessDialog from '@commonComponents/ActionWizardConflictProcessDialog/ActionWizardConflictProcessDialog';
 import {
   createProcess,
+  setBrokenStepError,
   setHasConflictError,
   setIsContinueProcessModal,
   startNewProcess,
@@ -34,11 +35,11 @@ const ClusterActionWizardDialog: React.FC = () => {
 
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
-  const brokenStepError = useStore((s) => s.adcm.clustersWizard.brokenStepError);
+  const brokenStepError = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.brokenStepError);
   const hasConflictError = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.hasConflictError);
   const isContinueProcessModal = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.isContinueProcessModal);
 
-  const { onClose } = useClusterDynamicActionWizardDialog();
+  const { wizardTitle, onClose } = useClusterDynamicActionWizardDialog();
 
   const brokenStep = useMemo(
     () => (processWithStages?.stages ? checkForBrokenStep(processWithStages?.stages) : undefined),
@@ -100,6 +101,7 @@ const ClusterActionWizardDialog: React.FC = () => {
         <Modal isOpen={true}>
           <ActionWizardValidationContextProvider>
             <ActionWizard
+              wizardTitle={wizardTitle}
               stages={processWithStages.stages}
               selectedStep={selectedStep}
               brokenStepError={brokenStepError}
