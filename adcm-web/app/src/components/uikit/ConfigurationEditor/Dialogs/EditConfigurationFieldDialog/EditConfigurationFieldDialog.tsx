@@ -67,11 +67,11 @@ const EditConfigurationFieldDialog = ({
 
     switch (fieldNode.data.fieldSchema.type) {
       case 'string': {
-        const isMultiline = adcmMeta.stringExtra?.isMultiline;
+        const isMultiline = adcmMeta?.stringExtra?.isMultiline;
         if (isMultiline) {
           return MultilineStringControl;
         } else {
-          if (adcmMeta.isSecret) {
+          if (adcmMeta?.isSecret) {
             return SecretControl;
           } else {
             return StringControl;
@@ -92,11 +92,11 @@ const EditConfigurationFieldDialog = ({
   }, [
     fieldNode.data.fieldSchema.enum,
     fieldNode.data.fieldSchema.type,
-    adcmMeta.stringExtra?.isMultiline,
-    adcmMeta.isSecret,
+    adcmMeta?.stringExtra?.isMultiline,
+    adcmMeta?.isSecret,
   ]);
 
-  const widthProps = adcmMeta.stringExtra?.isMultiline ? multilineWidthProps : undefined;
+  const widthProps = adcmMeta?.stringExtra?.isMultiline ? multilineWidthProps : undefined;
 
   return (
     isOpen && (

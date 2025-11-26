@@ -1,13 +1,13 @@
-import type { JSONObject } from '@models/json';
+import type { JSONObject, JSONValue } from '@models/json';
 import type { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 
 export interface AdcmFieldMetaData {
   isAdvanced?: boolean;
   isInvisible?: boolean;
-  activation: {
+  activation?: {
     isAllowChange: boolean;
   } | null;
-  synchronization: {
+  synchronization?: {
     isAllowChange: boolean;
   } | null;
   isSecret?: boolean;
@@ -20,8 +20,8 @@ export interface AdcmFieldMetaData {
   } | null;
 }
 
-type RedefinedFields = 'items' | 'properties' | 'additionalProperties' | 'oneOf';
-export interface SingleSchemaDefinition extends Omit<JSONSchema7, RedefinedFields> {
+type RedefinedFields = 'items' | 'properties' | 'additionalProperties';
+export interface SchemaDefinition extends Omit<JSONSchema7, RedefinedFields> {
   // Fields that must be redefined because they make use of this definition itself
   items?: SchemaDefinition;
   additionalItems?: SchemaDefinition;
@@ -29,19 +29,12 @@ export interface SingleSchemaDefinition extends Omit<JSONSchema7, RedefinedField
     [key: string]: SchemaDefinition;
   };
   additionalProperties?: boolean;
-  adcmMeta: AdcmFieldMetaData;
-  readOnly: boolean;
+  adcmMeta?: AdcmFieldMetaData;
+  readOnly?: boolean;
+  oneOf?: SchemaDefinition[];
+  discriminator?: { propertyName: string };
 }
 
-export interface NullSchemaDefinition {
-  type: 'null';
-}
-
-export type MultipleSchemaDefinitions = {
-  oneOf: (SingleSchemaDefinition | NullSchemaDefinition)[];
-};
-
-export type SchemaDefinition = SingleSchemaDefinition | MultipleSchemaDefinitions;
 export type SchemaTypeName = JSONSchema7TypeName;
 export type ConfigurationSchema = SchemaDefinition;
 export type ConfigurationData = JSONObject;
@@ -76,11 +69,13 @@ export interface AdcmFullConfigurationInfo extends AdcmConfigShortView {
 }
 
 export type FieldPath = string;
+
 export type ErrorKeyword = string;
+
 export type ErrorMessage = string;
+
 export type FieldErrors = {
-  // biome-ignore lint/suspicious/noExplicitAny:
-  value: any;
+  value: JSONValue;
   schema: SchemaDefinition;
   messages: Record<ErrorKeyword, ErrorMessage>;
 };

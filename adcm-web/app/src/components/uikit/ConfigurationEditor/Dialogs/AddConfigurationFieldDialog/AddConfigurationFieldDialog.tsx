@@ -62,7 +62,7 @@ const AddConfigurationFieldDialog = ({
             <Input value={fieldName} onChange={handleFieldNameChange} />
           </FormField>
 
-          {adcmMeta.isSecret ? (
+          {adcmMeta?.isSecret ? (
             <SecretControl
               fieldName="Enter secret"
               value={value}

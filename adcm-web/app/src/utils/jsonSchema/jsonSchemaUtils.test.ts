@@ -56,6 +56,173 @@ describe('validate', () => {
     },
   };
 
+  test('validateOneOfSchema', () => {
+    const schema: Schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        'catalog.manager': {
+          default: {
+            static: {},
+          },
+          oneOf: [
+            {
+              type: 'object',
+              readOnly: false,
+              properties: {
+                dynamic: {
+                  type: 'object',
+                  default: {},
+                  readOnly: false,
+                  properties: {
+                    'catalog.store': {
+                      type: 'string',
+                      description: '',
+                      default: 'file',
+                      readOnly: false,
+                    },
+                  },
+                  required: ['catalog.store'],
+                },
+              },
+              required: ['dynamic'],
+            },
+
+            {
+              type: 'object',
+              readOnly: false,
+              properties: {
+                static: {
+                  type: 'object',
+                  default: {},
+                  readOnly: false,
+                  properties: {
+                    'file.store': {
+                      type: 'number',
+                      description: '',
+                      default: 'file',
+                      readOnly: false,
+                    },
+                  },
+                  required: ['file.store'],
+                },
+              },
+              required: ['static'],
+            },
+
+            {
+              type: 'null',
+            },
+          ],
+        },
+      },
+    };
+
+    const object1 = {
+      'catalog.manager': {
+        dynamic: {
+          'catalog.store': '/var/abc',
+        },
+      },
+    };
+
+    const errors1 = validate(schema, object1);
+    expect(errors1).toBe(null);
+
+    const object2 = {
+      'catalog.manager': {
+        static: {
+          'file.store': 1,
+        },
+      },
+    };
+
+    const errors2 = validate(schema, object2);
+    expect(errors2).toBe(null);
+
+    const object3 = {
+      'catalog.manager': null,
+    };
+
+    const errors3 = validate(schema, object3);
+    expect(errors3).toBe(null);
+  });
+
+  test('validate with discriminator', () => {
+    const schema = {
+      type: 'object',
+      required: ['catalog.manager'],
+      properties: {
+        'catalog.manager': {
+          type: 'object',
+          discriminator: { propertyName: 'catalog.type' },
+          default: {
+            'catalog.type': 'static',
+          },
+          required: ['catalog.type'],
+          oneOf: [
+            {
+              properties: {
+                'catalog.type': {
+                  const: 'dynamic',
+                  title: 'adjajdkasjdlasjdls',
+                  type: 'string',
+                },
+                dynamic: {
+                  type: 'object',
+                  default: {
+                    foo: 'qqq',
+                  },
+                  properties: {
+                    foo: {
+                      type: 'string',
+                      default: 'aaa',
+                    },
+                  },
+                },
+              },
+              required: ['dynamic'],
+            },
+            {
+              properties: {
+                'catalog.type': {
+                  const: 'static',
+                  type: 'string',
+                },
+                static: {
+                  type: 'object',
+                  default: {
+                    bar: 100,
+                  },
+                  properties: {
+                    bar: {
+                      type: 'number',
+                      default: 10,
+                    },
+                  },
+                },
+              },
+              required: ['static'],
+            },
+          ],
+        },
+      },
+    };
+
+    const oneOfData = {
+      'catalog.manager': {
+        'catalog.type': 'static',
+        static: {
+          bar: 100,
+        },
+      },
+    };
+
+    const errors = validate(schema, oneOfData);
+    expect(errors).toBe(null);
+  });
+
   test('validate correct data', () => {
     const object = {
       clusterConfiguration: {
@@ -172,6 +339,7 @@ describe('generateFromSchema', () => {
 
   test('generate nullable primitive with defaults', () => {
     const schema: Schema = {
+      default: null,
       oneOf: [
         {
           type: 'boolean',
@@ -219,6 +387,207 @@ describe('generateFromSchema', () => {
 
     const result = generateFromSchema(schema);
     expect(result).toStrictEqual(true);
+  });
+
+  test('generate primitive with no defaults', () => {
+    const schema: Schema = {
+      type: 'boolean',
+      title: '',
+      description: '',
+      readOnly: false,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toStrictEqual(undefined);
+  });
+
+  test('generate object with discriminator', () => {
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        'catalog.manager': {
+          type: 'object',
+          discriminator: { propertyName: 'catalog.type' },
+          default: {
+            'catalog.type': 'static',
+          },
+          required: ['catalog.type'],
+          oneOf: [
+            {
+              properties: {
+                'catalog.type': { const: 'dynamic', title: 'adjajdkasjdlasjdls' },
+                dynamic: {
+                  type: 'object',
+                  default: {
+                    foo: 'qqq',
+                  },
+                  properties: {
+                    foo: {
+                      type: 'string',
+                      default: 'aaa',
+                    },
+                  },
+                },
+              },
+              required: ['dynamic'],
+            },
+            {
+              properties: {
+                'catalog.type': { const: 'static' },
+                static: {
+                  type: 'object',
+                  default: {
+                    bar: 100,
+                  },
+                  properties: {
+                    bar: {
+                      type: 'number',
+                      default: 10,
+                    },
+                  },
+                },
+              },
+              required: ['static'],
+            },
+          ],
+        },
+      },
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toStrictEqual({
+      'catalog.manager': {
+        'catalog.type': 'static',
+        static: {
+          bar: 100,
+        },
+      },
+    });
+  });
+
+  test('generate object with nullable discriminator', () => {
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        'catalog.manager': {
+          default: {
+            myType: 'static',
+            static: {
+              bar: -100,
+            },
+          },
+          oneOf: [
+            {
+              type: 'null',
+            },
+            {
+              type: 'object',
+              discriminator: { propertyName: 'myType' },
+              default: {
+                myType: 'static',
+              },
+              required: ['myType'],
+              oneOf: [
+                {
+                  properties: {
+                    myType: { const: 'dynamic', title: 'Dynamic title' },
+                    dynamic: {
+                      type: 'object',
+                      default: {
+                        foo: 'qqq',
+                      },
+                      properties: {
+                        foo: {
+                          type: 'string',
+                          default: 'aaa',
+                        },
+                      },
+                      required: ['foo'],
+                    },
+                  },
+                  required: ['dynamic'],
+                },
+                {
+                  properties: {
+                    myType: { const: 'static', title: 'Dynamic title' },
+                    static: {
+                      type: 'object',
+                      default: {
+                        bar: 100,
+                      },
+                      properties: {
+                        bar: {
+                          type: 'number',
+                          default: 10,
+                        },
+                      },
+                      required: ['bar'],
+                    },
+                  },
+                  required: ['static'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const result = generateFromSchema(schema);
+
+    // default value from "catalog.manager"
+    expect(result).toStrictEqual({
+      'catalog.manager': {
+        myType: 'static',
+        static: {
+          bar: -100,
+        },
+      },
+    });
+  });
+
+  test('generate object with defaults', () => {
+    const schema: Schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        myRoot: {
+          type: 'object',
+          default: {
+            myInt: 100,
+            myStr: 'zxcvbn',
+          },
+          properties: {
+            myInt: {
+              type: 'number',
+              default: 1,
+            },
+            myStr: {
+              type: 'string',
+              default: 'qwert',
+            },
+          },
+        },
+      },
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toStrictEqual({
+      myRoot: {
+        myInt: 100,
+        myStr: 'zxcvbn',
+      },
+    });
   });
 
   test('validate unsafe_pattern', () => {

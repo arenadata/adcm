@@ -1,5 +1,5 @@
-import type { FieldAttributes, SingleSchemaDefinition } from '@models/adcm';
-import type { JSONPrimitive, JSONValue } from '@models/json';
+import type { FieldAttributes, SchemaDefinition } from '@models/adcm';
+import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 
 export type ConfigurationNodeType = 'object' | 'field' | 'addField' | 'array' | 'addArrayItem';
@@ -8,7 +8,7 @@ export type ConfigurationNodePath = (string | number)[];
 export type ConfigurationField = {
   type: 'field';
   title: string;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isNullable: boolean;
   fieldAttributes?: FieldAttributes;
   parentNode: ConfigurationNode;
@@ -24,7 +24,7 @@ export type ConfigurationField = {
 export type ConfigurationNewField = {
   type: 'addField';
   title: string;
-  fieldSchema: SingleSchemaDefinition; // parent schema
+  fieldSchema: SchemaDefinition; // parent schema
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
@@ -33,7 +33,7 @@ export type ConfigurationNewField = {
 export type ConfigurationObject = {
   type: 'object';
   title: string;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isNullable: boolean;
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
@@ -42,7 +42,25 @@ export type ConfigurationObject = {
   isReadonly: boolean;
   isCleanable: boolean;
   objectType: 'map' | 'structure';
-  defaultValue?: JSONPrimitive;
+  defaultValue?: JSONObject;
+  value: JSONValue;
+  isDraggable: boolean;
+};
+
+export type ConfigurationSelectableObject = {
+  type: 'selectableObject';
+  title: string;
+  fieldSchema: SchemaDefinition;
+  selectedFieldSchema: SchemaDefinition | null;
+  oneOfSchemaDefaults: Record<string, JSONValue>;
+  isNullable: boolean;
+  parentNode: ConfigurationNode;
+  fieldAttributes?: FieldAttributes;
+  path: ConfigurationNodePath;
+  isDeletable: boolean;
+  isReadonly: boolean;
+  isCleanable: boolean;
+  defaultValue?: JSONObject;
   value: JSONValue;
   isDraggable: boolean;
 };
@@ -50,7 +68,7 @@ export type ConfigurationObject = {
 export type ConfigurationNewEmptyObject = {
   type: 'addEmptyObject';
   title: string;
-  fieldSchema: SingleSchemaDefinition; // items schema
+  fieldSchema: SchemaDefinition; // items schema
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
@@ -59,7 +77,7 @@ export type ConfigurationNewEmptyObject = {
 export type ConfigurationArray = {
   type: 'array';
   title: string;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isNullable: boolean;
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
@@ -75,7 +93,7 @@ export type ConfigurationArray = {
 export type ConfigurationNewArrayItem = {
   type: 'addArrayItem';
   title: string;
-  fieldSchema: SingleSchemaDefinition; // items schema
+  fieldSchema: SchemaDefinition; // items schema
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
@@ -84,19 +102,22 @@ export type ConfigurationNewArrayItem = {
 export type ConfigurationItemDropPlaceholder = {
   type: 'dropPlaceholder';
   title: string;
-  fieldSchema: SingleSchemaDefinition; // items schema
+  fieldSchema: SchemaDefinition; // items schema
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath; // new item path after drop
 };
 
-export type ConfigurationNode = Node<ConfigurationField | ConfigurationObject | ConfigurationArray>;
+export type ConfigurationNode = Node<
+  ConfigurationField | ConfigurationObject | ConfigurationSelectableObject | ConfigurationArray
+>;
 
 export type ConfigurationNodeView = Node<
   | ConfigurationField
   | ConfigurationNewField
   | ConfigurationNewEmptyObject
   | ConfigurationObject
+  | ConfigurationSelectableObject
   | ConfigurationArray
   | ConfigurationNewArrayItem
   | ConfigurationItemDropPlaceholder

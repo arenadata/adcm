@@ -117,33 +117,18 @@ describe('modify configuration', () => {
       required: ['internal_replica', 'weight'],
       readOnly: false,
       additionalProperties: false,
-      adcmMeta: {
-        activation: null,
-        synchronization: null,
-        stringExtra: null,
-      },
       properties: {
         weight: {
           type: 'integer',
           maximum: 10,
           default: 10,
           readOnly: false,
-          adcmMeta: {
-            activation: null,
-            synchronization: null,
-            stringExtra: null,
-          },
         },
         internal_replica: {
           type: 'integer',
           minimum: 12,
           default: 10,
           readOnly: false,
-          adcmMeta: {
-            activation: null,
-            synchronization: null,
-            stringExtra: null,
-          },
         },
       },
     };
@@ -173,11 +158,6 @@ describe('modify configuration', () => {
       minimum: 12,
       default: 10,
       readOnly: false,
-      adcmMeta: {
-        activation: null,
-        synchronization: null,
-        stringExtra: null,
-      },
     };
 
     const result = addArrayItem(testObject, ['nullableArray'], schema);

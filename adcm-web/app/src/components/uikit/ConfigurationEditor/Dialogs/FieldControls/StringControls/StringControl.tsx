@@ -2,14 +2,14 @@ import { useState } from 'react';
 import Input from '@uikit/Input/Input';
 import InputWithAutocomplete from '@uikit/InputWithAutocomplete/InputWithAutocomplete';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
@@ -50,7 +50,7 @@ const StringControl = ({
       onResetToDefault={onResetToDefault}
       error={error}
     >
-      {fieldSchema.adcmMeta.stringExtra?.suggestions ? (
+      {fieldSchema.adcmMeta?.stringExtra?.suggestions ? (
         <InputWithAutocomplete
           value={stringValue}
           disabled={isReadonly}

@@ -1,7 +1,7 @@
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import { getPatternErrorMessage } from '@utils/jsonSchema/jsonSchemaUtils';
 
-export const validate = (value: string, fieldSchema: SingleSchemaDefinition): string | undefined => {
+export const validate = (value: string, fieldSchema: SchemaDefinition): string | undefined => {
   let error = undefined;
   if (fieldSchema.pattern) {
     try {

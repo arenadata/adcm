@@ -7,14 +7,6 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
   title: 'Primary configuration',
   required: ['cluster_config'],
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    isInvisible: false,
-    activation: null,
-    synchronization: null,
-    isSecret: false,
-    stringExtra: null,
-  },
   properties: {
     cluster_config: {
       type: 'object',
@@ -23,16 +15,12 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
       additionalProperties: false,
       readOnly: false,
       adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
         activation: {
           isAllowChange: true,
         },
         synchronization: {
           isAllowChange: true,
         },
-        isSecret: false,
-        stringExtra: null,
       },
       default: {
         cluster: [
@@ -48,29 +36,17 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
           type: 'array',
           readOnly: false,
           adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
             activation: {
               isAllowChange: true,
             },
             synchronization: {
               isAllowChange: true,
             },
-            isSecret: false,
-            stringExtra: null,
           },
           items: {
             type: 'object',
             additionalProperties: false,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-              isSecret: false,
-              stringExtra: null,
-            },
             required: ['cluster_name', 'cluster_password'],
             properties: {
               cluster_name: {
@@ -78,14 +54,6 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                 default: 'default cluster name',
                 readOnly: false,
                 pattern: '[a-z]',
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-                  isSecret: false,
-                  stringExtra: null,
-                },
               },
               cluster_password: {
                 oneOf: [
@@ -95,14 +63,7 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                     default: 'default cluster password [a-z]',
                     readOnly: false,
                     adcmMeta: {
-                      isAdvanced: false,
-                      isInvisible: false,
-                      activation: null,
-                      synchronization: null,
                       isSecret: true,
-                      stringExtra: {
-                        isMultiline: false,
-                      },
                     },
                   },
                   {
@@ -114,92 +75,36 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                 type: 'array',
                 default: [],
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-                  isSecret: false,
-                  stringExtra: null,
-                },
                 items: {
                   type: 'object',
                   additionalProperties: false,
                   readOnly: false,
-                  adcmMeta: {
-                    isAdvanced: false,
-                    isInvisible: false,
-                    activation: null,
-                    synchronization: null,
-                    isSecret: false,
-                    stringExtra: null,
-                  },
                   required: ['weight', 'internal_replica', 'replicas'],
                   properties: {
                     weight: {
                       type: 'integer',
                       default: 10,
                       readOnly: false,
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                     },
                     internal_replica: {
                       type: 'integer',
                       default: 11,
                       readOnly: false,
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                     },
                     replicas: {
                       type: 'array',
                       default: [{ host: 'test_test' }],
                       readOnly: false,
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                       items: {
                         type: 'object',
                         additionalProperties: false,
                         readOnly: false,
-                        adcmMeta: {
-                          isAdvanced: false,
-                          isInvisible: false,
-                          activation: null,
-                          synchronization: null,
-                          isSecret: false,
-                          stringExtra: null,
-                        },
                         required: ['host'],
                         properties: {
                           host: {
                             type: 'string',
                             default: 'default-host',
                             readOnly: false,
-                            adcmMeta: {
-                              isAdvanced: false,
-                              isInvisible: false,
-                              activation: null,
-                              synchronization: null,
-                              isSecret: false,
-                              stringExtra: null,
-                            },
                           },
                         },
                       },
@@ -235,16 +140,6 @@ export const complexSchema: ConfigurationSchema = {
   title: 'Configuration',
   description: '',
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    isInvisible: false,
-    activation: null,
-    synchronization: null,
-
-    isSecret: false,
-    stringExtra: null,
-    enumExtra: null,
-  },
   type: 'object',
   properties: {
     structure_list_of_dict_default: {
@@ -260,32 +155,12 @@ export const complexSchema: ConfigurationSchema = {
         },
       ],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'object',
         title: '',
         description: '',
         default: {},
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
         properties: {
           boolean: {
             type: 'boolean',
@@ -293,16 +168,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           integer: {
             type: 'integer',
@@ -310,16 +175,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           string: {
             type: 'string',
@@ -327,16 +182,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           float: {
             type: 'number',
@@ -344,16 +189,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         required: ['integer', 'string'],
@@ -365,32 +200,12 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: [],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'object',
         title: '',
         description: '',
         default: {},
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
         properties: {
           boolean: {
             type: 'boolean',
@@ -398,16 +213,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           integer: {
             type: 'integer',
@@ -415,16 +220,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           string: {
             type: 'string',
@@ -432,16 +227,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           float: {
             type: 'number',
@@ -449,16 +234,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         required: ['integer', 'string'],
@@ -475,16 +250,6 @@ export const complexSchema: ConfigurationSchema = {
         string: 'string',
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         boolean: {
           type: 'boolean',
@@ -492,16 +257,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         float: {
           type: 'number',
@@ -509,16 +264,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         integer: {
           type: 'integer',
@@ -526,16 +271,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         string: {
           type: 'string',
@@ -543,16 +278,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
       },
       required: [],
@@ -563,16 +288,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         boolean: {
           type: 'boolean',
@@ -580,16 +295,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         float: {
           type: 'number',
@@ -597,16 +302,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         integer: {
           type: 'integer',
@@ -614,16 +309,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         string: {
           type: 'string',
@@ -631,16 +316,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
       },
       required: [],
@@ -656,16 +331,6 @@ export const complexSchema: ConfigurationSchema = {
         floats: [0.1],
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         booleans: {
           type: 'array',
@@ -673,32 +338,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'boolean',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         integers: {
@@ -707,32 +352,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'integer',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         strings: {
@@ -741,32 +366,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         floats: {
@@ -775,32 +380,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'number',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
       },
@@ -812,16 +397,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         booleans: {
           type: 'array',
@@ -829,32 +404,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'boolean',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         integers: {
@@ -863,32 +418,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'integer',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         strings: {
@@ -897,32 +432,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         floats: {
@@ -931,32 +446,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'number',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
       },
@@ -970,32 +465,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: ['value1', 'value2', 'value3'],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         {
@@ -1011,32 +486,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         {
@@ -1053,16 +508,6 @@ export const complexSchema: ConfigurationSchema = {
         key2: 'value2',
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       additionalProperties: true,
       properties: {},
     },
@@ -1072,16 +517,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         structure_list_of_dict_default: {
           title: 'structure_list_of_dict_default',
@@ -1096,32 +531,12 @@ export const complexSchema: ConfigurationSchema = {
             },
           ],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'object',
             title: '',
             description: '',
             default: {},
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
             properties: {
               boolean: {
                 type: 'boolean',
@@ -1129,16 +544,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               integer: {
                 type: 'integer',
@@ -1146,16 +551,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               string: {
                 type: 'string',
@@ -1163,16 +558,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               float: {
                 type: 'number',
@@ -1180,16 +565,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             required: ['integer', 'string'],
@@ -1201,32 +576,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'object',
             title: '',
             description: '',
             default: {},
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
             properties: {
               boolean: {
                 type: 'boolean',
@@ -1234,16 +589,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               integer: {
                 type: 'integer',
@@ -1251,16 +596,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               string: {
                 type: 'string',
@@ -1268,16 +603,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               float: {
                 type: 'number',
@@ -1285,16 +610,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             required: ['integer', 'string'],
@@ -1311,16 +626,6 @@ export const complexSchema: ConfigurationSchema = {
             string: 'string',
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             boolean: {
               type: 'boolean',
@@ -1328,16 +633,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             float: {
               type: 'number',
@@ -1345,16 +640,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             integer: {
               type: 'integer',
@@ -1362,16 +647,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             string: {
               type: 'string',
@@ -1379,16 +654,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
           },
           required: [],
@@ -1399,16 +664,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             boolean: {
               type: 'boolean',
@@ -1416,16 +671,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             float: {
               type: 'number',
@@ -1433,16 +678,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             integer: {
               type: 'integer',
@@ -1450,16 +685,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             string: {
               type: 'string',
@@ -1467,16 +692,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
           },
           required: [],
@@ -1492,16 +707,6 @@ export const complexSchema: ConfigurationSchema = {
             floats: [0.1],
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             booleans: {
               type: 'array',
@@ -1509,32 +714,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'boolean',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             integers: {
@@ -1543,32 +728,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'integer',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             strings: {
@@ -1577,32 +742,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             floats: {
@@ -1611,32 +756,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'number',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
           },
@@ -1648,16 +773,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             booleans: {
               type: 'array',
@@ -1665,32 +780,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'boolean',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             integers: {
@@ -1699,32 +794,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'integer',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             strings: {
@@ -1733,32 +808,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             floats: {
@@ -1767,32 +822,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'number',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
           },
@@ -1806,32 +841,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: ['value1', 'value2', 'value3'],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             {
@@ -1847,32 +862,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             {
@@ -1889,16 +884,6 @@ export const complexSchema: ConfigurationSchema = {
             key2: 'value2',
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           additionalProperties: true,
           properties: {},
         },
@@ -1908,16 +893,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           additionalProperties: true,
           properties: {},
         },
@@ -1948,32 +923,12 @@ export const complexSchema: ConfigurationSchema = {
         },
       ],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'object',
         title: '',
         description: '',
         default: {},
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
         properties: {
           boolean: {
             type: 'boolean',
@@ -1981,16 +936,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           integer: {
             type: 'integer',
@@ -1998,16 +943,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           string: {
             type: 'string',
@@ -2015,16 +950,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           float: {
             type: 'number',
@@ -2032,16 +957,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         required: ['integer', 'string'],
@@ -2054,32 +969,12 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: [],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'object',
         title: '',
         description: '',
         default: {},
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
         properties: {
           boolean: {
             type: 'boolean',
@@ -2087,16 +982,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           integer: {
             type: 'integer',
@@ -2104,16 +989,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           string: {
             type: 'string',
@@ -2121,16 +996,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           float: {
             type: 'number',
@@ -2138,16 +1003,6 @@ export const complexSchema: ConfigurationSchema = {
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         required: ['integer', 'string'],
@@ -2165,16 +1020,6 @@ export const complexSchema: ConfigurationSchema = {
         string: 'string',
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         boolean: {
           type: 'boolean',
@@ -2182,16 +1027,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         float: {
           type: 'number',
@@ -2199,16 +1034,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         integer: {
           type: 'integer',
@@ -2216,16 +1041,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         string: {
           type: 'string',
@@ -2233,16 +1048,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
       },
       required: [],
@@ -2254,16 +1059,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         boolean: {
           type: 'boolean',
@@ -2271,16 +1066,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         float: {
           type: 'number',
@@ -2288,16 +1073,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         integer: {
           type: 'integer',
@@ -2305,16 +1080,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
         string: {
           type: 'string',
@@ -2322,16 +1087,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: null,
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
         },
       },
       required: [],
@@ -2348,16 +1103,6 @@ export const complexSchema: ConfigurationSchema = {
         floats: [0.1],
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         booleans: {
           type: 'array',
@@ -2365,32 +1110,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'boolean',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         integers: {
@@ -2399,32 +1124,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'integer',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         strings: {
@@ -2433,32 +1138,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         floats: {
@@ -2467,32 +1152,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'number',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
       },
@@ -2505,16 +1170,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         booleans: {
           type: 'array',
@@ -2522,32 +1177,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'boolean',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         integers: {
@@ -2556,32 +1191,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'integer',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         strings: {
@@ -2590,32 +1205,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
         floats: {
@@ -2624,32 +1219,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'number',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
         },
       },
@@ -2662,32 +1237,12 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: ['value1', 'value2', 'value3'],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'string',
         title: '',
         description: '',
         default: null,
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
       },
       minItems: 1,
     },
@@ -2697,32 +1252,12 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: [],
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'string',
         title: '',
         description: '',
         default: null,
         readOnly: false,
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
       },
       minItems: 1,
     },
@@ -2735,16 +1270,6 @@ export const complexSchema: ConfigurationSchema = {
         key2: 'value2',
       },
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       additionalProperties: true,
       properties: {},
       minProperties: 1,
@@ -2755,16 +1280,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       additionalProperties: true,
       properties: {},
       minProperties: 1,
@@ -2775,16 +1290,6 @@ export const complexSchema: ConfigurationSchema = {
       description: '',
       default: {},
       readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       properties: {
         structure_list_of_dict_default_required: {
           title: 'structure_list_of_dict_default_required',
@@ -2799,32 +1304,12 @@ export const complexSchema: ConfigurationSchema = {
             },
           ],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'object',
             title: '',
             description: '',
             default: {},
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
             properties: {
               boolean: {
                 type: 'boolean',
@@ -2832,16 +1317,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               integer: {
                 type: 'integer',
@@ -2849,16 +1324,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               string: {
                 type: 'string',
@@ -2866,16 +1331,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               float: {
                 type: 'number',
@@ -2883,16 +1338,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             required: ['integer', 'string'],
@@ -2905,32 +1350,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: [],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'object',
             title: '',
             description: '',
             default: {},
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
             properties: {
               boolean: {
                 type: 'boolean',
@@ -2938,16 +1363,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               integer: {
                 type: 'integer',
@@ -2955,16 +1370,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               string: {
                 type: 'string',
@@ -2972,16 +1377,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
               float: {
                 type: 'number',
@@ -2989,16 +1384,6 @@ export const complexSchema: ConfigurationSchema = {
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             required: ['integer', 'string'],
@@ -3016,16 +1401,6 @@ export const complexSchema: ConfigurationSchema = {
             string: 'string',
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             boolean: {
               type: 'boolean',
@@ -3033,16 +1408,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             float: {
               type: 'number',
@@ -3050,16 +1415,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             integer: {
               type: 'integer',
@@ -3067,16 +1422,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             string: {
               type: 'string',
@@ -3084,16 +1429,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
           },
           required: [],
@@ -3105,16 +1440,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             boolean: {
               type: 'boolean',
@@ -3122,16 +1447,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             float: {
               type: 'number',
@@ -3139,16 +1454,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             integer: {
               type: 'integer',
@@ -3156,16 +1461,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
             string: {
               type: 'string',
@@ -3173,16 +1468,6 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: null,
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
             },
           },
           required: [],
@@ -3199,16 +1484,6 @@ export const complexSchema: ConfigurationSchema = {
             floats: [0.1],
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             booleans: {
               type: 'array',
@@ -3216,32 +1491,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'boolean',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             integers: {
@@ -3250,32 +1505,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'integer',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             strings: {
@@ -3284,32 +1519,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             floats: {
@@ -3318,32 +1533,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'number',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
           },
@@ -3356,16 +1551,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           properties: {
             booleans: {
               type: 'array',
@@ -3373,32 +1558,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'boolean',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             integers: {
@@ -3407,32 +1572,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'integer',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             strings: {
@@ -3441,32 +1586,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'string',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
             floats: {
@@ -3475,32 +1600,12 @@ export const complexSchema: ConfigurationSchema = {
               description: '',
               default: [],
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-
-                isSecret: false,
-                stringExtra: null,
-                enumExtra: null,
-              },
               items: {
                 type: 'number',
                 title: '',
                 description: '',
                 default: null,
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-
-                  isSecret: false,
-                  stringExtra: null,
-                  enumExtra: null,
-                },
               },
             },
           },
@@ -3513,32 +1618,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: ['value1', 'value2', 'value3'],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           minItems: 1,
         },
@@ -3548,32 +1633,12 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: ['value1', 'value2', 'value3'],
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           items: {
             type: 'string',
             title: '',
             description: '',
             default: null,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
           },
           minItems: 1,
         },
@@ -3586,16 +1651,6 @@ export const complexSchema: ConfigurationSchema = {
             key2: 'value2',
           },
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           additionalProperties: true,
           properties: {},
           minProperties: 1,
@@ -3606,16 +1661,6 @@ export const complexSchema: ConfigurationSchema = {
           description: '',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           additionalProperties: true,
           properties: {},
           minProperties: 1,
@@ -3665,16 +1710,6 @@ export const nullableSchema: ConfigurationSchema = {
   title: 'Configuration',
   description: '',
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    isInvisible: false,
-    activation: null,
-    synchronization: null,
-
-    isSecret: false,
-    stringExtra: null,
-    enumExtra: null,
-  },
   type: 'object',
   properties: {
     my_group_with_not_required_parameters: {
@@ -3686,16 +1721,6 @@ export const nullableSchema: ConfigurationSchema = {
           description: 'My group description',
           default: {},
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           additionalProperties: false,
           properties: {
             my_map: {
@@ -3706,16 +1731,6 @@ export const nullableSchema: ConfigurationSchema = {
                   description: '',
                   default: {},
                   readOnly: false,
-                  adcmMeta: {
-                    isAdvanced: false,
-                    isInvisible: false,
-                    activation: null,
-                    synchronization: null,
-
-                    isSecret: false,
-                    stringExtra: null,
-                    enumExtra: null,
-                  },
                   additionalProperties: true,
                   properties: {},
                 },
@@ -3745,58 +1760,20 @@ export const readOnlySchema: ConfigurationSchema = {
   title: 'Configuration',
   description: '',
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    isInvisible: false,
-    activation: null,
-    synchronization: null,
-
-    isSecret: false,
-    stringExtra: null,
-    enumExtra: null,
-  },
   type: 'object',
   properties: {
     some_field: {
       type: 'string',
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       readOnly: true,
     },
     some_structure: {
       type: 'object',
       default: {},
       readOnly: true,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       additionalProperties: false,
       properties: {
         field: {
           type: 'string',
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-            enumExtra: null,
-          },
           readOnly: true,
         },
       },
@@ -3805,15 +1782,6 @@ export const readOnlySchema: ConfigurationSchema = {
       type: 'object',
       default: {},
       readOnly: true,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       additionalProperties: true,
       properties: {},
     },
@@ -3821,40 +1789,12 @@ export const readOnlySchema: ConfigurationSchema = {
       type: 'array',
       default: [],
       readOnly: true,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-
-        isSecret: false,
-        stringExtra: null,
-        enumExtra: null,
-      },
       items: {
         type: 'object',
-        adcmMeta: {
-          isAdvanced: false,
-          isInvisible: false,
-          activation: null,
-          synchronization: null,
-          isSecret: false,
-          stringExtra: null,
-          enumExtra: null,
-        },
         readOnly: true,
         properties: {
           field: {
             type: 'string',
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-              isSecret: false,
-              stringExtra: null,
-              enumExtra: null,
-            },
             readOnly: false,
           },
         },
@@ -3874,6 +1814,184 @@ export const readOnlyConfig = {
     mapEntry2: '456',
   },
   some_array: [{ field: 'value' }],
+};
+
+export const oneOfSchema: ConfigurationSchema = {
+  type: 'object',
+  properties: {
+    'catalog.manager': {
+      default: {
+        _selection: 'static',
+      },
+      type: 'object',
+      discriminator: {
+        propertyName: '_selection',
+      },
+      required: ['_selection'],
+      oneOf: [
+        {
+          properties: {
+            _selection: {
+              const: 'dynamic',
+              title: 'dynamic',
+            },
+            dynamic: {
+              type: 'object',
+              default: {},
+              readOnly: false,
+              adcmMeta: {
+                activation: {
+                  isAllowChange: true,
+                },
+              },
+              additionalProperties: false,
+              properties: {
+                'catalog.store': {
+                  type: 'string',
+                  description: '',
+                  default: 'file',
+                  readOnly: false,
+                },
+              },
+              required: ['catalog.store'],
+            },
+          },
+          required: ['dynamic'],
+          additionalProperties: false,
+        },
+        {
+          properties: {
+            _selection: {
+              const: 'static',
+              title: 'static',
+            },
+            static: {
+              type: 'object',
+              default: {},
+              readOnly: false,
+              adcmMeta: {
+                activation: {
+                  isAllowChange: true,
+                },
+              },
+              additionalProperties: false,
+              properties: {
+                'catalog.config-dir': {
+                  type: 'string',
+                  description: '',
+                  default: '/etc/catalog/',
+                  readOnly: false,
+                },
+              },
+              required: ['catalog.config-dir'],
+            },
+          },
+          required: ['static'],
+          additionalProperties: false,
+        },
+      ],
+    },
+  },
+  required: ['catalog.manager'],
+};
+
+export const oneOfData = {
+  'catalog.manager': {
+    _selection: 'static',
+    static: {
+      'catalog.config-dir': '/etc/catalog/',
+    },
+  },
+};
+
+export const nullableOneOfSchema: ConfigurationSchema = {
+  type: 'object',
+  properties: {
+    'catalog.manager': {
+      oneOf: [
+        {
+          type: 'null',
+        },
+        {
+          default: {
+            _selection: 'static',
+          },
+          type: 'object',
+          discriminator: {
+            propertyName: '_selection',
+          },
+          required: ['_selection'],
+          oneOf: [
+            {
+              properties: {
+                _selection: {
+                  const: 'dynamic',
+                  title: 'dynamic',
+                },
+                dynamic: {
+                  type: 'object',
+                  default: {},
+                  readOnly: false,
+                  adcmMeta: {
+                    activation: {
+                      isAllowChange: true,
+                    },
+                  },
+                  additionalProperties: false,
+                  properties: {
+                    'catalog.store': {
+                      type: 'string',
+                      description: '',
+                      default: 'file',
+                      readOnly: false,
+                    },
+                  },
+                  required: ['catalog.store'],
+                },
+              },
+              required: ['dynamic'],
+              additionalProperties: false,
+            },
+            {
+              properties: {
+                _selection: {
+                  const: 'static',
+                  title: 'static',
+                },
+                static: {
+                  type: 'object',
+                  default: {},
+                  readOnly: false,
+                  adcmMeta: {
+                    activation: {
+                      isAllowChange: true,
+                    },
+                  },
+                  additionalProperties: false,
+                  properties: {
+                    'catalog.config-dir': {
+                      type: 'string',
+                      description: '',
+                      default: '/etc/catalog/',
+                      readOnly: false,
+                    },
+                  },
+                  required: ['catalog.config-dir'],
+                },
+              },
+              required: ['static'],
+              additionalProperties: false,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  required: ['catalog.manager'],
+};
+
+export const nullableOneOfData = {
+  'catalog.manager': null,
 };
 
 export const testArrayItemSchema: ConfigurationSchema = {

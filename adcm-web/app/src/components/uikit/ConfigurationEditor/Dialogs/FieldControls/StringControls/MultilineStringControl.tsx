@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import CodeEditor from '@uikit/CodeEditor/CodeEditor';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
 import { validate } from './StringControls.utils';
@@ -13,7 +13,7 @@ const textTransformers: { [format: string]: (value: string) => string } = {
 interface MultilineStringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (newValue: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
@@ -68,7 +68,7 @@ const MultilineStringControl = ({
       onResetToDefault={onResetToDefault}
     >
       <CodeEditor
-        isSecret={fieldSchema.adcmMeta.isSecret}
+        isSecret={fieldSchema.adcmMeta?.isSecret}
         language={format}
         code={code}
         isReadonly={isReadonly}

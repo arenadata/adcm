@@ -3,8 +3,6 @@ import type {
   ConfigurationSchema,
   SchemaDefinition,
   ConfigurationErrors,
-  SingleSchemaDefinition,
-  MultipleSchemaDefinitions,
   ConfigurationAttributes,
   FieldAttributes,
   FieldErrors,
@@ -19,9 +17,11 @@ import type {
   ConfigurationNodeView,
   ConfigurationTreeState,
   NodesDictionary,
+  ConfigurationSelectableObject,
 } from '../ConfigurationEditor.types';
-import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { validate as validateJsonSchema, generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
+  discriminatorFieldName,
   nestedPropsErrorKeyword,
   nestedPropsErrorMessage,
   primitiveFieldTypes,
@@ -47,7 +47,7 @@ export const validate = (schema: SchemaDefinition, configuration: JSONObject, at
 export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSchema>) => {
   const result: ConfigurationErrors = {};
 
-  const addError = (path: string, schema: SchemaDefinition, value: unknown, keyword: string, message: string) => {
+  const addError = (path: string, schema: SchemaDefinition, value: JSONValue, keyword: string, message: string) => {
     if (!result[path]) {
       result[path] = { schema, value, messages: {} };
     }
@@ -65,7 +65,7 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
     addError(
       error.instancePath,
       error.parentSchema as SchemaDefinition,
-      error.data,
+      error.data as JSONValue,
       error.keyword,
       error.message || '',
     );
@@ -74,7 +74,7 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
     // extend error from structure to field,
     if (error.keyword === 'required') {
       const fieldPath = `${error.instancePath}/${error.params.missingProperty}`;
-      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data, error.keyword, 'required');
+      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data as JSONValue, error.keyword, 'required');
     }
   }
 
@@ -97,7 +97,7 @@ export const filterConfigurationErrors = (errors: ConfigurationErrors, attribute
     const fieldErrors = error as FieldErrors;
     const { fieldSchema } = determineFieldSchema(fieldErrors.schema);
 
-    if (fieldSchema.type === 'string' && fieldSchema.adcmMeta.isSecret) {
+    if (fieldSchema.type === 'string' && fieldSchema.adcmMeta?.isSecret) {
       const fieldValue = fieldErrors.value as string;
       const isIgnoredKeyword =
         fieldErrors.messages.pattern || fieldErrors.messages.minLength || fieldErrors.messages.maxLength;
@@ -142,28 +142,26 @@ export const fillParentPathParts = (errors: ConfigurationErrors) => {
   }
 };
 
-export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
+export const getTitle = (keyName: string, fieldSchema: SchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
-export const getDefaultValue = (keyName: string, node: SingleSchemaDefinition, parentNode: SingleSchemaDefinition) => {
+export const getDefaultValue = (keyName: string, node: SchemaDefinition, parentNode: SchemaDefinition) => {
   const parentNodeDefault = parentNode.default?.[keyName as keyof typeof parentNode.default];
   const nodeDefault = node.default;
 
   return nodeDefault ?? parentNodeDefault;
 };
 
-const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
-  const fieldSchema: SingleSchemaDefinition = {
+const getDefaultFieldSchema = (parentFieldSchema: SchemaDefinition | null): SchemaDefinition => {
+  const fieldSchema: SchemaDefinition = {
     type: 'string',
     readOnly: false,
-    adcmMeta: {
-      activation: null,
-      isSecret: false,
-      synchronization: null,
-    },
   };
 
-  if (parentFieldSchema?.adcmMeta.isSecret) {
+  if (parentFieldSchema?.adcmMeta?.isSecret) {
+    if (fieldSchema.adcmMeta === undefined) {
+      fieldSchema.adcmMeta = {};
+    }
     fieldSchema.adcmMeta.isSecret = true;
   }
 
@@ -175,7 +173,7 @@ const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null)
 };
 
 const getIsReadonly = (
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
 ) => {
@@ -201,7 +199,7 @@ const getIsReadonly = (
 
 const getNodeProps = (
   fieldName: string,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   isNullable: boolean,
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
@@ -212,8 +210,12 @@ const getNodeProps = (
   const title = isArrayItem ? `${parentNodeData.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
 
   let isRequiredField = false;
-  if (parentNodeData.fieldSchema.type === 'object') {
+
+  if (parentNodeData.type === 'object') {
     const requiredFields = parentNodeData.fieldSchema.required ?? [];
+    isRequiredField = requiredFields.includes(fieldName);
+  } else if (parentNodeData.type === 'selectableObject') {
+    const requiredFields = parentNodeData.selectedFieldSchema?.required ?? [];
     isRequiredField = requiredFields.includes(fieldName);
   }
 
@@ -313,17 +315,41 @@ const buildNode = (
   attributes: ConfigurationAttributes,
 ): ConfigurationNode => {
   const { fieldSchema: singleFieldSchema, isNullable } = determineFieldSchema(fieldSchema);
-  if (singleFieldSchema.type === 'object') {
+
+  if (singleFieldSchema.type === 'object' && singleFieldSchema.discriminator === undefined) {
     return buildObjectNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
-  } else if (singleFieldSchema.type === 'array') {
-    return buildArrayNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
-  } else if (primitiveFieldTypes.has(singleFieldSchema.type as string)) {
-    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
-  } else if (singleFieldSchema.type === undefined && singleFieldSchema.enum) {
-    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
-  } else {
-    return buildUnknownNode(index, fieldName, path, parentNode, singleFieldSchema);
   }
+
+  if (singleFieldSchema.type === 'object' && singleFieldSchema.discriminator !== undefined) {
+    return buildSelectableObjectNode(
+      index,
+      fieldName,
+      path,
+      parentNode,
+      singleFieldSchema,
+      isNullable,
+      fieldValue,
+      attributes,
+    );
+  }
+
+  if (singleFieldSchema.type === 'array') {
+    return buildArrayNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+  }
+
+  if (primitiveFieldTypes.has(singleFieldSchema.type as string)) {
+    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+  }
+
+  if (singleFieldSchema.type === undefined && singleFieldSchema.enum) {
+    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+  }
+
+  if (fieldName === discriminatorFieldName) {
+    return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+  }
+
+  return buildUnknownNode(index, fieldName, path, parentNode, singleFieldSchema);
 };
 
 const buildObjectNode = (
@@ -331,13 +357,11 @@ const buildObjectNode = (
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
 ) => {
-  const objectValue = fieldValue as JSONObject | null;
-
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
@@ -348,6 +372,7 @@ const buildObjectNode = (
     fieldAttributes,
     parentNode,
   );
+
   const node: ConfigurationNode = {
     key,
     index,
@@ -363,56 +388,119 @@ const buildObjectNode = (
       isReadonly,
       isDraggable,
       objectType: 'map',
-      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
       value: fieldValue,
       fieldAttributes,
     },
   };
 
   const nodeData = node.data as ConfigurationObject;
-  const children = [];
 
   if (fieldSchema === undefined || fieldSchema.properties === undefined) {
     const fullPath = [...path, fieldName];
     console.error(`schema for /${fullPath.join('/')} not found`);
   } else {
-    const addedFields = new Set();
-
     if (!fieldSchema.additionalProperties) {
       nodeData.objectType = 'structure';
     }
 
-    if (objectValue) {
-      // add children from schema
-      for (const [key, value] of Object.keys(fieldSchema.properties).entries()) {
-        const fieldPath = [...path, value];
-        const propertyValue = objectValue?.[value] ?? null;
-        const childrenFieldSchema = fieldSchema.properties[value];
+    node.children = addObjectProperties(node, attributes);
+  }
 
-        children.push(buildNode(key, value, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
-        addedFields.add(value);
-      }
+  return node;
+};
 
-      // add children from data (map case)
-      let index = 0;
-      for (const [key, propertyValue] of Object.entries(objectValue)) {
-        if (!addedFields.has(key)) {
-          const fieldPath = [...path, key];
-          const childrenFieldSchema = fieldSchema.properties[key] ?? getDefaultFieldSchema(node.data.fieldSchema);
+const buildSelectableObjectNode = (
+  index: number,
+  fieldName: string,
+  path: ConfigurationNodePath,
+  parentNode: ConfigurationNode,
+  fieldSchema: SchemaDefinition,
+  isNullable: boolean,
+  fieldValue: JSONValue,
+  attributes: ConfigurationAttributes,
+) => {
+  const key = buildKey(path);
+  const fieldAttributes = attributes[key];
 
-          children.push(buildNode(index, key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
-          addedFields.add(key);
-          index++;
-        }
+  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
+    fieldName,
+    fieldSchema,
+    isNullable,
+    fieldAttributes,
+    parentNode,
+  );
+
+  const node: ConfigurationNode = {
+    key,
+    index,
+    data: {
+      title,
+      type: 'selectableObject',
+      path,
+      fieldSchema,
+      selectedFieldSchema: determineSelectableFieldSchema(fieldSchema, fieldValue),
+      oneOfSchemaDefaults: getOneOfSchemaDefaults(fieldSchema),
+      isNullable,
+      parentNode,
+      isCleanable,
+      isDeletable,
+      isReadonly,
+      isDraggable,
+      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
+      value: fieldValue,
+      fieldAttributes,
+    },
+  };
+
+  if (fieldSchema === undefined) {
+    const fullPath = [...path, fieldName];
+    console.error(`schema for /${fullPath.join('/')} not found`);
+  } else {
+    node.children = addObjectProperties(node, attributes);
+  }
+
+  return node;
+};
+
+const addObjectProperties = (node: ConfigurationNode, attributes: ConfigurationAttributes) => {
+  const configObject = node.data as ConfigurationObject | ConfigurationSelectableObject;
+  const { value, path } = configObject;
+
+  const fieldSchema = configObject.type === 'object' ? configObject.fieldSchema : configObject.selectedFieldSchema;
+
+  const objectValue = value as JSONObject | null;
+
+  const children = [];
+
+  if (fieldSchema?.properties && objectValue) {
+    const addedFields = new Set();
+
+    // add children from schema
+    for (const [key, value] of Object.keys(fieldSchema.properties).entries()) {
+      const fieldPath = [...path, value];
+      const propertyValue = objectValue?.[value] ?? null;
+      const childrenFieldSchema = fieldSchema.properties[value];
+
+      children.push(buildNode(key, value, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+      addedFields.add(value);
+    }
+
+    // add children from data (map case)
+    let index = 0;
+    for (const [key, propertyValue] of Object.entries(objectValue)) {
+      if (!addedFields.has(key)) {
+        const fieldPath = [...path, key];
+        const childrenFieldSchema = fieldSchema.properties[key] ?? getDefaultFieldSchema(fieldSchema);
+
+        children.push(buildNode(index, key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+        addedFields.add(key);
+        index++;
       }
     }
   }
 
-  if (children.length) {
-    node.children = children;
-  }
-
-  return node;
+  return children.length ? children : undefined;
 };
 
 const buildFieldNode = (
@@ -420,7 +508,7 @@ const buildFieldNode = (
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
@@ -461,7 +549,7 @@ const buildFieldNode = (
 
 const buildAddEmptyObjectNode = (
   path: ConfigurationNodePath,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   parentNode: ConfigurationNode,
 ) => {
   const index = getIndex(parentNode.children);
@@ -482,7 +570,7 @@ const buildAddEmptyObjectNode = (
 };
 
 const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: ConfigurationNode) => {
-  const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
+  const fieldSchema: SchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
   const index = getIndex(parentNode.children);
 
   const node: ConfigurationNodeView = {
@@ -505,7 +593,7 @@ const buildArrayNode = (
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
@@ -543,7 +631,7 @@ const buildArrayNode = (
     },
   };
 
-  const itemsSchema = fieldSchema.items as SingleSchemaDefinition;
+  const itemsSchema = fieldSchema.items as SchemaDefinition;
   node.children = [];
 
   if (array) {
@@ -559,7 +647,7 @@ const buildArrayNode = (
 const buildAddArrayItemNode = (
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
 ) => {
   const index = getIndex(parentNode.children);
   const node: ConfigurationNodeView = {
@@ -580,7 +668,7 @@ const buildAddArrayItemNode = (
 const buildItemDropPlaceholderNode = (
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
 ) => {
   const index = getIndex(parentNode.children);
   const node: ConfigurationNodeView = {
@@ -603,7 +691,7 @@ const buildUnknownNode = (
   fieldName: string,
   path: ConfigurationNodePath,
   parentNode: ConfigurationNode,
-  fieldSchema: SingleSchemaDefinition,
+  fieldSchema: SchemaDefinition,
 ) => {
   const node: ConfigurationNode = {
     key: buildKey(path),
@@ -658,10 +746,14 @@ const buildConfigurationTreeRecursively = (
   const treeNode = node as ConfigurationNodeView;
 
   const isVisible =
-    (filter.showInvisible ? true : !treeNode.data.fieldSchema.adcmMeta.isInvisible) &&
-    (filter.showAdvanced ? true : !treeNode.data.fieldSchema.adcmMeta.isAdvanced);
+    (filter.showInvisible ? true : !treeNode.data.fieldSchema.adcmMeta?.isInvisible) &&
+    (filter.showAdvanced ? true : !treeNode.data.fieldSchema.adcmMeta?.isAdvanced);
 
   if (!isVisible) {
+    return undefined;
+  }
+
+  if (node.data.path.at(-1) === discriminatorFieldName) {
     return undefined;
   }
 
@@ -703,7 +795,7 @@ const buildConfigurationTreeRecursively = (
   }
 
   if (nodeData.type === 'array' && !nodeData.isReadonly) {
-    const itemsSchema = nodeData.fieldSchema.items as SingleSchemaDefinition;
+    const itemsSchema = nodeData.fieldSchema.items as SchemaDefinition;
     if (treeNode.children === undefined) {
       treeNode.children = [];
     }
@@ -743,13 +835,13 @@ const buildConfigurationTreeRecursively = (
   return treeNode;
 };
 
-const isSingleSchemaDefinition = (fieldSchema: SchemaDefinition): fieldSchema is SingleSchemaDefinition => {
-  return (fieldSchema as MultipleSchemaDefinitions).oneOf === undefined;
+const isSingleSchemaDefinition = (fieldSchema: SchemaDefinition): boolean => {
+  return (fieldSchema as SchemaDefinition).oneOf === undefined || fieldSchema.discriminator !== undefined;
 };
 
 export const determineFieldSchema = (
   fieldSchema: SchemaDefinition,
-): { isNullable: boolean; fieldSchema: SingleSchemaDefinition } => {
+): { isNullable: boolean; fieldSchema: SchemaDefinition } => {
   if (isSingleSchemaDefinition(fieldSchema)) {
     return {
       isNullable: false,
@@ -759,11 +851,54 @@ export const determineFieldSchema = (
     const [schema1, schema2] = fieldSchema.oneOf ?? [];
 
     if (schema1.type === 'null') {
-      return { isNullable: true, fieldSchema: schema2 as SingleSchemaDefinition };
+      return { isNullable: true, fieldSchema: schema2 };
     } else {
-      return { isNullable: true, fieldSchema: schema1 as SingleSchemaDefinition };
+      return { isNullable: true, fieldSchema: schema1 };
     }
   }
+};
+
+export const determineSelectableFieldSchema = (
+  fieldSchema: SchemaDefinition,
+  value: JSONValue,
+): SchemaDefinition | null => {
+  if (value === null || fieldSchema.oneOf === undefined) {
+    return null;
+  }
+
+  const valueAsObject = value as JSONObject;
+  for (const oneOfSchema of fieldSchema.oneOf) {
+    const discriminatorValue = (oneOfSchema?.properties?.[discriminatorFieldName].const as string) ?? '';
+
+    if (valueAsObject[discriminatorFieldName] === discriminatorValue) {
+      return oneOfSchema;
+    }
+  }
+
+  return null;
+};
+
+export const getOneOfSchemaDefaults = (fieldSchema: SchemaDefinition): Record<string, JSONValue> => {
+  if (fieldSchema.oneOf === undefined) {
+    return {};
+  }
+
+  const { oneOf, discriminator, ...rest } = fieldSchema;
+
+  const result: Record<string, JSONValue> = {};
+
+  for (const oneOfSchema of oneOf) {
+    const discriminatorValue = (oneOfSchema?.properties?.[discriminatorFieldName].const as string) ?? '';
+    const option = generateFromSchema({ ...rest, ...oneOfSchema }) as object;
+
+    // set discriminator value;
+    result[discriminatorValue] = {
+      [discriminatorFieldName]: discriminatorValue,
+      ...option,
+    };
+  }
+
+  return result;
 };
 
 interface FailedNodeInfo {
@@ -797,17 +932,17 @@ export const getDirectErrorKeys = (failedMap: ConfigurationErrors, parentKey: st
 };
 
 export const getFailedNodeInfo = (
-  treeDictionary: NodesDictionary,
+  nodesDictionary: NodesDictionary,
   failedMap: ConfigurationErrors,
   parentKey: string,
 ): FailedNodeInfo | null => {
-  const parent = treeDictionary[parentKey]; // findNodeByKey(tree, parentKey);
+  const parent = nodesDictionary[parentKey];
   if (!parent || !parent.children?.length) return null;
 
   const directErrorKeys = getDirectErrorKeys(failedMap, parentKey);
   const failedIndices: number[] = [];
 
-  // Один проход по дочерним узлам
+  // find child nodes with errors
   for (const child of parent.children) {
     if (directErrorKeys.has(child.key)) {
       failedIndices.push(child.index);

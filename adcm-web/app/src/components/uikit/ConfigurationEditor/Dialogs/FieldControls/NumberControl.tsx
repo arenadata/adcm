@@ -1,12 +1,12 @@
 import InputNumber from '@uikit/InputNumber/InputNumber';
 import ConfigurationField from './ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 
 export interface NumberControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
   onApply: () => void;
