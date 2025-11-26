@@ -772,7 +772,11 @@ class ClusterViewSet(
     def host_candidates(self, request, *_, **kwargs):
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         candidates = find_host_candidates_for_cluster(cluster_id=cluster.pk, db=ClusterDB)
-        serializer = HostShortSerializer(instance=candidates, many=True)
+        hosts_allowed_for_user_query = get_objects_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host)
+        candidates_allowed_for_user = hosts_allowed_for_user_query.filter(id__in=(c.id for c in candidates)).order_by(
+            "fqdn"
+        )
+        serializer = HostShortSerializer(instance=candidates_allowed_for_user, many=True)
         return Response(data=serializer.data, status=HTTP_200_OK)
 
 

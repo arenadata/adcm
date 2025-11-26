@@ -305,9 +305,7 @@ def find_host_candidates_for_cluster(cluster_id: ClusterID, db: HostClusterDBPro
     hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
 
     payload = HostCandidateDTO(cluster_id=cluster_id, in_cluster=list(hosts_in_cluster), candidates=list(unbound_hosts))
-    candidates = sorted(filter_host_candidates(payload=payload), key=lambda h: h.name)
-
-    return tuple(candidates)
+    return filter_host_candidates(payload=payload)
 
 
 def construct_mapping_from_delta(
