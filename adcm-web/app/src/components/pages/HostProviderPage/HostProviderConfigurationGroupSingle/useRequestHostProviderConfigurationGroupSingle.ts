@@ -1,8 +1,10 @@
 import { useParams } from 'react-router-dom';
 import { useDispatch } from '@hooks';
 import { useEffect } from 'react';
-import { cleanupHostProviderConfigGroups } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsSlice';
-import { getHostProviderConfigGroup } from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
+import {
+  cleanupHostProviderConfigGroup,
+  getHostProviderConfigGroup,
+} from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
 
 export const useHostProviderConfigGroupSingle = () => {
   const { hostproviderId: hostproviderIdFromUrl, configGroupId: configGroupIdFromUrl } = useParams();
@@ -13,7 +15,7 @@ export const useHostProviderConfigGroupSingle = () => {
   useEffect(() => {
     dispatch(getHostProviderConfigGroup({ hostProviderId, configGroupId }));
     return () => {
-      dispatch(cleanupHostProviderConfigGroups());
+      dispatch(cleanupHostProviderConfigGroup());
     };
   }, [dispatch, hostProviderId, configGroupId]);
 };
