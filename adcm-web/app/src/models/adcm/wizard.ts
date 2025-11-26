@@ -1,6 +1,7 @@
 import type { JSONObject } from '@models/json';
 import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm/jobs';
 import type { AdcmConfiguration } from '@models/adcm/configuration';
+import type { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
 export type AdcmWizardMappingStepOperationType = 'add' | 'remove';
 export type AdcmWizardProcessState = 'created' | 'completed' | 'broken';
@@ -87,28 +88,27 @@ export interface AdcmActionProcessConfigurationStep {
   configuration: AdcmWizardConfiguration;
 }
 
+export interface AdcmActionProcessMappingStepRules {
+  operation: AdcmHostComponentMapRuleAction;
+  component: string;
+  service: string;
+}
+
+interface DeltaItem {
+  operation: AdcmWizardMappingStepOperationType;
+  componentId: number;
+  hostId: number;
+}
+
 export interface AdcmActionProcessMappingStep {
   id: number;
-  processSyncKey: string;
   displayName: string;
+  name: string;
   type: AdcmWizardStepType.Mapping;
   state: AdcmWizardStepStates;
-  mapping: {
-    rule: {
-      operation: AdcmWizardMappingStepOperationType;
-      componentId: number;
-    }[];
-    delta: {
-      operation: AdcmWizardMappingStepOperationType;
-      componentId: number;
-      hostId: number;
-    }[];
-    suggetion: {
-      operation: AdcmWizardMappingStepOperationType;
-      hostId: number;
-      componentId: number;
-    }[];
-  };
+  rules: AdcmActionProcessMappingStepRules[];
+  delta: DeltaItem[];
+  cumulativeDelta: DeltaItem[];
 }
 
 export interface AdcmActionProcessLastStep {
@@ -156,21 +156,22 @@ export interface AdcmWizardCompleteOperationPayload {
   };
 }
 
+export interface AdcmWizardMapping {
+  componentId: number;
+  hostId: number;
+}
+
+export interface AdcmWizardMappingChangeHistory {
+  add: AdcmWizardMapping[];
+  remove: AdcmWizardMapping[];
+}
+
 export interface AdcmWizardSubmitMappingStepPayload {
   method: AdcmWizardMethodType.Submit;
   params: {
     processSyncKey: string;
     stepId: number;
-    hostComponentMapDelta: {
-      add: {
-        hostId: number;
-        componentId: number;
-      }[];
-      remove: {
-        hostId: number;
-        componentId: number;
-      }[];
-    };
+    hostComponentMapDelta: AdcmWizardMappingChangeHistory;
   };
 }
 

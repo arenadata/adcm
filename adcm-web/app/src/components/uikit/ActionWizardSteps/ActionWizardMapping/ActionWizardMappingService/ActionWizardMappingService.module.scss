@@ -1,0 +1,17 @@
+.service {
+  &__title {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--component-container-valid-text-color);
+
+    &_error {
+      color: var(--component-container-error-color);
+    }
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 24px;
+  }
+}

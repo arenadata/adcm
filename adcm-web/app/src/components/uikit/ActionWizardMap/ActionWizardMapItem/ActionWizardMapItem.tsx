@@ -11,10 +11,9 @@ import { AdcmWizardStepType } from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
 import { useDispatch, useStore } from '@hooks';
-import { setSelectedStepId } from '@store/adcm/clusters/clustersWizardActionsSlice';
+import { setBrokenStepError, setSelectedStepId } from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import type { AdcmJob } from '@models/adcm';
-import { setBrokenStepError } from '@store/adcm/clusters/clustersWizardSlice';
 import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 
 interface MapItemStagesProps {

@@ -20,6 +20,7 @@ import type {
 } from '@models/adcm/dynamicAction';
 import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
 import { AdcmWizardApi } from '@api/adcm/wizard';
+import type { RequestOptions } from '@api/httpClient/HttpClient';
 
 export class AdcmClustersApi {
   public static async getClusters(
@@ -130,10 +131,11 @@ export class AdcmClustersApi {
     actionId: number,
     processId: number,
     stepId: number,
+    options?: RequestOptions,
   ) {
     const endpoint = `/api/v2/clusters/${clusterId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
 
-    return await AdcmWizardApi.getStep(endpoint);
+    return await AdcmWizardApi.getStep(endpoint, options);
   }
 
   public static async createClusterActionWizardOperation(

@@ -5,12 +5,13 @@ import type { AdcmActionWizardProcess } from '@models/adcm/wizard';
 
 interface ActionWizardMapProps {
   process: AdcmActionWizardProcess;
+  wizardTitle: string;
 }
 
-const ActionWizardMap: React.FC<ActionWizardMapProps> = ({ process }: ActionWizardMapProps) => {
+const ActionWizardMap: React.FC<ActionWizardMapProps> = ({ process, wizardTitle }: ActionWizardMapProps) => {
   return (
     <div>
-      <div className={s.actionWizardMap__title}>Manage install</div>
+      <div className={s.actionWizardMap__title}>{wizardTitle}</div>
       <div className={s.actionWizardMap}>
         <MapItemStages process={process} />
       </div>
