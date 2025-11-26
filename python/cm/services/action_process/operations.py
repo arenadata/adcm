@@ -528,13 +528,6 @@ def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta,
     ):
         existence_violations[0].raise_error()
 
-    # TODO: unite with cm.services.job._utils.check_delta_is_allowed
-    mapping_rules = _prepare_mapping_rules(step=step, topology=topology)
-    if distribution_violations := _find_hc_operation_distribution_violations(
-        delta=hc_mapping_delta, rules=mapping_rules, topology=topology
-    ):
-        distribution_violations[0].raise_error()
-
     # if there is previous mapping step with cumulative_delta: "apply" cumulative_delta to topology
     if previous_mapping_input := repo.retrieve_previous_mapping_step_input_with_cumulative_delta(
         process_id=step.process_id, step_id=step.id
@@ -543,6 +536,13 @@ def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta,
             delta=previous_mapping_input.mapping.cumulative_delta, topology=topology
         )
         topology = create_topology_with_new_mapping(topology=topology, new_mapping=mapping_considering_cumulative_delta)
+
+    # TODO: unite with cm.services.job._utils.check_delta_is_allowed
+    mapping_rules = _prepare_mapping_rules(step=step, topology=topology)
+    if distribution_violations := _find_hc_operation_distribution_violations(
+        delta=hc_mapping_delta, rules=mapping_rules, topology=topology
+    ):
+        distribution_violations[0].raise_error()
 
     new_mapping = _get_new_flat_mapping_from_delta_and_topology(delta=hc_mapping_delta, topology=topology)
     new_topology = create_topology_with_new_mapping(topology=topology, new_mapping=new_mapping)

@@ -2490,3 +2490,87 @@ class TestActionProcess(BaseAPITestCase):
             self.cleanup_process_hc_service(
                 cluster_id=cluster.id, service_ids=[service.id, bound_target_service.id], process_id=process.id
             )
+
+    def test_adcm_7451_retrieve_second_mapping_step_success(self):
+        self.add_services_to_cluster(["service_1", "service_2"], cluster=self.cluster_3)
+        component_1_s1 = Component.objects.get(
+            prototype__name="component_1_s1", service__prototype__name="service_1", cluster=self.cluster_3
+        )
+        component_1_s2 = Component.objects.get(
+            prototype__name="component_1_s2", service__prototype__name="service_2", cluster=self.cluster_3
+        )
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_3)
+        process = self.get_process(self.start_process(self.cluster_3))
+
+        # submit config step
+        cfg_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
+        payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
+        response = self.submit_config_step(
+            obj=self.cluster_3, process=process, step_id=cfg_step.id, config_payload=payload
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
+            steps=ProcessStep.objects.filter(process_id=process.id)
+        )
+        first_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping", display_name="change mapping"
+        )
+        self.assertEqual(current_step_id, first_mapping_step.id)
+        self.assertEqual(last_completed_step_id, cfg_step.id)
+
+        # submit first mapping step
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
+
+        first_mapping_step_hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}]}
+        payload = {
+            "method": ProcessOperationType.SUBMIT,
+            "params": {
+                "stepId": first_mapping_step.id,
+                "processSyncKey": process.sync_key,
+                "hostComponentMapDelta": first_mapping_step_hc_delta,
+            },
+        }
+        response = endpoint.post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # retrieve second mapping step
+        second_mapping_step = ProcessStep.objects.get(
+            process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
+        )
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "steps" / second_mapping_step
+        response = endpoint.get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        response = response.json()
+        self.assertIsNone(response["delta"])
+        expected_cumulative_delta = {"remove": [], **first_mapping_step_hc_delta}
+        self.assertDictEqual(response["cumulativeDelta"], expected_cumulative_delta)
+
+        # submit second mapping step
+        process.refresh_from_db()
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "operation"
+
+        second_mapping_step_hc_delta = {  # add s2c2, remove s1c1 (reverts first step add)
+            "add": [{"hostId": host_1.pk, "componentId": component_1_s2.pk}],
+            "remove": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}],
+        }
+        payload = {
+            "method": ProcessOperationType.SUBMIT,
+            "params": {
+                "stepId": second_mapping_step.id,
+                "processSyncKey": process.sync_key,
+                "hostComponentMapDelta": second_mapping_step_hc_delta,
+            },
+        }
+        response = endpoint.post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # retrieve second mapping step again
+        endpoint = self.get_endpoint_to_processes(self.cluster_3) / process / "steps" / second_mapping_step
+        response = endpoint.get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        response = response.json()
+        self.assertDictEqual(response["delta"], second_mapping_step_hc_delta)
+        expected_cumulative_delta = {"add": second_mapping_step_hc_delta["add"], "remove": []}
+        self.assertDictEqual(response["cumulativeDelta"], expected_cumulative_delta)
