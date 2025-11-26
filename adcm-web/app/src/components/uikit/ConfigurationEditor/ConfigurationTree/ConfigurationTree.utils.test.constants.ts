@@ -9,22 +9,10 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
   title: 'Cluster Configuration',
   required: ['cluster_config'],
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    activation: null,
-    synchronization: null,
-    stringExtra: null,
-  },
   properties: {
     cluster_config: {
       type: 'object',
       readOnly: true,
-      adcmMeta: {
-        isAdvanced: false,
-        activation: null,
-        synchronization: null,
-        stringExtra: null,
-      },
       required: ['cluster'],
       additionalProperties: false,
       properties: {
@@ -32,12 +20,6 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
           title: 'cluster',
           type: 'object',
           readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            activation: null,
-            synchronization: null,
-            stringExtra: null,
-          },
           required: ['cluster_name'],
           additionalProperties: false,
           properties: {
@@ -45,59 +27,29 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
               title: 'Cluster Name',
               type: 'string',
               readOnly: true,
-              adcmMeta: {
-                isAdvanced: false,
-                activation: null,
-                synchronization: null,
-                stringExtra: null,
-              },
             },
             shard: {
               type: 'array',
               title: 'List of shards',
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                activation: null,
-                synchronization: null,
-                stringExtra: null,
-              },
               items: {
                 title: 'shard',
                 type: 'object',
                 required: ['internal_replica', 'weight'],
                 readOnly: false,
                 additionalProperties: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  activation: null,
-                  synchronization: null,
-                  stringExtra: null,
-                },
                 properties: {
                   weight: {
                     type: 'integer',
                     maximum: 10,
                     default: 0,
                     readOnly: false,
-                    adcmMeta: {
-                      isAdvanced: false,
-                      activation: null,
-                      synchronization: null,
-                      stringExtra: null,
-                    },
                   },
                   internal_replica: {
                     type: 'integer',
                     minimum: 12,
                     default: 0,
                     readOnly: false,
-                    adcmMeta: {
-                      isAdvanced: false,
-                      activation: null,
-                      synchronization: null,
-                      stringExtra: null,
-                    },
                   },
                 },
               },
@@ -106,12 +58,6 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
         },
         auth: {
           readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            activation: null,
-            synchronization: null,
-            stringExtra: null,
-          },
           type: 'object',
           required: ['token', 'expire'],
           additionalProperties: true,
@@ -119,22 +65,10 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
             token: {
               type: 'string',
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                activation: null,
-                synchronization: null,
-                stringExtra: null,
-              },
             },
             expire: {
               type: 'number',
               readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                activation: null,
-                synchronization: null,
-                stringExtra: null,
-              },
             },
           },
         },
@@ -159,16 +93,8 @@ export const clusterConfiguration = {
   },
 };
 
-const defaultAdcmMeta = {
-  isAdvanced: false,
-  activation: null,
-  synchronization: null,
-  stringExtra: null,
-};
-
 export const defaultProps = {
   readOnly: false,
-  adcmMeta: { ...defaultAdcmMeta },
 };
 
 export const structureSchema: ConfigurationSchema = {
@@ -522,6 +448,95 @@ export const validateNestedErrorsSchema: ConfigurationSchema = {
           minItems: 1,
         },
       ],
+    },
+  },
+};
+
+export const selectableObjectSchema: ConfigurationSchema = {
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  type: 'object',
+  properties: {
+    selectable_no_default_required: {
+      title: 'selectable_no_default_required',
+      description: '',
+      readOnly: false,
+      default: null,
+      type: 'object',
+      discriminator: {
+        propertyName: '_selection',
+      },
+      oneOf: [
+        {
+          required: ['_selection', 'a'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'a',
+              title: 'a',
+            },
+            a: {
+              title: 'a',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+        {
+          required: ['_selection', 'b'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'b',
+              title: 'b',
+            },
+            b: {
+              title: 'b',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+      ],
+    },
+  },
+  required: ['selectable_no_default_required'],
+  additionalProperties: false,
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+};
+
+export const selectableObjectConfig = {
+  selectable_no_default_required: {
+    _selection: 'a',
+    a: {
+      plain: 2,
     },
   },
 };

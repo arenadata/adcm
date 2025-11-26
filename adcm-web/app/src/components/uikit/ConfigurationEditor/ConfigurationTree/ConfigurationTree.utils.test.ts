@@ -26,6 +26,8 @@ import {
   emptyFilter,
   defaultProps,
   validateNestedErrorsSchema,
+  selectableObjectSchema,
+  selectableObjectConfig,
 } from './ConfigurationTree.utils.test.constants';
 import {
   buildConfigurationNodes,
@@ -35,8 +37,13 @@ import {
   getDefaultValue,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
-import { nestedPropsErrorKeyword, nestedPropsErrorMessage, rootNodeKey } from './ConfigurationTree.constants';
-import type { ConfigurationErrors, FieldErrors, SingleSchemaDefinition } from '@models/adcm';
+import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
+import {
+  discriminatorFieldName,
+  nestedPropsErrorKeyword,
+  nestedPropsErrorMessage,
+  rootNodeKey,
+} from './ConfigurationTree.constants';
 
 describe('structure node tests', () => {
   test('structure', () => {
@@ -82,16 +89,16 @@ describe('structure node tests', () => {
   });
 
   test('default value', () => {
-    const node: SingleSchemaDefinition = { ...defaultProps, default: 'someValue' };
-    const parentNode: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    const node: SchemaDefinition = { ...defaultProps, default: 'someValue' };
+    const parentNode: SchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
     expect(getDefaultValue('keyName', node, parentNode)).toBe('someValue');
 
-    const node2: SingleSchemaDefinition = { ...defaultProps, default: null };
-    const parentNode2: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
-    expect(getDefaultValue('keyName', node2, parentNode2)).toBe(null);
+    const node2: SchemaDefinition = { ...defaultProps, default: null };
+    const parentNode2: SchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    expect(getDefaultValue('keyName', node2, parentNode2)).toBe('parentValue');
 
-    const node3: SingleSchemaDefinition = defaultProps;
-    const parentNode3: SingleSchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
+    const node3: SchemaDefinition = defaultProps;
+    const parentNode3: SchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
     expect(getDefaultValue('keyName', node3, parentNode3)).toBe('parentValue');
   });
 
@@ -543,5 +550,17 @@ describe('fillFieldAttributes', () => {
 
     const authNode = clusterConfigNode.children?.[1]!;
     expect(authNode.data.fieldAttributes).toStrictEqual(authAttributes);
+  });
+});
+
+describe('selection groups', () => {
+  test('build discriminator field', () => {
+    const tree = buildConfigurationNodes(selectableObjectSchema, selectableObjectConfig, {});
+    const rootNode = tree;
+
+    const clusterConfigNode = rootNode.children?.[0]!;
+    expect(clusterConfigNode.data.type).toStrictEqual('selectableObject');
+    expect(clusterConfigNode.children?.[0].key.endsWith(discriminatorFieldName)).toBeTruthy();
+    expect(clusterConfigNode.children?.[0].data.type).toStrictEqual('field');
   });
 });

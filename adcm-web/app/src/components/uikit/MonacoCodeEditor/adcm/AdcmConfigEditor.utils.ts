@@ -113,7 +113,7 @@ type NameValueTuple = { name: string; value: JSONValue };
  * @deprecated
  */
 const swapModelNode = (configNode: ConfigurationNode): NameValueTuple | null => {
-  if (configNode.data.fieldSchema.adcmMeta.isInvisible) {
+  if (configNode.data.fieldSchema.adcmMeta?.isInvisible) {
     return null;
   }
 
@@ -123,6 +123,7 @@ const swapModelNode = (configNode: ConfigurationNode): NameValueTuple | null => 
     case 'field': {
       return { name: title, value: configNode.data.value };
     }
+    case 'selectableObject':
     case 'object': {
       const result: JSONObject = {};
       if (configNode.children) {

@@ -9,6 +9,10 @@ import {
   readOnlySchema,
   nullableConfig,
   nullableSchema,
+  oneOfSchema,
+  oneOfData,
+  nullableOneOfSchema,
+  nullableOneOfData,
   testArrayItemSchema,
   testArrayItemConfig,
 } from './ConfigurationEditor.stories.constants';
@@ -196,6 +200,26 @@ export const ConfigurationEditorDragNDropStory: Story = {
       schema={clusterConfigurationSchema}
       initialConfigurationData={initialClusterConfiguration}
       initialAttributes={attributes}
+    />
+  ),
+};
+
+export const ConfigurationEditorOneOfStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={oneOfSchema}
+      initialConfigurationData={oneOfData}
+      initialAttributes={{}}
+    />
+  ),
+};
+
+export const ConfigurationEditorNullableOneOfStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={nullableOneOfSchema}
+      initialConfigurationData={nullableOneOfData}
+      initialAttributes={{}}
     />
   ),
 };

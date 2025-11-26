@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
@@ -10,7 +10,7 @@ const mismatchErrorText = 'Please, make sure your secrets match';
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;

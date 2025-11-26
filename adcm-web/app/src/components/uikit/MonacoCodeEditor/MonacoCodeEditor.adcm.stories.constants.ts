@@ -6,14 +6,6 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
   title: 'Primary configuration',
   required: ['cluster_config'],
   readOnly: false,
-  adcmMeta: {
-    isAdvanced: false,
-    isInvisible: false,
-    activation: null,
-    synchronization: null,
-    isSecret: false,
-    stringExtra: null,
-  },
   properties: {
     cluster_config: {
       type: 'object',
@@ -22,16 +14,12 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
       additionalProperties: false,
       readOnly: false,
       adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
         activation: {
           isAllowChange: true,
         },
         synchronization: {
           isAllowChange: true,
         },
-        isSecret: false,
-        stringExtra: null,
       },
       default: {
         cluster: [
@@ -49,16 +37,12 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
           description: 'SOME DESCR',
           readOnly: false,
           adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
             activation: {
               isAllowChange: true,
             },
             synchronization: {
               isAllowChange: true,
             },
-            isSecret: false,
-            stringExtra: null,
           },
         },
         some_field2: {
@@ -67,22 +51,18 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
           readOnly: false,
           adcmMeta: {
             isAdvanced: true,
-            isInvisible: false,
             activation: {
               isAllowChange: true,
             },
             synchronization: {
               isAllowChange: true,
             },
-            isSecret: false,
-            stringExtra: null,
           },
         },
         some_field3: {
           type: 'number',
           readOnly: false,
           adcmMeta: {
-            isAdvanced: false,
             isInvisible: true,
             activation: {
               isAllowChange: true,
@@ -90,8 +70,6 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
             synchronization: {
               isAllowChange: true,
             },
-            isSecret: false,
-            stringExtra: null,
           },
         },
         cluster: {
@@ -99,29 +77,17 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
           readOnly: false,
           title: 'Custer',
           adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
             activation: {
               isAllowChange: true,
             },
             synchronization: {
               isAllowChange: true,
             },
-            isSecret: false,
-            stringExtra: null,
           },
           items: {
             type: 'object',
             additionalProperties: false,
             readOnly: false,
-            adcmMeta: {
-              isAdvanced: false,
-              isInvisible: false,
-              activation: null,
-              synchronization: null,
-              isSecret: false,
-              stringExtra: null,
-            },
             required: ['cluster_name', 'cluster_password'],
             properties: {
               cluster_name: {
@@ -130,14 +96,6 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                 default: 'default cluster name',
                 readOnly: false,
                 maxLength: 10,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-                  isSecret: false,
-                  stringExtra: null,
-                },
               },
               cluster_password: {
                 title: 'Password',
@@ -147,14 +105,7 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                 readOnly: false,
                 maxLength: 10,
                 adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
                   isSecret: true,
-                  stringExtra: {
-                    isMultiline: false,
-                  },
                 },
               },
               shard: {
@@ -162,26 +113,10 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                 title: 'Shards',
                 default: [],
                 readOnly: false,
-                adcmMeta: {
-                  isAdvanced: false,
-                  isInvisible: false,
-                  activation: null,
-                  synchronization: null,
-                  isSecret: false,
-                  stringExtra: null,
-                },
                 items: {
                   type: 'object',
                   additionalProperties: false,
                   readOnly: false,
-                  adcmMeta: {
-                    isAdvanced: false,
-                    isInvisible: false,
-                    activation: null,
-                    synchronization: null,
-                    isSecret: false,
-                    stringExtra: null,
-                  },
                   required: ['weight', 'internal_replica', 'replicas', 'secret_field'],
                   properties: {
                     weight: {
@@ -190,14 +125,6 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                       description: 'some weight description',
                       default: 10,
                       readOnly: false,
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                     },
                     secret_field: {
                       type: 'string',
@@ -206,12 +133,7 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                       default: '',
                       readOnly: false,
                       adcmMeta: {
-                        isAdvanced: false,
                         isInvisible: true,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
                       },
                     },
                     internal_replica: {
@@ -219,40 +141,16 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                       title: 'Internal replica',
                       default: 11,
                       readOnly: false,
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                     },
                     replicas: {
                       type: 'array',
                       default: [{ host: 'test_test' }],
                       readOnly: false,
                       title: 'Replicas',
-                      adcmMeta: {
-                        isAdvanced: false,
-                        isInvisible: false,
-                        activation: null,
-                        synchronization: null,
-                        isSecret: false,
-                        stringExtra: null,
-                      },
                       items: {
                         type: 'object',
                         additionalProperties: false,
                         readOnly: false,
-                        adcmMeta: {
-                          isAdvanced: false,
-                          isInvisible: false,
-                          activation: null,
-                          synchronization: null,
-                          isSecret: false,
-                          stringExtra: null,
-                        },
                         required: ['host'],
                         properties: {
                           host: {
@@ -260,14 +158,6 @@ export const adcmConfigurationSchema: ConfigurationSchema = {
                             default: 'default-host',
                             title: 'Host name',
                             readOnly: false,
-                            adcmMeta: {
-                              isAdvanced: false,
-                              isInvisible: false,
-                              activation: null,
-                              synchronization: null,
-                              isSecret: false,
-                              stringExtra: null,
-                            },
                           },
                         },
                       },

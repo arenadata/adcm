@@ -1,4 +1,4 @@
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import FormField from '@uikit/FormField/FormField';
 import Button from '@uikit/Button/Button';
 import s from './ConfigurationField.module.scss';
@@ -7,7 +7,7 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   label: string;
   error?: string;
   children: React.ReactElement<{ hasError?: boolean }>;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   disabled: boolean;
   onResetToDefault?: () => void;
 }

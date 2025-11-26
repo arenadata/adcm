@@ -1,12 +1,12 @@
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import { nullStub } from '../../ConfigurationTree/ConfigurationTree.constants';
 
-export const getEnumOptions = (fieldSchema: SingleSchemaDefinition) => {
+export const getEnumOptions = (fieldSchema: SchemaDefinition) => {
   if (fieldSchema.enum === undefined) {
     return [];
   }
 
-  const labels: string[] = fieldSchema.adcmMeta.enumExtra?.labels ?? [];
+  const labels: string[] = fieldSchema.adcmMeta?.enumExtra?.labels ?? [];
   const enumValues = fieldSchema.enum as unknown[];
 
   const options =

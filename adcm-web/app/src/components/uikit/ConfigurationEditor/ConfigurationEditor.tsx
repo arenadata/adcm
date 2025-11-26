@@ -74,7 +74,7 @@ const ConfigurationEditor = ({
   };
 
   const handleValueChange = useCallback(
-    (node: ConfigurationNodeView, value: JSONPrimitive) => {
+    (node: ConfigurationNodeView, value: JSONValue) => {
       const newConfiguration = editField(configuration, node.data.path, value);
       if (newConfiguration) {
         onConfigurationChange(newConfiguration);

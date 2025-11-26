@@ -1,13 +1,13 @@
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import ConfigurationField from './ConfigurationField';
 import type { JSONPrimitive } from '@models/json';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import s from './ConfigurationField.module.scss';
 
 export interface BooleanControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
   onApply: () => void;

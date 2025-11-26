@@ -9,6 +9,8 @@ export const primitiveFieldTypes = new Set(['string', 'integer', 'number', 'bool
 export const secretFieldValuePrefixToIgnore = '$ANSIBLE_VAULT';
 
 export const toggleAllNodesEventName = 'toggle-all-nodes';
+export const discriminatorFieldName = '_selection';
+export const treeNodeLabelCharsLimit = 64;
 
 export const nestedPropsErrorKeyword = 'nested';
 export const nestedPropsErrorMessage = 'Has errors in nested props';

@@ -7,8 +7,12 @@ import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
-import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
-import { isPrimitiveValueSet, type JSONPrimitive } from '@models/json';
+import type {
+  ChangeConfigurationNodeHandler,
+  ChangeConfigurationNodeValueHandler,
+  ChangeFieldAttributesHandler,
+} from '../ConfigurationTree.types';
+import { isPrimitiveValueSet } from '@models/json';
 import type { FieldErrors } from '@models/adcm';
 import { isWhiteSpaceOnly } from '@utils/validationsUtils';
 import IconButton from '@uikit/IconButton/IconButton';
@@ -23,7 +27,7 @@ interface FieldNodeContentProps {
   onClick: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
-  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
+  onChange: ChangeConfigurationNodeValueHandler;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
   onDragEnd?: (node: ConfigurationNodeView, isDropped: boolean) => void;
@@ -120,10 +124,10 @@ const FieldNodeContent = ({
     }
 
     if (fieldNodeData.fieldSchema.enum) {
-      if (fieldNodeData.fieldSchema.adcmMeta.enumExtra?.labels) {
+      if (adcmMeta?.enumExtra?.labels) {
         const valueIndex = fieldNodeData.fieldSchema.enum?.indexOf(fieldNodeData.value);
         if (valueIndex !== undefined) {
-          return fieldNodeData.fieldSchema.adcmMeta.enumExtra.labels[valueIndex];
+          return adcmMeta.enumExtra.labels[valueIndex];
         }
       }
     }
@@ -136,17 +140,12 @@ const FieldNodeContent = ({
       return whiteSpaceStringStub;
     }
 
-    if (adcmMeta.isSecret) {
+    if (adcmMeta?.isSecret) {
       return secretStub;
     }
 
     return fieldNodeData.value.toString();
-  }, [
-    adcmMeta.isSecret,
-    fieldNodeData.fieldSchema.adcmMeta.enumExtra,
-    fieldNodeData.fieldSchema.enum,
-    fieldNodeData.value,
-  ]);
+  }, [adcmMeta?.isSecret, adcmMeta?.enumExtra, fieldNodeData.fieldSchema.enum, fieldNodeData.value]);
 
   return (
     <>
@@ -169,7 +168,7 @@ const FieldNodeContent = ({
         <div className={s.nodeContent__title} data-test="node-name">
           {`${fieldNodeData.title}: `}
         </div>
-        {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
+        {adcmMeta?.synchronization && fieldAttributes?.isSynchronized !== undefined && (
           <SynchronizedAttribute
             isSynchronized={fieldAttributes.isSynchronized}
             {...adcmMeta.synchronization}
@@ -179,7 +178,7 @@ const FieldNodeContent = ({
         <div className={s.nodeContent__value} data-test="node-value" onClick={handleClick}>
           {value}
         </div>
-        {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
+        {adcmMeta?.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
             isActive={fieldAttributes.isActive}
             isAllowChange={
@@ -195,7 +194,7 @@ const FieldNodeContent = ({
         )}
       </div>
       <div className={cn(s.nodeContent__buttonWrapper, st.nodeContent__buttonWrapper)}>
-        {!adcmMeta.isSecret && (
+        {!adcmMeta?.isSecret && (
           <IconButton
             className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__copyButton)}
             size={16}

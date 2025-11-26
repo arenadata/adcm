@@ -184,7 +184,7 @@ export class AdcmFieldAttributesDecoratorsController extends EventTarget {
 
     for (const path of nodesPaths) {
       const node = nodesDictionary[path];
-      if (node.data.fieldSchema.adcmMeta.isAdvanced) {
+      if (node.data.fieldSchema.adcmMeta?.isAdvanced) {
         const symbol = symbolsDictionary[path];
         if (symbol) {
           //  text color decorator
@@ -215,7 +215,7 @@ export class AdcmFieldAttributesDecoratorsController extends EventTarget {
         }
       }
 
-      if (node.data.fieldSchema.adcmMeta.isInvisible) {
+      if (node.data.fieldSchema.adcmMeta?.isInvisible) {
         const symbol = symbolsDictionary[path];
         if (symbol) {
           //  text color decorator

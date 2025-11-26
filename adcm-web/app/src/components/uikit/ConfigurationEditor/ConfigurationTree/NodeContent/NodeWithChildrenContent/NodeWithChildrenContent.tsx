@@ -1,19 +1,29 @@
-import { useCallback, useRef, useState } from 'react';
-import { type JSONPrimitive, isValueSet } from '@models/json';
-import type { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
-import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
-import s from '../ConfigurationTree.module.scss';
-import st from '../../../CollapseTree2/CollapseNode.module.scss';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { isValueSet } from '@models/json';
+import type {
+  ConfigurationArray,
+  ConfigurationObject,
+  ConfigurationNodeView,
+  ConfigurationSelectableObject,
+} from '../../../ConfigurationEditor.types';
+import type {
+  ChangeConfigurationNodeHandler,
+  ChangeConfigurationNodeValueHandler,
+  ChangeFieldAttributesHandler,
+} from '../../ConfigurationTree.types';
+import s from '../../ConfigurationTree.module.scss';
+import st from '@uikit/CollapseTree2/CollapseNode.module.scss';
 import cn from 'classnames';
-import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
-import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
-import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
-import { nullStub } from '../ConfigurationTree.constants';
+import SynchronizedAttribute from '../SyncronizedAttribute/SynchronizedAttribute';
+import ActivationAttribute from '../ActivationAttribute/ActivationAttribute';
+import FieldNodeErrors from '../FieldNodeErrors/FieldNodeErrors';
+import { nullStub } from '../../ConfigurationTree.constants';
 import type { FieldErrors } from '@models/adcm';
 import IconButton from '@uikit/IconButton/IconButton';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
+import ObjectSchemaSelect from './ObjectSchemaSelect';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;
@@ -21,7 +31,7 @@ interface NodeWithChildrenContentProps {
   isExpanded: boolean;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
-  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
+  onChange: ChangeConfigurationNodeValueHandler;
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
@@ -41,10 +51,15 @@ const NodeWithChildrenContent = ({
   onDragEnd,
 }: NodeWithChildrenContentProps) => {
   const ref = useRef(null);
-  const fieldNodeData = node.data as ConfigurationObject | ConfigurationArray;
-  const adcmMeta = node.data.fieldSchema.adcmMeta;
-  const fieldAttributes = node.data.fieldAttributes;
-  const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
+  const fieldNodeData = node.data as ConfigurationObject | ConfigurationSelectableObject | ConfigurationArray;
+  const adcmMeta = fieldNodeData.fieldSchema.adcmMeta;
+  const fieldSchema = fieldNodeData.fieldSchema;
+  const selectableFieldSchema =
+    fieldNodeData.type === 'selectableObject' ? fieldNodeData.selectedFieldSchema : undefined;
+  const fieldAttributes = fieldNodeData.fieldAttributes;
+  const isDeletable =
+    (fieldNodeData.type === 'object' || fieldNodeData.type === 'selectableObject' || fieldNodeData.type === 'array') &&
+    fieldNodeData.isDeletable;
   const isResetable =
     !fieldNodeData.isReadonly &&
     fieldNodeData.type === 'array' &&
@@ -111,6 +126,27 @@ const NodeWithChildrenContent = ({
     onDragEnd?.(node, isDropped);
   };
 
+  const handleSelect = (selection: string | null) => {
+    if (selection && node.data.type === 'selectableObject') {
+      const defaultValue = node.data.oneOfSchemaDefaults[selection];
+      onChange(node, defaultValue);
+    }
+  };
+
+  const selectionControl = useMemo(() => {
+    if (
+      fieldNodeData.type !== 'selectableObject' ||
+      fieldSchema.discriminator === undefined ||
+      selectableFieldSchema === undefined ||
+      fieldSchema.oneOf === undefined ||
+      fieldNodeData.isReadonly
+    ) {
+      return null;
+    }
+
+    return <ObjectSchemaSelect data={fieldNodeData} onChange={handleSelect} />;
+  }, [fieldSchema, selectableFieldSchema, fieldNodeData.value, handleSelect]);
+
   const hasChildren = Boolean(node.children?.length);
   const isExpandable = hasChildren;
   const active = fieldAttributes?.isActive === undefined ? true : fieldAttributes.isActive;
@@ -154,9 +190,9 @@ const NodeWithChildrenContent = ({
           />
         )}
         <span className={s.nodeContent__title} data-test="node-name">
-          {node.data.title}
+          {fieldNodeData.title}
         </span>
-        {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
+        {adcmMeta?.synchronization && fieldAttributes?.isSynchronized !== undefined && (
           <SynchronizedAttribute
             isSynchronized={fieldAttributes.isSynchronized}
             {...adcmMeta.synchronization}
@@ -168,7 +204,8 @@ const NodeWithChildrenContent = ({
             {nullStub}
           </span>
         )}
-        {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
+        {selectionControl}
+        {adcmMeta?.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
             isActive={fieldAttributes.isActive}
             isAllowChange={
