@@ -613,7 +613,7 @@ def _restore_config_of_main_object_and_update_host_groups(
 
         adapted_configs_of_host_groups[group] = result.value
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=adapted_configs_of_host_groups
+        main=config, groups=adapted_configs_of_host_groups, specification=new_spec
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
@@ -665,7 +665,7 @@ def _restore_config_of_host_group(
 
     # sync with changes from main config
     updated_configuration = config_service.prepare_updated_configurations_of_host_groups(
-        main=owner_config, groups={0: config}
+        main=owner_config, groups={0: config}, specification=specification
     )[0]
 
     config_service.create_new_configuration_by_descriptor(
@@ -748,7 +748,7 @@ def _switch_configuration_version(
         adapted_configs_of_host_groups[group] = result.value
 
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=adapted_configs_of_host_groups
+        main=config, groups=adapted_configs_of_host_groups, specification=new_spec
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(

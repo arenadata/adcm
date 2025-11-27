@@ -373,10 +373,12 @@ class ConfigService:
         return Configuration(values=encrypted_values, attributes=configuration.attributes)
 
     def prepare_updated_configurations_of_host_groups(
-        self, main: Configuration, groups: dict[T, Configuration]
+        self, main: Configuration, groups: dict[T, Configuration], specification: spec.FullSpec
     ) -> dict[T, Configuration]:
         return {
-            key: operations.update_config_of_host_group(main=main, host_group=config_of_group).value
+            key: operations.update_config_of_host_group(
+                main=main, host_group=config_of_group, specification=specification
+            ).value
             for key, config_of_group in groups.items()
         }
 

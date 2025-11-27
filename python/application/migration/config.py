@@ -73,7 +73,7 @@ def update_configuration_of_object(
 
         configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner_descriptor)
         updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-            main=result.encrypted_config, groups=configs_of_host_groups
+            main=result.encrypted_config, groups=configs_of_host_groups, specification=specification
         )
 
         for owner_group, updated_configuration in updated_host_group_configs.items():
@@ -140,7 +140,7 @@ def update_configuration_of_host_group(
 
         # sync with changes from main config
         updated_configuration = config_service.prepare_updated_configurations_of_host_groups(
-            main=main_object_config, groups={0: result.encrypted_config}
+            main=main_object_config, groups={0: result.encrypted_config}, specification=specification
         )[0]
 
         config_id = config_service.create_new_configuration_by_descriptor(
