@@ -132,7 +132,6 @@ const startNewProcess = createAsyncThunk(
 
       thunkAPI.dispatch(getProcess({ clusterId, actionId, processId: process.id }));
       thunkAPI.dispatch(setIsContinueProcessModal(false));
-      thunkAPI.dispatch(setBrokenStepError(undefined));
 
       return process;
     } catch (error) {
@@ -151,7 +150,6 @@ interface AdcmClustersWizardActionsState {
     inProgress: boolean;
     hasConflictError: boolean;
     isContinueProcessModal: boolean;
-    brokenStepError?: string;
   };
   hostComponentMapDelta?: AdcmWizardMappingChangeHistory;
   selectedStepId?: number;
@@ -166,7 +164,6 @@ const createInitialState = (): AdcmClustersWizardActionsState => ({
     inProgress: false,
     hasConflictError: false,
     isContinueProcessModal: false,
-    brokenStepError: undefined,
   },
   hostComponentMapDelta: undefined,
   selectedStepId: undefined,
@@ -178,9 +175,6 @@ const clustersWizardActionsSlice = createSlice({
   reducers: {
     cleanupClustersWizardActions() {
       return createInitialState();
-    },
-    setBrokenStepError(state, action) {
-      state.wizardDialog.brokenStepError = action.payload;
     },
     setInProgress(state, action) {
       state.wizardDialog.inProgress = action.payload;
@@ -238,7 +232,6 @@ export const {
   cleanupClustersWizardActions,
   openClusterWizardDialog,
   closeClusterWizardDialog,
-  setBrokenStepError,
   setHasConflictError,
   setIsContinueProcessModal,
   setSelectedStepId,
