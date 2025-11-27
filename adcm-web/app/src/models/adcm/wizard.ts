@@ -94,10 +94,14 @@ export interface AdcmActionProcessMappingStepRules {
   service: string;
 }
 
-interface DeltaItem {
-  operation: AdcmWizardMappingStepOperationType;
-  componentId: number;
+interface DeltaMapping {
   hostId: number;
+  componentId: number;
+}
+
+export interface Delta {
+  add: DeltaMapping[];
+  remove: DeltaMapping[];
 }
 
 export interface AdcmActionProcessMappingStep {
@@ -107,8 +111,8 @@ export interface AdcmActionProcessMappingStep {
   type: AdcmWizardStepType.Mapping;
   state: AdcmWizardStepStates;
   rules: AdcmActionProcessMappingStepRules[];
-  delta: DeltaItem[];
-  cumulativeDelta: DeltaItem[];
+  delta: Delta;
+  cumulativeDelta: Delta;
 }
 
 export interface AdcmActionProcessLastStep {

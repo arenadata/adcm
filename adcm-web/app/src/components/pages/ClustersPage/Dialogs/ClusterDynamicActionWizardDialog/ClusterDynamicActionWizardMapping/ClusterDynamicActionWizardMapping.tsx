@@ -12,6 +12,7 @@ import ActionWizardMappingToolbar from '@uikit/ActionWizardSteps/ActionWizardMap
 import HostsMapping from '@pages/cluster/ClusterMapping/HostsMapping/HostsMapping';
 import ActionWizardComponentsMapping from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardComponentsMapping/ActionWizardComponentsMapping';
 import RequiredServicesDialog from '@pages/cluster/ClusterMapping/RequiredServicesDialog/RequiredServicesDialog';
+import { applyMappingDelta } from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMapping.utils';
 
 interface ClusterDynamicActionWizardMappingProps {
   step: AdcmActionProcessMappingStep;
@@ -39,6 +40,11 @@ const ClusterDynamicActionWizardMapping: React.FC<ClusterDynamicActionWizardMapp
   });
   const [hasSaveError, setHasSaveError] = useState(false);
 
+  const mappingWithDelta = useMemo(
+    () => applyMappingDelta(mapping, step.cumulativeDelta),
+    [mapping, step.cumulativeDelta],
+  );
+
   const {
     localMapping,
     mappingFilter,
@@ -52,7 +58,7 @@ const ClusterDynamicActionWizardMapping: React.FC<ClusterDynamicActionWizardMapp
     handleMappingFilterChange,
     handleMappingSortDirectionChange,
   } = useClusterDynamicActionWizardMapping(
-    mapping,
+    mappingWithDelta,
     hosts,
     components,
     notAddedServicesDictionary,

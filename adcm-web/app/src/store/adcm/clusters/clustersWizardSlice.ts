@@ -24,7 +24,6 @@ import { fulfilledFilter } from '@utils/promiseUtils';
 import { LoadState, RequestState } from '@models/loadState';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
-import { setBrokenStepError } from '@store/adcm/clusters/clustersWizardActionsSlice';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -278,6 +277,7 @@ type AdcmClustersWizardState = {
     };
     accessCheckStatus: RequestState;
   };
+  brokenStepError?: string;
   isLoading: boolean;
 };
 
@@ -297,6 +297,7 @@ const createInitialState = (): AdcmClustersWizardState => ({
     },
     accessCheckStatus: RequestState.NotRequested,
   },
+  brokenStepError: undefined,
   isLoading: false,
 });
 
@@ -312,6 +313,9 @@ const clustersWizardSlice = createSlice({
     },
     closeRequiredServicesDialog(state) {
       state.mapping.requiredServicesDialog.component = null;
+    },
+    setBrokenStepError(state, action) {
+      state.brokenStepError = action.payload;
     },
     resetStep(state) {
       state.step = null;
@@ -428,6 +432,7 @@ export const {
   cleanupClustersWizard,
   openRequiredServicesDialog,
   closeRequiredServicesDialog,
+  setBrokenStepError,
   resetStep,
   resetJobData,
   resetJobDataByStep,
