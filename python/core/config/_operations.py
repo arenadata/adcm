@@ -276,8 +276,7 @@ def validate_action_configuration(
 
 
 def update_config_of_host_group(
-    main: Configuration,
-    host_group: Configuration,
+    main: Configuration, host_group: Configuration, specification: spec.FullSpec
 ) -> Success[Configuration]:
     """
     It is expected that both configurations are based on same schema,
@@ -289,20 +288,30 @@ def update_config_of_host_group(
 
     desynced = (name for name, value in source.attributes.items() if value.synchronization and not value.is_synced)
 
-    for param_name in desynced:
-        if param_name in target.attributes:
-            target.attributes[param_name].is_active = source.attributes[param_name].is_active
+    for name in desynced:
+        if name in target.attributes:
+            target.attributes[name].is_active = source.attributes[name].is_active
+            target.attributes[name].is_synced = False
         else:
-            value = get_by_full_name(param_name, values=source.values)
-            set_by_full_name(new_value=value, name=param_name, values=target.values)
+            value = get_by_full_name(name, values=source.values)
+            set_by_full_name(new_value=value, name=name, values=target.values)
 
-    # recover sync values for attributes,
-    # because they are missing in main config
-    for param_name, attr in source.attributes.items():
-        if param_name not in target.attributes:
-            target.attributes[param_name] = Attributes(is_synced=attr.is_synced)
-        else:
-            target.attributes[param_name].is_synced = attr.is_synced
+    # set "sync" values for those activatable groups that has it unset:
+    # at this point only activatable groups are expected in attributes
+    for attrs in target.attributes.values():
+        if not attrs.synchronization:
+            attrs.is_synced = True
+
+    present_parameters = set(nested_to_flat(configuration=target, specification=specification).values)
+
+    # re-build sync values for attributes, because they are missing in main config
+    for name in present_parameters:
+        is_synced = True
+
+        if (previous_attributes := source.attributes.get(name)) and previous_attributes.synchronization:
+            is_synced = previous_attributes.is_synced
+
+        target.attributes[name] = Attributes(is_synced=is_synced)
 
     return Success(target)
 
@@ -469,20 +478,18 @@ def adapt_configuration_for_new_specification(
         case Fail():
             return apply_result
 
+    present_in_new_config = set(nested_to_flat(configuration=new_configuration, specification=new_specification).values)
+
     # if default became None, old default should be kept
     new_none_defaults = {
         name for name, value in new_defaults.items() if value is None and defaults.get(name) is not None
     }
     if new_none_defaults:
         changed_parameters = {change.parameter for change in relevant_changes}
-        present_in_new_config = set(
-            nested_to_flat(configuration=new_configuration, specification=new_specification).values
-        )
         present_and_change_required = (new_none_defaults - changed_parameters) & present_in_new_config
         keep_old_default_changes = [
             ChangeRequest.for_value(name=name, value=defaults[name]) for name in present_and_change_required
         ]
-
         apply_result = apply_changes(
             changes=keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
         )
@@ -510,7 +517,7 @@ def adapt_configuration_for_new_specification(
             )
 
         # sync for parameters
-        for name in new_specification.parameters:
+        for name in present_in_new_config:
             new_configuration.attributes[name] = Attributes(
                 is_synced=_detect_is_synced_value(name=name, previous_attributes=configuration.attributes)
             )
