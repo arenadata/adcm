@@ -2051,3 +2051,351 @@ export const testArrayItemSchema: ConfigurationSchema = {
 export const testArrayItemConfig = {
   'dfs.namenode.name.dir': ['aaa'],
 };
+
+export const selectableObjectReadOnlySchema: ConfigurationSchema = {
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  type: 'object',
+  properties: {
+    first: {
+      title: 'first',
+      description: '',
+      readOnly: false,
+      default: 'aaa',
+      type: 'string',
+      minLength: 1,
+    },
+    selectable_no_default_required: {
+      title: 'selectable_no_default_required',
+      description: '',
+      readOnly: true,
+      default: null,
+      type: 'object',
+      discriminator: {
+        propertyName: '_selection',
+      },
+      oneOf: [
+        {
+          required: ['_selection', 'a'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'a',
+              title: 'a',
+            },
+            a: {
+              title: 'a',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+        {
+          required: ['_selection', 'b'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'b',
+              title: 'b',
+            },
+            b: {
+              title: 'b',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+      ],
+    },
+    selectable_with_default_not_required: {
+      title: 'selectable_with_default_not_required',
+      description: 'selectable_with_default_not_required',
+      readOnly: true,
+      default: {
+        _selection: 'b',
+      },
+      oneOf: [
+        {
+          type: 'object',
+          discriminator: {
+            propertyName: '_selection',
+          },
+          oneOf: [
+            {
+              required: ['_selection', 'a'],
+              additionalProperties: false,
+              properties: {
+                _selection: {
+                  const: 'a',
+                  title: 'a',
+                },
+                a: {
+                  title: 'a',
+                  description: '',
+                  readOnly: false,
+                  default: {},
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    plain: {
+                      title: 'plain',
+                      description: '',
+                      readOnly: false,
+                      default: 2,
+                      type: 'integer',
+                    },
+                  },
+                  required: ['plain'],
+                },
+              },
+            },
+            {
+              required: ['_selection', 'b'],
+              additionalProperties: false,
+              properties: {
+                _selection: {
+                  const: 'b',
+                  title: 'b',
+                },
+                b: {
+                  title: 'b',
+                  description: '',
+                  readOnly: false,
+                  default: {},
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    plain: {
+                      title: 'plain',
+                      description: '',
+                      readOnly: false,
+                      default: 2,
+                      type: 'integer',
+                    },
+                  },
+                  required: ['plain'],
+                },
+              },
+            },
+          ],
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    selectable_with_default_required: {
+      title: 'selectable_with_default_required',
+      description: '',
+      readOnly: false,
+      default: {
+        _selection: 'a',
+      },
+      type: 'object',
+      discriminator: {
+        propertyName: '_selection',
+      },
+      oneOf: [
+        {
+          required: ['_selection', 'a'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'a',
+              title: 'a',
+            },
+            a: {
+              title: 'a',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+        {
+          required: ['_selection', 'b'],
+          additionalProperties: false,
+          properties: {
+            _selection: {
+              const: 'b',
+              title: 'b',
+            },
+            b: {
+              title: 'b',
+              description: '',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                plain: {
+                  title: 'plain',
+                  description: '',
+                  readOnly: false,
+                  default: 2,
+                  type: 'integer',
+                },
+              },
+              required: ['plain'],
+            },
+          },
+        },
+      ],
+    },
+    selectable_no_default_not_required: {
+      title: 'selectable_no_default_not_required',
+      description: '',
+      readOnly: false,
+      default: null,
+      oneOf: [
+        {
+          type: 'object',
+          discriminator: {
+            propertyName: '_selection',
+          },
+          oneOf: [
+            {
+              required: ['_selection', 'a'],
+              additionalProperties: false,
+              properties: {
+                _selection: {
+                  const: 'a',
+                  title: 'a',
+                },
+                a: {
+                  title: 'a',
+                  description: '',
+                  readOnly: false,
+                  default: {},
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    plain: {
+                      title: 'plain',
+                      description: '',
+                      readOnly: false,
+                      default: 2,
+                      type: 'integer',
+                    },
+                  },
+                  required: ['plain'],
+                },
+              },
+            },
+            {
+              required: ['_selection', 'b'],
+              additionalProperties: false,
+              properties: {
+                _selection: {
+                  const: 'b',
+                  title: 'b',
+                },
+                b: {
+                  title: 'b',
+                  description: '',
+                  readOnly: false,
+                  default: {},
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    plain: {
+                      title: 'plain',
+                      description: '',
+                      readOnly: false,
+                      default: 2,
+                      type: 'integer',
+                    },
+                  },
+                  required: ['plain'],
+                },
+              },
+            },
+          ],
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+  },
+  required: [
+    'first',
+    'selectable_no_default_required',
+    'selectable_with_default_not_required',
+    'selectable_with_default_required',
+    'selectable_no_default_not_required',
+  ],
+  additionalProperties: false,
+  adcmMeta: {
+    isAdvanced: false,
+    isInvisible: false,
+    activation: null,
+    synchronization: null,
+    isSecret: false,
+    stringExtra: null,
+    enumExtra: null,
+  },
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+};
+
+export const selectableObjectReadOnlyConfig = {
+  first: 'aaa',
+  selectable_no_default_required: {
+    _selection: 'a',
+    a: {
+      plain: 2,
+    },
+  },
+  selectable_with_default_required: {
+    _selection: 'a',
+    a: {
+      plain: 2,
+    },
+  },
+  selectable_no_default_not_required: null,
+  selectable_with_default_not_required: {
+    _selection: 'b',
+    b: {
+      plain: 2,
+    },
+  },
+};

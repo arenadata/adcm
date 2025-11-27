@@ -139,7 +139,7 @@ const NodeWithChildrenContent = ({
       fieldSchema.discriminator === undefined ||
       selectableFieldSchema === undefined ||
       fieldSchema.oneOf === undefined ||
-      fieldNodeData.isReadonly
+      fieldSchema.readOnly
     ) {
       return null;
     }

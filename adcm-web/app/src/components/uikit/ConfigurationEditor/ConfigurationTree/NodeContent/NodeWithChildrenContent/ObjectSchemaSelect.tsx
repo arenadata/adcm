@@ -6,6 +6,7 @@ import { discriminatorFieldName } from '../../ConfigurationTree.constants';
 import type { ConfigurationSelectableObject } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 import type { JSONObject } from '@models/json';
 import s from './ObjectSchemaSelect.module.scss';
+import treeStyles from '../../ConfigurationTree.module.scss';
 import cn from 'classnames';
 
 export interface ObjectSchemaSelectProps {
@@ -46,7 +47,7 @@ const ObjectSchemaSelect = ({ data, onChange }: ObjectSchemaSelectProps) => {
 
   return (
     <>
-      {discriminatorValue}
+      {discriminatorValue && <div className={treeStyles.nodeContent__value}>{discriminatorValue}</div>}
       <div className={s.objectSchemaSelect}>
         <IconButton ref={iconRef} size={12} icon="chevron" className={iconClassName} onClick={handleIconClick} />
         <Popover isOpen={isOpen} onOpenChange={setIsOpen} triggerRef={iconRef} placement="bottom-start" offset={8}>

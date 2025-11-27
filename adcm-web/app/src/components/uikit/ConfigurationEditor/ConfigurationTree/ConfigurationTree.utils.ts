@@ -181,6 +181,11 @@ const getIsReadonly = (
 
   const isArrayItem = parentNodeData.fieldSchema.type === 'array';
   const isMapProperty = parentNode.data.type === 'object' && parentNode.data.objectType === 'map';
+  const isParentSelectableObject = parentNode.data.type === 'selectableObject';
+
+  if (isParentSelectableObject) {
+    return fieldSchema.readOnly ?? false;
+  }
 
   if ((isArrayItem || isMapProperty) && parentNodeData.isReadonly) {
     return true;
@@ -850,10 +855,11 @@ export const determineFieldSchema = (
   } else {
     const [schema1, schema2] = fieldSchema.oneOf ?? [];
 
+    const { oneOf, ...rest } = fieldSchema;
     if (schema1.type === 'null') {
-      return { isNullable: true, fieldSchema: schema2 };
+      return { isNullable: true, fieldSchema: { ...schema2, ...rest } };
     } else {
-      return { isNullable: true, fieldSchema: schema1 };
+      return { isNullable: true, fieldSchema: { ...schema1, ...rest } };
     }
   }
 };

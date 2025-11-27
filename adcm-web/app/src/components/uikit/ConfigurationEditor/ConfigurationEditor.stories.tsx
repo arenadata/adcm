@@ -15,6 +15,8 @@ import {
   nullableOneOfData,
   testArrayItemSchema,
   testArrayItemConfig,
+  selectableObjectReadOnlySchema,
+  selectableObjectReadOnlyConfig,
 } from './ConfigurationEditor.stories.constants';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type { ConfigurationTreeFilter } from './ConfigurationEditor.types';
@@ -230,6 +232,16 @@ export const TestArrayItemStory: Story = {
       schema={testArrayItemSchema}
       initialConfigurationData={testArrayItemConfig}
       initialAttributes={attributes}
+    />
+  ),
+};
+
+export const SelectableObjectReadOnlyStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={selectableObjectReadOnlySchema}
+      initialConfigurationData={selectableObjectReadOnlyConfig}
+      initialAttributes={{}}
     />
   ),
 };
