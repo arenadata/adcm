@@ -5,7 +5,7 @@
     --node-content-background-title: #27262B80;
     --node-content-background-default: var(--color-xdark-new-20);
     --node-content-label-color-default: var(--color-xdark-metal);
-    --node-content-value-color-default: var(--color-xgray-light);
+    --node-content-value-color-default: var(--color-xdark-metal);
     --node-content-expand-button: var(--color-xblack);
     --node-content-add-property-border-color: var(--color-xblue);
 
@@ -212,6 +212,7 @@
   --node-content-border: var(--node-content-border-default);
   --node-content-background: var(--node-content-background-default);
   --node-content-label-color: var(--node-content-label-color-default);
+  --node-content-value-color: var(--node-content-value-color-default);
 
   --node-content-background-hover: var(--node-content-background-default-hover);
   --node-content-label-color-hover: var(--node-content-label-color-default-hover);
@@ -314,6 +315,8 @@
 
 .dropPlaceholderContent {
   width: 180px;
-  border-style: dashed;
+  max-width: inherit;
+  height: 30px;
+  border-style: dashed!important;
   --node-content-border: var(--drop-placeholder-border-color);
 }
