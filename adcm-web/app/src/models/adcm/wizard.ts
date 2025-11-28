@@ -111,8 +111,8 @@ export interface AdcmActionProcessMappingStep {
   type: AdcmWizardStepType.Mapping;
   state: AdcmWizardStepStates;
   rules: AdcmActionProcessMappingStepRules[];
-  delta: Delta;
-  cumulativeDelta: Delta;
+  delta: Delta | null;
+  cumulativeDelta: Delta | null;
 }
 
 export interface AdcmActionProcessLastStep {
