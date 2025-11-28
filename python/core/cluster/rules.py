@@ -13,7 +13,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from itertools import chain
+from itertools import chain, filterfalse
 from operator import attrgetter
 from typing import Collection
 
@@ -43,6 +43,7 @@ class HostCandidateDTO:
 class _ViolationType(str, Enum):
     NAME = "name"
     DUPLICATE = "duplicate"
+    DUPLICATE_CANDIDATE = "duplicate_candidate"
     ALREADY_BOUND = "already_bound"
     FOREIGN_CLUSTER = "foreign_cluster"
 
@@ -75,20 +76,28 @@ def check_hosts_can_be_added_to_cluster(payload: HostCandidateDTO) -> None:
     result = _find_host_in_cluster_violations(payload)
     match result:
         case Fail(value=violations):
-            violations = _filter_duplicates_violations_by_ids(
-                violations=violations, ids={host.id for host in payload.candidates}, in_ids=True
-            )
-            if not violations:
+            candidates = {host.id for host in payload.candidates}
+            violations_ = []
+            for violation in violations:
+                if violation.type != _ViolationType.DUPLICATE:
+                    violations_.append(violation)
+                else:
+                    hosts_within_candidates = violation.host_ids.intersection(candidates)
+                    if hosts_within_candidates:
+                        hosts = violation.find_by_ids(hosts_within_candidates)
+                        violations_.append(_Violation(type=violation.type, hosts=hosts))
+
+            if not violations_:
                 return
 
-            violation = violations[0]  # raise first violation
+            violation = violations_[0]  # raise first violation
 
             match violation.type:
                 case _ViolationType.NAME:
                     msg = f"Host with the same name is already added to cluster. Errors: {violation.hosts_repr}"
                     raise ClusterAddHostError(msg)
 
-                case _ViolationType.DUPLICATE:
+                case _ViolationType.DUPLICATE | _ViolationType.DUPLICATE_CANDIDATE:
                     msg = f"Only one copy of a host can be added to the cluster. Errors: {violation.hosts_repr}"
                     raise ClusterAddHostError(msg)
 
@@ -109,29 +118,10 @@ def filter_host_candidates(payload: HostCandidateDTO) -> list[HostAddInfo]:
             return payload.candidates
 
         case Fail(value=violations):
-            violations = _filter_duplicates_violations_by_ids(
-                violations=violations, ids={host.id for host in payload.in_cluster}, in_ids=False
-            )
+            violations = tuple(filterfalse(lambda v: v.type == _ViolationType.DUPLICATE_CANDIDATE, violations))
             violation_ids = set(chain.from_iterable(v.host_ids for v in violations))
 
             return [host for host in payload.candidates if host.id not in violation_ids]
-
-
-def _filter_duplicates_violations_by_ids(
-    violations: list[_Violation], ids: Collection[HostID], in_ids: bool
-) -> list[_Violation]:
-    new_violations = []
-    for violation in violations:
-        if violation.type != _ViolationType.DUPLICATE:
-            new_violations.append(violation)
-            continue
-
-        if violation.host_ids.intersection(ids):
-            hosts = violation.find_by_ids(ids=ids) if in_ids else violation.hosts
-            if hosts:
-                new_violations.append(_Violation(type=violation.type, hosts=hosts))
-
-    return new_violations
 
 
 def _find_host_in_cluster_violations(payload: HostCandidateDTO) -> Success[None] | Fail[list[_Violation]]:
@@ -152,6 +142,8 @@ def _find_host_in_cluster_violations(payload: HostCandidateDTO) -> Success[None]
 
 
 def _find_host_duplicates_violations(payload: HostCandidateDTO) -> list[_Violation]:
+    in_cluster_originals = {host.original_id or host.id for host in payload.in_cluster}
+
     all_ids = set()
     original_duplicates_map = defaultdict(set)
     for host in payload.candidates + payload.in_cluster:
@@ -160,16 +152,25 @@ def _find_host_duplicates_violations(payload: HostCandidateDTO) -> list[_Violati
             original_duplicates_map[host.original_id].add(host.id)
 
     hosts: list[HostAddInfo] = []
+    hosts_candidates_violations = []
+
     for original_id, duplicate_ids in original_duplicates_map.items():
         dupe_ids_group = {id_ for id_ in (original_id, *duplicate_ids) if id_ in all_ids}
         if len(dupe_ids_group) > 1:
             dupe_hosts_group = payload.find_by_ids(ids=dupe_ids_group)
-            hosts.extend(dupe_hosts_group)
+            if original_id in in_cluster_originals:
+                hosts.extend(dupe_hosts_group)
+            else:
+                hosts_candidates_violations.extend(dupe_hosts_group)
 
-    if hosts:
-        return [_Violation(type=_ViolationType.DUPLICATE, hosts=hosts)]
+    candidate_violations = (
+        [_Violation(type=_ViolationType.DUPLICATE_CANDIDATE, hosts=hosts_candidates_violations)]
+        if hosts_candidates_violations
+        else []
+    )
+    in_cluster_violations = [_Violation(type=_ViolationType.DUPLICATE, hosts=hosts)] if hosts else []
 
-    return []
+    return candidate_violations + in_cluster_violations
 
 
 def _find_host_cluster_violations(payload: HostCandidateDTO) -> list[_Violation]:
