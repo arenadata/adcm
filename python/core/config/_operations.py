@@ -43,7 +43,7 @@ from core.config._predicates import is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
     ChangeRequest,
-    ConfigFlatValues,
+    ConfigParameterValue,
     Configuration,
     ConfigValues,
     Defaults,
@@ -76,6 +76,16 @@ class ValidationResult:
         return bool(self.changes)
 
 
+@dataclass(slots=True)
+class MissingDefaults:
+    value: ConfigParameterValue = None
+    activation: bool = False
+    selection: str | None = None
+
+
+_MISSING_DEFAULTS = MissingDefaults()
+
+
 ChangesToApply = list[ChangeRequest]
 
 T = TypeVar("T")
@@ -97,28 +107,36 @@ _HasChanged: TypeAlias = bool
 # Public
 
 
-def prepare_config_from_defaults(default_values: ConfigFlatValues, specification: spec.FullSpec) -> Configuration:
+def prepare_config_from_defaults(
+    defaults: Defaults,
+    specification: spec.FullSpec,
+    *,
+    missing_defaults: MissingDefaults = _MISSING_DEFAULTS,
+) -> Configuration:
     attributes = {
-        group_name: Attributes(is_active=param.activation.is_active_by_default)
+        group_name: Attributes(is_active=defaults.activation.get(group_name, missing_defaults.activation))
         for group_name, param in specification.groups.items()
         if param.activation
     }
 
-    flat_values = {name: default_values.get(name, None) for name in specification.parameters}
+    flat_values = {name: defaults.values.get(name, missing_defaults.value) for name in specification.parameters}
 
-    groups_selections = {name: group.selection for name, group in specification.groups.items() if group.selection}
     # in order to keep algorithm working, ensure groups are patched from "deepest" to closest to root
     # see ADCM-7418 for problematic case
     selections_ordered_by_level = sorted(
-        groups_selections.items(), key=lambda kv: len(full_name_to_level_names(kv[0])), reverse=True
+        (name for name, group in specification.groups.items() if group.selection),
+        key=lambda name: len(full_name_to_level_names(name)),
+        reverse=True,
     )
 
-    for group_name, selection in selections_ordered_by_level:
+    for group_name in selections_ordered_by_level:
         is_in_selection_group = partial(is_part_of_group, group=group_name)
         selection_group_children = set(filter(is_in_selection_group, chain(flat_values, attributes)))
 
-        if selection.use_as_default:
-            default_group_name = join_level_name_with_group_name(name=selection.use_as_default, group=group_name)
+        default_selection = defaults.selection.get(group_name, missing_defaults.selection)
+
+        if default_selection:
+            default_group_name = join_level_name_with_group_name(name=default_selection, group=group_name)
             is_in_default_group = partial(is_part_of_group, group=default_group_name)
             to_remove = set(filterfalse(is_in_default_group, selection_group_children))
         else:
@@ -453,7 +471,7 @@ def adapt_configuration_for_new_specification(
     # todo: clarify this function after logic confirmed by tests,
     #       now it's a bit of mess and joggling
 
-    previous_default_config = prepare_config_from_defaults(default_values=defaults, specification=specification)
+    previous_default_config = prepare_config_from_defaults(defaults=defaults, specification=specification)
 
     groups_with_selection = {name for name, group in new_specification.groups.items() if group.selection}
     parameters_and_groups_with_selection = groups_with_selection | set(new_specification.parameters)
@@ -468,7 +486,7 @@ def adapt_configuration_for_new_specification(
         if is_existing_selection_change or is_existing_value_change:
             relevant_changes.append(change)
 
-    new_configuration = prepare_config_from_defaults(default_values=new_defaults, specification=new_specification)
+    new_configuration = prepare_config_from_defaults(defaults=new_defaults, specification=new_specification)
 
     apply_result = apply_changes(changes=relevant_changes, configuration=new_configuration, defaults=new_defaults)
 
@@ -482,13 +500,13 @@ def adapt_configuration_for_new_specification(
 
     # if default became None, old default should be kept
     new_none_defaults = {
-        name for name, value in new_defaults.items() if value is None and defaults.get(name) is not None
+        name for name, value in new_defaults.values.items() if value is None and defaults.values.get(name) is not None
     }
     if new_none_defaults:
         changed_parameters = {change.parameter for change in relevant_changes}
         present_and_change_required = (new_none_defaults - changed_parameters) & present_in_new_config
         keep_old_default_changes = [
-            ChangeRequest.for_value(name=name, value=defaults[name]) for name in present_and_change_required
+            ChangeRequest.for_value(name=name, value=defaults.values[name]) for name in present_and_change_required
         ]
         apply_result = apply_changes(
             changes=keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
@@ -499,6 +517,15 @@ def adapt_configuration_for_new_specification(
                 new_configuration = config_with_changed_values
             case Fail():
                 return apply_result
+
+    current_config_flat = nested_to_flat(configuration=configuration, specification=specification)
+    present_secrets = (
+        spec.get_secret_parameters_names(new_specification)
+        .intersection(present_in_new_config)
+        .intersection(current_config_flat.values)
+    )
+    for name in present_secrets:
+        set_by_full_name(name=name, new_value=current_config_flat.values[name], values=new_configuration.values)
 
     for name, old_attributes in configuration.attributes.items():
         if not old_attributes.activation:
@@ -569,7 +596,7 @@ def _apply_selection_group_change_registering_violation(
         new_group_key = join_level_name_with_group_name(name=value, group=key)
         group_defaults = {
             remove_group_from_name(name=param, group=key): default_value
-            for param, default_value in defaults.items()
+            for param, default_value in defaults.values.items()
             if is_part_of_group(name=param, group=new_group_key)
         }
         # else required for case when non-existent group is specified or no default found for some reason,

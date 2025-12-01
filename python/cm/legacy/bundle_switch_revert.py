@@ -515,7 +515,7 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         try:
             previous_spec = specs[previous_prototype_id]
         except KeyError:
-            previous_spec = (core.config.spec.FullSpec(), {})
+            previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service

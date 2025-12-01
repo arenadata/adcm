@@ -94,7 +94,7 @@ class ADCMConfigView(ConfigLogViewSet):
 
         owner = core.config.ConfigOwner(
             descriptor=CoreObjectDescriptor(id=instance.pk, type=ADCMCoreType.ADCM),
-            info=core.config.ConfigOwnerObjectInfo(state=instance.state),
+            state=instance.state,
         )
 
         return config_service.retrieve_jsonschema(owner=owner)

@@ -278,18 +278,14 @@ def _serialize_config_step(
     schema = config_service.retrieve_jsonschema_for_action(
         action_specification=spec,
         action_config_defaults=defaults,
-        action_owner=core.config.ConfigOwner(
-            descriptor=object_, info=core.config.ConfigOwnerObjectInfo(state=object_orm.state)
-        ),
+        action_owner=core.config.ConfigOwner(descriptor=object_, state=object_orm.state),
     )
 
     if step_input:
         config = step_input.configuration["values"]
         attributes = step_input.configuration["attributes"]
     else:
-        default_config = core.config.operations.prepare_config_from_defaults(
-            default_values=defaults, specification=spec
-        )
+        default_config = core.config.operations.prepare_config_from_defaults(defaults=defaults, specification=spec)
         config = default_config.values
         attributes = {name: asdict(attrs) for name, attrs in default_config.attributes.items()}
 

@@ -734,14 +734,14 @@ class ConfigSchemaMixin:
 
             owner = core.config.HostGroupConfigOwner(
                 descriptor=orm_object_to_core_descriptor(owner_obj),
-                info=core.config.ConfigOwnerObjectInfo(state=owner_obj.state),
+                state=owner_obj.state,
                 group=Descriptor(id=instance.pk, type=ADCMHostGroupType.CONFIG),
             )
 
         else:
             owner = core.config.ConfigOwner(
                 descriptor=orm_object_to_core_descriptor(instance),
-                info=core.config.ConfigOwnerObjectInfo(state=instance.state),
+                state=instance.state,
             )
 
         return config_service.retrieve_jsonschema(owner=owner)

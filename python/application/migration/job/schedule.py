@@ -267,16 +267,14 @@ def retrieve_configuration_for_action(
         return None
 
     configuration = config_service.prepare_default_configuration(
-        default_values=spec_pair.defaults, specification=spec_pair.spec
+        defaults=spec_pair.defaults, specification=spec_pair.spec
     )
 
     return (
         spec_pair.spec,
         spec_pair.defaults,
         configuration,
-        core.config.ConfigOwner(
-            descriptor=descriptor, info=core.config.ConfigOwnerObjectInfo(state=action_objects.owner.state)
-        ),
+        core.config.ConfigOwner(descriptor=descriptor, state=action_objects.owner.state),
     )
 
 

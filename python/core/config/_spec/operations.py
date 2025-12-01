@@ -13,7 +13,7 @@
 from typing import Iterable
 
 from core.config._names import is_part_of_group, level_name_from_full_name
-from core.config._spec.parameters import Identifier
+from core.config._spec.parameters import Identifier, MapParameter, StringParameter
 from core.config._spec.spec import FullSpec
 from core.config._types import ParameterFullName
 
@@ -34,3 +34,11 @@ def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[Parame
 def build_identifier_from_name(full_name: ParameterFullName) -> Identifier:
     name = level_name_from_full_name(full_name)
     return Identifier(name=name, full=full_name)
+
+
+def get_secret_parameters_names(spec: FullSpec) -> set[ParameterFullName]:
+    return {
+        name
+        for name, param in spec.parameters.items()
+        if isinstance(param, StringParameter | MapParameter) and param.is_secret
+    }
