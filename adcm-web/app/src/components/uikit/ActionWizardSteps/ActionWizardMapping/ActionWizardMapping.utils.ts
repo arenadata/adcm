@@ -3,7 +3,8 @@ import type { Delta } from '@models/adcm/wizard';
 
 const getKey = (item: AdcmMapping) => `${item.hostId}-${item.componentId}`;
 
-export const applyMappingDelta = (currentMapping: AdcmMapping[], delta: Delta): AdcmMapping[] => {
+export const applyMappingDelta = (currentMapping: AdcmMapping[], delta: Delta | null): AdcmMapping[] => {
+  if (!delta) return currentMapping;
   const { add = [], remove = [] } = delta;
   const map = new Map<string, AdcmMapping>();
   let maxId = 0;
