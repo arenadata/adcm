@@ -19,7 +19,7 @@ from core.cluster.rules import (
     HostCandidateDTO,
     check_all_hosts_exist,
     check_hosts_can_be_added_to_cluster,
-    filter_host_candidates,
+    detect_valid_host_candidates,
 )
 from core.cluster.types import (
     ClusterTopology,
@@ -305,7 +305,7 @@ def find_host_candidates_for_cluster(cluster_id: ClusterID, db: HostClusterDBPro
     hosts_in_cluster = tuple(host for host in hosts_info if host.cluster_id == cluster_id)
 
     payload = HostCandidateDTO(cluster_id=cluster_id, in_cluster=list(hosts_in_cluster), candidates=list(unbound_hosts))
-    return filter_host_candidates(payload=payload)
+    return detect_valid_host_candidates(payload=payload)
 
 
 def construct_mapping_from_delta(

@@ -14,7 +14,14 @@ from operator import itemgetter
 from unittest import TestCase
 
 from core.cluster.errors import ClusterAddHostError
-from core.cluster.rules import HostCandidateDTO, check_hosts_can_be_added_to_cluster, filter_host_candidates
+from core.cluster.rules import (
+    CandidateViolation,
+    CandidateViolationType,
+    HostCandidateDTO,
+    check_hosts_can_be_added_to_cluster,
+    detect_valid_host_candidates,
+    find_host_candidate_violations,
+)
 from core.cluster.types import HostAddInfo
 
 
@@ -47,7 +54,7 @@ class TestClusterHostCandidates(TestCase):
         )
         expected_candidates = [self.host_2, self.host_2_d1, self.host_3]
 
-        candidates = filter_host_candidates(payload=payload)
+        candidates = detect_valid_host_candidates(payload=payload)
 
         self.assert_candidates(actual=candidates, expected=expected_candidates)
 
@@ -83,3 +90,72 @@ class TestClusterHostCandidates(TestCase):
 
         with self.assertRaises(ClusterAddHostError):
             check_hosts_can_be_added_to_cluster(payload=payload)
+
+    def test_bound_duplicate_to_empty_cluster_allowed(self):
+        payload = HostCandidateDTO(
+            cluster_id=1,
+            in_cluster=[],
+            candidates=[self.host_1_d1],
+        )
+
+        check_hosts_can_be_added_to_cluster(payload=payload)
+
+    def test_duplicate_not_in_candidates_when_original_added(self):
+        payload = HostCandidateDTO(
+            cluster_id=1,
+            in_cluster=[self.host_1],
+            candidates=[self.host_1_d1, self.host_2, self.host_2_d1],
+        )
+
+        candidates = detect_valid_host_candidates(payload=payload)
+
+        self.assert_candidates(actual=candidates, expected=[self.host_2, self.host_2_d1])
+
+    def test_duplicate_not_in_candidates_when_another_duplicate_added(self):
+        duplicate_in_cluster = with_cluster(host=self.host_1_d1, cluster_id=1)
+        duplicate_2 = HostAddInfo(id=11, name="host-1-duplicate-2", original_id=1, cluster_id=None)
+        payload = HostCandidateDTO(
+            cluster_id=1,
+            in_cluster=[duplicate_in_cluster],
+            candidates=[duplicate_in_cluster, duplicate_2, self.host_1, self.host_2, self.host_2_d1],
+        )
+
+        candidates = detect_valid_host_candidates(payload=payload)
+
+        self.assert_candidates(actual=candidates, expected=[self.host_2, self.host_2_d1])
+
+    def test_duplicate_by_name_in_candidates_to_empty_cluster_fail(self):
+        host_1 = HostAddInfo(id=1, name="host-1", cluster_id=None, original_id=None)
+        host_2 = HostAddInfo(id=2, name="host-1", cluster_id=None, original_id=3)
+        payload = HostCandidateDTO(
+            cluster_id=1,
+            in_cluster=[],
+            candidates=[host_1, host_2],
+        )
+
+        with self.assertRaises(ClusterAddHostError):
+            check_hosts_can_be_added_to_cluster(payload=payload)
+
+    def test_duplicate_by_name_in_candidates_when_same_name_in_cluster_fail(self):
+        host_1 = HostAddInfo(id=1, name="host-1", cluster_id=None, original_id=None)
+        host_2 = HostAddInfo(id=2, name="host-1", cluster_id=None, original_id=3)
+        payload = HostCandidateDTO(
+            cluster_id=1,
+            in_cluster=[host_1],
+            candidates=[host_2],
+        )
+
+        with self.assertRaises(ClusterAddHostError):
+            check_hosts_can_be_added_to_cluster(payload=payload)
+
+    def test_detect_foreign_cluster(self):
+        host_1 = HostAddInfo(id=1, name="host-1", cluster_id=1, original_id=None)
+        payload = HostCandidateDTO(cluster_id=2, in_cluster=[], candidates=[host_1])
+
+        expected_violation = CandidateViolation(
+            host=host_1, level="candidates", type=CandidateViolationType.BOUND_ANOTHER
+        )
+
+        violations = find_host_candidate_violations(payload)
+
+        self.assertListEqual(violations, [expected_violation])
