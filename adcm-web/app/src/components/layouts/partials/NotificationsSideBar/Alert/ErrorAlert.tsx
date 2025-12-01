@@ -7,10 +7,13 @@ import type { AlertOptions } from './Alert.types';
 import s from './Alert.module.scss';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import parse, { Element } from 'html-react-parser';
+import { escapeNonHtmlTags } from './ErrorAlert.utils';
 
 const ErrorAlert: React.FC<ErrorNotification & AlertOptions> = ({ model: { message }, onClose }) => {
   const parsedMessage = useMemo(() => {
     if (!message) return null;
+
+    const escapedMessage = escapeNonHtmlTags(message);
 
     const parseOptions: HTMLReactParserOptions = {
       replace: (domNode) => {
@@ -21,7 +24,7 @@ const ErrorAlert: React.FC<ErrorNotification & AlertOptions> = ({ model: { messa
       },
     };
 
-    return parse(message, parseOptions);
+    return parse(escapedMessage, parseOptions);
   }, [message]);
 
   return (

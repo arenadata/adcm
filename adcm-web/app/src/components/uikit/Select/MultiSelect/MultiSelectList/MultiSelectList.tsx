@@ -41,7 +41,14 @@ const MultiSelectList = <T,>() => {
       {options.map((optionProps) => {
         const { value, label, ItemComponent = DefaultMultiSelectListItem } = optionProps;
         const isSelected = selectedValuesSet.has(value);
-        return <ItemComponent key={label} onSelect={handleSelectItem} isSelected={isSelected} option={optionProps} />;
+        return (
+          <ItemComponent
+            key={`${label}${value}`}
+            onSelect={handleSelectItem}
+            isSelected={isSelected}
+            option={optionProps}
+          />
+        );
       })}
     </ul>
   );
