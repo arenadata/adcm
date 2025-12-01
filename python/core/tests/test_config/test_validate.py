@@ -27,14 +27,10 @@ from core.tests.test_config.utils import (
 
 
 class TestValidateConfigurationIsConsistent(ConfigTestCase):
-    def prepare_spec_and_values_without_group(
-        self, as_default: str | None, is_required: bool
-    ) -> tuple[FullSpec, ConfigValues]:
+    def prepare_spec_and_values_without_group(self, is_required: bool) -> tuple[FullSpec, ConfigValues]:
         spec = FullSpec.from_parameters(
             StringParameter(identifier=name_id("g1")),
-            ParameterGroup(
-                identifier=name_id("g"), selection=Selection(use_as_default=as_default, is_required=is_required)
-            ),
+            ParameterGroup(identifier=name_id("g"), selection=Selection(is_required=is_required)),
             ParameterGroup(identifier=name_id("g", "g1")),
             StringParameter(identifier=name_id("g", "g1", "a")),
             ParameterGroup(identifier=name_id("g", "g2")),
@@ -52,32 +48,16 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
     def validate(self, configuration: Configuration, specification: FullSpec) -> Success[None] | Fail[Violations]:
         return validate_configuration_is_consistent(configuration=configuration, specification=specification)
 
-    def test_none_value_for_non_required_no_default_success(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default=None, is_required=False)
+    def test_none_value_for_non_required_success(self):
+        spec, values = self.prepare_spec_and_values_without_group(is_required=False)
         config = Configuration(values=values | {"g": None})
 
         result = self.validate(config, spec)
 
         self.expect_success(result)
 
-    def test_none_value_for_non_required_activatable_with_default_success(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="act", is_required=False)
-        config = Configuration(values=values | {"g": None})
-
-        result = self.validate(config, spec)
-
-        self.expect_success(result)
-
-    def test_none_value_for_non_required_with_default_success(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="g1", is_required=False)
-        config = Configuration(values=values | {"g": None})
-
-        result = self.validate(config, spec)
-
-        self.expect_success(result)
-
-    def test_none_value_for_required_no_default_fail(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default=None, is_required=True)
+    def test_none_value_for_required_fail(self):
+        spec, values = self.prepare_spec_and_values_without_group(is_required=True)
         config = Configuration(values=values | {"g": None})
 
         result = self.validate(config, spec)
@@ -86,26 +66,8 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
             result, param_is=spec.groups["/g"], check_is="structure", reason_contains="incorrect group value type"
         )
 
-    def test_none_value_for_required_with_default_fail(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="g1", is_required=True)
-        config = Configuration(values=values | {"g": None})
-
-        result = self.validate(config, spec)
-
-        self.expect_exactly_one_violation_for(
-            result, param_is=spec.groups["/g"], check_is="structure", reason_contains="incorrect group value type"
-        )
-
-    def test_non_default_value_for_required_with_default_success(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="g1", is_required=True)
-        config = Configuration(values=values | {"g": {"g2": {"a": "v"}}})
-
-        result = self.validate(config, spec)
-
-        self.expect_success(result)
-
-    def test_default_value_for_required_with_default_success(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="g1", is_required=True)
+    def test_default_value_for_required_success(self):
+        spec, values = self.prepare_spec_and_values_without_group(is_required=True)
         config = Configuration(values=values | {"g": {"g1": {"a": "v"}}})
 
         result = self.validate(config, spec)
@@ -113,7 +75,7 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
         self.expect_success(result)
 
     def test_plain_value_fail(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default=None, is_required=False)
+        spec, values = self.prepare_spec_and_values_without_group(is_required=False)
         config = Configuration(values=values | {"g": 1})
 
         result = self.validate(config, spec)
@@ -123,7 +85,7 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
         )
 
     def test_different_groups_in_values_and_attributes_fail(self):
-        spec, values = self.prepare_spec_and_values_without_group(as_default="g2", is_required=True)
+        spec, values = self.prepare_spec_and_values_without_group(is_required=True)
         synced_attributes = Attributes(is_synced=True)
         config = Configuration(
             values=values | {"g": {"g2": {"a": "v"}}},

@@ -369,7 +369,7 @@ def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec
             changes.append(change)
             continue
 
-        if not spec.groups[full_name].is_activatable:
+        if not spec.groups[full_name].activation:
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: only activatable groups may be (de)activated")
 
         if not isinstance(value, bool):

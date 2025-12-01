@@ -46,7 +46,6 @@ from core.config._spec.parameters import (
 from core.config._types import (
     Attributes,
     ChangeRequest,
-    ConfigOwnerObjectInfo,
     Configuration,
     Defaults,
 )
@@ -82,7 +81,7 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
                     display_name="act",
                     edit_rule=ReadOnlyRule(read_only=[READ_ONLY_STATUS]),
                 ),
-                activation=Activation(is_desyncable=False, is_active_by_default=True),
+                activation=Activation(is_desyncable=False),
             ),
             MapParameter(identifier=name_id("act", "secrets"), is_secret=True),
             StringParameter(identifier=name_id("act", "file"), as_file=True, supports_multiline=True),
@@ -115,7 +114,6 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
             },
         )
 
-        self.created_owner_info = ConfigOwnerObjectInfo(state="created")
         self.validators = Validators(variant=ConstantVariantResolver(()), pattern=ConstantPatternValidator(True))
 
     def validate_changes(
@@ -234,7 +232,7 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
         name = name_id("deeply", "nested", "group", "value")
 
         read_only_any = "read_only-any", ReadOnlyRule(read_only="any")
-        read_only_at_state = "read_only-at-state", ReadOnlyRule(read_only=[self.created_owner_info.state])
+        read_only_at_state = "read_only-at-state", ReadOnlyRule(read_only=["created"])
         writable_at_state = "writable-at-state", WritableRule(writable=["notexist"])
 
         old_config = deepcopy(self.simple_config_valid)
@@ -445,10 +443,17 @@ class TestPrepareConfigForAnsible(ConfigTestCase):
         prefix = "cluster.1"
         params = (
             StringParameter(identifier=name_id("plain"), as_file=False),
-            StringParameter(identifier=name_id("file_root"), as_file=True),
-            StringParameter(identifier=name_id("group", "nested_file"), as_file=True, is_secret=True),
-            StringParameter(identifier=name_id("after_file"), as_file=True, ansible=AnsibleOptions(unsafe=True)),
-            StringParameter(identifier=name_id("none_file"), as_file=True),
+            StringParameter(identifier=name_id("file_root"), as_file=True, supports_multiline=True),
+            StringParameter(
+                identifier=name_id("group", "nested_file"), as_file=True, is_secret=True, supports_multiline=True
+            ),
+            StringParameter(
+                identifier=name_id("after_file"),
+                as_file=True,
+                ansible=AnsibleOptions(unsafe=False),
+                supports_multiline=True,
+            ),
+            StringParameter(identifier=name_id("none_file"), as_file=True, supports_multiline=True),
         )
         values = {
             "plain": "a",
@@ -526,7 +531,7 @@ class TestPrepareConfigForAnsible(ConfigTestCase):
             MapParameter(identifier=name_id("m")),
             MapParameter(identifier=name_id("sm"), is_secret=True),
             ListParameter(identifier=name_id("l")),
-            StringParameter(identifier=name_id("f"), as_file=True),
+            StringParameter(identifier=name_id("f"), as_file=True, supports_multiline=True),
             VariantParameter(identifier=name_id("v"), is_strict=True, payload={}, source="builtin"),
             OptionParameter(identifier=name_id("o"), options={}),
         )
@@ -620,9 +625,9 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             StringParameter(identifier=name_id("will_have_default"), is_required=True),
             StringParameter(identifier=name_id("have_default"), is_required=False),
         )
-        old_defaults = {"/will_have_default": None, "/have_default": 12}
-        new_defaults = {"/will_have_default": 54, "/have_default": None}
-        configuration = Configuration(values={k.strip("/"): v for k, v in old_defaults.items()}, attributes={})
+        old_defaults = Defaults(values={"/will_have_default": None, "/have_default": 12})
+        new_defaults = Defaults(values={"/will_have_default": 54, "/have_default": None})
+        configuration = Configuration(values={k.strip("/"): v for k, v in old_defaults.values.items()}, attributes={})
 
         expected_config = {"will_have_default": 54, "have_default": 12}
 
@@ -647,7 +652,7 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             ParameterGroup(identifier=name_id("a")),
             StringParameter(identifier=name_id("a", "b")),
         )
-        defaults = {"/a/b": None}
+        defaults = Defaults(values={"/a/b": None})
         configuration = Configuration(values={"a": {"b": None}}, attributes={"/a": Attributes(is_active=True)})
 
         result = adapt_configuration_for_new_specification(
@@ -674,14 +679,13 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
         new_spec = FullSpec.from_parameters(
             ParameterGroup(identifier=name_id("a"), activation=Activation()),
             StringParameter(identifier=name_id("a", "b"), is_required=True),
-            ParameterGroup(
-                identifier=name_id("c"), activation=Activation(is_active_by_default=True, is_desyncable=True)
-            ),
+            ParameterGroup(identifier=name_id("c"), activation=Activation(is_desyncable=True)),
             StringParameter(identifier=name_id("c", "b")),
             ParameterGroup(identifier=name_id("d"), activation=Activation(is_desyncable=True)),
             ParameterGroup(identifier=name_id("e"), activation=Activation(is_desyncable=False)),
         )
-        defaults = {"/a/b": None, "/c/b": None}
+        old_defaults = Defaults(values={"/a/b": None, "/c/b": None})
+        new_defaults = Defaults(values={"/a/b": None, "/c/b": None}, activation={"/c": True})
         configuration = Configuration(
             values={"a": {"b": None}, "c": {"b": None}},
             attributes={
@@ -703,8 +707,8 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             configuration=configuration,
             specification=old_spec,
             new_specification=new_spec,
-            defaults=defaults,
-            new_defaults=defaults,
+            defaults=old_defaults,
+            new_defaults=new_defaults,
             include_synchronization=True,
         )
 
@@ -713,13 +717,13 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
 
     def test_unchanged_with_selection_group(self):
         spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection(use_as_default="a")),
+            ParameterGroup(identifier=name_id("s"), selection=Selection()),
             ParameterGroup(identifier=name_id("s", "a")),
             StringParameter(identifier=name_id("s", "a", "av")),
             ParameterGroup(identifier=name_id("s", "b")),
             StringParameter(identifier=name_id("s", "b", "bv")),
         )
-        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"}, selection={"/s": "a"})
         values = {"s": {"a": {"av": "1"}}}
 
         result = adapt_configuration_for_new_specification(
@@ -736,13 +740,13 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
 
     def test_unchanged_with_selection_group_value_none(self):
         spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection(use_as_default="a")),
+            ParameterGroup(identifier=name_id("s"), selection=Selection()),
             ParameterGroup(identifier=name_id("s", "a")),
             StringParameter(identifier=name_id("s", "a", "av")),
             ParameterGroup(identifier=name_id("s", "b")),
             StringParameter(identifier=name_id("s", "b", "bv")),
         )
-        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"}, selection={"/s": "a"})
         values = {"s": None}
 
         result = adapt_configuration_for_new_specification(
@@ -765,7 +769,7 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             ParameterGroup(identifier=name_id("s", "b")),
             StringParameter(identifier=name_id("s", "b", "bv")),
         )
-        defaults = {"/s/a/av": "1", "/s/b/bv": "2"}
+        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"})
         values = {"s": {"b": {"bv": "1"}}}
 
         result = adapt_configuration_for_new_specification(
@@ -788,8 +792,8 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
             ParameterGroup(identifier=name_id("s", "b")),
             StringParameter(identifier=name_id("s", "b", "bv")),
         )
-        defaults_old = {"/s/a/av": "1", "/s/b/bv": "2"}
-        defaults_new = {"/s/a/av": None, "/s/b/bv": "2"}
+        defaults_old = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"})
+        defaults_new = Defaults(values={"/s/a/av": None, "/s/b/bv": "2"})
         values = {"s": {"b": {"bv": "1"}}}
 
         result = adapt_configuration_for_new_specification(
@@ -804,12 +808,38 @@ class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
         actual_values = self.expect_success(result).value.values
         self.assertDictEqual(actual_values, values)
 
+    def test_secrets_do_not_upgrade(self):
+        # ADCM-7444
+        spec = FullSpec.from_parameters(
+            StringParameter(identifier=name_id("p"), is_secret=False),
+            StringParameter(identifier=name_id("s"), is_secret=True),
+            MapParameter(identifier=name_id("pm"), is_secret=False),
+            MapParameter(identifier=name_id("sm"), is_secret=True),
+        )
+        defaults_old = Defaults(values={"/p": "old", "/s": "old", "/pm": {"o": "ld"}, "/sm": {"o": "ld"}})
+        defaults_new = Defaults(values={"/p": "new", "/s": "new", "/pm": {"n": "ew"}, "/sm": {"n": "ew"}})
+        values = {"p": "old", "s": "old", "pm": {"o": "ld"}, "sm": {"o": "ld"}}
+
+        expected_values = {"p": "new", "s": "old", "pm": {"n": "ew"}, "sm": {"o": "ld"}}
+
+        result = adapt_configuration_for_new_specification(
+            configuration=Configuration(values=values),
+            specification=spec,
+            new_specification=spec,
+            defaults=defaults_old,
+            new_defaults=defaults_new,
+            include_synchronization=False,
+        )
+
+        actual_values = self.expect_success(result).value.values
+        self.assertDictEqual(actual_values, expected_values)
+
 
 class TestPrepareConfigFromDefaults(ConfigTestCase):
     def prepare_spec_and_raw_defaults(self, as_default: str | None) -> tuple[FullSpec, Defaults]:
         spec = FullSpec.from_parameters(
             StringParameter(identifier=name_id("g1")),
-            ParameterGroup(identifier=name_id("g"), selection=Selection(use_as_default=as_default)),
+            ParameterGroup(identifier=name_id("g"), selection=Selection()),
             ParameterGroup(identifier=name_id("g", "g1")),
             StringParameter(identifier=name_id("g", "g1", "a")),
             ParameterGroup(identifier=name_id("g", "g2")),
@@ -820,7 +850,10 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
             StringParameter(identifier=name_id("g", "act", "a", "b", "c")),
             StringParameter(identifier=name_id("a")),
         )
-        defaults = {"/g1": "1", "/g/g1/a": "2", "/g/g2/a": "3", "/g/act/a/b/c": "2", "/a": "4"}
+        defaults = Defaults(
+            values={"/g1": "1", "/g/g1/a": "2", "/g/g2/a": "3", "/g/act/a/b/c": "2", "/a": "4"},
+            selection={"/g": as_default},
+        )
 
         return spec, defaults
 
@@ -828,7 +861,7 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
         spec, raw_defaults = self.prepare_spec_and_raw_defaults(as_default="g1")
         expected_values = {"g1": "1", "g": {"g1": {"a": "2"}}, "a": "4"}
 
-        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+        configuration = prepare_config_from_defaults(defaults=raw_defaults, specification=spec)
 
         self.assertDictEqual(configuration.values, expected_values)
         self.assertDictEqual(configuration.attributes, {})
@@ -838,7 +871,7 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
         expected_values = {"g1": "1", "g": {"act": {"a": {"b": {"c": "2"}}}}, "a": "4"}
         expected_attributes = {"/g/act/a/b": Attributes(is_active=False)}
 
-        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+        configuration = prepare_config_from_defaults(defaults=raw_defaults, specification=spec)
 
         self.assertDictEqual(configuration.values, expected_values)
         self.assertDictEqual(configuration.attributes, expected_attributes)
@@ -847,7 +880,7 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
         spec, raw_defaults = self.prepare_spec_and_raw_defaults(as_default=None)
         expected_values = {"g1": "1", "g": None, "a": "4"}
 
-        configuration = prepare_config_from_defaults(default_values=raw_defaults, specification=spec)
+        configuration = prepare_config_from_defaults(defaults=raw_defaults, specification=spec)
 
         self.assertDictEqual(configuration.values, expected_values)
         self.assertDictEqual(configuration.attributes, {})
@@ -863,7 +896,7 @@ class TestPrepareConfigFromDefaults(ConfigTestCase):
         )
 
         # we rely on safe retrieval of defaults in here, add actual defaults if implementation changed
-        configuration = prepare_config_from_defaults(default_values={}, specification=spec)
+        configuration = prepare_config_from_defaults(defaults=Defaults(), specification=spec)
 
         self.assertDictEqual(configuration.values, {"a": None})
         self.assertDictEqual(configuration.attributes, {})
@@ -891,7 +924,7 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
             ParameterGroup(identifier=name_id("s", "g2")),
             StringParameter(identifier=name_id("s", "g2", "b")),
         )
-        defaults = {"/s/g1/a": "1", "/s/g2/b": "2"}
+        defaults = Defaults(values={"/s/g1/a": "1", "/s/g2/b": "2"})
 
         return spec, defaults
 
@@ -981,7 +1014,7 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
             ParameterGroup(identifier=name_id("s", "g2")),
             StringParameter(identifier=name_id("s", "g2", "b")),
         )
-        defaults = {"/s/g1/a": "1", "/s/g1/c": None, "/s/g2/b": "2"}
+        defaults = Defaults(values={"/s/g1/a": "1", "/s/g1/c": None, "/s/g2/b": "2"})
         config = Configuration(values={"s": {"g2": {"b": "4"}}})
         changes = [
             ChangeRequest.for_group_selection(name="/s", value="g1"),
@@ -1000,7 +1033,7 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
             ParameterGroup(identifier=name_id("s", "g1")),
             StringParameter(identifier=name_id("s", "g1", "v")),
         )
-        defaults = {"/s/g1/v": "a"}
+        defaults = Defaults(values={"/s/g1/v": "a"})
         config = Configuration(values={"s": {"g1": {"v": "4"}}})
         changes = [
             ChangeRequest.for_group_selection(name="/s", value="notexist"),
@@ -1018,7 +1051,7 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
         )
 
     def test_change_value_in_unpicked_group_fails(self):
-        defaults = {"/s/sg1/sv": "a", "/s/sg2/sv": "b"}
+        defaults = Defaults(values={"/s/sg1/sv": "a", "/s/sg2/sv": "b"})
         config = Configuration(values={"s": {"sg1": {"sv": "4"}}})
         changes = [
             ChangeRequest.for_value(name="/s/sg1/sv", value="else"),

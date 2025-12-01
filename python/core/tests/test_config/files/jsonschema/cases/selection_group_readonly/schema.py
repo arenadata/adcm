@@ -33,12 +33,12 @@ def build() -> tuple[FullSpec, Defaults]:
         ParameterGroup(
             identifier=id_("sg"),
             extra=ExtraProperties(edit_rule=ReadOnlyRule(read_only="any")),
-            selection=Selection(is_required=True, use_as_default="g"),
+            selection=Selection(is_required=True),
         ),
         ParameterGroup(identifier=id_("sg", "g")),
         StringParameter(identifier=id_("sg", "g", "v")),
     )
 
-    defaults = {}
+    defaults = Defaults(selection={"/sg": "g"})
 
     return spec, defaults

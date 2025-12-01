@@ -46,6 +46,8 @@ def build_defaults(
     encrypt: Callable[[str], str],
 ) -> config.Defaults:
     flat_values = {}
+    activation = {}
+    selection = {}
 
     for record in records:
         full_name = _get_record_full_name(record)
@@ -54,6 +56,12 @@ def build_defaults(
             parameter = spec.parameters[full_name]
         except KeyError:
             # it's a group
+            group = spec.groups[full_name]
+            if group.selection:
+                selection[full_name] = record.default if record.default else None
+            elif group.activation:
+                activation[full_name] = record.limits.get("active", False)
+
             continue
 
         default = record.default
@@ -111,7 +119,7 @@ def build_defaults(
 
         flat_values[full_name] = default
 
-    return flat_values
+    return config.Defaults(values=flat_values, activation=activation, selection=selection)
 
 
 def _convert_parameter(
@@ -187,7 +195,6 @@ def _convert_parameter(
             if record.limits.get("activatable"):
                 activation = config.spec.p.Activation(
                     is_desyncable=is_desyncable,
-                    is_active_by_default=record.limits.get("active", False),
                 )
 
             return config.spec.p.ParameterGroup(
@@ -198,7 +205,7 @@ def _convert_parameter(
             return config.spec.p.ParameterGroup(
                 identifier=default_kwargs["identifier"],
                 extra=default_kwargs["extra"],
-                selection=config.spec.p.Selection(use_as_default=record.default or None, is_required=record.required),
+                selection=config.spec.p.Selection(is_required=record.required),
             )
 
         case _:

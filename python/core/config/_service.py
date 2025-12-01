@@ -23,7 +23,6 @@ from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
 from core.config._secrets import AnsibleSecrets
 from core.config._types import (
     ChangeRequest,
-    ConfigFlatValues,
     ConfigOwner,
     Configuration,
     ConfigurationWithID,
@@ -150,7 +149,7 @@ class ConfigService:
         return spec.spec_to_jsonschema(
             spec=specification,
             defaults=defaults,
-            owner_state=owner.info.state,
+            owner_state=owner.state,
             is_group_config=is_host_group,
             resolve_variant=variant_resolver.resolve,
         )
@@ -175,7 +174,7 @@ class ConfigService:
         return spec.spec_to_jsonschema(
             spec=action_specification,
             defaults=action_config_defaults,
-            owner_state=action_owner.info.state,
+            owner_state=action_owner.state,
             is_group_config=False,
             resolve_variant=variant_resolver.resolve,
         )
@@ -231,7 +230,7 @@ class ConfigService:
     def create_initial_configuration(
         self, owner: CoreObjectDescriptor, specification: spec.FullSpec, defaults: Defaults
     ) -> ConfigID:
-        default_config = self.prepare_default_configuration(default_values=defaults, specification=specification)
+        default_config = self.prepare_default_configuration(defaults=defaults, specification=specification)
 
         config_id = self.create_new_configuration_by_descriptor(
             configuration=default_config, description="init", owner=owner
@@ -271,10 +270,8 @@ class ConfigService:
 
     # prepare
 
-    def prepare_default_configuration(
-        self, default_values: ConfigFlatValues, specification: spec.FullSpec
-    ) -> Configuration:
-        return operations.prepare_config_from_defaults(default_values=default_values, specification=specification)
+    def prepare_default_configuration(self, defaults: Defaults, specification: spec.FullSpec) -> Configuration:
+        return operations.prepare_config_from_defaults(defaults=defaults, specification=specification)
 
     def prepare_new_configuration(
         self,
