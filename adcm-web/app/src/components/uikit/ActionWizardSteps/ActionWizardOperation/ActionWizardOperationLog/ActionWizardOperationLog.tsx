@@ -50,7 +50,7 @@ const ActionWizardOperationLog: React.FC<ActionWizardOperationLogProps> = ({
         </div>
       )}
 
-      {subJob && log && <SubJobLog isAutoScroll={false} subJob={subJob} subJobLog={log} />}
+      {subJob && log && <SubJobLog subJob={subJob} subJobLog={log} />}
     </div>
   );
 };
