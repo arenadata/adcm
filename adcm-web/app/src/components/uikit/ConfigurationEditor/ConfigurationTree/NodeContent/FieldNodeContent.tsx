@@ -1,20 +1,18 @@
 import { useCallback, useRef, useMemo, useState } from 'react';
 import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
-import {
-  emptyStringStub,
-  nullStub,
-  secretStub,
-  treeNodeLabelCharsLimit,
-  whiteSpaceStringStub,
-} from '../ConfigurationTree.constants';
+import { emptyStringStub, nullStub, secretStub, whiteSpaceStringStub } from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
 import st from '../../../CollapseTree2/CollapseNode.module.scss';
 import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
-import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
-import { isPrimitiveValueSet, type JSONPrimitive } from '@models/json';
+import type {
+  ChangeConfigurationNodeHandler,
+  ChangeConfigurationNodeValueHandler,
+  ChangeFieldAttributesHandler,
+} from '../ConfigurationTree.types';
+import { isPrimitiveValueSet } from '@models/json';
 import type { FieldErrors } from '@models/adcm';
 import { isWhiteSpaceOnly } from '@utils/validationsUtils';
 import IconButton from '@uikit/IconButton/IconButton';
@@ -22,7 +20,6 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import { useClipboardCopy } from '@hooks';
-import { getViewNodeValue } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
@@ -30,7 +27,7 @@ interface FieldNodeContentProps {
   onClick: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
-  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
+  onChange: ChangeConfigurationNodeValueHandler;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
   onDragEnd?: (node: ConfigurationNodeView, isDropped: boolean) => void;
@@ -127,10 +124,10 @@ const FieldNodeContent = ({
     }
 
     if (fieldNodeData.fieldSchema.enum) {
-      if (fieldNodeData.fieldSchema.adcmMeta.enumExtra?.labels) {
+      if (adcmMeta?.enumExtra?.labels) {
         const valueIndex = fieldNodeData.fieldSchema.enum?.indexOf(fieldNodeData.value);
         if (valueIndex !== undefined) {
-          return fieldNodeData.fieldSchema.adcmMeta.enumExtra.labels[valueIndex];
+          return adcmMeta.enumExtra.labels[valueIndex];
         }
       }
     }
@@ -143,17 +140,12 @@ const FieldNodeContent = ({
       return whiteSpaceStringStub;
     }
 
-    if (adcmMeta.isSecret) {
+    if (adcmMeta?.isSecret) {
       return secretStub;
     }
 
     return fieldNodeData.value.toString();
-  }, [
-    adcmMeta.isSecret,
-    fieldNodeData.fieldSchema.adcmMeta.enumExtra,
-    fieldNodeData.fieldSchema.enum,
-    fieldNodeData.value,
-  ]);
+  }, [adcmMeta?.isSecret, adcmMeta?.enumExtra, fieldNodeData.fieldSchema.enum, fieldNodeData.value]);
 
   return (
     <>
@@ -176,7 +168,7 @@ const FieldNodeContent = ({
         <div className={s.nodeContent__title} data-test="node-name">
           {`${fieldNodeData.title}: `}
         </div>
-        {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
+        {adcmMeta?.synchronization && fieldAttributes?.isSynchronized !== undefined && (
           <SynchronizedAttribute
             isSynchronized={fieldAttributes.isSynchronized}
             {...adcmMeta.synchronization}
@@ -184,12 +176,14 @@ const FieldNodeContent = ({
           />
         )}
         <div className={s.nodeContent__value} data-test="node-value" onClick={handleClick}>
-          {getViewNodeValue(value, treeNodeLabelCharsLimit)}
+          {value}
         </div>
-        {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
+        {adcmMeta?.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
             isActive={fieldAttributes.isActive}
-            isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
+            isAllowChange={
+              !fieldNodeData.isReadonly && adcmMeta.activation.isAllowChange && !fieldAttributes.isSynchronized
+            }
             onToggle={handleIsActiveChange}
           />
         )}
@@ -200,7 +194,7 @@ const FieldNodeContent = ({
         )}
       </div>
       <div className={cn(s.nodeContent__buttonWrapper, st.nodeContent__buttonWrapper)}>
-        {!adcmMeta.isSecret && (
+        {!adcmMeta?.isSecret && (
           <IconButton
             className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__copyButton)}
             size={16}
@@ -219,16 +213,18 @@ const FieldNodeContent = ({
             data-test="clear-btn"
           />
         )}
-        {fieldNodeData.defaultValue !== undefined && fieldNodeData.value !== fieldNodeData.defaultValue && (
-          <IconButton
-            className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
-            size={28}
-            icon="g1-return"
-            onClick={handleResetToDefaultClick}
-            data-test="reset-btn"
-            title="Reset to default"
-          />
-        )}
+        {!fieldNodeData.isReadonly &&
+          fieldNodeData.defaultValue !== undefined &&
+          fieldNodeData.value !== fieldNodeData.defaultValue && (
+            <IconButton
+              className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
+              size={28}
+              icon="g1-return"
+              onClick={handleResetToDefaultClick}
+              data-test="reset-btn"
+              title="Reset to default"
+            />
+          )}
         {fieldNodeData.isDeletable && (
           <IconButton
             className={cn(s.nodeContent, s.nodeContent__button)}
@@ -237,6 +233,17 @@ const FieldNodeContent = ({
             onClick={handleDeleteClick}
             data-test="delete-btn"
           />
+        )}
+        {fieldNodeData.fieldSchema.description && (
+          <Tooltip label={fieldNodeData.fieldSchema.description} placement="right-start">
+            <IconButton
+              type="button"
+              className={cn(s.nodeContent, s.nodeContent__button)}
+              size={18}
+              icon="marker-info"
+              data-test="description-btn"
+            />
+          </Tooltip>
         )}
       </div>
     </>

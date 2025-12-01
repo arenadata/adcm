@@ -11,18 +11,17 @@
 # limitations under the License.
 
 from typing import Any, Collection, TypeAlias, TypedDict
+import re
 
-from cm.api import set_object_config_with_plugin
-from cm.converters import CoreObject, core_type_to_model
-from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigLog
-from cm.services.config import ConfigAttrPair
-from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
+from application.migration.config import update_configuration_from_job
+from cm.converters import core_type_to_model
 from core.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
+from infra.services import get_config_service
 from pydantic import model_validator
 from typing_extensions import Self
+import core
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -35,12 +34,13 @@ from ansible_plugin.base import (
     from_arguments_root,
 )
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
-from ansible_plugin.utils import cast_to_type
 
 # don't want to typehint due to serialization problems and serialization priority
 # (e.g. bool casted successfully to float, etc.)
 ParamValue: TypeAlias = Any
-OriginalValues: TypeAlias = ConfigAttrPair
+
+INTEGER_LIKE_STRING = re.compile(r"^\d+$")
+FLOAT_LIKE_STRING = re.compile(r"^\d+\.\d+$")
 
 
 class AdcmConfigParameterPluginItem(ConfigApplyParameterItem):
@@ -117,121 +117,97 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value={}, changed=False, error=error)
 
-        model = core_type_to_model(core_type=target.type)
-        db_object = model.objects.select_related("config").get(id=target.id)
+        config_service = get_config_service()
 
-        changes_config, changed = apply_config_changes(
-            runtime.vars.job.id, db_object, arguments.get_changes(), "ansible update"
+        original_changes = arguments.get_changes()
+
+        model = core_type_to_model(core_type=target.type)
+        db_object = model.objects.get(id=target.id)
+
+        changes, has_changed = update_configuration_from_job(
+            owner=target,
+            changes_input=original_changes,
+            convert=to_changes,
+            description="ansible update",
+            job_id=runtime.vars.job.id,
+            config_service=config_service,
+            owner_orm=db_object,
         )
 
-        return_value = self._prepare_return_value(changes_config)
+        return_value = to_return_value(changes)
 
-        if not changed:
-            return CallResult(value=return_value, changed=False, error=None)
+        return CallResult(value=return_value, changed=has_changed, error=None)
 
-        return CallResult(value=return_value, changed=True, error=None)
 
-    @staticmethod
-    def _prepare_return_value(config: dict) -> ChangeConfigReturn:
-        # todo what should be returned in `value`??
-        #  originally the same data that was passed was returned
-        #  WITHOUT type casting
-        if len(config) == 1:
-            config_params = next(iter(config.values()))
+def to_changes(input_changes: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
+    changes = []
+
+    for parameter_change in input_changes:
+        full_name = core.config.names.ensure_full_name(parameter_change["key"])
+
+        if (group := spec.groups.get(full_name)) and group.selection:
+            message = f'Can\'t change selectable group "{full_name}" from plugin'
+            raise ValueError(message)
+
+        if (is_active := parameter_change.get("active")) is not None:
+            change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=is_active)
+            changes.append(change)
         else:
-            # removing trailing "/" to return to keys to input format
-            config_params = {key.rstrip("/"): value for key, value in config.items()}
+            raw_value = parameter_change["value"]
+            if not isinstance(raw_value, str):
+                value_to_set = raw_value
+            else:
+                parameter = spec.parameters[full_name]
+                parsed_value = parse_string_value(value=raw_value, parameter=parameter)
+                value_to_set = parsed_value
 
-        # putting result under the "value" key, because during result parsing dicts are merged into response,
-        # return of this plugin should always have `value` key
-        return ChangeConfigReturn(value=config_params)
+            change = core.config.ChangeRequest.for_value(name=full_name, value=value_to_set)
+            changes.append(change)
 
-
-def apply_config_changes(
-    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
-) -> tuple[dict, bool]:
-    changes = ConfigAttrPair(config={}, attr={})
-    for parameter in parameters:
-        key = parameter["key"]
-        if "/" not in key:
-            key = f"{key}/"
-
-        if parameter.get("active") is not None:
-            changes.attr[key] = {"active": parameter["active"]}
-        else:
-            changes.config[key] = parameter["value"]
-
-    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
-    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
-
-    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
-
-    if not changed:
-        return changes.config, False
-
-    set_object_config_with_plugin(
-        job_id=job_id,
-        obj=db_object,
-        config=configuration.config,
-        attr=configuration.attr,
-        description=changes_description,
-    )
-
-    return changes.config, True
+    return changes
 
 
-def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:
-    """
-    Fill `target` with values from `changes` in-place
+def to_return_value(changes: list[core.config.ChangeRequest]) -> ChangeConfigReturn:
+    value_changes = [change for change in changes if change.type == "value"]
+    if len(value_changes) == 1:
+        config_params = value_changes[0].value
+    else:
+        config_params = {change.parameter.lstrip("/"): change.value for change in value_changes}
 
-    :param target: Values for complex structures are nested (e.g. ["groupkey"]["valingorupkey"])
-    :param changes: Keys must have the same format as flatspec (e.g. ["groupkey/subgroupkey"])
-    :param spec: Flat specification for the changing config
-    :returns: Changed flag that's true if either param in config/attr has changed
-    """
+    # putting result under the "value" key, because during result parsing dicts are merged into response,
+    # return of this plugin should always have `value` key
+    return ChangeConfigReturn(value=config_params)
 
-    keys_to_change = set(changes.config.keys()) | set(changes.attr.keys())
-    if missing_keys := keys_to_change - spec.keys():
-        message = f"Some keys aren't presented in specification: {', '.join(sorted(missing_keys))}"
-        raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
 
-    changed = False
+def parse_string_value(value: str, parameter: core.config.spec.p.SimpleParameter) -> int | float | str | bool:
+    # shortcut for most generic case
+    if parameter.type == core.config.spec.p.ParameterType.STRING:
+        return value
 
-    for key, value in changes.config.items():
-        param_spec = spec[key]
-        cast_value = cast_to_type(field_type=param_spec.type, value=value, limits=param_spec.limits)
+    match parameter:
+        case core.config.spec.p.NumberParameter(is_float=is_float):
+            if is_float:
+                return float(value)
 
-        key, *subs = key.split("/", maxsplit=1)
-        subkey = subs[0] if subs else None
+            return int(value)
 
-        if subkey:
-            if target.config[key][subkey] == cast_value:
-                continue
+        # case core.config.spec.p.BooleanParameter():
+        #    truth_literal = "true"
+        #    lower_value = value.lower()
+        #    if lower_value not in (truth_literal, "false"):
+        #        raise ValueError(f"can't parse {value} as boolean")
 
-            target.config[key][subkey] = cast_value
-            changed = True
-        else:
-            if target.config[key] == cast_value:
-                continue
+        #    return value == "true"
 
-            target.config[key] = cast_value
-            changed = True
+        case core.config.spec.p.OptionParameter(options=options):
+            # strange patch retrieved from original plugin
+            if value in options.values():
+                return value
 
-    # here we consider key full key
-    for key, value in changes.attr.items():
-        param_spec = spec[key]
-        if "activatable" not in param_spec.limits:
-            message = (
-                "`active` parameter can be changed only for activatable group. " f"Group {key} is not one of them."
-            )
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
+            if INTEGER_LIKE_STRING.match(value):
+                return int(value)
 
-        attr_key = key.rstrip("/")
-        # we want to directly compare "active"'s since it's the only thing we may change via plugin
-        if target.attr[attr_key].get("active") == value["active"]:
-            continue
+            if FLOAT_LIKE_STRING.match(value):
+                return float(value)
 
-        target.attr[attr_key] |= value
-        changed = True
-
-    return changed
+    return value

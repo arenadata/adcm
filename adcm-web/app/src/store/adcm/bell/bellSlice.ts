@@ -74,7 +74,11 @@ const bellSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loadFromBackend.fulfilled, (state, action) => {
-        state.jobs = action.payload.results;
+        state.jobs = action.payload.results.map((job) => ({
+          ...job,
+          objects: job.objects.reverse(),
+        }));
+
         state.totalCount = action.payload.count;
       })
       .addCase(loadFromBackend.rejected, (state) => {

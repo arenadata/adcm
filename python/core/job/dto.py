@@ -12,10 +12,18 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, TypeAlias
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from core.job.types import AssociatedProcess, CallingProcess, ExecutionStatus, HostComponentChanges, TaskMappingDelta
+from core.job.types import (
+    AssociatedProcess,
+    CallingProcess,
+    ExecutionStatus,
+    HostComponentChanges,
+    TaskMappingDelta,
+)
+from core.types import ActionID, CoreObjectDescriptor, HostGroupDescriptor
 
 
 class TaskUpdateDTO(BaseModel):
@@ -57,6 +65,31 @@ class TaskPayloadDTO:
 
     process: CallingProcess | AssociatedProcess | None = None
 
+    description: str = ""
+
 
 class TaskMutableFieldsDTO(BaseModel):
     hostcomponent: HostComponentChanges
+
+
+PreparedConfigValues: TypeAlias = dict[str, Any]
+
+
+@dataclass(slots=True)
+class LaunchOptions:
+    is_verbose: bool = False
+    is_blocking: bool = True
+
+
+class TaskCreateDTO(BaseModel):
+    owner: CoreObjectDescriptor
+    target: CoreObjectDescriptor | HostGroupDescriptor
+    action_id: ActionID
+    launch: LaunchOptions = Field(default_factory=LaunchOptions)
+    process: AssociatedProcess | None = None
+    description: str = ""
+
+
+class TaskUpdateMainFieldsDTO(BaseModel):
+    mapping_delta: TaskMappingDelta | None
+    configuration: PreparedConfigValues | None

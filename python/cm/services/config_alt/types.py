@@ -132,11 +132,14 @@ class Attributes:
 
 ParameterValue = TypeVar("ParameterValue")
 
+ConfigValues: TypeAlias = dict[ParameterLevelName, Any]
+ConfigAttrs: TypeAlias = dict[ParameterFullName, Attributes]
+
 
 @dataclass(slots=True)
 class Configuration:
-    values: dict[ParameterLevelName, Any]
-    attributes: dict[ParameterFullName, Attributes]
+    values: ConfigValues
+    attributes: ConfigAttrs
     description: str = ""
 
 

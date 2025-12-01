@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal, Optional, TypeAlias
+from functools import partial
+from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias, Union
 
 from pydantic import (
     AfterValidator,
@@ -22,7 +23,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import TypedDict
+from typing_extensions import Self, TypedDict
 
 from core.bundle_alt.errors import BundleParsingError, convert_validation_to_bundle_error
 from core.bundle_alt.schema_validation import (
@@ -35,10 +36,13 @@ from core.bundle_alt.schema_validation import (
     min_less_than_max,
     patch_masking,
     script_is_correct_path,
+    template_script_is_correct_path,
     validate_name,
 )
 from core.job.types import StepType
 from core.templates import Template
+
+# pyright: reportIncompatibleVariableOverride=false, reportInvalidTypeForm=false
 
 VERSION: TypeAlias = int | float | str
 VENV: TypeAlias = Annotated[
@@ -51,6 +55,17 @@ MONITORING: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(def
 ACTION_SCRIPT_TYPE: TypeAlias = Literal["ansible", "internal", "python"]
 
 NAME: TypeAlias = Annotated[str, AfterValidator(validate_name)]
+
+WizardTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="wizard_template"))
+]
+ScriptsTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="scripts_template"))
+]
+ConfigTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="config_template"))
+]
+HCTemplate = Annotated[Template, AfterValidator(partial(template_script_is_correct_path, field_name="hc_template"))]
 
 
 class _BaseModel(BaseModel):
@@ -270,13 +285,67 @@ CONFIG_ITEMS: TypeAlias = (
 
 class ConfigItemGroupSchema(_BaseConfigItemSchema):
     type: Literal["group"]
-    subs: list[Annotated[CONFIG_ITEMS, Field(discriminator="type")]]
+    subs: list[Annotated[Union[CONFIG_ITEMS, Self, "ConfigItemSelectionGroupSchema"], Field(discriminator="type")]]
     activatable: Annotated[bool | None, Field(default=None)]
     active: Annotated[bool | None, Field(default=None)]
 
+    @field_validator("name", mode="after")
+    @classmethod
+    def name_is_allowed(cls, value: str) -> str:
+        if value == "_selection":
+            message = 'Group is not allowed to be named "_selection"'
+            raise ValueError(message)
+
+        return value
+
+
+class ConfigItemSelectionGroupSchema(_BaseConfigItemSchema):
+    type: Literal["selection_group"]
+    subs: Annotated[list[ConfigItemGroupSchema], Field(min_length=1)]
+    default: Annotated[str | None, Field(default=None)]
+
+    @field_validator("subs", mode="after")
+    @classmethod
+    def child_groups_are_regular(cls, groups: list[ConfigItemGroupSchema]) -> list[ConfigItemGroupSchema]:
+        activatable_group_names = {group.name for group in groups if group.activatable}
+        if activatable_group_names:
+            message = (
+                "Activatable groups aren't allowed as children "
+                f"of selection groups: {', '.join(sorted(activatable_group_names))}"
+            )
+            raise ValueError(message)
+
+        return groups
+
+    @model_validator(mode="after")
+    def default_is_one_of_subs(self) -> Self:
+        if self.default is None:
+            return self
+
+        sub_group_names = {group.name for group in self.subs}
+        if self.default not in sub_group_names:
+            allowed_values_repr = ", ".join(sorted(sub_group_names))
+            message = (
+                f'Default (value="{self.default}") for selection group '
+                f"must be name of one of it's subgroups: {allowed_values_repr}"
+            )
+            raise ValueError(message)
+
+        return self
+
+    @model_validator(mode="after")
+    def default_not_none_if_set(self) -> Self:
+        if "default" in self.model_fields_set and self.default is None:
+            message = "Default must be string, even for non-required selectable groups"
+            raise ValueError(message)
+
+        return self
+
 
 # TODO: move to schema_validation.py
-def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | None):
+def config_duplicates(
+    parameters: Sequence[CONFIG_ITEMS | ConfigItemGroupSchema | ConfigItemSelectionGroupSchema] | None,
+):
     # at least ADS has duplicates in config
     if not parameters:
         return None
@@ -289,13 +358,15 @@ def config_duplicates(parameters: list[CONFIG_ITEMS | ConfigItemGroupSchema] | N
 
         names.add(param.name)
 
-        if isinstance(param, ConfigItemGroupSchema):
+        if isinstance(param, ConfigItemGroupSchema | ConfigItemSelectionGroupSchema):
             config_duplicates(param.subs)
 
     return parameters
 
 
-CONFIG_LIST: TypeAlias = list[Annotated[CONFIG_ITEMS | ConfigItemGroupSchema, Field(discriminator="type")]]
+CONFIG_LIST: TypeAlias = list[
+    Annotated[CONFIG_ITEMS | ConfigItemGroupSchema | ConfigItemSelectionGroupSchema, Field(discriminator="type")]
+]
 CONFIG_TYPE: TypeAlias = Annotated[
     CONFIG_LIST | None,
     Field(default=None),
@@ -546,8 +617,8 @@ class _StepOperationUIOptions(_BaseModel):
 
 
 class OperationStep(_Names):
-    scripts_template: Template
-    ui_options: _StepOperationUIOptions | None = None
+    scripts_template: ScriptsTemplate
+    ui_options: _StepOperationUIOptions
 
     @property
     def type(self) -> StepType:
@@ -559,7 +630,7 @@ class OperationStep(_Names):
 
 
 class ConfigurationStep(_Names):
-    config_template: Template
+    config_template: ConfigTemplate
 
     @property
     def type(self) -> StepType:
@@ -570,7 +641,19 @@ class ConfigurationStep(_Names):
         return self.config_template
 
 
-ActionProcessStep = OperationStep | ConfigurationStep
+class MappingStep(_Names):
+    hc_template: HCTemplate
+
+    @property
+    def type(self) -> StepType:
+        return StepType.MAPPING
+
+    @property
+    def template(self) -> Template:
+        return self.hc_template
+
+
+ActionProcessStep = OperationStep | ConfigurationStep | MappingStep
 
 
 # Stage & Action Process Schema
@@ -682,7 +765,7 @@ class _BaseActionSchema(_BaseModel):
     allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
-    wizard_template: Annotated[Template | None, Field(default=None)]
+    wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
 
     @model_validator(mode="before")
     @classmethod
@@ -778,6 +861,9 @@ class InternalBundleRevertJobSchema(_BaseJobSchema, _InternalBundleRevertScript)
 class InternalHcApplyJobShema(_BaseJobSchema, _InternalHcApplyScript):
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
+        if self.wizard_template is not None:
+            return self
+
         if self.hc_acl is None:
             raise ValueError('"hc_apply" requires "hc_acl" declaration')
 
@@ -842,6 +928,11 @@ INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     Field(discriminator="script"),
 ]
 
+INTERNAL_TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA = Annotated[
+    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalConfigApplyTaskScriptSchema,
+    Field(discriminator="script"),
+]
+
 
 TASK_SCRIPTS_SCHEMA = Annotated[
     INTERNAL_TASK_SCRIPTS_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema, Field(discriminator="script_type")
@@ -854,9 +945,18 @@ TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
 ]
 
 
+TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA = Annotated[
+    INTERNAL_TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA | AnsibleTaskScriptSchema | PythonTaskScriptSchema,
+    Field(discriminator="script_type"),
+]
+
+
 class TaskSchema(_BaseTaskSchema):
     scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
     scripts_jinja: str | None = None
+    scripts_template: ScriptsTemplate | None = None
+
+    config_template: ConfigTemplate | None = None
 
     @field_validator("scripts_jinja")
     @classmethod
@@ -866,14 +966,32 @@ class TaskSchema(_BaseTaskSchema):
         return v
 
     @model_validator(mode="after")
-    def validate_only_one_set(self):
-        if bool(self.scripts) == bool(self.scripts_jinja):
-            raise ValueError('Exactly one of "scripts" or "scripts_jinja" must be provided, not both or neither.')
+    def validate_only_one_set_for_scripts(self):
+        specified = tuple(filter(None, (self.scripts, self.scripts_jinja, self.scripts_template)))
+        if len(specified) != 1:
+            raise ValueError(
+                'Exactly one of "scripts", "scripts_jinja" or "scripts_template" must be provided, '
+                "not multiple nor neither."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_only_one_set_for_config(self):
+        # thou this one semi duplicates check in Action schema, I put it here,
+        # because `config_template` should be applicable only for Task until decided otherwise
+        specified = tuple(filter(None, (self.config, self.config_jinja, self.config_template)))
+        if len(specified) > 1:
+            raise ValueError('At most one of "config", "config_jinja" or "config_template" must be provided.')
+
         return self
 
     @model_validator(mode="after")
     def validate_hc_apply_together_hc_acl(self):
         if self.scripts is None:
+            return self
+
+        if self.wizard_template is not None:
             return self
 
         for script in self.scripts:
@@ -1066,6 +1184,15 @@ def parse(
 
 class DynamicScriptsSchema(_BaseModel):
     scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
+
+
+##############
+# scripts_template in Wizard
+##############
+
+
+class WizardScriptsSchema(_BaseModel):
+    scripts: Annotated[list[TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA], Field(min_length=1)]
 
 
 ##############

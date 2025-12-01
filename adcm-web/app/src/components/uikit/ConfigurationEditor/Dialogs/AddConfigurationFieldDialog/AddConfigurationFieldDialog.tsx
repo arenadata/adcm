@@ -49,8 +49,6 @@ const AddConfigurationFieldDialog = ({
     onOpenChange(false);
   };
 
-  const inputClassName = s.addConfigurationFieldDialog__input;
-
   return (
     isOpen && (
       <ConfigurationEditorDialog
@@ -61,15 +59,14 @@ const AddConfigurationFieldDialog = ({
       >
         <div className={s.addConfigurationFieldDialog__content}>
           <FormField label="Enter field name">
-            <Input className={inputClassName} value={fieldName} onChange={handleFieldNameChange} />
+            <Input value={fieldName} onChange={handleFieldNameChange} />
           </FormField>
 
-          {adcmMeta.isSecret ? (
+          {adcmMeta?.isSecret ? (
             <SecretControl
               fieldName="Enter secret"
               value={value}
               fieldSchema={node.data.fieldSchema}
-              defaultValue={fieldNode.data.defaultValue}
               isReadonly={false}
               onChange={handleValueChange}
               onApply={handleApply}
@@ -79,7 +76,6 @@ const AddConfigurationFieldDialog = ({
               fieldName="Enter field value"
               value={value}
               fieldSchema={node.data.fieldSchema}
-              defaultValue={fieldNode.data.defaultValue}
               isReadonly={false}
               onChange={handleValueChange}
               onApply={handleApply}

@@ -8,6 +8,7 @@ interface ConfigurationMainProps {
   configuration: AdcmConfiguration | null;
   onChangeConfiguration: (configuration: AdcmConfiguration) => void;
   isLoading?: boolean;
+  isReadOnly?: boolean;
 }
 
 const getCorrectConfigurationData = (configuration: AdcmConfiguration): ConfigurationData => {
@@ -19,7 +20,11 @@ const getCorrectConfigurationData = (configuration: AdcmConfiguration): Configur
   return generateFromSchema<ConfigurationData>(schema) ?? {};
 };
 
-const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, onChangeConfiguration }) => {
+const ConfigurationMain: React.FC<ConfigurationMainProps> = ({
+  configuration,
+  onChangeConfiguration,
+  isReadOnly = false,
+}) => {
   const { filter, areExpandedAll, onChangeIsValid } = useConfigurationFormContext();
 
   if (configuration === null) return null;
@@ -52,6 +57,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, on
       onConfigurationChange={handleChangeConfigurationData}
       onAttributesChange={handleChangeAttributes}
       onChangeIsValid={onChangeIsValid}
+      isReadOnly={isReadOnly}
     />
   );
 };

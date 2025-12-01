@@ -1,0 +1,10 @@
+- name: stage_constraint_plus
+  display_name: Stage constraint plus
+  steps:
+    - name: step_constraint_plus
+      display_name: step_constraint_plus
+      hc_template:
+        file:
+          path: stages/constraint_plus/step.j2
+        engine:
+          type: jinja2

@@ -736,6 +736,7 @@ class TestBundleSchema(TestCase):
                 "task_plain": {
                     "type": "task",
                     "scripts_jinja": None,
+                    "scripts_template": None,
                     "scripts": [
                         {
                             "name": "job_1",
@@ -766,11 +767,13 @@ class TestBundleSchema(TestCase):
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
+                    "config_template": None,
                 },
                 "task_jinja": {
                     "type": "task",
                     "scripts": None,
                     "scripts_jinja": "path/to/script_jinja.j2",
+                    "scripts_template": None,
                     "display_name": None,
                     "description": None,
                     "params": None,
@@ -790,6 +793,7 @@ class TestBundleSchema(TestCase):
                     "allow_in_maintenance_mode": None,
                     "config": None,
                     "config_jinja": None,
+                    "config_template": None,
                 },
             }
             self.assertDictEqual(actions, expected_actions)
@@ -1195,11 +1199,98 @@ class TestBundleSchema(TestCase):
             with self.assertRaises(ValidationError):
                 self.validate_schema(raw)
 
+    def test_nested_groups_allowed(self):
+        yaml_schema = """
+        - type: cluster
+          name: some_cluster
+          version: 3
+          config: &config
+            - name: g1
+              type: group
+              subs:
+                - name: g2
+                  type: group
+                  subs:
+                    - name: g3
+                      type: group
+                      subs:
+                        - name: s
+                          type: string
+          actions:
+            with_config:
+              type: job
+              script: aa.py
+              script_type: python
+              config: *config
+        """
+
+        raw = yaml.safe_load(yaml_schema)
+        result = self.validate_schema(raw)
+
+        field_name = result[0]["config"][0]["subs"][0]["subs"][0]["subs"][0]["name"]
+        self.assertEqual(field_name, "s")
+        field_name = result[0]["actions"]["with_config"]["config"][0]["subs"][0]["subs"][0]["subs"][0]["name"]
+        self.assertEqual(field_name, "s")
+
+    def test_selection_groups_allowed(self):
+        yaml_schema = """
+        - type: cluster
+          name: some_cluster
+          version: 3
+          config: &config
+            - &sg
+              name: choose
+              type: selection_group
+              subs:
+                - name: first
+                  type: group
+                  subs:
+                    - name: some
+                      type: float
+                      required: false
+                - name: second
+                  type: group
+                  subs:
+                    - name: second-1
+                      type: string
+                      default: "aa"
+            - name: with_selection_group
+              type: group
+              subs:
+                - <<: *sg
+          actions:
+            some:
+              type: job
+              script: aa.yaml
+              script_type: ansible
+              config: *config
+        """
+
+        raw = yaml.safe_load(yaml_schema)
+        result = self.validate_schema(raw)
+
+        field_name = result[0]["config"][0]["name"]
+        self.assertEqual(field_name, "choose")
+        field_name = result[0]["config"][1]["subs"][0]["name"]
+        self.assertEqual(field_name, "choose")
+        field_name = result[0]["actions"]["some"]["config"][0]["name"]
+        self.assertEqual(field_name, "choose")
+
 
 class TestWizardSchema(TestCase):
     def test_correct_task_format_success(self):
         yaml_input_of_jinja = """
             stages:
+              - name: hc_apply_stage
+                display_name: "Host Component Apply"
+                steps:
+                  - name: mapping
+                    display_name: Host Component Apply
+                    hc_template:
+                      file:
+                        path: scripts/manage_hdfs_hc_step.j2
+                      engine:
+                        type: jinja2
               - name: manage_ssl_stage
                 display_name: "Manage SSL"
                 steps:

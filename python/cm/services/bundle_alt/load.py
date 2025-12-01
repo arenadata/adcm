@@ -16,19 +16,20 @@ from functools import cache
 from operator import methodcaller
 from pathlib import Path
 from tempfile import gettempdir
-from typing import NamedTuple
+from typing import Callable, Iterable, NamedTuple
 import os
 import fcntl
 import shutil
 import logging
 import tarfile
 
-from core.bundle_alt._config import check_default_values_in_jinja_config
+from core.bundle_alt._config import check_default_values_in_jinja_config, check_default_values_in_main_config
 from core.bundle_alt.bundle_load import get_hash_safe, untar_safe
 from core.bundle_alt.convertion import extract_config
 from core.bundle_alt.errors import convert_validation_to_bundle_error
 from core.bundle_alt.process import ConfigConversionContext, retrieve_bundle_definitions
 from core.bundle_alt.schema import ConfigJinjaSchema
+from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.errors import localize_error
 from django.conf import settings
 from django.core.files import File
@@ -82,7 +83,7 @@ def parse_bundle_archive(archive: Path, directories: Directories, adcm_version: 
     # Thou it's a bit of strange to remove archive in here,
     # but it's the original process,
     # required by upload-load separation in v1
-    with _cleanup_on_fail(archive):
+    with cleanup(on_fail=[archive]):
         return process_bundle_from_archive(
             archive=archive,
             bundles_dir=directories.bundles,
@@ -118,6 +119,34 @@ def parse_config_jinja(data: list[dict], context: ConfigConversionContext, *, ac
 # Public
 
 
+def retrieve_bundle_definitions_from_archive(
+    archive: Path, bundle_root: Path, adcm_version: str, check_defaults: Callable[[ConfigDefinition], None]
+) -> dict[BundleDefinitionKey, Definition]:
+    with localize_error(f"Bundle from {archive.name}"):
+        # yaml spec probably should be external dependency
+        return retrieve_bundle_definitions(
+            bundle_dir=bundle_root,
+            adcm_version=adcm_version,
+            yspec_schema=_get_rules_for_yspec_schema(),
+            check_defaults=check_defaults,
+        )
+
+
+def save_bundle_definitions(
+    definitions: dict[BundleDefinitionKey, Definition], unpacking_info: "_BundleUnpackingInfo"
+) -> Bundle:
+    bundle_object = repo.save_definitions(
+        bundle_definitions=definitions,
+        bundle_root=unpacking_info.root,
+        bundle_hash=unpacking_info.hash,
+        verification_status=unpacking_info.signature,
+    )
+    repo.update_prototype_licenses(bundle=bundle_object)
+    repo.recollect_categories()
+    bundle_object.refresh_from_db()
+    return bundle_object
+
+
 @convert_bundle_errors_to_adcm_ex
 def save_bundle_file_from_request_to_downloads(file_from_request: File, downloads_dir: Path) -> Path:
     archive_in_tmp = _write_bundle_archive_to_tempdir(file_from_request=file_from_request)
@@ -133,12 +162,17 @@ def process_bundle_from_archive(
         archive=archive, bundles_dir=bundles_dir, bundle_hash=bundle_hash, files_dir=files_dir
     )
 
-    with _cleanup_on_fail(unpacking_info.root):
-        _verify_signature(unpacking_info.signature, verified_signature_only)
+    with cleanup(on_fail=[unpacking_info.root], on_exit=[archive]):
+        verify_signature(unpacking_info.signature, verified_signature_only)
         # yaml spec probably should be external dependency
         with localize_error(f"Bundle from {archive.name}"):
             definitions = retrieve_bundle_definitions(
-                bundle_dir=unpacking_info.root, adcm_version=adcm_version, yspec_schema=_get_rules_for_yspec_schema()
+                bundle_dir=unpacking_info.root,
+                adcm_version=adcm_version,
+                yspec_schema=_get_rules_for_yspec_schema(),
+                check_defaults=lambda config: check_default_values_in_main_config(
+                    parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
+                ),
             )
 
         with atomic():
@@ -164,6 +198,11 @@ class _BundleUnpackingInfo:
     hash: str
     root: Path
     signature: SignatureStatus = SignatureStatus.ABSENT
+
+
+def unpack_bundle(archive: Path, bundles_dir: Path, files_dir: Path) -> _BundleUnpackingInfo:
+    bundle_hash = get_hash_safe(archive)
+    return _unpack_bundle(archive=archive, bundles_dir=bundles_dir, bundle_hash=bundle_hash, files_dir=files_dir)
 
 
 def _unpack_bundle(archive: Path, bundles_dir: Path, bundle_hash: str, files_dir: Path) -> _BundleUnpackingInfo:
@@ -285,22 +324,27 @@ def _find_signature_file(directory: Path) -> Path | None:
 
 
 @contextmanager
-def _cleanup_on_fail(*paths: Path):
+def cleanup(*, on_fail: Iterable[Path] = (), on_exit: Iterable[Path] = ()):
     try:
         yield
     except Exception:
-        for path in paths:
-            if path.is_file():
-                path.unlink()
-            elif path.is_dir():
-                shutil.rmtree(path, ignore_errors=True)
-            else:
-                logger.warning(f"Path assigned for cleanup on error, but it's neither existing file or dir: {path}")
-
+        cleanup_by_remove_from_fs(on_fail)
         raise
+    finally:
+        cleanup_by_remove_from_fs(on_exit)
 
 
-def _verify_signature(bundle_signature: SignatureStatus, verified_signature_only: bool) -> None:
+def cleanup_by_remove_from_fs(paths: Iterable[Path]) -> None:
+    for path in paths:
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            logger.warning(f"Path assigned for cleanup on error, but it's neither existing file or dir: {path}")
+
+
+def verify_signature(bundle_signature: SignatureStatus, verified_signature_only: bool) -> None:
     if bundle_signature != SignatureStatus.VALID and verified_signature_only:
         raise AdcmEx(
             code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",

@@ -14,7 +14,7 @@ from typing import Any
 
 from cm.models import Process
 from cm.services.action_process.schema_validation import (
-    CompleteStepPayload,
+    CompleteProcessPayload,
     OperationPayloadSchema,
     ResetStepPayload,
     SubmitStepPayload,
@@ -35,6 +35,7 @@ import pydantic
 class StepFromStageSerializer(Serializer):
     id = IntegerField()
     state = CharField()
+    name = CharField()
     display_name = CharField()
     type = SerializerMethodField()
 
@@ -45,14 +46,17 @@ class StepFromStageSerializer(Serializer):
         if data.get("scripts_template"):
             return "operation"
 
+        if data.get("hc_template"):
+            return "mapping"
+
         raise ValueError(f"Unknown step type for {data.get('id')=} {data.get('display_name')=}")
 
 
 class StageSerializer(Serializer):
+    name = CharField()
     display_name = CharField()
     steps = SerializerMethodField()
 
-    # D
     def get_steps(self, data: dict) -> list[dict]:
         steps = data["steps"]
         for step in steps:
@@ -83,6 +87,7 @@ class ProcessSerializer(ProcessShortSerializer):
 class StepSerializer(Serializer):
     id = IntegerField()
     display_name = CharField()
+    name = CharField()
     type = CharField()
     state = CharField()
 
@@ -91,7 +96,7 @@ class OperationSerializer(Serializer):
     method = CharField()
     params = DictField()
 
-    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteStepPayload | ResetStepPayload:
+    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteProcessPayload | ResetStepPayload:
         try:
             validated = OperationPayloadSchema.model_validate({"payload": attrs}).payload
         except pydantic.ValidationError as e:
@@ -106,4 +111,28 @@ class StepConfigurationSerializer(StepSerializer):
 
 class StepOperationSerializer(StepSerializer):
     ui_options = DictField()
+    # should be actually TaskListSerializer, but not for now due to circular imports
     task = DictField(allow_null=True, required=False)
+
+
+class MappingRuleSerializer(Serializer):
+    operation = CharField()
+    component = CharField()
+    service = CharField()
+
+
+class MappingDeltaItemSerializer(Serializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
+
+
+class MappingDeltaSerializer(Serializer):
+    add = MappingDeltaItemSerializer(many=True)
+    remove = MappingDeltaItemSerializer(many=True)
+
+
+class StepMappingSerializer(StepSerializer):
+    rules = MappingRuleSerializer(many=True)
+    delta = MappingDeltaSerializer(allow_null=True, default=None)
+    cumulative_delta = MappingDeltaSerializer(allow_null=True, default=None)
+    # suggestions = MappingDeltaItemSerializer(many=True, required=False, default=list)

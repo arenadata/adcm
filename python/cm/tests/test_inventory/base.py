@@ -36,7 +36,7 @@ from cm.models import (
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.job._utils import construct_delta_for_task
 from cm.services.job.inventory import get_inventory_data
-from cm.utils import decrypt_secrets
+from cm.utils import decrypt_secrets, strip_uuid
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -76,7 +76,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             expected_data = self.render_json_template(file=template_path, context=kwargs)
             actual_data = reduce(dict.get, full_key_chain, data)
 
-            self.assertDictEqual(actual_data, expected_data)
+            self.assertDictEqual(strip_uuid(actual_data), strip_uuid(expected_data))
 
     def assert_inventory(
         self,
@@ -87,8 +87,8 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         delta: TaskMappingDelta | None = None,
     ) -> None:
         target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
-        actual_inventory = decrypt_secrets(
-            source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta)
+        actual_inventory = strip_uuid(
+            decrypt_secrets(source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta))
         )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)

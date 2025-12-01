@@ -1,7 +1,10 @@
 import type React from 'react';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
+import MultiSelectListItem from './MultiSelectList/MultiSelectListItem/MultiSelectListItem';
+import Icon from '@uikit/Icon/Icon';
+import type { DefaultSelectListItemProps, SelectOption } from '../Select.types';
 
 type Story = StoryObj<typeof MultiSelect>;
 
@@ -21,7 +24,7 @@ export default {
   component: MultiSelect,
 } as Meta<typeof MultiSelect>;
 
-const options = [
+const defaultOptions = [
   {
     value: 123,
     label: 'A 123',
@@ -72,7 +75,7 @@ const MultiSelectExample: React.FC<MultiSelectExampleProps> = ({
       <MultiSelect
         value={value}
         onChange={setValue}
-        options={options}
+        options={defaultOptions}
         isSearchable={isSearchable}
         checkAllLabel={checkAllLabel}
         searchPlaceholder={searchPlaceholder}
@@ -100,5 +103,56 @@ export const MultiSelectEasy: Story = {
         maxHeight={maxHeight}
       />
     );
+  },
+};
+
+const CustomSelectItemRender = (props: DefaultSelectListItemProps<number>) => {
+  const { disabled, label, value } = props.option;
+
+  const handleChange = () => {
+    props.onSelect?.(value);
+  };
+
+  const iconStyle: CSSProperties = {
+    color: disabled ? 'gray' : props.isSelected ? 'green' : 'inherit',
+  };
+
+  return (
+    <MultiSelectListItem {...props}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer' }} onClick={handleChange}>
+        <Icon name="eye" style={iconStyle} />
+        <span>{label}</span>
+      </div>
+    </MultiSelectListItem>
+  );
+};
+
+const optionsWithCustomItemRender: SelectOption<number>[] = defaultOptions.map((option) => ({
+  ...option,
+  ItemComponent: CustomSelectItemRender,
+}));
+
+const MultiSelectWithCustomItemRenderExample: React.FC<MultiSelectExampleProps> = ({ isSearchable }) => {
+  const [value, setValue] = useState<number[]>([]);
+
+  return (
+    <div style={{ padding: 30, maxWidth: 300 }}>
+      <MultiSelect
+        value={value}
+        onChange={setValue}
+        options={optionsWithCustomItemRender}
+        isSearchable={isSearchable}
+        style={{ maxWidth: 300 }}
+      />
+    </div>
+  );
+};
+
+export const MultiSelectWithCustomItemRenderStory: Story = {
+  args: {},
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  render: () => {
+    return <MultiSelectWithCustomItemRenderExample />;
   },
 };

@@ -10,7 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import VIEW_PROVIDER_PERM
+from application.migration.hostprovider.create import create_hostprovider
 from audit.alt.api import audit_create, audit_delete
 from cm.api import add_host_provider, delete_host_provider
 from cm.errors import AdcmEx
@@ -19,6 +23,7 @@ from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -124,12 +129,17 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         if not serializer.is_valid():
             raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR")
 
+        name = serializer.validated_data["name"]
+        description = serializer.validated_data.get("description", "")
+
+        if use_new_config_processing(request.headers):
+            func = partial(create_hostprovider, config_service=get_config_service())
+        else:
+            func = add_host_provider
+
         try:
-            host_provider = add_host_provider(
-                prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
-                name=serializer.validated_data["name"],
-                description=serializer.validated_data.get("description", ""),
-            )
+            prototype = Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER)
+            host_provider = func(prototype=prototype, name=name, description=description)
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e
 

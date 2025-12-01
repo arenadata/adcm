@@ -16,19 +16,25 @@ from functools import partial
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
+from uuid import UUID
 import json
 import traceback
 
+from adcm.feature_flags import use_new_config_processing
 from ansible_plugin.utils import finish_check
+from core.cluster.types import ClusterTopology
 from core.job.dto import TaskUpdateDTO
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
-from core.job.types import HcAclRule, Job, ScriptType, Task, TaskMappingDelta
+from core.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.db.transaction import atomic
+from infra.services import get_config_service
 from rbac.roles import re_apply_policy_for_jobs
+import core
 
 from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
 from cm.errors import AdcmEx
@@ -43,10 +49,12 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from cm.services.action_process.types import ProcessStepState
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config import ConfigAttrPair
 from cm.services.config.spec import retrieve_flat_spec_for_objects
-from cm.services.job.inventory import get_action_process_context, get_adcm_configuration, get_inventory_data
+from cm.services.job import context as context_m
+from cm.services.job import inventory as inventory_m
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -55,6 +63,7 @@ from cm.services.job.run.executors import (
 )
 from cm.services.job.run.repo import JobRepoImpl
 from cm.services.job.types import (
+    ADCMJobConfig,
     ClusterActionType,
     ComponentActionType,
     HostActionType,
@@ -137,13 +146,25 @@ class ExecutionTargetFactory:
 
 @atomic()
 def internal_script_bundle_switch(task: Task, job: Job) -> int:
-    from cm.upgrade import bundle_switch
-
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
-    bundle_switch(obj=task_.task_object, upgrade=task_.action.upgrade)
+    if use_new_config_processing():
+        from application.legacy.upgrade import build_switch_revert_callbacks
+
+        from cm.legacy.bundle_switch_revert import bundle_switch
+
+        config_service = get_config_service()
+        callbacks = build_switch_revert_callbacks(config_service=config_service)
+        bundle_switch(
+            obj=task_.task_object, upgrade=task_.action.upgrade, callbacks=callbacks, config_service=config_service
+        )
+    else:
+        from cm.upgrade import bundle_switch
+
+        bundle_switch(obj=task_.task_object, upgrade=task_.action.upgrade)
+
     _switch_hc_if_required(task=task)
 
     re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
@@ -153,14 +174,24 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
 
 @atomic()
 def internal_script_bundle_revert(task: Task, job: Job) -> int:
-    from cm.upgrade import bundle_revert
-
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
 
     try:
-        bundle_revert(obj=task_.task_object)
+        if use_new_config_processing():
+            from application.legacy.upgrade import build_switch_revert_callbacks
+
+            from cm.legacy.bundle_switch_revert import bundle_revert
+
+            config_service = get_config_service()
+            callbacks = build_switch_revert_callbacks(config_service=config_service)
+
+            bundle_revert(obj=task_.task_object, callbacks=callbacks, config_service=config_service)
+        else:
+            from cm.upgrade import bundle_revert
+
+            bundle_revert(obj=task_.task_object)
     except ObjectDoesNotExist as error:
         # This is a hack. We can do this, since all AdcmEx are intercepted in the Executer,
         # and a message is generated in the log there.
@@ -201,9 +232,19 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
-        delta_part = _extract_mapping_delta_part(
-            cluster_id=cluster_id, mapping_delta=task.hostcomponent.mapping_delta, hc_apply_rules=hc_apply_rules
-        )
+
+        if (
+            isinstance(task.action_process, AssociatedProcess)
+            and (process := Process.objects.filter(id=task.action_process.id)).exists()
+        ):
+            mapping_delta = _extract_hc_apply_delta_for_process(process.first())
+            #  hc rule for process are validated during step submissions hence cumulative delta is valid
+            delta_part = mapping_delta
+        else:
+            mapping_delta = task.hostcomponent.mapping_delta
+            delta_part = _extract_mapping_delta_part(
+                cluster_id=cluster_id, mapping_delta=mapping_delta, hc_apply_rules=hc_apply_rules
+            )
         change_host_component_mapping_no_lock(
             cluster_id=cluster_id,
             bundle_id=bundle_id,
@@ -219,19 +260,38 @@ def internal_script_config_apply(task: Task, job: Job) -> int:
     # need to think if the owner object may be deleted during execution, need we check?
     owner = owner_model.objects.get(id=task.owner.id)
 
+    func = _apply_config_changes_new if use_new_config_processing() else _apply_config_changes
+
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(owner, change)
-        _apply_config_changes(
-            job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
-        )
+        func(job.id, changing_object, change["parameters"], f"{task.action.display_name} process update")
     return 0
+
+
+def _apply_config_changes_new(
+    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
+) -> None:
+    from application.migration.config import update_configuration_from_job
+
+    _check_parameters_unique(parameters)
+
+    config_service = get_config_service()
+    update_configuration_from_job(
+        owner=orm_object_to_core_descriptor(db_object),
+        changes_input=parameters,
+        convert=_prepare_changes_new,
+        job_id=job_id,
+        description=changes_description,
+        config_service=config_service,
+        owner_orm=db_object,
+    )
 
 
 def _apply_config_changes(
     job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
 ) -> tuple[dict, bool]:
-    from ansible_plugin.executors.config import _fill_config_and_attr
+    from ansible_plugin.executors.config_old import _fill_config_and_attr
 
     from cm.api import set_object_config_with_plugin
 
@@ -254,6 +314,71 @@ def _apply_config_changes(
     )
 
     return changes.config, True
+
+
+def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
+    last_mapping_step = (
+        process.steps.filter(state=ProcessStepState.COMPLETED)
+        .exclude(Q(processstepinput__mapping__isnull=True) | Q(processstepinput__mapping={}))
+        .order_by("-id")
+        .first()
+    )
+
+    if not last_mapping_step:
+        return TaskMappingDelta(add={}, remove={})
+
+    cumulative_delta = last_mapping_step.processstepinput.mapping["cumulative_delta"]
+
+    add_mapping: dict[int, set[int]] = {}
+    for entry in cumulative_delta.get("add", []):
+        add_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
+
+    remove_mapping: dict[int, set[int]] = {}
+    for entry in cumulative_delta.get("remove", []):
+        remove_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
+
+    return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
+
+
+def _check_parameters_unique(parameters: list[dict]) -> None:
+    checked = set()
+
+    for entry in parameters:
+        key = entry["key"]
+        if key not in checked:
+            checked.add(key)
+        else:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{key} is not unique within parameters")
+
+
+def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
+    changes = []
+
+    for parameter_change in parameters:
+        full_name = core.config.names.ensure_full_name(parameter_change["key"])
+        value = parameter_change["value"]
+
+        if full_name not in spec.groups:
+            change = core.config.ChangeRequest.for_value(name=full_name, value=value)
+            changes.append(change)
+            continue
+
+        group_spec = spec.groups[full_name]
+        if group_spec.selection:
+            change = core.config.ChangeRequest.for_group_selection(name=full_name, value=value)
+            changes.append(change)
+            continue
+
+        if not spec.groups[full_name].is_activatable:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: only activatable groups may be (de)activated")
+
+        if not isinstance(value, bool):
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: value expected to be boolean")
+
+        change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=value)
+        changes.append(change)
+
+    return changes
 
 
 def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
@@ -355,47 +480,64 @@ def _switch_hc_if_required(task: Task) -> None:
 # ENVIRONMENT BUILDERS
 
 
+class UiidJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)
+        return super().default(obj)
+
+
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
-    job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration)
+    cluster_id, topology = None, None
+    if task.owner:
+        if task.owner.type == ADCMCoreType.CLUSTER:
+            cluster_id = task.owner.id
+        elif task.owner.related_objects.cluster is not None:
+            cluster_id = task.owner.related_objects.cluster.id
+
+    if cluster_id:
+        topology = retrieve_cluster_topology(cluster_id)
+
+    job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration, topology=topology)
     job_run_dir = configuration.adcm.run_dir / str(job.id)
 
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    inventory = prepare_ansible_inventory(task=task)
+    inventory = prepare_ansible_inventory(task=task, topology=topology)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
-        json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
+        json.dump(obj=inventory, fp=file_descriptor, cls=UiidJSONEncoder, separators=(",", ":"))
 
     ansible_cfg_config_parser: ConfigParser = prepare_ansible_cfg(task=task)
     with (job_run_dir / "ansible.cfg").open(mode="w", encoding="utf-8") as config_file:
         ansible_cfg_config_parser.write(config_file)
 
 
-def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
-    delta = None
+def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = None) -> dict[str, Any]:
+    delta, process_context, process_mapping_delta = None, None, {}
+
     if task.action.hc_acl:
-        cluster_id = None
-        if task.owner:
-            if task.owner.type == ADCMCoreType.CLUSTER:
-                cluster_id = task.owner.id
-            elif task.owner.related_objects.cluster:
-                cluster_id = task.owner.related_objects.cluster.id
-
-        if not cluster_id:
-            message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
-            raise RuntimeError(message)
-
         delta = task.hostcomponent.mapping_delta
 
-    return get_inventory_data(
+    module = context_m if use_new_config_processing() else inventory_m
+
+    if task.action_process and topology:
+        process = Process.objects.get(id=task.action_process.id)
+        process_context = module.get_action_process_context(process, topology)
+        process_mapping_delta = process_context.cumulative_delta
+
+    return module.get_inventory_data(
         target=task.target,
         is_host_action=task.action.is_host_action,
         delta=delta,
         related_objects=task.owner.related_objects,
+        process_mapping_delta=process_mapping_delta,
     )
 
 
-def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSettings) -> dict[str, Any]:
+def prepare_ansible_job_config(
+    task: Task, job: Job, configuration: ExternalSettings, topology: ClusterTopology | None = None
+) -> dict[str, Any]:
     # prepare context
     context = {f"{k}_id": v["id"] for k, v in task.selector.items() if k != "action_host_group"}
     context["type"] = task.owner.type.value.replace("hostp", "p")
@@ -411,11 +553,8 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
         action_type_specification=_get_owner_specific_data(task=task),
     )
 
-    if task.owner:
-        if task.owner.type == ADCMCoreType.CLUSTER:
-            job_data.cluster_id = task.owner.id
-        elif task.owner.related_objects.cluster is not None:
-            job_data.cluster_id = task.owner.related_objects.cluster.id
+    if task.owner and topology:
+        job_data.cluster_id = topology.cluster_id
 
     if task.config:
         job_data.config = task.config
@@ -431,11 +570,22 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
 
     process_context = None
 
-    if task.action_process:
-        process_context = get_action_process_context(process=Process.objects.get(id=task.action_process.id))
+    if use_new_config_processing():
+        config_service = get_config_service()
+        get_action_process_context = context_m.get_action_process_context
+        get_adcm_configuration = partial(context_m.get_adcm_configuration, config_service=config_service)
+    else:
+        get_action_process_context = inventory_m.get_action_process_context
+        get_adcm_configuration = inventory_m.get_adcm_configuration
+
+    if task.action_process and topology:
+        process = Process.objects.get(id=task.action_process.id)
+        process_context = get_action_process_context(process, topology)
+
+    adcm = ADCM.objects.select_related("config").get()
 
     return JobConfig(
-        adcm={"config": get_adcm_configuration()},
+        adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=get_adcm_configuration(adcm)),
         context=context,
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),
@@ -443,9 +593,14 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             tmp_dir=str(configuration.adcm.run_dir / str(job.id) / "tmp"),
             stack_dir=str(task.bundle.root),
             status_api_token=configuration.integrations.status_server_token,
+            consul_url=configuration.consul.url,
+            consul_datacenter=configuration.consul.datacenter,
+            consul_client_cert_file=configuration.consul.client_cert_file,
+            consul_client_key_file=configuration.consul.client_key_file,
+            consul_client_cacert_file=configuration.consul.client_cacert_file,
         ),
         job=job_data,
-        process=process_context,
+        process=process_context.to_context() if process_context else None,
     ).model_dump(exclude_unset=True)
 
 

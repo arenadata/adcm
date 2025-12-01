@@ -1,18 +1,29 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmJobsApi, type RequestError } from '@api';
+import { AdcmClusterMappingApi, AdcmJobsApi, type RequestError } from '@api';
 import { AdcmClustersApi } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import type {
-  AdcmActionProcessOperationStep,
-  AdcmActionProcessStep,
-  AdcmActionWizardProcess,
+import {
+  type AdcmActionProcessStep,
+  type AdcmActionWizardProcess,
+  type AdcmWizardJobsData,
+  AdcmWizardStepStates,
 } from '@models/adcm/wizard';
 import { AdcmWizardStepType } from '@models/adcm/wizard';
-import { executeWithMinDelay } from '@utils/requestUtils';
-import { defaultSpinnerDelay } from '@constants';
-import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm';
+import type {
+  AdcmHostShortView,
+  AdcmJob,
+  AdcmMapping,
+  AdcmMappingComponent,
+  AdcmSubJobDetails,
+  AdcmSubJobLogItem,
+  NotAddedServicesDictionary,
+} from '@models/adcm';
+import { fulfilledFilter } from '@utils/promiseUtils';
+import { LoadState, RequestState } from '@models/loadState';
+import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
+import { arrayToHash } from '@utils/arrayUtils';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -34,7 +45,9 @@ interface AdcmGetStepsPayload {
   stepIds: number[];
 }
 
-const addLastStage = (state: AdcmClustersDynamicActionsState) => {
+let getStepsAbortController: AbortController = new AbortController();
+
+const addLastStage = (state: AdcmClustersWizardState) => {
   if (state.process && state.process.stages.length > 0) {
     const allStepIds = state.process.stages.flatMap((stage) => stage.steps.map((step) => step.id));
     const newStepId = Math.max(...allStepIds) + 1;
@@ -50,7 +63,10 @@ const addLastStage = (state: AdcmClustersDynamicActionsState) => {
           id: newStepId,
           displayName: 'Step 1. Confirmation',
           type: AdcmWizardStepType.LastStep,
-          state: state.process.state === 'completed' ? 'completed' : 'created',
+          state:
+            state.process.state === AdcmWizardStepStates.Completed
+              ? AdcmWizardStepStates.Completed
+              : AdcmWizardStepStates.Created,
         },
       ],
     });
@@ -62,6 +78,20 @@ const getProcess = createAsyncThunk(
   async ({ clusterId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const getProcessOnActionClick = createAsyncThunk(
+  'adcm/clustersWizard/getProcessOnActionClick',
+  async ({ clusterId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
+    try {
+      const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
+
       return process;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -90,7 +120,8 @@ const getStep = createAsyncThunk(
       const step = await AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId);
       return step;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      const errorMessage = getErrorMessage(error as RequestError);
+      thunkAPI.dispatch(setBrokenStepError(errorMessage));
       return thunkAPI.rejectWithValue(error);
     }
   },
@@ -100,60 +131,35 @@ const getSteps = createAsyncThunk(
   'adcm/clustersWizard/getSteps',
   async ({ clusterId, actionId, processId, stepIds }: AdcmGetStepsPayload, thunkAPI) => {
     try {
+      getStepsAbortController.abort();
+      getStepsAbortController = new AbortController();
+
       if (stepIds.length === 0) return [];
 
       const stepPromises = stepIds.map((stepId) =>
-        AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId),
+        AdcmClustersApi.getClusterActionWizardStep(clusterId, actionId, processId, stepId, {
+          signal: getStepsAbortController.signal,
+        }),
       );
-      const steps = await Promise.all(stepPromises);
-      return steps;
+      const steps = await Promise.allSettled(stepPromises);
+
+      return fulfilledFilter(steps);
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     }
   },
 );
 
-const loadJobFromBackend = createAsyncThunk('adcm/clustersWizard/loadJobFromBackend', async (_arg, thunkAPI) => {
-  const {
-    adcm: {
-      clustersWizard: { step },
-    },
-  } = thunkAPI.getState();
+interface loadJobPayload {
+  jobId: number;
+  stepId: number;
+}
 
-  try {
-    if (step) {
-      return await AdcmJobsApi.getJob((step as AdcmActionProcessOperationStep).task.id);
-    }
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue(error);
-  }
-});
-
-const getJob = createAsyncThunk('adcm/clustersWizard/getJob', async (_arg, thunkAPI) => {
-  const startDate = new Date();
-
-  await thunkAPI
-    .dispatch(loadJobFromBackend())
-    .unwrap()
-    .catch(() => {
-      thunkAPI.dispatch(showError({ message: 'Job not found' }));
-    });
-
-  executeWithMinDelay({
-    startDate,
-    delay: defaultSpinnerDelay,
-    callback: () => {},
-  });
-});
-
-const loadSubJobFromBackend = createAsyncThunk(
-  'adcm/clustersWizard/loadSubJobFromBackend',
-  async (id: number, thunkAPI) => {
+const loadJobFromBackend = createAsyncThunk(
+  'adcm/clustersWizard/loadJobFromBackend',
+  async (arg: loadJobPayload, thunkAPI) => {
     try {
-      const subJob = await AdcmJobsApi.getSubJob(id);
-      return subJob;
+      return await AdcmJobsApi.getJob(arg.jobId);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -161,37 +167,137 @@ const loadSubJobFromBackend = createAsyncThunk(
   },
 );
 
-const getSubJob = createAsyncThunk('adcm/clustersWizard/getSubJob', async (id: number, thunkAPI) => {
-  await thunkAPI.dispatch(loadSubJobFromBackend(id)).unwrap();
-  await thunkAPI.dispatch(getSubJobLog(id));
+const getJob = createAsyncThunk('adcm/clustersWizard/getJob', async (arg: loadJobPayload, thunkAPI) => {
+  await thunkAPI.dispatch(loadJobFromBackend(arg));
 });
 
-const getSubJobLog = createAsyncThunk('adcm/clustersWizard/getSubJobLog', async (id: number, thunkAPI) => {
-  try {
-    return await AdcmJobsApi.getSubJobLog(id);
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue(error);
-  }
-});
+interface loadSubJobLogPayload {
+  subJobIds: number[];
+  stepId: number;
+}
 
-type AdcmClustersDynamicActionsState = {
+const loadSubJobLogFromBackend = createAsyncThunk(
+  'adcm/clustersWizard/loadSubJobLogFromBackend',
+  async (arg: loadSubJobLogPayload, thunkAPI) => {
+    const { subJobIds } = arg;
+    try {
+      const subJobLogPromises = await Promise.allSettled(
+        arg.subJobIds.map(async (subJobId) => ({
+          subJobId,
+          subJobLogs: await AdcmJobsApi.getSubJobLog(subJobId),
+        })),
+      );
+      const subJobLogs = fulfilledFilter(subJobLogPromises);
+      if (subJobLogs.length === 0 && subJobIds.length > 0) {
+        throw new Error('All subJobs can not get those logs');
+      }
+
+      if (subJobLogs.length < subJobIds.length) {
+        throw new Error('Some subJobs can not get those logs');
+      }
+
+      return subJobLogs.reduce(
+        (res, { subJobId, subJobLogs }) => {
+          res[subJobId] = subJobLogs;
+
+          return res;
+        },
+        {} as Record<AdcmSubJobDetails['id'], AdcmSubJobLogItem[]>,
+      );
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+type GetClustersWizardMappingArg = {
+  clusterId: number;
+};
+
+const loadMappings = createAsyncThunk(
+  'adcm/clustersWizard/loadMappings',
+  async ({ clusterId }: GetClustersWizardMappingArg, thunkAPI) => {
+    try {
+      const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+      const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+      const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+      const notAddedServices = await AdcmClusterServicesApi.getClusterServiceCandidates(clusterId);
+      return { mapping, components, hosts, notAddedServices };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const getMappings = createAsyncThunk(
+  'adcm/clustersWizard/getMappings',
+  async (arg: GetClustersWizardMappingArg, thunkAPI) => {
+    await thunkAPI.dispatch(loadMappings(arg));
+  },
+);
+
+const refreshMapping = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMapping',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+    return mapping;
+  },
+);
+
+const refreshMappingHosts = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMappingHosts',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+    return hosts;
+  },
+);
+
+const refreshMappingComponents = createAsyncThunk(
+  'adcm/clustersWizard/mapping/refreshMappingComponents',
+  async ({ clusterId }: GetClustersWizardMappingArg, _thunkAPI) => {
+    const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+    return components;
+  },
+);
+
+type AdcmClustersWizardState = {
   process: AdcmActionWizardProcess | null;
   step: AdcmActionProcessStep | null;
   steps: AdcmActionProcessStep[];
-  job?: AdcmJob;
-  subJob?: AdcmSubJobDetails;
-  subJobLog: AdcmSubJobLogItem[];
+  jobsData: AdcmWizardJobsData;
+  mapping: {
+    mapping: AdcmMapping[];
+    hosts: AdcmHostShortView[];
+    components: AdcmMappingComponent[];
+    loadState: LoadState;
+    notAddedServicesDictionary: NotAddedServicesDictionary;
+    requiredServicesDialog: {
+      component: AdcmMappingComponent | null;
+    };
+    accessCheckStatus: RequestState;
+  };
+  brokenStepError?: string;
   isLoading: boolean;
 };
 
-const createInitialState = (): AdcmClustersDynamicActionsState => ({
+const createInitialState = (): AdcmClustersWizardState => ({
   process: null,
   steps: [],
   step: null,
-  job: undefined,
-  subJob: undefined,
-  subJobLog: [],
+  jobsData: {},
+  mapping: {
+    mapping: [],
+    hosts: [],
+    components: [],
+    loadState: LoadState.NotLoaded,
+    notAddedServicesDictionary: {},
+    requiredServicesDialog: {
+      component: null,
+    },
+    accessCheckStatus: RequestState.NotRequested,
+  },
+  brokenStepError: undefined,
   isLoading: false,
 });
 
@@ -199,19 +305,28 @@ const clustersWizardSlice = createSlice({
   name: 'adcm/clustersWizard',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
-    },
     cleanupClustersWizard() {
       return createInitialState();
+    },
+    openRequiredServicesDialog(state, action) {
+      state.mapping.requiredServicesDialog.component = action.payload;
+    },
+    closeRequiredServicesDialog(state) {
+      state.mapping.requiredServicesDialog.component = null;
+    },
+    setBrokenStepError(state, action) {
+      state.brokenStepError = action.payload;
     },
     resetStep(state) {
       state.step = null;
     },
     resetJobData(state) {
-      state.job = undefined;
-      state.subJob = undefined;
-      state.subJobLog = [];
+      state.jobsData = {};
+    },
+    resetJobDataByStep(state, action) {
+      state.jobsData = Object.fromEntries(
+        Object.entries(state.jobsData).filter(([stepId]) => Number(stepId) < action.payload),
+      );
     },
   },
   extraReducers: (builder) => {
@@ -224,6 +339,17 @@ const clustersWizardSlice = createSlice({
       addLastStage(state);
     });
     builder.addCase(getProcess.rejected, (state) => {
+      state.process = null;
+    });
+    builder.addCase(getProcessOnActionClick.fulfilled, (state, action) => {
+      // @ts-ignore
+      state.process = action.payload;
+
+      // adding last stage with step, which is will always be shown in map
+      // @ts-ignore
+      addLastStage(state);
+    });
+    builder.addCase(getProcessOnActionClick.rejected, (state) => {
       state.process = null;
     });
     builder.addCase(refreshProcessStages.fulfilled, (state, action) => {
@@ -249,27 +375,77 @@ const clustersWizardSlice = createSlice({
       state.steps = [];
     });
     builder.addCase(loadJobFromBackend.fulfilled, (state, action) => {
-      state.job = action.payload;
+      const id = action.meta.arg.stepId;
+      if (id) {
+        if (!state.jobsData[id]) {
+          state.jobsData[id] = { job: {} as AdcmJob };
+        }
+        state.jobsData[id].job = action.payload;
+      }
     });
-    builder.addCase(loadJobFromBackend.rejected, (state) => {
-      state.job = undefined;
+    builder.addCase(loadJobFromBackend.rejected, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id && state.jobsData[id]) {
+        state.jobsData[id].job = undefined;
+      }
     });
-    builder.addCase(loadSubJobFromBackend.fulfilled, (state, action) => {
-      state.subJob = action.payload;
+    builder.addCase(loadSubJobLogFromBackend.fulfilled, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id) {
+        const job = state.jobsData[id] ?? (state.jobsData[id] = {});
+        job.subJobLog = action.payload;
+      }
     });
-    builder.addCase(loadSubJobFromBackend.rejected, (state) => {
-      state.subJob = undefined;
+    builder.addCase(loadSubJobLogFromBackend.rejected, (state, action) => {
+      const id = state.step?.id;
+      if (id) {
+        const job = state.jobsData[id] ?? (state.jobsData[id] = {});
+        const subJobLog = job.subJobLog ?? (job.subJobLog = {});
+        action.meta.arg.subJobIds.map((id) => delete subJobLog[id]);
+      }
     });
-    builder.addCase(getSubJobLog.fulfilled, (state, action) => {
-      state.subJobLog = action.payload;
+    builder.addCase(loadMappings.fulfilled, (state, action) => {
+      state.mapping.mapping = action.payload.mapping;
+      state.mapping.hosts = action.payload.hosts;
+      state.mapping.components = action.payload.components;
+      state.mapping.notAddedServicesDictionary = arrayToHash(action.payload.notAddedServices, (s) => s.id);
     });
-    builder.addCase(getSubJobLog.rejected, (state) => {
-      state.subJobLog = [];
+    builder.addCase(getMappings.pending, (state) => {
+      state.mapping.loadState = LoadState.Loading;
+    });
+    builder.addCase(getMappings.fulfilled, (state) => {
+      state.mapping.loadState = LoadState.Loaded;
+    });
+    builder.addCase(refreshMapping.fulfilled, (state, action) => {
+      state.mapping.mapping = action.payload;
+    });
+    builder.addCase(refreshMappingHosts.fulfilled, (state, action) => {
+      state.mapping.hosts = action.payload;
+    });
+    builder.addCase(refreshMappingComponents.fulfilled, (state, action) => {
+      state.mapping.components = action.payload;
     });
   },
 });
 
-export const { cleanupClustersWizard, resetStep, resetJobData } = clustersWizardSlice.actions;
-export { getStep, getSteps, getProcess, getJob, getSubJob, getSubJobLog, refreshProcessStages };
+export const {
+  cleanupClustersWizard,
+  openRequiredServicesDialog,
+  closeRequiredServicesDialog,
+  setBrokenStepError,
+  resetStep,
+  resetJobData,
+  resetJobDataByStep,
+} = clustersWizardSlice.actions;
+export {
+  getStep,
+  getSteps,
+  getProcess,
+  getJob,
+  getProcessOnActionClick,
+  loadSubJobLogFromBackend,
+  refreshProcessStages,
+  getMappings,
+};
 
 export default clustersWizardSlice.reducer;

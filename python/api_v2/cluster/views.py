@@ -12,6 +12,7 @@
 
 from typing import Collection
 
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -23,6 +24,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.migration.cluster.create import create_cluster
 from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -30,7 +32,7 @@ from audit.alt.hooks import (
     extract_previous_from_object,
     only_on_success,
 )
-from cm.api import add_cluster, delete_cluster, remove_host_from_cluster
+from cm.api import add_cluster, delete_cluster, partial, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
@@ -66,6 +68,7 @@ from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -310,6 +313,12 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
         responses=responses(success=dict),
     ),
     config_schema=extend_config_schema("cluster"),
+    host_candidates=extend_schema(
+        methods=["get"],
+        operation_id="getClusterHostCandidates",
+        description="Get a list of hosts candidates.",
+        responses=responses(success=HostShortSerializer(many=True), errors=HTTP_404_NOT_FOUND),
+    ),
 )
 class ClusterViewSet(
     PermissionListMixin,
@@ -366,7 +375,12 @@ class ClusterViewSet(
         if not prototype:
             raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-        cluster = add_cluster(prototype=prototype, name=valid["name"], description=valid["description"])
+        func = (
+            partial(create_cluster, config_service=get_config_service())
+            if use_new_config_processing(request.headers)
+            else add_cluster
+        )
+        cluster = func(prototype=prototype, name=valid["name"], description=valid["description"])
 
         return Response(
             data=ClusterSerializer(cluster, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
@@ -758,7 +772,11 @@ class ClusterViewSet(
     def host_candidates(self, request, *_, **kwargs):
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         candidates = find_host_candidates_for_cluster(cluster_id=cluster.pk, db=ClusterDB)
-        serializer = HostShortSerializer(instance=candidates, many=True)
+        hosts_allowed_for_user_query = get_objects_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host)
+        candidates_allowed_for_user = hosts_allowed_for_user_query.filter(id__in=(c.id for c in candidates)).order_by(
+            "fqdn"
+        )
+        serializer = HostShortSerializer(instance=candidates_allowed_for_user, many=True)
         return Response(data=serializer.data, status=HTTP_200_OK)
 
 

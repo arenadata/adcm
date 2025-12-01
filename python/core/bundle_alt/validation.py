@@ -12,12 +12,12 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Collection, Iterable
+from typing import Callable, Collection, Iterable, cast
 
 from graphlib import CycleError, TopologicalSorter
-from jinja2 import Template, TemplateError
+import jinja2
 
-from core.bundle_alt._config import check_default_values_in_main_config, key_to_str
+from core.bundle_alt._config import key_to_str
 from core.bundle_alt._yspec import FormatError, check_rule, process_rule
 from core.bundle_alt.errors import BundleValidationError
 from core.bundle_alt.predicates import has_requires, is_component, is_component_key, is_service
@@ -32,6 +32,7 @@ from core.bundle_alt.types import (
 )
 from core.errors import localize_error
 from core.job.types import JobSpec, ScriptType
+from core.templates import RendererEnv, Template, get_renderer
 
 # This section should be in sort of global consts module
 ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
@@ -41,7 +42,13 @@ ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
 # section end
 
 
-def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, yspec_schema: dict) -> None:
+def check_definitions_are_valid(
+    definitions: DefinitionsMap,
+    bundle_root: Path,
+    yspec_schema: dict,
+    *,
+    check_defaults: Callable[[ConfigDefinition], None],
+) -> None:
     # special, require too much context to include it in main loop
     check_requires(definitions)
     check_display_names_are_unique(definitions)
@@ -53,7 +60,12 @@ def check_definitions_are_valid(definitions: DefinitionsMap, bundle_root: Path, 
             check_upgrades(upgrades=definition.upgrades, definitions=definitions)
 
             if definition.config:
-                check_config(config=definition.config, bundle_root=bundle_root, yspec_schema=yspec_schema)
+                check_config(
+                    config=definition.config,
+                    bundle_root=bundle_root,
+                    yspec_schema=yspec_schema,
+                    check_defaults=check_defaults,
+                )
 
             check_actions(
                 actions=definition.actions,
@@ -83,18 +95,19 @@ def check_requires(definitions: DefinitionsMap) -> None:
                     raise BundleValidationError(message)
 
                 if required_entry_key not in definitions:
-                    if is_component_key(required_entry_key):
-                        _, service_name, component_name = required_entry_key
-                        message = f'No required component "{component_name}" of service "{service_name}"'
-                    else:
-                        _, service_name = required_entry_key
-                        message = f'No required service "{service_name}"'
-
+                    match required_entry_key:
+                        case ("component", service_name, component_name):
+                            message = f'No required component "{component_name}" of service "{service_name}"'
+                        case ("service", service_name):
+                            message = f'No required service "{service_name}"'
+                        case _:
+                            message = f"No required entity {required_entry_key}"
                     raise BundleValidationError(message)
 
-                if is_component_key(required_entry_key):
-                    parent_key = ("service", required_entry_key[1])
-                    requires_tree.add(key, parent_key, required_entry_key)
+                match required_entry_key:
+                    case ("component", service_name, component_name):
+                        parent_key: BundleDefinitionKey = ("service", service_name)
+                        requires_tree.add(key, parent_key, required_entry_key)
 
     try:
         requires_tree.prepare()
@@ -107,7 +120,8 @@ def check_display_names_are_unique(definitions: DefinitionsMap) -> None:
     component_keys = filter(is_component_key, definitions.keys())
 
     for key in component_keys:
-        service_name = key[1]
+        service_key = cast(tuple[str, str], key[0:2])
+        service_name = service_key
         component_definition = definitions[key]
         component_display_name = component_definition.display_name
         if component_display_name in component_display_names_per_service[service_name]:
@@ -126,7 +140,13 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict) -> None:
+def check_config(
+    config: ConfigDefinition,
+    bundle_root: Path,
+    yspec_schema: dict,
+    *,
+    check_defaults: Callable[[ConfigDefinition], None],
+) -> None:
     for key, parameter in config.parameters.items():
         with localize_error(f"Configuration parameter: {key_to_str(key)}"):
             if parameter.type in ("file", "secretfile"):
@@ -153,9 +173,14 @@ def check_config(config: ConfigDefinition, bundle_root: Path, yspec_schema: dict
                         message = f"yspec file of config key '{key_repr}': '{value['match']}' rule is not supported"
                         raise BundleValidationError(message)
 
-    check_default_values_in_main_config(
-        parameters=config.parameters, values=config.default_values, attributes=config.default_attrs
-    )
+            if parameter.type == "selection_group" and parameter.group_customization:
+                message = (
+                    "Selection group isn't allowed to be desynchronized from main configuration: "
+                    "group_customization must be false"
+                )
+                raise BundleValidationError(message)
+
+    check_defaults(config)
 
 
 def check_file_path_in_config(bundle_root: Path, default: str, key: Iterable[str]):
@@ -187,6 +212,7 @@ def check_actions(
             check_mm_host_action_is_allowed(action=action, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action.hostcomponentmap, definitions=definitions)
             check_jinja_templates_are_correct(action=action, bundle_root=bundle_root)
+            check_templates_are_correct(action=action, bundle_root=bundle_root)
             check_action_scripts(action=action)
 
 
@@ -231,9 +257,14 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
     if action.config_jinja:
-        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
+        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
     if action.scripts_jinja:
-        check_file_is_correct_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
+        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
+
+
+def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
+    for template in filter(None, (action.wizard_template, action.config_template, action.scripts_template)):
+        check_file_is_correct_template(template=template, bundle_root=bundle_root)
 
 
 # Atomic checks
@@ -267,20 +298,28 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
             raise BundleValidationError('"service" field is required in hc_acl for cluster and component') from e
 
         if hc_entry_key not in definitions:
-            _, service_name, component_name = hc_entry_key
-            message = f'Unknown component "{component_name}" of service "{service_name}"'
-            raise BundleValidationError(message)
+            match hc_entry_key:
+                case ("component", service_name, component_name):
+                    message = f'Unknown component "{component_name}" of service "{service_name}"'
+                    raise BundleValidationError(message)
 
 
-def check_file_is_correct_template(bundle_root: Path, relative_template_path: str) -> None:
+def check_file_is_correct_jinja_template(bundle_root: Path, relative_template_path: str) -> None:
     path = bundle_root / relative_template_path
 
     try:
         content = path.read_text(encoding="utf-8")
-        Template(source=content)
-    except (FileNotFoundError, TemplateError) as e:
+        jinja2.Template(source=content)
+    except (FileNotFoundError, jinja2.TemplateError) as e:
         message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
         raise BundleValidationError(message) from e
+
+
+def check_file_is_correct_template(bundle_root: Path, template: Template) -> None:
+    renderer = get_renderer(template=template, environment=RendererEnv(discovery_root=bundle_root))
+    if not renderer.can_be_rendered():
+        message = f"Incorrect template for *_template at {template.file.path}"
+        raise BundleValidationError(message)
 
 
 def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) -> None:

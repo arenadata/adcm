@@ -1,25 +1,36 @@
 import type React from 'react';
-import { useMemo } from 'react';
-import { useEffect } from 'react';
-import { AdcmWizardMethodType, type AdcmWizardStage, AdcmWizardStepType } from '@models/adcm/wizard';
+import { useMemo, useEffect } from 'react';
+import {
+  AdcmWizardMethodType,
+  AdcmWizardStepType,
+  type AdcmActionProcessStep,
+  type AdcmWizardStage,
+  AdcmWizardStepStates,
+} from '@models/adcm/wizard';
 import { useDispatch, useStore } from '@hooks';
 import {
   type AdcmPostOperationPayload,
   postOperation,
   postOperationWithLastStep,
+  postOperationWithStepReset,
   postOperationWithTask,
   resetSelectedStepId,
 } from '@store/adcm/clusters/clustersWizardActionsSlice';
-import { getProcess, getSteps, resetJobData, resetStep } from '@store/adcm/clusters/clustersWizardSlice';
+import { getProcess, getSteps, resetStep } from '@store/adcm/clusters/clustersWizardSlice';
 import type { RunClusterDynamicActionPayload } from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
+import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
 
 interface ClusterDynamicActionWizardStepProps {
   stageNumber: number;
 }
 
-const getCurrentStageNotDisabledStepIds = (currentStep: number, stages: AdcmWizardStage[]): number[] => {
+const getCurrentStageNotDisabledStepIds = (
+  currentStep: number,
+  currentStepFromEndpoint: number,
+  stages: AdcmWizardStage[],
+): number[] => {
   const currentStage = stages.find((stage) =>
     stage.steps.some((step) => step.id === currentStep && step.type !== AdcmWizardStepType.LastStep),
   );
@@ -28,7 +39,15 @@ const getCurrentStageNotDisabledStepIds = (currentStep: number, stages: AdcmWiza
     return [];
   }
 
-  return currentStage.steps.filter((step) => step.id <= currentStep).map((step) => step.id);
+  if (currentStage.steps.every((step) => step.state === AdcmWizardStepStates.Completed)) {
+    return currentStage.steps.map((step) => step.id);
+  }
+
+  return currentStage.steps.filter((step) => step.id <= currentStepFromEndpoint).map((step) => step.id);
+};
+
+const getMaxStepId = (steps: AdcmActionProcessStep[]) => {
+  return steps.length > 0 ? Math.max(...steps.map((step) => step.id)) : -1;
 };
 
 const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepProps> = ({
@@ -38,40 +57,104 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
 
   const clusterId = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.clusterId);
   const actionId = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.actionId);
-  const process = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.process);
+  const processId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.processId);
+  const process = useStore((s) => s.adcm.clustersWizard.process);
+  const inProgress = useStore(({ adcm }) => adcm.clustersWizardActions.wizardDialog.inProgress);
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
   const stepsWithData = useStore(({ adcm }) => adcm.clustersWizard.steps);
+  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
+  const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardActions.hostComponentMapDelta);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
+  const { formData } = useActionWizardLastStageContext();
 
   const currentStep = selectedStep ?? process?.currentStep;
 
-  const stepIds = useMemo(() => {
-    return process && process.stages.length > 0 && currentStep
-      ? getCurrentStageNotDisabledStepIds(currentStep, process.stages)
-      : [];
-  }, [currentStep, process?.stages]);
+  const isInRunningState = useMemo(() => {
+    return process?.stages.some((stage) => stage.steps.some((step) => step.state === 'running')) || false;
+  }, [process?.stages]);
 
-  const maxStepId = useMemo(
-    () => (stepsWithData.length > 0 ? Math.max(...stepsWithData.map((step) => step.id)) : -1),
-    [stepsWithData],
-  );
+  const stageMaxIds = useMemo(() => {
+    return (
+      process?.stages.reduce(
+        (acc, stage, index) => {
+          acc[index] = getMaxStepId(stage.steps);
+          return acc;
+        },
+        {} as Record<number, AdcmActionProcessStep['id']>,
+      ) ?? {}
+    );
+  }, [process?.stages]);
+
+  const stepIds = useMemo(() => {
+    return process && processId === process.id && process.stages.length > 0 && currentStep
+      ? getCurrentStageNotDisabledStepIds(currentStep, process?.currentStep, process.stages)
+      : [];
+  }, [currentStep, processId, process?.stages]);
+
+  const isMaxStepInStage = useMemo(() => currentStep === stageMaxIds[stageNumber - 1], [currentStep, stageNumber]);
 
   const steps = useMemo(() => {
-    if (stepsWithData.length === 0 || (currentStep && currentStep > maxStepId)) {
+    if (stepsWithData.length === 0 || (currentStep && currentStep > getMaxStepId(stepsWithData))) {
       return process?.stages.at(-1)?.steps;
     } else {
       return stepsWithData;
     }
-  }, [stepsWithData, currentStep, process?.stages, maxStepId]);
+  }, [stepsWithData, currentStep, process?.stages]);
+
+  const stepToStageMap = useMemo(() => {
+    return new Map<number, string>(
+      process?.stages.flatMap((stage) => stage.steps.map((step) => [step.id, stage.displayName])),
+    );
+  }, [process?.stages]);
+
+  const isCurrentStepBroken = useMemo(() => {
+    if (!process) return false;
+
+    const allSteps = process.stages.flatMap((stage) => stage.steps);
+    const step = allSteps.find((step) => step.id === process.currentStep);
+
+    return step?.state === AdcmWizardStepStates.Broken;
+  }, [process]);
+
+  const isCurrentStepRunning = useMemo(() => {
+    if (!steps) return false;
+
+    const step = steps.find((step) => step.id === process?.currentStep);
+
+    return step?.state === AdcmWizardStepStates.Running;
+  }, [selectedStep]);
+
+  const neededStageName = useMemo(() => {
+    if (currentStep) {
+      return stepToStageMap.get(currentStep);
+    }
+  }, [currentStep, stepToStageMap]);
+
+  const loadedStageName = useMemo(() => {
+    if (stepsWithData.length > 0) {
+      const firstStepId = stepsWithData[0].id;
+      return stepToStageMap.get(firstStepId);
+    }
+  }, [stepsWithData, stepToStageMap]);
+
+  // we need to check if selectedStep(clicked) is in the different stage with current step
+  // lint doesn't react to deps
+  const isNeedToLoadSteps = useMemo(() => {
+    if (selectedStep && !isCurrentStepRunning) {
+      return neededStageName !== loadedStageName;
+    }
+
+    return true;
+  }, [selectedStep, steps]);
 
   useEffect(() => {
-    if (process && clusterId && actionId) {
+    if ((isCurrentStepBroken || isNeedToLoadSteps) && processId && clusterId && actionId && stepIds.length > 0) {
       dispatch(
         getSteps({
           clusterId,
           actionId,
-          processId: process.id,
+          processId,
           stepIds,
         }),
       );
@@ -84,7 +167,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     }
 
     if (stepType === AdcmWizardStepType.Configuration) {
-      const data = configuration;
+      const data = configuration[process.currentStep];
       if (!data) return;
 
       const payload: AdcmPostOperationPayload = {
@@ -132,6 +215,24 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
       );
     }
 
+    if (stepType === AdcmWizardStepType.Mapping) {
+      const postMappingPayload: AdcmPostOperationPayload = {
+        clusterId,
+        actionId,
+        processId: process.id,
+        operation: {
+          method: AdcmWizardMethodType.Submit,
+          params: {
+            stepId: process.currentStep,
+            processSyncKey: process.syncKey,
+            hostComponentMapDelta: hostComponentMapDelta,
+          },
+        },
+      };
+
+      dispatch(postOperation(postMappingPayload));
+    }
+
     if (stepType === AdcmWizardStepType.LastStep) {
       const postOperationPayload: AdcmPostOperationPayload = {
         clusterId,
@@ -151,8 +252,9 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
         actionRunConfig: {
           configuration: null,
           hostComponentMap: [],
-          isVerbose: false,
-          shouldBlockObject: true,
+          isVerbose: formData.isVerbose,
+          shouldBlockObject: formData.shouldBlockObject,
+          description: formData.description,
           process: {
             id: process.id,
           },
@@ -163,42 +265,47 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     }
   };
 
-  const handleResetStep = () => {
-    if (!clusterId || !actionId || !process || !currentStep) {
+  const handleResetStep = (stepId: number) => {
+    if (!clusterId || !actionId || !process || inProgress) {
       return;
     }
 
-    const payload: AdcmPostOperationPayload = {
+    const postOperationPayload: AdcmPostOperationPayload = {
       clusterId,
       actionId,
       processId: process.id,
       operation: {
         method: AdcmWizardMethodType.Reset,
         params: {
-          stepId: currentStep,
+          stepId,
           processSyncKey: process.syncKey,
         },
       },
     };
 
-    dispatch(postOperation(payload));
+    dispatch(postOperationWithStepReset({ postOperationPayload, stepId }));
   };
 
   const handleChangeStep = () => {
-    if (clusterId && actionId && process) {
+    if (clusterId && actionId && process && currentStep) {
+      if (isMaxStepInStage) {
+        dispatch(resetStep());
+      }
       dispatch(resetSelectedStepId());
-      dispatch(resetStep());
-      dispatch(resetJobData());
       dispatch(getProcess({ clusterId, actionId, processId: process.id }));
     }
   };
 
-  if (!steps || !process) return null;
+  if (!steps || !process || processId !== process.id) return null;
 
   return (
     <ActionWizardSteps
+      jobsData={jobsData}
+      selectedStep={selectedStep}
+      currentStep={process.currentStep}
       stageNumber={stageNumber}
       steps={steps}
+      isInRunningState={isInRunningState}
       onStepSubmit={handleSubmitStep}
       onStepChange={handleChangeStep}
       onStepReset={handleResetStep}

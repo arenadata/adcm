@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, NamedTuple, TextIO
+from typing import Any, Generic, NamedTuple, TextIO, TypeVar
 import os
 import subprocess
 
@@ -30,9 +30,10 @@ class WithErrOutLogsMixin:
     _out_log: TextIO | None = None
     _err_log: TextIO | None = None
 
-    def _open_logs(self, log_dir: Path, log_prefix: str) -> None:
+    def _open_logs(self, log_dir: Path, log_prefix: str) -> tuple[TextIO, TextIO]:
         self._out_log = (log_dir / f"{log_prefix}-stdout.txt").open(mode="a+", encoding="utf-8")
         self._err_log = (log_dir / f"{log_prefix}-stderr.txt").open(mode="a+", encoding="utf-8")
+        return self._out_log, self._err_log
 
     def _close_logs(self) -> None:
         if self._out_log:
@@ -51,8 +52,11 @@ class BundleExecutorConfig(ExecutorConfig):
     bundle: BundleInfo
 
 
-class Executor(ABC):
-    _config: ExecutorConfig
+C = TypeVar("C", bound=ExecutorConfig)
+
+
+class Executor(ABC, Generic[C]):
+    _config: C
     _result: ExecutionResult | None
     _process: Any | None
 
@@ -69,7 +73,7 @@ class Executor(ABC):
     def process(self):
         return self._process
 
-    def __init__(self, config: ExecutorConfig):
+    def __init__(self, config: C):
         self._config = config
         self._result = None
         self._process = None
@@ -83,8 +87,7 @@ class Executor(ABC):
         raise NotImplementedError()
 
 
-class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
-    _config: BundleExecutorConfig
+class ProcessExecutor(Executor[BundleExecutorConfig], WithErrOutLogsMixin, ABC):
     _process: subprocess.Popen | None
 
     def __init__(self, config: BundleExecutorConfig) -> None:
@@ -109,6 +112,8 @@ class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
         return self
 
     def wait_finished(self) -> Self:
+        if self._process is None:
+            return self
         return_code = self._process.wait()
         self._result = ExecutionResult(code=return_code)
 

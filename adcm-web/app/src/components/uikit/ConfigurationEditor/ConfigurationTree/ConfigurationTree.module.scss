@@ -5,7 +5,7 @@
     --node-content-background-title: #27262B80;
     --node-content-background-default: var(--color-xdark-new-20);
     --node-content-label-color-default: var(--color-xdark-metal);
-    --node-content-value-color-default: var(--color-xgray-light);
+    --node-content-value-color-default: var(--color-xdark-metal);
     --node-content-expand-button: var(--color-xblack);
     --node-content-add-property-border-color: var(--color-xblue);
 
@@ -35,7 +35,7 @@
   body.theme-light {
     // default
     --node-content-border-default: var(--color-xgray-lighter);
-    --node-content-background-title: #E3EAEE80;
+    --node-content-background-title: var(--color-xgray-alt-80);
     --node-content-background-default: var(--color-xgray-alt-30);
     --node-content-label-color-default: var(--color-adcmx);
     --node-content-value-color-default: var(--color-xgray-light);
@@ -71,13 +71,16 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  border: 2px solid var(--node-content-border);
+  border: 2px solid var(--node-content-border) !important;
   border-radius: 8px;
-  padding: 5px 10px;
   display: flex;
   gap: 8px;
   align-items: center;
   margin-right: 6px;
+
+  max-width: fit-content;
+  min-width: 0;
+  flex: 1;
 
   transition: background-color 250ms, border-color 250ms;
 
@@ -148,9 +151,18 @@
 
   &__buttonWrapper {
     display: none;
+    opacity: 0;
+    transition: display 200ms ease-out allow-discrete, opacity 200ms ease-out;
 
     & > button {
+      border-radius: 8px;
       border-color: var(--node-content-border-default);
+    }
+  }
+
+  @starting-style {
+    &__buttonWrapper {
+      opacity: 0;
     }
   }
 
@@ -200,6 +212,7 @@
   --node-content-border: var(--node-content-border-default);
   --node-content-background: var(--node-content-background-default);
   --node-content-label-color: var(--node-content-label-color-default);
+  --node-content-value-color: var(--node-content-value-color-default);
 
   --node-content-background-hover: var(--node-content-background-default-hover);
   --node-content-label-color-hover: var(--node-content-label-color-default-hover);
@@ -302,6 +315,8 @@
 
 .dropPlaceholderContent {
   width: 180px;
-  border-style: dashed;
+  max-width: inherit;
+  height: 30px;
+  border-style: dashed!important;
   --node-content-border: var(--drop-placeholder-border-color);
 }

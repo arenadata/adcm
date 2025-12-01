@@ -13,6 +13,7 @@
 
 from typing import NoReturn
 
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -22,6 +23,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.migration.hostprovider.create import create_host as create_host_new
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
@@ -34,6 +36,7 @@ from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -66,6 +69,7 @@ from api_v2.host.serializers import (
     CreateDuplicateSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
+    HostDuplicateUpdateSerializer,
     HostSerializer,
     HostUpdateSerializer,
     HostWithDuplicatesSerializer,
@@ -187,7 +191,10 @@ class HostViewSet(
             return HostCreateSerializer
 
         if self.action in ("update", "partial_update"):
-            return HostUpdateSerializer
+            if not getattr(self, "_is_original_host", False):
+                return HostDuplicateUpdateSerializer
+            else:
+                return HostUpdateSerializer
 
         if self.action == "maintenance_mode":
             return HostChangeMaintenanceModeSerializer
@@ -215,17 +222,29 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
+        func = self._create_host_new if use_new_config_processing(request.headers) else self._create_host_old
+        host = func(request_provider, serializer, request_cluster)
+
+        return Response(
+            data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
+        )
+
+    def _create_host_old(self, request_provider, serializer, request_cluster):
         with atomic():
             bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_provider.prototype_id)
-            host = create_host(
+            return create_host(
                 bundle_id=bundle_id,
                 provider_id=request_provider.id,
                 fqdn=serializer.validated_data["fqdn"],
                 cluster=request_cluster,
             )
 
-        return Response(
-            data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
+    def _create_host_new(self, provider, serializer, cluster):
+        return create_host_new(
+            hostprovider=provider,
+            name=serializer.validated_data["fqdn"],
+            cluster=cluster,
+            config_service=get_config_service(),
         )
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
@@ -245,6 +264,8 @@ class HostViewSet(
     )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
+        self._is_original_host = not instance.original
+
         check_custom_perm(request.user, "change", "host", instance)
 
         serializer = self.get_serializer(instance=instance, data=request.data, partial=True)
@@ -303,7 +324,6 @@ class HostViewSet(
             get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
 
         host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
-
         duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
 
         duplicate = Host.objects.get(id=duplicate_id)

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import CodeEditor from '@uikit/CodeEditor/CodeEditor';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
 import { validate } from './StringControls.utils';
@@ -13,21 +13,21 @@ const textTransformers: { [format: string]: (value: string) => string } = {
 interface MultilineStringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (newValue: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
+  onResetToDefault: () => void;
 }
 
 const MultilineStringControl = ({
   fieldName,
   value,
   fieldSchema,
-  defaultValue,
   isReadonly,
   onChange,
   onApply,
+  onResetToDefault,
 }: MultilineStringControlProps) => {
   const stringValue = value?.toString() ?? '';
   const format = fieldSchema.format ?? 'text';
@@ -63,13 +63,12 @@ const MultilineStringControl = ({
     <ConfigurationField
       label={fieldName}
       fieldSchema={fieldSchema}
-      defaultValue={defaultValue}
       disabled={isReadonly}
       error={error}
-      onResetToDefault={onChange}
+      onResetToDefault={onResetToDefault}
     >
       <CodeEditor
-        isSecret={fieldSchema.adcmMeta.isSecret}
+        isSecret={fieldSchema.adcmMeta?.isSecret}
         language={format}
         code={code}
         isReadonly={isReadonly}

@@ -3,7 +3,9 @@ import { createContextHelper, useContextHelper } from '@hooks/useContextHelper';
 
 interface ActionWizardValidationContextOptions {
   isValid: boolean;
+  isDraft: boolean;
   setIsValid: (valid: boolean) => void;
+  setIsDraft: (valid: boolean) => void;
 }
 
 export const ActionWizardValidationContext = createContextHelper<ActionWizardValidationContextOptions>(

@@ -3,7 +3,7 @@ import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import DropPlaceholderNodeContent from './NodeContent/DropPlaceholderNodeContent';
-import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
+import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent/NodeWithChildrenContent';
 import type {
   ConfigurationNode,
   ConfigurationNodeView,
@@ -25,11 +25,11 @@ import type {
   ChangeConfigurationNodeHandler,
   MoveConfigurationNodeHandler,
   ChangeFieldAttributesHandler,
+  ChangeConfigurationNodeValueHandler,
 } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
-import type { JSONPrimitive } from '@models/json';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -42,11 +42,12 @@ export interface ConfigurationTreeProps {
   onAddField: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
-  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
+  onChange: ChangeConfigurationNodeValueHandler;
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onMoveArrayItem: MoveConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
   onChangeIsValid?: (isValid: boolean) => void;
+  isReadOnly?: boolean;
 }
 
 const getNodeClassName = (
@@ -59,7 +60,7 @@ const getNodeClassName = (
   const isDropPlaceholder = node.data.type === 'dropPlaceholder';
 
   return cn(s.collapseNode, {
-    [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta.isAdvanced,
+    [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta?.isAdvanced,
     [s.collapseNode_beforeFailed]: isBeforeFailedNode,
     [s.collapseNode_failed]: hasError,
     [s.collapseNode_disabled]: !hasError && isReadonly,
@@ -85,9 +86,10 @@ const ConfigurationTree = ({
   onFieldAttributesChange,
   onMoveArrayItem,
   onChangeIsValid,
+  isReadOnly = false,
 }: ConfigurationTreeProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
+  const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes, isReadOnly);
   const nodeDictionary = buildNodeDictionary(configNode);
 
   const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
@@ -188,6 +190,7 @@ const ConfigurationTree = ({
             errors={errors}
             onClear={onClear}
             onDelete={onDelete}
+            onChange={onChange}
             onExpand={onExpand}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}

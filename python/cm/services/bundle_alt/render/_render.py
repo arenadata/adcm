@@ -20,11 +20,13 @@ from core.bundle_alt.process import (
     parse_action_process_stages,
     parse_scripts,
 )
-from core.bundle_alt.schema import ActionProcessStage
-from core.job.types import JobSpec
+from core.bundle_alt.schema import ActionProcessStage, DynamicScriptsSchema, WizardScriptsSchema
+from core.bundle_alt.validation import check_action_hc_acl_rules
+from core.job.types import JobSpec, MappingRule
 from core.templates import RendererEnv, Template, get_renderer
 
-from cm.models import PrototypeConfig
+from cm.models import Cluster, Component, PrototypeConfig, Service
+from cm.services.action_process import repo
 from cm.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.services.bundle_alt.load import parse_config_jinja
 from cm.services.bundle_alt.render._context import (
@@ -96,14 +98,34 @@ def render_scripts(
         context_args=context_args,
     )
 
+    schema = DynamicScriptsSchema if context_args.action_process is None else WizardScriptsSchema
+
     allow_to_terminate_from_action = context_args.action.allow_to_terminate
     parsing_context = ScriptsConversionContext(
         source_dir=template.file.path.parent, action_allow_to_terminate=allow_to_terminate_from_action
     )
 
-    scripts = parse_scripts(data=raw, context=parsing_context)
+    scripts = parse_scripts(data=raw, context=parsing_context, schema=schema)
 
     return scripts  # noqa: RET504
+
+
+@convert_bundle_errors_to_adcm_ex
+def render_hc_template(
+    template: Template,
+    environment: Environment,
+    context_args: TaskArgs,
+) -> list[MappingRule]:
+    raw = _render_template(
+        template=template,
+        environment=environment,
+        build_context=prepare_context_for_task,
+        context_args=context_args,
+    )
+    rules = [MappingRule(**rule) for rule in raw]
+    _validate_mapping_spec(spec=rules, object_=context_args.target_object)
+
+    return rules
 
 
 # Helper Functions
@@ -134,3 +156,9 @@ def _ensure_render_result_is_list_of_dicts(value: Any) -> list[dict]:
         raise TypeError(message)
 
     return value
+
+
+def _validate_mapping_spec(spec: list[MappingRule], object_: Cluster | Service | Component) -> None:
+    cluster_id = object_.id if isinstance(object_, Cluster) else object_.cluster_id
+    db_component_keys = repo.retrieve_cluster_component_definition_keys(cluster_id=cluster_id)
+    check_action_hc_acl_rules(hostcomponentmap=[rule.model_dump() for rule in spec], definitions=db_component_keys)

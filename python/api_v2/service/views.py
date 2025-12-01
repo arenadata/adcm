@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     ADD_SERVICE_PERM,
     CHANGE_MM_PERM,
@@ -21,6 +22,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from application.migration.cluster.create import create_services_from_prototypes
 from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -35,6 +37,7 @@ from cm.services.status.notify import update_mm_objects
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -222,12 +225,9 @@ class ServiceViewSet(
         serializer = self.get_serializer(data=request.data, many=multiple_services, context={"cluster": cluster})
         serializer.is_valid(raise_exception=True)
 
-        service_prototypes, error = validate_service_prototypes(
-            cluster=cluster, data=serializer.validated_data if multiple_services else [serializer.validated_data]
-        )
-        if error is not None:
-            raise error
-        added_services = bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
+        data = serializer.validated_data if multiple_services else [serializer.validated_data]
+        func = self._add_services_new if use_new_config_processing(headers=request.headers) else self._add_services_old
+        added_services = func(cluster, data)
 
         context = self.get_serializer_context()
 
@@ -240,6 +240,18 @@ class ServiceViewSet(
         return Response(
             status=HTTP_201_CREATED,
             data=ServiceRetrieveSerializer(instance=added_services[0], context=context).data,
+        )
+
+    def _add_services_old(self, cluster, data):
+        service_prototypes, error = validate_service_prototypes(cluster=cluster, data=data)
+        if error is not None:
+            raise error
+
+        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
+
+    def _add_services_new(self, cluster, data):
+        return create_services_from_prototypes(
+            cluster=cluster, prototype_ids=[e["prototype_id"] for e in data], config_service=get_config_service()
         )
 
     @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(

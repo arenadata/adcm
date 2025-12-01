@@ -36,6 +36,7 @@ from api_v2.generic.action.process.serializers import ProcessSerializer
 
 class Step(Serializer):
     id = IntegerField()
+    name = CharField()
     display_name = CharField()
     type = CharField()
     state = CharField()
@@ -101,25 +102,29 @@ example_process = OpenApiExample(
         "syncKey": "c0ffead5-054f-4ef7-8776-607ea80812f2",
         "stages": [
             {
+                "name": "first_stage",
                 "displayName": "First stage",
-                "steps": [{"id": 1, "displayName": "Stage1.Step1", "type": "configuration"}],
+                "steps": [{"id": 1, "name": "stage1_step1", "displayName": "Stage1.Step1", "type": "configuration"}],
             },
             {
+                "name": "second_stage",
                 "displayName": "Second stage",
                 "steps": [
-                    {"id": 2, "displayName": "Stage2.Step1", "type": "configuration"},
-                    {"id": 3, "displayName": "Stage2.Step2", "type": "operation"},
+                    {"id": 2, "name": "stage2_step2", "displayName": "Stage2.Step1", "type": "configuration"},
+                    {"id": 3, "name": "stage2_step2", "displayName": "Stage2.Step2", "type": "operation"},
                 ],
             },
             {
+                "name": "third_stage",
                 "displayName": "Third stage",
-                "steps": [{"id": 4, "displayName": "Stage3.Step1", "type": "operation"}],
+                "steps": [{"id": 4, "name": "stage3_step1", "displayName": "Stage3.Step1", "type": "operation"}],
             },
             {
+                "name": "fourth_stage",
                 "displayName": "Fourth stage",
                 "steps": [
-                    {"id": 5, "displayName": "Stage4.Step1", "type": "operation"},
-                    {"id": 6, "displayName": "Stage4.Step2", "type": "operation"},
+                    {"id": 5, "name": "stage4_step1", "displayName": "Stage4.Step1", "type": "operation"},
+                    {"id": 6, "name": "stage4_step2", "displayName": "Stage4.Step2", "type": "operation"},
                 ],
             },
         ],
@@ -228,6 +233,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                         OpenApiExample(
                             "Operation step",
                             value={
+                                "name": "stage2_step2",
                                 "displayName": "Stage2.Step2",
                                 "id": 1,
                                 "state": "created",
@@ -280,6 +286,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                         "type": "object",
                                     },
                                 },
+                                "name": "stage1_step1",
                                 "displayName": "Stage1.Step1",
                                 "id": 1,
                                 "state": "created",

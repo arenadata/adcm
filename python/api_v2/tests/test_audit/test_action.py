@@ -73,8 +73,8 @@ class TestActionProcessAudit(BaseAPITestCase):
 
     def test_audit_record_process_operation(self):
         test_spec, test_input, previous_step_names = (
-            [{"name": "spec", "subname": ""}],
-            {"config": {}, "attr": {}},
+            [{"name": "spec", "subname": "", "type": "string"}],
+            {"values": {}, "attributes": {}},
             {"stage1_step1", "stage2_step1"},
         )
 
@@ -108,8 +108,8 @@ class TestActionProcessAudit(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
             self.check_last_audit_record(
-                operation_name=f"Operation {ProcessOperationType.SUBMIT.value} for process {process.id}"
-                f" of action {action.display_name}",
+                operation_name=f"Operation {ProcessOperationType.SUBMIT.value} {target_operation_step.id} "
+                f"for process {process.id} of action {action.display_name}",
                 operation_result="denied",
                 operation_type=AuditLogOperationType.UPDATE,
                 **self.prepare_audit_object_arguments(expected_object=self.cluster_1, is_deleted=False),
@@ -144,8 +144,8 @@ class TestActionProcessAudit(BaseAPITestCase):
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.check_last_audit_record(
-                    operation_name=f"Operation {ProcessOperationType.SUBMIT.value} for process {process.id}"
-                    f" of action {action.display_name}",
+                    operation_name=f"Operation {ProcessOperationType.SUBMIT.value} {target_operation_step.id} "
+                    f"for process {process.id} of action {action.display_name}",
                     operation_result="success",
                     operation_type=AuditLogOperationType.UPDATE,
                     **self.prepare_audit_object_arguments(expected_object=obj, is_deleted=False),

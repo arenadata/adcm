@@ -28,7 +28,7 @@ def construct_delta_for_task(host_difference: TopologyHostDiff) -> TaskMappingDe
 
 def check_delta_is_allowed(
     delta: TaskMappingDelta,
-    rules: list[ActionHCRule | HcAclRule],
+    rules: list[ActionHCRule] | list[HcAclRule],
     full_name_mapping: dict[ComponentNameKey, ComponentID],
 ) -> None:
     if not rules:

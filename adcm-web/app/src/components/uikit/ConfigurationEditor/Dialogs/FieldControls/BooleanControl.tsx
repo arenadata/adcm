@@ -1,27 +1,27 @@
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import ConfigurationField from './ConfigurationField';
 import type { JSONPrimitive } from '@models/json';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import s from './ConfigurationField.module.scss';
 
 export interface BooleanControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
   onApply: () => void;
+  onResetToDefault: () => void;
 }
 
 const BooleanControl = ({
   fieldName,
   fieldSchema,
-  defaultValue,
   value,
   isReadonly,
   onChange,
   onApply,
+  onResetToDefault,
 }: BooleanControlProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
@@ -37,9 +37,8 @@ const BooleanControl = ({
     <ConfigurationField
       label={fieldName}
       fieldSchema={fieldSchema}
-      defaultValue={defaultValue}
       disabled={isReadonly}
-      onResetToDefault={onChange}
+      onResetToDefault={onResetToDefault}
     >
       <Checkbox
         className={s.configurationField__checkbox}

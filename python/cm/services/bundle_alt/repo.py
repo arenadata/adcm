@@ -18,7 +18,6 @@ import json
 import hashlib
 import functools
 
-from adcm_version import compare_prototype_versions
 from core.bundle_alt._config import STACK_COMPLEX_FIELD_TYPES
 from core.bundle_alt.errors import BundleProcessingError
 from core.bundle_alt.predicates import is_component_key
@@ -34,6 +33,7 @@ from core.bundle_alt.types import (
 )
 from core.job.types import JobSpec
 from django.db import IntegrityError
+from pydantic import BaseModel
 
 from cm.errors import AdcmEx
 from cm.models import (
@@ -52,25 +52,6 @@ from cm.models import (
 
 def find_bundle_by_hash(hash_: str) -> Bundle | None:
     return Bundle.objects.filter(hash=hash_).first()
-
-
-def _order_model_versions(model):
-    # COPIED FROM cm.bundle
-    items = []
-    for obj in model.objects.order_by("id"):
-        items.append(obj)
-    ver = ""
-    count = 0
-    for obj in sorted(
-        items,
-        key=functools.cmp_to_key(lambda obj1, obj2: compare_prototype_versions(obj1.version, obj2.version)),
-    ):
-        if ver != obj.version:
-            count += 1
-        obj.version_order = count
-        ver = obj.version
-    # Update all table in one time. That is much faster than one by one method
-    model.objects.bulk_update(items, fields=["version_order"])
 
 
 def recollect_categories():
@@ -170,14 +151,16 @@ def save_definitions(
     return bundle
 
 
+# todo should be moved to core.config.repo interface after definition generalization
 def convert_config_definition_to_orm_model(
     definition: ConfigDefinition, prototype: Prototype | None, action: Action | None
 ) -> Generator[PrototypeConfig, None, None]:
     # prototype is optional for the sake of jinja-config generation
     # should be made mandatory after its refactoring
     for param_key, param_spec in definition.parameters.items():
-        name = param_spec.key[0]
-        subname = param_spec.name if len(param_key) != 1 else ""
+        root_name, *subnames = param_spec.key
+        name = root_name
+        subname = "/".join(subnames)
 
         default = ""
         if (value := definition.default_values.get(param_key, None)) is not None:
@@ -289,8 +272,10 @@ def _action_definition_to_model(definition: ActionDefinition, prototype: Prototy
         allow_for_action_host_group=definition.allow_for_action_host_group,
         allow_in_maintenance_mode=definition.allow_in_maintenance_mode,
         config_jinja=definition.config_jinja,
+        config_template=_dump_or_none(definition.config_template),
         scripts_jinja=definition.scripts_jinja if definition.scripts_jinja else "",
-        wizard_template=definition.wizard_template,
+        scripts_template=_dump_or_none(definition.scripts_template),
+        wizard_template=_dump_or_none(definition.wizard_template),
     )
 
 
@@ -309,7 +294,7 @@ def _sub_action_to_definition_to_model(definition: JobSpec, action: Action) -> S
     )
 
 
-def _import_definition_to_model(definition: ImportDefinition, prototype: Prototype) -> None:
+def _import_definition_to_model(definition: ImportDefinition, prototype: Prototype) -> PrototypeImport:
     return PrototypeImport(
         name=definition.name,
         prototype=prototype,
@@ -323,7 +308,7 @@ def _import_definition_to_model(definition: ImportDefinition, prototype: Prototy
     )
 
 
-def _upgrade_definition_to_model(definition: UpgradeDefinition, bundle: Bundle, action: Action | None) -> None:
+def _upgrade_definition_to_model(definition: UpgradeDefinition, bundle: Bundle, action: Action | None) -> Upgrade:
     return Upgrade(
         name=definition.name,
         bundle=bundle,
@@ -361,3 +346,7 @@ def update_prototype_licenses(bundle: Bundle) -> None:
         license_hash__in=Prototype.objects.filter(license="accepted").values_list("license_hash", flat=True),
         bundle_id=bundle.id,
     ).update(license="accepted")
+
+
+def _dump_or_none(value: BaseModel | None) -> dict | None:
+    return value.model_dump(mode="json") if value is not None else None

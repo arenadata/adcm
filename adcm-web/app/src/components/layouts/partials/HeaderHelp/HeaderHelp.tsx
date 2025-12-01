@@ -4,14 +4,9 @@ import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
-import AboutAdcm from './AboutAdcm/AboutAdcm';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
 import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
-
-enum HelperLinkActions {
-  Help = 'https://t.me/arenadata_cm',
-  Documentation = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html',
-}
+import { apiRedocHost, HelperLinkActions } from '@constants';
 
 const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
   const {
@@ -36,7 +31,6 @@ const linkOptions = [
   {
     value: 'aboutAdcm',
     label: 'About ADCM',
-    ItemComponent: AboutAdcm,
   },
   {
     value: HelperLinkActions.Help,
@@ -46,6 +40,11 @@ const linkOptions = [
   {
     value: HelperLinkActions.Documentation,
     label: 'Documentation',
+    ItemComponent: LinkItem,
+  },
+  {
+    value: `${apiRedocHost}/api/v2/schema/redoc/`,
+    label: 'ADCM API',
     ItemComponent: LinkItem,
   },
 ];

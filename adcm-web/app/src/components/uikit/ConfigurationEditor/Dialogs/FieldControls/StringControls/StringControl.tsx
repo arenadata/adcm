@@ -2,28 +2,28 @@ import { useState } from 'react';
 import Input from '@uikit/Input/Input';
 import InputWithAutocomplete from '@uikit/InputWithAutocomplete/InputWithAutocomplete';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
+  onResetToDefault?: () => void;
 }
 
 const StringControl = ({
   fieldName,
   value,
   fieldSchema,
-  defaultValue,
   isReadonly,
   onChange,
   onApply,
+  onResetToDefault,
 }: StringControlProps) => {
   const [error, setError] = useState<string | undefined>(undefined);
 
@@ -46,12 +46,11 @@ const StringControl = ({
     <ConfigurationField
       label={fieldName}
       fieldSchema={fieldSchema}
-      defaultValue={defaultValue}
       disabled={isReadonly}
-      onResetToDefault={onChange}
+      onResetToDefault={onResetToDefault}
       error={error}
     >
-      {fieldSchema.adcmMeta.stringExtra?.suggestions ? (
+      {fieldSchema.adcmMeta?.stringExtra?.suggestions ? (
         <InputWithAutocomplete
           value={stringValue}
           disabled={isReadonly}

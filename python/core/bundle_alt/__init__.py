@@ -9,3 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from core.bundle_alt._config import check_default_values_in_main_config
+from core.bundle_alt.types import ConfigDefinition
+
+__all__ = ["ConfigDefinition", "check_default_values_in_main_config"]

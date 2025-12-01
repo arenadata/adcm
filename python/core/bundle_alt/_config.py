@@ -11,6 +11,8 @@
 # limitations under the License.
 
 """
+DEPRECATED
+
 Added as part of ADCM-6355.
 
 This module should be moved to `core.config` or something like that

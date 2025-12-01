@@ -7,6 +7,7 @@
   --color-teal: #39C2CB;
 
   --color-xblue: #1997E8;
+  --color-xblue-15: rgba(25, 151, 232, 0.15);
 
   --color-new-black: #2F3338;
   --color-black-12: #121212;
@@ -33,6 +34,8 @@
   --color-xgray-alt-30: rgba(227, 234, 238, 0.3);
   --color-xgray-alt-50: rgba(227, 234, 238, 0.5);
   --color-xgray-alt-60: rgba(227, 234, 238, 0.6);
+  --color-xgray-alt-77: rgba(227, 234, 238, 0.77);
+  --color-xgray-alt-80: rgba(227, 234, 238, 0.5);
   --color-xgray-reading: #545E68;
   --color-xgray-medium: rgba(112, 122, 131, 0.2);
   --color-xgray: #e0e2e4;
@@ -52,6 +55,8 @@
   --color-green-full: #00D2A026;
   --color-new-light: #2F3136;
   --color-new-light-30: color-mix(in srgb, var(--color-new-light) 30%, transparent);
+  --color-new-light-50: rgba(47, 49, 54, 0.5);
+  --color-new-light-80: color-mix(in srgb, var(--color-new-light) 80%, transparent);
   --color-stroke-light: #D9DEF3;
   --color-background-light: #F3F3F3;
 
@@ -63,6 +68,9 @@
   --color-red-30: #EEC9D4;
   --color-dark-red: #6F213A;
   --color-light-red: #F26161;
+  --color-light-red-10: rgba(242, 97, 97, 0.1);
+  --color-light-red-15: rgba(242, 97, 97, 0.15);
+  --color-light-red-30: rgba(242, 97, 97, 0.3);
 
   --color-navy: #1A1B21;
 

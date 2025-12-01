@@ -1,7 +1,7 @@
 export type SelectValue = string | number | null;
 
 export interface DefaultSelectListItemProps<T> {
-  onSelect?: () => void;
+  onSelect?: (value: T | null) => void;
   isSelected?: boolean;
   className?: string;
   option: SelectOption<T>;

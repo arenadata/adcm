@@ -1,9 +1,10 @@
 import type React from 'react';
 import { useMemo } from 'react';
-import { FormField, FormFieldsContainer, Select } from '@uikit';
+import { FormField, FormFieldsContainer, Select, type SelectOption } from '@uikit';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 import { useStore } from '@hooks';
 import type { UpgradeStepFormProps } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
+import BundleVersionSelectItem from './BundleVersionSelectItem/BundleVersionSelectItem';
 
 const SelectUpgradeStep: React.FC<UpgradeStepFormProps> = ({ formData, onChange }) => {
   const cluster = useStore(({ adcm }) => adcm.clusterUpgrades.dialog.cluster);
@@ -14,10 +15,14 @@ const SelectUpgradeStep: React.FC<UpgradeStepFormProps> = ({ formData, onChange 
   };
 
   const upgradesOptions = useMemo(() => {
-    return upgradesList.map((upgrade) => ({
-      label: upgrade.name,
-      value: upgrade.id,
-    }));
+    return upgradesList.map(
+      (upgrade) =>
+        ({
+          label: upgrade.name,
+          value: upgrade.id,
+          ItemComponent: (props) => <BundleVersionSelectItem {...props} version={upgrade} />,
+        }) satisfies SelectOption<number>,
+    );
   }, [upgradesList]);
 
   return (

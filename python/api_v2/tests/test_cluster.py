@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from unittest.mock import patch
 
+from adcm.feature_flags import use_new_config_processing
 from adcm.tests.base import BusinessLogicMixin
 from cm.models import (
     Action,
@@ -25,7 +27,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.config import convert_adcm_meta_to_attr
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
@@ -42,7 +43,11 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
+
+subtest_on_new_config_processing = partial(
+    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.cluster.views"
+)
 
 
 class TestCluster(BaseAPITestCase):
@@ -138,15 +143,20 @@ class TestCluster(BaseAPITestCase):
             self.assertEqual(response.json()["results"][0]["id"], self.cluster_2.pk)
 
     def test_create_success(self):
+        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
+            with sub_test:
+                self._test_create_success(i)
+
+    def _test_create_success(self, i: int):
         response = (self.client.v2 / "clusters").post(
             data={
                 "prototype_id": self.cluster_1.prototype.pk,
-                "name": "new_test_cluster",
+                "name": f"new_test_cluster-{i}",
                 "description": "Test cluster description",
             },
         )
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
 
     def test_create_without_required_field_fail(self):
         response = (self.client.v2 / "clusters").post(data={})
@@ -624,10 +634,10 @@ class TestClusterActions(BaseAPITestCase):
                 data={"configuration": {"config": config, "adcmMeta": adcm_meta}}
             )
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
         self.assertEqual(response.json()["id"], run_task.target_task.id)
         self.assertEqual(run_task.target_task.config, config)
-        self.assertEqual(run_task.target_task.attr, convert_adcm_meta_to_attr(adcm_meta))
+        self.assertEqual(run_task.target_task.attr, {})
 
     def test_run_action_with_config_wrong_configuration_fail(self):
         with RunTaskMock() as run_task:

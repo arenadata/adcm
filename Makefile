@@ -3,13 +3,13 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.8.0"
+ADCM_VERSION = "2.9.0"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
 .PHONY: build unittests pretty lint version
 
 build:
-	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
@@ -30,6 +30,7 @@ lint:
 	poetry run ruff check $(PY_FILES)
 	poetry run ruff format --check $(PY_FILES)
 	poetry run pyright --project pyproject.toml
+	env PYTHONPATH=python poetry run lint-imports --verbose
 	poetry run python dev/linters/license_checker.py --folders $(PY_FILES) go
 	poetry run python dev/linters/migrations_checker.py python
 

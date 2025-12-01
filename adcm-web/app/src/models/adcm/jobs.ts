@@ -39,6 +39,7 @@ export interface AdcmJob {
   startTime: string | null;
   endTime: string | null;
   isTerminatable: boolean;
+  description: string | null;
   childJobs: AdcmSubJob[];
   action: {
     id: number;

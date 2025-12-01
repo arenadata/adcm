@@ -9,6 +9,14 @@ import {
   readOnlySchema,
   nullableConfig,
   nullableSchema,
+  oneOfSchema,
+  oneOfData,
+  nullableOneOfSchema,
+  nullableOneOfData,
+  testArrayItemSchema,
+  testArrayItemConfig,
+  selectableObjectReadOnlySchema,
+  selectableObjectReadOnlyConfig,
 } from './ConfigurationEditor.stories.constants';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type { ConfigurationTreeFilter } from './ConfigurationEditor.types';
@@ -194,6 +202,46 @@ export const ConfigurationEditorDragNDropStory: Story = {
       schema={clusterConfigurationSchema}
       initialConfigurationData={initialClusterConfiguration}
       initialAttributes={attributes}
+    />
+  ),
+};
+
+export const ConfigurationEditorOneOfStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={oneOfSchema}
+      initialConfigurationData={oneOfData}
+      initialAttributes={{}}
+    />
+  ),
+};
+
+export const ConfigurationEditorNullableOneOfStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={nullableOneOfSchema}
+      initialConfigurationData={nullableOneOfData}
+      initialAttributes={{}}
+    />
+  ),
+};
+
+export const TestArrayItemStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={testArrayItemSchema}
+      initialConfigurationData={testArrayItemConfig}
+      initialAttributes={attributes}
+    />
+  ),
+};
+
+export const SelectableObjectReadOnlyStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={selectableObjectReadOnlySchema}
+      initialConfigurationData={selectableObjectReadOnlyConfig}
+      initialAttributes={{}}
     />
   ),
 };

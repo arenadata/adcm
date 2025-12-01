@@ -1,21 +1,30 @@
 import { useStore } from '@hooks';
-import type { AdcmActionProcessStep } from '@models/adcm/wizard';
+import type { AdcmActionProcessOperationStep } from '@models/adcm/wizard';
 import { useRequestClusterDynamicActionWizardDialog } from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/useRequestClusterDynamicActionWizardDialog';
 import ActionWizardOperation from '@uikit/ActionWizardSteps/ActionWizardOperation/ActionWizardOperation';
 
 interface ClusterDynamicActionWizardOperationProps {
-  step: AdcmActionProcessStep;
+  step: AdcmActionProcessOperationStep;
 }
 
 const ClusterDynamicActionWizardOperation = ({ step }: ClusterDynamicActionWizardOperationProps) => {
-  const job = useStore((s) => s.adcm.clustersWizard.job);
-  const subJobLog = useStore((s) => s.adcm.clustersWizard.subJobLog);
+  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
 
-  useRequestClusterDynamicActionWizardDialog();
+  useRequestClusterDynamicActionWizardDialog(step);
 
-  if (!job || !subJobLog) return null;
+  const stepId = step.id;
 
-  return step && step.state !== 'created' && <ActionWizardOperation job={job} subJobLog={subJobLog} />;
+  if (!jobsData || !jobsData[stepId]) {
+    return null;
+  }
+
+  const { job, subJobLog } = jobsData[stepId];
+
+  if (!job || !subJobLog) {
+    return null;
+  }
+
+  return <ActionWizardOperation job={job} subJobLog={subJobLog} />;
 };
 
 export default ClusterDynamicActionWizardOperation;

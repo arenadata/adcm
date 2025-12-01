@@ -2,61 +2,139 @@ import Button from '@uikit/Button/Button';
 import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
 import Panel from '@uikit/Panel/Panel';
 import s from './ActionWizardSteps.module.scss';
-import { type AdcmActionProcessStep, AdcmWizardStepType } from '@models/adcm/wizard';
+import {
+  type AdcmActionProcessStep,
+  type AdcmWizardJobsData,
+  AdcmWizardStepStates,
+  AdcmWizardStepType,
+} from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
 import ClusterDynamicActionWizardOperation from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardOperation/ClusterDynamicActionWizardOperation';
 import ActionWizardConfigurationEditor from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditor';
 import ActionWizardLastStage from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStage';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
+import { useEffect, useMemo, useState } from 'react';
+import type { AdcmJob } from '@models/adcm';
+import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
+import ClusterDynamicActionWizardMapping from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardMapping/ClusterDynamicActionWizardMapping';
+
+const wizardStepStates = new Set([AdcmWizardStepStates.Running, AdcmWizardStepStates.Completed]);
+
+const wizardStepType = new Set([
+  AdcmWizardStepType.Operation,
+  AdcmWizardStepType.Configuration,
+  AdcmWizardStepType.Mapping,
+]);
 
 interface ActionWizardStepProps {
+  jobsData: AdcmWizardJobsData;
+  currentStep: number;
   stageNumber: number;
   steps: AdcmActionProcessStep[];
+  isInRunningState: boolean;
   onStepSubmit: (stepType: AdcmWizardStepType) => void;
   onStepChange: () => void;
-  onStepReset: () => void;
+  onStepReset: (stepId: number) => void;
+  selectedStep?: number;
 }
 
-const getStepIcon = (step: AdcmActionProcessStep, isValid: boolean) => {
-  if (!isValid || step.state === 'broken') {
+const getStepIcon = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
+  if (isStepFailed(step, !hasConflict, jobsData)) {
     return <MarkerIcon variant="round" type="alert" size={12} />;
   }
-  if (step.state === 'completed') {
+  if (step.state === AdcmWizardStepStates.Completed) {
     return <MarkerIcon variant="round" type="check" size={12} />;
   }
 
   return undefined;
 };
 
-const stepPanelLabelClassName = (step: AdcmActionProcessStep, isValid: boolean) => {
+const stepPanelLabelClassName = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
   return cn(s.actionWizardSteps__stageInfo, {
-    [s.actionWizardSteps__stageInfo_running]: step.state === 'running',
-    [s.actionWizardSteps__stageInfo_error]: !isValid || step.state === 'broken',
-    [s.actionWizardSteps__stageInfo_completed]: step.state === 'completed',
+    [s.actionWizardSteps__stageInfo_running]: step.state === AdcmWizardStepStates.Running,
+    [s.actionWizardSteps__stageInfo_error]: isStepFailed(step, !hasConflict, jobsData),
+    [s.actionWizardSteps__stageInfo_completed]: step.state === AdcmWizardStepStates.Completed,
   });
 };
 
-const isButtonDisabled = (step: AdcmActionProcessStep) => {
-  if (step.type === AdcmWizardStepType.Operation) {
-    return step.state !== 'completed';
+const isFirstButtonDisabled = (
+  step: AdcmActionProcessStep,
+  isCurrentStep: boolean,
+  isDraft: boolean,
+  isInRunningState: boolean,
+) => {
+  if ([AdcmWizardStepType.Configuration, AdcmWizardStepType.Mapping].includes(step.type)) {
+    return (isCurrentStep && !isDraft) || isInRunningState;
   }
 
-  return step.state === 'completed';
+  return wizardStepStates.has(step.state);
+};
+
+const isSecondButtonDisabled = (step: AdcmActionProcessStep) => {
+  if (step.type === AdcmWizardStepType.Operation) {
+    return step.state !== AdcmWizardStepStates.Completed;
+  }
+
+  return step.state === AdcmWizardStepStates.Completed;
 };
 
 const isFirstButtonVisible = (stepType: AdcmWizardStepType) => {
-  return [AdcmWizardStepType.Operation, AdcmWizardStepType.Configuration].includes(stepType);
+  return wizardStepType.has(stepType);
 };
 
-const ActionWizardSteps = ({ stageNumber, steps, onStepSubmit, onStepChange, onStepReset }: ActionWizardStepProps) => {
-  const { isValid } = useActionWizardValidationContext();
+const ActionWizardSteps = ({
+  jobsData,
+  selectedStep,
+  currentStep,
+  stageNumber,
+  steps,
+  isInRunningState,
+  onStepSubmit,
+  onStepChange,
+  onStepReset,
+}: ActionWizardStepProps) => {
+  const { isValid, isDraft, setIsValid, setIsDraft } = useActionWizardValidationContext();
+  const initialHiddenStates = useMemo(() => {
+    return steps.reduce<Record<number, boolean>>((acc, step) => {
+      acc[step.id] = step.id !== (selectedStep || currentStep);
+      return acc;
+    }, {});
+  }, [steps]);
 
-  const handleFirstButtonClick = (stepType: AdcmWizardStepType) => {
+  const [hiddenStates, setHiddenStates] = useState(initialHiddenStates);
+
+  useEffect(() => {
+    const element = document.getElementById(`step-${selectedStep}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [steps]);
+
+  useEffect(() => {
+    setHiddenStates(initialHiddenStates);
+  }, [initialHiddenStates]);
+
+  useEffect(() => {
+    if (selectedStep) {
+      handleChangeStepStatus(selectedStep);
+    }
+  }, [selectedStep]);
+
+  const handleChangeStepStatus = (stepId: number) => {
+    setHiddenStates((prev) => ({
+      ...prev,
+      [stepId]: !prev[stepId],
+    }));
+  };
+
+  const handleFirstButtonClick = (stepType: AdcmWizardStepType, stepId: number) => {
     if (stepType === AdcmWizardStepType.Operation) {
       onStepSubmit(stepType);
     } else {
-      onStepReset();
+      onStepReset(stepId);
+      setIsValid(true);
+      setIsDraft(false);
     }
   };
 
@@ -70,38 +148,59 @@ const ActionWizardSteps = ({ stageNumber, steps, onStepSubmit, onStepChange, onS
 
   return (
     <div className={s.actionWizardSteps__steps}>
-      {steps.map((step, stepIndex) => (
-        <div key={step.id} className={s.actionWizardSteps__step}>
-          <Panel className={s.actionWizardSteps__panel}>
-            <div className={stepPanelLabelClassName(step, isValid)}>
-              <div className={s.actionWizardSteps__stageNumber}>
-                {stageNumber}.{stepIndex + 1}
-                {getStepIcon(step, isValid)}
+      {steps.map((step, stepIndex) => {
+        const isStepHidden = hiddenStates[step.id]; // Per-step hidden state
+        const isCurrentStep = currentStep === step.id;
+        const hasConflict = isCurrentStep && !isValid;
+
+        return (
+          <div
+            key={step.id}
+            id={`step-${step.id}`}
+            className={cn(s.actionWizardSteps__step, isStepHidden ? s.actionWizardSteps__step_isHidden : '')}
+          >
+            <Panel className={s.actionWizardSteps__panel}>
+              <div className={stepPanelLabelClassName(step, hasConflict, jobsData[step.id]?.job)}>
+                <div className={s.actionWizardSteps__stageNumber}>
+                  {stageNumber}.{stepIndex + 1}
+                  {getStepIcon(step, hasConflict, jobsData[step.id]?.job)}
+                </div>
+                <div className={s.actionWizardSteps__stepLabel} onClick={() => handleChangeStepStatus(step.id)}>
+                  {step.displayName}
+                </div>
               </div>
-              <div className={s.actionWizardSteps__stepLabel}>{step.displayName}</div>
-            </div>
-            <ButtonGroup className={s.actionWizardSteps__buttons}>
-              {isFirstButtonVisible(step.type) && (
-                <Button variant="secondary" onClick={() => handleFirstButtonClick(step.type)}>
-                  {step.type === AdcmWizardStepType.Operation ? step.uiOptions.buttonName : 'Discard changes'}
+              <ButtonGroup className={s.actionWizardSteps__buttons}>
+                {isFirstButtonVisible(step.type) && (
+                  <Button
+                    variant="secondary"
+                    disabled={isFirstButtonDisabled(step, isCurrentStep, isDraft, isInRunningState)}
+                    onClick={() => handleFirstButtonClick(step.type, step.id)}
+                  >
+                    {step.type === AdcmWizardStepType.Operation ? step?.uiOptions?.buttonName : 'Discard changes'}
+                  </Button>
+                )}
+                <Button
+                  onClick={() => handleSecondButtonClick(step.type)}
+                  hasError={hasConflict}
+                  disabled={hasConflict || step.id !== currentStep || isSecondButtonDisabled(step)}
+                >
+                  {step.type === AdcmWizardStepType.LastStep ? 'Run' : 'Next step'}
                 </Button>
+              </ButtonGroup>
+            </Panel>
+            <div className={s.actionWizardSteps__content}>
+              {step.type === AdcmWizardStepType.Configuration && (
+                <ActionWizardConfigurationEditor isReadOnly={!isCurrentStep} step={step} />
               )}
-              <Button
-                onClick={() => handleSecondButtonClick(step.type)}
-                hasError={!isValid}
-                disabled={!isValid || isButtonDisabled(step)}
-              >
-                {step.type === AdcmWizardStepType.LastStep ? 'Run' : 'Next step'}
-              </Button>
-            </ButtonGroup>
-          </Panel>
-          <div className={s.actionWizardSteps__content}>
-            {step.type === AdcmWizardStepType.Configuration && <ActionWizardConfigurationEditor step={step} />}
-            {step.type === AdcmWizardStepType.Operation && <ClusterDynamicActionWizardOperation step={step} />}
-            {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
+              {step.type === AdcmWizardStepType.Operation && <ClusterDynamicActionWizardOperation step={step} />}
+              {step.type === AdcmWizardStepType.Mapping && (
+                <ClusterDynamicActionWizardMapping isReadOnly={!isCurrentStep} step={step} />
+              )}
+              {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

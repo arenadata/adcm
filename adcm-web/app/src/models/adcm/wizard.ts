@@ -1,7 +1,17 @@
 import type { JSONObject } from '@models/json';
+import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm/jobs';
+import type { AdcmConfiguration } from '@models/adcm/configuration';
+import type { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
 export type AdcmWizardMappingStepOperationType = 'add' | 'remove';
 export type AdcmWizardProcessState = 'created' | 'completed' | 'broken';
+
+export enum AdcmWizardStepStates {
+  Created = 'created',
+  Completed = 'completed',
+  Running = 'running',
+  Broken = 'broken',
+}
 
 export enum AdcmWizardMethodType {
   Submit = 'submit_step',
@@ -49,7 +59,7 @@ export interface AdcmActionProcessOperationStep {
   uiOptions: {
     buttonName: string;
   };
-  state: string;
+  state: AdcmWizardStepStates;
   task: { id: number };
 }
 
@@ -74,39 +84,42 @@ export interface AdcmActionProcessConfigurationStep {
   processSyncKey: string;
   displayName: string;
   type: AdcmWizardStepType.Configuration;
-  state: string;
+  state: AdcmWizardStepStates;
   configuration: AdcmWizardConfiguration;
+}
+
+export interface AdcmActionProcessMappingStepRules {
+  operation: AdcmHostComponentMapRuleAction;
+  component: string;
+  service: string;
+}
+
+interface DeltaMapping {
+  hostId: number;
+  componentId: number;
+}
+
+export interface Delta {
+  add: DeltaMapping[];
+  remove: DeltaMapping[];
 }
 
 export interface AdcmActionProcessMappingStep {
   id: number;
-  processSyncKey: string;
   displayName: string;
+  name: string;
   type: AdcmWizardStepType.Mapping;
-  state: string;
-  mapping: {
-    rule: {
-      operation: AdcmWizardMappingStepOperationType;
-      componentId: number;
-    }[];
-    delta: {
-      operation: AdcmWizardMappingStepOperationType;
-      componentId: number;
-      hostId: number;
-    }[];
-    suggetion: {
-      operation: AdcmWizardMappingStepOperationType;
-      hostId: number;
-      componentId: number;
-    }[];
-  };
+  state: AdcmWizardStepStates;
+  rules: AdcmActionProcessMappingStepRules[];
+  delta: Delta | null;
+  cumulativeDelta: Delta | null;
 }
 
 export interface AdcmActionProcessLastStep {
   displayName: string;
   id: number;
   type: AdcmWizardStepType.LastStep;
-  state: string;
+  state: AdcmWizardStepStates;
 }
 
 export type AdcmActionProcessStep =
@@ -147,21 +160,22 @@ export interface AdcmWizardCompleteOperationPayload {
   };
 }
 
+export interface AdcmWizardMapping {
+  componentId: number;
+  hostId: number;
+}
+
+export interface AdcmWizardMappingChangeHistory {
+  add: AdcmWizardMapping[];
+  remove: AdcmWizardMapping[];
+}
+
 export interface AdcmWizardSubmitMappingStepPayload {
   method: AdcmWizardMethodType.Submit;
   params: {
     processSyncKey: string;
     stepId: number;
-    hostComponentMapDelta: {
-      add: {
-        hostId: number;
-        componentId: number;
-      }[];
-      remove: {
-        hostId: number;
-        componentId: number;
-      }[];
-    };
+    hostComponentMapDelta: AdcmWizardMappingChangeHistory;
   };
 }
 
@@ -173,3 +187,15 @@ export type AdcmWizardProcessOperationPayload =
   | AdcmWizardSubmitMappingStepPayload;
 
 export type AdcmWizardProcessOperation = AdcmActionWizardProcess;
+
+export type AdcmWizardJobsData = Record<
+  AdcmActionProcessStep['id'],
+  {
+    job?: AdcmJob;
+    subJobLog?: Record<AdcmSubJobDetails['id'], AdcmSubJobLogItem[]>;
+  }
+>;
+
+export interface ConfigurationMap {
+  [stepId: number]: AdcmConfiguration | null;
+}

@@ -16,6 +16,7 @@
   "type": "object",
   "properties": {
     "string": {
+      "default": "string",
       "oneOf": [
         {
           "title": "string",
@@ -101,6 +102,7 @@
       "additionalProperties": false,
       "properties": {
         "text": {
+          "default": "text",
           "oneOf": [
             {
               "title": "text",

@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Hashable, Iterable, TypeAlias
+from typing import Any, Callable, Hashable, Iterable, Protocol, TypeAlias, runtime_checkable
 import warnings
 import collections.abc
 
@@ -42,9 +42,10 @@ from core.bundle_alt.schema import (
     HostSchema,
     ProviderSchema,
     ServiceSchema,
+    WizardScriptsSchema,
     parse,
 )
-from core.bundle_alt.types import BundleDefinitionKey, Definition
+from core.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.bundle_alt.validation import check_definitions_are_valid
 from core.errors import localize_error
 from core.job.types import JobSpec
@@ -80,17 +81,16 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
     This is a replace for ruyaml.round_trip_load() function which can switch off
     duplicate YAML keys error
     """
-
     loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
-    loader._constructor.allow_duplicate_keys = allow_duplicate_keys
+    loader._constructor.allow_duplicate_keys = allow_duplicate_keys  # pyright: ignore [reportAttributeAccessIssue]
     try:
-        return loader._constructor.get_single_data()
+        return loader._constructor.get_single_data()  # pyright: ignore [reportAttributeAccessIssue]
     finally:
-        loader._parser.dispose()
+        loader._parser.dispose()  # pyright: ignore [reportAttributeAccessIssue]
         with suppress(AttributeError):
-            loader._reader.reset_reader()
+            loader._reader.reset_reader()  # pyright: ignore [reportAttributeAccessIssue]
         with suppress(AttributeError):
-            loader._scanner.reset_scanner()
+            loader._scanner.reset_scanner()  # pyright: ignore [reportAttributeAccessIssue]
 
 
 class FirstExplicitKeyLoader(yaml.SafeLoader):
@@ -173,7 +173,7 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
 
 
 def retrieve_bundle_definitions(
-    bundle_dir: Path, *, adcm_version: str, yspec_schema: dict
+    bundle_dir: Path, *, adcm_version: str, yspec_schema: dict, check_defaults: Callable[[ConfigDefinition], None]
 ) -> dict[BundleDefinitionKey, Definition]:
     definition_path_pairs = read_raw_bundle_definitions(bundle_root=bundle_dir)
     parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
@@ -184,7 +184,9 @@ def retrieve_bundle_definitions(
     normalized_definitions = _normalize_definitions(
         definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
     )
-    check_definitions_are_valid(normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema)
+    check_definitions_are_valid(
+        normalized_definitions, bundle_root=bundle_dir, yspec_schema=yspec_schema, check_defaults=check_defaults
+    )
     return normalized_definitions
 
 
@@ -196,8 +198,10 @@ def parse_action_process_stages(data: list[dict]) -> list[ActionProcessStage]:
 
 
 @convert_validation_to_bundle_error
-def parse_scripts(data: list[dict], context: ScriptsConversionContext) -> list[JobSpec]:
-    scripts = DynamicScriptsSchema.model_validate({"scripts": data}, strict=True)
+def parse_scripts(
+    data: list[dict], context: ScriptsConversionContext, schema: type[DynamicScriptsSchema | WizardScriptsSchema]
+) -> list[JobSpec]:
+    scripts = schema.model_validate({"scripts": data}, strict=True)
     scripts = scripts.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
     for script in scripts:  # propagate `allow_to_terminate` attr from action if not set
@@ -272,6 +276,26 @@ def _check_no_definition_type_conflicts(keys: Iterable[BundleDefinitionKey]) -> 
         raise BundleValidationError(message)
 
 
+@runtime_checkable
+class HasScripts(Protocol):
+    scripts: list[Any] | None
+
+
+@runtime_checkable
+class HasUpgrade(Protocol):
+    upgrade: list[Any] | None
+
+
+@runtime_checkable
+class HasConfigGroupCustomization(Protocol):
+    config_group_customization: bool | None
+
+
+@runtime_checkable
+class HasName(Protocol):
+    name: str
+
+
 def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefinition]) -> None:
     for key, definition in definitions.items():
         with localize_error(repr_from_key(key)):
@@ -279,14 +303,14 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
                 if action.venv is None:
                     action.venv = definition.venv
 
-                if hasattr(action, "scripts"):
+                if isinstance(action, HasScripts):
                     for script in action.scripts or ():
                         if script.allow_to_terminate is None:
                             script.allow_to_terminate = action.allow_to_terminate
                         if script.params is None:
-                            script.params = action.params
+                            script.params = action.params  # pyright: ignore [reportAttributeAccessIssue]
 
-            if hasattr(definition, "upgrade"):
+            if isinstance(definition, HasUpgrade):
                 for upgrade in definition.upgrade or ():
                     if upgrade.venv is None:
                         upgrade.venv = definition.venv
@@ -307,19 +331,23 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, _ParsedDefiniti
                 definition.flag_autogeneration = parent.flag_autogeneration
 
             # now all objects with parents has config_group_customization
-            if definition.config_group_customization is None:
+            if (
+                isinstance(definition, HasConfigGroupCustomization)
+                and isinstance(parent, HasConfigGroupCustomization)
+                and definition.config_group_customization is None
+            ):
                 definition.config_group_customization = parent.config_group_customization
 
             if isinstance(definition, ComponentSchema):
                 for requirement in definition.requires or ():
-                    if requirement.get("service") is None:
+                    if requirement.get("service") is None and isinstance(parent, HasName):
                         requirement["service"] = parent.name
 
             # patch hc_acl entries where can be patched
             if isinstance(definition, ServiceSchema):
                 for action in (definition.actions or {}).values():
                     for entry in action.hc_acl or ():
-                        if entry.get("service") is None:
+                        if entry.get("service") is None and isinstance(definition, HasName):
                             entry["service"] = definition.name
 
 

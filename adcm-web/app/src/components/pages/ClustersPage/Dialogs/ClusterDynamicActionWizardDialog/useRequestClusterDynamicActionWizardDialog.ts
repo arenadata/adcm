@@ -1,46 +1,56 @@
 import { useDispatch, useRequestTimer, useStore } from '@hooks';
-import { resetJobData, getStep, getSubJob, refreshProcessStages } from '@store/adcm/clusters/clustersWizardSlice';
+import { getStep, loadSubJobLogFromBackend, refreshProcessStages } from '@store/adcm/clusters/clustersWizardSlice';
 import { getJob } from '@store/adcm/clusters/clustersWizardSlice';
 import type { AdcmActionProcessOperationStep } from '@models/adcm/wizard';
 import { AdcmJobStatus } from '@models/adcm';
 import { useEffect, useMemo } from 'react';
 
-export const useRequestClusterDynamicActionWizardDialog = () => {
+const terminalStatuses = new Set([
+  AdcmJobStatus.Success,
+  AdcmJobStatus.Failed,
+  AdcmJobStatus.Locked,
+  AdcmJobStatus.Aborted,
+  AdcmJobStatus.Broken,
+]);
+
+export const useRequestClusterDynamicActionWizardDialog = (step: AdcmActionProcessOperationStep) => {
   const dispatch = useDispatch();
-  const job = useStore((s) => s.adcm.clustersWizard.job);
-  const step = useStore((s) => s.adcm.clustersWizard.step);
+  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
 
   const clusterId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.clusterId);
   const actionId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.actionId);
-  const processId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.process)?.id;
+  const processId = useStore((s) => s.adcm.clustersWizardActions.wizardDialog.processId);
+  const currentStep = useStore((s) => s.adcm.clustersWizard.process)?.currentStep;
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
 
   useEffect(() => {
-    if (clusterId && actionId && processId && selectedStep) {
-      dispatch(resetJobData());
-      dispatch(getStep({ clusterId, actionId, processId, stepId: selectedStep }));
+    if (clusterId && actionId && processId) {
+      const stepId = selectedStep ?? currentStep;
+      if (stepId) {
+        dispatch(getStep({ clusterId, actionId, processId, stepId }));
+      }
     }
-  }, [dispatch, selectedStep]);
+  }, [dispatch, selectedStep, currentStep]);
 
-  const requestFrequency = useMemo(() => {
-    return job?.status === AdcmJobStatus.Success ? 0 : 3;
-  }, [job?.status]);
+  const jobId = (step as AdcmActionProcessOperationStep)?.task?.id;
+  const stepId = step.id;
+  const job = useMemo(() => (step ? jobsData[stepId]?.job : null), [step, jobsData]);
+  const requestFrequency = useMemo(() => (job?.status && terminalStatuses.has(job.status) ? 0 : 3), [job?.status]);
 
   const getJobData = () => {
-    if (step && (step as AdcmActionProcessOperationStep).task) {
-      if (job?.status !== AdcmJobStatus.Success) {
-        dispatch(getJob());
+    if (jobId && currentStep && step.id <= currentStep) {
+      dispatch(getJob({ jobId, stepId }));
 
-        if (job) {
-          dispatch(getSubJob(job.id));
-        }
-      } else {
-        if (clusterId && actionId && processId) {
-          dispatch(refreshProcessStages({ clusterId, actionId, processId }));
-        }
+      if (job) {
+        const subJobIds = job.childJobs.map((childJob) => childJob.id);
+        dispatch(loadSubJobLogFromBackend({ subJobIds, stepId }));
+      }
+
+      if (clusterId && actionId && processId && job?.status && terminalStatuses.has(job.status)) {
+        dispatch(refreshProcessStages({ clusterId, actionId, processId }));
       }
     }
   };
 
-  useRequestTimer(getJobData, getJobData, requestFrequency, [step, job?.status]);
+  useRequestTimer(getJobData, getJobData, requestFrequency, [step.id, step.state, job?.status]);
 };

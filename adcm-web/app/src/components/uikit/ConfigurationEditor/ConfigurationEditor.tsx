@@ -28,6 +28,7 @@ export interface ConfigurationEditorProps {
   onConfigurationChange: (configuration: ConfigurationData) => void;
   onAttributesChange: (attributes: ConfigurationAttributes) => void;
   onChangeIsValid?: (isValid: boolean) => void;
+  isReadOnly?: boolean;
 }
 
 const ConfigurationEditor = ({
@@ -39,6 +40,7 @@ const ConfigurationEditor = ({
   onConfigurationChange,
   onAttributesChange,
   onChangeIsValid,
+  isReadOnly = false,
 }: ConfigurationEditorProps) => {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);
@@ -72,7 +74,7 @@ const ConfigurationEditor = ({
   };
 
   const handleValueChange = useCallback(
-    (node: ConfigurationNodeView, value: JSONPrimitive) => {
+    (node: ConfigurationNodeView, value: JSONValue) => {
       const newConfiguration = editField(configuration, node.data.path, value);
       if (newConfiguration) {
         onConfigurationChange(newConfiguration);
@@ -167,6 +169,7 @@ const ConfigurationEditor = ({
         onAddArrayItem={handleAddArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
         onChangeIsValid={onChangeIsValid}
+        isReadOnly={isReadOnly}
       />
       {selectedNode && isEditFieldDialogOpen && (
         <EditConfigurationFieldDialog

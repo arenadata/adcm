@@ -11,14 +11,14 @@
 # limitations under the License.
 
 """
+DEPRECATED
+
 Copy-pasted from cm for ACDM-6355
 
 Should be moved to core.config or smt
 """
 
 import re
-
-from typing_extensions import Self
 
 
 class Pattern:
@@ -37,7 +37,7 @@ class Pattern:
         if self._compiled:
             return self._compiled
 
-        self.compile()
+        self._compiled = self.compile()
 
         return self._compiled
 
@@ -49,9 +49,8 @@ class Pattern:
         except re.error:
             return False
 
-    def compile(self) -> Self:
-        self._compiled = self._compiled or re.compile(self._pattern)
-        return self
+    def compile(self) -> re.Pattern:
+        return self._compiled or re.compile(self._pattern)
 
     def matches(self, value: str) -> bool:
         return bool(self.compiled.search(value))

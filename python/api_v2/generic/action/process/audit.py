@@ -10,10 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from json import JSONDecodeError
+import re
+import json
+
 from audit.alt.api import audit_create, audit_update, audit_view
 from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result, RetrieveAuditObjectFunc
 from audit.alt.hooks import AuditHook, adjust_denied_on_404_result
 from cm.models import Action
+from django.core.handlers.wsgi import WSGIRequest
 
 from api_v2.utils.audit import _retrieve_request_body, object_does_exist
 
@@ -24,7 +29,7 @@ def audit_action_process_viewset(retrieve_owner: RetrieveAuditObjectFunc):
             on_collect=[set_name, adjust_denied_on_404_result(objects_exist=parent_action_exists)]
         ),
         operation=audit_update(
-            name="Operation {operation_name} for process {process_id} of action {action_name}",
+            name="Operation {operation_name} {step_id} for process {process_id} of action {action_name}",
             object_=retrieve_owner,
         ).attach_hooks(
             pre_call=retrieve_operation_name,
@@ -60,12 +65,15 @@ def set_names(
         Action.objects.values_list("display_name", flat=True).filter(id=call_arguments.get("action_pk")).first()
     )
     process_id = call_arguments.get("pk")
+    step_id = _get_step_id(call_arguments["request"])
     operation_name = call_arguments.data.get("method", "")
 
-    context.name = (
-        context.name.format(operation_name=operation_name, process_id=process_id, action_name=action_name or "")
-        .strip()
-        .replace("  ", " ")
+    context.name = re.sub(
+        r" {2,}",
+        " ",
+        context.name.format(
+            operation_name=operation_name, process_id=process_id, step_id=step_id, action_name=action_name or ""
+        ).strip(),
     )
 
 
@@ -79,3 +87,11 @@ class retrieve_operation_name(AuditHook):  # noqa: N801
             return ()
 
         self.call_arguments.data["method"] = data.get("method").strip()
+
+
+def _get_step_id(request: WSGIRequest) -> int | str:
+    try:
+        payload = json.loads(request.body)
+        return payload.get("params", {}).get("step_id", "")
+    except JSONDecodeError:
+        return ""

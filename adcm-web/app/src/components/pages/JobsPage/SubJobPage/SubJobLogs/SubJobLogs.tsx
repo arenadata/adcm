@@ -5,6 +5,7 @@ import SubJobLog from '@commonComponents/job/SubJobLog/SubJobLog';
 import SubJobLogsTabs from '@commonComponents/job/SubJobLogsTabs/SubJobLogsTabs';
 import s from './SubJobLogs.module.scss';
 import { Spinner } from '@uikit';
+import { FullscreenContainer } from '@uikit/CodeHighlighter/SubComponents/FullscreenContainer';
 
 export interface SubJobLogsProps {
   isAutoScroll: boolean;
@@ -35,8 +36,8 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
     setCurrentLogId(id);
   };
 
-  return (
-    <div className={s.subJobLog}>
+  const content = (
+    <>
       {isSubJobLogsShown && (
         <SubJobLogsTabs
           subJobId={subJob?.id}
@@ -45,18 +46,18 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
           onChangeTab={onTabChange}
         />
       )}
-
       {!isSubJobLogsShown && (
         <div className={s.subJobLog__spinner}>
           <Spinner />
         </div>
       )}
-
       {subJob && log && (
         <SubJobLog isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} subJob={subJob} subJobLog={log} />
       )}
-    </div>
+    </>
   );
+
+  return <FullscreenContainer className={s.subJobLog}>{content}</FullscreenContainer>;
 };
 
 export default SubJobLogs;

@@ -5,6 +5,7 @@ import type {
   AdcmWizardProcessOperation,
   AdcmWizardProcessOperationPayload,
 } from '@models/adcm/wizard';
+import type { RequestOptions } from '@api/httpClient/HttpClient';
 
 export class AdcmWizardApi {
   public static async createProcess(endpoint: string) {
@@ -19,8 +20,8 @@ export class AdcmWizardApi {
     return response.data;
   }
 
-  public static async getStep(endpoint: string) {
-    const response = await httpClient.get<AdcmActionProcessStep>(endpoint);
+  public static async getStep(endpoint: string, options?: RequestOptions) {
+    const response = await httpClient.get<AdcmActionProcessStep>(endpoint, options);
 
     return response.data;
   }

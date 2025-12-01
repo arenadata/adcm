@@ -4,42 +4,61 @@ import ActionWizardMap from '@uikit/ActionWizardMap/ActionWizardMap';
 import s from './ActionWizard.module.scss';
 import Button from '@uikit/Button/Button';
 import Icon from '@uikit/Icon/Icon';
-import type { AdcmActionWizardProcess, AdcmWizardStage } from '@models/adcm/wizard';
+import {
+  type AdcmActionWizardProcess,
+  type AdcmWizardJobsData,
+  type AdcmWizardStage,
+  AdcmWizardStepStates,
+  AdcmWizardStepType,
+} from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
 import ClusterDynamicActionWizardStep from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardStep/ClusterDynamicActionWizardStep';
 import ActionWizardConfigurationEditorContextProvider from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContextProvider';
-import { useStore } from '@hooks';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
+import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
+import ActionWizardLastStageContextProvider from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContextProvider';
+import ActionWizardBrokenStage from '@uikit/ActionWizardSteps/ActionWizardBrokenStage/ActionWizardBrokenStage';
+import FlexGroup from '@uikit/FlexGroup/FlexGroup';
+
+const tips = {
+  [AdcmWizardStepStates.Created]: 'Fill inputs',
+  [AdcmWizardStepStates.Completed]: 'Proceed to next step',
+  [AdcmWizardStepStates.Running]: 'Running',
+  [AdcmWizardStepStates.Broken]: 'Broken',
+};
 
 const getTitleIcon = (stage: AdcmWizardStage, isValid: boolean) => {
-  if (stage.steps.some((step) => step.state === 'running')) {
+  if (stage.steps.some((step) => step.state === AdcmWizardStepStates.Running)) {
     return <Icon className={s.actionWizardLayout__runningIcon} name="g1-hourglass" />;
   }
-  if (stage.steps.every((step) => step.state === 'completed') && isValid) {
+  if (stage.steps.every((step) => step.state === AdcmWizardStepStates.Completed) && isValid) {
     return <MarkerIcon variant="round" type="check" size={20} />;
   }
 
   return undefined;
 };
 
-const stageLabelClassName = (stage: AdcmWizardStage, isValid: boolean) => {
+const stageLabelClassName = (stage: AdcmWizardStage, isValid: boolean, jobsData?: AdcmJob) => {
   return cn(s.actionWizardLayout__label, {
-    [s.actionWizardLayout__label_running]: stage.steps.some((step) => step.state === 'running'),
-    [s.actionWizardLayout__label_error]: !isValid || stage.steps.some((step) => step.state === 'broken'),
-    [s.actionWizardLayout__label_completed]: stage.steps.every((step) => step.state === 'completed'),
+    [s.actionWizardLayout__label_running]: stage.steps.some((step) => step.state === AdcmWizardStepStates.Running),
+    [s.actionWizardLayout__label_error]:
+      !isValid ||
+      jobsData?.status === AdcmJobStatus.Failed ||
+      stage.steps.some((step) => step.state === AdcmWizardStepStates.Broken),
+    [s.actionWizardLayout__label_completed]: stage.steps.every((step) => step.state === AdcmWizardStepStates.Completed),
   });
 };
 
-const getStepTip = (stage: AdcmWizardStage) => {
-  if (stage.steps.some((step) => step.state === 'created')) {
-    return 'Fill inputs';
-  }
-  if (stage.steps.every((step) => step.state === 'completed')) {
-    return 'Proceed to next step';
-  }
-  if (stage.steps.some((step) => step.state === 'running')) {
-    return 'Running';
+const getStepTip = (stage: AdcmWizardStage, currentStep: number) => {
+  const step = stage.steps.find((step) => step.id === currentStep);
+
+  if (step) {
+    if (step.type === AdcmWizardStepType.Operation || step.type === AdcmWizardStepType.LastStep) {
+      return tips[AdcmWizardStepStates.Completed];
+    }
+
+    return tips[step.state as AdcmWizardStepStates];
   }
 };
 
@@ -47,16 +66,28 @@ interface ActionWizardProps {
   stages: AdcmWizardStage[];
   currentStep: number;
   process: AdcmActionWizardProcess;
-  onClose?: () => void;
+  jobsData: AdcmWizardJobsData;
+  onClose: () => void;
+  selectedStep?: number;
+  brokenStepError?: string;
+  wizardTitle: string;
 }
 
-const ActionWizard: React.FC<ActionWizardProps> = ({ stages, currentStep, process, onClose }) => {
-  const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
+const ActionWizard: React.FC<ActionWizardProps> = ({
+  wizardTitle,
+  stages,
+  selectedStep,
+  brokenStepError,
+  currentStep,
+  process,
+  jobsData,
+  onClose,
+}) => {
+  const stepId = selectedStep ?? currentStep;
 
   const { isValid } = useActionWizardValidationContext();
 
   const stageIndex = useMemo(() => {
-    const stepId = selectedStep ?? currentStep;
     return stages.findIndex((stage) => stage.steps.some((step) => step.id === stepId));
   }, [stages, selectedStep]);
 
@@ -65,24 +96,35 @@ const ActionWizard: React.FC<ActionWizardProps> = ({ stages, currentStep, proces
   return (
     <div className={s.actionWizardLayout}>
       <aside className={s.actionWizardLayout__leftSidebarWrap} data-test="nav-menu">
-        <ActionWizardMap process={process} />
+        <ActionWizardMap wizardTitle={wizardTitle} process={process} />
       </aside>
       <div className={s.actionWizardLayout__content}>
-        <header className={s.actionWizardLayout__header}>
-          <div className={s.actionWizardLayout__title}>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <span className={stageLabelClassName(stages[stageIndex], isValid)}>{stages[stageIndex].displayName}</span>
-              {getTitleIcon(stages[stageIndex], isValid)}
-            </div>
-            <span className={s.actionWizardLayout__tip}>{getStepTip(stages[stageIndex])}</span>
-          </div>
-          <Button className={s.actionWizardLayout__exitButton} variant="secondary" onClick={onClose}>
-            Exit
-          </Button>
-        </header>
-        <ActionWizardConfigurationEditorContextProvider>
-          <ClusterDynamicActionWizardStep stageNumber={stageIndex + 1} />
-        </ActionWizardConfigurationEditorContextProvider>
+        {brokenStepError && <ActionWizardBrokenStage brokenStepError={brokenStepError} onClose={onClose} />}
+        {!brokenStepError && (
+          <>
+            <header className={s.actionWizardLayout__header}>
+              <div className={s.actionWizardLayout__title}>
+                <FlexGroup gap="16px">
+                  <span className={stageLabelClassName(stages[stageIndex], isValid, jobsData[stepId]?.job)}>
+                    {stages[stageIndex].displayName}
+                  </span>
+                  {getTitleIcon(stages[stageIndex], isValid)}
+                </FlexGroup>
+                <span className={s.actionWizardLayout__tip}>
+                  {getStepTip(stages[stageIndex], selectedStep ?? currentStep)}
+                </span>
+              </div>
+              <Button className={s.actionWizardLayout__exitButton} variant="secondary" onClick={onClose}>
+                Exit
+              </Button>
+            </header>
+            <ActionWizardConfigurationEditorContextProvider>
+              <ActionWizardLastStageContextProvider>
+                <ClusterDynamicActionWizardStep stageNumber={stageIndex + 1} />
+              </ActionWizardLastStageContextProvider>
+            </ActionWizardConfigurationEditorContextProvider>
+          </>
+        )}
       </div>
     </div>
   );

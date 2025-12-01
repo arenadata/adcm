@@ -15,6 +15,8 @@ from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
+from unittest.mock import patch
+import unittest
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
@@ -208,7 +210,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
             )
 
         run_task.run()
@@ -219,7 +221,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
             )
 
         run_task.run()
@@ -233,3 +235,12 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         job.save(update_fields=["status", "pid"])
 
         return task, job
+
+
+# Reasonably fast and dirty approach to "duplicate" test for another use case with a bit less overhead
+def subtests_on_feature_flag(tc: unittest.TestCase, flag_func, override_in: str):
+    name = flag_func.__name__
+    # todo REMOVE IN ADCM-7319
+    for flag_value in (False,):
+        with patch(f"{override_in}.{name}", return_value=flag_value):
+            yield tc.subTest(f"{name}-{flag_value}")

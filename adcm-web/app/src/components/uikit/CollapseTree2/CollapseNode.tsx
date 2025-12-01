@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import type React from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { useEffect, useState, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
 import type { Node } from './CollapseNode.types';
@@ -13,7 +12,7 @@ import {
 
 interface CollapseNodeProps<T> {
   node: Node<T>;
-  treeRef?: React.RefObject<HTMLDivElement>;
+  treeRef?: RefObject<HTMLDivElement>;
   isInitiallyExpanded?: boolean;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;

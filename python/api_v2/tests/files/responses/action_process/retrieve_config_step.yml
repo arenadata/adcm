@@ -1,5 +1,6 @@
 {
   "id": {{ step_id }},
+  "name": "stage1_step1",
   "displayName": "Stage1.Step1",
   "type": "configuration",
   "state": "created",

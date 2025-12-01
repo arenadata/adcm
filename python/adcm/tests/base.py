@@ -16,7 +16,9 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Callable, Iterable
+import uuid
 import random
+import shutil
 import string
 import tarfile
 
@@ -83,7 +85,7 @@ class ParallelReadyTestCase:
         super().__init_subclass__(**kwargs)
 
         cls.directories = cls._prepare_temporal_directories_for_adcm()
-        override_settings(**cls.directories)(cls)
+        override_settings(**cls.directories, ANSIBLE_SECRET="verysecretstuff")(cls)
 
     @staticmethod
     def _prepare_temporal_directories_for_adcm() -> dict:
@@ -239,7 +241,9 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         return policy.pk
 
     def upload_and_load_bundle(self, path: Path) -> Bundle:
-        return self.add_bundle(source_dir=path)
+        downloaded_archive = Path(path.parent, str(uuid.uuid4()) + ".temp")
+        shutil.copy2(path, downloaded_archive)
+        return self.add_bundle(source_dir=downloaded_archive)
 
     def create_cluster(self, bundle_pk: int, name: str) -> Cluster:
         prototype = Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER)
@@ -429,6 +433,7 @@ class TaskTestMixin:
         return prepare_task_for_action(
             target=target,
             orm_owner=owner,
+            orm_target=host or owner,
             action=action.id,
             payload=payload or TaskPayloadDTO(),
             feature_scripts_jinja=feature_scripts_jinja,

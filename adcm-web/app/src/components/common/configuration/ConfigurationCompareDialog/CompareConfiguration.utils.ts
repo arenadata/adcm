@@ -28,7 +28,7 @@ export const getCompareView = (
 };
 
 const configNodeToCompareView = (configNode: ConfigurationNode, isParentDeactivated = false): NameValueTuple | null => {
-  if (configNode.data.fieldSchema.adcmMeta.isInvisible) {
+  if (configNode.data.fieldSchema.adcmMeta?.isInvisible) {
     return null;
   }
 
@@ -40,6 +40,7 @@ const configNodeToCompareView = (configNode: ConfigurationNode, isParentDeactiva
     case 'field': {
       return { name, value: configNode.data.value };
     }
+    case 'selectableObject':
     case 'object': {
       const result: JSONObject = {};
       if (configNode.children) {

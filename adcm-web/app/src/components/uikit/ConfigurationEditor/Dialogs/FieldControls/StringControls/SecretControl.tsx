@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import ConfigurationField from '../ConfigurationField';
-import type { SingleSchemaDefinition } from '@models/adcm';
+import type { SchemaDefinition } from '@models/adcm';
 import type { JSONPrimitive } from '@models/json';
 import { validate } from './StringControls.utils';
 
@@ -10,22 +10,13 @@ const mismatchErrorText = 'Please, make sure your secrets match';
 export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
-  defaultValue: JSONPrimitive;
-  fieldSchema: SingleSchemaDefinition;
+  fieldSchema: SchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
   onApply: () => void;
 }
 
-const SecretControl = ({
-  fieldName,
-  fieldSchema,
-  defaultValue,
-  value,
-  isReadonly,
-  onChange,
-  onApply,
-}: StringControlProps) => {
+const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: StringControlProps) => {
   const [secret, setSecret] = useState((value as string) ?? '');
   const [confirm, setConfirm] = useState((value as string) ?? '');
   const [secretError, setSecretError] = useState<string | undefined>(undefined);
@@ -47,12 +38,6 @@ const SecretControl = ({
     setConfirmError(!areEqual ? mismatchErrorText : undefined);
   }, [secret, secretError, confirm, onChange]);
 
-  const handleResetToDefault = (defaultValue: JSONPrimitive) => {
-    onChange(defaultValue, true);
-    setSecret((defaultValue as string) ?? '');
-    setConfirm((defaultValue as string) ?? '');
-  };
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const areEqual = secret === confirm;
     if (areEqual && event.key === 'Enter') {
@@ -62,14 +47,7 @@ const SecretControl = ({
 
   return (
     <form>
-      <ConfigurationField
-        label={fieldName}
-        fieldSchema={fieldSchema}
-        defaultValue={defaultValue}
-        error={secretError}
-        disabled={isReadonly}
-        onResetToDefault={handleResetToDefault}
-      >
+      <ConfigurationField label={fieldName} fieldSchema={fieldSchema} error={secretError} disabled={isReadonly}>
         <InputPassword
           tabIndex={0}
           value={secret}
@@ -79,14 +57,7 @@ const SecretControl = ({
         />
       </ConfigurationField>
       {!isReadonly && (
-        <ConfigurationField
-          label="Confirm"
-          fieldSchema={fieldSchema}
-          defaultValue={defaultValue}
-          error={confirmError}
-          disabled={isReadonly}
-          onResetToDefault={handleResetToDefault}
-        >
+        <ConfigurationField label="Confirm" fieldSchema={fieldSchema} error={confirmError} disabled={isReadonly}>
           <InputPassword
             tabIndex={0}
             value={confirm}

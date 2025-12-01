@@ -148,6 +148,7 @@ class TaskLogLockTest(BaseTestCase):
             id=prepare_task_for_action(
                 target=object_,
                 orm_owner=cluster,
+                orm_target=cluster,
                 action=action.pk,
                 payload=TaskPayloadDTO(),
             ).id

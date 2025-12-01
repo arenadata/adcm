@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from enum import Enum
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 
 from core.types import ActionProcessStepID
@@ -39,30 +39,40 @@ class _StepIDParam(BaseModel):
     step_id: ActionProcessStepID
 
 
+class HCMappingRule(BaseModel):
+    host_id: int
+    component_id: int
+
+
+class HostComponentMapDelta(BaseModel):
+    add: Optional[list[HCMappingRule]] = Field(default_factory=list)
+    remove: Optional[list[HCMappingRule]] = Field(default_factory=list)
+
+
 # Submit
 
 
-class _ConfigurationParam(BaseModel):
+class SubmitOperationStepParams(_SyncKeyParam, _StepIDParam):
+    ...
+
+
+class SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam):
     configuration: Configuration
 
 
-class _SubmitOperationStepParams(_SyncKeyParam, _StepIDParam):
-    ...
-
-
-class _SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam, _ConfigurationParam):
-    ...
+class SubmitMappingStepParams(_SyncKeyParam, _StepIDParam):
+    host_component_map_delta: HostComponentMapDelta
 
 
 class SubmitStepPayload(BaseModel):
     method: Literal[ProcessOperationType.SUBMIT]
-    params: _SubmitOperationStepParams | _SubmitConfigurationStepParams
+    params: SubmitMappingStepParams | SubmitConfigurationStepParams | SubmitOperationStepParams
 
 
 # Complete
 
 
-class CompleteStepPayload(BaseModel):
+class CompleteProcessPayload(BaseModel):
     method: Literal[ProcessOperationType.COMPLETE]
     params: _SyncKeyParam
 
@@ -83,6 +93,6 @@ class ResetStepPayload(BaseModel):
 
 
 class OperationPayloadSchema(BaseModel):
-    payload: SubmitStepPayload | CompleteStepPayload | ResetStepPayload = Field(discriminator="method")
+    payload: SubmitStepPayload | CompleteProcessPayload | ResetStepPayload = Field(discriminator="method")
 
     model_config = ConfigDict(extra="forbid")

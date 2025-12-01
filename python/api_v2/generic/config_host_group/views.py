@@ -72,7 +72,7 @@ class CHGViewSet(
         )
 
     def create(self, request: Request, *_, **__):
-        parent_object = self.get_parent_object()
+        parent_object = self.get_parent_object(raise_=NotFound())
 
         self._check_parent_permissions(parent_object=parent_object)
 

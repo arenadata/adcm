@@ -168,6 +168,7 @@ class JobRepoImpl(JobRepoInterface):
                 multi_state_unset=tuple(task_record.action.multi_state_on_fail_unset or ()),
             ),
             is_blocking=task_record.is_blocking,
+            description=task_record.description,
         )
 
     @classmethod
@@ -225,6 +226,7 @@ class JobRepoImpl(JobRepoInterface):
             selector=selector,
             is_blocking=payload.is_blocking,
             process=payload.process.model_dump(mode="json") if payload.process else None,
+            description=payload.description,
         )
 
         return cls.get_task(id=task.pk)
@@ -529,7 +531,13 @@ class ActionRepoImpl(ActionRepoInterface):
     @staticmethod
     def get_action(id: ActionID) -> ActionInfo:  # noqa: A002
         action = Action.objects.values(
-            "id", "name", "prototype_id", "prototype__type", "scripts_jinja", "wizard_template"
+            "id",
+            "name",
+            "prototype_id",
+            "prototype__type",
+            "scripts_jinja",
+            "wizard_template",
+            "scripts_template",
         ).get(id=id)
         return ActionInfo(
             id=action["id"],
@@ -538,6 +546,7 @@ class ActionRepoImpl(ActionRepoInterface):
                 id=action["prototype_id"], type=db_record_type_to_core_type(db_record_type=action["prototype__type"])
             ),
             scripts_jinja=action["scripts_jinja"],
+            scripts_template=action["scripts_template"],
             wizard_template=action["wizard_template"],
         )
 

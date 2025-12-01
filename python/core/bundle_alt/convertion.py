@@ -12,7 +12,7 @@
 
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal, cast
 import re
 
 import yaml
@@ -36,6 +36,7 @@ from core.bundle_alt.types import (
     VersionBound,
 )
 from core.job.types import JobSpec, ScriptType
+from core.templates import Template, parse_template
 
 # Public
 
@@ -104,6 +105,7 @@ def schema_entry_to_definition(
 
     if is_component_key(key):
         parent = find_parent(key, entries)
+        parent = cast(ClusterSchema | ServiceSchema, parent)
         inherited = {
             "name": key[-1],
             "version": parent.version,
@@ -161,7 +163,7 @@ def _convert(entity: dict, context: dict):
     return definition
 
 
-def _extract_imports(entity: dict) -> list[dict] | None:
+def _extract_imports(entity: dict) -> list[ImportDefinition] | None:
     imports = entity.get("imports")
     if imports is None:
         return None
@@ -228,7 +230,9 @@ def _extract_action(entity, context):
     _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
     _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
     _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
-    _fill_value(result, entity, "wizard_template")
+    _fill_value(result, entity, "config_template", cast=partial(_to_template_with_normalized_path, context=context))
+    _fill_value(result, entity, "scripts_template", cast=partial(_to_template_with_normalized_path, context=context))
+    _fill_value(result, entity, "wizard_template", cast=partial(_to_template_with_normalized_path, context=context))
 
     _patch_display_name(result, entity)
 
@@ -333,6 +337,12 @@ def _normalize_path(result: str, context: dict) -> str:
 
 
 # Specific Steps
+
+
+def _to_template_with_normalized_path(entity: dict, context: dict) -> Template:
+    template = parse_template(entity)
+    template.file.path = Path(_normalize_path(result=str(template.file.path), context=context))
+    return template
 
 
 def _patch_upgrade_action_names(result: Definition) -> Definition:
@@ -567,7 +577,7 @@ def __iterate_parameters(group: list[dict], key: ParameterKey) -> Iterable[tuple
 
         yield param_key, param
 
-        if param["type"] == "group":
+        if param["type"] in ("group", "selection_group"):
             yield from __iterate_parameters(group=param["subs"], key=param_key)
 
 

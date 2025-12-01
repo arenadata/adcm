@@ -14,6 +14,7 @@ from collections import deque
 from operator import attrgetter
 from typing import Iterable, Literal, NamedTuple, TypeAlias
 
+from adcm.feature_flags import use_new_config_processing
 from core.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.cluster.types import ClusterTopology
 from core.concern.checks import (
@@ -24,7 +25,9 @@ from core.concern.checks import (
 from core.converters import named_mapping_from_topology
 from core.types import ClusterID, ConfigID, ObjectID
 from django.db.models import Q
+import core
 
+from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
@@ -52,6 +55,16 @@ class MissingRequirement(NamedTuple):
 
 
 def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
+    if use_new_config_processing():
+        from infra.services import get_config_service
+
+        service = get_config_service()
+        descriptor = orm_object_to_core_descriptor(target)
+        try:
+            return service.inspect_has_invalid_configuration(owner=descriptor)
+        except core.config.ObjectWithoutConfigError:
+            return False
+
     config_spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(target.prototype_id,)).values()), None)
     if not config_spec:
         return False

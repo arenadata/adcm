@@ -1,0 +1,41 @@
+:global {
+  body.theme-dark {
+    --action-wizard-mapping-input-background: var(--color-xblack);
+  }
+
+  body.theme-light {
+    --action-wizard-mapping-input-background: var(--color-xwhite);
+  }
+}
+
+.actionWizardMappingToolbar {
+  gap: 40px;
+  margin-bottom: 24px;
+  top: 0;
+  position: sticky;
+  backdrop-filter: blur(7px);
+  z-index: 1;
+
+  &__inputAndSwitches {
+    width: 100%;
+    gap: 20px;
+    display: flex;
+  }
+
+  &__searchInput {
+    background: var(--action-wizard-mapping-input-background);
+    flex: 1;
+  }
+
+  &__sortIconWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__sortIcon {
+    &_desc {
+      transform: rotate(180deg);
+    }
+  }
+}

@@ -23,7 +23,6 @@ from django.db import transaction
 from rbac.models import Policy
 
 from cm.adcm_config.config import (
-    init_object_config,
     make_object_config,
     save_object_config,
     switch_config,
@@ -37,6 +36,7 @@ from cm.api import (
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
+from cm.legacy.config import init_object_config
 from cm.logger import logger
 from cm.models import (
     ActionHostGroup,

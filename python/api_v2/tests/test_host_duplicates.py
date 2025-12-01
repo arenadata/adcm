@@ -266,9 +266,13 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertIn("host duplicate", response.json()["desc"])
 
     def test_host_list_queries_amount(self):
-        expected_queries_amount = 10
+        expected_queries_amount = 8
 
-        # When there aren't any duplicates, there will be 1 less query (for concerns prefetch),
+        # When there aren't any duplicates, there will be 1 more query (for concerns prefetch),
+        # SELECT "django_content_type"."id", "django_content_type"."app_label", "django_content_type"."model" FROM
+        # "django_content_type" INNER JOIN "auth_permission" ON
+        # ("django_content_type"."id" = "auth_permission"."content_type_id") WHERE
+        # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_host') LIMIT 21
         # yet amount of queries won't increase when more instances/duplicates arrive
         create_duplicate(host_id=self.host_1.pk, name="jjjj")
 
@@ -298,9 +302,42 @@ class TestDuplicateHost(BaseAPITestCase):
     def test_create_duplicate_and_add_to_cluster_with_same_duplicate_added_fail(self):
         self.create_duplicate(origin=self.host_1, name=self.host_1.fqdn, cluster=self.cluster_1)
 
+        self.cluster_1.refresh_from_db()
         response = self.client.v2[self.host_1, "duplicates"].post(
             data={"name": self.host_1.fqdn, "clusterId": self.cluster_1.id}
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, msg=response.json())
-        self.assertEqual("Host with the same origin is already added to cluster", response.json()["desc"])
+        response = response.json()
+        self.assertEqual(response["code"], "HOST_CONFLICT")
+        self.assertEqual(response["level"], "error")
+        # here we can not know host_id, it existed only in rolled back transaction
+        self.assertIn("Only one copy of a host can be added to the cluster. Errors: <Host #", response["desc"])
+
+    def test_adcm_7132_create_duplicate_from_duplicate_fail(self):
+        duplicate = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate")
+        response = self.client.v2[duplicate, "duplicates"].post(data={"name": f"{duplicate.fqdn}-duplicate"})
+
+        expected_response = {
+            "code": "INVALID_CREATE_DUPLICATE_HOST",
+            "desc": f"There is not a #{duplicate.id} original host",
+            "level": "error",
+        }
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_adcm_7156_set_duplicate_name_same_as_existing_success(self):
+        duplicate_1 = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate-1")
+        duplicate_2 = self.create_duplicate(origin=self.host_1, name=f"{self.host_1.fqdn}-duplicate-2")
+
+        # name as original
+        response = self.client.v2[duplicate_2].patch(data={"name": self.host_1.fqdn})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        duplicate_2.refresh_from_db()
+        self.assertEqual(duplicate_2.fqdn, self.host_1.fqdn)
+
+        # name as another duplicate
+        response = self.client.v2[duplicate_2].patch(data={"name": duplicate_1.fqdn})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        duplicate_2.refresh_from_db()
+        self.assertEqual(duplicate_2.fqdn, duplicate_1.fqdn)

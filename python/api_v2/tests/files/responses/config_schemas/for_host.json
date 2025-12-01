@@ -16,6 +16,16 @@
   "type": "object",
   "properties": {
     "structure": {
+      "default": [
+        {
+          "integer": 1,
+          "string": "string1"
+        },
+        {
+          "integer": 2,
+          "string": "string2"
+        }
+      ],
       "oneOf": [
         {
           "title": "structure",
@@ -140,6 +150,11 @@
       "additionalProperties": false,
       "properties": {
         "list": {
+          "default": [
+            "value1",
+            "value2",
+            "value3"
+          ],
           "oneOf": [
             {
               "title": "list",

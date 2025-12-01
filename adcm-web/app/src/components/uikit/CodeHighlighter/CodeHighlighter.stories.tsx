@@ -74,3 +74,21 @@ from dev1 t1, dev1 t2 where t1.id is not null
 -- Dolores, quis quos. Ad alias commodi culpa eaque fugit ipsa numquam sequi.`,
   language: 'sql',
 };
+
+const original = {
+  name: 'Adeel Solangi',
+  language: 'Sindhi',
+  id: 'V59OF92YF627HFY0',
+  bio: 'Donec lobortis eleifend condimentum. Cras dictum dolor lacinia lectus vehicula rutrum. Maecenas quis nisi nunc. Nam tristique feugiat est vitae mollis. Maecenas quis nisi nunc.',
+  version: 6.1,
+};
+const repeatedArray = Array(10000).fill(original);
+const items = repeatedArray.map((obj) => JSON.stringify(obj));
+const jsonString = `[\n${items.join(',\n')}\n]`;
+
+export const CodeHighlighterElementBigJSON = Template.bind({});
+CodeHighlighterElementBigJSON.args = {
+  isNotCopy: false,
+  code: jsonString,
+  language: 'json',
+};

@@ -16,6 +16,7 @@
   "type": "object",
   "properties": {
     "simple": {
+      "default": null,
       "oneOf": [
         {
           "title": "simple",

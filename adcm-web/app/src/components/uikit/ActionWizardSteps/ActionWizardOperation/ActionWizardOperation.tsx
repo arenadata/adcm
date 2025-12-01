@@ -9,14 +9,14 @@ import { useDispatch } from '@hooks';
 import JobsStatusCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
-import { AdcmJobStatus } from '@models/adcm';
+import { AdcmJobStatus, type AdcmSubJobDetails } from '@models/adcm';
 import type { AdcmJob, AdcmSubJob, AdcmSubJobLogItem } from '@models/adcm';
 import { Link } from 'react-router-dom';
 import ActionWizardOperationLog from '@uikit/ActionWizardSteps/ActionWizardOperation/ActionWizardOperationLog/ActionWizardOperationLog';
 
 interface ActionWizardOperationProps {
   job: AdcmJob;
-  subJobLog: AdcmSubJobLogItem[];
+  subJobLog: Record<AdcmSubJobDetails['id'], AdcmSubJobLogItem[]>;
 }
 
 const ActionWizardOperation = ({ job, subJobLog }: ActionWizardOperationProps) => {
@@ -49,7 +49,7 @@ const ActionWizardOperation = ({ job, subJobLog }: ActionWizardOperationProps) =
           key={subJob.id}
           colSpan={columns.length}
           isExpanded={expandableRows[subJob.id] || false}
-          expandedContent={<ActionWizardOperationLog subJob={subJob} subJobLogs={subJobLog} />}
+          expandedContent={<ActionWizardOperationLog subJob={subJob} subJobLogs={subJobLog[subJob.id]} />}
         >
           <JobsStatusCell status={subJob.status} className={s.subJobRow__subJobName}>
             <Link to={`/jobs/${job.id}/subjobs/${subJob.id}`} className="text-link">

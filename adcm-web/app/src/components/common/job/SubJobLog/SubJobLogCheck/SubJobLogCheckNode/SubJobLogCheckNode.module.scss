@@ -33,17 +33,17 @@
 
     --subjob-node-title-color-failed: var(--color-xred-light);
 
-    --subjob-node-message-background: #F7F9FA;
+    --subjob-node-message-background: #f7f9fa;
     --subjob-node-message-color: var(--color-xgray-darker);
   }
 }
-
 
 .subJobLogCheckNode {
   border-radius: 16px;
   border: 2px solid var(--subjob-node-border);
   padding: 4px 8px;
   transition: background-color 250ms;
+  flex: 1;
 
   background: var(--subjob-node-background);
 
@@ -61,7 +61,6 @@
       --subjob-node-title-color: var(--subjob-node-title-color-failed);
     }
   }
-
 
   &__header {
     display: flex;

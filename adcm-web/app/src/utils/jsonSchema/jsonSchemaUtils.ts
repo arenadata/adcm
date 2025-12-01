@@ -7,6 +7,7 @@ const ajv = new Ajv2020({
   allErrors: true,
   verbose: true,
   unicodeRegExp: false,
+  discriminator: true,
 });
 
 ajv.addVocabulary(['adcmMeta']);
@@ -17,6 +18,7 @@ const ajvWithDefaults = new Ajv2020({
   strictSchema: false,
   useDefaults: true,
   allErrors: true,
+  discriminator: true,
 });
 
 ajvWithDefaults.addVocabulary(['adcmMeta']);
@@ -33,7 +35,19 @@ export const validate = <T>(schema: Schema, data: T) => {
 export const generateFromSchema = <T>(schema: Schema): T | null => {
   if (typeof schema === 'object') {
     if (schema.oneOf !== undefined) {
-      return null;
+      const tmpSchema: Schema = {
+        type: 'object',
+        properties: {
+          t: { ...schema },
+        },
+      };
+
+      // t property required for applying defaults (defaults applies only for object properties and not for object itself)
+      const result = { t: undefined } as { t: T };
+      const validate = ajvWithDefaults.compile(tmpSchema);
+      validate(result);
+
+      return result.t;
     }
 
     if (schema.type === 'object') {

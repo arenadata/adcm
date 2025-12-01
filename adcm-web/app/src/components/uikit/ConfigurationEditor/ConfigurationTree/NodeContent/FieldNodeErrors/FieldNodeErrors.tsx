@@ -11,7 +11,7 @@ const FieldNodeErrors = ({ fieldErrors }: FieldNodeErrorsProps) => {
   return (
     <div className={s.fieldNodeErrors}>
       {Object.entries(fieldErrors.messages).map(([keyword, error]) => {
-        if (keyword === 'oneOf' || keyword === 'type') {
+        if (hasOneOfKeywordError && (keyword === 'oneOf' || keyword === 'type')) {
           return null;
         }
 

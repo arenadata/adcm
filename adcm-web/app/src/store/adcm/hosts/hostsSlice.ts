@@ -116,10 +116,16 @@ const hostsSlice = createSlice({
         },
         (host) => ({
           ...host,
-          duplicates: host.duplicates.map((dup) => ({
-            ...dup,
-            concerns: [...dup.concerns, newConcern],
-          })),
+          duplicates: host.duplicates.map((duplicate) => {
+            if (hostId === duplicate.id) {
+              return {
+                ...duplicate,
+                concerns: [...duplicate.concerns, newConcern],
+              };
+            }
+
+            return duplicate;
+          }),
         }),
       );
 

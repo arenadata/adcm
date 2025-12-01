@@ -18,6 +18,7 @@ import logging
 from core.job.runners import (
     ADCMSettings,
     AnsibleSettings,
+    ConsulSettings,
     ExternalSettings,
     IntegrationsSettings,
     JobProcessor,
@@ -72,4 +73,11 @@ def _prepare_settings() -> ExternalSettings:
         adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
         ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
         integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+        consul=ConsulSettings(
+            url=settings.CONSUL_URL,
+            datacenter=settings.CONSUL_DATACENTER,
+            client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
+            client_cacert_file=settings.CONSUL_CACERT_FILE,
+            client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
+        ),
     )

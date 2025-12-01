@@ -22,9 +22,9 @@ from core.types import (
 )
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, Provider, Service
+from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, MainObject, Provider, Service
 
-CoreObject: TypeAlias = Cluster | Service | Component | Provider | Host
+CoreObject: TypeAlias = MainObject
 GroupObject: TypeAlias = ConfigHostGroup | ActionHostGroup
 
 

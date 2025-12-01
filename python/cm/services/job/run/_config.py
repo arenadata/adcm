@@ -13,7 +13,7 @@
 from core.config.types import ConfigCoreObjectWithPrototype, RelatedConfigs
 from core.job.dto import JobUpdateDTO
 from core.job.types import TaskOwner
-from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor
+from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, PrototypeID
 
 from cm.models import JobLog
 from cm.services.config import retrieve_primary_configs
@@ -45,25 +45,30 @@ def create_related_configs(job_id: int, owner: TaskOwner) -> None:
 def get_new_related_configs(
     job_id: int, target: ConfigCoreObjectWithPrototype, new_config_id: ConfigID
 ) -> list[RelatedConfigs]:
-    related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
-        id=job_id
-    )
-
     # The list cannot be empty, as it is prepared at the start, and if the job has been started,
     # then at least one object must be in the hierarchy. If this is not the case,
     # we believe that this is a mistake, and we want to know about it explicitly.
-
-    target_config = RelatedConfigs(
-        object_id=target.object.id,
-        object_type=target.object.type.value,
-        prototype_id=target.prototype_id,
-        primary_config_id=target.config_id,
+    related_configs: list[RelatedConfigs] = JobLog.objects.values_list("objects_related_configs", flat=True).get(
+        id=job_id
     )
-    index = related_configs.index(target_config)
-    record = related_configs[index]
-    record["primary_config_id"] = new_config_id
+    related_configs: dict[CoreObjectDescriptor, tuple[PrototypeID, ConfigID]] = {
+        CoreObjectDescriptor(id=cfg["object_id"], type=cfg["object_type"]): (
+            cfg["prototype_id"],
+            cfg["primary_config_id"],
+        )
+        for cfg in related_configs
+    }
 
-    return related_configs
+    # Parallel modification of the same `target`'s config should not cause errors,
+    # since `objects_related_configs` stores snapshots of hierarchy configs on job start
+    # Known case: multiple non-blocking service install actions, modifying the same cluster's config
+    prototype_id, _ = related_configs[target.object]
+    related_configs[target.object] = (prototype_id, new_config_id)
+
+    return [
+        RelatedConfigs(object_id=cod.id, object_type=cod.type, prototype_id=ids[0], primary_config_id=ids[1])
+        for cod, ids in related_configs.items()
+    ]
 
 
 def update_related_configs(

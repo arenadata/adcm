@@ -13,6 +13,7 @@
 from typing import TypeAlias, overload
 
 from cm.models import (
+    ADCM,
     Cluster,
     Component,
     ConfigHostGroup,
@@ -23,7 +24,7 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host
+ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host | ADCM
 
 
 class GetParentObjectMixin:

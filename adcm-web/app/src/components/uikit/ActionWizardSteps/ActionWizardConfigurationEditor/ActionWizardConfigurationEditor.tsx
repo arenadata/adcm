@@ -6,30 +6,39 @@ import ActionWizardConfigurationEditorToolbar from '@uikit/ActionWizardSteps/Act
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
+import type { AdcmConfiguration } from '@models/adcm';
 
 interface ActionWizardConfigurationEditorProps {
   step: AdcmActionProcessConfigurationStep;
+  isReadOnly?: boolean;
 }
 
-const ActionWizardConfigurationEditor = ({ step }: ActionWizardConfigurationEditorProps) => {
-  const { configuration, setConfiguration } = useActionWizardConfigurationEditorContext();
-  const { setIsValid } = useActionWizardValidationContext();
+const ActionWizardConfigurationEditor = ({ step, isReadOnly = false }: ActionWizardConfigurationEditorProps) => {
+  const { configuration, setConfigurationForStep } = useActionWizardConfigurationEditorContext();
+  const { setIsDraft } = useActionWizardValidationContext();
 
   useEffect(() => {
     const preparedConfig = prepareConfigurationFromStepData(step.configuration);
-    setConfiguration(preparedConfig);
+
+    setConfigurationForStep(step.id, preparedConfig);
   }, [step.configuration]);
 
-  const onReset = () => {
-    const configuration = prepareConfigurationFromStepData(step.configuration);
-    setConfiguration(configuration);
-    setIsValid(true);
+  const onConfigurationChange = (configuration: AdcmConfiguration) => {
+    setConfigurationForStep(step.id, configuration);
+    setIsDraft(true);
   };
+
+  const config = configuration[step.id];
+  if (!config) return null;
 
   return (
     <ConfigurationFormContextProvider>
-      <ActionWizardConfigurationEditorToolbar onRevert={onReset} />
-      <ConfigurationMain configuration={configuration} onChangeConfiguration={setConfiguration} />
+      <ActionWizardConfigurationEditorToolbar />
+      <ConfigurationMain
+        isReadOnly={isReadOnly}
+        configuration={configuration[step.id]}
+        onChangeConfiguration={(configuration) => onConfigurationChange(configuration)}
+      />
     </ConfigurationFormContextProvider>
   );
 };

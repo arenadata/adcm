@@ -3,19 +3,14 @@ import { useMemo } from 'react';
 import { useState } from 'react';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import { Input, Switch, WarningMessage } from '@uikit';
-import { useForm, useStore } from '@hooks';
+import { useStore } from '@hooks';
 import s from './ActionWizardLastStage.module.scss';
-
-const initialFormData = {
-  description: '',
-  isVerbose: false,
-};
+import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
 
 const ActionWizardLastStage: React.FC = () => {
   const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
-
   const [isRaiseNonBlockingConcerns, setIsRaiseNonBlockingConcerns] = useState(false);
-  const { formData, handleChangeFormData } = useForm(initialFormData);
+  const { formData, onChange } = useActionWizardLastStageContext();
 
   const disclaimerText = useMemo(() => {
     if (actionDetails?.disclaimer && actionDetails.disclaimer !== '') {
@@ -25,15 +20,17 @@ const ActionWizardLastStage: React.FC = () => {
   }, [actionDetails]);
 
   const handleRaiseConcernsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsRaiseNonBlockingConcerns(event.target.checked);
+    const isEnabled = event.target.checked;
+    setIsRaiseNonBlockingConcerns(isEnabled);
+    onChange({ shouldBlockObject: !isEnabled });
   };
 
   const handleVerboseChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleChangeFormData({ isVerbose: event.target.checked });
+    onChange({ isVerbose: event.target.checked });
   };
 
   const handleDescriptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleChangeFormData({ description: event.target.value });
+    onChange({ description: event.target.value });
   };
 
   return (
@@ -51,17 +48,24 @@ const ActionWizardLastStage: React.FC = () => {
         </WarningMessage>
       )}
 
-      <div>{disclaimerText}</div>
+      <div className={s.actionWizardLastStage__disclaimerText}>{disclaimerText}</div>
 
-      <span>You can add short description for performed job. But it's not required.</span>
+      <div className={s.actionWizardLastStage__descriptionWrapper}>
+        <span className={s.actionWizardLastStage__descriptionLabel}>
+          You can add short description for performed job. But it's not required.
+        </span>
 
-      <Input
-        value={formData.description}
-        type="text"
-        onChange={handleDescriptionChange}
-        placeholder="Running a performance check with new parameters. Comparing results with and without cache, focusing on anomalies and overall behavior."
-        autoComplete="off"
-      />
+        <Input
+          title="You can add short description for performed job. But it's not required."
+          className={s.actionWizardLastStage__descriptionValue}
+          value={formData.description}
+          type="text"
+          onChange={handleDescriptionChange}
+          placeholder="Running a performance check with new parameters. Comparing results with and without cache, focusing on anomalies and overall behavior."
+          autoComplete="off"
+          maxLength={255}
+        />
+      </div>
 
       <Checkbox checked={formData.isVerbose} label="Verbose" onChange={handleVerboseChange} />
     </div>

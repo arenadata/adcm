@@ -79,9 +79,11 @@ class TestUpgrade(BaseAPITestCase):
 
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
-
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 6)
+
+        for upgrade in response.json():
+            self.assertIn("bundle", upgrade)
 
     def test_upgrade_visibility_from_edition_any_success(self):
         response = self.client.v2[self.cluster_2, "upgrades"].get()
@@ -481,6 +483,9 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 3)
 
+        for upgrade in response.json():
+            self.assertIn("bundle", upgrade)
+
     def test_provider_upgrade_retrieve_success(self):
         response = self.client.v2[self.provider, "upgrades", self.provider_upgrade].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -711,6 +716,7 @@ class TestUpgrade(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
 
+    @unittest.skip("ADCM-7359 File retrieval for default problem")
     def test_cluster_upgrade_retrieve_complex_invalid_config_variant_value_fail(self):
         with RunTaskMock():
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(

@@ -19,6 +19,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 from api_v2.tests.base import BaseAPITestCase
@@ -475,7 +476,7 @@ class TestHostAudit(BaseAPITestCase):
         response = self.client.v2[self.host_1, "configs"].post(
             data={"config": {}, "adcmMeta": {"/activatable_group": {"isActive": True}}},
         )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
             operation_name="Host configuration updated",

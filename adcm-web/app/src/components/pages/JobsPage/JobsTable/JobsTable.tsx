@@ -38,7 +38,7 @@ const JobsTable = () => {
         return (
           <TableRow key={job.id}>
             <TableCell>{job.id}</TableCell>
-            <JobsStatusCell status={job.status}>
+            <JobsStatusCell status={job.status} description={job.description}>
               <Link to={generatePath('/jobs/:jobId', { jobId: `${job.id}` })} className="text-link">
                 {orElseGet(job.displayName || '-')}
               </Link>

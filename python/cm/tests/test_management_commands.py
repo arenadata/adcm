@@ -41,6 +41,7 @@ from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJS
 from cm.models import ADCM, Bundle, Component, HostInfo
 from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
+from cm.utils import strip_uuid
 
 
 class MockResponse:
@@ -332,7 +333,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         }
         actual_inventory = get_inventory()
 
-        self.assertDictEqual(actual_inventory, expected_inventory)
+        self.assertDictEqual(strip_uuid(actual_inventory), expected_inventory)
 
     def test_host_info_dump_mapping(self):
         bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")

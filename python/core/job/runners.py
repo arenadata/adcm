@@ -35,10 +35,19 @@ class IntegrationsSettings(NamedTuple):
     status_server_token: str
 
 
+class ConsulSettings(NamedTuple):
+    url: str | None
+    datacenter: str | None
+    client_cert_file: str | None
+    client_key_file: str | None
+    client_cacert_file: str | None
+
+
 class ExternalSettings(NamedTuple):
     adcm: ADCMSettings
     ansible: AnsibleSettings
     integrations: IntegrationsSettings
+    consul: ConsulSettings
 
 
 class JobFinalizer(Protocol):
@@ -69,10 +78,13 @@ class ExecutionTargetFactoryI(Protocol):
         ...
 
 
+def always_true(_: "Job") -> bool:
+    return True
+
+
 class JobProcessor(NamedTuple):
     convert: ExecutionTargetFactoryI
-    # id will always return True in bool cast
-    filter_predicate: Callable[[Job], bool] = id
+    filter_predicate: Callable[[Job], bool] = always_true
 
 
 class RunnerEnvironment(Protocol):

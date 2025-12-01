@@ -49,6 +49,7 @@ export interface AdcmDynamicActionRunConfig {
   process?: {
     id: number;
   };
+  description?: string;
 }
 
 export type EntitiesDynamicActions = Record<number, AdcmDynamicAction[]>;

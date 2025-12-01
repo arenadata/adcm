@@ -22,7 +22,7 @@ interface ModalProps extends ModalOptions {
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,
-  onOpenChange,
+  onOpenChange = () => {},
   isDismissDisabled = false,
   className,
   style,

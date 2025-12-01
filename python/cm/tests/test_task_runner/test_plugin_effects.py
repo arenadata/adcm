@@ -16,9 +16,11 @@ import json
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
+from application.dto import RunActionDTO
+from application.migration.job.schedule import schedule_task
+from infra.services import get_config_service, get_job_service
 
 from cm.models import Action, Component
-from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
 
 
@@ -73,10 +75,13 @@ class TestEffectsOfADCMAnsiblePlugins(
                 change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}
             )
         ) as run_task:
-            run_action(
-                action=Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps"),
-                obj=self.cluster,
-                payload=ActionRunPayload(),
+            schedule_task(
+                action_orm=Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps"),
+                target=self.cluster,
+                payload=RunActionDTO(),
+                job_service=get_job_service(),
+                config_service=get_config_service(),
+                start_task_after_schedule=True,
             )
 
         self.assertIsNotNone(run_task.target_task)

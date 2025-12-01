@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
+from typing import Any, Callable, Generator
 import sys
 import importlib
 
@@ -62,7 +62,7 @@ class TemplateRendererPython(TemplateRenderer):
         return get_func(module)
 
     @contextmanager
-    def _get_module(self, import_path: str) -> ModuleType:
+    def _get_module(self, import_path: str) -> Generator[ModuleType, None, None]:
         with add_to_path(self.env.discovery_root):
             module = importlib.import_module(import_path)
             # Need to force "reload" module to allow same named modules in different base directories
@@ -89,7 +89,7 @@ class TemplateRendererJinja2(TemplateRenderer):
     def render(self, context: dict) -> Any:
         with reraise_as_render_error():
             template = self._read_template()
-            yaml_content = template.render(**context)
+            yaml_content = str(template.render(**context))
             return yaml.load(stream=yaml_content, Loader=yaml.loader.SafeLoader)
 
     def _read_template(self) -> Template:
@@ -106,8 +106,14 @@ class TemplateRendererJinja2(TemplateRenderer):
 
         loader = FileSystemLoader(paths_to_load)
         autoescape = select_autoescape(default_for_string=False, enabled_extensions=("html", "htm"))
-        # S701 suggests to use select autoescape, but not smart enough to check out that it's used
-        return Environment(loader=loader, autoescape=autoescape)  # noqa: S701
+        # Looks like typehints in jinja2.Environment doesn't work too well,
+        # because in fact this function accepts callable, yet typehint says different.
+        #
+        # ruff have a problem with this one too, yet it's how it is working for now, can't change it
+        return Environment(
+            loader=loader,
+            autoescape=autoescape,  # pyright: ignore [reportArgumentType] # noqa: S701
+        )
 
 
 # Helpers
