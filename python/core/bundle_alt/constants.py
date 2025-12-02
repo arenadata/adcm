@@ -28,3 +28,4 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
+PROVIDER_ACTION_FORBIDDEN_PROPS_SET = {"scripts_template", "config_template"}
