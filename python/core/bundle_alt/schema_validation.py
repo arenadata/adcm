@@ -16,7 +16,11 @@ from typing import TYPE_CHECKING, Any
 from adcm_version import compare_prototype_versions
 
 from core.bundle_alt._pattern import Pattern
-from core.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET, NAME_REGEX
+from core.bundle_alt.constants import (
+    ADCM_MM_ACTION_FORBIDDEN_PROPS_SET,
+    ADCM_SERVICE_ACTION_NAMES_SET,
+    NAME_REGEX,
+)
 from core.templates import Template
 
 if TYPE_CHECKING:

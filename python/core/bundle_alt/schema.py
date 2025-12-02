@@ -1007,6 +1007,16 @@ ACTIONS_TYPE: TypeAlias = Annotated[
     BeforeValidator(forbidden_mm_actions),
 ]
 
+CLUSTER_ACTIONS_TYPE: TypeAlias = Annotated[
+    dict[NAME, Annotated[JOB_SCHEMA | TaskSchema, Field(discriminator="type")]] | None,
+    Field(default=None),
+    BeforeValidator(forbidden_mm_actions),
+]
+
+PROVIDER_ACTIONS_TYPE: TypeAlias = Annotated[
+    dict[NAME, Annotated[JOB_SCHEMA, Field(discriminator="type")]] | None,
+    Field(default=None),
+]
 
 #########
 # OBJECTS
@@ -1063,7 +1073,6 @@ class _BaseObjectSchema(_BaseModel):
     edition: Annotated[str | None, Field(default=None)]
     license: Annotated[str | None, Field(default=None)]
     config: CONFIG_TYPE
-    actions: ACTIONS_TYPE
     venv: VENV
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
@@ -1085,6 +1094,7 @@ class _BaseObjectSchema(_BaseModel):
 
 class ADCMSchema(_BaseObjectSchema):
     upgrade: Annotated[list[ProviderUpgradeSchema] | None, Field(default=None)]
+    actions: CLUSTER_ACTIONS_TYPE
 
 
 class ClusterSchema(_BaseObjectSchema):
@@ -1094,6 +1104,7 @@ class ClusterSchema(_BaseObjectSchema):
     export: Annotated[str | list[str] | None, Field(default=None)]
     config_group_customization: Annotated[bool | None, Field(default=None)]
     allow_maintenance_mode: Annotated[bool | None, Field(default=None)]
+    actions: CLUSTER_ACTIONS_TYPE
 
 
 class ComponentSchema(_BaseModel):
@@ -1105,7 +1116,7 @@ class ComponentSchema(_BaseModel):
     params: Annotated[Any, Field(default=None, deprecated=True)]
     requires: Annotated[list[ComponentRequiresSchema] | None, Field(default=None)]
     config: CONFIG_TYPE
-    actions: ACTIONS_TYPE
+    actions: CLUSTER_ACTIONS_TYPE
     config_group_customization: Annotated[bool | None, Field(default=None)]
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
     venv: VENV
@@ -1134,16 +1145,19 @@ class ServiceSchema(_BaseObjectSchema):
     requires: Annotated[list[ServiceRequiresSchema] | None, Field(default=None)]
     monitoring: MONITORING
     config_group_customization: Annotated[bool | None, Field(default=None)]
+    actions: CLUSTER_ACTIONS_TYPE
 
 
 class HostSchema(_BaseObjectSchema):
     type: Literal["host"]
+    actions: PROVIDER_ACTIONS_TYPE
 
 
 class ProviderSchema(_BaseObjectSchema):
     type: Literal["provider"]
     upgrade: Annotated[list[ProviderUpgradeSchema] | None, Field(default=None)]
     config_group_customization: Annotated[bool | None, Field(default=None)]
+    actions: PROVIDER_ACTIONS_TYPE
 
 
 ################
