@@ -19,8 +19,8 @@ import logging
 import adcm.init_django  # noqa: F401, isort:skip
 
 from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
-from application import bundle
-from cm.issue import update_hierarchy_issues
+from cm.legacy.issue import update_hierarchy_issues
+from cm.legacy.services.bundle_alt.adcm import process_adcm_bundle
 from cm.models import (
     ADCM,
     CheckLog,
@@ -30,12 +30,12 @@ from cm.models import (
     GroupCheckLog,
     Provider,
 )
-from cm.services.bundle_alt.adcm import process_adcm_bundle
 from django.conf import settings
 from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
+from use_cases import bundle
 
-TOKEN_LENGTH = 20
+TOKEN_LENGTH = 2
 
 
 logger = logging.getLogger("stream_std")

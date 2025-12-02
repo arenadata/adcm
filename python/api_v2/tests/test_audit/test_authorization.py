@@ -13,7 +13,7 @@
 from datetime import datetime, timedelta
 
 from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditUser
-from core.rbac.dto import UserUpdateDTO
+from core.legacy.rbac.dto import UserUpdateDTO
 from rbac.models import User
 from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND

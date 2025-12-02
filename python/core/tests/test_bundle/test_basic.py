@@ -13,10 +13,16 @@
 from pathlib import Path
 from unittest import TestCase
 
-from core.bundle_alt.convertion import schema_entry_to_definition
-from core.bundle_alt.errors import BundleValidationError
-from core.bundle_alt.schema import ClusterSchema, HostSchema, ProviderSchema, ServiceSchema
-from core.bundle_alt.types import (
+from core.legacy.bundle_alt.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
+from core.legacy.bundle_alt.convertion import schema_entry_to_definition
+from core.legacy.bundle_alt.errors import BundleValidationError
+from core.legacy.bundle_alt.schema import (
+    ClusterSchema,
+    HostSchema,
+    ProviderSchema,
+    ServiceSchema,
+)
+from core.legacy.bundle_alt.types import (
     ActionAvailability,
     ActionDefinition,
     ConfigDefinition,
@@ -27,9 +33,7 @@ from core.bundle_alt.types import (
     UpgradeRestrictions,
     VersionBound,
 )
-from core.bundle_alt.validation import (
-    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
-    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+from core.legacy.bundle_alt.validation import (
     check_action_hc_acl_rules,
     check_bound_to,
     check_bundle_switch_amount_for_upgrade_action,
@@ -38,7 +42,7 @@ from core.bundle_alt.validation import (
     check_mm_host_action_is_allowed,
     check_requires,
 )
-from core.job.types import JobSpec, ScriptType
+from core.legacy.job.types import JobSpec, ScriptType
 
 CLUSTER = "cluster"
 SERVICE = "service"

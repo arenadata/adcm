@@ -20,13 +20,11 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.dto import ConfigurationDTO, UpgradeActionDTO
-from application.migration.upgrade import upgrade_object
 from cm.errors import AdcmEx
+from cm.legacy.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
+from cm.legacy.upgrade import check_upgrade, do_upgrade, get_upgrade
 from cm.models import Bundle, Cluster, ObjectType, Prototype, PrototypeConfig, Provider, TaskLog, Upgrade
-from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
-from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
-from core.cluster.types import HostComponentEntry
+from core.legacy.cluster.types import HostComponentEntry
 from django.db.models import OuterRef, Prefetch, Subquery
 from infra.services import get_config_service, get_job_service
 from rbac.models import User
@@ -38,6 +36,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
+from use_cases.dto import ConfigurationDTO, UpgradeActionDTO
+from use_cases.transition.upgrade import upgrade_object
 import core
 
 from api_v2.generic.action.serializers import UpgradeRunSerializer
@@ -205,7 +205,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         payload = UpgradeActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
+            launch=core.legacy.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
 
         result = upgrade_object(

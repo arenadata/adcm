@@ -12,13 +12,12 @@
 
 
 from adcm.feature_flags import use_new_config_processing
-from application import bundle as bundle_use_case
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
-from cm.bundle import delete_bundle
+from cm.legacy.bundle import delete_bundle
+from cm.legacy.services.adcm import adcm_config, get_adcm_config_id
+from cm.legacy.services.bundle_alt.load import Directories, parse_bundle_from_request_to_db
 from cm.models import Bundle, ObjectType
-from cm.services.adcm import adcm_config, get_adcm_config_id
-from cm.services.bundle_alt.load import Directories, parse_bundle_from_request_to_db
 from django.conf import settings
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -40,6 +39,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases import bundle as bundle_use_case
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.bundle.filters import BundleFilter

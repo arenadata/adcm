@@ -23,14 +23,13 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.migration.hostprovider.create import create_host as create_host_new
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
-from cm.api import delete_host
 from cm.errors import AdcmEx
+from cm.legacy.api import delete_host
+from cm.legacy.services.host.duplicates import create_duplicate
+from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
-from cm.services.host.duplicates import create_duplicate
-from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -51,6 +50,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.hostprovider.create import create_host as create_host_new
 
 from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset

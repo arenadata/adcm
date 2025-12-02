@@ -16,8 +16,8 @@ import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 
+from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import Action
-from cm.services.config.jinja import get_jinja_config
 
 
 class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
@@ -30,14 +30,14 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
     def test_adcm_5556_incorrect_path_bug_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_adcm_5556_incorrect_path_bug()
 
         # patched.assert_called_once()
 
     @unittest.skip("ADCM-6747")
     def test_adcm_5556_incorrect_path_bug_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_5556_incorrect_path_bug()
 
         patched.assert_called_once()

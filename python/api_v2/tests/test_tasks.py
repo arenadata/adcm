@@ -15,8 +15,9 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
-from cm.api import delete_service
 from cm.converters import model_name_to_core_type
+from cm.legacy.api import delete_service
+from cm.legacy.services.job.action import prepare_task_for_action
 from cm.models import (
     ADCM,
     Action,
@@ -29,9 +30,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.job.action import prepare_task_for_action
 from cm.tests.mocks.task_runner import RunTaskMock
-from core.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone

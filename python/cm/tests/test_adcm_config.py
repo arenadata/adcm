@@ -16,7 +16,7 @@ from adcm.tests.base import BaseTestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
-from cm.adcm_config.config import process_config
+from cm.legacy.adcm_config.config import process_config
 from cm.models import ADCM, ConfigLog
 
 
@@ -40,7 +40,7 @@ class TestAdcmConfig(BaseTestCase):
             Permission.objects.get(codename="add_configlog", content_type=ContentType.objects.get_for_model(ConfigLog)),
         )
 
-    @patch("cm.adcm_config.config.cook_file_type_name")
+    @patch("cm.legacy.adcm_config.config.cook_file_type_name")
     def test_process_config(self, mock_cook_file_type_name):
         mock_cook_file_type_name.return_value = "data_from_file"
         obj_mock = Mock()

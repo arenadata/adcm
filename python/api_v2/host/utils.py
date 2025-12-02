@@ -11,15 +11,15 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm
-from cm.adcm_config.config import init_object_config
-from cm.api import check_license
+from cm.legacy.adcm_config.config import init_object_config
+from cm.legacy.api import check_license
+from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
+from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.status.notify import reset_hc_map
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
-from cm.services.concern.cases import recalculate_own_concerns_on_add_hosts
-from cm.services.concern.distribution import distribute_concern_from_provider_to_host
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.status.notify import reset_hc_map
-from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core.types import ADCMCoreType, BundleID, ProviderID
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request

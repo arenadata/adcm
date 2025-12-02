@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.adcm_config.config import get_main_info
+from cm.legacy.adcm_config.config import get_main_info
 from cm.models import Component, MaintenanceMode, Service
 from rest_framework.serializers import (
     ChoiceField,

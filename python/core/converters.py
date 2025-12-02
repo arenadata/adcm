@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.cluster.types import ClusterTopology, NamedMapping
+from core.legacy.cluster.types import ClusterTopology, NamedMapping
 
 
 def named_mapping_from_topology(topology: ClusterTopology) -> NamedMapping:

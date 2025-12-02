@@ -13,8 +13,8 @@
 from typing import TypedDict
 
 from adcm.serializers import EmptySerializer
+from cm.legacy.utils import get_obj_type
 from cm.models import ConcernItem
-from cm.utils import get_obj_type
 from drf_spectacular.utils import OpenApiExample, extend_schema_field, extend_schema_serializer
 from rest_framework.fields import CharField, DictField, SerializerMethodField
 from rest_framework.serializers import BooleanField, ModelSerializer

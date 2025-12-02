@@ -18,7 +18,7 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from cm.api import multi_bind
+from cm.legacy.api import multi_bind
 from cm.models import Cluster, PrototypeImport, Service
 from django.db.transaction import atomic
 from rest_framework.request import Request

@@ -15,16 +15,16 @@ from functools import partial
 from typing import Any, Callable, Generator, Iterable, NamedTuple
 from unittest.mock import patch
 
-from core.job.executors import ExecutionResult, Executor, ExecutorConfig
-from core.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings, TaskRunner
-from core.job.types import Job, ScriptType, Task
+from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
+from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings, TaskRunner
+from core.legacy.job.types import Job, ScriptType, Task
 from django.utils import timezone
 from typing_extensions import Self
 
+from cm.legacy.services.job.run import get_default_runner, start_task
+from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import TaskLog
-from cm.services.job.run import get_default_runner, start_task
-from cm.services.job.run._target_factories import ExecutionTargetFactory
-from cm.services.job.run.repo import JobRepoImpl
 
 
 def do_nothing(*_, **__):
@@ -191,17 +191,17 @@ class RunTaskMock:
 
     def __call__(self, task: TaskLog) -> None:
         self.target_task = task
-        with patch("cm.services.job.run._task.subprocess.Popen", return_value=FakePopen(pid=101)):
+        with patch("cm.legacy.services.job.run._task.subprocess.Popen", return_value=FakePopen(pid=101)):
             start_task(task)
 
-        with patch("cm.services.job.run._impl._factory", new=self._execution_target_factory), patch(
-            "cm.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
-        ), patch("cm.services.job.run._impl.JobRepoImpl", new=JobImplRunnerMock):
+        with patch("cm.legacy.services.job.run._impl._factory", new=self._execution_target_factory), patch(
+            "cm.legacy.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
+        ), patch("cm.legacy.services.job.run._impl.JobRepoImpl", new=JobImplRunnerMock):
             self.runner = get_default_runner()
 
     def __enter__(self):
-        self._run_patch = patch("application.migration.job.schedule.start_task", new=self)
-        # self._run_patch = patch("cm.services.job.action.start_task", new=self)
+        self._run_patch = patch("use_cases.transition.job.schedule.start_task", new=self)
+        # self._run_patch = patch("cm.legacy.services.job.action.start_task", new=self)
         return self._run_patch.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

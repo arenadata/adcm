@@ -13,8 +13,8 @@
 from adcm.feature_flags import use_new_config_processing
 from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
+from cm.legacy.services.bundle import ADCMBundlePathResolver
 from cm.models import ADCM, ConfigLog, PrototypeConfig
-from cm.services.bundle import ADCMBundlePathResolver
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from infra.services import get_config_service

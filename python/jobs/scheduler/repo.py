@@ -19,7 +19,7 @@ from adcm.settings import (
     ADCM_TURN_ON_MM_ACTION_NAME,
 )
 from cm.models import UNFINISHED_STATUS, Action, ConcernItem, ConcernType, JobLog, JobStatus, TaskLog
-from core.job.types import ExecutionStatus
+from core.legacy.job.types import ExecutionStatus
 from core.types import ActionID, ConcernID, JobID, TaskID
 
 from jobs.scheduler._types import ActionShortInfo, TaskShortInfo

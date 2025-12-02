@@ -14,19 +14,15 @@ from itertools import compress
 
 from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
-from application.migration.job.schedule import (
-    ActionTarget,
-    ConfigurationDTO,
-    RunActionDTO,
-    retrieve_configuration_for_action,
-    schedule_task,
-)
 from cm.converters import (
     orm_object_to_action_target_descriptor,
     orm_object_to_action_target_type,
     orm_object_to_core_descriptor,
 )
 from cm.errors import AdcmEx
+from cm.legacy.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
+from cm.legacy.services.config.jinja import get_jinja_config
+from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.models import (
     Action,
     ADCMEntity,
@@ -36,11 +32,8 @@ from cm.models import (
     HostComponent,
     PrototypeConfig,
 )
-from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
-from cm.services.config.jinja import get_jinja_config
-from cm.services.job.action import ActionRunPayload, run_action
-from core.cluster.types import HostComponentEntry
-from core.job.types import AssociatedProcess
+from core.legacy.cluster.types import HostComponentEntry
+from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
@@ -53,6 +46,13 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import (
     HTTP_200_OK,
+)
+from use_cases.transition.job.schedule import (
+    ActionTarget,
+    ConfigurationDTO,
+    RunActionDTO,
+    retrieve_configuration_for_action,
+    schedule_task,
 )
 import core
 
@@ -292,7 +292,7 @@ class ActionViewSet(
         payload = RunActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.job.dto.LaunchOptions(
+            launch=core.legacy.job.dto.LaunchOptions(
                 is_blocking=data["should_block_object"],
                 is_verbose=data["is_verbose"],
             ),

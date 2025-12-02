@@ -16,9 +16,9 @@ import json
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from application.dto import RunActionDTO
-from application.migration.job.schedule import schedule_task
 from infra.services import get_config_service, get_job_service
+from use_cases.dto import RunActionDTO
+from use_cases.transition.job.schedule import schedule_task
 
 from cm.models import Action, Component
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock

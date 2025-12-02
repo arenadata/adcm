@@ -18,24 +18,24 @@ import unittest
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
 
-from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.action_process import repo
-from cm.services.action_process.operations import (
+from cm.legacy.services.action_process import repo
+from cm.legacy.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     initiate_process,
     submit_step,
 )
-from cm.services.action_process.schema_validation import (
+from cm.legacy.services.action_process.schema_validation import (
     Configuration,
     ProcessOperationType,
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.services.action_process.types import ProcessStepState
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.config._base import ConfigAttrPair
-from cm.services.job.run.repo import ActionRepoImpl
+from cm.legacy.services.action_process.types import ProcessStepState
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.config._base import ConfigAttrPair
+from cm.legacy.services.job.run.repo import ActionRepoImpl
+from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
 
 StepName: TypeAlias = str
 
@@ -154,7 +154,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
-        from cm.services.job.inventory import get_action_process_context
+        from cm.legacy.services.job.inventory import get_action_process_context
 
         process = Process.objects.get(id=process_id)
         topology = retrieve_cluster_topology(cluster_id)

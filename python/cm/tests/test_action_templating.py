@@ -13,9 +13,9 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from application.dto import ConfigurationDTO, RunActionDTO
-from application.migration.job.schedule import schedule_task
 from infra.services import get_config_service, get_job_service
+from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.transition.job.schedule import schedule_task
 import core
 
 from cm.models import Action, JobLog

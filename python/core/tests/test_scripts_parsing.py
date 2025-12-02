@@ -13,9 +13,9 @@
 from pathlib import Path
 from unittest import TestCase
 
-from core.bundle_alt.errors import BundleParsingError
-from core.bundle_alt.process import ScriptsConversionContext, parse_scripts
-from core.bundle_alt.schema import DynamicScriptsSchema, WizardScriptsSchema
+from core.legacy.bundle_alt.errors import BundleParsingError
+from core.legacy.bundle_alt.process import ScriptsConversionContext, parse_scripts
+from core.legacy.bundle_alt.schema import DynamicScriptsSchema, WizardScriptsSchema
 
 data = {
     "correct_script": {

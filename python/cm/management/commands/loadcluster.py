@@ -23,8 +23,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.transaction import atomic
 
-from cm.services.transition.load import load
-from cm.services.transition.types import TransitionPayload
+from cm.legacy.services.transition.load import load
+from cm.legacy.services.transition.types import TransitionPayload
 
 
 def decrypt_file(pass_from_user: str, file: str) -> bytes:

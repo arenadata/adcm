@@ -18,8 +18,8 @@ from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy
 
+from cm.legacy.status_api import send_concern_delete_event
 from cm.models import Cluster, ConcernItem, Host
-from cm.status_api import send_concern_delete_event
 
 
 @receiver(signal=pre_save, sender=Cluster)

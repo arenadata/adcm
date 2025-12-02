@@ -14,25 +14,31 @@ from copy import deepcopy
 from uuid import UUID
 import unittest
 
-from application.dto import ConfigurationDTO, RunActionDTO
-from application.migration.job.schedule import schedule_task
-from core.job.dto import TaskPayloadDTO
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
+from core.legacy.job.dto import TaskPayloadDTO
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from infra.services import get_config_service, get_job_service
+from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.transition.job.schedule import schedule_task
 import core
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
+from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.action import prepare_task_for_action
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.utils import decrypt_secrets
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):

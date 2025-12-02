@@ -13,7 +13,7 @@
 from typing import NamedTuple
 from unittest import TestCase
 
-from cm.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 
 ACTIVE = "isActive"
 SYNCHRONIZED = "isSynchronized"

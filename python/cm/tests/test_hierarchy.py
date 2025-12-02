@@ -13,7 +13,7 @@
 
 from adcm.tests.base import BaseTestCase
 
-from cm.hierarchy import HierarchyError, Tree
+from cm.legacy.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,

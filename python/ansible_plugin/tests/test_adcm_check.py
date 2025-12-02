@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCM, CheckLog, Component, GroupCheckLog, LogStorage
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.check import ADCMCheckPluginExecutor

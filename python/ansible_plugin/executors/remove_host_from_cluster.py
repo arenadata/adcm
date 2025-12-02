@@ -12,7 +12,7 @@
 
 from typing import Collection
 
-from cm.api import remove_host_from_cluster
+from cm.legacy.api import remove_host_from_cluster
 from cm.models import Host
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import model_validator

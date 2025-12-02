@@ -14,10 +14,9 @@ from functools import partial
 
 from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import VIEW_PROVIDER_PERM
-from application.migration.hostprovider.create import create_hostprovider
 from audit.alt.api import audit_create, audit_delete
-from cm.api import add_host_provider, delete_host_provider
 from cm.errors import AdcmEx
+from cm.legacy.api import add_host_provider, delete_host_provider
 from cm.models import ObjectType, Prototype, Provider
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -34,6 +33,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.hostprovider.create import create_hostprovider
 
 from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset

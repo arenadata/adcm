@@ -16,9 +16,8 @@ from typing import Any
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
-from cm.services.action_process import repo
-from cm.services.action_process.errors import (
+from cm.legacy.services.action_process import repo
+from cm.legacy.services.action_process.errors import (
     ActionProcessDBError,
     ActionProcessNotFoundError,
     ActionProcessOperationError,
@@ -26,14 +25,15 @@ from cm.services.action_process.errors import (
     ActionProcessStepNotFoundError,
     SyncKeyMismatchError,
 )
-from cm.services.action_process.operations import OperationContext, initiate_process, perform_operation
-from cm.services.action_process.schema_validation import Configuration
-from cm.services.action_process.types import Step, StepType
-from cm.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
-from cm.services.job.action import check_no_blocking_concerns
-from cm.services.job.run.repo import ActionRepoImpl
-from cm.status_api import notify_about_redistributed_concerns_from_maps
-from core.job.types import ActionInfo
+from cm.legacy.services.action_process.operations import OperationContext, initiate_process, perform_operation
+from cm.legacy.services.action_process.schema_validation import Configuration
+from cm.legacy.services.action_process.types import Step, StepType
+from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
+from cm.legacy.services.job.action import check_no_blocking_concerns
+from cm.legacy.services.job.run.repo import ActionRepoImpl
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
+from core.legacy.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic
@@ -264,7 +264,7 @@ def _serialize_config_step(
     base_data: dict,
     config_service: core.config.ConfigService,
 ) -> dict:
-    from cm.config.repo import build_specification_from_prototype_config_records
+    from cm.impl.config.repo import build_specification_from_prototype_config_records
 
     object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
 

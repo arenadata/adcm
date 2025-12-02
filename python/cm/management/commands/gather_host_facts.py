@@ -19,7 +19,7 @@ from django.conf import settings
 from django.core.management import BaseCommand
 
 from cm.collect_statistics.gather_hardware_info import get_inventory
-from cm.utils import get_env_with_venv_path
+from cm.legacy.utils import get_env_with_venv_path
 
 
 class Command(BaseCommand):

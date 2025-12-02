@@ -25,9 +25,9 @@ from adcm.permissions import (
 from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Component, Host, Service
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.status.notify import update_mm_objects
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin

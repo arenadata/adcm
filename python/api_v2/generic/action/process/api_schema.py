@@ -12,7 +12,7 @@
 
 from uuid import uuid4
 
-from cm.services.action_process.schema_validation import ProcessOperationType
+from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,

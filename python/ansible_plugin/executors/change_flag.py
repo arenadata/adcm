@@ -13,7 +13,7 @@
 from enum import Enum
 from typing import Collection
 
-from cm.services.concern.flags import (
+from cm.legacy.services.concern.flags import (
     BuiltInFlag,
     ConcernFlag,
     lower_all_flags,
@@ -21,7 +21,7 @@ from cm.services.concern.flags import (
     raise_flag,
     update_hierarchy_for_flag,
 )
-from cm.status_api import notify_about_redistributed_concerns_from_maps
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import field_validator

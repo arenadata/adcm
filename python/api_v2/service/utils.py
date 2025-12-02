@@ -12,8 +12,13 @@
 
 from typing import Literal
 
-from cm.adcm_config.config import get_prototype_config, process_file_type
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.config import get_prototype_config, process_file_type
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_services
+from cm.legacy.services.concern.distribution import redistribute_issues_and_flags
+from cm.legacy.services.status.notify import reset_hc_map
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.models import (
     ADCMEntity,
     Cluster,
@@ -24,11 +29,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.concern.cases import recalculate_own_concerns_on_add_services
-from cm.services.concern.distribution import redistribute_issues_and_flags
-from cm.services.status.notify import reset_hc_map
-from cm.status_api import notify_about_redistributed_concerns_from_maps
 from django.db import connection, transaction
 from django.db.models import Count, QuerySet
 from rbac.models import re_apply_object_policy
