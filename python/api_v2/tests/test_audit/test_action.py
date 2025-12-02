@@ -14,10 +14,10 @@ from typing import Iterable, Literal
 
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_core_descriptor
+from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.legacy.services.action_process.schema_validation import ProcessOperationType
+from cm.legacy.services.action_process.types import ProcessStepState
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
-from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
-from cm.services.action_process.schema_validation import ProcessOperationType
-from cm.services.action_process.types import ProcessStepState
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,

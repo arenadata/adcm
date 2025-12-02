@@ -12,8 +12,8 @@
 
 from typing import TypeAlias
 
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Cluster, Component, Host, Provider, Service
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.base import ADCMAnsiblePluginExecutor
 from ansible_plugin.executors.multi_state_set import ADCMMultiStateSetPluginExecutor

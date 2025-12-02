@@ -13,21 +13,27 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from application.dto import RunActionDTO
-from application.migration.job.schedule import schedule_task
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
 from infra.services import get_config_service, get_job_service
+from use_cases.dto import RunActionDTO
+from use_cases.transition.job.schedule import schedule_task
 
 from cm.errors import AdcmEx
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
+from cm.legacy.services.job.inventory import get_inventory_data
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Action, ActionHostGroup, Component
-from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.jinja_env import get_env_for_jinja_scripts
-from cm.services.job.inventory import get_inventory_data
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
 
 

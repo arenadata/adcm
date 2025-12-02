@@ -11,8 +11,8 @@
 # limitations under the License.
 
 
+from cm.legacy.services.job.types import HcAclAction
 from cm.models import Action, Component, Service
-from cm.services.job.types import HcAclAction
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 

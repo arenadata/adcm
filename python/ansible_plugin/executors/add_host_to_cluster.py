@@ -12,9 +12,9 @@
 
 from typing import Collection
 
+from cm.legacy.services.cluster import perform_host_to_cluster_map
+from cm.legacy.services.status import notify
 from cm.models import Host
-from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.status import notify
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import model_validator
 from typing_extensions import Self

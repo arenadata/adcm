@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Generic, TypeVar
 
-from core.cluster.types import HostComponentEntry
+from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -24,10 +24,30 @@ from django.db import transaction
 from rbac.models import Policy
 import core
 
-from cm.adcm_config.utils import proto_ref
-from cm.api import check_license
-from cm.config.repo import convert_attr_to_adcm_meta
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.impl.config.repo import convert_attr_to_adcm_meta
+from cm.legacy.adcm_config.utils import proto_ref
+from cm.legacy.api import check_license
+from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
+from cm.legacy.services.concern import create_issue, retrieve_issue
+from cm.legacy.services.concern.cases import (
+    recalculate_concerns_on_cluster_upgrade,
+)
+from cm.legacy.services.concern.checks import object_configuration_has_issue
+from cm.legacy.services.concern.distribution import (
+    AffectedObjectConcernMap,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
+from cm.legacy.services.mapping import check_nothing, set_host_component_mapping
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.legacy.upgrade.before_upgrade_schemas import (
+    ClusterBeforeUpgrade,
+    DeletedObjectBeforeUpgrade,
+    DeletedServiceBeforeUpgrade,
+    ProviderBeforeUpgrade,
+)
+from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
     ActionHostGroup,
@@ -49,26 +69,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from cm.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
-from cm.services.concern import create_issue, retrieve_issue
-from cm.services.concern.cases import (
-    recalculate_concerns_on_cluster_upgrade,
-)
-from cm.services.concern.checks import object_configuration_has_issue
-from cm.services.concern.distribution import (
-    AffectedObjectConcernMap,
-    distribute_concern_on_related_objects,
-    redistribute_issues_and_flags,
-)
-from cm.services.mapping import check_nothing, set_host_component_mapping
-from cm.status_api import notify_about_redistributed_concerns_from_maps
-from cm.upgrade.before_upgrade_schemas import (
-    ClusterBeforeUpgrade,
-    DeletedObjectBeforeUpgrade,
-    DeletedServiceBeforeUpgrade,
-    ProviderBeforeUpgrade,
-)
-from cm.utils import obj_ref
 
 OT = TypeVar("OT", Cluster, Provider)
 MT = TypeVar("MT")

@@ -12,9 +12,9 @@
 
 from unittest import TestCase
 
-from core.bundle_alt.errors import BundleValidationError
-from core.bundle_alt.types import Definition, DefinitionsMap
-from core.bundle_alt.validation import check_display_names_are_unique
+from core.legacy.bundle_alt.errors import BundleValidationError
+from core.legacy.bundle_alt.types import Definition, DefinitionsMap
+from core.legacy.bundle_alt.validation import check_display_names_are_unique
 
 
 class TestCheckDisplayNamesAreUnique(TestCase):

@@ -12,13 +12,13 @@
 
 from unittest import TestCase
 
-from core.cluster.operations import (
+from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     calculate_maintenance_mode_for_component,
     calculate_maintenance_mode_for_service,
     find_hosts_difference,
 )
-from core.cluster.types import (
+from core.legacy.cluster.types import (
     ClusterTopology,
     ComponentTopology,
     MaintenanceModeOfObjects,
@@ -27,7 +27,7 @@ from core.cluster.types import (
     ServiceTopology,
     TopologyHostDiff,
 )
-from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
+from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ShortObjectInfo
 
 

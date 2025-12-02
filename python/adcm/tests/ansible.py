@@ -20,12 +20,18 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
 )
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import JobLog
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.executors import Executor as JobExecutor
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
-from core.job.types import Job
+from core.legacy.job.executors import Executor as JobExecutor
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
+from core.legacy.job.types import Job
 from core.types import CoreObjectDescriptor
 from django.conf import settings
 import yaml

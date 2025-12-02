@@ -17,7 +17,8 @@ import json
 import unittest
 
 from adcm.feature_flags import use_new_config_processing
-from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.models import (
     ADCM,
     Action,
@@ -31,7 +32,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from cm.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -3075,14 +3075,14 @@ class TestPatternInConfig(BaseAPITestCase):
 
     def test_jinja_config_old_processing(self) -> None:
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_jinja_config()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_jinja_config_new_processing(self) -> None:
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_jinja_config()
 
         patched.assert_called()

@@ -11,10 +11,10 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.adcm_config.config import get_main_info
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.config import get_main_info
+from cm.legacy.upgrade import get_upgrade
 from cm.models import ObjectType, Prototype, Provider
-from cm.upgrade import get_upgrade
 from rest_framework.serializers import (
     CharField,
     IntegerField,

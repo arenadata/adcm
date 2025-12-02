@@ -13,9 +13,9 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.host.duplicates import create_duplicate
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
-from cm.services.host.duplicates import create_duplicate
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError
 from ansible_plugin.executors.delete_host import ADCMDeleteHostPluginExecutor
@@ -53,7 +53,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             executor_type=ADCMDeleteHostPluginExecutor, call_arguments={}, call_context=job
         )
 
-        with patch("cm.api.cancel_locking_tasks") as cancel_tasks_mock:
+        with patch("cm.legacy.api.cancel_locking_tasks") as cancel_tasks_mock:
             result = executor.execute()
 
         self.assertIsNone(result.error)

@@ -17,6 +17,7 @@ from unittest.mock import patch
 import json
 import unittest
 
+from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
     Action,
     Cluster,
@@ -30,7 +31,6 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.jinja_env import _get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -578,14 +578,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_retrieve_jinja_config_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_retrieve_jinja_config()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_retrieve_jinja_config_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_retrieve_jinja_config()
 
         patched.assert_called()
@@ -612,14 +612,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_adcm_6013_jinja_config_with_min_max()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_6013_jinja_config_with_min_max()
 
         patched.assert_called()
@@ -655,14 +655,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_adcm_4703_action_retrieve_returns_500()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_4703_action_retrieve_returns_500()
 
         patched.assert_called()

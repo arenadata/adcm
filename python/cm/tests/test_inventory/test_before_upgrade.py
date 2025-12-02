@@ -16,10 +16,10 @@ from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
+from cm.legacy.services.job.inventory import get_inventory_data
+from cm.legacy.upgrade import _update_before_upgrade, bundle_switch
 from cm.models import Action, Component, ObjectType, Prototype, Service, Upgrade
-from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.upgrade import _update_before_upgrade, bundle_switch
 
 
 class TestBeforeUpgrade(BaseInventoryTestCase):

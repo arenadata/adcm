@@ -1,0 +1,124 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from collections import defaultdict
+
+from core.legacy.cluster.types import ClusterTopology
+
+from cm.legacy.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
+from cm.legacy.services.job.inventory._config import ProcessStepPair, update_configuration_for_inventory_inplace
+from cm.legacy.services.job.inventory._types import CurrentStep, ProcessContext
+from cm.models import Process, ProcessStep, PrototypeConfig
+
+
+class ProcessInfo:
+    current: CurrentStep | None
+    stages: dict[str, dict]
+    cumulative_delta: dict[str, set[tuple[int, str]]]
+
+    def __init__(self, current: CurrentStep | None, stages: dict[str, dict], cumulative_delta: dict[str, set[str]]):
+        self.current = current
+        self.stages = stages
+        self.cumulative_delta = cumulative_delta
+
+    def to_context(self) -> ProcessContext:
+        return ProcessContext(
+            stages=self.stages,
+            current=self.current,
+        )
+
+
+def get_action_process_context(process: Process, topology: ClusterTopology) -> ProcessInfo:
+    steps_qs = process.steps.all().select_related("processstepinput")
+
+    steps_by_name: dict[str, ProcessStep] = {step.name: step for step in steps_qs}
+
+    # Global cumulative groups
+    cumulative_groups: dict[str, set[str]] = defaultdict(set)
+
+    current: CurrentStep | None = None
+    stages = {}
+
+    for stage in process.flow_spec:
+        stages[stage["name"]] = {}
+        for step in stage["steps"]:
+            step_data = {}
+            step_obj = steps_by_name[step["name"]]
+
+            if process.current_step and step_obj.id == process.current_step.id:
+                current = {"step": step["name"], "stage": stage["name"]}
+
+            if _is_config_step(step) and hasattr(step_obj, "processstepinput"):
+                step_data = _build_config_for_step(process=process, step_obj=step_obj)
+
+            if _is_mapping_step(step) and hasattr(step_obj, "processstepinput") and step_obj.processstepinput.mapping:
+                step_data["groups"], cumulative_groups = _build_mapping_for_step(step_obj, topology)
+
+            if step_data:
+                stages[stage["name"]][step["name"]] = step_data
+
+    return ProcessInfo(stages=stages, current=current, cumulative_delta=cumulative_groups)
+
+
+def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
+    config_input = step_obj.processstepinput.configuration
+
+    proto_flat_spec = {
+        f"{config['name']}/{config['subname']}": PrototypeConfig(**config) for config in step_obj.step_spec
+    }
+    flat_spec = convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=proto_flat_spec)
+
+    configuration = update_configuration_for_inventory_inplace(
+        configuration=config_input["config"],
+        attributes=config_input["attr"],
+        specification=flat_spec,
+        config_owner=ProcessStepPair(process_id=process.id, step_id=step_obj.id),
+    )
+
+    return {"config": configuration}
+
+
+def _build_mapping_for_step(
+    step_obj: ProcessStep, topology: ClusterTopology
+) -> tuple[dict[str, list[str]], dict[str, list[tuple[int, str]]]]:
+    mapping = step_obj.processstepinput.mapping
+
+    groups = _build_groups(mapping["delta"], topology)
+    cumulative_groups = _build_groups(mapping["cumulative_delta"], topology, with_id=True)
+
+    return groups, cumulative_groups
+
+
+def _build_groups(
+    delta_mapping: dict[str, list[dict]], topology: ClusterTopology, with_id: bool = False
+) -> dict[str, list[str]] | dict[str, list[tuple[int, str]]]:
+    groups = defaultdict(list)
+    for operation, pairs in delta_mapping.items():
+        for pair in pairs:
+            component_key = next(
+                k for k, v in topology.component_full_name_id_mapping.items() if v == pair["component_id"]
+            )
+            host = topology.hosts[pair["host_id"]]
+            group_name = f"{component_key.service}.{component_key.component}.{operation}"
+            groups[group_name].append((host.id, host.name) if with_id else host.name)
+    for group_name in groups:
+        groups[group_name].sort()
+    return groups
+
+
+def _is_config_step(step: dict) -> bool:
+    # left this check as there's no "type" field for now in step spec/obj
+    return "config_template" in step
+
+
+def _is_mapping_step(step: dict) -> bool:
+    return "hc_template" in step

@@ -13,6 +13,8 @@
 from typing import NamedTuple
 from unittest.mock import patch
 
+from cm.legacy.services.job.action import ActionRunPayload, run_action
+from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -31,8 +33,6 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (

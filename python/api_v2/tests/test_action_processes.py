@@ -19,7 +19,24 @@ import unittest
 
 from adcm.tests.client import APINode
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
-from cm.issue import add_concern_to_object
+from cm.legacy.issue import add_concern_to_object
+from cm.legacy.services.action_process.operations import (
+    find_current_and_last_completed_steps,
+)
+from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
+from cm.legacy.services.action_process.schema_validation import ProcessOperationType
+from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
+from cm.legacy.services.bundle_alt.render import TaskArgs
+from cm.legacy.services.bundle_alt.render._context import prepare_context_for_task
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.job.action import ActionRunPayload, run_action
+from cm.legacy.services.job.run._target_factories import (
+    internal_script_hc_apply,
+    prepare_ansible_environment,
+    prepare_ansible_inventory,
+)
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import (
     ADCM,
     Action,
@@ -35,26 +52,15 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.action_process.operations import (
-    find_current_and_last_completed_steps,
-)
-from cm.services.action_process.render_step import RenderStepContext, fill_step_spec
-from cm.services.action_process.schema_validation import ProcessOperationType
-from cm.services.action_process.types import ProcessState, ProcessStepState
-from cm.services.bundle_alt.render import TaskArgs
-from cm.services.bundle_alt.render._context import prepare_context_for_task
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.concern import create_issue
-from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.job.run._target_factories import (
-    internal_script_hc_apply,
-    prepare_ansible_environment,
-    prepare_ansible_inventory,
-)
-from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
-from core.job.types import AssociatedProcess
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
+from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType

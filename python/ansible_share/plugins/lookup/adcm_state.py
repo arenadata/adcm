@@ -21,9 +21,9 @@ import adcm.init_django  # noqa: F401, isort:skip
 
 from ansible_plugin.utils import get_service_by_name
 from cm.converters import orm_object_to_core_type
+from cm.legacy.status_api import send_object_update_event
 from cm.logger import logger
 from cm.models import ADCMEntity, Cluster, Host, Provider, Service
-from cm.status_api import send_object_update_event
 
 DOCUMENTATION = """
     lookup: file

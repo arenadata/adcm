@@ -14,7 +14,7 @@ from copy import deepcopy
 
 from django.test import TestCase
 
-from cm.checker import FormatError, process_rule
+from cm.legacy.checker import FormatError, process_rule
 
 test_data = {
     "cluster": [

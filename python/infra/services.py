@@ -13,9 +13,9 @@
 from functools import cache
 import json
 
-from cm.config.repo import ConfigRepo
-from cm.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.job.repo import JobRepo
+from cm.impl.config.repo import ConfigRepo
+from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
+from cm.impl.job.repo import JobRepo
 import core
 
 

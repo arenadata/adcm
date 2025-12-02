@@ -15,12 +15,12 @@ from unittest.mock import patch
 import secrets
 
 from adcm.feature_flags import use_new_config_processing
-from cm.api import remove_host_from_cluster
+from cm.legacy.api import remove_host_from_cluster
+from cm.legacy.services.cluster import perform_host_to_cluster_map
+from cm.legacy.services.host.duplicates import create_duplicate
+from cm.legacy.services.status import notify
+from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider
-from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.host.duplicates import create_duplicate
-from cm.services.status import notify
-from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType, HostID, HostName
 from rest_framework.status import (

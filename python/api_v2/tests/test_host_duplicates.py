@@ -12,8 +12,8 @@
 
 from operator import itemgetter
 
+from cm.legacy.services.host.duplicates import create_duplicate
 from cm.models import Action, Cluster, Component, Host, MaintenanceMode
-from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
 from rest_framework.status import (
     HTTP_200_OK,

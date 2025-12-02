@@ -18,8 +18,8 @@ from audit.models import AuditLogOperationType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
-from cm.services.job.action import ActionRunPayload, run_action
 
 logger = logging.getLogger("background_tasks")
 

@@ -24,11 +24,11 @@ from django.core.management import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
 
-from cm.adcm_config.config import get_adcm_config
 from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage
+from cm.legacy.adcm_config.config import get_adcm_config
 from cm.models import ADCM
 
 SENDER_REQUEST_TIMEOUT = 15.0

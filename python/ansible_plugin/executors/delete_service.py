@@ -12,10 +12,10 @@
 
 from typing import Collection
 
-from cm.api import delete_service
+from cm.legacy.api import delete_service
+from cm.legacy.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
 from cm.models import ClusterBind, HostComponent, Prototype, Service
-from cm.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
-from core.cluster.types import HostComponentEntry
+from core.legacy.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 

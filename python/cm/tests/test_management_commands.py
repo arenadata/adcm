@@ -38,10 +38,10 @@ from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionE
 from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
+from cm.legacy.services.job.inventory import get_objects_configurations
+from cm.legacy.utils import strip_uuid
 from cm.models import ADCM, Bundle, Component, HostInfo
-from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
-from cm.utils import strip_uuid
 
 
 class MockResponse:

@@ -15,10 +15,10 @@ from typing import Callable, Collection
 
 from cm.converters import core_type_to_model, host_group_type_to_model
 from cm.errors import AdcmEx
+from cm.legacy.services.status.client import retrieve_status_map
+from cm.legacy.status_api import get_raw_status
 from cm.models import Cluster, Component, Host, Service
-from cm.services.status.client import retrieve_status_map
-from cm.status_api import get_raw_status
-from core.cluster.errors import (
+from core.legacy.cluster.errors import (
     ClusterAddHostError,
     HostAlreadyBoundError,
     HostBelongsToAnotherClusterError,

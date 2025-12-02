@@ -22,7 +22,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.migration.cluster.create import create_services_from_prototypes
 from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -30,10 +29,10 @@ from audit.alt.hooks import (
     extract_previous_from_object,
 )
 from cm.errors import AdcmEx
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.service import delete_service_from_api
+from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.service import delete_service_from_api
-from cm.services.status.notify import update_mm_objects
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -57,6 +56,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.cluster.create import create_services_from_prototypes
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset

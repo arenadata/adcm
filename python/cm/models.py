@@ -21,8 +21,8 @@ import signal
 import os.path
 
 from adcm.feature_flags import use_new_config_processing
-from core.action.process.types import ProcessState, ProcessStepState
-from core.job.types import ScriptType
+from core.legacy.action.process.types import ProcessState, ProcessStepState
+from core.legacy.job.types import ScriptType
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -34,8 +34,8 @@ from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 
 

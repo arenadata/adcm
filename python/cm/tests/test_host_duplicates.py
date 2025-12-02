@@ -15,8 +15,8 @@ from pathlib import Path
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionTargetDescriptor, ADCMCoreType
 
-from cm.services.host.duplicates import create_duplicate
-from cm.services.job.inventory._base import get_inventory_data
+from cm.legacy.services.host.duplicates import create_duplicate
+from cm.legacy.services.job.inventory._base import get_inventory_data
 
 
 class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):

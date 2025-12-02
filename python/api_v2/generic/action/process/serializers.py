@@ -12,13 +12,13 @@
 
 from typing import Any
 
-from cm.models import Process
-from cm.services.action_process.schema_validation import (
+from cm.legacy.services.action_process.schema_validation import (
     CompleteProcessPayload,
     OperationPayloadSchema,
     ResetStepPayload,
     SubmitStepPayload,
 )
+from cm.models import Process
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import (

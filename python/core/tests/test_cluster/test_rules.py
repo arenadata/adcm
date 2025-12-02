@@ -13,8 +13,8 @@
 from operator import itemgetter
 from unittest import TestCase
 
-from core.cluster.errors import ClusterAddHostError
-from core.cluster.rules import (
+from core.legacy.cluster.errors import ClusterAddHostError
+from core.legacy.cluster.rules import (
     CandidateViolation,
     CandidateViolationType,
     HostCandidateDTO,
@@ -22,7 +22,7 @@ from core.cluster.rules import (
     detect_valid_host_candidates,
     find_host_candidate_violations,
 )
-from core.cluster.types import HostAddInfo
+from core.legacy.cluster.types import HostAddInfo
 
 
 def with_cluster(host: HostAddInfo, cluster_id: int | None) -> HostAddInfo:

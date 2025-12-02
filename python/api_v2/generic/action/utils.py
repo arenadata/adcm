@@ -17,8 +17,12 @@ from typing import Iterable, Iterator, List, Literal
 import json
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
-from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.config import get_default
+from cm.legacy.services.action_process.types import ProcessState
+from cm.legacy.services.bundle import ADCMBundlePathResolver, BundlePathResolver
+from cm.legacy.services.config import convert_attr_to_adcm_meta
+from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import (
     ADCM,
     Action,
@@ -31,10 +35,6 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.action_process.types import ProcessState
-from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
-from cm.services.config import convert_attr_to_adcm_meta
-from cm.services.config.jinja import get_jinja_config
 from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
 from django.utils import timezone

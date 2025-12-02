@@ -12,13 +12,13 @@
 
 from typing import Any, Collection, TypeAlias, TypedDict
 
-from cm.api import set_object_config_with_plugin
 from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
+from cm.legacy.api import set_object_config_with_plugin
+from cm.legacy.services.config import ConfigAttrPair
+from cm.legacy.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.models import ADCM, ConfigLog
-from cm.services.config import ConfigAttrPair
-from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
-from core.bundle_alt.schema import ConfigApplyParameterItem
+from core.legacy.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import model_validator

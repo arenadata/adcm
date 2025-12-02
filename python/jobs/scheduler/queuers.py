@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.run import run_task_in_local_subprocess
+from cm.legacy.services.job.run import run_task_in_local_subprocess
 from core.types import TaskID
 
 from jobs.scheduler import repo
