@@ -33,7 +33,7 @@ ruyaml = "^0.91.0"
 python-gnupg = "^0.5.5"  # for the bundle signature verification mechanism
 
 # Ansible
-ansible = { git = "https://github.com/arenadata/ansible.git", rev = "v2.8.8-p7" }
+ansible = { git = "https://github.com/arenadata/ansible.git", rev = "v2.8.8-p8" }
 jinja2 = "<3.0.0"  # required for Ansible for jinja_native option,
 # "<3.0.0" is due to the absence of the "jinja2._compat" module in jinja2 >= 3.0.0.
 # Jinja2 is also used for rendering files in ADCM.
