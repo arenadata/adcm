@@ -575,3 +575,38 @@ class TestBundle(BaseAPITestCase):
         self.assertIn(
             "Errors found in definition of bundle entity:\n actions\n  scripts_template", response.json()["desc"]
         )
+
+    def test_adcm_7395_wrong_template_definition(self):
+        with self.subTest("scripts_template"):
+            bundle_file = self.prepare_bundle_file(
+                source_dir=self.test_bundles_dir / "invalid_bundles" / "wrong_scripts_template",
+                target_dir=settings.TMP_DIR,
+            )
+
+            with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            response = response.json()
+            print(f"{response=}")
+            self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertEqual(response["level"], "error")
+            self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
+
+        with self.subTest("config_template"):
+            bundle_file = self.prepare_bundle_file(
+                source_dir=self.test_bundles_dir / "invalid_bundles" / "wrong_config_template",
+                target_dir=settings.TMP_DIR,
+            )
+
+            with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            response = response.json()
+            print(f"{response=}")
+            self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertEqual(response["level"], "error")
+            self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
