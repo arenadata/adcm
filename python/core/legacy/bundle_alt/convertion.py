@@ -368,6 +368,7 @@ def _patch_upgrade_action_names(result: Definition) -> Definition:
         # ! second strict is taken from min_ too,
         # ! because this error was in old code
         # ! => fixing it requires migrations
+        # Decided within ADCM-6414 not to fix: such bundle won't be uploaded
         versions = f"{min_.value}_strict_{min_.is_strict}-" f"{max_.value}_strict_{min_.is_strict}"
         editions = f"editions-{'_'.join(upgrade.restrictions.from_editions)}"
         available = f"state_available-{'_'.join(upgrade.state_available)}"
