@@ -20,7 +20,8 @@ import core
 from cm.errors import AdcmEx
 from cm.legacy.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.legacy.services.bundle_alt.render import Environment, TaskArgs
-from cm.legacy.services.jinja_env import get_env_for_jinja_scripts, get_env_for_jinja_scripts_new
+from cm.legacy.services.bundle_alt.render._context import prepare_context_for_task
+from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.template import TemplateBuilder
 from cm.legacy.utils import decrypt_secrets, get_on_fail_states
 from cm.models import (
@@ -70,8 +71,7 @@ def get_job_specs_from_template_new(
     # dirty function just to unbind job specs build from task existence
 
     scripts_jinja_file = environment.bundle_root / jinja_path
-
-    context = get_env_for_jinja_scripts_new(args=task_args, config_service=config_service)
+    context = prepare_context_for_task(args=task_args, config_service=config_service)
     # TO DO: get rid of using decrypt_secrets here
     decrypted_context = decrypt_secrets(context)
 

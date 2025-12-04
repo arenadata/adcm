@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 
 from adcm.feature_flags import use_new_config_processing
@@ -20,6 +20,7 @@ from core.types import HostID, HostName, ServiceName
 from infra.services import get_config_service
 from pydantic import BaseModel
 from typing_extensions import TypedDict
+import core
 
 from cm.legacy.services.cluster import retrieve_related_cluster_topology
 from cm.legacy.services.job import context as context_m
@@ -57,7 +58,7 @@ class TaskArgs:
     action: Action
     action_process: Process | None = None
 
-    config: dict = field(default_factory=dict)
+    config: dict | None = None
     verbose: bool = False
     delta: TaskMappingDelta | None = None
 
@@ -103,12 +104,18 @@ def prepare_context_for_action(args: ActionArgs) -> dict:
     return context.model_dump(mode="python")
 
 
-def prepare_context_for_task(args: TaskArgs) -> dict:
-    action_group = None
+def prepare_context_for_task(args: TaskArgs, config_service: core.config.ConfigService | None = None) -> dict:
     target_object = args.target_object
+    extra_groups = {}
+
     if isinstance(target_object, ActionHostGroup):
-        action_group = target_object
+        target_group_hosts = _get_names_of_hosts_in_action_host_group(target_object.pk)
+        extra_groups = {"target": target_group_hosts}
+
+        # override target object for further processing
         target_object = target_object.object
+    elif isinstance(target_object, Host):
+        extra_groups = {"target": _get_target_for_host(target_object.fqdn)}
 
     if not isinstance(target_object, (Cluster, Service, Component, Host)):
         message = f"Target for task context can't be of type {type(target_object)}"
@@ -119,11 +126,10 @@ def prepare_context_for_task(args: TaskArgs) -> dict:
         cluster_relative_object=target_object,
         action_process=args.action_process,
         delta=args.delta,
+        config_service=config_service,
     )
 
-    if action_group:
-        target_group_hosts = _get_names_of_hosts_in_action_host_group(action_group.pk)
-        action_context.groups |= {"target": target_group_hosts}
+    action_context.groups |= extra_groups
 
     task_context = _TaskContext(config=args.config, verbose=args.verbose)
 
@@ -133,7 +139,7 @@ def prepare_context_for_task(args: TaskArgs) -> dict:
         groups=action_context.groups,
         task=task_context,
         action=action_context.action,
-    ).model_dump(mode="python")
+    ).model_dump(mode="python", by_alias=True)
 
 
 def _prepare_context_for_action(
@@ -141,11 +147,12 @@ def _prepare_context_for_action(
     cluster_relative_object: Cluster | Service | Component | Host,
     action_process: Process | None = None,
     delta: TaskMappingDelta | None = None,
+    config_service: core.config.ConfigService | None = None,
 ) -> ActionRenderContext:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
 
     if use_new_config_processing():
-        get_cluster_vars = partial(context_m.get_cluster_vars, config_service=get_config_service())
+        get_cluster_vars = partial(context_m.get_cluster_vars, config_service=config_service or get_config_service())
         get_action_process_context = context_m.get_action_process_context
     else:
         get_cluster_vars = inventory.get_cluster_vars
@@ -220,6 +227,10 @@ def _get_host_group_names_for_cluster(
         host_groups=host_groups, process_mapping_delta=process_cumulative_delta or {}
     )
     return _get_host_group_names_only(host_groups=sort_hosts_within_groups(host_groups))
+
+
+def _get_target_for_host(host_name: HostName) -> list[HostName]:
+    return [host_name]
 
 
 def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[HostName]:
