@@ -38,6 +38,7 @@ from core.config._validate import (
 )
 from core.result import Fail, Success, is_fail
 from core.types import (
+    ActionDescriptor,
     ActionID,
     ADCMHostGroupType,
     ConfigID,
@@ -110,13 +111,13 @@ class ConfigService:
         return self.repo.get_config(owner=owner)
 
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=False)
+        return self.repo.get_spec(owner=owner, defaults=False)
 
     def retrieve_specification_with_defaults(
         self, owner: CoreObjectDescriptor, *, encrypt_defaults: bool = True
     ) -> tuple[spec.FullSpec, Defaults]:
         encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=encrypt)
+        return self.repo.get_spec(owner=owner, defaults=encrypt)
 
     def retrieve_partial_specification(
         self,
@@ -129,7 +130,7 @@ class ConfigService:
         Don't overuse this function, ensure that you are out of other options and no new mechanism is required.
         Can return "empty" spec.
         """
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=False, only_for=only_for_types)
+        return self.repo.get_spec(owner=owner, defaults=False, only_for=only_for_types)
 
     def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
         # scenario-like method, may be moved
@@ -179,10 +180,9 @@ class ConfigService:
             resolve_variant=variant_resolver.resolve,
         )
 
-    def retrieve_specification_with_defaults_for_action(
-        self, owner: CoreObjectDescriptor, action_id: ActionID
-    ) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec(owner=owner, action_id=action_id, defaults=self.secrets.encrypt)
+    def retrieve_specification_with_defaults_for_action(self, action_id: ActionID) -> tuple[spec.FullSpec, Defaults]:
+        descriptor: ActionDescriptor = Descriptor(id=action_id, type="action")
+        return self.repo.get_spec(owner=descriptor, defaults=self.secrets.encrypt)
 
     def retrieve_configurations_by_id(self, configurations: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
         return self.repo.find_configs_by_ids(ids=configurations)

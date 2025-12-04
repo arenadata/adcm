@@ -18,7 +18,7 @@ from typing import Iterable, Literal, overload
 
 from core import config
 from core.types import (
-    ActionID,
+    ActionDescriptor,
     ADCMCoreType,
     ADCMHostGroupType,
     ConfigID,
@@ -35,11 +35,12 @@ from django.db.models import F, Q
 from cm.converters import core_type_to_model
 from cm.impl.config._repo_spec import build_defaults, build_specification
 from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
+from cm.models import ADCM, Action, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
 
 
 @dataclass(slots=True)
 class ConfigPrototypeInfo:
+    prototype_type: ADCMCoreType
     bundle_hash: str
     group_customization_flag: bool
     parameter_prototypes: tuple[PrototypeConfig, ...]
@@ -80,8 +81,7 @@ class ConfigRepo(config.ConfigRepoI):
     @overload
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: Literal[False],
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
@@ -91,8 +91,7 @@ class ConfigRepo(config.ConfigRepoI):
     @overload
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: config.EncryptFunc,
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
@@ -101,18 +100,18 @@ class ConfigRepo(config.ConfigRepoI):
 
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: Literal[False] | config.EncryptFunc = False,
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
     ) -> config.spec.FullSpec | tuple[config.spec.FullSpec, config.Defaults]:
-        config_spec_info = _get_config_prototype_info(owner=owner, action_id=action_id, only_for=only_for)
+        config_spec_info = _get_config_prototype_info(owner=owner, only_for=only_for)
         if not config_spec_info.parameter_prototypes and not only_for:
             message = f"Unexpectedly got object without configuration: {owner}"
             raise config.ObjectWithoutConfigError(message)
 
-        bundle_root = _build_path_to_bundle_root(owner_type=owner.type, bundle_hash=config_spec_info.bundle_hash)
+        owner_type = config_spec_info.prototype_type
+        bundle_root = _build_path_to_bundle_root(owner_type=owner_type, bundle_hash=config_spec_info.bundle_hash)
         spec = build_specification(
             records=config_spec_info.parameter_prototypes,
             group_customization_flag=config_spec_info.group_customization_flag,
@@ -255,18 +254,30 @@ def _detect_owner_model(owner: ObjectOrGroup) -> type[MainObject | ADCM | Config
 
 
 def _get_config_prototype_info(
-    owner: CoreObjectDescriptor,
-    action_id: int | None,
+    owner: CoreObjectDescriptor | Descriptor[Literal["action"]],
     only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
 ) -> ConfigPrototypeInfo:
-    model = core_type_to_model(owner.type)
-    response = model.objects.values(
-        "prototype_id",
-        customization=F("prototype__config_group_customization"),
-        bundle_hash=F("prototype__bundle__hash"),
-    ).get(id=owner.id)
+    match owner:
+        case CoreObjectDescriptor():
+            model = core_type_to_model(owner.type)
+            prototype_id, prototype_type_literal, group_customization, bundle_hash = model.objects.values_list(
+                "prototype_id",
+                "prototype__type",
+                "prototype__config_group_customization",
+                "prototype__bundle__hash",
+            ).get(id=owner.id)
 
-    query_filter = Q(action_id=action_id) if action_id else Q(prototype_id=response["prototype_id"], action_id=None)
+            query_filter = Q(prototype_id=prototype_id, action_id=None)
+
+        case Descriptor(id=action_id, type="action"):
+            prototype_id, prototype_type_literal, bundle_hash = Action.objects.values_list(
+                "prototype_id", "prototype__type", "prototype__bundle__hash"
+            ).get(id=action_id)
+            group_customization = False
+
+            query_filter = Q(action_id=action_id)
+
+    prototype_type = ADCMCoreType(prototype_type_literal)
 
     # now implemented for two only, since others aren't required yet
     if only_for:
@@ -281,8 +292,9 @@ def _get_config_prototype_info(
     parameter_prototypes = tuple(PrototypeConfig.objects.filter(query_filter).order_by("pk"))
 
     return ConfigPrototypeInfo(
-        bundle_hash=response["bundle_hash"],
-        group_customization_flag=response["customization"] if not action_id else False,
+        prototype_type=prototype_type,
+        bundle_hash=bundle_hash,
+        group_customization_flag=group_customization,
         parameter_prototypes=parameter_prototypes,
     )
 
@@ -294,7 +306,7 @@ def _get_configs_by_ids(ids: Iterable[ConfigID]) -> dict[ConfigID, ConfigLog]:
 
 def _get_config_prototypes_info_by_ids(ids: Iterable[PrototypeID]) -> dict[PrototypeID, ConfigPrototypeInfo]:
     prototypes_query = Prototype.objects.filter(id__in=ids).values(
-        "id", customization=F("config_group_customization"), bundle_hash=F("bundle__hash")
+        "id", "type", customization=F("config_group_customization"), bundle_hash=F("bundle__hash")
     )
     records = {p["id"]: p for p in prototypes_query}
 
@@ -307,6 +319,7 @@ def _get_config_prototypes_info_by_ids(ids: Iterable[PrototypeID]) -> dict[Proto
 
     return {
         prototype_id: ConfigPrototypeInfo(
+            prototype_type=info["type"],
             bundle_hash=info["bundle_hash"],
             group_customization_flag=info["customization"],
             parameter_prototypes=tuple(parameter_prototypes.get(prototype_id, ())),

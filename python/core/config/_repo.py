@@ -15,7 +15,7 @@ from typing import Iterable, Literal, Protocol, TypeAlias, overload
 from core.config import spec
 from core.config._types import Configuration, ConfigurationWithID, Defaults, EncryptFunc
 from core.types import (
-    ActionID,
+    ActionDescriptor,
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
@@ -55,8 +55,7 @@ class ConfigRepoI(Protocol):
     @overload
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: Literal[False],
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
@@ -66,8 +65,7 @@ class ConfigRepoI(Protocol):
     @overload
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: EncryptFunc,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
@@ -76,8 +74,7 @@ class ConfigRepoI(Protocol):
 
     def get_spec(
         self,
-        owner: CoreObjectDescriptor,
-        action_id: ActionID | None,
+        owner: CoreObjectDescriptor | ActionDescriptor,
         *,
         defaults: Literal[False] | EncryptFunc = False,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,

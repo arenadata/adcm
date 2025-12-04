@@ -155,6 +155,7 @@ ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
 TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]
+ActionDescriptor: TypeAlias = Descriptor[Literal["action"]]
 
 
 @dataclass(slots=True, frozen=True)
