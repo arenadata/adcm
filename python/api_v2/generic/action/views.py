@@ -155,6 +155,7 @@ class ActionViewSet(
         return ActionListSerializer
 
     def handle_exception(self, exc: Exception) -> Response:
+        # temporal handling
         if isinstance(exc, core.config.OperationError):
             exc = AdcmEx(code="ACTION_OPERATION_ERROR", msg=exc.args[0])
 

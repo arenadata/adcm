@@ -145,16 +145,13 @@ def schedule_task(
 
         match action_objects.owner:
             case Provider() | Host() | ADCM():
-                spec_pair = _retrieve_static_spec(
-                    owner=descriptor, action_id=action_orm.pk, config_service=config_service
-                )
+                spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=config_service)
                 job_config = _prepare_configuration(
                     spec=spec_pair, config=payload.configuration, owner=descriptor, config_service=config_service
                 )
 
             case Cluster() | Service() | Component():
                 spec_pair = _resolve_spec(
-                    owner=descriptor,
                     action=action_orm,
                     cluster_related_object=action_objects.owner,
                     process=process,
@@ -250,12 +247,11 @@ def retrieve_configuration_for_action(
 
     match action_objects.owner:
         case Provider() | Host() | ADCM():
-            spec_pair = _retrieve_static_spec(owner=descriptor, action_id=action_orm.pk, config_service=config_service)
+            spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=config_service)
 
         case Cluster() | Service() | Component():
             environment = Environment(bundle_root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash)
             spec_pair = _resolve_spec(
-                owner=descriptor,
                 action=action_orm,
                 cluster_related_object=action_objects.owner,
                 process=None,
@@ -278,20 +274,15 @@ def retrieve_configuration_for_action(
     )
 
 
-def _retrieve_static_spec(
-    owner: CoreObjectDescriptor, action_id: ActionID, config_service: core.config.ConfigService
-) -> SpecPair | None:
+def _retrieve_static_spec(action_id: ActionID, config_service: core.config.ConfigService) -> SpecPair | None:
     try:
-        specification, defaults = config_service.retrieve_specification_with_defaults_for_action(
-            owner=owner, action_id=action_id
-        )
+        specification, defaults = config_service.retrieve_specification_with_defaults_for_action(action_id=action_id)
         return SpecPair(spec=specification, defaults=defaults)
     except core.config.ObjectWithoutConfigError:
         return None
 
 
 def _resolve_spec(
-    owner: CoreObjectDescriptor,
     action: Action,
     cluster_related_object: Cluster | Service | Component | Host,
     environment: Environment,
@@ -299,7 +290,7 @@ def _resolve_spec(
     config_service: core.config.ConfigService,
 ) -> SpecPair | None:
     if not (action.config_jinja or action.config_template):
-        return _retrieve_static_spec(owner=owner, action_id=action.pk, config_service=config_service)
+        return _retrieve_static_spec(action_id=action.pk, config_service=config_service)
 
     if action.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=cluster_related_object)

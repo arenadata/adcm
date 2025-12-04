@@ -55,6 +55,13 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
     filterset_class = UpgradeFilter
     pagination_class = None
 
+    def handle_exception(self, exc: Exception) -> Response:
+        # temporal handling
+        if isinstance(exc, core.config.OperationError):
+            exc = AdcmEx(code="UPGRADE_OPERATION_ERROR", msg=exc.args[0])
+
+        return super().handle_exception(exc)
+
     def get_serializer_class(self) -> type[UpgradeListSerializer | UpgradeRunSerializer | UpgradeRetrieveSerializer]:
         if self.action == "retrieve":
             return UpgradeRetrieveSerializer
