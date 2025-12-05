@@ -59,6 +59,7 @@ from django.conf import settings
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.test import Client, TestCase, override_settings
+from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.group import create as create_group
@@ -173,6 +174,9 @@ class TestCaseWithCommonSetUpTearDown(TestCase):
 
 class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
     def setUp(self) -> None:
+        # TODO: ADCM-7513
+        get_config_service.cache_clear()
+
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
 

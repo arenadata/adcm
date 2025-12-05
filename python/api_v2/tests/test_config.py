@@ -51,7 +51,6 @@ from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
 CONFIGS = "configs"
 CONFIG_SCHEMA = "config-schema"
 
-
 subtest_on_new_config_processing = partial(
     subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.generic.config.views"
 )
@@ -293,7 +292,6 @@ class TestClusterConfig(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-@unittest.skip("ADCM-7359: intentionally broke this case, approval required")
 class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -302,16 +300,15 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
             service_names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
         ).get()
 
-    def test_adcm_4328_save_empty_config_success(self):
+    def test_save_empty_config_success(self):
         response = self.client.v2[self.service, CONFIGS].post(data={"config": {}, "adcmMeta": {}})
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn("value is missing", response.json()["desc"])
 
-        self.service.refresh_from_db()
-        current_config = ConfigLog.objects.get(obj_ref=self.service.config, id=self.service.config.current).config
+    def test_save_config_without_not_required_map_in_group_success(self):
+        # As part of the refactoring, the behavior has been changed. The configuration must contain all fields.
+        # The required property is responsible for the value, not the presence of the field. See ADCM-7089
 
-        self.assertDictEqual(current_config, {})
-
-    def test_adcm_4328_save_config_without_not_required_map_in_group_success(self):
         response = self.client.v2[self.service, CONFIGS].post(
             data={
                 "config": {
@@ -322,9 +319,10 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
                 "adcmMeta": {},
             },
         )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn("value is missing", response.json()["desc"])
 
-    def test_adcm_4328_default_raw_config_success(self):
+    def test_default_raw_config_success(self):
         default_config_without_secrets = ConfigLog.objects.get(
             obj_ref=self.service.config, id=self.service.config.current
         ).config
@@ -598,7 +596,8 @@ class TestClusterCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        # fixme ADCM-7359
+        # TODO: ADCM-7516
+        # TODO This was the case before refactoring the configuration code
         # self.assertDictEqual(
         #    response.json(),
         #    {
@@ -607,6 +606,15 @@ class TestClusterCHG(BaseAPITestCase):
         #        "level": "error",
         #    },
         # )
+        # TODO: So it became
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "API_ERROR",
+                "desc": ["adcmMeta values should be dictionaries"],
+                "level": "ERROR",
+            },
+        )
 
     def test_create_bad_and_good_fail(self):
         data = {
@@ -1073,15 +1081,14 @@ class TestServiceCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        # fixme ADCM-7359
-        # self.assertDictEqual(
-        #    response.json(),
-        #    {
-        #        "code": "ATTRIBUTE_ERROR",
-        #        "desc": 'adcmMeta values should be dictionaries',
-        #        "level": "error",
-        #    },
-        # )
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "API_ERROR",
+                "desc": ["adcmMeta values should be dictionaries"],
+                "level": "ERROR",
+            },
+        )
 
     def test_create_bad_and_good_fail(self):
         data = {
@@ -1103,11 +1110,9 @@ class TestServiceCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        # fixme ADCM-7359
-        # self.assertDictEqual(
-        #    response.json(),
-        #    {"code": "ATTRIBUTE_ERROR", "desc": "invalid `stringBAD/` field in `group_keys`", "level": "error"},
-        # )
+        self.assertEqual(response.json()["code"], "CONFIG_OPERATION_ERROR")
+        self.assertIn("unexpected synchronization attribute", response.json()["desc"])
+        self.assertIn("not allowed to be desynchronized", response.json()["desc"])
 
     def test_schema(self):
         response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
@@ -1479,7 +1484,6 @@ class TestComponentCHG(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
 
-    @unittest.skip("ADCM-7359 Likely parallel problem")
     def test_cancel_sync(self):
         config = {
             "group": {"file": "new content"},
@@ -1548,7 +1552,6 @@ class TestComponentCHG(BaseAPITestCase):
             "content",
         )
 
-    @unittest.skip("ADCM-7359 Likely parallel problem with FS write")
     def test_primary_config_update(self):
         data = {
             "config": {
@@ -1608,7 +1611,8 @@ class TestComponentCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        # fixme ADCM-7359
+        # TODO: ADCM-7516
+        # TODO This was the case before refactoring the configuration code
         # self.assertDictEqual(
         #    response.json(),
         #    {
@@ -1617,6 +1621,15 @@ class TestComponentCHG(BaseAPITestCase):
         #        "level": "error",
         #    },
         # )
+        # TODO: So it became
+        self.assertEqual(
+            response.json(),
+            {
+                "code": "API_ERROR",
+                "desc": ["adcmMeta values should be dictionaries"],
+                "level": "ERROR",
+            },
+        )
 
     def test_create_bad_and_good_fail(self):
         data = {
@@ -1638,11 +1651,18 @@ class TestComponentCHG(BaseAPITestCase):
         response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        # fixme ADCM-7359
-        # self.assertDictEqual(
-        #    response.json(),
-        #    {"code": "ATTRIBUTE_ERROR", "desc": "invalid `stringBAD/` field in `group_keys`", "level": "error"},
-        # )
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "CONFIG_OPERATION_ERROR",
+                "desc": (
+                    "Configuration doesn't match specification. Following violations detected:\n"
+                    "- /stringBAD [attribute]: unexpected synchronization attribute\n"
+                    "- /stringBAD [attribute]: not allowed to be desynchronized"
+                ),
+                "level": "error",
+            },
+        )
 
     def test_schema(self):
         response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
