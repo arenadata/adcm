@@ -13,10 +13,11 @@
 from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
-import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
+from infra.services import get_config_service
+import core
 
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
@@ -33,7 +34,6 @@ from cm.legacy.services.action_process.schema_validation import (
 )
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.config._base import ConfigAttrPair
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
 
@@ -154,13 +154,12 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
-        from cm.legacy.services.job.inventory import get_action_process_context
+        from cm.legacy.services.job.context import get_action_process_context
 
         process = Process.objects.get(id=process_id)
         topology = retrieve_cluster_topology(cluster_id)
         return get_action_process_context(process=process, topology=topology).to_context()
 
-    @unittest.skip("ADCM-7359 Figure out action process package separation")
     def test_process_step_sequential_rendering(self):
         bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
         cluster = self.add_cluster(bundle=bundle, name="cc")
@@ -183,7 +182,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         context = OperationContext(
             object=object_,
             action=action_info,
-            config_processor=lambda _, config: ConfigAttrPair(config=config.config, attr=config.adcm_meta),
+            config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
         payload = SubmitStepPayload(
             method=ProcessOperationType.SUBMIT,
@@ -194,7 +193,13 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
             ),
         )
 
-        submit_step(process=process, payload=payload, context=context, new_process_sync_key=uuid4())
+        submit_step(
+            process=process,
+            payload=payload,
+            context=context,
+            new_process_sync_key=uuid4(),
+            config_service=get_config_service(),
+        )
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertDictContainsSubset(

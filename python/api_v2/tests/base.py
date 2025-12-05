@@ -39,6 +39,7 @@ from cm.models import (
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.http import HttpRequest
+from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
@@ -69,6 +70,9 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         config_log.save(update_fields=["config"])
 
     def setUp(self) -> None:
+        # TODO: ADCM-7513
+        get_config_service.cache_clear()
+
         self.client.login(username="admin", password="admin")
 
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"

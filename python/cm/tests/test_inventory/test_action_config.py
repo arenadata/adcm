@@ -12,7 +12,6 @@
 
 from copy import deepcopy
 from uuid import UUID
-import unittest
 
 from core.legacy.job.dto import TaskPayloadDTO
 from core.legacy.job.runners import (
@@ -132,7 +131,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_action_config(self) -> None:
         for object_, config, type_name in (
             (self.cluster, None, "cluster"),
@@ -365,7 +363,6 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_scripts_in_action_config(self) -> None:
         for action_name in ("job_proto_relative", "job_bundle_relative", "task_mixed"):
             for object_, type_name in ((self.cluster, "cluster"), (self.service_1, "service")):
