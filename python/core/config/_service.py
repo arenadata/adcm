@@ -113,11 +113,8 @@ class ConfigService:
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
         return self.repo.get_spec(owner=owner, action_id=None, defaults=False)
 
-    def retrieve_specification_with_defaults(
-        self, owner: CoreObjectDescriptor, *, encrypt_defaults: bool = True
-    ) -> tuple[spec.FullSpec, Defaults]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=encrypt)
+    def retrieve_specification_with_defaults(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
+        return self.repo.get_spec(owner=owner, action_id=None, defaults=self.secrets.encrypt)
 
     def retrieve_partial_specification(
         self,
@@ -198,10 +195,9 @@ class ConfigService:
         }
 
     def retrieve_specifications_by_prototypes_with_defaults(
-        self, prototypes: Iterable[PrototypeID], *, encrypt_defaults: bool = True
+        self, prototypes: Iterable[PrototypeID]
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt)
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=self.secrets.encrypt)
 
     # todo: bad, should accept host groups or direct ids,
     # host groups retrieval should be in separate service/repo

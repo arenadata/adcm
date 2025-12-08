@@ -1,0 +1,19 @@
+- type: cluster
+  name: aa
+  version: 2
+
+  upgrade:
+    - name: cool
+      versions:
+        min: 1
+        max: 1.9
+      states:
+        available: any
+
+  config:
+    - name: exists
+      type: password
+      default: aaa
+    - name: new
+      type: password
+      default: iii
