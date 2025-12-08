@@ -341,3 +341,10 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         duplicate_2.refresh_from_db()
         self.assertEqual(duplicate_2.fqdn, duplicate_1.fqdn)
+
+    def test_adcm_7443_files_in_nested_groups_success(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider_host_nested_groups_with_files")
+        provider = self.add_provider(bundle=bundle, name="provider-with-files-in-nested-groups")
+        host = self.add_host(provider=provider, fqdn="host-with-files-in-nested-groups")
+
+        self.create_duplicate(origin=host, name=f"{host.name}-duplicate")  # no error expected

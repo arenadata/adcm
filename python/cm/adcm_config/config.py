@@ -446,7 +446,7 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
         elif conf[key]:
             for subkey in conf[key]:
                 if spec[key][subkey]["type"] == "file":
-                    save_file_type(obj, key, subkey, conf[key][subkey])
+                    save_file_type(obj, key, subkey.replace("/", "."), conf[key][subkey])
                 elif spec[key][subkey]["type"] == "secretfile":
                     value = conf[key][subkey]
                     if conf[key][subkey] is not None:
@@ -461,7 +461,7 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                     else:
                         value = None
 
-                    save_file_type(obj, key, subkey, value)
+                    save_file_type(obj, key, subkey.replace("/", "."), value)
 
 
 def process_config(
