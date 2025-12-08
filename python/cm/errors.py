@@ -221,6 +221,7 @@ ERRORS = {
     "ACTION_OPERATION_ERROR": ("Can't perform operation with action", HTTP_409_CONFLICT, ERR),
     "ACTION_PROCESS_NOT_FOUND": ("Process not found", HTTP_404_NOT_FOUND, ERR),
     "ACTION_PROCESS_STEP_NOT_FOUND": ("Step not found", HTTP_404_NOT_FOUND, ERR),
+    "UPGRADE_OPERATION_ERROR": ("Can't perform operation with upgrade", HTTP_409_CONFLICT, ERR),
 }
 
 
