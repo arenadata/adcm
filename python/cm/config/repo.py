@@ -35,7 +35,7 @@ from django.db.models import F, Q
 from cm.config._repo_spec import build_defaults, build_specification
 from cm.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.converters import core_type_to_model
-from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
+from cm.models import ADCM, Action, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
 
 
 @dataclass(slots=True)
@@ -259,14 +259,23 @@ def _get_config_prototype_info(
     action_id: int | None,
     only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
 ) -> ConfigPrototypeInfo:
-    model = core_type_to_model(owner.type)
-    response = model.objects.values(
-        "prototype_id",
-        customization=F("prototype__config_group_customization"),
-        bundle_hash=F("prototype__bundle__hash"),
-    ).get(id=owner.id)
+    if not action_id:
+        model = core_type_to_model(owner.type)
+        prototype_id, prototype_type_literal, group_customization, bundle_hash = model.objects.values_list(
+            "prototype_id",
+            "prototype__type",
+            "prototype__config_group_customization",
+            "prototype__bundle__hash",
+        ).get(id=owner.id)
 
-    query_filter = Q(action_id=action_id) if action_id else Q(prototype_id=response["prototype_id"], action_id=None)
+        query_filter = Q(prototype_id=prototype_id, action_id=None)
+    else:
+        prototype_id, prototype_type_literal, bundle_hash = Action.objects.values_list(
+            "prototype_id", "prototype__type", "prototype__bundle__hash"
+        ).get(id=action_id)
+        group_customization = False
+
+        query_filter = Q(action_id=action_id)
 
     # now implemented for two only, since others aren't required yet
     if only_for:
@@ -281,8 +290,8 @@ def _get_config_prototype_info(
     parameter_prototypes = tuple(PrototypeConfig.objects.filter(query_filter).order_by("pk"))
 
     return ConfigPrototypeInfo(
-        bundle_hash=response["bundle_hash"],
-        group_customization_flag=response["customization"] if not action_id else False,
+        bundle_hash=bundle_hash,
+        group_customization_flag=group_customization,
         parameter_prototypes=parameter_prototypes,
     )
 
