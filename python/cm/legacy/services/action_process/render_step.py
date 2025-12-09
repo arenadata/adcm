@@ -13,16 +13,25 @@
 from dataclasses import dataclass
 
 from core.legacy.bundle_alt.errors import BundleValidationError
-from core.legacy.job.types import JobSpec, MappingRule
+from core.legacy.job.types import JobSpec
+from core.mapping import MappingRule
 from core.templates._errors import RenderError
 from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
+import core
 
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process import repo
-from cm.legacy.services.action_process.types import DBPrototypeConfig, ProcessStepState, StepType, StepUpdateDTO
-from cm.legacy.services.bundle_alt.render import ActionArgs, Environment, TaskArgs, render_config, render_scripts
-from cm.legacy.services.bundle_alt.render._render import render_hc_template
+from cm.legacy.services.action_process.types import DBPrototypeConfig, ProcessStepState, StepUpdateDTO
+from cm.legacy.services.bundle_alt.render import (
+    ActionArgs,
+    ContextGatherer,
+    Environment,
+    TaskArgs,
+    render_config,
+    render_hc_template,
+    render_scripts,
+)
 from cm.logger import logger
 
 
@@ -33,9 +42,9 @@ class RenderStepContext:
     object: CoreObjectDescriptor
 
 
-def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext) -> None:
+def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext, context_gatherer: ContextGatherer) -> None:
     try:
-        spec = _render_step(step_id=step_id, context=context)
+        spec = _render_step(step_id=step_id, context=context, context_gatherer=context_gatherer)
         repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
     except (RenderError, AdcmEx, BundleValidationError):
         logger.exception(f"Failed to render step {step_id}")
@@ -43,51 +52,53 @@ def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext) -> 
 
 
 def _render_step(
-    step_id: ActionProcessStepID, context: RenderStepContext
+    step_id: ActionProcessStepID, context: RenderStepContext, context_gatherer: ContextGatherer
 ) -> list[JobSpec] | list[DBPrototypeConfig] | list[MappingRule]:
     process = repo.retrieve_process(process_id=context.process_id)
     step = repo.retrieve_step(process_id=context.process_id, step_id=step_id)
     template = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec).template
 
-    process_orm = repo.retrieve_process_orm(process_id=process.id)
     action_orm = repo.retrieve_action_orm(action_id=context.action_id)
     object_orm = core_type_to_model(context.object.type).objects.get(id=context.object.id)
     bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
     environment = Environment(bundle_root=bundle_root)
 
     match step.type:
-        case StepType.CONFIGURATION:
+        case core.action.wizard.StepType.CONFIGURATION:
             action_args = ActionArgs(
                 action=action_orm,
                 cluster_relative_object=object_orm,
-                action_process=process_orm,
+                wizard_process_id=process.id,
             )
-            prototype_configs = render_config(template=template, environment=environment, context_args=action_args)
+            prototype_configs = render_config(
+                template=template, environment=environment, context_args=action_args, context_gatherer=context_gatherer
+            )
             step_spec = repo.serialize_prototype_configs(data=prototype_configs)
 
-        case StepType.OPERATION:
+        case core.action.wizard.StepType.OPERATION:
             task_args = TaskArgs(
                 target_object=object_orm,
                 action=action_orm,
                 config={},
                 verbose=False,
                 delta=None,
-                action_process=process_orm,
+                wizard_process_id=process.id,
             )
-            step_spec = render_scripts(template=template, environment=environment, context_args=task_args)
+            step_spec = render_scripts(
+                template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
+            )
 
-        case StepType.MAPPING:
+        case core.action.wizard.StepType.MAPPING:
             task_args = TaskArgs(
                 target_object=object_orm,
                 action=action_orm,
                 config={},
                 verbose=False,
                 delta=None,
-                action_process=process_orm,
+                wizard_process_id=process.id,
             )
-            step_spec = render_hc_template(template=template, environment=environment, context_args=task_args)
-
-        case _:
-            raise NotImplementedError(f"Unexpected step type {step.type}")
+            step_spec = render_hc_template(
+                template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
+            )
 
     return step_spec

@@ -17,10 +17,10 @@ import unittest
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.legacy.action.process.types import ProcessState
 from django.utils import timezone
+from infra.services import get_config_service, get_wizard_service
 
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.legacy.services.bundle_alt.render import TaskArgs
-from cm.legacy.services.bundle_alt.render._context import prepare_context_for_task
+from cm.legacy.services.bundle_alt.render import ContextGatherer, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
@@ -104,10 +104,13 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
             },
             "task": {"config": None, "verbose": False},
         }
+        self.context_gatherer = ContextGatherer(
+            config_service=get_config_service(), wizard_service=get_wizard_service()
+        )
 
     def test_env_for_cluster(self):
         args = TaskArgs(target_object=self.cluster, action=self.cluster_action)
-        env = decrypt_secrets(source=prepare_context_for_task(args=args))
+        env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_cluster", "owner_group": "CLUSTER"},
@@ -116,7 +119,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
 
     def test_env_for_service(self):
         args = TaskArgs(target_object=self.service, action=self.service_action)
-        env = decrypt_secrets(source=prepare_context_for_task(args=args))
+        env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
             "action": {"name": "action_on_service", "owner_group": "service_one_component"},
@@ -125,7 +128,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
 
     def test_env_for_component(self):
         args = TaskArgs(target_object=self.component, action=self.component_action)
-        env = decrypt_secrets(source=prepare_context_for_task(args=args))
+        env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
             "action": {
@@ -137,7 +140,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
 
     def test_env_for_host(self):
         args = TaskArgs(target_object=self.host, action=self.component_host_action)
-        env = decrypt_secrets(source=prepare_context_for_task(args=args))
+        env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
             "groups": {**self.expected_env_part["groups"], "target": [self.host.fqdn]},
@@ -214,8 +217,8 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
             created_at=timezone.now(),
             state="created",
         )
-        args = TaskArgs(target_object=self.cluster, action=self.cluster_action, action_process=process)
-        encrypted_env = prepare_context_for_task(args=args)
+        args = TaskArgs(target_object=self.cluster, action=self.cluster_action, wizard_process_id=process.pk)
+        encrypted_env = self.context_gatherer.prepare_context_for_task(args=args)
         env = decrypt_secrets(source=encrypted_env)
         expected_env = {
             **self.expected_env_part,

@@ -33,7 +33,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
 
 from cm.converters import core_type_to_model
-from cm.impl.config._repo_spec import build_defaults, build_specification
+from cm.impl.common.config_spec import build_defaults, build_specification
 from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.models import ADCM, Action, ConfigHostGroup, ConfigLog, MainObject, ObjectConfig, Prototype, PrototypeConfig
 

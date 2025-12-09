@@ -15,6 +15,10 @@ from contextlib import contextmanager
 from core.types import ADCMLocalizedError, ADCMMessageError
 
 
+class OperationError(ADCMMessageError):
+    ...
+
+
 class NotFoundError(ADCMMessageError):
     ...
 

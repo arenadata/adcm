@@ -10,16 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+# str is required for pydantic to correctly cast enum to value when calling `.dict`
+from enum import Enum
 
-__all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
-]
+from pydantic import BaseModel
+
+
+class ScriptType(str, Enum):
+    ANSIBLE = "ansible"
+    PYTHON = "python"
+    INTERNAL = "internal"
+
+
+class JobSpec(BaseModel):
+    # basic info
+    name: str
+    display_name: str
+    script: str
+    script_type: ScriptType
+    allow_to_terminate: bool
+
+    # states
+    state_on_fail: str
+    multi_state_on_fail_set: list
+    multi_state_on_fail_unset: list
+
+    # extra
+    params: dict

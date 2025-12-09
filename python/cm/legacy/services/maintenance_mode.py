@@ -12,7 +12,7 @@
 
 from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
 from django.conf import settings
-from infra.services import get_config_service, get_job_service
+from infra.services import get_config_service, get_job_service, get_wizard_service
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
@@ -20,6 +20,7 @@ from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import schedule_task
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.legacy.services.status.notify import reset_objects_in_mm
 from cm.legacy.status_api import send_object_update_event
@@ -45,6 +46,8 @@ def _change_mm_via_action(
         if use_new_config_processing():
             job_service = get_job_service()
             config_service = get_config_service()
+            wizard_service = get_wizard_service()
+            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=wizard_service)
             schedule_task(
                 action_orm=action,
                 target=obj,
@@ -52,6 +55,7 @@ def _change_mm_via_action(
                 job_service=job_service,
                 config_service=config_service,
                 start_task_after_schedule=not use_new_job_scheduler(),
+                context_gatherer=context_gatherer,
             )
 
         else:

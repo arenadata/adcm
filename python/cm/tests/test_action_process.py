@@ -15,8 +15,9 @@ from typing import TypeAlias
 from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from api_v2.generic.action.process.views import ContextGatherer
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
-from infra.services import get_config_service
+from infra.services import get_config_service, get_wizard_service
 import core
 
 from cm.legacy.services.action_process import repo
@@ -167,7 +168,11 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
         action_info = ActionRepoImpl.get_action(id=action.pk)
 
-        process_id = initiate_process(object_=object_, action=action_info)
+        config_service = get_config_service()
+
+        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
+
+        process_id = initiate_process(object_=object_, action=action_info, context_gatherer=context_gatherer)
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertIsNotNone(ctx["current"])
@@ -198,7 +203,8 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
             payload=payload,
             context=context,
             new_process_sync_key=uuid4(),
-            config_service=get_config_service(),
+            config_service=config_service,
+            context_gatherer=context_gatherer,
         )
 
         ctx = self.get_process_context(process_id, cluster.id)

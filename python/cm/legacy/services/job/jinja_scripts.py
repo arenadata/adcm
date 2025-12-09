@@ -15,12 +15,10 @@ from typing import Generator
 
 from core.legacy.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
-import core
 
 from cm.errors import AdcmEx
 from cm.legacy.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.legacy.services.bundle_alt.render import Environment, TaskArgs
-from cm.legacy.services.bundle_alt.render._context import prepare_context_for_task
+from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs
 from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.template import TemplateBuilder
 from cm.legacy.utils import decrypt_secrets, get_on_fail_states
@@ -65,13 +63,13 @@ def get_job_specs_from_template_new(
     jinja_path: Path,
     environment: Environment,
     task_args: TaskArgs,
-    config_service: core.config.ConfigService,
     allow_to_terminate: bool,
+    context_gatherer: ContextGatherer,
 ) -> Generator[JobSpec, None, None]:
     # dirty function just to unbind job specs build from task existence
 
     scripts_jinja_file = environment.bundle_root / jinja_path
-    context = prepare_context_for_task(args=task_args, config_service=config_service)
+    context = context_gatherer.prepare_context_for_task(args=task_args)
     # TO DO: get rid of using decrypt_secrets here
     decrypted_context = decrypt_secrets(context)
 

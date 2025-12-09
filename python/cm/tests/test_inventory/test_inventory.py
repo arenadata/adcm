@@ -16,7 +16,7 @@ from pathlib import Path
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from infra.services import get_config_service, get_job_service
+from infra.services import get_config_service, get_job_service, get_wizard_service
 from init_db import init as init_adcm
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import schedule_task
@@ -24,6 +24,7 @@ import core
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.api import add_service_to_cluster, update_obj_config
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import ObjectWithAction
 from cm.legacy.services.job.inventory import get_inventory_data
@@ -277,12 +278,15 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.assertEqual(JobLog.objects.count(), 0)
 
         with RunTaskMock() as run_task:
+            config_service = get_config_service()
+            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
             schedule_task(
                 action_orm=action,
                 target=object_,
                 payload=payload,
                 job_service=get_job_service(),
-                config_service=get_config_service(),
+                config_service=config_service,
+                context_gatherer=context_gatherer,
                 start_task_after_schedule=True,
             )
 

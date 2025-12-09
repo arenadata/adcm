@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
@@ -22,18 +22,14 @@ from core.legacy.bundle_alt.process import (
 )
 from core.legacy.bundle_alt.schema import ActionProcessStage, DynamicScriptsSchema, WizardScriptsSchema
 from core.legacy.bundle_alt.validation import check_action_hc_acl_rules
-from core.legacy.job.types import JobSpec, MappingRule
+from core.legacy.job.types import JobSpec
 from core.templates import RendererEnv, Template, get_renderer
+import core
 
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.bundle_alt.load import parse_config_jinja
-from cm.legacy.services.bundle_alt.render._context import (
-    ActionArgs,
-    TaskArgs,
-    prepare_context_for_action,
-    prepare_context_for_task,
-)
+from cm.legacy.services.bundle_alt.render._context import ActionArgs, ContextGatherer, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Cluster, Component, PrototypeConfig, Service
 
@@ -51,9 +47,13 @@ def render_process(
     template: Template,
     environment: Environment,
     context_args: ActionArgs,
+    context_gatherer: ContextGatherer,
 ) -> list[ActionProcessStage]:
     raw = _render_template(
-        template=template, environment=environment, build_context=prepare_context_for_action, context_args=context_args
+        template=template,
+        environment=environment,
+        build_context=context_gatherer.prepare_context_for_action,
+        context_args=context_args,
     )
 
     stages = parse_action_process_stages(data=raw)
@@ -66,9 +66,13 @@ def render_config(
     template: Template,
     environment: Environment,
     context_args: ActionArgs,
+    context_gatherer: ContextGatherer,
 ) -> list[PrototypeConfig]:
     raw = _render_template(
-        template=template, environment=environment, build_context=prepare_context_for_action, context_args=context_args
+        template=template,
+        environment=environment,
+        build_context=context_gatherer.prepare_context_for_action,
+        context_args=context_args,
     )
 
     parsing_context = ConfigConversionContext(
@@ -90,15 +94,16 @@ def render_scripts(
     template: Template,
     environment: Environment,
     context_args: TaskArgs,
+    context_gatherer: ContextGatherer,
 ) -> list[JobSpec]:
     raw = _render_template(
         template=template,
         environment=environment,
-        build_context=prepare_context_for_task,
+        build_context=context_gatherer.prepare_context_for_task,
         context_args=context_args,
     )
 
-    schema = DynamicScriptsSchema if context_args.action_process is None else WizardScriptsSchema
+    schema = DynamicScriptsSchema if context_args.wizard_process_id is None else WizardScriptsSchema
 
     allow_to_terminate_from_action = context_args.action.allow_to_terminate
     parsing_context = ScriptsConversionContext(
@@ -115,14 +120,15 @@ def render_hc_template(
     template: Template,
     environment: Environment,
     context_args: TaskArgs,
-) -> list[MappingRule]:
+    context_gatherer: ContextGatherer,
+) -> list[core.mapping.MappingRule]:
     raw = _render_template(
         template=template,
         environment=environment,
-        build_context=prepare_context_for_task,
+        build_context=context_gatherer.prepare_context_for_task,
         context_args=context_args,
     )
-    rules = [MappingRule(**rule) for rule in raw]
+    rules = [core.mapping.MappingRule(**rule) for rule in raw]
     _validate_mapping_spec(spec=rules, object_=context_args.target_object)
 
     return rules
@@ -158,7 +164,7 @@ def _ensure_render_result_is_list_of_dicts(value: Any) -> list[dict]:
     return value
 
 
-def _validate_mapping_spec(spec: list[MappingRule], object_: Cluster | Service | Component) -> None:
-    cluster_id = object_.id if isinstance(object_, Cluster) else object_.cluster_id
+def _validate_mapping_spec(spec: list[core.mapping.MappingRule], object_: Cluster | Service | Component) -> None:
+    cluster_id = object_.pk if isinstance(object_, Cluster) else object_.cluster_id  # pyright: ignore [reportAttributeAccessIssue]
     db_component_keys = repo.retrieve_cluster_component_definition_keys(cluster_id=cluster_id)
-    check_action_hc_acl_rules(hostcomponentmap=[rule.model_dump() for rule in spec], definitions=db_component_keys)
+    check_action_hc_acl_rules(hostcomponentmap=[asdict(rule) for rule in spec], definitions=db_component_keys)

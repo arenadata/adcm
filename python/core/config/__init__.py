@@ -43,7 +43,7 @@ from core.config._types import (
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
-from core.config._service import ConfigService, Settings, Directories, VariantValidators, OperationError
+from core.config._service import ConfigService, VariantValidators, OperationError
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError, ObjectDiscoveryError
 
 __all__ = [
@@ -59,7 +59,6 @@ __all__ = [
     "ConfigurationWithID",
     "DecryptFunc",
     "Defaults",
-    "Directories",
     "EncryptFunc",
     "FlatConfiguration",
     "HostGroupConfigOwner",
@@ -71,7 +70,6 @@ __all__ = [
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",
-    "Settings",
     "Validators",
     "VariantValidator",
     "VariantValidators",

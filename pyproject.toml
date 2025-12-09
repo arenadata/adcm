@@ -214,6 +214,19 @@ root_packages = [
 # Only check imports within the project, not external libs
 include_external_packages = true
 
+#[[tool.importlinter.contracts]]
+#name = "ADCM layers contract"
+#type = "layers"
+# semi correct layers are below
+# After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
+#layers = [
+#    "api_v2 | jobs | ansible_plugin",
+#    "use_cases | infra",
+#    # this should be done with "|", but requires quite a refactoring for true independance
+#    "cm : audit : rbac ",
+#    "core",
+#]
+
 
 [[tool.importlinter.contracts]]
 name = "core must not import other modules"
@@ -228,33 +241,22 @@ source_modules = ["core.*"]
 forbidden_submodules = ["core.legacy.bundle"]
 forbidden_modules = []
 
-# After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
+[[tool.importlinter.contracts]]
+name = "independant core modules"
+type = "independence"
+modules = [
+  "core.mapping",
+  "core.config",
+]
 
-# refactoring for ADCM-7181:
+[[tool.importlinter.contracts]]
+name = "core.action dependencies"
+type = "forbidden"
+source_modules = [
+  "core.mapping",
+  "core.config",
+]
+forbidden_modules = ["core.action"]
 
-# [[tool.importlinter.contracts]]
-# name = "audit must not import cm or rbac"
-# type = "forbidden"
-# source_modules = ["audit"]
-# forbidden_modules = [
-#     "cm",
-#     "rbac",
-#     ]
-
-# refactoring for ADCM-7182:
-
-# [[tool.importlinter.contracts]]
-# name = "rbac must not import audit"
-# type = "forbidden"
-# source_modules =["rbac"]
-# forbidden_modules = ["audit"]
-
-# refactoring for ADCM-7183:
-
-# [[tool.importlinter.contracts]]
-# name = "cm must not import audit"
-# type = "forbidden"
-# source_modules = ["cm"]
-# forbidden_modules = ["audit"]
 
 

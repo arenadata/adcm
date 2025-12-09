@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from functools import partial
 
 from adcm.feature_flags import use_new_config_processing
+from core.action._context._wizard_process import construct_process_info
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
-from infra.services import get_config_service
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 import core
@@ -37,7 +37,6 @@ from cm.models import (
     Host,
     MaintenanceMode,
     ObjectType,
-    Process,
     Prototype,
     Service,
 )
@@ -49,14 +48,14 @@ from cm.models import (
 class ActionArgs:
     action: Action
     cluster_relative_object: Cluster | Service | Component | Host
-    action_process: Process | None = None
+    wizard_process_id: core.action.wizard.ProcessID | None = None
 
 
 @dataclass(slots=True)
 class TaskArgs:
     target_object: Cluster | Service | Component | Host | ActionHostGroup
     action: Action
-    action_process: Process | None = None
+    wizard_process_id: core.action.wizard.ProcessID | None = None
 
     config: dict | None = None
     verbose: bool = False
@@ -91,96 +90,108 @@ class TaskRenderContext(ActionRenderContext):
     task: _TaskContext
 
 
-# Context Preparation Functions
+# Context Preparation
 
 
-def prepare_context_for_action(args: ActionArgs) -> dict:
-    context = _prepare_context_for_action(
-        action=args.action,
-        cluster_relative_object=args.cluster_relative_object,
-        action_process=args.action_process,
-        delta=None,
-    )
-    return context.model_dump(mode="python")
+@dataclass(slots=True)
+class ContextGatherer:
+    config_service: core.config.ConfigService
+    wizard_service: core.action.wizard.WizardService
 
+    def prepare_context_for_action(
+        self,
+        args: ActionArgs,
+    ) -> dict:
+        context = self._prepare_context_for_action(
+            action=args.action,
+            cluster_relative_object=args.cluster_relative_object,
+            wizard_process_id=args.wizard_process_id,
+            delta=TaskMappingDelta(),
+        )
+        return context.model_dump(mode="python", by_alias=True)
 
-def prepare_context_for_task(args: TaskArgs, config_service: core.config.ConfigService | None = None) -> dict:
-    target_object = args.target_object
-    extra_groups = {}
+    def prepare_context_for_task(self, args: TaskArgs) -> dict:
+        target_object = args.target_object
+        extra_groups = {}
 
-    if isinstance(target_object, ActionHostGroup):
-        target_group_hosts = _get_names_of_hosts_in_action_host_group(target_object.pk)
-        extra_groups = {"target": target_group_hosts}
+        if isinstance(target_object, ActionHostGroup):
+            target_group_hosts = _get_names_of_hosts_in_action_host_group(target_object.pk)
+            extra_groups = {"target": target_group_hosts}
 
-        # override target object for further processing
-        target_object = target_object.object
-    elif isinstance(target_object, Host):
-        extra_groups = {"target": _get_target_for_host(target_object.fqdn)}
+            # override target object for further processing
+            target_object = target_object.object
+        elif isinstance(target_object, Host):
+            extra_groups = {"target": _get_target_for_host(target_object.fqdn)}
 
-    if not isinstance(target_object, (Cluster, Service, Component, Host)):
-        message = f"Target for task context can't be of type {type(target_object)}"
-        raise TypeError(message)
+        if not isinstance(target_object, (Cluster, Service, Component, Host)):
+            message = f"Target for task context can't be of type {type(target_object)}"
+            raise TypeError(message)
 
-    action_context = _prepare_context_for_action(
-        action=args.action,
-        cluster_relative_object=target_object,
-        action_process=args.action_process,
-        delta=args.delta,
-        config_service=config_service,
-    )
+        action_context = self._prepare_context_for_action(
+            action=args.action,
+            cluster_relative_object=target_object,
+            wizard_process_id=args.wizard_process_id,
+            delta=args.delta or TaskMappingDelta(),
+        )
 
-    action_context.groups |= extra_groups
+        action_context.groups |= extra_groups
 
-    task_context = _TaskContext(config=args.config, verbose=args.verbose)
+        task_context = _TaskContext(config=args.config, verbose=args.verbose)
 
-    return TaskRenderContext(
-        cluster=action_context.cluster,
-        services=action_context.services,
-        groups=action_context.groups,
-        task=task_context,
-        action=action_context.action,
-    ).model_dump(mode="python", by_alias=True)
+        return TaskRenderContext(
+            cluster=action_context.cluster,
+            services=action_context.services,
+            groups=action_context.groups,
+            task=task_context,
+            action=action_context.action,
+        ).model_dump(mode="python", by_alias=True)
 
+    def _prepare_context_for_action(
+        self,
+        *,
+        action: Action,
+        cluster_relative_object: Cluster | Service | Component | Host,
+        delta: TaskMappingDelta,
+        wizard_process_id: core.action.wizard.ProcessID | None,
+    ) -> ActionRenderContext:
+        cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
 
-def _prepare_context_for_action(
-    action: Action,
-    cluster_relative_object: Cluster | Service | Component | Host,
-    action_process: Process | None = None,
-    delta: TaskMappingDelta | None = None,
-    config_service: core.config.ConfigService | None = None,
-) -> ActionRenderContext:
-    cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
+        if use_new_config_processing():
+            get_cluster_vars = partial(context_m.get_cluster_vars, config_service=self.config_service)
+        else:
+            get_cluster_vars = inventory.get_cluster_vars
 
-    if use_new_config_processing():
-        get_cluster_vars = partial(context_m.get_cluster_vars, config_service=config_service or get_config_service())
-        get_action_process_context = context_m.get_action_process_context
-    else:
-        get_cluster_vars = inventory.get_cluster_vars
-        get_action_process_context = inventory.get_action_process_context
+        clusters_vars = get_cluster_vars(topology=cluster_topology)
 
-    clusters_vars = get_cluster_vars(topology=cluster_topology)
+        process_cumulative_delta = {}
 
-    process_cumulative_delta = {}
+        action_context = _get_action_info(action=action)
 
-    action_context = _get_action_info(action=action)
+        if wizard_process_id:
+            component_map = {v: k for k, v in cluster_topology.component_full_name_id_mapping.items()}
+            steps = self.wizard_service.retrieve_steps_and_data_for_process(process_id=wizard_process_id)
+            process_context = construct_process_info(
+                process_id=wizard_process_id,
+                steps_with_data=steps,
+                component_map=component_map,
+                host_map=cluster_topology.hosts,
+                config_service=self.config_service,
+            )
+            process_cumulative_delta = process_context.cumulative_delta
+            action_context = _ActionWithProcessContext(**action_context, process=process_context.to_context())
 
-    if action_process:
-        process_context = get_action_process_context(action_process, cluster_topology)
-        process_cumulative_delta = process_context.cumulative_delta
-        action_context = _ActionWithProcessContext(**action_context, process=process_context.to_context())
+        groups = _get_host_group_names_for_cluster(
+            cluster_topology=cluster_topology,
+            hc_delta=delta,
+            process_cumulative_delta=process_cumulative_delta,
+        )
 
-    groups = _get_host_group_names_for_cluster(
-        cluster_topology=cluster_topology,
-        hc_delta=delta or TaskMappingDelta(),
-        process_cumulative_delta=process_cumulative_delta,
-    )
-
-    return ActionRenderContext(
-        cluster=clusters_vars.cluster,
-        services=clusters_vars.services,
-        groups=groups,
-        action=action_context,
-    )
+        return ActionRenderContext(
+            cluster=clusters_vars.cluster,
+            services=clusters_vars.services,
+            groups=groups,
+            action=action_context,
+        )
 
 
 # Helper Functions
@@ -208,8 +219,8 @@ def _get_action_info(action: Action) -> _ActionContext:
 
 def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology,
-    hc_delta: TaskMappingDelta | None = None,
-    process_cumulative_delta: dict[str, set[str]] | None = None,
+    hc_delta: TaskMappingDelta,
+    process_cumulative_delta: dict[str, set[tuple[int, str]]],
 ) -> dict[inventory.HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
@@ -220,11 +231,11 @@ def _get_host_group_names_for_cluster(
     host_groups = module.detect_host_groups_for_cluster_bundle_action(
         cluster_topology=cluster_topology,
         hosts_in_maintenance_mode=hosts_in_maintenance_mode,
-        hc_delta=hc_delta or TaskMappingDelta(),
+        hc_delta=hc_delta,
     )
 
     host_groups = add_mapping_groups_from_process_steps(
-        host_groups=host_groups, process_mapping_delta=process_cumulative_delta or {}
+        host_groups=host_groups, process_mapping_delta=process_cumulative_delta
     )
     return _get_host_group_names_only(host_groups=sort_hosts_within_groups(host_groups))
 

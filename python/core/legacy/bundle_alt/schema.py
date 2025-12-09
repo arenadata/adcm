@@ -25,6 +25,7 @@ from pydantic import (
 )
 from typing_extensions import Self, TypedDict
 
+from core import action
 from core.legacy.bundle_alt.errors import BundleParsingError, convert_validation_to_bundle_error
 from core.legacy.bundle_alt.schema_validation import (
     convert_config,
@@ -39,7 +40,6 @@ from core.legacy.bundle_alt.schema_validation import (
     template_script_is_correct_path,
     validate_name,
 )
-from core.legacy.job.types import StepType
 from core.templates import Template
 
 # pyright: reportIncompatibleVariableOverride=false, reportInvalidTypeForm=false
@@ -621,8 +621,8 @@ class OperationStep(_Names):
     ui_options: _StepOperationUIOptions
 
     @property
-    def type(self) -> StepType:
-        return StepType.OPERATION
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.OPERATION
 
     @property
     def template(self) -> Template:
@@ -633,8 +633,8 @@ class ConfigurationStep(_Names):
     config_template: ConfigTemplate
 
     @property
-    def type(self) -> StepType:
-        return StepType.CONFIGURATION
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.CONFIGURATION
 
     @property
     def template(self) -> Template:
@@ -645,8 +645,8 @@ class MappingStep(_Names):
     hc_template: HCTemplate
 
     @property
-    def type(self) -> StepType:
-        return StepType.MAPPING
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.MAPPING
 
     @property
     def template(self) -> Template:

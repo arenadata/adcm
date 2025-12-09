@@ -16,6 +16,7 @@ from cm import models
 from cm.errors import AdcmEx
 from cm.legacy.api import check_license
 from cm.legacy.bundle_switch_revert import bundle_switch
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.status_api import send_prototype_and_state_update_event
 
 # todo waiting for refactoring, don't want to copy it anywhere for now
@@ -36,6 +37,7 @@ def upgrade_object(
     payload: UpgradeActionDTO,
     job_service: core.job.JobService,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
     start_task_after_schedule: bool,
 ) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
     with atomic():
@@ -72,6 +74,7 @@ def upgrade_object(
             job_service=job_service,
             config_service=config_service,
             start_task_after_schedule=start_task_after_schedule,
+            context_gatherer=context_gatherer,
         )
 
         return "task", task.pk
