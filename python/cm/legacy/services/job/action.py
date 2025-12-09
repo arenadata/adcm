@@ -23,8 +23,10 @@ from core.templates import Template
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
+from infra.services import get_config_service, get_wizard_service
 from rbac.roles import re_apply_policy_for_jobs
 from rest_framework.status import HTTP_409_CONFLICT
+import core
 
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -32,7 +34,7 @@ from cm.legacy.adcm_config.checks import check_attr
 from cm.legacy.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec
 from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.render import Environment, TaskArgs, render_scripts
+from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs, render_scripts
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
@@ -242,7 +244,11 @@ def prepare_task_for_action(
             raise TypeError(message)
 
         job_specifications = _render_scripts_from_template(
-            template=action_info.scripts_template, action=orm_action, owner=orm_owner, target=orm_target
+            template=action_info.scripts_template,
+            action=orm_action,
+            owner=orm_owner,
+            target=orm_target,
+            context_gatherer=ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service()),
         )
     else:
         job_specifications = tuple(action_repo.get_job_specs(id=action))
@@ -269,17 +275,19 @@ def _render_scripts_from_template(
     owner: Cluster | Service | Component | Host,
     target: Cluster | Service | Component | Host | ActionHostGroup,
     action: Action,
+    context_gatherer: ContextGatherer,
 ) -> tuple[JobSpec, ...]:
     # todo this level is too deep for working with that stuff, it should be passed from outside
     #      yet it's a problem to do this now,
     #      request for process should be separated too
     bundle_root = settings.BUNDLE_DIR / action.prototype.bundle.hash
-    process: Process | None = (
+    process_id: core.action.wizard.ProcessID | None = (
         Process.objects.filter(
             action_id=action.pk,
             object_id=target.pk,
             object_type=orm_object_to_core_type(owner),
         )
+        .values_list("id", flat=True)
         .order_by("-created_at")
         .first()
     )
@@ -291,9 +299,11 @@ def _render_scripts_from_template(
         config={},
         verbose=False,
         delta=None,
-        action_process=process,
+        wizard_process_id=process_id,
     )
-    step_spec = render_scripts(template=template, environment=environment, context_args=task_args)
+    step_spec = render_scripts(
+        template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
+    )
     return tuple(step_spec)
 
 

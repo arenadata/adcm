@@ -68,11 +68,10 @@ from cm.legacy.services.action_process.types import (
     ProcessUpdateDTO,
     Step,
     StepInputDTO,
-    StepType,
     StepUpdateDTO,
 )
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.render import ActionArgs, Environment, render_process
+from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, Environment, render_process
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.job.run import start_task
@@ -157,7 +156,9 @@ def find_current_and_last_completed_steps(
     return current, last_completed
 
 
-def initiate_process(object_: CoreObjectDescriptor, action: ActionInfo) -> ActionProcessID:
+def initiate_process(
+    object_: CoreObjectDescriptor, action: ActionInfo, context_gatherer: ContextGatherer
+) -> ActionProcessID:
     object_orm = core_type_to_model(object_.type).objects.get(id=object_.id)
     bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
 
@@ -165,9 +166,14 @@ def initiate_process(object_: CoreObjectDescriptor, action: ActionInfo) -> Actio
     action_args = ActionArgs(
         action=repo.retrieve_action_orm(action_id=action.id),
         cluster_relative_object=object_orm,
-        action_process=None,
+        wizard_process_id=None,
     )
-    stages = render_process(template=action.wizard_template, environment=environment, context_args=action_args)
+    stages = render_process(
+        template=action.wizard_template,
+        environment=environment,
+        context_args=action_args,
+        context_gatherer=context_gatherer,
+    )
     db_stages = repo.convert_stages_to_db_format(stages=stages)
     process = repo.create_process(object_=object_, action_id=action.id, stages=db_stages)
 
@@ -183,7 +189,7 @@ def initiate_process(object_: CoreObjectDescriptor, action: ActionInfo) -> Actio
     )
 
     context = RenderStepContext(process_id=process.id, action_id=action.id, object=object_)
-    fill_step_spec(step_id=current_step_id, context=context)
+    fill_step_spec(step_id=current_step_id, context=context, context_gatherer=context_gatherer)
 
     return process.id
 
@@ -198,6 +204,7 @@ def complete_step(
     step_id: ActionProcessStepID,
     action_id: ActionID,
     object_: CoreObjectDescriptor,
+    context_gatherer: ContextGatherer,
 ) -> None:
     """Set step's status to `completed`, process's current_step and last_completed_step; render next step"""
 
@@ -212,7 +219,7 @@ def complete_step(
     )
     if current_id:
         context = RenderStepContext(process_id=process_id, action_id=action_id, object=object_)
-        fill_step_spec(step_id=current_id, context=context)
+        fill_step_spec(step_id=current_id, context=context, context_gatherer=context_gatherer)
 
 
 def complete_operation_step(
@@ -222,6 +229,7 @@ def complete_operation_step(
     action_id: ActionID,
     object_: CoreObjectDescriptor,
     is_operation_success: bool,
+    context_gatherer: ContextGatherer,
 ) -> None:
     update_process_sync_key(process_id=process_id, sync_key=process_sync_key, new_sync_key=uuid.uuid4())
 
@@ -232,7 +240,9 @@ def complete_operation_step(
         # which will entail deleting the current ProcessStepInput.
         return
 
-    complete_step(process_id=process_id, step_id=step_id, action_id=action_id, object_=object_)
+    complete_step(
+        process_id=process_id, step_id=step_id, action_id=action_id, object_=object_, context_gatherer=context_gatherer
+    )
 
 
 def revoke_next_steps(process_id: ActionProcessID, step_id: ActionProcessStepID) -> set[int]:
@@ -306,6 +316,7 @@ def perform_operation(
     payload: OperationPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> None:
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
@@ -320,10 +331,11 @@ def perform_operation(
                 context=context,
                 new_process_sync_key=new_process_sync_key,
                 config_service=config_service,
+                context_gatherer=context_gatherer,
             )
 
         case ProcessOperationType.RESET:
-            reset_step(process=process, payload=payload, context=context)
+            reset_step(process=process, payload=payload, context=context, context_gatherer=context_gatherer)
 
         case ProcessOperationType.COMPLETE:
             complete_process(process=process)
@@ -340,6 +352,7 @@ def submit_step(
     payload: SubmitStepPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
@@ -348,7 +361,7 @@ def submit_step(
     msg_wrong_payload = f"Wrong params for {step.type} step"
 
     match step.type:
-        case StepType.CONFIGURATION:
+        case core.action.wizard.StepType.CONFIGURATION:
             if not isinstance(payload.params, SubmitConfigurationStepParams):
                 raise ActionProcessPayloadError(msg_wrong_payload)
 
@@ -358,9 +371,10 @@ def submit_step(
                 input_config=payload.params.configuration,
                 context=context,
                 config_service=config_service,
+                context_gatherer=context_gatherer,
             )
 
-        case StepType.OPERATION:
+        case core.action.wizard.StepType.OPERATION:
             if not isinstance(payload.params, SubmitOperationStepParams):
                 raise ActionProcessPayloadError(msg_wrong_payload)
 
@@ -371,7 +385,7 @@ def submit_step(
                 parent_object=context.object,
                 action=context.action,
             )
-        case StepType.MAPPING:
+        case core.action.wizard.StepType.MAPPING:
             if not isinstance(payload.params, SubmitMappingStepParams):
                 raise ActionProcessPayloadError(msg_wrong_payload)
 
@@ -380,6 +394,7 @@ def submit_step(
                 step=step,
                 hc_mapping_delta=payload.params.host_component_map_delta,
                 context=context,
+                context_gatherer=context_gatherer,
             )
 
 
@@ -389,6 +404,7 @@ def _operation_submit_mapping(
     hc_mapping_delta: HostComponentMapDelta,
     *,
     context: OperationContext,
+    context_gatherer: ContextGatherer,
 ) -> None:
     step_input_data = StepInputDTO(
         configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
@@ -403,10 +419,13 @@ def _operation_submit_mapping(
         step_id=step.id,
         action_id=context.action.id,
         object_=context.object,
+        context_gatherer=context_gatherer,
     )
 
 
-def reset_step(process: ActionProcess, payload: ResetStepPayload, context: OperationContext) -> None:
+def reset_step(
+    process: ActionProcess, payload: ResetStepPayload, context: OperationContext, context_gatherer: ContextGatherer
+) -> None:
     _check_no_running_steps(process=process)
 
     revoke_starting_with_step(process_id=process.id, step_id=payload.params.step_id)
@@ -420,7 +439,7 @@ def reset_step(process: ActionProcess, payload: ResetStepPayload, context: Opera
     )
     if current_id:
         render_context = RenderStepContext(process_id=process.id, action_id=context.action.id, object=context.object)
-        fill_step_spec(step_id=current_id, context=render_context)
+        fill_step_spec(step_id=current_id, context=render_context, context_gatherer=context_gatherer)
 
 
 def _operation_submit_job(
@@ -469,6 +488,7 @@ def _operation_submit_config(
     *,
     context: OperationContext,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> None:
     prototype_conifgs = tuple(PrototypeConfig(**cfg) for cfg in step.step_spec)
     specification = build_specification(records=prototype_conifgs, group_customization_flag=False)
@@ -494,7 +514,13 @@ def _operation_submit_config(
     repo.upsert_step_input(step_id=step.id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step.id)
-    complete_step(process_id=process.id, step_id=step.id, action_id=context.action.id, object_=context.object)
+    complete_step(
+        process_id=process.id,
+        step_id=step.id,
+        action_id=context.action.id,
+        object_=context.object,
+        context_gatherer=context_gatherer,
+    )
 
 
 def _check_step_is_current(process: ActionProcess, payload: SubmitStepPayload) -> None:

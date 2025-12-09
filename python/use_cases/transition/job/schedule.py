@@ -18,6 +18,7 @@ from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.render import (
     ActionArgs,
+    ContextGatherer,
     Environment,
     TaskArgs,
     render_config,
@@ -94,6 +95,7 @@ def schedule_task(
     payload: RunActionDTO,
     job_service: core.job.JobService,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
     start_task_after_schedule: bool,
 ) -> TaskLog:
     action_objects = _ActionLaunchObjects(target=target, action=action_orm)
@@ -136,7 +138,7 @@ def schedule_task(
         )
         task_id = job_service.create_task(payload=create_dto)
 
-        process = None if not payload.process else Process.objects.get(id=payload.process.id)
+        process_id = None if not payload.process else payload.process.id
         environment = Environment(bundle_root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash)
 
         job_config = None
@@ -154,9 +156,10 @@ def schedule_task(
                 spec_pair = _resolve_spec(
                     action=action_orm,
                     cluster_related_object=action_objects.owner,
-                    process=process,
+                    process_id=process_id,
                     environment=environment,
                     config_service=config_service,
+                    context_gatherer=context_gatherer,
                 )
                 job_config = _prepare_configuration(
                     spec=spec_pair, config=payload.configuration, owner=descriptor, config_service=config_service
@@ -204,14 +207,14 @@ def schedule_task(
                     config=config_to_set or {},
                     verbose=payload.launch.is_verbose,
                     delta=delta,
-                    action_process=process,
+                    wizard_process_id=process_id,
                 )
                 scripts = _resolve_scripts(
                     action=action_orm,
                     environment=environment,
                     task_args=task_args,
                     job_service=job_service,
-                    config_service=config_service,
+                    context_gatherer=context_gatherer,
                 )
 
             case _:
@@ -239,7 +242,11 @@ def schedule_task(
 #      when we are working with action's configuration.
 #      not even a use case.
 def retrieve_configuration_for_action(
-    *, action_orm: Action, target: ActionTarget, config_service: core.config.ConfigService
+    *,
+    action_orm: Action,
+    target: ActionTarget,
+    config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.Configuration, core.config.ConfigOwner] | None:
     action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
@@ -254,9 +261,10 @@ def retrieve_configuration_for_action(
             spec_pair = _resolve_spec(
                 action=action_orm,
                 cluster_related_object=action_objects.owner,
-                process=None,
+                process_id=None,
                 environment=environment,
                 config_service=config_service,
+                context_gatherer=context_gatherer,
             )
 
     if not spec_pair:
@@ -286,8 +294,9 @@ def _resolve_spec(
     action: Action,
     cluster_related_object: Cluster | Service | Component | Host,
     environment: Environment,
-    process: Process | None,
+    process_id: core.action.wizard.ProcessID | None,
     config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> SpecPair | None:
     if not (action.config_jinja or action.config_template):
         return _retrieve_static_spec(action_id=action.pk, config_service=config_service)
@@ -300,9 +309,11 @@ def _resolve_spec(
         action_args = ActionArgs(
             action=action,
             cluster_relative_object=cluster_related_object,
-            action_process=process,
+            wizard_process_id=process_id,
         )
-        prototype_configs = render_config(template=template, environment=environment, context_args=action_args)
+        prototype_configs = render_config(
+            template=template, environment=environment, context_args=action_args, context_gatherer=context_gatherer
+        )
 
     # todo rework, it shouldn't be imported in here, nor used "plainly" at all
     from cm.impl.config.repo import build_specification_from_prototype_config_records
@@ -357,7 +368,7 @@ def _resolve_scripts(
     environment: Environment,
     task_args: TaskArgs,
     job_service: core.job.JobService,
-    config_service: core.config.ConfigService,
+    context_gatherer: ContextGatherer,
 ) -> tuple[JobSpec, ...]:
     if not (action.scripts_jinja or action.scripts_template):
         return job_service.retrieve_scripts(action_id=action.pk)
@@ -366,9 +377,9 @@ def _resolve_scripts(
         script_generator = get_job_specs_from_template_new(
             jinja_path=action.scripts_jinja,
             allow_to_terminate=action.allow_to_terminate,
-            config_service=config_service,
             environment=environment,
             task_args=task_args,
+            context_gatherer=context_gatherer,
         )
 
         scripts = tuple(script_generator)
@@ -378,7 +389,9 @@ def _resolve_scripts(
 
     else:
         template = parse_template(action.scripts_template)
-        script_generator = render_scripts(template=template, environment=environment, context_args=task_args)
+        script_generator = render_scripts(
+            template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
+        )
         scripts = tuple(script_generator)
 
     return scripts

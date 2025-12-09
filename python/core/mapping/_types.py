@@ -10,16 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+from dataclasses import dataclass
+from typing import Literal, TypeAlias
 
-__all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
-]
+MappingOperation: TypeAlias = Literal["add", "remove"]
+
+
+@dataclass(slots=True)
+class MappingRule:
+    operation: MappingOperation
+    service: str
+    component: str
+
+
+@dataclass(slots=True)
+class MappingPair:
+    host_id: int
+    component_id: int

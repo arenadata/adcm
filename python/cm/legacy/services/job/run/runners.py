@@ -23,7 +23,9 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
 )
+from infra.services import get_config_service, get_wizard_service
 
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -278,7 +280,12 @@ class JobSequenceRunner(TaskRunner):
 
         if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
             self._update_calling_process(
-                process=finished_task.action_process, action_id=task.action.id, task_owner=finished_task.owner
+                process=finished_task.action_process,
+                action_id=task.action.id,
+                task_owner=finished_task.owner,
+                context_gatherer=ContextGatherer(
+                    config_service=get_config_service(), wizard_service=get_wizard_service()
+                ),
             )
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
@@ -338,7 +345,11 @@ class JobSequenceRunner(TaskRunner):
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 
     def _update_calling_process(
-        self, process: CallingProcess, action_id: ActionID, task_owner: TaskOwner | None
+        self,
+        process: CallingProcess,
+        action_id: ActionID,
+        task_owner: TaskOwner | None,
+        context_gatherer: ContextGatherer,
     ) -> None:
         from cm.legacy.services.action_process.operations import complete_operation_step
 
@@ -352,4 +363,5 @@ class JobSequenceRunner(TaskRunner):
             action_id=action_id,
             object_=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
             is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
+            context_gatherer=context_gatherer,
         )

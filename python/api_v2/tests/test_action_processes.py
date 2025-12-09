@@ -32,6 +32,7 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitStepPayload,
 )
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.concern import create_issue
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import (
@@ -59,7 +60,7 @@ from core.legacy.job.runners import (
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
+from infra.services import get_config_service, get_wizard_service
 from jinja2 import Template
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -97,8 +98,8 @@ class TestActionProcess(BaseAPITestCase):
         self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
         self.cluster_3 = self.add_cluster(bundle=self.bundle_3, name="cluster_3", description="cluster_3")
         self.process_action_of_cluster = self.get_object_action_with_process(self.cluster_1)
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).get()
+        self.component_1 = Component.objects.filter(service=self.service_1).get()
 
         provider_bundle_path = self.test_bundles_dir / "provider"
         self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
@@ -208,6 +209,7 @@ class TestActionProcess(BaseAPITestCase):
             action=action_info,
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
+        context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
 
         submit_step(
             process=process,
@@ -215,6 +217,7 @@ class TestActionProcess(BaseAPITestCase):
             context=context,
             new_process_sync_key=uuid4(),
             config_service=get_config_service(),
+            context_gatherer=context_gatherer,
         )
 
     def test_create_process_success(self):
@@ -599,6 +602,8 @@ class TestActionProcess(BaseAPITestCase):
 
         process.refresh_from_db()
 
+        context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
+
         fill_step_spec(
             step_id=process.current_step_id,
             context=RenderStepContext(
@@ -606,6 +611,7 @@ class TestActionProcess(BaseAPITestCase):
                 action_id=self.process_action_of_cluster.pk,
                 object=orm_object_to_core_descriptor(self.cluster_2),
             ),
+            context_gatherer=context_gatherer,
         )
         step = ProcessStep.objects.get(id=process.current_step_id)
         self.assertEqual(step.state, ProcessStepState.BROKEN.value)

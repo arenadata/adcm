@@ -10,16 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+from core.mapping._types import MappingOperation, MappingPair, MappingRule
 
 __all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
+    "MappingOperation",
+    "MappingPair",
+    "MappingRule",
 ]

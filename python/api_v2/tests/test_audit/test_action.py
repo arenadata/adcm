@@ -17,7 +17,9 @@ from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessStepState
+from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from infra.services import get_config_service, get_wizard_service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -127,12 +129,17 @@ class TestActionProcessAudit(BaseAPITestCase):
                 self.fill_steps_for_process(process.id, test_spec, test_input, previous_step_names)
                 action = self.get_object_action_with_process(obj)
 
+                context_gatherer = ContextGatherer(
+                    config_service=get_config_service(), wizard_service=get_wizard_service()
+                )
+
                 # render step
                 fill_step_spec(
                     step_id=target_operation_step.id,
                     context=RenderStepContext(
                         process_id=process.id, action_id=action.id, object=orm_object_to_core_descriptor(obj)
                     ),
+                    context_gatherer=context_gatherer,
                 )
 
                 response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(

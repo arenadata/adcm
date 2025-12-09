@@ -22,6 +22,7 @@ from ansible.errors import AnsibleError
 from core.templates import parse_template
 from django.conf import settings
 from django.db.models import QuerySet
+from infra.services import get_config_service, get_wizard_service
 
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
@@ -37,7 +38,7 @@ from cm.legacy.adcm_config.utils import (
     to_flat_dict,
 )
 from cm.legacy.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
-from cm.legacy.services.bundle_alt.render import ActionArgs, Environment, render_config
+from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, Environment, render_config
 from cm.legacy.services.config.jinja import get_jinja_config
 from cm.legacy.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.legacy.variant import get_variant, process_variant
@@ -89,7 +90,12 @@ def get_prototype_config(
     if action is not None and obj is not None and action.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=obj)
     elif action is not None and obj is not None and action.config_template:
-        prototype_configs = _get_prototype_configs_from_config_template(prototype=prototype, action=action, target=obj)
+        prototype_configs = _get_prototype_configs_from_config_template(
+            prototype=prototype,
+            action=action,
+            target=obj,
+            context_gatherer=ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service()),
+        )
     else:
         prototype_configs = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
 
@@ -99,7 +105,7 @@ def get_prototype_config(
 
 
 def _get_prototype_configs_from_config_template(
-    prototype: Prototype, action: Action, target: ADCMEntity
+    prototype: Prototype, action: Action, target: ADCMEntity, context_gatherer: ContextGatherer
 ) -> list[PrototypeConfig]:
     if not isinstance(target, (Cluster, Service, Component, Host)):
         message = f"Incorrect type for template rendering: {type(target)}"
@@ -111,9 +117,11 @@ def _get_prototype_configs_from_config_template(
     action_args = ActionArgs(
         action=action,
         cluster_relative_object=target,
-        action_process=None,
+        wizard_process_id=None,
     )
-    prototype_configs = render_config(template=template, environment=environment, context_args=action_args)
+    prototype_configs = render_config(
+        template=template, environment=environment, context_args=action_args, context_gatherer=context_gatherer
+    )
 
     return prototype_configs  # noqa: RET504
 

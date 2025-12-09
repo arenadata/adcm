@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+from typing import Iterable, TypeVar
 
-__all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
-]
+from core.action._wizard._types import Step, StepState
+
+StepT = TypeVar("StepT", bound=Step)
+
+
+def detect_current_step(steps: Iterable[StepT]) -> StepT | None:
+    for step in steps:
+        if step.state != StepState.COMPLETED:
+            return step
+
+    return None

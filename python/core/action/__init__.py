@@ -10,16 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+# order is important
+from core.action._types import JobSpec  # noqa
+from core.action import _wizard as wizard  # noqa
+from core.action import _context as context
 
 __all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
+    "JobSpec",
+    "context",
+    "wizard",
 ]

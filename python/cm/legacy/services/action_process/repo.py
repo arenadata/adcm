@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any, Generator, Literal, TypeAlias
 from uuid import UUID, uuid4
 
+from core.action import wizard
 from core.legacy.bundle_alt.schema import ActionProcessStage, ActionProcessStep
-from core.legacy.job.types import StepType
 from core.types import (
     ActionID,
     ActionProcessID,
@@ -84,7 +84,9 @@ def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) 
             objects.append(
                 ProcessStep(
                     process_id=process_id,
+                    type=step.type.value,
                     name=step.name,
+                    stage=stage.name,
                     display_name=step.display_name,
                     step_spec=None,
                 )
@@ -180,7 +182,7 @@ def retrieve_previous_mapping_step_input_with_cumulative_delta(
     for step in retrieve_steps(
         process_id=process_id, id__lt=step_id, state__in=[ProcessStepState.COMPLETED, ProcessStepState.RUNNING]
     ):
-        if step.type == StepType.MAPPING:
+        if step.type == wizard.StepType.MAPPING:
             candidates.add(step.id)
 
     if (

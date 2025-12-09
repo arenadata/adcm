@@ -37,6 +37,7 @@ from core.config._validate import (
     Violations,
 )
 from core.result import Fail, Success, is_fail
+from core.settings import Settings
 from core.types import (
     ActionDescriptor,
     ActionID,
@@ -72,16 +73,6 @@ FileOwner = (
     | TaskDescriptor
     | tuple[Descriptor[Literal["process"]], Descriptor[Literal["step"]]]
 )
-
-
-@dataclass(slots=True)
-class Directories:
-    files: Path
-
-
-@dataclass(slots=True)
-class Settings:
-    directories: Directories
 
 
 @dataclass(slots=True)

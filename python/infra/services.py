@@ -16,6 +16,8 @@ import json
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobRepo
+from cm.impl.wizard.repo import WizardRepo
+from core.settings import Directories, Settings
 import core
 
 
@@ -41,8 +43,7 @@ def get_config_service():
 
     validators = core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
     # shouldn't work like that, but no other way for now
-    settings_ = core.config.Settings(directories=core.config.Directories(files=settings.FILE_DIR))
-
+    settings_ = _get_settings()
     return core.config.ConfigService(
         repo=repo, secrets=secrets_service, settings=settings_, variant_validators=validators
     )
@@ -53,3 +54,18 @@ def get_job_service():
     repo = JobRepo()
 
     return core.job.JobService(repo=repo)
+
+
+@cache
+def get_wizard_service():
+    settings_ = _get_settings()
+
+    repo = WizardRepo()
+
+    return core.action.wizard.WizardService(repo=repo, settings=settings_)
+
+
+def _get_settings() -> Settings:
+    from django.conf import settings
+
+    return Settings(directories=Directories(files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR))

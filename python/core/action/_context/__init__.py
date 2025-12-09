@@ -10,16 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+# later it will become service, so function imports will go away
+from core.action._context._wizard_process import construct_process_info
 
 __all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
+    "construct_process_info",
 ]

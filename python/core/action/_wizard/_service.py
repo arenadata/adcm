@@ -10,16 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._context import ActionArgs, TaskArgs
-from ._render import ContextGatherer, Environment, render_config, render_hc_template, render_process, render_scripts
+from dataclasses import dataclass
 
-__all__ = [
-    "ActionArgs",
-    "ContextGatherer",
-    "Environment",
-    "TaskArgs",
-    "render_config",
-    "render_hc_template",
-    "render_process",
-    "render_scripts",
-]
+from core.action._wizard._repo import WizardRepoI
+from core.action._wizard._types import ProcessID, StepWithData
+from core.settings import Settings
+
+
+@dataclass(slots=True)
+class WizardService:
+    repo: WizardRepoI
+    settings: Settings
+
+    def retrieve_steps_and_data_for_process(self, process_id: ProcessID) -> list[StepWithData]:
+        return self.repo.get_steps_with_data(process_id=process_id, bundles_dir=self.settings.directories.bundles)

@@ -16,10 +16,8 @@ from typing import Any
 from uuid import UUID
 
 from core.legacy.bundle_alt.schema import ActionProcessStage
-from core.legacy.job.types import StepType
 from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID, TaskID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import TypedDict
 import core
 
 from cm.legacy.services.action_process.schema_validation import HostComponentMapDelta
@@ -48,11 +46,6 @@ class ProcessUpdateDTO(BaseModel):
 class StepUpdateDTO(BaseModel):
     step_spec: Any = None
     state: ProcessStepState | None = None
-
-
-class _ConfigAttr(TypedDict):
-    config: dict
-    attr: dict
 
 
 class MappingInputDTO(BaseModel):
@@ -104,7 +97,7 @@ class Step(BaseModel):
     name: str
     display_name: str
     step_spec: Any = None
-    type: StepType
+    type: core.action.wizard.StepType
     state: ProcessStepState
 
     model_config = ConfigDict(extra="allow", use_enum_values=True)
