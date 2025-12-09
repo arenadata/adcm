@@ -13,9 +13,10 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.host.duplicates import create_duplicate
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
+from infra.services import get_config_service
+from use_cases.transition.host.duplicate import create_duplicate
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError
 from ansible_plugin.executors.delete_host import ADCMDeleteHostPluginExecutor
@@ -27,6 +28,7 @@ EXECUTOR_MODULE = "ansible_plugin.executors.add_host"
 class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
     def setUp(self) -> None:
         super().setUp()
+        self.config_service = get_config_service()
 
         self.provider_2 = self.add_provider(bundle=self.provider_bundle, name="Second Provider")
 
@@ -104,7 +106,9 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
     def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
         host = self.add_host(provider=self.another_provider, fqdn="original-host")
 
-        create_duplicate(host_id=host.id, name="duplicate-1", cluster_id=self.cluster.id)
+        create_duplicate(
+            host_id=host.id, name="duplicate-1", cluster_id=self.cluster.id, config_service=self.config_service
+        )
 
         task = self.prepare_task(owner=host, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

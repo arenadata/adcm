@@ -89,7 +89,7 @@ class ParallelReadyTestCase:
         override_settings(**cls.directories, ANSIBLE_SECRET="verysecretstuff")(cls)
 
     @staticmethod
-    def _prepare_temporal_directories_for_adcm() -> dict:
+    def _prepare_temporal_directories_for_adcm() -> dict[str, Path]:
         stack = Path(mkdtemp())
         data = Path(mkdtemp()) / "data"
 

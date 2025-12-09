@@ -151,6 +151,7 @@ class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
 
 ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
 ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+HostDesc = Descriptor[Literal[ADCMCoreType.HOST]]
 ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc

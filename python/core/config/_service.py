@@ -40,10 +40,12 @@ from core.result import Fail, Success, is_fail
 from core.types import (
     ActionDescriptor,
     ActionID,
+    ADCMCoreType,
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
     Descriptor,
+    HostDesc,
     HostGroupDescriptor,
     ObjectOrGroup,
     PrototypeID,
@@ -389,6 +391,20 @@ class ConfigService:
             decrypt=lambda x: self.secrets.decrypt(x) or "",
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
+
+    def prepare_symlinks_for_file_type(self, original: HostDesc, duplicate: HostDesc) -> None:
+        original_specification = self.retrieve_specification(
+            owner=CoreObjectDescriptor(id=original.id, type=ADCMCoreType.HOST)
+        )
+
+        original_prefix = files.build_config_prefix(original)
+        duplicate_prefix = files.build_config_prefix(duplicate)
+        operations.create_symlinks_for_files(
+            specification=original_specification,
+            original_prefix=original_prefix,
+            duplicate_prefix=duplicate_prefix,
+            files_dir=self.settings.directories.files,
+        )
 
     def prepare_configuration_for_ansible(
         self,

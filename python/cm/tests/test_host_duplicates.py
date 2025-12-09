@@ -14,14 +14,16 @@ from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionTargetDescriptor, ADCMCoreType
+from infra.services import get_config_service
+from use_cases.transition.host.duplicate import create_duplicate
 
-from cm.legacy.services.host.duplicates import create_duplicate
 from cm.legacy.services.job.inventory._base import get_inventory_data
 
 
 class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
+        get_config_service.cache_clear()
 
         bundle_root = Path(__file__).parent / "bundles"
 
@@ -39,7 +41,9 @@ class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
         self.host.config = None
         self.host.save(update_fields=["config"])
 
-        create_duplicate(host_id=self.host.pk, name="dup", cluster_id=self.cluster.pk)
+        create_duplicate(
+            host_id=self.host.pk, name="dup", cluster_id=self.cluster.pk, config_service=get_config_service()
+        )
 
         target = ActionTargetDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)
         get_inventory_data(target=target, is_host_action=False)

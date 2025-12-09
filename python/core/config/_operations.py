@@ -14,6 +14,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain, filterfalse
+from pathlib import Path
 from typing import Any, Callable, Generator, Literal, TypeAlias, TypeVar
 import logging
 
@@ -31,6 +32,7 @@ from core.config._config import (
     set_by_full_name,
     set_by_full_name_returning_old,
 )
+from core.config._files import construct_parameter_file_full_name
 from core.config._names import (
     full_name_to_file_name,
     full_name_to_level_names,
@@ -352,6 +354,23 @@ def store_files(
                     result.append(file_identifier)
 
     return Success(result)
+
+
+def create_symlinks_for_files(
+    specification: spec.FullSpec, original_prefix: str, duplicate_prefix: str, files_dir: Path
+) -> None:
+    for parameter in specification.parameters.values():
+        match parameter:
+            case spec.p.StringParameter(identifier=name, as_file=True):
+                file_identifier = full_name_to_file_name(full=name.full)
+                original_filename = construct_parameter_file_full_name(
+                    owner_prefix=original_prefix, file_identifier=file_identifier
+                )
+                duplicate_filename = construct_parameter_file_full_name(
+                    owner_prefix=duplicate_prefix, file_identifier=file_identifier
+                )
+
+                Path(files_dir / duplicate_filename).symlink_to(files_dir / original_filename)
 
 
 def encrypt_secrets(

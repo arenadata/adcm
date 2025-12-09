@@ -13,12 +13,9 @@
 
 from copy import copy
 from dataclasses import dataclass
-from pathlib import Path
 
 from core.types import HostID
 
-from cm.legacy.adcm_config.utils import cook_file_type_name
-from cm.legacy.services.config.spec import retrieve_flat_spec_for_objects
 from cm.models import Host
 
 
@@ -51,15 +48,3 @@ def duplicate_host_record(
     duplicate.save()
 
     return duplicate
-
-
-def prepare_symlinks_for_file_type(duplicate: Host) -> None:
-    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(duplicate.prototype_id,)).values()))
-
-    for composite_key, field in spec.items():
-        if field.type not in {"file", "secretfile"}:
-            continue
-
-        target_file_path = cook_file_type_name(duplicate.original, *composite_key.split("/"))
-        duplicate_file_path = cook_file_type_name(duplicate, *composite_key.split("/"))
-        Path(duplicate_file_path).symlink_to(target_file_path)

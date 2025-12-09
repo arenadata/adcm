@@ -81,22 +81,15 @@ def to_flat_dict(config: dict, spec: dict) -> dict:
     return flat
 
 
-def cook_file_type_name(obj: ADCMEntity | ConfigHostGroup | ProcessStep, key: str, sub_key: str) -> str:
+def cook_file_type_name(obj: ADCMEntity | ConfigHostGroup | ProcessStep, *keys: str) -> str:
     if isinstance(obj, ADCMEntity):
-        filename = [obj.prototype.type, str(obj.id), key, sub_key]
+        filename = [obj.prototype.type, str(obj.id), *keys]
     elif isinstance(obj, ConfigHostGroup):
-        filename = [
-            obj.object.prototype.type,
-            str(obj.object.id),
-            "group",
-            str(obj.id),
-            key,
-            sub_key,
-        ]
+        filename = [obj.object.prototype.type, str(obj.object.id), "group", str(obj.id), *keys]
     elif isinstance(obj, ProcessStep):
-        filename = ["process", str(obj.process_id), "step", str(obj.id), key, sub_key]
+        filename = ["process", str(obj.process_id), "step", str(obj.id), *keys]
     else:
-        filename = ["task", str(obj.id), key, sub_key]
+        filename = ["task", str(obj.id), *keys]
 
     return str(Path(settings.FILE_DIR, ".".join(filename)))
 
