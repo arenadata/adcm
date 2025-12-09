@@ -589,7 +589,6 @@ class TestBundle(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
             response = response.json()
-            print(f"{response=}")
             self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertEqual(response["level"], "error")
             self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
@@ -606,7 +605,6 @@ class TestBundle(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
             response = response.json()
-            print(f"{response=}")
             self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertEqual(response["level"], "error")
             self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])

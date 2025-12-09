@@ -27,7 +27,6 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
-from cm.legacy.services.host.duplicates import create_duplicate
 from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
 from core.types import ADCMCoreType
@@ -50,6 +49,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host as create_host_new
 
 from api_v2.api_schema import responses
@@ -324,7 +324,9 @@ class HostViewSet(
             get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
 
         host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
-        duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
+        duplicate_id = create_duplicate(
+            host_id=host.id, name=data["name"], cluster_id=data["cluster_id"], config_service=get_config_service()
+        )
 
         duplicate = Host.objects.get(id=duplicate_id)
         serializer = HostSerializer(instance=duplicate, context=self.get_serializer_context())

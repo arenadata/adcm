@@ -17,12 +17,12 @@ import secrets
 from adcm.feature_flags import use_new_config_processing
 from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.host.duplicates import create_duplicate
 from cm.legacy.services.status import notify
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType, HostID, HostName
+from infra.services import get_config_service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -31,6 +31,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.host.duplicate import create_duplicate
 
 from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
 
@@ -358,6 +359,7 @@ class TestHost(BaseAPITestCase):
 class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
+        get_config_service.cache_clear()
 
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test-host")
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second-host")
@@ -561,8 +563,14 @@ class TestClusterHost(BaseAPITestCase):
         self.check_control_hosts()
 
     def test_adcm_7228_add_originals_with_duplicates_fail(self):
-        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
-        h2_dup = Host.objects.get(id=create_duplicate(host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup"))
+        h1_dup = Host.objects.get(
+            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+        )
+        h2_dup = Host.objects.get(
+            id=create_duplicate(
+                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+            )
+        )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
 
         data = [{"hostId": host.id} for host in hosts_to_add]
@@ -580,8 +588,14 @@ class TestClusterHost(BaseAPITestCase):
         self.check_control_hosts()
 
     def test_adcm_7228_add_original_and_copy_of_host_fail(self):
-        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
-        h2_dup = Host.objects.get(id=create_duplicate(host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup"))
+        h1_dup = Host.objects.get(
+            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+        )
+        h2_dup = Host.objects.get(
+            id=create_duplicate(
+                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+            )
+        )
 
         # cluster with original host; add the duplicate
         response = self.client.v2[self.cluster_1, "hosts"].post(data={"hostId": self.host.pk})
@@ -613,8 +627,14 @@ class TestClusterHost(BaseAPITestCase):
         self.check_control_hosts()
 
     def test_adcm_7228_add_two_duplicates_fail(self):
-        h1_dup = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup"))
-        h1_dup_2 = Host.objects.get(id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup-dup"))
+        h1_dup = Host.objects.get(
+            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+        )
+        h1_dup_2 = Host.objects.get(
+            id=create_duplicate(
+                host_id=self.host.id, name=f"{self.host.fqdn}-dup-dup", config_service=get_config_service()
+            )
+        )
         hosts_to_add = (h1_dup, h1_dup_2)
 
         # add two duplicates together
@@ -776,8 +796,12 @@ class TestClusterHost(BaseAPITestCase):
     def test_host_candidates_filtering_success(self):
         host_1 = self.host
         host_2 = self.host_2
-        host_duplicate_1 = Host.objects.get(id=create_duplicate(host_id=host_1.pk, name="duplicate"))
-        host_duplicate_named_as_host_2 = Host.objects.get(id=create_duplicate(host_id=host_1.pk, name=host_2.name))
+        host_duplicate_1 = Host.objects.get(
+            id=create_duplicate(host_id=host_1.pk, name="duplicate", config_service=get_config_service())
+        )
+        host_duplicate_named_as_host_2 = Host.objects.get(
+            id=create_duplicate(host_id=host_1.pk, name=host_2.name, config_service=get_config_service())
+        )
 
         candidates = self.get_host_candidates(self.cluster_1)
         self.assert_hosts_in_candidates(

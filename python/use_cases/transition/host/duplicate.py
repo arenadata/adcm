@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ClusterID, HostID
-from django.db.transaction import atomic
+from typing import TypeAlias, cast
 
 from cm.errors import AdcmEx
 from cm.legacy.services import cluster
@@ -20,9 +19,16 @@ from cm.legacy.services.host import repo
 from cm.legacy.services.status import notify
 from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.models import Cluster, Host
+from core.config import ConfigService
+from core.types import ADCMCoreType, ClusterID, Descriptor, HostDesc, HostID, HostName
+from django.db.transaction import atomic
+
+HostDuplicateID: TypeAlias = HostID
 
 
-def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = None) -> HostID:
+def create_duplicate(
+    config_service: ConfigService, host_id: HostID, name: HostName, cluster_id: ClusterID | None = None
+) -> HostDuplicateID:
     with atomic():
         try:
             original = repo.get_original_host(host_id=host_id)
@@ -33,21 +39,23 @@ def create_duplicate(host_id: HostID, name: str, cluster_id: ClusterID | None = 
         duplicate = repo.duplicate_host_record(host=original, overrides=overrides)
 
         if original.config:
-            repo.prepare_symlinks_for_file_type(duplicate=duplicate)
+            original_desc = cast(HostDesc, Descriptor(id=original.pk, type=ADCMCoreType.HOST))
+            duplicate_desc = cast(HostDesc, Descriptor(id=duplicate.pk, type=ADCMCoreType.HOST))
+            config_service.prepare_symlinks_for_file_type(original=original_desc, duplicate=duplicate_desc)
 
         if cluster_id is not None:
             try:
                 cluster.perform_host_to_cluster_map(
                     cluster_id=cluster_id,
-                    hosts=[duplicate.id],
+                    hosts=[duplicate.pk],
                     status_service=notify,
                 )
             except Cluster.DoesNotExist as e:
                 raise AdcmEx("CLUSTER_NOT_FOUND") from e
 
-        attached_concern_map = distribute_concern_from_provider_to_host(host_id=duplicate.id)
+        attached_concern_map = distribute_concern_from_provider_to_host(host_id=duplicate.pk)
 
-    notify.register_host_duplicates(original=host_id, duplicates=(duplicate.id,))
+    notify.register_host_duplicates(original=host_id, duplicates=(duplicate.pk,))
     notify_about_redistributed_concerns_from_maps(added=attached_concern_map, removed={})
 
-    return duplicate.id
+    return duplicate.pk
