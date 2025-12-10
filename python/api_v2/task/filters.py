@@ -10,16 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import (
-    Cluster,
-    Component,
-    Host,
-    JobStatus,
-    Provider,
-    Service,
-    TaskLog,
-)
+
+from cm.models import ActionHostGroup, Cluster, Component, Host, JobStatus, Provider, Service, TaskLog
 from django.contrib.contenttypes.models import ContentType
+from django.db import connection
 from django.db.models import QuerySet
 from django_filters import NumberFilter
 from django_filters.rest_framework.filters import (
@@ -64,20 +58,32 @@ class TaskFilter(
         label="ordering",
     )
 
-    def filter_object_name(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
-        clusters = Cluster.objects.filter(name__icontains=value).values_list("id")
-        services = Service.objects.filter(prototype__display_name__icontains=value).values_list("id")
-        components = Component.objects.filter(prototype__display_name__icontains=value).values_list("id")
-        providers = Provider.objects.filter(name__icontains=value).values_list("id")
-        hosts = Host.objects.filter(fqdn__icontains=value).values_list("id")
+    def filter_object_name(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet:
+        model_names = {m._meta.model_name for m in (Cluster, Service, Component, Provider, Host, ActionHostGroup)}
+        ct_selector_map = {
+            ct_id: model_name if model_name != "actionhostgroup" else "action_host_group"
+            for ct_id, model_name in ContentType.objects.filter(app_label="cm", model__in=model_names).values_list(
+                "id", "model"
+            )
+        }
 
-        return (
-            queryset.filter(object_type=ContentType.objects.get_for_model(Cluster), object_id__in=clusters)
-            | queryset.filter(object_type=ContentType.objects.get_for_model(Service), object_id__in=services)
-            | queryset.filter(object_type=ContentType.objects.get_for_model(Component), object_id__in=components)
-            | queryset.filter(object_type=ContentType.objects.get_for_model(Provider), object_id__in=providers)
-            | queryset.filter(object_type=ContentType.objects.get_for_model(Host), object_id__in=hosts)
+        # ideally, we want to use jsonb_path_exists here
+        # params substitution takes place in single-quoted argument of jsonb_path_exists,
+        # therefore it must be double-quoted, but django querying functionality can't handle this case
+        # Example:
+        # WHERE object_type_id = {ct_id} AND
+        #       jsonb_path_exists(selector, '$ ? ($.{field}.name like_regex %s flag "i" )')
+        where_clause = " OR ".join(
+            f"(object_type_id = {ct_id} AND COALESCE(selector ->> '{field}', '{{}}')::jsonb ->> 'name' ILIKE %s)"
+            for ct_id, field in ct_selector_map.items()
         )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                sql=f"SELECT id FROM {TaskLog._meta.db_table} WHERE {where_clause}",  # noqa:S608. Not an injection
+                params=[f"%{value}%"] * len(ct_selector_map),
+            )
+
+            return queryset.filter(id__in=[row[0] for row in cursor.fetchall()])
 
     def advanced_filter_by_target_type(self, queryset: QuerySet, name: str, value: str) -> QuerySet[TaskLog]:
         if value == "action_host_group":

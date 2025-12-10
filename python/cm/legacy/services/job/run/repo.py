@@ -105,7 +105,7 @@ class JobRepoImpl(JobRepoInterface):
             "type_name": Value(ADCMCoreType.COMPONENT.value),
         },
         Host: {"object_id": F("id"), "object_name": F("fqdn"), "type_name": Value(ADCMCoreType.HOST.value)},
-        Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
+        Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value(ADCMCoreType.PROVIDER.value)},
     }
 
     @classmethod
