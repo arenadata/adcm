@@ -396,6 +396,7 @@ TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
 
 ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=2)
 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 CONSUL_URL = os.getenv("CONSUL_URL")
 CONSUL_DATACENTER = os.getenv("CONSUL_DATACENTER")
