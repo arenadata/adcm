@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config.config import get_main_info
+from cm.legacy.adcm_config.config import get_main_info
 from cm.models import Component, Host, HostComponent, MaintenanceMode
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (

@@ -13,8 +13,8 @@
 from hashlib import sha256
 from pathlib import Path
 
-from cm.checker import FormatError, check
 from cm.errors import raise_adcm_ex
+from cm.legacy.checker import FormatError, check
 from cm.logger import logger
 from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from django.conf import settings

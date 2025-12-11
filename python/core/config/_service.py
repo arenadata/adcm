@@ -23,7 +23,6 @@ from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
 from core.config._secrets import AnsibleSecrets
 from core.config._types import (
     ChangeRequest,
-    ConfigFlatValues,
     ConfigOwner,
     Configuration,
     ConfigurationWithID,
@@ -38,12 +37,16 @@ from core.config._validate import (
     Violations,
 )
 from core.result import Fail, Success, is_fail
+from core.settings import Settings
 from core.types import (
+    ActionDescriptor,
     ActionID,
+    ADCMCoreType,
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
     Descriptor,
+    HostDesc,
     HostGroupDescriptor,
     ObjectOrGroup,
     PrototypeID,
@@ -75,16 +78,6 @@ FileOwner = (
 
 
 @dataclass(slots=True)
-class Directories:
-    files: Path
-
-
-@dataclass(slots=True)
-class Settings:
-    directories: Directories
-
-
-@dataclass(slots=True)
 class VariantValidators:
     main: type[MainConfigVariantResolver]
     default: type[VariantValidator]
@@ -111,10 +104,10 @@ class ConfigService:
         return self.repo.get_config(owner=owner)
 
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=False)
+        return self.repo.get_spec(owner=owner, defaults=False)
 
     def retrieve_specification_with_defaults(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=self.secrets.encrypt)
+        return self.repo.get_spec(owner=owner, defaults=self.secrets.encrypt)
 
     def retrieve_partial_specification(
         self,
@@ -127,7 +120,7 @@ class ConfigService:
         Don't overuse this function, ensure that you are out of other options and no new mechanism is required.
         Can return "empty" spec.
         """
-        return self.repo.get_spec(owner=owner, action_id=None, defaults=False, only_for=only_for_types)
+        return self.repo.get_spec(owner=owner, defaults=False, only_for=only_for_types)
 
     def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
         # scenario-like method, may be moved
@@ -147,7 +140,7 @@ class ConfigService:
         return spec.spec_to_jsonschema(
             spec=specification,
             defaults=defaults,
-            owner_state=owner.info.state,
+            owner_state=owner.state,
             is_group_config=is_host_group,
             resolve_variant=variant_resolver.resolve,
         )
@@ -172,32 +165,27 @@ class ConfigService:
         return spec.spec_to_jsonschema(
             spec=action_specification,
             defaults=action_config_defaults,
-            owner_state=action_owner.info.state,
+            owner_state=action_owner.state,
             is_group_config=False,
             resolve_variant=variant_resolver.resolve,
         )
 
-    def retrieve_specification_with_defaults_for_action(
-        self, owner: CoreObjectDescriptor, action_id: ActionID
-    ) -> tuple[spec.FullSpec, Defaults]:
-        return self.repo.get_spec(owner=owner, action_id=action_id, defaults=self.secrets.encrypt)
+    def retrieve_specification_with_defaults_for_action(self, action_id: ActionID) -> tuple[spec.FullSpec, Defaults]:
+        descriptor: ActionDescriptor = Descriptor(id=action_id, type="action")
+        return self.repo.get_spec(owner=descriptor, defaults=self.secrets.encrypt)
 
     def retrieve_configurations_by_id(self, configurations: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
         return self.repo.find_configs_by_ids(ids=configurations)
 
     def retrieve_specifications_by_prototypes(
-        self, prototypes: Iterable[PrototypeID], encrypt_defaults: bool = True
+        self, prototypes: Iterable[PrototypeID]
     ) -> dict[PrototypeID, spec.FullSpec]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return {
-            id_: spec
-            for id_, (spec, _) in self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt).items()
-        }
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, with_defaults=False, encrypt=None)
 
     def retrieve_specifications_by_prototypes_with_defaults(
         self, prototypes: Iterable[PrototypeID]
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        return self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=self.secrets.encrypt)
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, with_defaults=True, encrypt=self.secrets.encrypt)
 
     # todo: bad, should accept host groups or direct ids,
     # host groups retrieval should be in separate service/repo
@@ -227,7 +215,7 @@ class ConfigService:
     def create_initial_configuration(
         self, owner: CoreObjectDescriptor, specification: spec.FullSpec, defaults: Defaults
     ) -> ConfigID:
-        default_config = self.prepare_default_configuration(default_values=defaults, specification=specification)
+        default_config = self.prepare_default_configuration(defaults=defaults, specification=specification)
 
         config_id = self.create_new_configuration_by_descriptor(
             configuration=default_config, description="init", owner=owner
@@ -267,10 +255,8 @@ class ConfigService:
 
     # prepare
 
-    def prepare_default_configuration(
-        self, default_values: ConfigFlatValues, specification: spec.FullSpec
-    ) -> Configuration:
-        return operations.prepare_config_from_defaults(default_values=default_values, specification=specification)
+    def prepare_default_configuration(self, defaults: Defaults, specification: spec.FullSpec) -> Configuration:
+        return operations.prepare_config_from_defaults(defaults=defaults, specification=specification)
 
     def prepare_new_configuration(
         self,
@@ -388,6 +374,20 @@ class ConfigService:
             decrypt=lambda x: self.secrets.decrypt(x) or "",
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
+
+    def prepare_symlinks_for_file_type(self, original: HostDesc, duplicate: HostDesc) -> None:
+        original_specification = self.retrieve_specification(
+            owner=CoreObjectDescriptor(id=original.id, type=ADCMCoreType.HOST)
+        )
+
+        original_prefix = files.build_config_prefix(original)
+        duplicate_prefix = files.build_config_prefix(duplicate)
+        operations.create_symlinks_for_files(
+            specification=original_specification,
+            original_prefix=original_prefix,
+            duplicate_prefix=duplicate_prefix,
+            files_dir=self.settings.directories.files,
+        )
 
     def prepare_configuration_for_ansible(
         self,

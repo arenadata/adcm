@@ -23,8 +23,8 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from core.errors import NotFoundError
-from core.rbac.dto import UserCreateDTO, UserUpdateDTO
-from core.rbac.errors import (
+from core.legacy.rbac.dto import UserCreateDTO, UserUpdateDTO
+from core.legacy.rbac.errors import (
     ChangeMembershipError,
     EmailTakenError,
     PasswordError,

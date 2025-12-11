@@ -13,8 +13,8 @@
 from operator import itemgetter
 
 from cm.models import Action, Cluster, Component, Host, MaintenanceMode
-from cm.services.host.duplicates import create_duplicate
 from core.types import HostID
+from infra.services import get_config_service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -23,6 +23,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.host.duplicate import create_duplicate
 
 from api_v2.tests.base import BaseAPITestCase, RunTaskMock
 
@@ -31,6 +32,7 @@ class TestDuplicateHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
+        get_config_service.cache_clear()
         self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
 
     def get_ids(self, collection: list[dict]) -> set[int]:
@@ -40,7 +42,9 @@ class TestDuplicateHost(BaseAPITestCase):
         return list(map(itemgetter("name"), actions))
 
     def create_duplicate(self, origin: Host, name: str = "duplicate", cluster: Cluster | None = None) -> Host:
-        duplicate_id = create_duplicate(host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None))
+        duplicate_id = create_duplicate(
+            host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None), config_service=get_config_service()
+        )
         return Host.objects.get(id=duplicate_id)
 
     def assert_cluster_host_candidates(self, cluster: Cluster, expected_ids: set[int]):
@@ -80,8 +84,10 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertDictContainsSubset(expected_data, response.json())
 
     def test_add_duplicate_to_cluster_after_creation(self):
-        duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="awesome")
-        duplicate_2_id = create_duplicate(host_id=self.host_1.id, name="another-host")
+        duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="awesome", config_service=get_config_service())
+        duplicate_2_id = create_duplicate(
+            host_id=self.host_1.id, name="another-host", config_service=get_config_service()
+        )
 
         expected_duplicates = [
             {
@@ -129,8 +135,8 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertDictContainsSubset(expected_data, response.json())
 
     def test_adcm_6943_new_host_with_name_of_duplicate_pass(self):
-        create_duplicate(host_id=self.host_1.id, name="awesome")
-        create_duplicate(host_id=self.host_1.id, name="awesome-2")
+        create_duplicate(host_id=self.host_1.id, name="awesome", config_service=get_config_service())
+        create_duplicate(host_id=self.host_1.id, name="awesome-2", config_service=get_config_service())
         with self.subTest("New host"):
             response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
 
@@ -144,8 +150,15 @@ class TestDuplicateHost(BaseAPITestCase):
             self.assertEqual(self.host_1.fqdn, "awesome-2")
 
     def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
-        duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="duplicate-1", cluster_id=self.cluster_1.id)
-        duplicate_2_id = create_duplicate(host_id=self.host_1.id, name="duplicate-2")
+        duplicate_1_id = create_duplicate(
+            host_id=self.host_1.id,
+            name="duplicate-1",
+            cluster_id=self.cluster_1.id,
+            config_service=get_config_service(),
+        )
+        duplicate_2_id = create_duplicate(
+            host_id=self.host_1.id, name="duplicate-2", config_service=get_config_service()
+        )
 
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).first()
         component_1 = Component.objects.get(service=service, prototype__name="component_1")
@@ -274,7 +287,7 @@ class TestDuplicateHost(BaseAPITestCase):
         # ("django_content_type"."id" = "auth_permission"."content_type_id") WHERE
         # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_host') LIMIT 21
         # yet amount of queries won't increase when more instances/duplicates arrive
-        create_duplicate(host_id=self.host_1.pk, name="jjjj")
+        create_duplicate(host_id=self.host_1.pk, name="jjjj", config_service=get_config_service())
 
         with self.assertNumQueries(expected_queries_amount):
             response = (self.client.v2 / "hosts").get()
@@ -283,7 +296,7 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.add_host(provider=self.provider, fqdn="something")
         another_host = self.add_host(provider=self.provider, fqdn="something-else")
-        create_duplicate(host_id=another_host.pk, name="wow")
+        create_duplicate(host_id=another_host.pk, name="wow", config_service=get_config_service())
 
         with self.assertNumQueries(expected_queries_amount):
             response = (self.client.v2 / "hosts").get()
@@ -343,8 +356,41 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertEqual(duplicate_2.fqdn, duplicate_1.fqdn)
 
     def test_adcm_7443_files_in_nested_groups_success(self):
+        files_dir = self.directories["FILE_DIR"]
+
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider_host_nested_groups_with_files")
         provider = self.add_provider(bundle=bundle, name="provider-with-files-in-nested-groups")
         host = self.add_host(provider=provider, fqdn="host-with-files-in-nested-groups")
 
-        self.create_duplicate(origin=host, name=f"{host.name}-duplicate")  # no error expected
+        original_files = {file.name for file in files_dir.rglob(f"host.{host.id}.*")}
+        expected_files = {
+            f"host.{host.id}.file_field.",
+            f"host.{host.id}.g1.file_field",
+            f"host.{host.id}.g1.g2.file_field",
+            f"host.{host.id}.g1.g2.g3.file_field",
+            f"host.{host.id}.g1.g2.g3.secretfile_field",
+            f"host.{host.id}.g1.g2.secretfile_field",
+            f"host.{host.id}.g1.secretfile_field",
+            f"host.{host.id}.secretfile_field.",
+        }
+        self.assertSetEqual(original_files, expected_files)
+
+        duplicate = self.create_duplicate(origin=host, name=f"{host.name}-duplicate")  # no error expected
+
+        duplicate_files = {file.name for file in files_dir.rglob(f"host.{duplicate.id}.*")}
+        expected_files = {
+            f"host.{duplicate.id}.file_field.",
+            f"host.{duplicate.id}.g1.file_field",
+            f"host.{duplicate.id}.g1.g2.file_field",
+            f"host.{duplicate.id}.g1.g2.g3.file_field",
+            f"host.{duplicate.id}.g1.g2.g3.secretfile_field",
+            f"host.{duplicate.id}.g1.g2.secretfile_field",
+            f"host.{duplicate.id}.g1.secretfile_field",
+            f"host.{duplicate.id}.secretfile_field.",
+        }
+        self.assertSetEqual(duplicate_files, expected_files)
+
+        for orig_file, dup_file in zip(sorted(original_files), sorted(duplicate_files)):
+            self.assertTrue((files_dir / orig_file).is_file())
+            self.assertTrue((files_dir / dup_file).is_symlink())
+            self.assertTrue((files_dir / dup_file).readlink() == files_dir / orig_file)

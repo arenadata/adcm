@@ -13,8 +13,8 @@
 from itertools import chain
 from typing import Collection, Generator
 
+from cm.legacy.services.status.client import retrieve_status_map
 from cm.models import ADCMEntityStatus, Cluster, Component, Host, Service
-from cm.services.status.client import retrieve_status_map
 from django.db.models import Q, QuerySet
 from django_filters import BaseInFilter, CharFilter, NumberFilter
 from django_filters.filterset import BaseFilterSet, FilterSetMetaclass

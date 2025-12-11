@@ -17,6 +17,8 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 from cm.models import (
     ADCM,
     Cluster,
@@ -28,8 +30,6 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.concern import create_issue
-from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 
 
 class TestFlag(BaseTestCase, BusinessLogicMixin):

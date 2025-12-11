@@ -21,8 +21,8 @@ import signal
 import os.path
 
 from adcm.feature_flags import use_new_config_processing
-from core.action.process.types import ProcessState, ProcessStepState
-from core.job.types import ScriptType
+from core.legacy.action.process.types import ProcessState, ProcessStepState
+from core.legacy.job.types import ScriptType
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -33,9 +33,10 @@ from django.db.models import QuerySet
 from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+import core
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 
 
@@ -1678,6 +1679,7 @@ class HostInfo(models.Model):
         ]
 
 
+ProcessTypeChoices = tuple((st.value, st.value) for st in core.action.wizard.StepType)
 ProcessStateChoices = tuple((state.value, state.value) for state in ProcessState)
 ProcessStepStateChoices = tuple((state.value, state.value) for state in ProcessStepState)
 DEFAULT_PROCESS_STATE = ProcessState.CREATED.value
@@ -1708,6 +1710,10 @@ class Process(models.Model):
 
 class ProcessStep(models.Model):
     process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name="steps")
+    # those defaults are dangerous if we don't invalidate processes between upgrades
+    # => process may be retrieved + for type it's anyway incorrect
+    type = models.CharField(max_length=50, choices=ProcessTypeChoices, default="")
+    stage = models.CharField(max_length=150, default="")
     name = models.CharField(max_length=150)
     display_name = models.CharField(max_length=150)
     step_spec = models.JSONField(null=True)

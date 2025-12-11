@@ -33,7 +33,7 @@ ruyaml = "^0.91.0"
 python-gnupg = "^0.5.5"  # for the bundle signature verification mechanism
 
 # Ansible
-ansible = { git = "https://github.com/arenadata/ansible.git", rev = "v2.8.8-p7" }
+ansible = { git = "https://github.com/arenadata/ansible.git", rev = "v2.8.8-p8" }
 jinja2 = "<3.0.0"  # required for Ansible for jinja_native option,
 # "<3.0.0" is due to the absence of the "jinja2._compat" module in jinja2 >= 3.0.0.
 # Jinja2 is also used for rendering files in ADCM.
@@ -155,20 +155,30 @@ include = [
     "conf/adcm/python_scripts",
 ]
 exclude = [
-    "dev/linters/",
-    "conf/adcm/",
-    "python/check_adcm_config.py",
-    "python/migration_checker.py",
-    "python/adcm/",
-    "python/ansible_share/",
-    "python/ansible_plugin/",
-    "python/api_v2/",
-    "python/audit/",
-    "python/cm/",
-    "python/jobs/",
+    # cm
+    "python/cm/collect_statistics/",
+    "python/cm/legacy/",
+    "python/cm/management/",
+    "python/cm/migrations",
+    "python/cm/models.py",
+    "python/cm/errors.py",
+    "python/cm/signals.py",
+    "python/cm/lookups.py",
+    # rbac
     "python/rbac/",
+    # audit
+    "python/audit/",
+    # other
+    "conf/adcm/",
+    "dev/linters/",
+    "python/adcm/",
+    "python/ansible_plugin/",
+    "python/ansible_share/",
+    "python/api_v2/",
+    "python/jobs/",
+    # common
     "**/tests",
-    "**/migrations",
+    # technical
     "**/__pycache__",
 ]
 
@@ -192,7 +202,7 @@ root_packages = [
     "adcm",
     "ansible_plugin",
     "api_v2",
-    "application",
+    "use_cases",
     "audit",
     "cm",
     "core",
@@ -204,47 +214,49 @@ root_packages = [
 # Only check imports within the project, not external libs
 include_external_packages = true
 
+#[[tool.importlinter.contracts]]
+#name = "ADCM layers contract"
+#type = "layers"
+# semi correct layers are below
+# After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
+#layers = [
+#    "api_v2 | jobs | ansible_plugin",
+#    "use_cases | infra",
+#    # this should be done with "|", but requires quite a refactoring for true independance
+#    "cm : audit : rbac ",
+#    "core",
+#]
+
 
 [[tool.importlinter.contracts]]
 name = "core must not import other modules"
 type = "forbidden"
 source_modules = ["core"]
-forbidden_modules = ["cm", "rbac", "api_v2", "ansible_share", "ansible_plugin", "audit", "jobs", "django", "application", "infra"]
+forbidden_modules = ["cm", "rbac", "api_v2", "ansible_share", "ansible_plugin", "audit", "jobs", "django", "use_cases", "infra"]
 
 [[tool.importlinter.contracts]]
 name = "core.* modules must not import core.bundle"
 type = "forbidden"
 source_modules = ["core.*"]
-forbidden_submodules = ["core.bundle"]
+forbidden_submodules = ["core.legacy.bundle"]
 forbidden_modules = []
 
-# After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
+[[tool.importlinter.contracts]]
+name = "independant core modules"
+type = "independence"
+modules = [
+  "core.mapping",
+  "core.config",
+]
 
-# refactoring for ADCM-7181:
+[[tool.importlinter.contracts]]
+name = "core.action dependencies"
+type = "forbidden"
+source_modules = [
+  "core.mapping",
+  "core.config",
+]
+forbidden_modules = ["core.action"]
 
-# [[tool.importlinter.contracts]]
-# name = "audit must not import cm or rbac"
-# type = "forbidden"
-# source_modules = ["audit"]
-# forbidden_modules = [
-#     "cm",
-#     "rbac",
-#     ]
-
-# refactoring for ADCM-7182:
-
-# [[tool.importlinter.contracts]]
-# name = "rbac must not import audit"
-# type = "forbidden"
-# source_modules =["rbac"]
-# forbidden_modules = ["audit"]
-
-# refactoring for ADCM-7183:
-
-# [[tool.importlinter.contracts]]
-# name = "cm must not import audit"
-# type = "forbidden"
-# source_modules = ["cm"]
-# forbidden_modules = ["audit"]
 
 

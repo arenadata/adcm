@@ -1,0 +1,29 @@
+
+
+- type: provider
+  version: 1.0
+  name: provider_nested_groups
+
+  actions: &actions
+    scripts_template:
+      type: task
+      config_template: 
+        file:
+          path: ./config.j2
+        engine:
+          type: jinja2
+      scripts_template: 
+        file:
+          path: ./script.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+      params:
+        ansible_tags: sleep 
+
+- type: host
+  version: 1.0
+  name: simple_host
+
+  actions: *actions

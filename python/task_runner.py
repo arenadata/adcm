@@ -18,7 +18,7 @@ import logging
 import argparse
 
 import adcm.init_django  # noqa: F401, isort:skip
-from cm.services.job.run import get_default_runner, get_restart_runner
+from cm.legacy.services.job.run import get_default_runner, get_restart_runner
 
 
 def main():

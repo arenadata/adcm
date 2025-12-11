@@ -10,6 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core import bundle_alt, config, job
+# order is important
+from core import config as config  # noqa
+from core import mapping as mapping
+from core.legacy import bundle_alt, job  # noqa
+from core import action as action  # noqa
 
-__all__ = ["config", "bundle_alt", "job"]
+__all__ = [
+    "action",
+    "bundle_alt",
+    "config",
+    "job",
+    "mapping",
+]

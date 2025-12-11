@@ -20,9 +20,9 @@ from rest_framework.status import (
 )
 import yaml
 
-from cm.api import delete_host_provider
-from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
+from cm.legacy.api import delete_host_provider
+from cm.legacy.bundle import delete_bundle
 from cm.models import (
     Action,
     ADCMEntity,

@@ -12,27 +12,33 @@
 
 from copy import deepcopy
 from uuid import UUID
-import unittest
 
-from application.dto import ConfigurationDTO, RunActionDTO
-from application.migration.job.schedule import schedule_task
-from core.job.dto import TaskPayloadDTO
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
+from core.legacy.job.dto import TaskPayloadDTO
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from infra.services import get_config_service, get_job_service
+from infra.services import get_config_service, get_job_service, get_wizard_service
+from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.transition.job.schedule import schedule_task
 import core
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
+from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.action import prepare_task_for_action
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.utils import decrypt_secrets
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -126,7 +132,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_action_config(self) -> None:
         for object_, config, type_name in (
             (self.cluster, None, "cluster"),
@@ -227,12 +232,15 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
+            config_service = get_config_service()
+            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
             schedule_task(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
                 job_service=get_job_service(),
-                config_service=get_config_service(),
+                config_service=config_service,
+                context_gatherer=context_gatherer,
                 start_task_after_schedule=True,
             )
 
@@ -258,12 +266,15 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
+            config_service = get_config_service()
+            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
             schedule_task(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
                 job_service=get_job_service(),
-                config_service=get_config_service(),
+                config_service=config_service,
+                context_gatherer=context_gatherer,
                 start_task_after_schedule=True,
             )
 
@@ -295,12 +306,15 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
             )
+            config_service = get_config_service()
+            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
             schedule_task(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
                 job_service=get_job_service(),
-                config_service=get_config_service(),
+                config_service=config_service,
+                context_gatherer=context_gatherer,
                 start_task_after_schedule=True,
             )
 
@@ -359,7 +373,6 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_scripts_in_action_config(self) -> None:
         for action_name in ("job_proto_relative", "job_bundle_relative", "task_mixed"):
             for object_, type_name in ((self.cluster, "cluster"), (self.service_1, "service")):

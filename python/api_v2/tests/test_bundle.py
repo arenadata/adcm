@@ -14,10 +14,11 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import tarfile
+import unittest
 
-from cm.bundle import _get_file_hashes
+from cm.legacy.bundle import _get_file_hashes
+from cm.legacy.services.adcm import adcm_config
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
-from cm.services.adcm import adcm_config
 from django.conf import settings
 from django.db.models import F
 from rest_framework.status import (
@@ -559,3 +560,51 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 3)
+
+    @unittest.skip("Unskip after ADCM-7491")
+    def test_adcm_7398_upload_provider_bundle_with_templates_fail(self) -> None:
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "provider_groups_v1.0_community",
+            target_dir=settings.TMP_DIR,
+        )
+
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn(
+            "Errors found in definition of bundle entity:\n actions\n  scripts_template", response.json()["desc"]
+        )
+
+    def test_adcm_7395_wrong_template_definition(self):
+        with self.subTest("scripts_template"):
+            bundle_file = self.prepare_bundle_file(
+                source_dir=self.test_bundles_dir / "invalid_bundles" / "wrong_scripts_template",
+                target_dir=settings.TMP_DIR,
+            )
+
+            with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            response = response.json()
+            self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertEqual(response["level"], "error")
+            self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
+
+        with self.subTest("config_template"):
+            bundle_file = self.prepare_bundle_file(
+                source_dir=self.test_bundles_dir / "invalid_bundles" / "wrong_config_template",
+                target_dir=settings.TMP_DIR,
+            )
+
+            with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+                response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+            response = response.json()
+            self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
+            self.assertEqual(response["level"], "error")
+            self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])

@@ -3,6 +3,7 @@ export { usePageTitle } from './usePageTitle';
 export { usePageRouteInfo } from './usePageRouteInfo';
 export { useCurrentRoute } from './useCurrentRoute';
 export { useResizeObserver } from './useResizeObserver';
+export { useResizeElementObserver } from './useResizeElementObserver';
 export { useStore } from './useStore';
 export { useLocalStorage } from './useLocalStorage';
 export { useDispatch } from './useDispatch';

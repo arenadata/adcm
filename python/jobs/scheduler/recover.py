@@ -12,7 +12,7 @@
 
 from functools import partial
 
-from core.job.types import ExecutionStatus
+from core.legacy.job.types import ExecutionStatus
 from core.types import ConcernID
 
 from jobs.scheduler import repo

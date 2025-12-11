@@ -17,8 +17,11 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
-from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
+from cm.legacy.services.job.action import ActionRunPayload, run_action
+from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
@@ -31,10 +34,7 @@ from cm.models import (
     ProcessStepInput,
     TaskLog,
 )
-from cm.services.jinja_env import get_env_for_jinja_scripts
-from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.utils import decrypt_secrets
 
 
 class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCase):

@@ -16,14 +16,18 @@ from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
-from core.cluster.types import HostComponentEntry
-from core.job.types import TaskMappingDelta
+from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.legacy.cluster.types import HostComponentEntry
+from core.legacy.job.types import TaskMappingDelta
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.converters import model_name_to_core_type
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job._utils import construct_delta_for_task
+from cm.legacy.services.job.inventory import get_inventory_data
+from cm.legacy.utils import decrypt_secrets, strip_uuid
 from cm.models import (
     ADCM,
     Action,
@@ -33,10 +37,6 @@ from cm.models import (
     Host,
     MaintenanceMode,
 )
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job._utils import construct_delta_for_task
-from cm.services.job.inventory import get_inventory_data
-from cm.utils import decrypt_secrets, strip_uuid
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]

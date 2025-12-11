@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from cm.services.job.run import get_default_runner
+from cm.legacy.services.job.run import get_default_runner
 from core.types import TaskID
 
 from jobs.worker.celery.worker import app

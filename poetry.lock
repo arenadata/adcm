@@ -63,8 +63,8 @@ azure = ["azure-cli-core (==2.0.35)", "azure-cli-nspkg (==3.0.2)", "azure-common
 [package.source]
 type = "git"
 url = "https://github.com/arenadata/ansible.git"
-reference = "v2.8.8-p7"
-resolved_reference = "8c62daf26068a7b2c6570ab01c335c1adff82e0a"
+reference = "v2.8.8-p8"
+resolved_reference = "dae560fcfe579a51ef5c14a3e155909b2cea99d8"
 
 [[package]]
 name = "asgiref"
@@ -2785,4 +2785,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.10"
-content-hash = "139ce149ab75762d5cfe765de89611baeab26c68ba9806cc49fca9751227e83b"
+content-hash = "4fa9faafa576a208e82e6922036d25b4f19555eed8aa13fe959751d045cb6f05"

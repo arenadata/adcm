@@ -13,10 +13,10 @@
 from typing import Collection
 from unittest.mock import patch
 
+from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, ConcernItem
-from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.types import Task
+from core.legacy.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor

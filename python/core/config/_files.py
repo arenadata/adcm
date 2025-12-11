@@ -47,3 +47,7 @@ def construct_parameter_file_name_for_action_process_step(
 ) -> str:
     prefix = build_action_process_step_prefix(process_id=process_id, step_id=step_id)
     return f"{prefix}.{parameter_file_identifier}"
+
+
+def construct_parameter_file_full_name(owner_prefix: str, file_identifier: str) -> str:
+    return f"{owner_prefix}.{file_identifier}"

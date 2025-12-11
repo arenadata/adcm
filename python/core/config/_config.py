@@ -152,6 +152,11 @@ def nested_to_flat(configuration: Configuration, specification: spec.FullSpec) -
 
     result = FlatConfiguration(attributes=configuration.attributes)
 
+    # NOTE
+    #  Retrieval by full name has its costs (string spawning)
+    #  and for deeply nested configs retrieval of node may have a cost too.
+    #  That price is paid for simplicity of algorithm.
+    #  If this became a problem, look into recursive implemetation based on hierarchy.
     for name in specification.parameters:
         with suppress(MissingKeyError):
             value = get_by_full_name(name=name, values=configuration.values)

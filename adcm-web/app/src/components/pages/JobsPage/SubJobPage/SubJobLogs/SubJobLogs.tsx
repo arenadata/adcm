@@ -7,12 +7,7 @@ import s from './SubJobLogs.module.scss';
 import { Spinner } from '@uikit';
 import { FullscreenContainer } from '@uikit/CodeHighlighter/SubComponents/FullscreenContainer';
 
-export interface SubJobLogsProps {
-  isAutoScroll: boolean;
-  setIsAutoScroll: (value: boolean) => void;
-}
-
-const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
+const SubJobLogs = () => {
   const subJob = useStore(({ adcm }) => adcm.subJob.subJob);
   const subJobLogs = useStore(({ adcm }) => adcm.subJob.subJobLog);
 
@@ -51,9 +46,7 @@ const SubJobLogs = ({ isAutoScroll, setIsAutoScroll }: SubJobLogsProps) => {
           <Spinner />
         </div>
       )}
-      {subJob && log && (
-        <SubJobLog isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} subJob={subJob} subJobLog={log} />
-      )}
+      {subJob && log && <SubJobLog subJob={subJob} subJobLog={log} />}
     </>
   );
 

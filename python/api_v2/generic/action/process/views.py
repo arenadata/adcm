@@ -16,9 +16,8 @@ from typing import Any
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
-from cm.services.action_process import repo
-from cm.services.action_process.errors import (
+from cm.legacy.services.action_process import repo
+from cm.legacy.services.action_process.errors import (
     ActionProcessDBError,
     ActionProcessNotFoundError,
     ActionProcessOperationError,
@@ -26,19 +25,21 @@ from cm.services.action_process.errors import (
     ActionProcessStepNotFoundError,
     SyncKeyMismatchError,
 )
-from cm.services.action_process.operations import OperationContext, initiate_process, perform_operation
-from cm.services.action_process.schema_validation import Configuration
-from cm.services.action_process.types import Step, StepType
-from cm.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
-from cm.services.job.action import check_no_blocking_concerns
-from cm.services.job.run.repo import ActionRepoImpl
-from cm.status_api import notify_about_redistributed_concerns_from_maps
-from core.job.types import ActionInfo
+from cm.legacy.services.action_process.operations import OperationContext, initiate_process, perform_operation
+from cm.legacy.services.action_process.schema_validation import Configuration
+from cm.legacy.services.action_process.types import Step
+from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
+from cm.legacy.services.job.action import check_no_blocking_concerns
+from cm.legacy.services.job.run.repo import ActionRepoImpl
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
+from core.legacy.job.types import ActionInfo
 from core.types import ActionProcessID, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic
 from django.http.response import Http404
-from infra.services import get_config_service
+from infra.services import get_config_service, get_wizard_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -142,7 +143,13 @@ class ActionProcessViewSet(
 
         # TODO: check if Process already exists
         with atomic():
-            process_id = initiate_process(object_=orm_object_to_core_descriptor(parent_object), action=action_info)
+            process_id = initiate_process(
+                object_=orm_object_to_core_descriptor(parent_object),
+                action=action_info,
+                context_gatherer=ContextGatherer(
+                    config_service=get_config_service(), wizard_service=get_wizard_service()
+                ),
+            )
             flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
             targets = [CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))]
             changed = raise_flag_for_process(flag=flag, on_objects=targets, action=action, action_owner=parent_object)
@@ -177,13 +184,20 @@ class ActionProcessViewSet(
         payload = serializer.validated_data
 
         config_service = get_config_service()
+        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
 
         context = OperationContext(
             object=orm_object_to_core_descriptor(object_=parent_object),
             action=action_info,
             config_processor=self._convert_configuration,
         )
-        perform_operation(process_id=process_id, payload=payload, context=context, config_service=config_service)
+        perform_operation(
+            process_id=process_id,
+            payload=payload,
+            context=context,
+            config_service=config_service,
+            context_gatherer=context_gatherer,
+        )
 
         return Response(
             status=HTTP_200_OK,
@@ -247,13 +261,13 @@ def serialize_step(
     step_input = ProcessStepInput.objects.filter(step_id=step.id).first()
 
     match step.type:
-        case StepType.CONFIGURATION:
+        case core.action.wizard.StepType.CONFIGURATION:
             return _serialize_config_step(
                 step=step, object_=object_, step_input=step_input, base_data=base_data, config_service=config_service
             )
-        case StepType.OPERATION:
+        case core.action.wizard.StepType.OPERATION:
             return _serialize_operation_step(step=step, step_input=step_input, base_data=base_data)
-        case StepType.MAPPING:
+        case core.action.wizard.StepType.MAPPING:
             return _serialize_mapping_step(step=step, step_input=step_input, base_data=base_data)
 
 
@@ -264,7 +278,7 @@ def _serialize_config_step(
     base_data: dict,
     config_service: core.config.ConfigService,
 ) -> dict:
-    from cm.config.repo import build_specification_from_prototype_config_records
+    from cm.impl.config.repo import build_specification_from_prototype_config_records
 
     object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
 
@@ -278,18 +292,14 @@ def _serialize_config_step(
     schema = config_service.retrieve_jsonschema_for_action(
         action_specification=spec,
         action_config_defaults=defaults,
-        action_owner=core.config.ConfigOwner(
-            descriptor=object_, info=core.config.ConfigOwnerObjectInfo(state=object_orm.state)
-        ),
+        action_owner=core.config.ConfigOwner(descriptor=object_, state=object_orm.state),
     )
 
     if step_input:
         config = step_input.configuration["values"]
         attributes = step_input.configuration["attributes"]
     else:
-        default_config = core.config.operations.prepare_config_from_defaults(
-            default_values=defaults, specification=spec
-        )
+        default_config = core.config.operations.prepare_config_from_defaults(defaults=defaults, specification=spec)
         config = default_config.values
         attributes = {name: asdict(attrs) for name, attrs in default_config.attributes.items()}
 

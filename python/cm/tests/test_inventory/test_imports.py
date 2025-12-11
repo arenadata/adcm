@@ -14,8 +14,10 @@ from typing import Iterable
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from cm.api import DataForMultiBind, multi_bind
 from cm.converters import model_name_to_core_type
+from cm.legacy.api import DataForMultiBind, multi_bind
+from cm.legacy.services.job.inventory import get_imports_for_inventory, get_inventory_data
+from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     ADCMModel,
@@ -24,9 +26,7 @@ from cm.models import (
     PrototypeImport,
     Service,
 )
-from cm.services.job.inventory import get_imports_for_inventory, get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.utils import decrypt_secrets
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):

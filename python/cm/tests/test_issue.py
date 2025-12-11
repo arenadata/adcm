@@ -16,15 +16,19 @@ from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase
 
-from cm.api import add_cluster, add_service_to_cluster
-from cm.hierarchy import Tree
-from cm.issue import (
+from cm.legacy.api import add_cluster, add_service_to_cluster
+from cm.legacy.hierarchy import Tree
+from cm.legacy.issue import (
     add_concern_to_object,
     add_issue_on_linked_objects,
     recheck_issues,
     remove_issue,
     update_hierarchy_issues,
 )
+from cm.legacy.services.cluster import perform_host_to_cluster_map
+from cm.legacy.services.concern.checks import object_has_required_services_issue_orm_version, object_imports_has_issue
+from cm.legacy.services.concern.locks import create_task_lock_concern
+from cm.legacy.services.status import notify
 from cm.models import (
     ADCMEntity,
     Bundle,
@@ -36,10 +40,6 @@ from cm.models import (
     PrototypeImport,
     Service,
 )
-from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.concern.checks import object_has_required_services_issue_orm_version, object_imports_has_issue
-from cm.services.concern.locks import create_task_lock_concern
-from cm.services.status import notify
 from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
 mock_issue_check_map = {
@@ -109,7 +109,7 @@ class CreateIssueTest(BaseTestCase):
             self.assertEqual(len(concerns), 2)
             self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
 
-    @patch("cm.issue._issue_check_map", mock_issue_check_map)
+    @patch("cm.legacy.issue._issue_check_map", mock_issue_check_map)
     def test_inherit_on_creation(self):
         """Test if new object in hierarchy inherits existing issues"""
 
@@ -392,7 +392,7 @@ class TestConcernsRedistribution(BaseTestCase):
             {self.provider.content_type, self.host.content_type},
         )
 
-        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
+        with patch("cm.legacy.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
             perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
 
         self.host.refresh_from_db()

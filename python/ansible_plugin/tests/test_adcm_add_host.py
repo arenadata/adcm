@@ -13,8 +13,8 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError, PluginValidationError
 from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor

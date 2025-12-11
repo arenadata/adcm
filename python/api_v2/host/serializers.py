@@ -14,8 +14,8 @@ from operator import attrgetter
 
 from adcm import settings
 from adcm.serializers import EmptySerializer
+from cm.legacy.validators import HostUniqueValidator, StartMidEndValidator
 from cm.models import Cluster, Component, Host, MaintenanceMode, Provider
-from cm.validators import HostUniqueValidator, StartMidEndValidator
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,

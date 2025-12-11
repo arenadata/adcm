@@ -12,21 +12,15 @@
 
 from itertools import compress
 
-from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
+from adcm.feature_flags import use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
-from application.migration.job.schedule import (
-    ActionTarget,
-    ConfigurationDTO,
-    RunActionDTO,
-    retrieve_configuration_for_action,
-    schedule_task,
-)
 from cm.converters import (
     orm_object_to_action_target_descriptor,
     orm_object_to_action_target_type,
     orm_object_to_core_descriptor,
 )
 from cm.errors import AdcmEx
+from cm.legacy.services.job.action import ContextGatherer
 from cm.models import (
     Action,
     ADCMEntity,
@@ -34,17 +28,13 @@ from cm.models import (
     ConfigHostGroup,
     Host,
     HostComponent,
-    PrototypeConfig,
 )
-from cm.services.config import convert_adcm_meta_to_attr, represent_string_as_json_type
-from cm.services.config.jinja import get_jinja_config
-from cm.services.job.action import ActionRunPayload, run_action
-from core.cluster.types import HostComponentEntry
-from core.job.types import AssociatedProcess
+from core.legacy.cluster.types import HostComponentEntry
+from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
-from infra.services import get_config_service, get_job_service
+from infra.services import get_config_service, get_job_service, get_wizard_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -53,6 +43,13 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import (
     HTTP_200_OK,
+)
+from use_cases.transition.job.schedule import (
+    ActionTarget,
+    ConfigurationDTO,
+    RunActionDTO,
+    retrieve_configuration_for_action,
+    schedule_task,
 )
 import core
 
@@ -65,7 +62,6 @@ from api_v2.generic.action.serializers import (
 from api_v2.generic.action.utils import (
     check_process_object,
     filter_actions_by_user_perm,
-    get_action_configuration,
     get_action_processes,
     has_run_perms,
 )
@@ -155,6 +151,7 @@ class ActionViewSet(
         return ActionListSerializer
 
     def handle_exception(self, exc: Exception) -> Response:
+        # temporal handling
         if isinstance(exc, core.config.OperationError):
             exc = AdcmEx(code="ACTION_OPERATION_ERROR", msg=exc.args[0])
 
@@ -173,13 +170,9 @@ class ActionViewSet(
 
         self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
-        get_configuration = (
-            self.get_action_configuration_new
-            if use_new_config_processing(headers=request.headers)
-            else self.get_action_configuration_old
+        config_schema, config, adcm_meta = self.get_action_configuration_new(
+            action=action_, target=self._get_actions_owner()
         )
-
-        config_schema, config, adcm_meta = get_configuration(action=action_, target=self._get_actions_owner())
 
         # processes = None - If processes are not supported by the action.
         # processes = [] - If processes is supported by the action, but there are no created processes yet.
@@ -206,16 +199,16 @@ class ActionViewSet(
 
         return Response(data=serializer.data)
 
-    def get_action_configuration_old(self, action: Action, target: ADCMEntity):
-        return get_action_configuration(action_=action, object_=target)
-
     def get_action_configuration_new(self, action: Action, target: ADCMEntity):
         if not isinstance(target, ActionTarget):
             raise TypeError(f"Can't get configuration for {target=}")
 
         config_service = get_config_service()
 
-        result = retrieve_configuration_for_action(action_orm=action, target=target, config_service=config_service)
+        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
+        result = retrieve_configuration_for_action(
+            action_orm=action, target=target, config_service=config_service, context_gatherer=context_gatherer
+        )
 
         if not result:
             return None, None, None
@@ -254,8 +247,7 @@ class ActionViewSet(
                 action_target=orm_object_to_action_target_descriptor(object_=self.parent_object),
             )
 
-        func = self._run_new if use_new_config_processing(headers=request.headers) else self._run_old
-        task = func(serializer, target_action)
+        task = self._run_new(serializer, target_action)
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
@@ -292,7 +284,7 @@ class ActionViewSet(
         payload = RunActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.job.dto.LaunchOptions(
+            launch=core.legacy.job.dto.LaunchOptions(
                 is_blocking=data["should_block_object"],
                 is_verbose=data["is_verbose"],
             ),
@@ -300,60 +292,16 @@ class ActionViewSet(
             description=data["description"],
         )
 
+        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
+
         return schedule_task(
             action_orm=target_action,
             target=self.parent_object,
             payload=payload,
             job_service=job_service,
             config_service=config_service,
+            context_gatherer=context_gatherer,
             start_task_after_schedule=not use_new_job_scheduler(),
-        )
-
-    def _run_old(self, serializer: Serializer, target_action: Action):
-        configuration = serializer.validated_data["configuration"]
-        description = serializer.validated_data["description"]
-        config = {}
-        adcm_meta = {}
-
-        if configuration is not None:
-            config = configuration["config"]
-            adcm_meta = configuration["adcm_meta"]
-
-        if target_action.config_jinja:
-            prototype_configs, _ = get_jinja_config(
-                action=target_action, cluster_relative_object=self._get_actions_owner()
-            )
-            prototype_configs = [
-                prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
-            ]
-        else:
-            prototype_configs = PrototypeConfig.objects.filter(
-                prototype=target_action.prototype, type="json", action=target_action
-            ).order_by("pk")
-
-        config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
-        attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
-
-        return run_action(
-            action=target_action,
-            obj=self.parent_object,
-            payload=ActionRunPayload(
-                conf=config,
-                attr=attr,
-                hostcomponent={
-                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-                    for entry in serializer.validated_data["host_component_map"]
-                },
-                verbose=serializer.validated_data["is_verbose"],
-                is_blocking=serializer.validated_data["should_block_object"],
-                process=AssociatedProcess(**serializer.validated_data["process"])
-                if serializer.validated_data["process"]
-                else None,
-                description=description,
-            ),
-            # As part of the ADCM-6747 task, we are leaving the old mechanism
-            # for preparing the scripts from the jinja file.
-            feature_scripts_jinja=False,
         )
 
     def _list_actions_available_to_user(self, request: Request) -> Response:

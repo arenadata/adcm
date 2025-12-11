@@ -16,8 +16,8 @@ from itertools import chain
 from operator import itemgetter
 
 from cm.converters import model_to_core_type, orm_object_to_core_type
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.models import Action, ActionHostGroup, Cluster, Component, ConcernItem, Host, Service, TaskLog
-from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import CoreObjectDescriptor
 from rbac.models import Role

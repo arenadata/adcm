@@ -16,8 +16,10 @@ from typing import Any, TypeAlias, Union
 import json
 
 from adcm.feature_flags import use_new_spec_format
-from cm.adcm_config.config import get_default
 from cm.converters import orm_object_to_core_descriptor
+from cm.legacy.adcm_config.config import get_default
+from cm.legacy.services.bundle import BundlePathResolver, PathResolver
+from cm.legacy.variant import get_variant
 from cm.models import (
     ADCMEntity,
     Cluster,
@@ -29,8 +31,6 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.bundle import BundlePathResolver, PathResolver
-from cm.variant import get_variant
 from core.types import ADCMHostGroupType, Descriptor
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
@@ -734,14 +734,14 @@ class ConfigSchemaMixin:
 
             owner = core.config.HostGroupConfigOwner(
                 descriptor=orm_object_to_core_descriptor(owner_obj),
-                info=core.config.ConfigOwnerObjectInfo(state=owner_obj.state),
+                state=owner_obj.state,
                 group=Descriptor(id=instance.pk, type=ADCMHostGroupType.CONFIG),
             )
 
         else:
             owner = core.config.ConfigOwner(
                 descriptor=orm_object_to_core_descriptor(instance),
-                info=core.config.ConfigOwnerObjectInfo(state=instance.state),
+                state=instance.state,
             )
 
         return config_service.retrieve_jsonschema(owner=owner)
