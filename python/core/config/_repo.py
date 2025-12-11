@@ -95,9 +95,21 @@ class ConfigRepoI(Protocol):
     def find_configs_by_ids(self, ids: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
         ...
 
+    @overload
     def find_specs_by_prototype_ids(
-        self, ids: Iterable[PrototypeID], encrypt: EncryptFunc
+        self, ids: Iterable[PrototypeID], with_defaults: Literal[False], encrypt: None = None
+    ) -> dict[PrototypeID, spec.FullSpec]:
+        ...
+
+    @overload
+    def find_specs_by_prototype_ids(
+        self, ids: Iterable[PrototypeID], with_defaults: Literal[True], encrypt: EncryptFunc
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
+        ...
+
+    def find_specs_by_prototype_ids(
+        self, ids: Iterable[PrototypeID], with_defaults: bool, encrypt: EncryptFunc | None = None
+    ) -> dict[PrototypeID, spec.FullSpec] | dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
         ...
 
     # todo: shouldn't be here, see service for more info

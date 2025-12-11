@@ -134,9 +134,21 @@ class ConfigRepo(config.ConfigRepoI):
             for config_id, record in records.items()
         }
 
+    @overload
     def find_specs_by_prototype_ids(
-        self, ids: Iterable[PrototypeID], encrypt: config.EncryptFunc
+        self, ids: Iterable[PrototypeID], with_defaults: Literal[False], encrypt: None = None
+    ) -> dict[PrototypeID, config.spec.FullSpec]:
+        ...
+
+    @overload
+    def find_specs_by_prototype_ids(
+        self, ids: Iterable[PrototypeID], with_defaults: Literal[True], encrypt: config.EncryptFunc
     ) -> dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]:
+        ...
+
+    def find_specs_by_prototype_ids(
+        self, ids: Iterable[PrototypeID], with_defaults: bool, encrypt: config.EncryptFunc | None = None
+    ) -> dict[PrototypeID, config.spec.FullSpec] | dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]:
         ids_ = tuple(ids)
 
         proto_dir_mapping_query = Prototype.objects.filter(id__in=ids_).values_list("id", "type", "bundle__hash")
@@ -159,15 +171,23 @@ class ConfigRepo(config.ConfigRepoI):
             specification = build_specification(
                 records=info.parameter_prototypes, group_customization_flag=info.group_customization_flag
             )
+            result[prototype_id] = specification
+
+        if not (with_defaults and encrypt):  # check "encrypt" only for Pyright
+            return result
+
+        result_with_default = {}
+
+        for prototype_id, specification in result.items():
             defaults = build_defaults(
-                records=info.parameter_prototypes,
+                records=config_prototypes[prototype_id].parameter_prototypes,
                 spec=specification,
                 bundle_root=proto_dir_map[prototype_id],
                 encrypt=encrypt,
             )
-            result[prototype_id] = (specification, defaults)
+            result_with_default[prototype_id] = (specification, defaults)
 
-        return result
+        return result_with_default
 
     # todo: shouldn't be here, see service for more info
     def find_host_group_configurations(

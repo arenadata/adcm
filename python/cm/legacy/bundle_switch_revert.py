@@ -507,7 +507,7 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         owner = orm_object_to_core_descriptor(obj)
         config = config_service.retrieve_configurations_by_id(configurations=(config_id,))[config_id]
         specs = config_service.retrieve_specifications_by_prototypes_with_defaults(
-            prototypes=(previous_prototype_id, new_prototype_id), encrypt_defaults=False
+            prototypes=(previous_prototype_id, new_prototype_id)
         )
         # it is expected to be present since config_id is specified
         new_spec = specs[new_prototype_id]
@@ -686,7 +686,7 @@ def switch_config(
     config_service: core.config.ConfigService,
 ):
     specs_and_defaults = config_service.retrieve_specifications_by_prototypes_with_defaults(
-        prototypes=(new_prototype.pk, old_prototype.pk), encrypt_defaults=False
+        prototypes=(new_prototype.pk, old_prototype.pk)
     )
 
     old = specs_and_defaults[old_prototype.pk]

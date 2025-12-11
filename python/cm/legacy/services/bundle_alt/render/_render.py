@@ -146,6 +146,10 @@ def _render_template(
     context_args: T,
 ) -> list[dict]:
     context = build_context(context_args)
+    # TODO: Decryption of the Ansible secret is a relatively fast operation.
+    #  But decrypting 192 secret fields takes about 1.8 seconds. See bundle from ADCM-7481.
+    #  It seems we can optimize this. I think that for template rendering,
+    #  we may not encrypt the fields when preparing the context in order to decrypt them later.
     decrypted_context = decrypt_secrets(context)
 
     renderer = get_renderer(template=template, environment=RendererEnv(discovery_root=environment.bundle_root))
