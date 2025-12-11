@@ -190,19 +190,14 @@ class ConfigService:
         return self.repo.find_configs_by_ids(ids=configurations)
 
     def retrieve_specifications_by_prototypes(
-        self, prototypes: Iterable[PrototypeID], encrypt_defaults: bool = True
+        self, prototypes: Iterable[PrototypeID]
     ) -> dict[PrototypeID, spec.FullSpec]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return {
-            id_: spec
-            for id_, (spec, _) in self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt).items()
-        }
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, with_defaults=False, encrypt=None)
 
     def retrieve_specifications_by_prototypes_with_defaults(
-        self, prototypes: Iterable[PrototypeID], *, encrypt_defaults: bool = True
+        self, prototypes: Iterable[PrototypeID]
     ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return self.repo.find_specs_by_prototype_ids(ids=prototypes, encrypt=encrypt)
+        return self.repo.find_specs_by_prototype_ids(ids=prototypes, with_defaults=True, encrypt=self.secrets.encrypt)
 
     # todo: bad, should accept host groups or direct ids,
     # host groups retrieval should be in separate service/repo
