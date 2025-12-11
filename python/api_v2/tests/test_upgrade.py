@@ -25,11 +25,19 @@ from cm.models import (
 from cm.tests.mocks.task_runner import RunTaskMock
 from init_db import init
 from rbac.upgrade.role import init_roles
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 from rest_framework.test import APITestCase
 
 from api_v2.prototype.utils import accept_license
 from api_v2.tests.base import BaseAPITestCase
+
+ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 
 class TestUpgrade(BaseAPITestCase):
@@ -745,6 +753,20 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(data["code"], "UPGRADE_OPERATION_ERROR")
         self.assertIn("/variant_config_type_strict", data["desc"])
         self.assertIn("not in variant list", data["desc"])
+
+    def test_adcm_7535_encrypt_secrets_from_new_defaults(self):
+        old_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_old")
+        new_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_new")
+        cluster = self.add_cluster(bundle=old_bundle, name="nice")
+        upgrade = Upgrade.objects.get(bundle_id=new_bundle.pk)
+
+        response = self.client.v2[cluster, "upgrades", upgrade, "run"].post(data={})
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        cluster.refresh_from_db()
+        config = ConfigLog.objects.get(id=cluster.config.current)
+        self.assertTrue(config.config["new"].startswith(ANSIBLE_VAULT_HEADER))
+        self.assertTrue(config.config["exists"].startswith(ANSIBLE_VAULT_HEADER))
 
 
 class TestAdcmUpgrade(APITestCase):

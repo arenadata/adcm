@@ -106,11 +106,8 @@ class ConfigService:
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
         return self.repo.get_spec(owner=owner, defaults=False)
 
-    def retrieve_specification_with_defaults(
-        self, owner: CoreObjectDescriptor, *, encrypt_defaults: bool = True
-    ) -> tuple[spec.FullSpec, Defaults]:
-        encrypt = self.secrets.encrypt if encrypt_defaults else return_as_is
-        return self.repo.get_spec(owner=owner, defaults=encrypt)
+    def retrieve_specification_with_defaults(self, owner: CoreObjectDescriptor) -> tuple[spec.FullSpec, Defaults]:
+        return self.repo.get_spec(owner=owner, defaults=self.secrets.encrypt)
 
     def retrieve_partial_specification(
         self,
