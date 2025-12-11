@@ -38,16 +38,16 @@ FROM python:3.10-alpine
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
-        bash \
-        gnupg \
-        nginx \
-        openldap \
-        openssh-client \
-        openssh-keygen \
-        openssl \
-        rsync \
-        runit \
-        sshpass && \
+    bash \
+    gnupg \
+    nginx \
+    openldap \
+    openssh-client \
+    openssh-keygen \
+    openssl \
+    rsync \
+    runit \
+    sshpass && \
     apk cache clean --purge
 
 RUN python -m pip install -U setuptools && \
@@ -66,13 +66,9 @@ COPY python/ansible_share/plugins /usr/share/ansible/plugins
 COPY python /adcm/python
 COPY --from=python_builder /usr/local/bin /usr/local/bin
 COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-COPY --from=hub.adsw.io/adcm/ansible:2.9.27-python3.10-ci-4847 /venv/2.9 /venv/2.9
-COPY --from=hub.adsw.io/adcm/ansible:2.16.4-python3.10-ci-4847 /venv/2.16 /venv/2.16
-COPY --from=hub.adsw.io/adcm/ansible:2.16.4-python3.10-ci-4847 /root/.ansible/collections /root/.ansible/collections
-# TODO: Use public repo after prepare, see CI-4847
-#COPY --from=arenadata/ansible:2.9.27-python3.10 /venv/2.9 /venv/2.9
-#COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
-#COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
+COPY --from=arenadata/ansible:2.9.27-python3.10 /venv/2.9 /venv/2.9
+COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
+COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
 
 RUN python -m pip uninstall -y pip && \
     rm -rf /root/.cache/pip
