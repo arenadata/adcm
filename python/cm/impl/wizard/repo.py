@@ -41,7 +41,7 @@ class WizardRepo(wizard.WizardRepoI):
 
 def get_steps_with_data(process_id: wizard.ProcessID, build_defaults_: _BuildDefaults) -> list[wizard.StepWithData]:
     step_input_relation = "processstepinput"
-    query = ProcessStep.objects.select_related(step_input_relation).filter(process_id=process_id)
+    query = ProcessStep.objects.select_related(step_input_relation).filter(process_id=process_id).order_by("id")
     serialize = partial(serialize_step, extract_data=return_step_input, build_defaults_=build_defaults_)
     return list(map(serialize, query))
 
@@ -68,7 +68,7 @@ def serialize_step(
 
     match type_:
         case wizard.StepType.CONFIGURATION:
-            if spec is not None:
+            if orm_step.step_spec is not None:
                 spec = to_step_config_spec(orm_step.step_spec, build_defaults_=build_defaults_)
 
             if step_input is not None:
@@ -79,7 +79,7 @@ def serialize_step(
             return step, data
 
         case wizard.StepType.OPERATION:
-            if spec is not None:
+            if orm_step.step_spec is not None:
                 spec = to_step_operation_spec(orm_step.step_spec)
 
             if step_input is not None:
@@ -89,7 +89,7 @@ def serialize_step(
             return step, data
 
         case wizard.StepType.MAPPING:
-            if spec is not None:
+            if orm_step.step_spec is not None:
                 spec = to_step_mapping_spec(orm_step.step_spec)
 
             if step_input is not None:
