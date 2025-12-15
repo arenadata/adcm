@@ -3,6 +3,7 @@ import UnlinkClusterHostsDialog from '@pages/cluster/ClusterHosts/ClusterHostsAc
 import AddClusterHostsDialog from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/AddClusterHostsDialog/AddClusterHostsDialog';
 import ClusterHostsMaintenanceModeDialog from './ClusterHostsMaintenanceModeDialog/ClusterHostsMaintenanceModeDialog';
 import ClusterHostsDynamicActionDialog from './ClusterHostsDynamicActionDialog/ClusterHostsDynamicActionDialog';
+import ClusterHostsActionWizardDialog from './ClusterHostsDynamicActionWizardDialog/ClusterHostsDynamicActionWizardDialog';
 
 const ClusterHostsActionsDialogs: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ const ClusterHostsActionsDialogs: React.FC = () => {
       <UnlinkClusterHostsDialog />
       <ClusterHostsMaintenanceModeDialog />
       <ClusterHostsDynamicActionDialog />
+      <ClusterHostsActionWizardDialog />
     </>
   );
 };

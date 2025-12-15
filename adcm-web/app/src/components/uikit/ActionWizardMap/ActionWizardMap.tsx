@@ -1,19 +1,33 @@
 import type React from 'react';
 import s from './ActionWizardMap.module.scss';
 import MapItemStages from '@uikit/ActionWizardMap/ActionWizardMapItem/ActionWizardMapItem';
-import type { AdcmActionWizardProcess } from '@models/adcm/wizard';
+import type { AdcmActionWizardProcess, AdcmWizardJobsData } from '@models/adcm/wizard';
 
 interface ActionWizardMapProps {
   process: AdcmActionWizardProcess;
   wizardTitle: string;
+  jobsData: AdcmWizardJobsData;
+  onSetBrokenStepError: (error?: string) => void;
+  onSetSelectedStepId: (id: number) => void;
 }
 
-const ActionWizardMap: React.FC<ActionWizardMapProps> = ({ process, wizardTitle }: ActionWizardMapProps) => {
+const ActionWizardMap: React.FC<ActionWizardMapProps> = ({
+  process,
+  wizardTitle,
+  jobsData,
+  onSetBrokenStepError,
+  onSetSelectedStepId,
+}: ActionWizardMapProps) => {
   return (
     <div>
       <div className={s.actionWizardMap__title}>{wizardTitle}</div>
       <div className={s.actionWizardMap}>
-        <MapItemStages process={process} />
+        <MapItemStages
+          process={process}
+          jobsData={jobsData}
+          onSetBrokenStepError={onSetBrokenStepError}
+          onSetSelectedStepId={onSetSelectedStepId}
+        />
       </div>
     </div>
   );

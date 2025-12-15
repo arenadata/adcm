@@ -11,7 +11,6 @@ import type {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { arrayToHash } from '@utils/arrayUtils';
 import type { SortDirection } from '@models/table';
-import { setHostComponentMapDelta } from '@store/adcm/clusters/clustersWizardActionsSlice';
 import {
   getComponentsMapping,
   getHostsMapping,
@@ -20,8 +19,12 @@ import {
   mapHostsToComponent,
   validate,
 } from '@pages/cluster/ClusterMapping/ClusterMapping.utils';
+import {
+  cleanupClustersWizardMapping,
+  setHostComponentMapDelta,
+} from '@store/adcm/clusters/clustersWizardMappingSlice';
 
-export const useClusterDynamicActionWizardMapping = (
+export const useActionWizardMapping = (
   mapping: AdcmMapping[],
   hosts: AdcmHostShortView[],
   components: AdcmMappingComponent[],
@@ -51,6 +54,12 @@ export const useClusterDynamicActionWizardMapping = (
   useEffect(() => {
     dispatch(setHostComponentMapDelta(getMappingChanges()));
   }, [localMapping]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(cleanupClustersWizardMapping());
+    };
+  }, [dispatch]);
 
   const getMappingChanges = useCallback(() => {
     // Create sets for quick lookups using a unique key per pair

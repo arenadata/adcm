@@ -64,6 +64,44 @@ const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
   },
 );
 
+interface AdcmCreateProcessPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+  actionId: number;
+}
+
+const createClusterServiceComponentsDynamicActionProcess = createAsyncThunk(
+  'adcm/services/serviceComponents/serviceComponentDynamicActions/createClusterServiceDynamicActionProcess',
+  async ({ clusterId, serviceId, componentId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    const {
+      adcm: {
+        serviceComponentsDynamicActions: {
+          dialog: { component },
+        },
+      },
+    } = thunkAPI.getState();
+
+    try {
+      const process = await AdcmClusterServiceComponentsApi.createClusterServiceComponentActionWizardProcess(
+        clusterId,
+        serviceId,
+        componentId,
+        actionId,
+      );
+
+      if (component) {
+        await thunkAPI.dispatch(openClusterServiceComponentDynamicActionDialog({ component, actionId }));
+      }
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 interface OpenClusterServiceComponentDynamicActionPayload {
   component: AdcmServiceComponent;
   actionId: number;
@@ -88,21 +126,26 @@ const openClusterServiceComponentDynamicActionDialog = createAsyncThunk(
   },
 );
 
-interface RunClusterServiceComponentDynamicActionPayload {
-  component: AdcmServiceComponent;
+export interface RunClusterServiceComponentDynamicActionPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
   actionId: number;
   actionRunConfig: AdcmDynamicActionRunConfig;
 }
 
 const runClusterServiceComponentDynamicAction = createAsyncThunk(
   'adcm/services/serviceComponents/serviceComponentDynamicActions/runClusterServiceComponentDynamicAction',
-  async ({ component, actionId, actionRunConfig }: RunClusterServiceComponentDynamicActionPayload, thunkAPI) => {
+  async (
+    { clusterId, serviceId, componentId, actionId, actionRunConfig }: RunClusterServiceComponentDynamicActionPayload,
+    thunkAPI,
+  ) => {
     try {
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterServiceComponentsApi.runClusterServiceComponentAction(
-        component.cluster.id,
-        component.service.id,
-        component.id,
+        clusterId,
+        serviceId,
+        componentId,
         actionId,
         actionRunConfig,
       );
@@ -144,6 +187,10 @@ const serviceComponentsDynamicActionsSlice = createSlice({
     cleanupClusterServiceComponentsDynamicActions() {
       return createInitialState();
     },
+    cleanupClusterServiceComponentsActionDetails(state) {
+      // @ts-ignore
+      state.dialog.actionDetails = createInitialState().dialog.actionDetails;
+    },
     closeClusterServiceComponentsDynamicActionDialog(state) {
       state.dialog = createInitialState().dialog;
     },
@@ -168,12 +215,16 @@ const serviceComponentsDynamicActionsSlice = createSlice({
   },
 });
 
-export const { cleanupClusterServiceComponentsDynamicActions, closeClusterServiceComponentsDynamicActionDialog } =
-  serviceComponentsDynamicActionsSlice.actions;
+export const {
+  cleanupClusterServiceComponentsDynamicActions,
+  cleanupClusterServiceComponentsActionDetails,
+  closeClusterServiceComponentsDynamicActionDialog,
+} = serviceComponentsDynamicActionsSlice.actions;
 export {
   loadClusterServiceComponentsDynamicActions,
   openClusterServiceComponentDynamicActionDialog,
   runClusterServiceComponentDynamicAction,
+  createClusterServiceComponentsDynamicActionProcess,
 };
 
 export default serviceComponentsDynamicActionsSlice.reducer;

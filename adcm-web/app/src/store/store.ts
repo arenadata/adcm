@@ -15,6 +15,8 @@ import clusterUpgradesSlice from '@store/adcm/clusters/clusterUpgradesSlice';
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
 import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import clusterHostsWizardSlice from '@store/adcm/cluster/hosts/hostsWizardSlice';
+import clusterHostsWizardActionsSlice from '@store/adcm/cluster/hosts/hostsWizardActionsSlice';
 import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import hostComponentsDynamicActionsSlice from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
@@ -47,6 +49,10 @@ import clusterOverviewServicesSlice from '@store/adcm/cluster/overview/overviewS
 import clusterOverviewHostsSlice from '@store/adcm/cluster/overview/overviewHostsSlice';
 import clusterOverviewServicesTableSlice from '@store/adcm/cluster/overview/overviewServicesTableSlice';
 import clusterOverviewHostsTableSlice from '@store/adcm/cluster/overview/overviewHostsTableSlice';
+import clusterServicesWizardSlice from '@store/adcm/cluster/services/servicesWizardSlice';
+import clusterServicesWizardActionsSlice from '@store/adcm/cluster/services/servicesWizardActionsSlice';
+import clusterServiceComponentsWizardSlice from '@store/adcm/cluster/services/serviceComponents/serviceComponentsWizardSlice';
+import clusterServiceComponentsWizardActionsSlice from '@store/adcm/cluster/services/serviceComponents/serviceComponentsWizardActionsSlice';
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import { wsMiddleware } from './middlewares/wsMiddeware';
@@ -108,6 +114,7 @@ import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice';
 
 import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/configurationSlice';
 import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice';
+import clustersWizardMappingSlice from '@store/adcm/clusters/clustersWizardMappingSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -119,12 +126,19 @@ const rootReducer = combineReducers({
     clustersDynamicActions: clustersDynamicActionsSlice,
     clustersWizard: clustersWizardSlice,
     clustersWizardActions: clustersWizardActionsSlice,
+    clustersWizardMapping: clustersWizardMappingSlice,
     clusterUpgrades: clusterUpgradesSlice,
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,
     clusterHost: clusterHostSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsDynamicActions: clusterHostsDynamicActionsSlice,
+    clusterHostsWizard: clusterHostsWizardSlice,
+    clusterHostsWizardActions: clusterHostsWizardActionsSlice,
+    clusterServicesWizard: clusterServicesWizardSlice,
+    clusterServicesWizardActions: clusterServicesWizardActionsSlice,
+    clusterServiceComponentsWizard: clusterServiceComponentsWizardSlice,
+    clusterServiceComponentsWizardActions: clusterServiceComponentsWizardActionsSlice,
     actionHostGroups: actionHostGroupsSlice,
     actionHostGroupsTable: actionHostGroupsTableSlice,
     actionHostGroupsActions: actionHostGroupsActionsSlice,

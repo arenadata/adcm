@@ -17,6 +17,9 @@ import type {
 import type { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
+import { AdcmWizardApi } from '@api/adcm/wizard';
+import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
+import type { RequestOptions } from '@api/httpClient/HttpClient';
 
 export class AdcmClusterHostsApi {
   public static async getClusterHosts(
@@ -115,5 +118,48 @@ export class AdcmClusterHostsApi {
     );
 
     return response.data;
+  }
+
+  // action wizard
+  public static async createHostActionWizardProcess(clusterId: number, hostId: number, actionId: number) {
+    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/`;
+
+    return await AdcmWizardApi.createProcess(endpoint);
+  }
+
+  public static async getHostActionWizardProcess(
+    clusterId: number,
+    hostId: number,
+    actionId: number,
+    processId: number,
+  ) {
+    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/`;
+
+    return await AdcmWizardApi.getProcess(endpoint);
+  }
+
+  public static async getHostActionWizardStep(
+    clusterId: number,
+    hostId: number,
+    actionId: number,
+    processId: number,
+    stepId: number,
+    options?: RequestOptions,
+  ) {
+    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
+
+    return await AdcmWizardApi.getStep(endpoint, options);
+  }
+
+  public static async createHostActionWizardOperation(
+    clusterId: number,
+    hostId: number,
+    actionId: number,
+    processId: number,
+    operation: AdcmWizardProcessOperationPayload,
+  ) {
+    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/operation/`;
+
+    return await AdcmWizardApi.postOperation(endpoint, operation);
   }
 }
