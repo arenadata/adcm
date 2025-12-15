@@ -29,7 +29,7 @@ const ClusterHostsDynamicActionsButton: React.FC<ClusterHostsDynamicActionsButto
   const isDisabled = useMemo(() => isBlockingConcernPresent(host.concerns), [host.concerns]);
 
   const handleSelectAction = (actionId: number) => {
-    dispatch(openClusterHostDynamicActionDialog({ cluster, host, actionId }));
+    dispatch(openClusterHostDynamicActionDialog({ cluster, clusterHost: host, actionId }));
   };
 
   const DynamicActionsTrigger = type === 'icon' ? DynamicActionsIcon : DynamicActionsButton;

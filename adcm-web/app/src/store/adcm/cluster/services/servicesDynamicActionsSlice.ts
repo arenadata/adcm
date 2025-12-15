@@ -54,6 +54,38 @@ const loadClusterServicesDynamicActions = createAsyncThunk(
   },
 );
 
+interface AdcmCreateProcessPayload {
+  clusterId: number;
+  serviceId: number;
+  actionId: number;
+}
+
+const createClusterServiceDynamicActionProcess = createAsyncThunk(
+  'adcm/serviceDynamicActions/createClusterServiceDynamicActionProcess',
+  async ({ clusterId, serviceId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    const {
+      adcm: {
+        servicesDynamicActions: {
+          dialog: { service, cluster },
+        },
+      },
+    } = thunkAPI.getState();
+
+    try {
+      const process = await AdcmClusterServicesApi.createServiceActionWizardProcess(clusterId, serviceId, actionId);
+
+      if (cluster && service) {
+        await thunkAPI.dispatch(openClusterServiceDynamicActionDialog({ cluster, service, actionId }));
+      }
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 interface OpenClusterServiceDynamicActionPayload {
   cluster: AdcmCluster;
   service: AdcmService;
@@ -78,19 +110,19 @@ const openClusterServiceDynamicActionDialog = createAsyncThunk(
   },
 );
 
-interface RunClusterDynamicActionPayload {
-  cluster: AdcmCluster;
-  service: AdcmService;
+export interface RunClusterServiceDynamicActionPayload {
+  clusterId: number;
+  serviceId: number;
   actionId: number;
   actionRunConfig: AdcmDynamicActionRunConfig;
 }
 
 const runClusterServiceDynamicAction = createAsyncThunk(
   'adcm/serviceDynamicActions/runClusterServiceDynamicAction',
-  async ({ cluster, service, actionId, actionRunConfig }: RunClusterDynamicActionPayload, thunkAPI) => {
+  async ({ clusterId, serviceId, actionId, actionRunConfig }: RunClusterServiceDynamicActionPayload, thunkAPI) => {
     try {
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
-      await AdcmClusterServicesApi.runClusterServiceAction(cluster.id, service.id, actionId, actionRunConfig);
+      await AdcmClusterServicesApi.runClusterServiceAction(clusterId, serviceId, actionId, actionRunConfig);
 
       thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
@@ -127,6 +159,10 @@ const servicesDynamicActionsSlice = createSlice({
     cleanupClusterServiceDynamicActions() {
       return createInitialState();
     },
+    cleanupClusterServiceActionDetails(state) {
+      // @ts-ignore
+      state.dialog.actionDetails = createInitialState().dialog.actionDetails;
+    },
     closeClusterServiceDynamicActionDialog(state) {
       state.dialog = createInitialState().dialog;
     },
@@ -152,8 +188,16 @@ const servicesDynamicActionsSlice = createSlice({
   },
 });
 
-export const { cleanupClusterServiceDynamicActions, closeClusterServiceDynamicActionDialog } =
-  servicesDynamicActionsSlice.actions;
-export { loadClusterServicesDynamicActions, openClusterServiceDynamicActionDialog, runClusterServiceDynamicAction };
+export const {
+  cleanupClusterServiceDynamicActions,
+  cleanupClusterServiceActionDetails,
+  closeClusterServiceDynamicActionDialog,
+} = servicesDynamicActionsSlice.actions;
+export {
+  loadClusterServicesDynamicActions,
+  openClusterServiceDynamicActionDialog,
+  runClusterServiceDynamicAction,
+  createClusterServiceDynamicActionProcess,
+};
 
 export default servicesDynamicActionsSlice.reducer;

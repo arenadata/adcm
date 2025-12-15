@@ -33,6 +33,7 @@ export enum HelperLinkActions {
   Documentation = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html',
 }
 
+export const wizardProcessConflictErrorCode = 'ACTION_PROCESS_UPDATE_CONFLICT';
 export enum HttpStatus {
   // 2xx - Successful responses
   OK = 200,

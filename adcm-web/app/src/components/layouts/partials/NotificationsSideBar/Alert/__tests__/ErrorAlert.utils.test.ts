@@ -1,4 +1,4 @@
-import { KNOWN_HTML_TAGS, escapeNonHtmlTags } from '../ErrorAlert.utils.ts';
+import { KNOWN_HTML_TAGS, escapeNonHtmlTags } from '../ErrorAlert.utils';
 
 describe('escapeNonHtmlTags', () => {
   it('should escape non-HTML tags', () => {

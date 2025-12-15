@@ -145,6 +145,10 @@ const clustersDynamicActionsSlice = createSlice({
     cleanupClusterDynamicActions() {
       return createInitialState();
     },
+    cleanupClusterActionDetails(state) {
+      // @ts-ignore
+      state.dialog.actionDetails = createInitialState().dialog.actionDetails;
+    },
     closeClusterDynamicActionDialog(state) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -171,7 +175,8 @@ const clustersDynamicActionsSlice = createSlice({
   },
 });
 
-export const { cleanupClusterDynamicActions, closeClusterDynamicActionDialog } = clustersDynamicActionsSlice.actions;
+export const { cleanupClusterDynamicActions, cleanupClusterActionDetails, closeClusterDynamicActionDialog } =
+  clustersDynamicActionsSlice.actions;
 export {
   loadClustersDynamicActions,
   createClusterDynamicActionProcess,
