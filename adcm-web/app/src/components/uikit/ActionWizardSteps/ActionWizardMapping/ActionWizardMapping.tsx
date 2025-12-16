@@ -78,7 +78,7 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
     if (clusterId && !Number.isNaN(clusterId)) {
       dispatch(getMappings({ clusterId }));
     }
-  }, [clusterId, dispatch]);
+  }, [clusterId, step.state, dispatch]);
 
   useEffect(() => {
     if (hasSaveError && localMapping !== prevLocalMapping) {
