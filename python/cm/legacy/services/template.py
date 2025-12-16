@@ -42,7 +42,11 @@ class TemplateBuilder:
         try:
             env = Environment(
                 loader=FileSystemLoader([str(self._template_path.parent), str(self._bundle_path)]),
-                autoescape=select_autoescape(default_for_string=False, enabled_extensions=("html", "htm")),
+                autoescape=select_autoescape(
+                    default_for_string=True,
+                    default=True,
+                    disabled_extensions=("j2", "jinja2", "yml", "yaml"),
+                ),
             )
             template = env.get_template(self._template_path.name)
             data_yaml = template.render(**self._context)
