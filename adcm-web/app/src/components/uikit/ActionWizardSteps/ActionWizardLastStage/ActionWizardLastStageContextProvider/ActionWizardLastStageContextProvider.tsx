@@ -10,7 +10,7 @@ interface LastStageContextProviderProps {
 
 const initialFormData: AdcmWizardLastStageContextProps = {
   isVerbose: false,
-  shouldBlockObject: false,
+  shouldBlockObject: true,
   description:
     'Running a performance check with new parameters.\n' +
     'Comparing results with and without cache, focusing on anomalies and overall behavior.',
