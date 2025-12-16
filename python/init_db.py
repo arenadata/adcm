@@ -35,7 +35,7 @@ from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
 from use_cases import bundle
 
-TOKEN_LENGTH = 2
+TOKEN_LENGTH = 20
 
 
 logger = logging.getLogger("stream_std")
