@@ -1,6 +1,5 @@
 import type React from 'react';
 import { useMemo } from 'react';
-import { useState } from 'react';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import { Input, Switch, WarningMessage } from '@uikit';
 import { useStore } from '@hooks';
@@ -9,8 +8,8 @@ import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/Action
 
 const ActionWizardLastStage: React.FC = () => {
   const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
-  const [isRaiseNonBlockingConcerns, setIsRaiseNonBlockingConcerns] = useState(false);
   const { formData, onChange } = useActionWizardLastStageContext();
+  const isRaiseNonBlockingConcerns = !formData.shouldBlockObject;
 
   const disclaimerText = useMemo(() => {
     if (actionDetails?.disclaimer && actionDetails.disclaimer !== '') {
@@ -20,9 +19,7 @@ const ActionWizardLastStage: React.FC = () => {
   }, [actionDetails]);
 
   const handleRaiseConcernsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const isEnabled = event.target.checked;
-    setIsRaiseNonBlockingConcerns(isEnabled);
-    onChange({ shouldBlockObject: !isEnabled });
+    onChange({ shouldBlockObject: !event.target.checked });
   };
 
   const handleVerboseChange = (event: React.ChangeEvent<HTMLInputElement>) => {
