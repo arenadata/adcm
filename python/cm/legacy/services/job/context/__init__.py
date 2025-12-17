@@ -23,6 +23,7 @@ from cm.legacy.services.job.context._base import (
     get_basic_info_for_hosts,
     get_cluster_vars,
     get_inventory_data,
+    get_run_context,
     sort_hosts_within_groups,
 )
 from cm.legacy.services.job.context._config import get_adcm_configuration, get_config_info, get_objects_configurations
@@ -58,4 +59,5 @@ __all__ = [
     "get_inventory_data",
     "get_objects_configurations",
     "sort_hosts_within_groups",
+    "get_run_context",
 ]
