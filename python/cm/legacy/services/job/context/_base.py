@@ -16,7 +16,7 @@ from typing import Iterable
 
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.legacy.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.legacy.job.types import RelatedObjects, TaskMappingDelta
+from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -452,3 +452,10 @@ def add_mapping_groups_from_process_steps(
     process_mapping_delta: dict[HostGroupName, set[tuple[HostID, HostName]]],
 ) -> dict[str, set[tuple[HostID, HostName]]]:
     return host_groups | process_mapping_delta
+
+
+def get_run_context(task: Task) -> dict[str, str | int]:
+    context = {f"{k}_id": v["id"] for k, v in task.selector.items() if k != "action_host_group"}
+    context["type"] = task.owner.type.value
+
+    return context

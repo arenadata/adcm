@@ -256,15 +256,11 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
 
 def internal_script_config_apply(task: Task, job: Job) -> int:
-    owner_model = core_type_to_model(core_type=task.owner.type)
-    # need to think if the owner object may be deleted during execution, need we check?
-    owner = owner_model.objects.get(id=task.owner.id)
-
     func = _apply_config_changes_new if use_new_config_processing() else _apply_config_changes
 
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
-        changing_object = _extract_apply_config_target(owner, change)
+        changing_object = _extract_apply_config_target(task=task, change=change)
         func(job.id, changing_object, change["parameters"], f"{task.action.display_name} process update")
     return 0
 
@@ -405,17 +401,13 @@ def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
     return changes
 
 
-def _extract_apply_config_target(owner: ADCM | CoreObject, change: dict) -> ADCM | CoreObject:
+def _extract_apply_config_target(task: Task, change: dict) -> ADCM | CoreObject:
     # in order to preserve single mechanism with adcm_config plugin.
     # Requires refactoring to move it common location with plugins
-    from ansible_plugin.base import (
-        CoreObjectTargetDescription,
-        _from_target_description,
-        build_vars_context_from_descriptor,
-    )
+    from ansible_plugin.base import CoreObjectTargetDescription, VarsContextSection, _from_target_description
     from ansible_plugin.errors import PluginTargetDetectionError
 
-    context = build_vars_context_from_descriptor(orm_object_to_core_descriptor(owner))
+    context = VarsContextSection(**context_m.get_run_context(task=task))
     target_description = CoreObjectTargetDescription(**change["object"])
 
     try:
@@ -538,10 +530,6 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
 def prepare_ansible_job_config(
     task: Task, job: Job, configuration: ExternalSettings, topology: ClusterTopology | None = None
 ) -> dict[str, Any]:
-    # prepare context
-    context = {f"{k}_id": v["id"] for k, v in task.selector.items() if k != "action_host_group"}
-    context["type"] = task.owner.type.value.replace("hostp", "p")
-
     job_data = JobData(
         id=job.id,
         action=task.action.name,
@@ -586,7 +574,7 @@ def prepare_ansible_job_config(
 
     return JobConfig(
         adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=get_adcm_configuration(adcm)),
-        context=context,
+        context=context_m.get_run_context(task=task),
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),
             log_dir=str(configuration.adcm.log_dir),
