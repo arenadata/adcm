@@ -1,3 +1,0 @@
-#!/bin/sh 
-
-uwsgi --stop /run/uwsgi.pid

@@ -1,7 +1,0 @@
----
-root:
-  match: list
-  item: integer
-
-integer:
-  match: int

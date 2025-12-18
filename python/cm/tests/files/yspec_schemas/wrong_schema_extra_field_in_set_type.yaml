@@ -1,7 +1,0 @@
----
-root:
-  match: set
-  variants:
-    - v1
-    - v2
-  extra: field

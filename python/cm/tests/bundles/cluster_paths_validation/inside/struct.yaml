@@ -1,7 +1,0 @@
----
-root:
-  match: dict
-  items:
-    integer: integer
-integer:
-  match: int

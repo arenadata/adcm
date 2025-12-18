@@ -1,8 +1,0 @@
----
-root:
-  match: dict_key_selection
-  variants:
-    string: string
-
-string:
-  match: string

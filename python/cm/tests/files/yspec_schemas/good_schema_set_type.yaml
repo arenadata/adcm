@@ -1,7 +1,0 @@
----
-root:
-  match: set
-  variants:
-    - variant1
-    - variant2
-    - variant3

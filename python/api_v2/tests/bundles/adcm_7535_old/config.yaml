@@ -1,8 +1,0 @@
-- type: cluster
-  name: aa
-  version: 1
-
-  config:
-    - name: exists
-      type: password
-      default: aaa

@@ -1,7 +1,0 @@
----
-root:
-  match: dict
-  default_item: string
-
-string:
-  match: string

@@ -1,9 +1,0 @@
-<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-        d="M18.8891 12.2205V18.8872H12.2224M7.778 18.8872H1.11133V12.2205M1.11133 7.77604V1.10938H7.778M12.2224 1.10938H18.8891V7.77604"
-        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M18.5 1.5L1.5 18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-        stroke-dasharray="10 8" />
-    <path d="M1.5 1.5L18.5 18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-        stroke-dasharray="10 8" />
-</svg>

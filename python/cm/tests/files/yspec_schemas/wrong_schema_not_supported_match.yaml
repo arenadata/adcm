@@ -1,4 +1,0 @@
----
-root:
-  match: not_supported_match
-  item: variable

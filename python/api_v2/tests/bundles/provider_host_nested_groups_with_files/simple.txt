@@ -1,6 +1,0 @@
-just a bunch of test
-in a file
-{
-what else have you expected?
-}
-# ah?

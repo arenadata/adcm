@@ -1,8 +1,0 @@
-**/*.git*
-.*
-go/**/.*
-python/**/.*
-**/tests/
-data
-dev
-venv
