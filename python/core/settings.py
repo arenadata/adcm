@@ -16,8 +16,9 @@ from pathlib import Path
 
 @dataclass(slots=True)
 class Directories:
-    files: Path
     bundles: Path
+    downloads: Path
+    files: Path
 
 
 @dataclass(slots=True)

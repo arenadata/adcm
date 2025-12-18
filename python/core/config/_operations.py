@@ -15,10 +15,9 @@ from dataclasses import dataclass
 from functools import partial
 from itertools import chain, filterfalse
 from pathlib import Path
-from typing import Any, Callable, Generator, Literal, TypeAlias, TypeVar
-import logging
+from typing import Any, Callable, Final, Generator, Literal, TypeAlias, TypeVar
 
-from core.config import spec
+from core.config import _yspec, spec
 from core.config._config import (
     MissingKeyError,
     build_apply_if,
@@ -63,7 +62,9 @@ from core.config._validate import (
 )
 from core.result import Fail, Success, is_fail
 
-log = logging.getLogger("core.config")
+# Constants
+
+_FORBIDDEN_YSPEC_RULES: Final = frozenset({"one_of", "dict_key_selection", "set", "none", "any"})
 
 # Types
 
@@ -104,7 +105,6 @@ _FileIdentifier = TypeVar("_FileIdentifier")
 _ParameterPathBuilder: TypeAlias = Callable[[_FileParameterIdentifier], str]
 
 _HasChanged: TypeAlias = bool
-
 
 # Public
 
@@ -170,6 +170,34 @@ def prepare_initial_config_of_host_group(
     parameter_attrs = {k: Attributes(is_synced=True) for k in specification.parameters if k in present_parameter_values}
 
     return Success(Configuration(values=configuration.values, attributes=owner_attrs | parameter_attrs))
+
+
+def validate_structure_parameters_schema(
+    specification: spec.FullSpec, yspec_schema: dict
+) -> Success[None] | Fail[Violations]:
+    for name, parameter in specification.parameters.items():
+        if parameter.type == spec.p.ParameterType.STRUCTURE:
+            param_schema = parameter.yspec
+            try:
+                _yspec.process_rule(data=param_schema, rules=yspec_schema, name="root")
+            except _yspec.FormatError as error:
+                message = f"yspec schema is incorrect: {error}"
+                violation = Violation(parameter=name, reason=message, check="value")
+                return Fail([violation])
+
+            success, error = _yspec.check_rule(rules=param_schema)
+            if not success:
+                message = f"yspec schema is incorrect: {error}"
+                violation = Violation(parameter=name, reason=message, check="value")
+                return Fail([violation])
+
+            for value in param_schema.values():
+                if value["match"] in _FORBIDDEN_YSPEC_RULES:
+                    message = f"yspec schema is incorrect: '{value['match']}' rule is not supported"
+                    violation = Violation(parameter=name, reason=message, check="value")
+                    return Fail([violation])
+
+    return Success(None)
 
 
 def validate_values(

@@ -1,0 +1,12 @@
+- type: cluster
+  contract_version: "2.0"
+  
+  name: "simple"
+  version: "2.4"
+
+- type: service
+  name: "simple_too"
+  version: 1.3
+
+  components:
+    even_simplier:

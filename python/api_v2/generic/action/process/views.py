@@ -88,7 +88,7 @@ class ActionProcessViewSet(
         ActionProcessDBError: "ACTION_PROCESS_UPDATE_CONFLICT",
         ActionProcessOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
         ActionProcessNotFoundError: "ACTION_PROCESS_NOT_FOUND",
-        core.config.OperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
+        core.config.ConfigOperationError: "ACTION_PROCESS_OPERATION_CONFLICT",
         ActionProcessPayloadError: "BAD_REQUEST",
     }
 

@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
 from cm import models
 from cm.legacy.services import adcm
 from cm.legacy.services import bundle_alt as bundle
-from django.conf import settings
+from core.errors import localize_error
+from core.settings import Directories
+from core.types import BundleID
 from django.core.files import File
 from django.db.transaction import atomic
 from infra.services import get_config_service
@@ -24,38 +27,42 @@ from rbac.upgrade.role import prepare_action_roles
 import core
 
 
-@bundle.errors.convert_bundle_errors_to_adcm_ex
-def parse_bundle_from_request_to_db(
-    file_from_request: File,
-) -> models.Bundle:
-    adcm_configuration = adcm.get_adcm_configuration()
-    verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
+@dataclass(slots=True)
+class ParseBundleFromRequest:
+    directories: Directories
 
-    archive = bundle.load.save_bundle_file_from_request_to_downloads(
-        file_from_request=file_from_request, downloads_dir=settings.DOWNLOAD_DIR
-    )
+    bundle_service: core.bundle.BundleService
 
-    with bundle.load.cleanup(on_exit=[archive]):
-        unpacking_info = bundle.load.unpack_bundle(
-            archive=archive, bundles_dir=settings.BUNDLE_DIR, files_dir=settings.FILE_DIR
+    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    def do(self, file_from_request: File) -> BundleID:
+        adcm_configuration = adcm.get_adcm_configuration()
+        verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
+
+        archive = bundle.load.save_bundle_file_from_request_to_downloads(
+            file_from_request=file_from_request, downloads_dir=self.directories.downloads
         )
-        check_defaults = partial(_check_defaults_new, bundle_root=unpacking_info.root)
-        with bundle.load.cleanup(on_fail=[unpacking_info.root]):
-            bundle.load.verify_signature(unpacking_info.signature, verified_signature_only)
-            definitions = bundle.load.retrieve_bundle_definitions_from_archive(
-                archive=archive,
-                bundle_root=unpacking_info.root,
-                adcm_version=settings.ADCM_VERSION,
-                check_defaults=check_defaults,
+
+        with bundle.load.cleanup(on_exit=[archive]):
+            unpacking_info = bundle.load.unpack_bundle(
+                archive=archive, bundles_dir=self.directories.bundles, files_dir=self.directories.files
             )
+            with bundle.load.cleanup(on_fail=[unpacking_info.root]):
+                bundle.load.verify_signature(unpacking_info.signature, verified_signature_only)
 
-            with atomic():
-                bundle_object = bundle.load.save_bundle_definitions(
-                    definitions=definitions, unpacking_info=unpacking_info
-                )
-                prepare_action_roles(bundle=bundle_object)
+                with localize_error(f"Bundle from {archive.name}"):
+                    root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=unpacking_info.root)
+                    definitions = self.bundle_service.parse_to_definitions(
+                        entries=root_entries, bundle_root=unpacking_info.root
+                    )
 
-    return bundle_object
+                with atomic():
+                    bundle_id = self.bundle_service.create_bundle_from_definitions(
+                        definitions=definitions, unpacking_info=unpacking_info
+                    )
+                    bundle_object = models.Bundle.objects.get(id=bundle_id)
+                    prepare_action_roles(bundle=bundle_object)
+
+        return bundle_id
 
 
 @bundle.errors.convert_bundle_errors_to_adcm_ex

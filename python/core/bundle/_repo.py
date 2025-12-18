@@ -1,0 +1,35 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from pathlib import Path
+from typing import Protocol
+
+from core.bundle._definitions import DefinitionsMap
+from core.bundle._types import SignatureStatus
+from core.types import BundleID
+
+
+class BundleRepoI(Protocol):
+    def save_definitions(
+        self,
+        definitions: DefinitionsMap,
+        bundle_root: Path,
+        bundle_hash: str,
+        verification_status: SignatureStatus,
+    ) -> BundleID:
+        ...
+
+    def update_prototype_licenses(self, bundle_id: BundleID) -> None:
+        ...
+
+    def recollect_categories(self) -> None:
+        ...

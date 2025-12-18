@@ -13,8 +13,10 @@
 from functools import wraps
 from typing import Callable, TypeVar
 
+from core.bundle import BundleParsingError, BundleProcessingError, BundleValidationError
+from core.config import ConfigOperationError, DefaultFileMissingError
 from core.errors import ConfigValueError
-from core.legacy.bundle_alt.errors import BundleParsingError, BundleProcessingError, BundleValidationError
+from core.legacy.bundle_alt import errors
 
 from cm.errors import AdcmEx
 
@@ -26,27 +28,27 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except BundleProcessingError as e:
+        except (BundleProcessingError, errors.BundleProcessingError) as e:
             http_code = 409
             error_code = "BUNDLE_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
-        except BundleParsingError as e:
+        except (BundleParsingError, errors.BundleParsingError) as e:
             http_code = 409
             error_code = "BUNDLE_DEFINITION_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
-        except BundleValidationError as e:
+        except (BundleValidationError, errors.BundleValidationError) as e:
             http_code = 409
             error_code = "BUNDLE_VALIDATION_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
-        except ConfigValueError as e:
+        except (ConfigValueError, ConfigOperationError) as e:
             http_code = 409
             error_code = "CONFIG_VALUE_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
-        except FileNotFoundError as e:
+        except (FileNotFoundError, DefaultFileMissingError) as e:
             http_code = 409
             error_code = "BUNDLE_ERROR"
             message = str(e)

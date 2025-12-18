@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from functools import cache
 from operator import methodcaller
 from pathlib import Path
@@ -23,6 +23,7 @@ import shutil
 import logging
 import tarfile
 
+from core.bundle import BundleUnpackingInfo, SignatureStatus
 from core.errors import localize_error
 from core.legacy.bundle_alt._config import check_default_values_in_jinja_config, check_default_values_in_main_config
 from core.legacy.bundle_alt.bundle_load import get_hash_safe, untar_safe
@@ -34,14 +35,14 @@ from core.legacy.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, 
 from django.conf import settings
 from django.core.files import File
 from django.db.transaction import atomic
-from gnupg import GPG, ImportResult
+from gnupg import GPG
 from rbac.upgrade.role import prepare_action_roles
 import ruyaml
 
 from cm.errors import AdcmEx
 from cm.legacy.services.bundle_alt import repo
 from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
-from cm.models import ADCM, Action, Bundle, PrototypeConfig, SignatureStatus
+from cm.models import ADCM, Action, Bundle, PrototypeConfig
 
 logger = logging.getLogger("adcm")
 
@@ -62,20 +63,6 @@ class Directories(NamedTuple):
     downloads: Path
     bundles: Path
     files: Path
-
-
-def parse_bundle_from_request_to_db(
-    file_from_request: File, *, directories: Directories, adcm_version: str, verified_signature_only: bool
-) -> Bundle:
-    archive_in_downloads = save_bundle_file_from_request_to_downloads(
-        file_from_request=file_from_request, downloads_dir=directories.downloads
-    )
-    return parse_bundle_archive(
-        archive=archive_in_downloads,
-        directories=directories,
-        adcm_version=adcm_version,
-        verified_signature_only=verified_signature_only,
-    )
 
 
 @convert_bundle_errors_to_adcm_ex
@@ -133,7 +120,7 @@ def retrieve_bundle_definitions_from_archive(
 
 
 def save_bundle_definitions(
-    definitions: dict[BundleDefinitionKey, Definition], unpacking_info: "_BundleUnpackingInfo"
+    definitions: dict[BundleDefinitionKey, Definition], unpacking_info: BundleUnpackingInfo
 ) -> Bundle:
     bundle_object = repo.save_definitions(
         bundle_definitions=definitions,
@@ -193,20 +180,13 @@ def process_bundle_from_archive(
 # Steps
 
 
-@dataclass(slots=True)
-class _BundleUnpackingInfo:
-    hash: str
-    root: Path
-    signature: SignatureStatus = SignatureStatus.ABSENT
-
-
-def unpack_bundle(archive: Path, bundles_dir: Path, files_dir: Path) -> _BundleUnpackingInfo:
+def unpack_bundle(archive: Path, bundles_dir: Path, files_dir: Path) -> BundleUnpackingInfo:
     bundle_hash = get_hash_safe(archive)
     return _unpack_bundle(archive=archive, bundles_dir=bundles_dir, bundle_hash=bundle_hash, files_dir=files_dir)
 
 
-def _unpack_bundle(archive: Path, bundles_dir: Path, bundle_hash: str, files_dir: Path) -> _BundleUnpackingInfo:
-    info = _BundleUnpackingInfo(hash=bundle_hash, root=bundles_dir / bundle_hash)
+def _unpack_bundle(archive: Path, bundles_dir: Path, bundle_hash: str, files_dir: Path) -> BundleUnpackingInfo:
+    info = BundleUnpackingInfo(hash=bundle_hash, root=bundles_dir / bundle_hash)
 
     if info.root.is_dir():
         bundle = repo.find_bundle_by_hash(info.hash)
@@ -258,7 +238,7 @@ def _calculate_bundle_verification_status(
     key_filepath = files_dir / f"adcm.{adcm_id}.global.verification_public_key"
 
     try:
-        res: ImportResult = gpg.import_keys_file(key_path=key_filepath)
+        res = gpg.import_keys_file(key_path=key_filepath)
     except (PermissionError, FileNotFoundError):
         logger.warning("Can't read public key file: %s", key_filepath)
         return SignatureStatus.INVALID

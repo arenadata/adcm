@@ -69,7 +69,7 @@ class MainConfigVariantResolver(ABC, VariantValidator):
         ...
 
 
-# Types
+# Types & Constants
 
 
 @dataclass(slots=True, frozen=True)
@@ -84,6 +84,7 @@ class Violation:
 
 
 Violations: TypeAlias = list[Violation]
+
 
 # Public
 

@@ -29,7 +29,7 @@ API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 BASE_DIR = Path(BASE_DIR) if BASE_DIR else Path(__file__).absolute().parent.parent.parent
 
-STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
+STACK_DIR = Path(os.getenv("ADCM_STACK_DIR", BASE_DIR))
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
 DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
@@ -91,6 +91,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "adcm.dependencies.DishkaMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
