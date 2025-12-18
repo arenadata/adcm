@@ -18,6 +18,7 @@ import json
 import hashlib
 import functools
 
+from core.bundle._types import SignatureStatus
 from core.legacy.bundle_alt._config import STACK_COMPLEX_FIELD_TYPES
 from core.legacy.bundle_alt.errors import BundleProcessingError
 from core.legacy.bundle_alt.predicates import is_component_key
@@ -44,7 +45,6 @@ from cm.models import (
     PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
-    SignatureStatus,
     SubAction,
     Upgrade,
 )

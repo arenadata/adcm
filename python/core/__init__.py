@@ -14,10 +14,12 @@
 from core import config as config  # noqa
 from core import mapping as mapping
 from core.legacy import bundle_alt, job  # noqa
+from core import bundle as bundle  # noqa
 from core import action as action  # noqa
 
 __all__ = [
     "action",
+    "bundle",
     "bundle_alt",
     "config",
     "job",

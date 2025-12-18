@@ -81,7 +81,7 @@ def build_defaults(
                         default = path.read_text(encoding="utf-8")
                     else:
                         message = f"Missing file for {parameter.identifier.full} at {path}"
-                        raise RuntimeError(message)
+                        raise config.DefaultFileMissingError(message=message, parameter=parameter.identifier.full)
 
                 if is_secret:
                     default = config.secrets.encrypt_if_possible(value=default, encryptor=encrypt)

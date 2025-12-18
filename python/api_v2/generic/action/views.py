@@ -152,7 +152,7 @@ class ActionViewSet(
 
     def handle_exception(self, exc: Exception) -> Response:
         # temporal handling
-        if isinstance(exc, core.config.OperationError):
+        if isinstance(exc, core.config.ConfigOperationError):
             exc = AdcmEx(code="ACTION_OPERATION_ERROR", msg=exc.args[0])
 
         return super().handle_exception(exc)

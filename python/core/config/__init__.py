@@ -15,6 +15,7 @@ from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
 from core.config import _pattern as pattern
+from core.config._errors import DefaultFileMissingError, ConfigOperationError
 from core.config._config import (
     flat_to_nested,
     get_by_full_name,
@@ -43,7 +44,7 @@ from core.config._types import (
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
-from core.config._service import ConfigService, VariantValidators, OperationError
+from core.config._service import ConfigService, VariantValidators
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError, ObjectDiscoveryError
 
 __all__ = [
@@ -58,6 +59,7 @@ __all__ = [
     "Configuration",
     "ConfigurationWithID",
     "DecryptFunc",
+    "DefaultFileMissingError",
     "Defaults",
     "EncryptFunc",
     "FlatConfiguration",
@@ -66,7 +68,7 @@ __all__ = [
     "NoConfigError",
     "ObjectDiscoveryError",
     "ObjectWithoutConfigError",
-    "OperationError",
+    "ConfigOperationError",
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",

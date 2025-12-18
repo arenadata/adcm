@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import suppress
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
@@ -21,7 +20,6 @@ import collections.abc
 from adcm_version import compare_adcm_versions
 from ruyaml.error import ReusedAnchorWarning
 import yaml
-import ruyaml
 
 from core.errors import localize_error
 from core.legacy.bundle_alt.bundle_load import get_config_files
@@ -66,31 +64,6 @@ class ConfigConversionContext:
     bundle_root: Path
     path: str  # dir with jinja template, relative to bundle root
     object: dict
-
-
-# COPIED FROM cm.checker DURING ADCM-6411
-#
-# This takes much more time than regular load,
-# but some bundles contain duplicates in dict keys and stuff,
-# when it's required to keep first element (at least for studied case),
-# so we were forced to return this until the better solution is found.
-def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_keys=False):
-    """
-    Parse the first YAML document in a stream and produce the corresponding Python object.
-
-    This is a replace for ruyaml.round_trip_load() function which can switch off
-    duplicate YAML keys error
-    """
-    loader = ruyaml.RoundTripLoader(stream, version, preserve_quotes=preserve_quotes)
-    loader._constructor.allow_duplicate_keys = allow_duplicate_keys  # pyright: ignore [reportAttributeAccessIssue]
-    try:
-        return loader._constructor.get_single_data()  # pyright: ignore [reportAttributeAccessIssue]
-    finally:
-        loader._parser.dispose()  # pyright: ignore [reportAttributeAccessIssue]
-        with suppress(AttributeError):
-            loader._reader.reset_reader()  # pyright: ignore [reportAttributeAccessIssue]
-        with suppress(AttributeError):
-            loader._scanner.reset_scanner()  # pyright: ignore [reportAttributeAccessIssue]
 
 
 class FirstExplicitKeyLoader(yaml.SafeLoader):

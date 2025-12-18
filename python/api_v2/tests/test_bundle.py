@@ -12,7 +12,8 @@
 
 from datetime import datetime
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
+from typing import Any
 import tarfile
 import unittest
 
@@ -608,3 +609,31 @@ class TestBundle(BaseAPITestCase):
             self.assertEqual(response["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertEqual(response["level"], "error")
             self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
+
+
+class TestBundleContract_V_2_0(BaseAPITestCase):  # noqa: N801
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.tempdir = Path(mkdtemp())
+
+    def upload_bundle(self, path: Path) -> Any:
+        endpoint = self.client.v2 / "bundles"
+
+        bundle_file_name = self.prepare_bundle_file(source_dir=path, target_dir=self.tempdir)
+        bundle_file = self.tempdir / bundle_file_name
+
+        with bundle_file.open(encoding="utf-8") as file_:
+            return endpoint.post(data={"file": file_}, format_="multipart")
+
+    def test_upload_bundle(self):
+        bundle_names = ("cluster_simple", "provider_simple")
+
+        for name in bundle_names:
+            with self.subTest(name):
+                bundle_path = self.test_bundles_dir / "v_2_0" / name
+
+                response = self.upload_bundle(bundle_path)
+
+                self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())

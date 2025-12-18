@@ -17,6 +17,7 @@ from typing import Callable, Iterable, Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
 from core.config._config import detect_active_groups, nested_to_flat
+from core.config._errors import ConfigOperationError
 from core.config._names import is_parameter_file_name_startswith
 from core.config._pattern_validators import PossiblyEncryptedPatternValidator
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError
@@ -27,6 +28,7 @@ from core.config._types import (
     Configuration,
     ConfigurationWithID,
     Defaults,
+    FlatConfiguration,
     HostGroupConfigOwner,
 )
 from core.config._validate import (
@@ -37,7 +39,7 @@ from core.config._validate import (
     Violations,
 )
 from core.result import Fail, Success, is_fail
-from core.settings import Settings
+from core.settings import Directories
 from core.types import (
     ActionDescriptor,
     ActionID,
@@ -83,10 +85,6 @@ class VariantValidators:
     default: type[VariantValidator]
 
 
-class OperationError(Exception):
-    ...
-
-
 def return_as_is(x: str) -> str:
     return x
 
@@ -95,8 +93,9 @@ def return_as_is(x: str) -> str:
 class ConfigService:
     repo: ConfigRepoI
     secrets: AnsibleSecrets
-    settings: Settings
+    directories: Directories
     variant_validators: VariantValidators
+    yspec_schema: dict
 
     # retrieve
 
@@ -370,7 +369,7 @@ class ConfigService:
         write = partial(
             _write_to_files_dir_with_prefix,
             prefix=owner_prefix,
-            target_dir=self.settings.directories.files,
+            target_dir=self.directories.files,
             decrypt=lambda x: self.secrets.decrypt(x) or "",
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
@@ -386,7 +385,7 @@ class ConfigService:
             specification=original_specification,
             original_prefix=original_prefix,
             duplicate_prefix=duplicate_prefix,
-            files_dir=self.settings.directories.files,
+            files_dir=self.directories.files,
         )
 
     def prepare_configuration_for_ansible(
@@ -401,10 +400,35 @@ class ConfigService:
         result = operations.prepare_config_for_ansible(
             configuration=configuration,
             specification=specification,
-            construct_parameter_path=lambda name: str(self.settings.directories.files / file_name_constructor(name)),
+            construct_parameter_path=lambda name: str(self.directories.files / file_name_constructor(name)),
             inplace=inplace,
         )
         return result.value
+
+    # validate
+
+    def validate_configuration_definition(self, specification: spec.FullSpec, defaults: Defaults) -> Violations:
+        result = operations.validate_structure_parameters_schema(
+            specification=specification, yspec_schema=self.yspec_schema
+        )
+        if is_fail(result):
+            return result.value
+
+        values_without_nones = {k: v for k, v in defaults.values.items() if v is not None}
+        result = operations.validate_values(
+            # for now attributes feel unimportant for defaults
+            configuration=FlatConfiguration(values=values_without_nones, attributes={}),
+            specification=specification,
+            validators=Validators(
+                variant=self.variant_validators.default(),
+                pattern=PossiblyEncryptedPatternValidator(secrets=self.secrets),
+            ),
+        )
+
+        if is_fail(result):
+            return result.value
+
+        return []
 
     # inspect
 
@@ -456,10 +480,10 @@ def _choose_file_name_builder(owner: FileOwner) -> Callable[[str], str]:
             )
 
 
-def _format_validation_violations_to_error(violations: Violations) -> OperationError:
+def _format_validation_violations_to_error(violations: Violations) -> ConfigOperationError:
     violations_list_repr = "\n".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)
     message = f"Configuration doesn't match specification. Following violations detected:\n{violations_list_repr}"
-    return OperationError(message)
+    return ConfigOperationError(message)
 
 
 def _write_to_files_dir_with_prefix(

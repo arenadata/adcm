@@ -609,7 +609,7 @@ def _restore_config_of_main_object_and_update_host_groups(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
@@ -729,7 +729,7 @@ def _switch_configuration_version(
 
     update_result = update_for_new_spec(configuration=configuration, include_synchronization=False)
     if isinstance(update_result, Fail):
-        raise core.config.OperationError(f"Failed to adapt config: {str(update_result.value)}")
+        raise core.config.ConfigOperationError(f"Failed to adapt config: {str(update_result.value)}")
 
     config = update_result.value
 
@@ -743,7 +743,7 @@ def _switch_configuration_version(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt config of host group: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt config of host group: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
 

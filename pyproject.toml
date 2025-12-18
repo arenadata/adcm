@@ -40,6 +40,7 @@ jinja2 = "<3.0.0"  # required for Ansible for jinja_native option,
 markupsafe = "<2.1"  # required for jinja2,
 # "<2.1" is due to the absence of the "soft_unicode()" function in markupsafe >= 2.1,
 # but which is used in jinja2 < 3.0.0
+dishka = "^1.7.2"
 
 [tool.poetry.group.ansible.dependencies]
 hvac = "^2.3.0"  # required for hashi_vault plugin
@@ -227,6 +228,20 @@ include_external_packages = true
 #    "core",
 #]
 
+[[tool.importlinter.contracts]]
+name = "core layers contract"
+type = "layers"
+layers = [
+    # it's not actually top layer, but we don't want it to poison other core modules
+    "core.legacy",
+    "core.bundle",
+    "core.action",
+    "core.config | core.mapping",
+    "core.templates",
+    "core.errors | core.settings",
+    "core.types",
+    "core.result",
+]
 
 [[tool.importlinter.contracts]]
 name = "core must not import other modules"
@@ -257,6 +272,3 @@ source_modules = [
   "core.config",
 ]
 forbidden_modules = ["core.action"]
-
-
-
