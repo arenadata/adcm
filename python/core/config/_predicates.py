@@ -37,5 +37,9 @@ def is_not_none(arg: Any) -> bool:
     return not is_none(arg)
 
 
+def is_non_empty_string(arg: Any) -> TypeGuard[str]:
+    return is_str(arg) and arg != ""
+
+
 def is_str(arg: Any) -> TypeGuard[str]:
     return isinstance(arg, str)

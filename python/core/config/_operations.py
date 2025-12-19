@@ -39,7 +39,7 @@ from core.config._names import (
     level_names_to_full_name,
     remove_group_from_name,
 )
-from core.config._predicates import is_none, is_not_none, is_str
+from core.config._predicates import is_non_empty_string, is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
     ChangeRequest,
@@ -378,7 +378,9 @@ def prepare_config_for_ansible(
                 change_by_full_name_skip_missing(name=name, func=construct_path_if_not_none, values=target.values)
             # set secret
             case spec.p.StringParameter(is_secret=True):
-                change_by_full_name_skip_missing(name=name, func=_to_ansible_vault_dict_if_is_str, values=target.values)
+                change_by_full_name_skip_missing(
+                    name=name, func=_to_ansible_vault_dict_if_is_non_empty_str, values=target.values
+                )
             case spec.p.MapParameter(is_secret=True):
                 change_by_full_name_skip_missing(
                     name=name, func=_nested_dict_values_to_ansible_vault, values=target.values
@@ -670,8 +672,11 @@ def _apply_to_secrets(
 ) -> Success[ConfigValues]:
     out: ConfigValues = values if inplace else deepcopy(values)
 
+    # We use "non empty string" check, because it is possible to put "" as value of string parameter and run action:
+    # it should be non-required parameter with "" as default or set to default via API/plugin.
+    # See ADCM-7586 for more info.
     apply_to_str = partial(
-        change_by_full_name_skip_missing, func=build_apply_if(func=func, when=is_not_none), values=out
+        change_by_full_name_skip_missing, func=build_apply_if(func=func, when=is_non_empty_string), values=out
     )
     apply_to_dict_values = partial(
         change_by_full_name_skip_missing,
@@ -699,8 +704,8 @@ def _set_none(_: Any) -> None:
     return None
 
 
-def _to_ansible_vault_dict_if_is_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:
-    if is_str(value):
+def _to_ansible_vault_dict_if_is_non_empty_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:
+    if is_non_empty_string(value):
         return {"__ansible_vault": value}
 
     return value
@@ -715,6 +720,6 @@ def _to_ansible_unsafe_dict_if_is_str(value: T) -> dict[Literal["__ansible_unsaf
 
 def _nested_dict_values_to_ansible_vault(value: T) -> dict | T:
     if isinstance(value, dict):
-        return {key: _to_ansible_vault_dict_if_is_str(val) for key, val in value.items()}
+        return {key: _to_ansible_vault_dict_if_is_non_empty_str(val) for key, val in value.items()}
 
     return value
