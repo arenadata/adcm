@@ -1060,3 +1060,14 @@ class ClusterActionProcessViewSet(ActionProcessViewSet):
 @document_action_process_step_viewset(object_type="cluster")
 class ClusterActionProcessStepViewSet(ProcessStepViewSet):
     ...
+
+
+@audit_action_process_viewset(retrieve_owner=parent_host_from_lookup)
+@document_action_process_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
+class ClusterHostActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
+class ClusterHostActionProcessStepViewSet(ProcessStepViewSet):
+    ...

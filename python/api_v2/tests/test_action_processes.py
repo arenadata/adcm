@@ -42,6 +42,7 @@ from cm.models import (
     Component,
     ConcernCause,
     ConcernItem,
+    ConcernType,
     Host,
     HostComponent,
     Process,
@@ -50,6 +51,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -205,7 +207,7 @@ class TestActionProcess(BaseAPITestCase):
         process = repo.retrieve_process(process_id=process_id)
         action_info = ActionRepoImpl.get_action(id=action_id)
         context = OperationContext(
-            object=object_,
+            target=object_,
             action=action_info,
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
@@ -609,7 +611,8 @@ class TestActionProcess(BaseAPITestCase):
             context=RenderStepContext(
                 process_id=process.id,
                 action_id=self.process_action_of_cluster.pk,
-                object=orm_object_to_core_descriptor(self.cluster_2),
+                target=orm_object_to_core_descriptor(self.cluster_2),
+                owner_prototype_id=self.cluster_1.prototype_id,
             ),
             context_gatherer=context_gatherer,
         )
@@ -2076,3 +2079,179 @@ class TestActionProcess(BaseAPITestCase):
         self.assertDictEqual(response["delta"], second_mapping_step_hc_delta)
         expected_cumulative_delta = {"add": second_mapping_step_hc_delta["add"], "remove": []}
         self.assertDictEqual(response["cumulativeDelta"], expected_cumulative_delta)
+
+    def test_adcm_7551_process_on_host_action(self):
+        cluster, service, component = self.cluster_1, self.service_1, self.component_1
+        host = self.add_host(provider=self.provider, fqdn="test-host", cluster=cluster)
+
+        self.set_hostcomponent(cluster=cluster, entries=((host, component),))
+        host_action_from_cluster = Action.objects.get(
+            name="wizard_host_action_from_cluster", prototype=cluster.prototype
+        )
+        host_action_from_service = Action.objects.get(
+            name="wizard_host_action_from_service", prototype=service.prototype
+        )
+        host_action_from_component = Action.objects.get(
+            name="wizard_host_action_from_component", prototype=component.prototype
+        )
+
+        host_actions = (host_action_from_cluster, host_action_from_service, host_action_from_component)
+
+        for action in host_actions:
+            with self.subTest(f"Retrieve {action=}"):
+                response = self.client.v2[cluster, "hosts", host, "actions", action].get()
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertListEqual(response.json()["processes"], [])
+
+        expected_step_spec = {
+            "step_1_config": [
+                {
+                    "name": "float",
+                    "type": "float",
+                    "limits": {},
+                    "default": 0.1,
+                    "subname": "",
+                    "required": False,
+                    "ui_options": {},
+                    "description": "",
+                    "display_name": "float",
+                    "ansible_options": {"unsafe": False},
+                    "group_customization": False,
+                }
+            ],
+            "step_2_mapping": [{"service": service.name, "component": component.name, "operation": "remove"}],
+            "step_3_operation": [
+                {
+                    "name": "sleep_script",
+                    "params": {},
+                    "script": "wizard_jinja/scripts/sleep.yaml",
+                    "script_type": "ansible",
+                    "display_name": "Sleep",
+                    "state_on_fail": "",
+                    "allow_to_terminate": False,
+                    "multi_state_on_fail_set": [],
+                    "multi_state_on_fail_unset": [],
+                }
+            ],
+        }
+        for action in host_actions:
+            with self.subTest(f"Process on {action=}"):
+                host_concerns = ConcernItem.objects.filter(
+                    owner_id=host.id,
+                    owner_type=ContentType.objects.get_for_model(host),
+                    cause=ConcernCause.CONFIGURING_PROCESS,
+                )
+                self.assertEqual(host_concerns.count(), 0)
+
+                action_endpoint = self.client.v2[cluster, "hosts", host, "actions", action]
+                processes_endpoint = action_endpoint / "processes"
+                response = processes_endpoint.post(data={})
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+                host_concerns = ConcernItem.objects.filter(
+                    owner_id=host.id,
+                    owner_type=ContentType.objects.get_for_model(host),
+                    cause=ConcernCause.CONFIGURING_PROCESS,
+                )
+                self.assertEqual(host_concerns.count(), 1)
+                concern = host_concerns.get()
+                self.assertEqual(concern.type, ConcernType.FLAG)
+                self.assertEqual(concern.name, "action_process_running")
+
+                process = Process.objects.get(id=response.json()["id"])
+                self.assertEqual(process.state, ProcessState.CREATED.value)
+
+                # first config step
+                step_1_config = ProcessStep.objects.get(process=process, name="step_1_config")
+                self.assertEqual(step_1_config.state, ProcessStepState.CREATED.value)
+                self.assertListEqual(step_1_config.step_spec, expected_step_spec[step_1_config.name])
+
+                operation_endpoint = processes_endpoint / process / "operation"
+                response = operation_endpoint.post(
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {
+                            "processSyncKey": process.sync_key,
+                            "stepId": step_1_config.id,
+                            "configuration": {"config": {"float": 0.4}, "adcmMeta": {}},
+                        },
+                    }
+                )
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                step_1_config.refresh_from_db()
+                self.assertEqual(step_1_config.state, ProcessStepState.COMPLETED)
+
+                # second mapping step
+                process.refresh_from_db()
+                step_2_mapping = ProcessStep.objects.get(process=process, name="step_2_mapping")
+                self.assertListEqual(step_2_mapping.step_spec, expected_step_spec[step_2_mapping.name])
+                self.assertEqual(step_2_mapping.state, ProcessStepState.CREATED.value)
+
+                response = operation_endpoint.post(
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {
+                            "processSyncKey": process.sync_key,
+                            "stepId": step_2_mapping.id,
+                            "hostComponentMapDelta": {"remove": [{"hostId": host.id, "componentId": component.id}]},
+                        },
+                    }
+                )
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                step_2_mapping.refresh_from_db()
+                self.assertEqual(step_2_mapping.state, ProcessStepState.COMPLETED)
+
+                # third operation step
+                process.refresh_from_db()
+                step_3_operation = ProcessStep.objects.get(process=process, name="step_3_operation")
+                self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
+                self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
+
+                with RunTaskMock(run_patch_path="cm.legacy.services.action_process.operations.start_task") as run_task:
+                    response = operation_endpoint.post(
+                        data={
+                            "method": ProcessOperationType.SUBMIT,
+                            "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
+                        }
+                    )
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+
+                run_task.runner.run(run_task.target_task.id)
+
+                step_3_operation.refresh_from_db()
+                self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
+
+                # complete process
+                host_concerns = ConcernItem.objects.filter(
+                    owner_id=host.id,
+                    owner_type=ContentType.objects.get_for_model(host),
+                    cause=ConcernCause.CONFIGURING_PROCESS,
+                )
+                self.assertEqual(host_concerns.count(), 1)
+
+                process.refresh_from_db()
+                response = operation_endpoint.post(
+                    data={"method": ProcessOperationType.COMPLETE, "params": {"processSyncKey": process.sync_key}}
+                )
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                process.refresh_from_db()
+                self.assertEqual(process.state, ProcessState.COMPLETED.value)
+
+                host_concerns = ConcernItem.objects.filter(
+                    owner_id=host.id,
+                    owner_type=ContentType.objects.get_for_model(host),
+                    cause=ConcernCause.CONFIGURING_PROCESS,
+                )
+                self.assertEqual(host_concerns.count(), 0)
+
+                # run process action
+                with RunTaskMock() as run_task:
+                    response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+
+                # remove job lock
+                ConcernItem.objects.filter(
+                    name="job_lock", owner_id=host.id, owner_type=ContentType.objects.get_for_model(host)
+                ).delete()

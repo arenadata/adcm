@@ -25,6 +25,8 @@ from api_v2.cluster.views import (
     ClusterCHGViewSet,
     ClusterConfigCHGViewSet,
     ClusterConfigViewSet,
+    ClusterHostActionProcessStepViewSet,
+    ClusterHostActionProcessViewSet,
     ClusterHostActionViewSet,
     ClusterHostCHGViewSet,
     ClusterImportViewSet,
@@ -217,6 +219,20 @@ host_router.register(prefix=HOST_PREFIX, viewset=HostClusterViewSet, basename="h
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_PREFIX, viewset=ClusterHostActionViewSet, basename="host-cluster-action")
 
+host_action_process_router = NestedSimpleRouter(
+    parent_router=host_action_router, parent_prefix=ACTION_PREFIX, lookup="action"
+)
+host_action_process_router.register(
+    prefix=PROCESS_PREFIX, viewset=ClusterHostActionProcessViewSet, basename="host-cluster-action-process"
+)
+
+host_action_process_step_router = NestedSimpleRouter(
+    parent_router=host_action_process_router, parent_prefix=PROCESS_PREFIX, lookup="process"
+)
+host_action_process_step_router.register(
+    prefix=STEP_PREFIX, viewset=ClusterHostActionProcessStepViewSet, basename="host-cluster-action-process-step"
+)
+
 host_component_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_component_router.register(prefix=COMPONENT_PREFIX, viewset=HostComponentViewSet, basename="host-cluster-component")
 
@@ -255,6 +271,8 @@ urlpatterns = [
     # host
     *host_router.urls,
     *host_action_router.urls,
+    *host_action_process_router.urls,
+    *host_action_process_step_router.urls,
     *host_component_router.urls,
     # other
     *upgrade_router.urls,

@@ -16,7 +16,7 @@ from core.legacy.bundle_alt.errors import BundleValidationError
 from core.legacy.job.types import JobSpec
 from core.mapping import MappingRule
 from core.templates._errors import RenderError
-from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor
+from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID
 import core
 
 from cm.converters import core_type_to_model
@@ -39,7 +39,8 @@ from cm.logger import logger
 class RenderStepContext:
     process_id: ActionProcessID
     action_id: ActionID
-    object: CoreObjectDescriptor
+    target: CoreObjectDescriptor
+    owner_prototype_id: PrototypeID
 
 
 def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext, context_gatherer: ContextGatherer) -> None:
@@ -59,15 +60,15 @@ def _render_step(
     template = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec).template
 
     action_orm = repo.retrieve_action_orm(action_id=context.action_id)
-    object_orm = core_type_to_model(context.object.type).objects.get(id=context.object.id)
-    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
+    target_orm = core_type_to_model(context.target.type).objects.get(id=context.target.id)
+    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=context.owner_prototype_id)
     environment = Environment(bundle_root=bundle_root)
 
     match step.type:
         case core.action.wizard.StepType.CONFIGURATION:
             action_args = ActionArgs(
                 action=action_orm,
-                cluster_relative_object=object_orm,
+                cluster_relative_object=target_orm,
                 wizard_process_id=process.id,
             )
             prototype_configs = render_config(
@@ -77,7 +78,7 @@ def _render_step(
 
         case core.action.wizard.StepType.OPERATION:
             task_args = TaskArgs(
-                target_object=object_orm,
+                target_object=target_orm,
                 action=action_orm,
                 config={},
                 verbose=False,
@@ -90,7 +91,7 @@ def _render_step(
 
         case core.action.wizard.StepType.MAPPING:
             task_args = TaskArgs(
-                target_object=object_orm,
+                target_object=target_orm,
                 action=action_orm,
                 config={},
                 verbose=False,

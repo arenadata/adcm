@@ -75,7 +75,7 @@ from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, En
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.job.run import start_task
-from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
 
@@ -132,7 +132,7 @@ class ConfigInputProcessor(Protocol[T]):
 
 @dataclass(frozen=True, slots=True)
 class OperationContext:
-    object: CoreObjectDescriptor
+    target: CoreObjectDescriptor
     action: ActionInfo
     config_processor: ConfigInputProcessor
 
@@ -157,15 +157,15 @@ def find_current_and_last_completed_steps(
 
 
 def initiate_process(
-    object_: CoreObjectDescriptor, action: ActionInfo, context_gatherer: ContextGatherer
+    target: CoreObjectDescriptor, action: ActionInfo, context_gatherer: ContextGatherer
 ) -> ActionProcessID:
-    object_orm = core_type_to_model(object_.type).objects.get(id=object_.id)
-    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=object_orm.prototype_id)
+    target_orm = core_type_to_model(target.type).objects.get(id=target.id)
+    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=action.owner_prototype.id)
 
     environment = Environment(bundle_root=bundle_root)
     action_args = ActionArgs(
         action=repo.retrieve_action_orm(action_id=action.id),
-        cluster_relative_object=object_orm,
+        cluster_relative_object=target_orm,
         wizard_process_id=None,
     )
     stages = render_process(
@@ -175,7 +175,7 @@ def initiate_process(
         context_gatherer=context_gatherer,
     )
     db_stages = repo.convert_stages_to_db_format(stages=stages)
-    process = repo.create_process(object_=object_, action_id=action.id, stages=db_stages)
+    process = repo.create_process(object_=target, action_id=action.id, stages=db_stages)
 
     # Works with bulk_create only if the Step model’s primary key is an AutoField, ignore_conflicts=False and
     # db is PostgreSQL, MariaDB, or SQLite 3.35+
@@ -188,7 +188,9 @@ def initiate_process(
         data=ProcessUpdateDTO(current_step=current_step_id, flow_spec=db_stages),
     )
 
-    context = RenderStepContext(process_id=process.id, action_id=action.id, object=object_)
+    context = RenderStepContext(
+        process_id=process.id, action_id=action.id, target=target, owner_prototype_id=action.owner_prototype.id
+    )
     fill_step_spec(step_id=current_step_id, context=context, context_gatherer=context_gatherer)
 
     return process.id
@@ -202,8 +204,8 @@ def complete_process(process: ActionProcess) -> None:
 def complete_step(
     process_id: ActionProcessID,
     step_id: ActionProcessStepID,
-    action_id: ActionID,
-    object_: CoreObjectDescriptor,
+    action: ActionInfo,
+    target: CoreObjectDescriptor,
     context_gatherer: ContextGatherer,
 ) -> None:
     """Set step's status to `completed`, process's current_step and last_completed_step; render next step"""
@@ -218,7 +220,9 @@ def complete_step(
         data=ProcessUpdateDTO(current_step=current_id, last_completed_step=last_completed_id),
     )
     if current_id:
-        context = RenderStepContext(process_id=process_id, action_id=action_id, object=object_)
+        context = RenderStepContext(
+            process_id=process_id, action_id=action.id, target=target, owner_prototype_id=action.owner_prototype.id
+        )
         fill_step_spec(step_id=current_id, context=context, context_gatherer=context_gatherer)
 
 
@@ -240,8 +244,10 @@ def complete_operation_step(
         # which will entail deleting the current ProcessStepInput.
         return
 
+    action = ActionRepoImpl.get_action(id=action_id)
+
     complete_step(
-        process_id=process_id, step_id=step_id, action_id=action_id, object_=object_, context_gatherer=context_gatherer
+        process_id=process_id, step_id=step_id, action=action, target=object_, context_gatherer=context_gatherer
     )
 
 
@@ -339,7 +345,7 @@ def perform_operation(
 
         case ProcessOperationType.COMPLETE:
             complete_process(process=process)
-            lower_flag(BuiltInFlag.ACTION_PROCESS_RUNNING.value.name, on_objects=[context.object])
+            lower_flag(BuiltInFlag.ACTION_PROCESS_RUNNING.value.name, on_objects=[context.target])
 
     update_process_sync_key(
         process_id=process_id, sync_key=payload.params.process_sync_key, new_sync_key=new_process_sync_key
@@ -382,7 +388,7 @@ def submit_step(
                 process=process,
                 step_id=payload.params.step_id,
                 new_process_sync_key=new_process_sync_key,
-                parent_object=context.object,
+                parent_object=context.target,
                 action=context.action,
             )
         case core.action.wizard.StepType.MAPPING:
@@ -409,7 +415,7 @@ def _operation_submit_mapping(
     step_input_data = StepInputDTO(
         configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
     )
-    _check_hc_mapping_delta(step=step, hc_mapping_delta=hc_mapping_delta, object_=context.object)
+    _check_hc_mapping_delta(step=step, hc_mapping_delta=hc_mapping_delta, object_=context.target)
 
     perform_mapping(process_id=process.id, step_id=step.id, step_input_data=step_input_data)
 
@@ -417,8 +423,8 @@ def _operation_submit_mapping(
     complete_step(
         process_id=process.id,
         step_id=step.id,
-        action_id=context.action.id,
-        object_=context.object,
+        action=context.action,
+        target=context.target,
         context_gatherer=context_gatherer,
     )
 
@@ -438,7 +444,12 @@ def reset_step(
         data=ProcessUpdateDTO(current_step=current_id, last_completed_step=last_completed_id),
     )
     if current_id:
-        render_context = RenderStepContext(process_id=process.id, action_id=context.action.id, object=context.object)
+        render_context = RenderStepContext(
+            process_id=process.id,
+            action_id=context.action.id,
+            target=context.target,
+            owner_prototype_id=context.action.owner_prototype.id,
+        )
         fill_step_spec(step_id=current_id, context=render_context, context_gatherer=context_gatherer)
 
 
@@ -494,16 +505,16 @@ def _operation_submit_config(
     specification = build_specification(records=prototype_conifgs, group_customization_flag=False)
 
     try:
-        owner_config = config_service.retrieve_current_configuration(owner=context.object)
+        target_config = config_service.retrieve_current_configuration(owner=context.target)
     except core.config.ObjectWithoutConfigError:
-        owner_config = None
+        target_config = None
 
     configuration = context.config_processor(input_config, specification)
     step_configuration = config_service.prepare_action_configuration(
         configuration=configuration,
         specification=specification,
-        owner=context.object,
-        owner_configuration=owner_config,
+        owner=context.target,
+        owner_configuration=target_config,
     )
     prefix = core.config.files.build_action_process_step_prefix(process_id=process.id, step_id=step.id)
     config_service.prepare_file_parameter_values_on_fs(
@@ -517,8 +528,8 @@ def _operation_submit_config(
     complete_step(
         process_id=process.id,
         step_id=step.id,
-        action_id=context.action.id,
-        object_=context.object,
+        action=context.action,
+        target=context.target,
         context_gatherer=context_gatherer,
     )
 

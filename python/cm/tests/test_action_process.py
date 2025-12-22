@@ -172,7 +172,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
 
         context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
 
-        process_id = initiate_process(object_=object_, action=action_info, context_gatherer=context_gatherer)
+        process_id = initiate_process(target=object_, action=action_info, context_gatherer=context_gatherer)
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertIsNotNone(ctx["current"])
@@ -185,7 +185,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
 
         process = repo.retrieve_process(process_id=process_id)
         context = OperationContext(
-            object=object_,
+            target=object_,
             action=action_info,
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )

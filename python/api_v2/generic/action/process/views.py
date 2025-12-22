@@ -14,7 +14,11 @@ from dataclasses import asdict
 from typing import Any
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
-from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.converters import (
+    core_type_to_model,
+    orm_object_to_core_descriptor,
+    orm_object_to_core_type,
+)
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.errors import (
@@ -135,24 +139,24 @@ class ActionProcessViewSet(
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):  # noqa: ARG002
-        parent_object, action_info = self.get_parent_and_action_supporting_process()
+        target_orm, action_info = self.get_parent_and_action_supporting_process()
         action = Action.objects.get(pk=action_info.id)
 
-        self.check_permissions_for_run(request=request, action=action, parent_object=parent_object)
-        check_no_blocking_concerns(lock_owner=parent_object, action_name=action_info.name)
+        self.check_permissions_for_run(request=request, action=action, parent_object=target_orm)
+        check_no_blocking_concerns(lock_owner=target_orm, action_name=action_info.name)
 
         # TODO: check if Process already exists
         with atomic():
             process_id = initiate_process(
-                object_=orm_object_to_core_descriptor(parent_object),
+                target=orm_object_to_core_descriptor(target_orm),
                 action=action_info,
                 context_gatherer=ContextGatherer(
                     config_service=get_config_service(), wizard_service=get_wizard_service()
                 ),
             )
             flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
-            targets = [CoreObjectDescriptor(id=parent_object.id, type=orm_object_to_core_type(parent_object))]
-            changed = raise_flag_for_process(flag=flag, on_objects=targets, action=action, action_owner=parent_object)
+            targets = [CoreObjectDescriptor(id=target_orm.id, type=orm_object_to_core_type(target_orm))]
+            changed = raise_flag_for_process(flag=flag, on_objects=targets, action=action, action_owner=target_orm)
 
             if changed:
                 added = update_hierarchy_for_flag(flag=flag, on_objects=targets)
@@ -187,7 +191,7 @@ class ActionProcessViewSet(
         context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
 
         context = OperationContext(
-            object=orm_object_to_core_descriptor(object_=parent_object),
+            target=orm_object_to_core_descriptor(object_=parent_object),
             action=action_info,
             config_processor=self._convert_configuration,
         )
