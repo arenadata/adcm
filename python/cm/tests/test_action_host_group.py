@@ -22,23 +22,22 @@ from core.legacy.job.runners import (
 )
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
-from infra.services import get_config_service, get_job_service, get_wizard_service
 from use_cases.dto import RunActionDTO
-from use_cases.transition.job.schedule import schedule_task
+from use_cases.transition.job.schedule import ScheduleTask
 
 from cm.errors import AdcmEx
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.job.inventory import get_inventory_data
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Action, ActionHostGroup, Component
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
 
 
-class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
+class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -98,17 +97,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action = Action.objects.get(prototype=self.cluster.prototype, name="dummy")
 
         with RunTaskMock() as run_task:
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=self.action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=self.action_group, payload=RunActionDTO())
 
         task = run_task.target_task
         self.assertEqual(task.task_object, self.action_group)
@@ -148,17 +138,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with RunTaskMock() as run_task:
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
         result_env = get_env_for_jinja_scripts(task=run_task.target_task)
 
@@ -182,17 +163,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with RunTaskMock() as run_task:
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
         task = JobRepoImpl.get_task(run_task.target_task.id)
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

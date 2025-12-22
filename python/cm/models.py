@@ -168,6 +168,7 @@ class Bundle(ADCMModel):
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
     signature_status = models.CharField(max_length=10, choices=SignatureStatus, default=SignatureStatus.ABSENT)
+    contract_version = models.CharField(max_length=10, default="1.0")
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 

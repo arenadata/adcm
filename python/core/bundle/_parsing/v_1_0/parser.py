@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Final, Iterable, TypeAlias, cast
+from typing import Final, Iterable, Literal, TypeAlias, cast
 
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._errors import BundleParsingError
@@ -21,6 +21,8 @@ from core.bundle._parsing.v_1_0.schema import (
     ADCMSchema,
     ClusterSchema,
     ComponentSchema,
+    ConfigJinjaSchema,
+    DynamicScriptsSchema,
     HasConfigGroupCustomization,
     HasName,
     HasScripts,
@@ -28,6 +30,7 @@ from core.bundle._parsing.v_1_0.schema import (
     HostSchema,
     ProviderSchema,
     ServiceSchema,
+    WizardScriptsSchema,
 )
 from core.bundle._predicates import is_component_key
 from core.bundle._representation import build_parent_key_safe, find_parent, repr_from_key
@@ -50,6 +53,16 @@ TYPE_SCHEMA_MAP: Final = {
 class Parser(PydanticParser[_ParsedRootDefinition, _ParsedDefinition]):
     def _get_schema_mapping(self) -> dict[str, type[_ParsedRootDefinition]]:
         return TYPE_SCHEMA_MAP
+
+    def _get_config_model(self) -> type[ConfigJinjaSchema]:
+        return ConfigJinjaSchema
+
+    def _get_scripts_model(self, mode: Literal["action", "wizard"]) -> type[DynamicScriptsSchema | WizardScriptsSchema]:
+        match mode:
+            case "action":
+                return DynamicScriptsSchema
+            case "wizard":
+                return WizardScriptsSchema
 
     def _flatten_definitions(
         self, definition: _ParsedRootDefinition

@@ -10,19 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, NamedTuple, TypeAlias
+from dataclasses import dataclass
+from typing import Iterable, NamedTuple, NewType, TypeAlias
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
+from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.bundle_alt.render import (
     ActionArgs,
-    ContextGatherer,
     Environment,
     TaskArgs,
-    render_config,
-    render_scripts,
 )
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.checks import check_mapping_restrictions
@@ -49,10 +48,11 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.dynamic_bundle.render import BundleRenderer
+from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
 from core.legacy.job.types import (
-    JobSpec,
     ScriptType,
     TaskMappingDelta,
 )
@@ -77,6 +77,8 @@ from use_cases.dto import ConfigurationDTO, RunActionDTO
 ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
+UseNewScheduler = NewType("UseNewScheduler", bool)
+
 
 class SpecPair(NamedTuple):
     spec: core.config.spec.FullSpec
@@ -88,198 +90,222 @@ class JobConfig(NamedTuple):
     specification: core.config.spec.FullSpec
 
 
-def schedule_task(
-    *,
-    action_orm: Action,
-    target: ActionTarget,
-    payload: RunActionDTO,
-    job_service: core.job.JobService,
-    config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
-    start_task_after_schedule: bool,
-) -> TaskLog:
-    action_objects = _ActionLaunchObjects(target=target, action=action_orm)
+@dataclass(slots=True)
+class ScheduleTask:
+    job_service: core.job.JobService
+    config_service: core.config.ConfigService
+    context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
+    use_new_scheduler: UseNewScheduler
 
-    is_upgrade_action = hasattr(action_orm, "upgrade")
-    action_has_hc_acl = bool(action_orm.hostcomponentmap)
+    def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
+        action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
-    if action_has_hc_acl and not action_objects.cluster:
-        raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
+        is_upgrade_action = hasattr(action_orm, "upgrade")
+        action_has_hc_acl = bool(action_orm.hostcomponentmap)
 
-    # shouldn't be here, extract and check correctly
-    if action_orm.wizard_template:
-        if payload.process is None:
-            raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
+        if action_has_hc_acl and not action_objects.cluster:
+            raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
-        if not Process.objects.filter(id=payload.process.id, action=action_orm, state=ProcessState.COMPLETED).exists():
-            raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
+        # shouldn't be here, extract and check correctly
+        if action_orm.wizard_template:
+            if payload.process is None:
+                raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
 
-    with atomic():
-        _check_no_target_conflict(target=action_objects.target, action=action_orm)
-        _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action_orm.name)
-        _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action_orm.pk)
-        _check_action_is_available_for_object(owner=action_objects.owner, action=action_orm)
+            if not Process.objects.filter(
+                id=payload.process.id, action=action_orm, state=ProcessState.COMPLETED
+            ).exists():
+                raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
 
-        descriptor = orm_object_to_core_descriptor(action_objects.owner)
+        with atomic():
+            _check_no_target_conflict(target=action_objects.target, action=action_orm)
+            _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action_orm.name)
+            _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action_orm.pk)
+            _check_action_is_available_for_object(owner=action_objects.owner, action=action_orm)
 
-        match action_objects.target:
-            case ActionHostGroup():
-                target_descriptor = HostGroupDescriptor(id=action_objects.target.pk, type=ADCMHostGroupType.ACTION)
-            case _:
-                target_descriptor = orm_object_to_core_descriptor(action_objects.target)
+            descriptor = orm_object_to_core_descriptor(action_objects.owner)
 
-        create_dto = core.job.dto.TaskCreateDTO(
-            action_id=action_orm.pk,
-            owner=descriptor,
-            target=target_descriptor,
-            launch=payload.launch,
-            process=payload.process,
-            description=payload.description,
-        )
-        task_id = job_service.create_task(payload=create_dto)
+            match action_objects.target:
+                case ActionHostGroup():
+                    target_descriptor = HostGroupDescriptor(id=action_objects.target.pk, type=ADCMHostGroupType.ACTION)
+                case _:
+                    target_descriptor = orm_object_to_core_descriptor(action_objects.target)
 
-        process_id = None if not payload.process else payload.process.id
-        environment = Environment(bundle_root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash)
-
-        job_config = None
-        delta = None
-        config_to_set = None
-
-        match action_objects.owner:
-            case Provider() | Host() | ADCM():
-                spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=config_service)
-                job_config = _prepare_configuration(
-                    spec=spec_pair, config=payload.configuration, owner=descriptor, config_service=config_service
-                )
-
-            case Cluster() | Service() | Component():
-                spec_pair = _resolve_spec(
-                    action=action_orm,
-                    cluster_related_object=action_objects.owner,
-                    process_id=process_id,
-                    environment=environment,
-                    config_service=config_service,
-                    context_gatherer=context_gatherer,
-                )
-                job_config = _prepare_configuration(
-                    spec=spec_pair, config=payload.configuration, owner=descriptor, config_service=config_service
-                )
-
-        if job_config:
-            update_result = config_service.prepare_configuration_for_ansible(
-                configuration=job_config.configuration,
-                specification=job_config.specification,
-                file_owner=Descriptor(id=task_id, type="task"),
+            create_dto = core.job.dto.TaskCreateDTO(
+                action_id=action_orm.pk,
+                owner=descriptor,
+                target=target_descriptor,
+                launch=payload.launch,
+                process=payload.process,
+                description=payload.description,
             )
-            config_to_set = update_result.values
-            config_service.prepare_file_parameter_values_on_fs(
-                configuration=job_config.configuration,
-                specification=job_config.specification,
-                owner_prefix=f"task.{task_id}",
+            task_id = self.job_service.create_task(payload=create_dto)
+
+            process_id = None if not payload.process else payload.process.id
+            bundle_context = core.bundle.BundleContext(
+                root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash,
+                contract_version=action_orm.prototype.bundle.contract_version,
             )
 
-        match action_objects.owner:
-            case Provider() | Host() | ADCM():
-                scripts = job_service.retrieve_scripts(action_id=action_orm.pk)
+            job_config = None
+            delta = None
+            config_to_set = None
 
-            case Cluster(id=cluster_id) | Service(cluster_id=cluster_id) | Component(cluster_id=cluster_id):
-                topology = retrieve_cluster_topology(cluster_id=cluster_id)
-
-                # it's actually an incorrect possibility for target, should be resolved earlier
-                if isinstance(action_objects.target, (ADCM, Provider)):
-                    message = f"Can't render scripts for target of type {type(action_objects.target)}"
-                    raise TypeError(message)
-
-                if action_has_hc_acl or is_upgrade_action:
-                    delta = _check_hostcomponent_and_get_delta(
-                        bundle_id=int(action_orm.prototype.bundle_id),
-                        topology=topology,
-                        hc_payload=payload.mapping or set(),
-                        hc_rules=action_orm.hostcomponentmap,
-                        mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
-                        if is_upgrade_action
-                        else "{}",
+            match action_objects.owner:
+                case Provider() | Host() | ADCM():
+                    spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=self.config_service)
+                    job_config = _prepare_configuration(
+                        spec=spec_pair,
+                        config=payload.configuration,
+                        owner=descriptor,
+                        config_service=self.config_service,
                     )
 
-                task_args = TaskArgs(
-                    target_object=action_objects.target,
-                    action=action_orm,
-                    config=config_to_set or {},
-                    verbose=payload.launch.is_verbose,
-                    delta=delta,
-                    wizard_process_id=process_id,
+                case Cluster() | Service() | Component():
+                    action_args = ActionArgs(
+                        action=action_orm,
+                        cluster_relative_object=action_objects.owner,
+                        wizard_process_id=process_id,
+                    )
+                    spec_pair = _resolve_spec(
+                        action=action_orm,
+                        action_args=action_args,
+                        bundle_context=bundle_context,
+                        config_service=self.config_service,
+                        bundle_renderer=self.bundle_renderer,
+                    )
+                    job_config = _prepare_configuration(
+                        spec=spec_pair,
+                        config=payload.configuration,
+                        owner=descriptor,
+                        config_service=self.config_service,
+                    )
+
+            if job_config:
+                update_result = self.config_service.prepare_configuration_for_ansible(
+                    configuration=job_config.configuration,
+                    specification=job_config.specification,
+                    file_owner=Descriptor(id=task_id, type="task"),
                 )
-                scripts = _resolve_scripts(
-                    action=action_orm,
-                    environment=environment,
-                    task_args=task_args,
-                    job_service=job_service,
-                    context_gatherer=context_gatherer,
+                config_to_set = update_result.values
+                self.config_service.prepare_file_parameter_values_on_fs(
+                    configuration=job_config.configuration,
+                    specification=job_config.specification,
+                    owner_prefix=f"task.{task_id}",
                 )
 
-            case _:
-                message = f"Unexpected owner: {action_objects.owner}"
-                raise RuntimeError(message)
+            match action_objects.owner:
+                case Provider() | Host() | ADCM():
+                    scripts = self.job_service.retrieve_scripts(action_id=action_orm.pk)
 
-        job_service.create_jobs(task_id=task_id, scripts=scripts)
+                case Cluster(id=cluster_id) | Service(cluster_id=cluster_id) | Component(cluster_id=cluster_id):
+                    topology = retrieve_cluster_topology(cluster_id=cluster_id)
 
-        if config_to_set is not None or delta is not None:
-            update_dto = core.job.dto.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
-            job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
+                    # it's actually an incorrect possibility for target, should be resolved earlier
+                    if isinstance(action_objects.target, (ADCM, Provider)):
+                        message = f"Can't render scripts for target of type {type(action_objects.target)}"
+                        raise TypeError(message)
 
-        orm_task = TaskLog.objects.get(id=task_id)
-        re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
+                    if action_has_hc_acl or is_upgrade_action:
+                        delta = _check_hostcomponent_and_get_delta(
+                            bundle_id=int(action_orm.prototype.bundle_id),
+                            topology=topology,
+                            hc_payload=payload.mapping or set(),
+                            hc_rules=action_orm.hostcomponentmap,
+                            mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
+                            if is_upgrade_action
+                            else "{}",
+                        )
 
-    send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
+                    task_args = TaskArgs(
+                        target_object=action_objects.target,
+                        action=action_orm,
+                        config=config_to_set or {},
+                        verbose=payload.launch.is_verbose,
+                        delta=delta,
+                        wizard_process_id=process_id,
+                    )
+                    scripts = _resolve_scripts(
+                        action=action_orm,
+                        bundle_context=bundle_context,
+                        task_args=task_args,
+                        job_service=self.job_service,
+                        context_gatherer=self.context_gatherer,
+                        bundle_renderer=self.bundle_renderer,
+                    )
 
-    if start_task_after_schedule:
-        start_task(orm_task)
+                case _:
+                    message = f"Unexpected owner: {action_objects.owner}"
+                    raise RuntimeError(message)
 
-    return orm_task
+            self.job_service.create_jobs(task_id=task_id, scripts=scripts)
+
+            if config_to_set is not None or delta is not None:
+                update_dto = core.job.dto.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
+                self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
+
+            orm_task = TaskLog.objects.get(id=task_id)
+            re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
+
+        send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
+
+        if not self.use_new_scheduler:
+            start_task(orm_task)
+
+        return orm_task
 
 
 # todo should be moved out of here, just a "simple" cover-up of most cornerstones
 #      when we are working with action's configuration.
 #      not even a use case.
-def retrieve_configuration_for_action(
-    *,
-    action_orm: Action,
-    target: ActionTarget,
-    config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
-) -> tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.Configuration, core.config.ConfigOwner] | None:
-    action_objects = _ActionLaunchObjects(target=target, action=action_orm)
+@dataclass(slots=True)
+class RetrieveConfigurationForAction:
+    config_service: core.config.ConfigService
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
 
-    descriptor = orm_object_to_core_descriptor(action_objects.owner)
+    def do(
+        self, *, action_orm: Action, target: ActionTarget
+    ) -> (
+        tuple[core.config.spec.FullSpec, core.config.Defaults, core.config.Configuration, core.config.ConfigOwner]
+        | None
+    ):
+        action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
-    match action_objects.owner:
-        case Provider() | Host() | ADCM():
-            spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=config_service)
+        descriptor = orm_object_to_core_descriptor(action_objects.owner)
 
-        case Cluster() | Service() | Component():
-            environment = Environment(bundle_root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash)
-            spec_pair = _resolve_spec(
-                action=action_orm,
-                cluster_related_object=action_objects.owner,
-                process_id=None,
-                environment=environment,
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-            )
+        match action_objects.owner:
+            case Provider() | Host() | ADCM():
+                spec_pair = _retrieve_static_spec(action_id=action_orm.pk, config_service=self.config_service)
 
-    if not spec_pair:
-        return None
+            case Cluster() | Service() | Component():
+                bundle_context = core.bundle.BundleContext(
+                    root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash,
+                    contract_version=action_orm.prototype.bundle.contract_version,
+                )
+                action_args = ActionArgs(
+                    action=action_orm, cluster_relative_object=action_objects.owner, wizard_process_id=None
+                )
+                spec_pair = _resolve_spec(
+                    action=action_orm,
+                    action_args=action_args,
+                    bundle_context=bundle_context,
+                    config_service=self.config_service,
+                    bundle_renderer=self.bundle_renderer,
+                )
 
-    configuration = config_service.prepare_default_configuration(
-        defaults=spec_pair.defaults, specification=spec_pair.spec
-    )
+        if not spec_pair:
+            return None
 
-    return (
-        spec_pair.spec,
-        spec_pair.defaults,
-        configuration,
-        core.config.ConfigOwner(descriptor=descriptor, state=action_objects.owner.state),
-    )
+        configuration = self.config_service.prepare_default_configuration(
+            defaults=spec_pair.defaults, specification=spec_pair.spec
+        )
+
+        return (
+            spec_pair.spec,
+            spec_pair.defaults,
+            configuration,
+            core.config.ConfigOwner(descriptor=descriptor, state=action_objects.owner.state),
+        )
 
 
 def _retrieve_static_spec(action_id: ActionID, config_service: core.config.ConfigService) -> SpecPair | None:
@@ -290,42 +316,36 @@ def _retrieve_static_spec(action_id: ActionID, config_service: core.config.Confi
         return None
 
 
+@convert_bundle_errors_to_adcm_ex
 def _resolve_spec(
     action: Action,
-    cluster_related_object: Cluster | Service | Component | Host,
-    environment: Environment,
-    process_id: core.action.wizard.ProcessID | None,
+    action_args: ActionArgs,
+    bundle_context: core.bundle.BundleContext,
     config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> SpecPair | None:
     if not (action.config_jinja or action.config_template):
         return _retrieve_static_spec(action_id=action.pk, config_service=config_service)
 
     if action.config_jinja:
-        prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=cluster_related_object)
-    else:
-        template = parse_template(action.config_template)
-
-        action_args = ActionArgs(
-            action=action,
-            cluster_relative_object=cluster_related_object,
-            wizard_process_id=process_id,
+        prototype_configs, _ = get_jinja_config(
+            action=action, cluster_relative_object=action_args.cluster_relative_object
         )
-        prototype_configs = render_config(
-            template=template, environment=environment, context_args=action_args, context_gatherer=context_gatherer
+        # todo rework, it shouldn't be imported in here, nor used "plainly" at all
+        from cm.impl.config.repo import build_specification_from_prototype_config_records
+
+        # todo raise error on empty spec?
+        spec, defaults = build_specification_from_prototype_config_records(
+            records=tuple(prototype_configs),
+            group_customization_flag=False,
+            secrets_service=config_service.secrets,
+            bundle_root=bundle_context.root,
         )
+        return SpecPair(spec=spec, defaults=defaults)
 
-    # todo rework, it shouldn't be imported in here, nor used "plainly" at all
-    from cm.impl.config.repo import build_specification_from_prototype_config_records
+    template = parse_template(action.config_template)
 
-    # todo raise error on empty spec?
-
-    spec, defaults = build_specification_from_prototype_config_records(
-        records=tuple(prototype_configs),
-        group_customization_flag=False,
-        secrets_service=config_service.secrets,
-        bundle_root=environment.bundle_root,
-    )
+    spec, defaults = bundle_renderer.render_config(template=template, args=action_args, bundle_context=bundle_context)
 
     return SpecPair(spec=spec, defaults=defaults)
 
@@ -365,11 +385,12 @@ def _prepare_configuration(
 
 def _resolve_scripts(
     action: Action,
-    environment: Environment,
+    bundle_context: core.bundle.BundleContext,
     task_args: TaskArgs,
     job_service: core.job.JobService,
-    context_gatherer: ContextGatherer,
-) -> tuple[JobSpec, ...]:
+    context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+) -> tuple[core.action.JobSpec, ...]:
     if not (action.scripts_jinja or action.scripts_template):
         return job_service.retrieve_scripts(action_id=action.pk)
 
@@ -377,7 +398,7 @@ def _resolve_scripts(
         script_generator = get_job_specs_from_template_new(
             jinja_path=action.scripts_jinja,
             allow_to_terminate=action.allow_to_terminate,
-            environment=environment,
+            environment=Environment(bundle_root=bundle_context.root),
             task_args=task_args,
             context_gatherer=context_gatherer,
         )
@@ -387,14 +408,16 @@ def _resolve_scripts(
             message = "Internal script 'config_apply' can't be used for jinja action"
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
 
-    else:
-        template = parse_template(action.scripts_template)
-        script_generator = render_scripts(
-            template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
-        )
-        scripts = tuple(script_generator)
+        return scripts
 
-    return scripts
+    template = parse_template(action.scripts_template)
+    scripts = bundle_renderer.render_scripts_for_action(
+        template=template,
+        args=task_args,
+        bundle_context=bundle_context,
+        action_allow_to_terminate=action.allow_to_terminate,
+    )
+    return tuple(scripts)
 
 
 class _ActionLaunchObjects:

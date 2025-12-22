@@ -12,7 +12,6 @@
 
 from itertools import compress
 
-from adcm.feature_flags import use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
 from cm.converters import (
     orm_object_to_action_target_descriptor,
@@ -20,7 +19,6 @@ from cm.converters import (
     orm_object_to_core_descriptor,
 )
 from cm.errors import AdcmEx
-from cm.legacy.services.job.action import ContextGatherer
 from cm.models import (
     Action,
     ADCMEntity,
@@ -32,24 +30,24 @@ from cm.models import (
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType
+from dishka import FromDishka
 from django.conf import settings
 from django.db.models import Q
-from infra.services import get_config_service, get_job_service, get_wizard_service
+from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
 from rest_framework.status import (
     HTTP_200_OK,
 )
 from use_cases.transition.job.schedule import (
     ActionTarget,
     ConfigurationDTO,
+    RetrieveConfigurationForAction,
     RunActionDTO,
-    retrieve_configuration_for_action,
-    schedule_task,
+    ScheduleTask,
 )
 import core
 
@@ -164,15 +162,40 @@ class ActionViewSet(
 
         return self._list_actions_available_to_user(request)
 
-    def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def retrieve(
+        self,
+        request,
+        *_,
+        config_service: FromDishka[core.config.ConfigService],
+        retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
+        **__,
+    ):
         self.parent_object = self.get_parent_object()
         action_: Action = self.get_object()
 
         self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
-        config_schema, config, adcm_meta = self.get_action_configuration_new(
-            action=action_, target=self._get_actions_owner()
-        )
+        target = self._get_actions_owner()
+
+        if not isinstance(target, ActionTarget):
+            raise TypeError(f"Can't get configuration for {target=}")
+
+        result = retrieve_configuration.do(action_orm=action_, target=target)
+
+        config_schema = config = adcm_meta = None
+
+        if result:
+            spec, defaults, default_config, owner = result
+
+            jsonschema = config_service.retrieve_jsonschema_for_action(
+                action_specification=spec, action_config_defaults=defaults, action_owner=owner
+            )
+            attributes = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
+            values = convert_json_fields_to_strings(values=default_config.values, spec=spec, inplace=True)
+            add_selection_for_selectable_groups(values=values, spec=spec, inplace=True)
+
+            config_schema, config, adcm_meta = jsonschema, values, attributes
 
         # processes = None - If processes are not supported by the action.
         # processes = [] - If processes is supported by the action, but there are no created processes yet.
@@ -199,33 +222,9 @@ class ActionViewSet(
 
         return Response(data=serializer.data)
 
-    def get_action_configuration_new(self, action: Action, target: ADCMEntity):
-        if not isinstance(target, ActionTarget):
-            raise TypeError(f"Can't get configuration for {target=}")
-
-        config_service = get_config_service()
-
-        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-        result = retrieve_configuration_for_action(
-            action_orm=action, target=target, config_service=config_service, context_gatherer=context_gatherer
-        )
-
-        if not result:
-            return None, None, None
-
-        spec, defaults, default_config, owner = result
-
-        jsonschema = config_service.retrieve_jsonschema_for_action(
-            action_specification=spec, action_config_defaults=defaults, action_owner=owner
-        )
-        attributes = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
-        values = convert_json_fields_to_strings(values=default_config.values, spec=spec, inplace=True)
-        add_selection_for_selectable_groups(values=values, spec=spec, inplace=True)
-
-        return jsonschema, values, attributes
-
     @action(methods=["post"], detail=True, url_path="run")
-    def run(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    @inject
+    def run(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG001, ARG002
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
         action_owner = self._get_actions_owner()
@@ -247,16 +246,8 @@ class ActionViewSet(
                 action_target=orm_object_to_action_target_descriptor(object_=self.parent_object),
             )
 
-        task = self._run_new(serializer, target_action)
-
-        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
-
-    def _run_new(self, serializer: Serializer, target_action: Action):
         if self.parent_object is None or isinstance(self.parent_object, ConfigHostGroup):
             raise ValueError(f"Unexpectedly parent object of object is {self.parent_object}")
-
-        config_service = get_config_service()
-        job_service = get_job_service()
 
         data: dict = serializer.validated_data
 
@@ -284,7 +275,7 @@ class ActionViewSet(
         payload = RunActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.legacy.job.dto.LaunchOptions(
+            launch=core.job.dto.LaunchOptions(
                 is_blocking=data["should_block_object"],
                 is_verbose=data["is_verbose"],
             ),
@@ -292,17 +283,13 @@ class ActionViewSet(
             description=data["description"],
         )
 
-        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-
-        return schedule_task(
+        task = schedule_task.do(
             action_orm=target_action,
             target=self.parent_object,
             payload=payload,
-            job_service=job_service,
-            config_service=config_service,
-            context_gatherer=context_gatherer,
-            start_task_after_schedule=not use_new_job_scheduler(),
         )
+
+        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
     def _list_actions_available_to_user(self, request: Request) -> Response:
         actions = self.filter_queryset(self.get_queryset())

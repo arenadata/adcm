@@ -84,7 +84,9 @@ def check_definitions_are_valid(
             check_upgrades(upgrades=definition.upgrades, definitions=definitions)
 
             if definition.config:
-                check_config(definition=definition.config, context=context, config_service=config_service)
+                check_config_definition(definition=definition.config, bundle_root=context.bundle_root)
+                specification, defaults = context.to_spec_and_defaults(definition.config, context.bundle_root)
+                check_config_defaults(specification=specification, defaults=defaults, config_service=config_service)
 
             check_actions(
                 actions=definition.actions,
@@ -159,11 +161,7 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def check_config(
-    definition: ConfigDefinition,
-    context: ValidationContext,
-    config_service: config.ConfigService,
-) -> None:
+def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> None:
     # For now performing these checks in here,
     # because later they will be "invalidated" by conversion to spec and defaults.
     # Maybe later these can be moved to parsing level,
@@ -174,7 +172,7 @@ def check_config(
                 default = definition.default_values.get(key)
                 if default:
                     check_file_path_in_config(
-                        bundle_root=context.bundle_root,
+                        bundle_root=bundle_root,
                         default=default,
                         name=config.names.level_names_to_full_name(key),
                     )
@@ -186,7 +184,12 @@ def check_config(
                 )
                 raise BundleValidationError(message)
 
-    specification, defaults = context.to_spec_and_defaults(definition, context.bundle_root)
+
+def check_config_defaults(
+    specification: config.spec.FullSpec,
+    defaults: config.Defaults,
+    config_service: config.ConfigService,
+):
     violations = config_service.validate_configuration_definition(specification=specification, defaults=defaults)
     if violations:
         violations_list_repr = "; ".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)

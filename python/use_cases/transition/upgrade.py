@@ -16,7 +16,6 @@ from cm import models
 from cm.errors import AdcmEx
 from cm.legacy.api import check_license
 from cm.legacy.bundle_switch_revert import bundle_switch
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.status_api import send_prototype_and_state_update_event
 
 # todo waiting for refactoring, don't want to copy it anywhere for now
@@ -27,7 +26,7 @@ import core
 
 from use_cases.dto import UpgradeActionDTO
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
-from use_cases.transition.job.schedule import schedule_task
+from use_cases.transition.job.schedule import ScheduleTask
 
 
 def upgrade_object(
@@ -35,10 +34,8 @@ def upgrade_object(
     upgrade: models.Upgrade,
     *,
     payload: UpgradeActionDTO,
-    job_service: core.job.JobService,
+    schedule_task: ScheduleTask,
     config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
-    start_task_after_schedule: bool,
 ) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
     with atomic():
         check_license(prototype=obj.prototype)
@@ -67,14 +64,6 @@ def upgrade_object(
             send_prototype_and_state_update_event(object_=obj)
             return "plain", None
 
-        task = schedule_task(
-            action_orm=upgrade.action,
-            target=obj,
-            payload=payload.to_run_action_dto(),
-            job_service=job_service,
-            config_service=config_service,
-            start_task_after_schedule=start_task_after_schedule,
-            context_gatherer=context_gatherer,
-        )
+        task = schedule_task.do(action_orm=upgrade.action, target=obj, payload=payload.to_run_action_dto())
 
         return "task", task.pk

@@ -33,9 +33,11 @@ from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
 from cm.legacy.services.service import delete_service_from_api
 from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
+from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import (
@@ -57,6 +59,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.cluster.create import create_services_from_prototypes
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -276,7 +279,8 @@ class ServiceViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
         service: Service = get_object_for_user(
             user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
@@ -291,7 +295,9 @@ class ServiceViewSet(
         serializer = self.get_serializer_class()(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        response: Response = get_maintenance_mode_response(obj=self.get_object(), serializer=serializer)
+        response: Response = get_maintenance_mode_response(
+            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+        )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 

@@ -14,9 +14,15 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BeforeValidator, Field
 
-from core.bundle._parsing.shared.config import ConfigAsListDictOrNone
+from core.bundle._parsing.shared.config import ConfigAsList, ConfigAsListDictOrNone
 from core.bundle._parsing.shared.model import BundleModel
-from core.bundle._parsing.v_2_0.actions import ClusterActions, HostOrADCMActions, ProviderActions
+from core.bundle._parsing.v_2_0.actions import (
+    ClusterActions,
+    DynamicActionScript,
+    DynamicWizardScript,
+    HostOrADCMActions,
+    ProviderActions,
+)
 from core.bundle._parsing.v_2_0.schema import (
     ComponentRequiresSchema,
     Export,
@@ -191,16 +197,16 @@ class ADCMSchema(BundleModel):
 # Dynamic Blocks
 
 
-# class DynamicActionScripts(BundleModel):
-#    scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
-#
-#
-# class DynamicWizardScripts(BundleModel):
-#    scripts: Annotated[list[TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA], Field(min_length=1)]
-#
-#
-# class DynamicConfig(BundleModel):
-#    config: ConfigAsListDictOrNoneNoDuplicates
+class DynamicActionScripts(BundleModel):
+    scripts: Annotated[list[DynamicActionScript], Field(min_length=1)]
+
+
+class DynamicWizardScripts(BundleModel):
+    scripts: Annotated[list[DynamicWizardScript], Field(min_length=1)]
+
+
+class DynamicConfig(BundleModel):
+    config: Annotated[ConfigAsList, Field(min_length=1)]
 
 
 # Unions

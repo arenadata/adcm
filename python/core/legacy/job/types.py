@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.action import JobSpec  # noqa
 from core.templates import Template
 from core.types import (
     ActionID,
@@ -233,23 +234,6 @@ class Task(BaseModel):
     is_blocking: bool
 
     description: str
-
-
-class JobSpec(BaseModel):
-    # basic info
-    name: str
-    display_name: str
-    script: str
-    script_type: ScriptType
-    allow_to_terminate: bool
-
-    # states
-    state_on_fail: str
-    multi_state_on_fail_set: list
-    multi_state_on_fail_unset: list
-
-    # extra
-    params: dict
 
 
 # it is validated, because we want to fail here on incorrect data

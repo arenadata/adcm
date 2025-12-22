@@ -19,6 +19,7 @@ import json
 import hashlib
 
 from core import action, bundle
+from core.bundle._types import BundleInfo
 from core.types import BundleID
 from django.db import IntegrityError
 from pydantic import BaseModel
@@ -41,17 +42,16 @@ STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 
 
 class BundleRepo(bundle.BundleRepoI):
-    def save_definitions(
-        self,
-        definitions: bundle.d.DefinitionsMap,
-        bundle_root: Path,
-        bundle_hash: str,
-        verification_status: bundle.SignatureStatus,
-    ) -> BundleID:
+    def save_definitions(self, definitions: bundle.d.DefinitionsMap, bundle_info: BundleInfo) -> BundleID:
         bundle_definition = definitions.get(("cluster",)) or definitions.get(("provider",)) or definitions[("adcm",)]
 
         try:
-            created_bundle = _create_bundle(bundle_definition, bundle_hash, verification_status)
+            created_bundle = _create_bundle(
+                bundle_definition,
+                bundle_info.hash,
+                bundle_info.signature,
+                contract_version=bundle_info.contract_version,
+            )
         except IntegrityError as e:
             is_constraint_violation = "duplicate key value violates unique constraint" in str(e)
             if not is_constraint_violation:
@@ -77,7 +77,7 @@ class BundleRepo(bundle.BundleRepoI):
             prototype = _definition_to_model(
                 definition=definition,
                 bundle=created_bundle,
-                license_hash=_get_license_hash(bundle_root, definition.license.path),
+                license_hash=_get_license_hash(bundle_info.root, definition.license.path),
             )
 
             if bundle.is_component_key(key):
@@ -181,13 +181,17 @@ def convert_config_definition_to_orm_model(
 
 
 def _create_bundle(
-    definition: bundle.d.Definition, bundle_hash: str, verification_status: bundle.SignatureStatus
+    definition: bundle.d.Definition,
+    bundle_hash: str,
+    verification_status: bundle.SignatureStatus,
+    contract_version: str,
 ) -> Bundle:
     return Bundle.objects.create(
         name=definition.name,
         version=definition.version,
         edition=definition.edition,
         signature_status=verification_status,
+        contract_version=contract_version,
         description=definition.description,
         # version_order
         hash=bundle_hash,

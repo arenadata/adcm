@@ -18,11 +18,13 @@ from core.bundle._predicates import is_component_key
 from core.bundle._repo import BundleRepoI
 from core.bundle._representation import build_parent_key_safe
 from core.bundle._service import BundleService
-from core.bundle._types import BundleDefinitionKey, BundleUnpackingInfo, SignatureStatus
+from core.bundle._types import BundleContext, BundleDefinitionKey, BundleInfo, BundleUnpackingInfo, SignatureStatus
 from core.bundle._validate import ConvertConfigDefinition
 
 __all__ = [
+    "BundleContext",
     "BundleDefinitionKey",
+    "BundleInfo",
     "BundleOperationError",
     "BundleParsingError",
     "BundleProcessingError",

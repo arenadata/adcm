@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Literal, Protocol, TypeAlias
 
-from core.bundle._definitions import DefinitionsMap
+from core import action
+from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 
 VersionTag: TypeAlias = str
 VersionSupportStatus: TypeAlias = Literal["supported", "deprecated"]
@@ -40,12 +41,21 @@ class RootEntry:
 
 class BundleParser(Protocol):
     def parse_root_entries(self, entries: Iterable[RootEntry], bundle_root: Path) -> DefinitionsMap:
-        # parsed_definitions_map, definition_path_map = _parse_bundle_definitions(
-        #     definition_path_pairs, bundle_root=bundle_dir, adcm_version=adcm_version
-        # )
-        # _propagate_attributes(parsed_definitions_map)
-        # normalized_definitions = _normalize_definitions(
-        #    definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_dir
-        # )
+        ...
 
+    def parse_config(
+        self,
+        config: list[dict],
+        bundle_root: Path,
+        template_path: Path,
+    ) -> ConfigDefinition:
+        ...
+
+    def parse_scripts(
+        self,
+        scripts: list[dict],
+        template_path: Path,
+        action_allow_to_terminate: bool,
+        mode: Literal["action", "wizard"],
+    ) -> list[action.JobSpec]:
         ...

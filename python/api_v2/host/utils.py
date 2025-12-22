@@ -25,6 +25,7 @@ from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
@@ -68,7 +69,7 @@ def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster
     return host
 
 
-def maintenance_mode(request: Request, host: Host) -> Response:
+def maintenance_mode(request: Request, host: Host, schedule_task: ScheduleTask) -> Response:
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
 
     serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)
@@ -83,7 +84,7 @@ def maintenance_mode(request: Request, host: Host) -> Response:
             status=HTTP_409_CONFLICT,
         )
 
-    response = get_maintenance_mode_response(obj=host, serializer=serializer)
+    response = get_maintenance_mode_response(obj=host, serializer=serializer, schedule_task=schedule_task)
     if response.status_code == HTTP_200_OK:
         response.data = serializer.data
 

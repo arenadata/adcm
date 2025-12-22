@@ -16,17 +16,20 @@ import json
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from infra.services import get_config_service, get_job_service, get_wizard_service
 from use_cases.dto import RunActionDTO
-from use_cases.transition.job.schedule import schedule_task
 
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.models import Action, Component
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 
 
 class TestEffectsOfADCMAnsiblePlugins(
-    TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BusinessLogicMixin, ADCMAnsiblePluginTestMixin
+    WithDishkaContainer,
+    TestCaseWithCommonSetUpTearDown,
+    ParallelReadyTestCase,
+    BusinessLogicMixin,
+    ADCMAnsiblePluginTestMixin,
 ):
     def setUp(self) -> None:
         super().setUp()
@@ -76,18 +79,9 @@ class TestEffectsOfADCMAnsiblePlugins(
                 change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}
             )
         ) as run_task:
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-
-            schedule_task(
-                action_orm=Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps"),
-                target=self.cluster,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            action = Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps")
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=self.cluster, payload=RunActionDTO())
 
         self.assertIsNotNone(run_task.target_task)
         run_task.runner.run(task_id=run_task.target_task.pk)

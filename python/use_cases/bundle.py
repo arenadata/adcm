@@ -51,13 +51,16 @@ class ParseBundleFromRequest:
 
                 with localize_error(f"Bundle from {archive.name}"):
                     root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=unpacking_info.root)
-                    definitions = self.bundle_service.parse_to_definitions(
+                    parsing_meta, definitions = self.bundle_service.parse_to_definitions(
                         entries=root_entries, bundle_root=unpacking_info.root
                     )
 
                 with atomic():
+                    bundle_info = core.bundle.BundleInfo.from_unpacking_info(
+                        unpacking_info, contract_version=parsing_meta.contract_version
+                    )
                     bundle_id = self.bundle_service.create_bundle_from_definitions(
-                        definitions=definitions, unpacking_info=unpacking_info
+                        definitions=definitions, bundle_info=bundle_info
                     )
                     bundle_object = models.Bundle.objects.get(id=bundle_id)
                     prepare_action_roles(bundle=bundle_object)
