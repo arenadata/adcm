@@ -105,7 +105,9 @@ class TemplateRendererJinja2(TemplateRenderer):
         paths_to_load = [str(script_dir_within_bundle), str(bundle_root)]
 
         loader = FileSystemLoader(paths_to_load)
-        autoescape = select_autoescape(default_for_string=False, enabled_extensions=("html", "htm"))
+        autoescape = select_autoescape(
+            default_for_string=True, default=True, disabled_extensions=("j2", "jinja2", "yml", "yaml")
+        )
         # Looks like typehints in jinja2.Environment doesn't work too well,
         # because in fact this function accepts callable, yet typehint says different.
         #
