@@ -70,9 +70,8 @@
       transition: background-color 600000s 0s, color 600000s 0s;
     }
 
-    -webkit-text-fill-color: var(--field-color-primary);
-
     &:autofill {
+      -webkit-text-fill-color: var(--field-color-primary);
       background: transparent;
       caret-color: var(--field-color-primary);
     }
