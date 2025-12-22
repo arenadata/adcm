@@ -183,11 +183,16 @@ _DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
 
 
 class RunTaskMock:
-    def __init__(self, execution_target_factory: ExecutionTargetFactoryI = _DEFAULT_ETF_MOCK):
+    def __init__(
+        self,
+        execution_target_factory: ExecutionTargetFactoryI = _DEFAULT_ETF_MOCK,
+        run_patch_path: str = "use_cases.transition.job.schedule.start_task",
+    ):
         self.target_task: TaskLog | None = None
         self.runner: TaskRunner | None = None
         self._execution_target_factory = execution_target_factory
         self._run_patch = None
+        self._run_patch_path = run_patch_path  # TODO: remove after legacy is gone
 
     def __call__(self, task: TaskLog) -> None:
         self.target_task = task
@@ -200,8 +205,7 @@ class RunTaskMock:
             self.runner = get_default_runner()
 
     def __enter__(self):
-        self._run_patch = patch("use_cases.transition.job.schedule.start_task", new=self)
-        # self._run_patch = patch("cm.legacy.services.job.action.start_task", new=self)
+        self._run_patch = patch(self._run_patch_path, new=self)
         return self._run_patch.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -137,7 +137,10 @@ class TestActionProcessAudit(BaseAPITestCase):
                 fill_step_spec(
                     step_id=target_operation_step.id,
                     context=RenderStepContext(
-                        process_id=process.id, action_id=action.id, object=orm_object_to_core_descriptor(obj)
+                        process_id=process.id,
+                        action_id=action.id,
+                        target=orm_object_to_core_descriptor(obj),
+                        owner_prototype_id=obj.prototype_id,
                     ),
                     context_gatherer=context_gatherer,
                 )

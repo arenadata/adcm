@@ -183,6 +183,7 @@ class ActionViewSet(
             ADCMCoreType.CLUSTER,
             ADCMCoreType.SERVICE,
             ADCMCoreType.COMPONENT,
+            ADCMCoreType.HOST,
         ):
             processes = get_action_processes(action=action_, object_=orm_object_to_core_descriptor(self.parent_object))
 

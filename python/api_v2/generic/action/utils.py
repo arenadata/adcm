@@ -159,7 +159,6 @@ def get_schema_config_meta(
 def check_process_object(process_id: int, action_id: ActionID, action_target: ActionTargetDescriptor) -> None:
     if action_target.type in {
         ADCMCoreType.ADCM,
-        ADCMCoreType.HOST,
         ADCMCoreType.PROVIDER,
         ExtraActionTargetType.ACTION_HOST_GROUP,
     }:

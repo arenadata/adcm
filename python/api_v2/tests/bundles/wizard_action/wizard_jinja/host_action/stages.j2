@@ -1,0 +1,27 @@
+- name: first_stage
+  display_name: "First stage"
+  steps:
+    - name: step_1_config
+      display_name: "Stage1 Step1. Config"
+      config_template:
+        file:
+          path: wizard_jinja/host_action/config_step.j2
+        engine:
+          type: jinja2
+    - name: step_2_mapping
+      display_name: "Stage1 Step2. Mapping"
+      hc_template:
+        file:
+          path: wizard_jinja/host_action/mapping_step.j2
+        engine:
+          type: jinja2
+    - name: step_3_operation
+      display_name: "Stage1 Step3. Operation"
+      ui_options:
+        button_name: ButtonName
+      scripts_template:
+        file:
+          path: wizard_jinja/host_action/operation_step.py
+          entrypoint: generate_scripts
+        engine:
+          type: python
