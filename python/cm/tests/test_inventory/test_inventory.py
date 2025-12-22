@@ -16,15 +16,12 @@ from pathlib import Path
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from infra.services import get_config_service, get_job_service, get_wizard_service
 from init_db import init as init_adcm
 from use_cases.dto import RunActionDTO
-from use_cases.transition.job.schedule import schedule_task
 import core
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.api import add_service_to_cluster, update_obj_config
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import ObjectWithAction
 from cm.legacy.services.job.inventory import get_inventory_data
@@ -42,7 +39,9 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
@@ -153,7 +152,7 @@ class TestInventory(BaseTestCase):
                 self.assertDictEqual(strip_uuid(actual_data), inv)
 
 
-class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
+class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
         init_adcm()
@@ -278,17 +277,12 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.assertEqual(JobLog.objects.count(), 0)
 
         with RunTaskMock() as run_task:
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=object_,
-                payload=payload,
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=object_,
+                    payload=payload,
+                )
 
         inventory = prepare_ansible_inventory(
             task=JobRepoImpl.get_task(run_task.target_task.id),

@@ -13,13 +13,10 @@
 from pathlib import Path
 from typing import Any
 
-from core.errors import localize_error
-from core.legacy.bundle_alt.process import ConfigConversionContext
 from django.conf import settings
 from yaml import safe_load
 
 from cm.legacy.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.legacy.services.bundle_alt.load import parse_config_jinja
 from cm.legacy.services.config.patterns import Pattern
 from cm.legacy.services.jinja_env import get_env_for_jinja_config
 from cm.legacy.services.template import TemplateBuilder
@@ -79,20 +76,6 @@ def _get_jinja_config_old(
                 attr[normalized_field["name"]] = normalized_field["limits"]
 
     return configs, attr
-
-
-def _get_jinja_config_new(data: list[dict], action: Action, config_file: Path, resolver: BundlePathResolver, object_):
-    context = ConfigConversionContext(
-        bundle_root=resolver.bundle_root,
-        path=str(config_file.parent),
-        object={"config_group_customization": False},
-    )
-
-    proto = object_.prototype
-    with localize_error(f'Object of type {proto.type} named "{proto.name}", version {proto.version}'):
-        configs = parse_config_jinja(data=data, context=context, action=action)
-
-    return configs, {}
 
 
 def _normalize_field(

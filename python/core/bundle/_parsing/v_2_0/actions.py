@@ -107,14 +107,32 @@ class ConfigApplyInternalScript(_BaseScript):
     params: ConfigApplyParams
 
 
-GeneralInternalScript = Annotated[
-    BundleSwitchInternalScript | BundleRevertInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+NonClusterInternalScript = Annotated[
+    BundleSwitchInternalScript | BundleRevertInternalScript, Field(discriminator="script")
 ]
-ClusterInternalScript = Annotated[GeneralInternalScript | HcApplyInternalScript, Field(discriminator="script")]
+ClusterStaticInternalScript = Annotated[NonClusterInternalScript | HcApplyInternalScript, Field(discriminator="script")]
 
-ClusterScript = Annotated[ClusterInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")]
+ClusterScript = Annotated[
+    ClusterStaticInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
+]
 
-NonClusterScript = Annotated[GeneralInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")]
+NonClusterScript = Annotated[
+    NonClusterInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
+]
+
+_DynamicActionInternalScript = Annotated[
+    ClusterStaticInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+]
+DynamicActionScript = Annotated[
+    _DynamicActionInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
+]
+
+_DynamicWizardInternalScript = Annotated[
+    NonClusterInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+]
+DynamicWizardScript = Annotated[
+    _DynamicWizardInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
+]
 
 # Action
 

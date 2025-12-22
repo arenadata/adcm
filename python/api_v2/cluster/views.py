@@ -62,11 +62,13 @@ from core.legacy.cluster.operations import (
 )
 from core.legacy.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
 from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -83,6 +85,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.cluster.create import create_cluster
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
@@ -945,8 +948,9 @@ class HostClusterViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object())
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002

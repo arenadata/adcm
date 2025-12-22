@@ -15,6 +15,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, TypeAlias
 
+from typing_extensions import Self
+
 
 class SignatureStatus(str, Enum):
     VALID = "valid"
@@ -27,6 +29,18 @@ class BundleUnpackingInfo:
     hash: str
     root: Path
     signature: SignatureStatus = SignatureStatus.ABSENT
+
+
+@dataclass(slots=True)
+class BundleInfo:
+    contract_version: str
+    hash: str
+    root: Path
+    signature: SignatureStatus
+
+    @classmethod
+    def from_unpacking_info(cls, info: BundleUnpackingInfo, contract_version: str) -> Self:
+        return cls(hash=info.hash, root=info.root, signature=info.signature, contract_version=contract_version)
 
 
 # This is target implementation of definition keys,
@@ -57,3 +71,9 @@ class BundleUnpackingInfo:
 #
 # BundleDefinitionKey: TypeAlias = ClusterBundleDefinitionKey | ProviderBundleDefinitionKey | ADCMBundleDefinitionKey
 BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | tuple[Literal["component"], str, str]
+
+
+@dataclass(slots=True)
+class BundleContext:
+    root: Path
+    contract_version: str

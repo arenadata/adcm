@@ -10,18 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
 from django.conf import settings
-from infra.services import get_config_service, get_job_service, get_wizard_service
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from use_cases.dto import RunActionDTO
-from use_cases.transition.job.schedule import schedule_task
+from use_cases.transition.job.schedule import ScheduleTask
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.bundle_alt.render import ContextGatherer
-from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.legacy.services.status.notify import reset_objects_in_mm
 from cm.legacy.status_api import send_object_update_event
 from cm.models import (
@@ -40,30 +36,12 @@ def _change_mm_via_action(
     action_name: str,
     obj: Host | Service | Component,
     serializer: Serializer,
+    schedule_task: ScheduleTask,
 ) -> Serializer:
     action = Action.objects.filter(prototype=prototype, name=action_name).first()
     if action:
-        if use_new_config_processing():
-            job_service = get_job_service()
-            config_service = get_config_service()
-            wizard_service = get_wizard_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=wizard_service)
-            schedule_task(
-                action_orm=action,
-                target=obj,
-                payload=RunActionDTO(),
-                job_service=job_service,
-                config_service=config_service,
-                start_task_after_schedule=not use_new_job_scheduler(),
-                context_gatherer=context_gatherer,
-            )
+        schedule_task.do(action_orm=action, target=obj, payload=RunActionDTO())
 
-        else:
-            run_action(
-                action=action,
-                obj=obj,
-                payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
-            )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 
     return serializer
@@ -72,6 +50,7 @@ def _change_mm_via_action(
 def get_maintenance_mode_response(
     obj: Host | Service | Component,
     serializer: Serializer,
+    schedule_task: ScheduleTask,
 ) -> Response:
     if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
         return Response(
@@ -135,6 +114,7 @@ def get_maintenance_mode_response(
                 action_name=turn_on_action_name,
                 obj=obj,
                 serializer=serializer,
+                schedule_task=schedule_task,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.ON
@@ -167,6 +147,7 @@ def get_maintenance_mode_response(
                 action_name=turn_off_action_name,
                 obj=obj,
                 serializer=serializer,
+                schedule_task=schedule_task,
             )
         else:
             obj.maintenance_mode = MaintenanceMode.OFF

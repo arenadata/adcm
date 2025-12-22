@@ -15,16 +15,18 @@ from itertools import chain
 from pathlib import Path
 from typing import Collection
 
-from core import config
+from core import action, config
 from core.bundle import parsing
 from core.bundle._definitions import DefinitionsMap
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
-from core.bundle._types import BundleUnpackingInfo
+from core.bundle._types import BundleContext, BundleInfo
 from core.bundle._validate import (
     ConvertConfigDefinition,
     ValidationContext,
+    check_config_defaults,
+    check_config_definition,
     check_definitions_are_valid,
     check_has_valid_definitions_set,
 )
@@ -41,15 +43,8 @@ class BundleService:
 
     config_service: config.ConfigService
 
-    def create_bundle_from_definitions(
-        self, definitions: DefinitionsMap, unpacking_info: BundleUnpackingInfo
-    ) -> BundleID:
-        bundle_id = self.repo.save_definitions(
-            definitions=definitions,
-            bundle_root=unpacking_info.root,
-            bundle_hash=unpacking_info.hash,
-            verification_status=unpacking_info.signature,
-        )
+    def create_bundle_from_definitions(self, definitions: DefinitionsMap, bundle_info: BundleInfo) -> BundleID:
+        bundle_id = self.repo.save_definitions(definitions=definitions, bundle_info=bundle_info)
         self.repo.update_prototype_licenses(bundle_id=bundle_id)
         self.repo.recollect_categories()
         return bundle_id
@@ -59,7 +54,9 @@ class BundleService:
         root_entries = map(read_root_entries_from_yaml_file, config_files)
         return list(chain.from_iterable(root_entries))
 
-    def parse_to_definitions(self, entries: Collection[parsing.RootEntry], bundle_root: Path) -> DefinitionsMap:
+    def parse_to_definitions(
+        self, entries: Collection[parsing.RootEntry], bundle_root: Path
+    ) -> tuple[parsing.ParsingMeta, DefinitionsMap]:
         meta = parsing.extract_parsing_meta(entries)
         parsing.check_adcm_min_version(current=self.adcm_version, required=meta.adcm_min_version)
         parser = parsing.pick_suitable_parser(version=meta.contract_version, parsers=self.parsers)
@@ -67,4 +64,47 @@ class BundleService:
         check_has_valid_definitions_set(definitions)
         context = ValidationContext(bundle_root=bundle_root, to_spec_and_defaults=self.definition_to_spec_converter)
         check_definitions_are_valid(definitions=definitions, context=context, config_service=self.config_service)
-        return definitions
+        return meta, definitions
+
+    def parse_to_spec_with_defaults(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+    ) -> tuple[config.spec.FullSpec, config.Defaults]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        definition = parser.parse_config(config=data, bundle_root=bundle_context.root, template_path=template_path)
+        check_config_definition(definition=definition, bundle_root=bundle_context.root)
+        specification, defaults = self.definition_to_spec_converter(definition, bundle_context.root)
+        check_config_defaults(specification=specification, defaults=defaults, config_service=self.config_service)
+        return specification, defaults
+
+    def parse_to_action_scripts(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+        action_allow_to_terminate: bool,
+    ) -> list[action.JobSpec]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        return parser.parse_scripts(
+            scripts=data,
+            template_path=template_path,
+            action_allow_to_terminate=action_allow_to_terminate,
+            mode="action",
+        )
+
+    def parse_to_wizard_scripts(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+        action_allow_to_terminate: bool,
+    ) -> list[action.JobSpec]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        return parser.parse_scripts(
+            scripts=data,
+            template_path=template_path,
+            action_allow_to_terminate=action_allow_to_terminate,
+            mode="wizard",
+        )

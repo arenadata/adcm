@@ -12,12 +12,13 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generic, Iterable, TypeAlias, TypeVar
+from typing import Generic, Iterable, Literal, TypeAlias, TypeVar
 
-from pydantic import BaseModel
-
-from core.bundle._definitions import DefinitionsMap
+from core import action
+from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._errors import BundleParsingError, convert_validation_to_bundle_error
+from core.bundle._parsing.shared.conversion import extract_config, extract_scripts
+from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.types import BundleParser, RootEntry
 from core.bundle._representation import repr_from_raw
 from core.bundle._types import BundleDefinitionKey
@@ -25,13 +26,21 @@ from core.errors import localize_error
 
 _RelativePath: TypeAlias = str
 
-RootT = TypeVar("RootT", bound=BaseModel)
-ObjectT = TypeVar("ObjectT", bound=BaseModel)
+RootT = TypeVar("RootT", bound=BundleModel)
+ObjectT = TypeVar("ObjectT", bound=BundleModel)
 
 
 class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
     @abstractmethod
     def _get_schema_mapping(self) -> dict[str, type[RootT]]:
+        ...
+
+    @abstractmethod
+    def _get_config_model(self) -> type[BundleModel]:
+        ...
+
+    @abstractmethod
+    def _get_scripts_model(self, mode: Literal["action", "wizard"]) -> type[BundleModel]:
         ...
 
     @abstractmethod
@@ -49,6 +58,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
 
     # Implementation
 
+    @convert_validation_to_bundle_error
     def parse_root_entries(
         self,
         entries: Iterable[RootEntry],
@@ -58,6 +68,53 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         return self._convert_objects(
             definitions=parsed_definitions_map, relative_definition_paths=definition_path_map, bundle_root=bundle_root
         )
+
+    @convert_validation_to_bundle_error
+    def parse_config(
+        self,
+        config: list[dict],
+        bundle_root: Path,
+        template_path: Path,
+    ) -> ConfigDefinition:
+        model_ = self._get_config_model()
+        parsed = model_.model_validate({"config": config}, strict=True)
+        dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
+
+        conversion_context = {
+            "object": {"config_group_customization": False},
+            "bundle_root": bundle_root,
+            "path": str(template_path.parent),
+        }
+        result = extract_config(config=dumped, context=conversion_context)
+
+        if not result:
+            message = "Conversion to config definition failed: unexpectedly got None"
+            raise BundleParsingError(message)
+
+        return result
+
+    def parse_scripts(
+        self,
+        scripts: list[dict],
+        template_path: Path,
+        action_allow_to_terminate: bool,
+        mode: Literal["action", "wizard"],
+    ) -> list[action.JobSpec]:
+        model_ = self._get_scripts_model(mode)
+        parsed = model_.model_validate({"scripts": scripts}, strict=True)
+        dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
+
+        for script in dumped:  # propagate `allow_to_terminate` attr from action if not set
+            if not script.get("allow_to_terminate"):
+                script["allow_to_terminate"] = action_allow_to_terminate
+
+        result = extract_scripts(scripts=dumped, path_resolution_root=template_path.parent)
+
+        if not result:
+            message = "Conversion to scripts definition failed: unexpectedly got None"
+            raise BundleParsingError(message)
+
+        return result
 
     # Steps
 
@@ -82,7 +139,6 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         return definitions_map, paths_map
 
 
-@convert_validation_to_bundle_error
 def parse_root_entry(definition: dict, schema_map: dict[str, type[RootT]]) -> RootT:
     try:
         def_type = definition["type"]

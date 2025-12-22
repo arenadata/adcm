@@ -13,12 +13,13 @@
 from pathlib import Path
 from typing import Generator
 
+from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
 
 from cm.errors import AdcmEx
 from cm.legacy.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs
+from cm.legacy.services.bundle_alt.render import ActionArgs, Environment, TaskArgs
 from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.template import TemplateBuilder
 from cm.legacy.utils import decrypt_secrets, get_on_fail_states
@@ -64,7 +65,7 @@ def get_job_specs_from_template_new(
     environment: Environment,
     task_args: TaskArgs,
     allow_to_terminate: bool,
-    context_gatherer: ContextGatherer,
+    context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
 ) -> Generator[JobSpec, None, None]:
     # dirty function just to unbind job specs build from task existence
 

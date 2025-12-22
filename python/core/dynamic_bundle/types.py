@@ -10,17 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from typing import Generic, Protocol, TypeVar
 
-from core.action._wizard._repo import WizardRepoI
-from core.action._wizard._types import ProcessID, StepWithData
-from core.settings import Directories
+from core import config
+
+AT = TypeVar("AT", contravariant=True)
+TT = TypeVar("TT", contravariant=True)
 
 
-@dataclass(slots=True)
-class WizardService:
-    repo: WizardRepoI
-    directories: Directories
+class ContextGathererI(Protocol, Generic[AT, TT]):
+    def prepare_context_for_action(self, args: AT) -> dict:
+        ...
 
-    def retrieve_steps_and_data_for_process(self, process_id: ProcessID) -> list[StepWithData]:
-        return self.repo.get_steps_with_data(process_id=process_id, bundles_dir=self.directories.bundles)
+    def prepare_context_for_task(self, args: TT) -> dict:
+        ...
+
+
+class JinjaRendererI(Protocol):
+    def render_config(self) -> tuple[config.spec.FullSpec, config.Defaults]:
+        ...

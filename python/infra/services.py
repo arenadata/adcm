@@ -70,7 +70,7 @@ def get_wizard_service():
 
     repo = WizardRepo()
 
-    return core.action.wizard.WizardService(repo=repo, settings=settings_)
+    return core.action.wizard.WizardService(repo=repo, directories=settings_.directories)
 
 
 def _get_settings() -> Settings:

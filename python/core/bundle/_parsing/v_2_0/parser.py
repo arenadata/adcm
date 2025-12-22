@@ -12,7 +12,7 @@
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Final, Iterable
+from typing import Final, Iterable, Literal
 
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._parsing.shared.conversion import convert_object
@@ -20,6 +20,9 @@ from core.bundle._parsing.shared.parser import PydanticParser
 from core.bundle._parsing.v_2_0.targets import (
     ADCMSchema,
     Cluster,
+    DynamicActionScripts,
+    DynamicConfig,
+    DynamicWizardScripts,
     Host,
     ObjectTarget,
     Provider,
@@ -43,6 +46,18 @@ TYPE_SCHEMA_MAP: Final[dict[str, type[RootTarget]]] = {
 class Parser(PydanticParser[RootTarget, ObjectTarget]):
     def _get_schema_mapping(self) -> dict[str, type[RootTarget]]:
         return TYPE_SCHEMA_MAP
+
+    def _get_config_model(self) -> type[DynamicConfig]:
+        return DynamicConfig
+
+    def _get_scripts_model(
+        self, mode: Literal["action", "wizard"]
+    ) -> type[DynamicActionScripts | DynamicWizardScripts]:
+        match mode:
+            case "action":
+                return DynamicActionScripts
+            case "wizard":
+                return DynamicWizardScripts
 
     def _flatten_definitions(self, definition: RootTarget) -> Iterable[tuple[BundleDefinitionKey, ObjectTarget]]:
         if not isinstance(definition, Service):

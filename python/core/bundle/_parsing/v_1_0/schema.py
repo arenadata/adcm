@@ -26,6 +26,7 @@ from pydantic import (
 from typing_extensions import Self, TypedDict
 
 from core import action
+from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.validation import (
     convert_config,
     forbidden_mm_actions,
@@ -800,14 +801,17 @@ class _BaseActionSchema(_BaseModel):
             raise ValueError('"scripts" and "scripts_jinja" are mutually exclusive')
 
         config_jinja_specified = "config_jinja" in data
+        config_template_specified = "config_template" in data
         config_specified = "config" in data
         wizard_specified = "wizard_template" in data
         hc_acl_specified = "hc_acl" in data
-        if config_jinja_specified and config_specified:
-            raise ValueError('"config" and "config_jinja" are mutually exclusive')
 
-        if wizard_specified and (config_specified or config_jinja_specified):
-            raise ValueError('"wizard_template" and "config" or  "config_jinja" are mutually exclusive')
+        config_variants = tuple(filter(bool, (config_specified, config_jinja_specified, config_template_specified)))
+        if len(config_variants) > 1:
+            raise ValueError('"config", "config_jinja" and "config_template" are mutually exclusive')
+
+        if wizard_specified and (config_specified or config_jinja_specified or config_template_specified):
+            raise ValueError('"wizard_template" and "config", "config_jinja", "config_template" are mutually exclusive')
 
         if wizard_specified and hc_acl_specified:
             raise ValueError('"wizard_template" and "hc_acl" are mutually exclusive')
@@ -1078,7 +1082,7 @@ class ImportSchema(_BaseModel):
         return self
 
 
-class _BaseObjectSchema(_BaseModel):
+class _BaseObjectSchema(BundleModel):
     type: Literal["cluster", "service", "provider", "host", "adcm"]
     name: str
     version: VERSION
@@ -1122,7 +1126,7 @@ class ClusterSchema(_BaseObjectSchema):
     actions: CLUSTER_ACTIONS_TYPE
 
 
-class ComponentSchema(_BaseModel):
+class ComponentSchema(BundleModel):
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
     monitoring: MONITORING
@@ -1185,7 +1189,7 @@ class ProviderSchema(_BaseObjectSchema):
 ###############
 
 
-class DynamicScriptsSchema(_BaseModel):
+class DynamicScriptsSchema(BundleModel):
     scripts: Annotated[list[TASK_SCRIPTS_JINJA_SCHEMA], Field(min_length=1)]
 
 
@@ -1194,7 +1198,7 @@ class DynamicScriptsSchema(_BaseModel):
 ##############
 
 
-class WizardScriptsSchema(_BaseModel):
+class WizardScriptsSchema(BundleModel):
     scripts: Annotated[list[TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA], Field(min_length=1)]
 
 
@@ -1203,5 +1207,5 @@ class WizardScriptsSchema(_BaseModel):
 ##############
 
 
-class ConfigJinjaSchema(_BaseModel):
+class ConfigJinjaSchema(BundleModel):
     config: Annotated[CONFIG_LIST, BeforeValidator(convert_config), AfterValidator(config_duplicates)]

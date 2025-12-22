@@ -10,22 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from typing import Protocol
 
 from core.bundle._definitions import DefinitionsMap
-from core.bundle._types import SignatureStatus
+from core.bundle._types import BundleInfo
 from core.types import BundleID
 
 
 class BundleRepoI(Protocol):
-    def save_definitions(
-        self,
-        definitions: DefinitionsMap,
-        bundle_root: Path,
-        bundle_hash: str,
-        verification_status: SignatureStatus,
-    ) -> BundleID:
+    def save_definitions(self, definitions: DefinitionsMap, bundle_info: BundleInfo) -> BundleID:
         ...
 
     def update_prototype_licenses(self, bundle_id: BundleID) -> None:

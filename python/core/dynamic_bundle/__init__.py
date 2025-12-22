@@ -9,18 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from dataclasses import dataclass
-
-from core.action._wizard._repo import WizardRepoI
-from core.action._wizard._types import ProcessID, StepWithData
-from core.settings import Directories
-
-
-@dataclass(slots=True)
-class WizardService:
-    repo: WizardRepoI
-    directories: Directories
-
-    def retrieve_steps_and_data_for_process(self, process_id: ProcessID) -> list[StepWithData]:
-        return self.repo.get_steps_with_data(process_id=process_id, bundles_dir=self.directories.bundles)

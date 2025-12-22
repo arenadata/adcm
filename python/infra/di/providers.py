@@ -14,13 +14,20 @@ from functools import partial
 from pathlib import Path
 import json
 
+from adcm.feature_flags import use_new_job_scheduler
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
+from cm.impl.job.repo import JobRepo
+from cm.impl.wizard.repo import WizardRepo
+from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
+from core.dynamic_bundle.render import BundleRenderer
+from core.dynamic_bundle.types import ContextGathererI
 from core.settings import Directories
 from dishka import Provider, Scope, provide
 from use_cases.bundle import ParseBundleFromRequest
+from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
 import core
 import yaml
 
@@ -73,6 +80,20 @@ class ConfigProvider(Provider):
     service = provide(core.config.ConfigService)
 
 
+class JobProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(JobRepo, provides=core.job.JobRepoI)
+    service = provide(core.job.JobService)
+
+
+class WizardProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(WizardRepo, provides=core.action.wizard.WizardRepoI)
+    service = provide(core.action.wizard.WizardService)
+
+
 class BundleProvider(Provider):
     scope = Scope.APP
 
@@ -102,7 +123,25 @@ class BundleProvider(Provider):
     service = provide(core.bundle.BundleService)
 
 
+class UtilsProvider(Provider):
+    scope = Scope.APP
+
+    context_gatherer = provide(ContextGatherer, provides=ContextGathererI[ActionArgs, TaskArgs])
+    bundle_renderer = provide(BundleRenderer[ActionArgs, TaskArgs], provides=BundleRenderer[ActionArgs, TaskArgs])
+
+
+class FeatureFlagProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def new_scheduler(self) -> UseNewScheduler:
+        return UseNewScheduler(use_new_job_scheduler())
+
+
 class UseCaseProvider(Provider):
     scope = Scope.REQUEST
 
     parse_bundle_from_request = provide(ParseBundleFromRequest)
+    schedule_task = provide(ScheduleTask)
+
+    retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)

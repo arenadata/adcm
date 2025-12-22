@@ -30,10 +30,12 @@ from cm.legacy.api import delete_host
 from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
 from core.types import ADCMCoreType
+from dishka import FromDishka
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -51,6 +53,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host as create_host_new
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -303,8 +306,9 @@ class HostViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object())
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(

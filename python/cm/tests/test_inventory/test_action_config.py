@@ -23,25 +23,24 @@ from core.legacy.job.runners import (
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from infra.services import get_config_service, get_job_service, get_wizard_service
 from use_cases.dto import ConfigurationDTO, RunActionDTO
-from use_cases.transition.job.schedule import schedule_task
 import core
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.adcm_config.ansible import ansible_decrypt
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestConfigAndImportsInInventory(BaseInventoryTestCase):
+class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase):
     CONFIG_WITH_NONES = {
         "boolean": True,
         "secrettext": "awe\nsopme\n\ttext\n",
@@ -232,17 +231,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -266,17 +260,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
 
@@ -306,17 +295,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
             )
-            config_service = get_config_service()
-            context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=config_service,
-                context_gatherer=context_gatherer,
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
 

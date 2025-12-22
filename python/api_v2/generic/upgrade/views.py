@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_job_scheduler
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -21,12 +20,13 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from cm.errors import AdcmEx
-from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.upgrade import check_upgrade, get_upgrade
 from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog, Upgrade
 from core.legacy.cluster.types import HostComponentEntry
+from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
-from infra.services import get_config_service, get_job_service, get_wizard_service
+from infra.di.django import inject
+from infra.services import get_config_service
 from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -34,9 +34,9 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from use_cases.dto import ConfigurationDTO, UpgradeActionDTO
+from use_cases.transition.job.schedule import ScheduleTask
 from use_cases.transition.upgrade import upgrade_object
 import core
 
@@ -174,7 +174,8 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def run(self, request: Request, *_, **__) -> Response:
+    @inject
+    def run(self, request: Request, *_, schedule_task: FromDishka[ScheduleTask], **__) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -183,9 +184,6 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
-        return self._run_new(serializer, upgrade, parent)
-
-    def _run_new(self, serializer: Serializer, upgrade: Upgrade, parent: Cluster | Provider) -> Response:
         data = serializer.validated_data
 
         configuration = None
@@ -214,17 +212,13 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         )
 
         config_service = get_config_service()
-        wizard_service = get_wizard_service()
-        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=wizard_service)
 
         result = upgrade_object(
             obj=parent,
             upgrade=upgrade,
             payload=payload,
-            job_service=get_job_service(),
+            schedule_task=schedule_task,
             config_service=config_service,
-            context_gatherer=context_gatherer,
-            start_task_after_schedule=not use_new_job_scheduler(),
         )
 
         match result:
