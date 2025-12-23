@@ -46,7 +46,7 @@
       position: absolute;
       top: 0;
       bottom: 0;
-      left: 100%;
+      right: 0;
       width: 2px;
       background: var(--left-menu-item-color);
     }
@@ -72,5 +72,10 @@
 
     color: var(--left-menu-item-color);
     transition: color 250ms;
+    white-space: nowrap;
+
+    svg {
+      flex-shrink: 0;
+    }
   }
 }

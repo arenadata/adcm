@@ -1,0 +1,28 @@
+body.theme-dark {
+  // borders
+  --borders-br-main: #505C73;
+
+  // texts
+  --text-txt-default: #98A1B2;
+  --text-txt-h-contrast: #F2F4FF;
+
+  //surfaces
+  --surfaces-sf-one: #1A1B1C;
+  --surfaces-sf-one-b: #222325;
+
+  //primitives
+  --primitives-pmt-selected: #00D2A0;
+  --primitives-pmt-selected-20: #00D2A033;
+}
+
+body.theme-light {
+  // borders
+  --borders-br-main: #ADB8CC;
+
+  // texts
+  --text-txt-default: #70758C;
+
+  //surfaces
+  --surfaces-sf-one: #EEF3FA;
+  --surfaces-sf-one-b: #E6EEFA;
+}
