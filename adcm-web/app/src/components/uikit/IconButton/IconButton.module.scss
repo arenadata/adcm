@@ -10,6 +10,9 @@
     --icon-button-color-secondary: var(--color-xwhite-off);
     --icon-button-color-disabled-secondary: var(--color-xgray-reading);
     --icon-button-background-hover-secondary: var(--color-xdark-new-50);
+
+    // tertiary
+    --icon-button-color: var(--text-txt-default);
   }
   body.theme-light {
     // primary
@@ -26,6 +29,9 @@
 }
 
 .iconButton {
+  --icon-button-bg-color: transparent;
+  --icon-button-border: none;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -33,8 +39,8 @@
   transition: color 250ms, background 250ms;
 
   padding: 0;
-  border: none;
-  background: transparent;
+  border: var(--icon-button-border);
+  background: var(--icon-button-bg-color);
   outline: none;
   border-radius: 5px;
 
@@ -80,5 +86,16 @@
     --icon-button-background-hover: var(--icon-button-background-hover-secondary);
     --icon-button-background-active: var(--icon-button-background-hover-secondary);
     --icon-button-background-disabled: transparent;
+  }
+
+  &_tertiary {
+    --icon-button-bg-color: var(--surfaces-sf-one);
+    --icon-button-border: 2px solid var(--borders-br-main);
+    --icon-button-background-active: var(--surfaces-sf-one-b);
+    --icon-button-color: var(--text-txt-default);
+    --icon-button-color-active: var(--text-txt-h-contrast);
+    --icon-button-color-hover: var(--text-txt-h-contrast);
+    box-sizing: border-box;
+    padding: 4px;
   }
 }

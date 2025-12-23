@@ -1,5 +1,5 @@
 .leftSideBar {
-  padding: 20px 0;
+  padding: 44px 0;
   box-sizing: border-box;
   min-height: 100vh;
   display: flex;
@@ -8,20 +8,44 @@
   &__logo {
     display: flex;
     justify-content: center;
-    margin-bottom: 57px;
+    margin: 0 auto 40px 32px
   }
 
   &__menu {
-    margin-top: 20px;
-
     &_main {
       margin-bottom: auto;
     }
   }
+
   &__menu &__userName {
     max-width: 150px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+  }
+
+  &__toggleBtn {
+    position: absolute;
+    right:0;
+    top: 78px;
+    transform: translateX(50%) rotate(90deg);
+
+    &_reversed {
+      transform: translateX(50%) rotate(-90deg);
+    }
+  }
+
+  &__contentWrapper{
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 217px;
+    overflow: hidden;
+    transition: width 0.20s ease-in-out;
+
+    &_slim {
+      width: 92px;
+    }
   }
 }

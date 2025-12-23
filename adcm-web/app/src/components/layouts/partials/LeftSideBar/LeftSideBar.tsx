@@ -6,17 +6,22 @@ import LeftBarMenu from '@commonComponents/LeftBarMenu/LeftBarMenu';
 import LeftBarMenuItem from '@commonComponents/LeftBarMenu/LeftBarMenuItem';
 import MainLogo from '@layouts/partials/MainLogo/MainLogo';
 import s from './LeftSideBar.module.scss';
-import { useDispatch, useStore, useMediaQuery } from '@hooks';
+import { useDispatch, useStore, useMediaQuery, useLocalStorage } from '@hooks';
 import { logout } from '@store/authSlice';
 import { getAdcmSettings } from '@store/adcm/settings/settingsSlice';
 import { isIssueConcernPresent } from '@utils/concernUtils';
+import { IconButton } from '@uikit';
+import { sideBarTopGroup } from '@layouts/partials/LeftSideBar/LeftSideBar.schema.ts';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
   const dispatch = useDispatch();
   const { username, firstName } = useStore((s) => s.auth.profile);
   const { adcmSettings } = useStore((s) => s.adcm.adcmSettings);
 
-  const [isSlim, setIsSlim] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  const [isToggled, saveIsToggled] = useLocalStorage<boolean>({ key: 'isMenuToggled', initData: isSmallScreen });
+
   const [hasSettingsIssue, setHasSettingsIssue] = useState(false);
 
   useEffect(() => {
@@ -29,50 +34,50 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
     dispatch(getAdcmSettings());
   }, [dispatch]);
 
-  useMediaQuery('(max-width: 980px)', setIsSlim);
+  useMediaQuery('(max-width: 1365px)', setIsSmallScreen);
+
+  const isSlimMenu = isSmallScreen || isToggled === null ? isSmallScreen : isToggled;
+
+  const handleToggleMenu = () => {
+    saveIsToggled(!isToggled);
+  };
 
   return (
     <div className={cn(s.leftSideBar, className)}>
-      <MainLogo className={s.leftSideBar__logo} isSmall={isSlim} data-test="nav-menu-logo" />
+      <div className={cn(s.leftSideBar__contentWrapper, { [s.leftSideBar__contentWrapper_slim]: isSlimMenu })}>
+        <MainLogo className={s.leftSideBar__logo} isSmall={isSlimMenu} data-test="nav-menu-logo" />
+        {!isSmallScreen && (
+          <IconButton
+            className={cn(s.leftSideBar__toggleBtn, { [s.leftSideBar__toggleBtn_reversed]: isSlimMenu })}
+            variant="tertiary"
+            icon="chevron"
+            size={12}
+            onClick={handleToggleMenu}
+          />
+        )}
+        <LeftBarMenu className={cn(s.leftSideBar__menu, s.leftSideBar__menu_main)} data-test="nav-menu-pages">
+          {sideBarTopGroup.map((sideBarItem) => (
+            <LeftBarMenuItem key={sideBarItem.label} icon={sideBarItem.icon} to={sideBarItem.link} isSmall={isSlimMenu}>
+              {sideBarItem.label}
+            </LeftBarMenuItem>
+          ))}
+        </LeftBarMenu>
 
-      <LeftBarMenu className={cn(s.leftSideBar__menu, s.leftSideBar__menu_main)} data-test="nav-menu-pages">
-        <LeftBarMenuItem icon="g2-cluster3" to="/clusters" isSmall={isSlim}>
-          Clusters
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-provider" to="/hostproviders" isSmall={isSlim}>
-          Hostproviders
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-hosts" to="/hosts" isSmall={isSlim}>
-          Hosts
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-jobs" to="/jobs" isSmall={isSlim}>
-          Jobs
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-users" to="/access-manager" isSmall={isSlim}>
-          Access manager
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-audit" to="/audit" isSmall={isSlim}>
-          Audit
-        </LeftBarMenuItem>
-        <LeftBarMenuItem icon="g2-bundles" to="/bundles" isSmall={isSlim}>
-          Bundles
-        </LeftBarMenuItem>
-      </LeftBarMenu>
-
-      <LeftBarMenu className={s.leftSideBar__menu} data-test="nav-menu-settings">
-        <LeftBarMenuItem icon="g2-user" to="/profile" isSmall={isSlim}>
-          <div className={s.leftSideBar__userName}>{firstName || username}</div>
-        </LeftBarMenuItem>
-        <LeftBarMenuItem
-          icon="g2-configuration"
-          to="/settings"
-          isSmall={isSlim}
-          variant={hasSettingsIssue ? 'alert' : 'default'}
-        >
-          Settings
-        </LeftBarMenuItem>
-        <LogoutMenuItem isSmall={isSlim} />
-      </LeftBarMenu>
+        <LeftBarMenu className={s.leftSideBar__menu} data-test="nav-menu-settings">
+          <LeftBarMenuItem icon="g2-user" to="/profile" isSmall={isSlimMenu}>
+            <div className={s.leftSideBar__userName}>{firstName || username}</div>
+          </LeftBarMenuItem>
+          <LeftBarMenuItem
+            icon="g2-configuration"
+            to="/settings"
+            isSmall={isSlimMenu}
+            variant={hasSettingsIssue ? 'alert' : 'default'}
+          >
+            Settings
+          </LeftBarMenuItem>
+          <LogoutMenuItem isSmall={isSlimMenu} />
+        </LeftBarMenu>
+      </div>
     </div>
   );
 };

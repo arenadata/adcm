@@ -1,6 +1,14 @@
 .mainLogo {
   display: inline-flex;
+
   svg {
     height: 34px;
+  }
+
+  &_small {
+    svg {
+      height: 26px;
+      margin-bottom: 8px;
+    }
   }
 }
