@@ -38,6 +38,7 @@
 
   &__descriptionValue {
     color: var(--description-value-color);
+    min-height: 52px;
   }
 
   &__descriptionWrapper {
