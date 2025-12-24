@@ -11,20 +11,24 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
+import logging
 
+from adcm_version import ComparisonResult, compare_adcm_versions
 from cm import models
+from cm.errors import AdcmEx
 from cm.legacy.services import adcm
 from cm.legacy.services import bundle_alt as bundle
 from core.errors import localize_error
+from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from core.types import BundleID
 from django.core.files import File
 from django.db.transaction import atomic
-from infra.services import get_config_service
 from rbac.upgrade.role import prepare_action_roles
 import core
+
+logger = logging.getLogger("adcm")
 
 
 @dataclass(slots=True)
@@ -68,62 +72,53 @@ class ParseBundleFromRequest:
         return bundle_id
 
 
-@bundle.errors.convert_bundle_errors_to_adcm_ex
-def process_adcm_bundle(adcm_config_file: Path) -> None:
-    adcm_object = models.ADCM.objects.first()
-    current_version = adcm_object.prototype.version if adcm_object is not None else "0"
+@dataclass(slots=True)
+class InitOrUpgradeADCM:
+    bundle_service: core.bundle.BundleService
 
-    check_defaults = partial(_check_defaults_new, bundle_root=adcm_config_file.parent)
+    initialize_adcm: InitializeADCM
+    upgrade_adcm: UpgradeADCM
 
-    adcm_definition = bundle.adcm.retrieve_adcm_definition(
-        adcm_config_file=adcm_config_file, current_version=current_version, check_defaults=check_defaults
-    )
-    if adcm_definition is None:
-        return
+    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    def do(self, adcm_config_file: Path) -> None:
+        adcm_object = models.ADCM.objects.first()
+        current_adcm_bundle_version = adcm_object.prototype.version if adcm_object is not None else "0"
+        bundle_root = adcm_config_file.parent
 
-    with atomic():
-        bundle.adcm.init_or_upgrade_adcm(
-            adcm_definition=adcm_definition, adcm_config_file=adcm_config_file, adcm=adcm_object
+        root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=bundle_root)
+        parsing_meta, definitions = self.bundle_service.parse_to_definitions(
+            entries=root_entries, bundle_root=bundle_root
         )
 
+        new_adcm_bundle_version = definitions[("adcm",)].version
+        match compare_adcm_versions(this=current_adcm_bundle_version, other=new_adcm_bundle_version):
+            case ComparisonResult.EQUAL:
+                return
 
-def _check_defaults_new(configuration: core.bundle_alt.ConfigDefinition, bundle_root: Path) -> None:
-    # the whole function shouldn't be on this level,
-    # but it can be moved only after direct conversion from bundle DSL to spec is available
-    from cm.impl.config.repo import build_specification_from_prototype_config_records
+            case ComparisonResult.NEWER:
+                msg = (
+                    f"Current adcm version {current_adcm_bundle_version} is higher "
+                    f"than upgrade version {new_adcm_bundle_version}."
+                )
+                raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
 
-    # validate defaults should be added to config service, so this import won't be nessesary
-    from cm.impl.config.validators import DefaultsVariantResolver
-    from cm.legacy.services.bundle_alt.repo import convert_config_definition_to_orm_model
-    from core.config._pattern_validators import PossiblyEncryptedPatternValidator
-    from core.result import is_fail
+        with atomic():
+            bundle_info = core.bundle.BundleInfo(
+                contract_version=parsing_meta.contract_version,
+                hash="adcm",
+                root=bundle_root,
+                signature=core.bundle.SignatureStatus.ABSENT,
+            )
+            bundle_id = self.bundle_service.create_bundle_from_definitions(
+                definitions=definitions, bundle_info=bundle_info
+            )
+            match adcm_object:
+                case models.ADCM():
+                    self.upgrade_adcm.do(bundle_id=bundle_id)
 
-    secrets = get_config_service().secrets
+                    logger.info("ADCM upgrade: OK (%s -> %s).", current_adcm_bundle_version, new_adcm_bundle_version)
 
-    records = tuple(convert_config_definition_to_orm_model(configuration, prototype=None, action=None))
-    specification, defaults = build_specification_from_prototype_config_records(
-        records=records,
-        # can't detect customization flag in here and it's not important for validation
-        group_customization_flag=False,
-        secrets_service=secrets,
-        bundle_root=bundle_root,
-    )
+                case None:
+                    self.initialize_adcm.do(bundle_id=bundle_id)
 
-    flat_defaults = core.config.FlatConfiguration(
-        values={k: v for k, v in defaults.values.items() if v is not None}, attributes={}
-    )
-
-    validators = core.config.Validators(
-        variant=DefaultsVariantResolver(), pattern=PossiblyEncryptedPatternValidator(secrets=secrets)
-    )
-
-    result = core.config.operations.validate_values(
-        # for now attributes feel unimportant for defaults
-        configuration=flat_defaults,
-        specification=specification,
-        validators=validators,
-    )
-
-    if is_fail(result):
-        violations_list_repr = "; ".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in result.value)
-        raise bundle.errors.BundleValidationError(message=f"object's defaults are invalid: {violations_list_repr}")
+                    logger.info("ADCM upgrade: version %s initialized.", new_adcm_bundle_version)

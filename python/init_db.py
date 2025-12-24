@@ -18,9 +18,9 @@ import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.feature_flags import use_new_config_processing, use_new_job_scheduler
+from adcm.dependencies import prepare_container
+from adcm.feature_flags import use_new_job_scheduler
 from cm.legacy.issue import update_hierarchy_issues
-from cm.legacy.services.bundle_alt.adcm import process_adcm_bundle
 from cm.models import (
     ADCM,
     CheckLog,
@@ -128,10 +128,10 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     recover_statuses()
     clear_temp_tables()
 
-    if use_new_config_processing():
-        bundle.process_adcm_bundle(adcm_conf_file)
-    else:
-        process_adcm_bundle(adcm_conf_file)
+    container = prepare_container()
+
+    process_adcm_bundle = container.get(bundle.InitOrUpgradeADCM)
+    process_adcm_bundle.do(adcm_conf_file)
 
     if not use_new_job_scheduler():
         drop_locks()

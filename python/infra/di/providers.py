@@ -12,6 +12,7 @@
 
 from functools import partial
 from pathlib import Path
+import os
 import json
 
 from adcm.feature_flags import use_new_job_scheduler
@@ -20,13 +21,15 @@ from cm.impl.bundle.repo import BundleRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobRepo
+from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
+from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from dishka import Provider, Scope, provide
-from use_cases.bundle import ParseBundleFromRequest
+from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
 import core
 import yaml
@@ -138,10 +141,27 @@ class FeatureFlagProvider(Provider):
         return UseNewScheduler(use_new_job_scheduler())
 
 
+class ScenariosProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def default_adcm_url(self) -> DefaultURL | None:
+        adcm_url = os.getenv("DEFAULT_ADCM_URL")
+        if adcm_url:
+            return DefaultURL(adcm_url)
+
+        return None
+
+    initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
+    upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
+
+
 class UseCaseProvider(Provider):
     scope = Scope.REQUEST
 
     parse_bundle_from_request = provide(ParseBundleFromRequest)
+    init_upgrade_adcm = provide(InitOrUpgradeADCM, scope=Scope.APP)
+
     schedule_task = provide(ScheduleTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
