@@ -14,7 +14,7 @@ import logging
 
 from adcm_version import compare_prototype_versions
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
-from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor
+from core.types import ADCMCoreType, BundleID, ConfigID, CoreObjectDescriptor
 
 from cm.legacy.bundle_switch_revert import switch_config
 from cm.models import ADCM, ConfigLog, ObjectConfig, Prototype
@@ -29,9 +29,12 @@ class InitializeADCMLegacy(InitializeADCM):
         prototype = Prototype.objects.get(bundle_id=bundle_id, type="adcm")
         adcm = ADCM.objects.create(prototype=prototype, name="ADCM")
         descriptor = CoreObjectDescriptor(id=adcm.pk, type=ADCMCoreType.ADCM)
-        self.config_service.create_initial_configuration_if_required(owner=descriptor)
+        specification, defaults = self.config_service.retrieve_specification_with_defaults(owner=descriptor)
+        config_id = self.config_service.create_initial_configuration(
+            owner=descriptor, specification=specification, defaults=defaults
+        )
         if self.default_adcm_url:
-            _set_adcm_url(adcm=adcm, adcm_url=self.default_adcm_url)
+            _set_adcm_url(config_id=config_id, adcm_url=self.default_adcm_url)
 
 
 class UpgradeADCMLegacy(UpgradeADCM):
@@ -80,8 +83,8 @@ def _adcm_config_data_migration(adcm_config: ObjectConfig, old_version: str, new
     config_log_new.save(update_fields=["config"])
 
 
-def _set_adcm_url(adcm: ADCM, adcm_url: str) -> None:
-    config_log = ConfigLog.objects.get(id=adcm.config.current)
+def _set_adcm_url(config_id: ConfigID, adcm_url: str) -> None:
+    config_log = ConfigLog.objects.get(id=config_id)
     config_log.config["global"]["adcm_url"] = adcm_url
     config_log.save(update_fields=["config"])
     logger.info("Set ADCM's URL from environment variable: %s", adcm_url)
