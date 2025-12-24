@@ -26,7 +26,7 @@ drf-nested-routers = "^0.94.0"  # drf-nested-routers (0.95.0) depends on djangor
 drf-spectacular = { extras = ["sidecar"], version = "^0.28.0" }
 
 # Extras
-adcm-version = "^1.0.3"  # to compare bundle versions
+adcm-version = "2.0.0" # to compare bundle versions
 pydantic = "^2.11.7"
 psycopg = { extras = ["binary"], version = "^3.2.10" }
 ruyaml = "^0.91.0"
@@ -234,6 +234,7 @@ type = "layers"
 layers = [
     # it's not actually top layer, but we don't want it to poison other core modules
     "core.legacy",
+    "core.scenarios",
     "core.bundle",
     "core.action",
     "core.config | core.mapping",

@@ -50,6 +50,7 @@ from cm.legacy.upgrade.before_upgrade_schemas import (
 from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -680,7 +681,7 @@ def _restore_config_of_host_group(
 
 
 def switch_config(
-    obj: Cluster | Service | Component | Provider | Host,
+    obj: Cluster | Service | Component | Provider | Host | ADCM,
     new_prototype: Prototype,
     old_prototype: Prototype,
     config_service: core.config.ConfigService,

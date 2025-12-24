@@ -16,7 +16,7 @@ from functools import cache
 from operator import methodcaller
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Callable, Iterable, NamedTuple
+from typing import Iterable, NamedTuple
 import os
 import fcntl
 import shutil
@@ -31,7 +31,6 @@ from core.legacy.bundle_alt.convertion import extract_config
 from core.legacy.bundle_alt.errors import convert_validation_to_bundle_error
 from core.legacy.bundle_alt.process import ConfigConversionContext, retrieve_bundle_definitions
 from core.legacy.bundle_alt.schema import ConfigJinjaSchema
-from core.legacy.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from django.conf import settings
 from django.core.files import File
 from django.db.transaction import atomic
@@ -104,34 +103,6 @@ def parse_config_jinja(data: list[dict], context: ConfigConversionContext, *, ac
 
 
 # Public
-
-
-def retrieve_bundle_definitions_from_archive(
-    archive: Path, bundle_root: Path, adcm_version: str, check_defaults: Callable[[ConfigDefinition], None]
-) -> dict[BundleDefinitionKey, Definition]:
-    with localize_error(f"Bundle from {archive.name}"):
-        # yaml spec probably should be external dependency
-        return retrieve_bundle_definitions(
-            bundle_dir=bundle_root,
-            adcm_version=adcm_version,
-            yspec_schema=_get_rules_for_yspec_schema(),
-            check_defaults=check_defaults,
-        )
-
-
-def save_bundle_definitions(
-    definitions: dict[BundleDefinitionKey, Definition], unpacking_info: BundleUnpackingInfo
-) -> Bundle:
-    bundle_object = repo.save_definitions(
-        bundle_definitions=definitions,
-        bundle_root=unpacking_info.root,
-        bundle_hash=unpacking_info.hash,
-        verification_status=unpacking_info.signature,
-    )
-    repo.update_prototype_licenses(bundle=bundle_object)
-    repo.recollect_categories()
-    bundle_object.refresh_from_db()
-    return bundle_object
 
 
 @convert_bundle_errors_to_adcm_ex

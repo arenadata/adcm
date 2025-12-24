@@ -10,6 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.services.bundle_alt import load, errors  # noqa
+from abc import abstractmethod
+from dataclasses import dataclass
+from typing import NewType
 
-__all__ = ["load", "errors"]
+from core import config
+from core.types import BundleID
+
+DefaultURL = NewType("DefaultURL", str)
+
+
+@dataclass(slots=True)
+class InitializeADCM:
+    default_adcm_url: DefaultURL | None
+
+    config_service: config.ConfigService
+
+    @abstractmethod
+    def do(self, bundle_id: BundleID):
+        ...
+
+
+@dataclass(slots=True)
+class UpgradeADCM:
+    config_service: config.ConfigService
+
+    @abstractmethod
+    def do(self, bundle_id: BundleID):
+        ...
