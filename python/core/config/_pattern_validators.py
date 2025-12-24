@@ -30,9 +30,6 @@ class PossiblyEncryptedPatternValidator(PatternValidator):
     secrets: AnsibleSecrets
 
     def is_match(self, value: str, pattern: str) -> bool:
-        # "hack" for no force decryption of configuration, cause it's the only point where secrets effect validation
-        if self.secrets.is_encrypted(value):
-            return True
-
+        decrypted = self.secrets.decrypt(value) or ""
         pattern_validator = Pattern(regex_pattern=pattern)
-        return pattern_validator.matches(value)
+        return pattern_validator.matches(decrypted)
