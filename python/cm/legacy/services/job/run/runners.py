@@ -263,7 +263,20 @@ class JobSequenceRunner(TaskRunner):
         audit_task_finish(task=task, task_result=task_result)
 
         finished_task = self._repo.get_task(id=task.id)
-        if finished_task.owner:
+        if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
+            self._update_calling_process(
+                process=finished_task.action_process,
+                action_id=task.action.id,
+                task_owner=finished_task.owner,
+                context_gatherer=ContextGatherer(
+                    config_service=get_config_service(), wizard_service=get_wizard_service()
+                ),
+            )
+        elif finished_task.owner:
+            # Owner should be updated only when action's not a part of operation step of wizard process.
+            # This patch raises questions about what can be updated and what not,
+            # but that requires clarification of task runner process and configurability of it,
+            # which for now is not archievable.
             self._update_owner_object(
                 owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
                 finished_task=finished_task,
@@ -276,16 +289,6 @@ class JobSequenceRunner(TaskRunner):
                 object_=finished_task.target
                 if isinstance(finished_task.target.type, ADCMCoreType)
                 else finished_task.owner,
-            )
-
-        if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
-            self._update_calling_process(
-                process=finished_task.action_process,
-                action_id=task.action.id,
-                task_owner=finished_task.owner,
-                context_gatherer=ContextGatherer(
-                    config_service=get_config_service(), wizard_service=get_wizard_service()
-                ),
             )
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
