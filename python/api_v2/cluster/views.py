@@ -24,7 +24,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.migration.cluster.create import create_cluster
 from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -32,8 +31,18 @@ from audit.alt.hooks import (
     extract_previous_from_object,
     only_on_success,
 )
-from cm.api import add_cluster, delete_cluster, partial, remove_host_from_cluster
 from cm.errors import AdcmEx
+from cm.legacy.api import add_cluster, delete_cluster, partial, remove_host_from_cluster
+from cm.legacy.services.bundle import retrieve_bundle_restrictions
+from cm.legacy.services.cluster import (
+    ClusterDB,
+    perform_host_to_cluster_map,
+    retrieve_cluster_topology,
+    retrieve_clusters_objects_maintenance_mode,
+)
+from cm.legacy.services.mapping import set_host_component_mapping
+from cm.legacy.services.status import notify
+from cm.legacy.status_api import send_object_update_event
 from cm.models import (
     AnsibleConfig,
     Bundle,
@@ -46,28 +55,20 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.bundle import retrieve_bundle_restrictions
-from cm.services.cluster import (
-    ClusterDB,
-    perform_host_to_cluster_map,
-    retrieve_cluster_topology,
-    retrieve_clusters_objects_maintenance_mode,
-)
-from cm.services.mapping import set_host_component_mapping
-from cm.services.status import notify
-from cm.status_api import send_object_update_event
-from core.bundle.operations import build_requires_dependencies_map
-from core.cluster.operations import (
+from core.legacy.bundle.operations import build_requires_dependencies_map
+from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     find_host_candidates_for_cluster,
 )
-from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
+from core.legacy.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
 from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -83,6 +84,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.cluster.create import create_cluster
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
@@ -945,8 +948,9 @@ class HostClusterViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object())
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
@@ -1059,4 +1063,15 @@ class ClusterActionProcessViewSet(ActionProcessViewSet):
 
 @document_action_process_step_viewset(object_type="cluster")
 class ClusterActionProcessStepViewSet(ProcessStepViewSet):
+    ...
+
+
+@audit_action_process_viewset(retrieve_owner=parent_host_from_lookup)
+@document_action_process_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
+class ClusterHostActionProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
+class ClusterHostActionProcessStepViewSet(ProcessStepViewSet):
     ...

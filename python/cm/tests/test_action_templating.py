@@ -13,16 +13,16 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from application.dto import ConfigurationDTO, RunActionDTO
-from application.migration.job.schedule import schedule_task
-from infra.services import get_config_service, get_job_service
+from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
 from cm.models import Action, JobLog
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 
 
-class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def setUp(self) -> None:
@@ -43,14 +43,10 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values=input_config["config"], attributes=input_config["attr"]),
             )
-            schedule_task(
-                action_orm=action,
-                target=self.cluster,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action, target=self.cluster, payload=RunActionDTO(configuration=configuration)
+                )
 
         self.assertIsNotNone(task_mock.target_task)
         jobs = JobLog.objects.filter(task_id=task_mock.target_task.pk)

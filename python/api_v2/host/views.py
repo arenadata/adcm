@@ -23,19 +23,19 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.migration.hostprovider.create import create_host as create_host_new
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
-from cm.api import delete_host
 from cm.errors import AdcmEx
+from cm.legacy.api import delete_host
+from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
-from cm.services.host.duplicates import create_duplicate
-from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType
+from dishka import FromDishka
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -51,6 +51,9 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.host.duplicate import create_duplicate
+from use_cases.transition.hostprovider.create import create_host as create_host_new
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -303,8 +306,9 @@ class HostViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object())
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(
@@ -324,7 +328,9 @@ class HostViewSet(
             get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
 
         host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
-        duplicate_id = create_duplicate(host_id=host.id, name=data["name"], cluster_id=data["cluster_id"])
+        duplicate_id = create_duplicate(
+            host_id=host.id, name=data["name"], cluster_id=data["cluster_id"], config_service=get_config_service()
+        )
 
         duplicate = Host.objects.get(id=duplicate_id)
         serializer = HostSerializer(instance=duplicate, context=self.get_serializer_context())

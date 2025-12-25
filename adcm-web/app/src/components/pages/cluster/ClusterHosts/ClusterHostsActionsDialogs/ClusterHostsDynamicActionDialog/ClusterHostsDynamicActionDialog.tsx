@@ -11,7 +11,7 @@ const ClusterHostsDynamicActionDialog: React.FC = () => {
   const dispatch = useDispatch();
   const { cluster, clusterHost, actionDetails } = useStore((s) => s.adcm.clusterHostsDynamicActions.dialog);
 
-  if (!actionDetails || !cluster || !clusterHost) return null;
+  if (!actionDetails || !cluster || !clusterHost || actionDetails.processes !== null) return null;
 
   const handleCancel = () => {
     dispatch(closeClusterHostDynamicActionDialog());
@@ -20,8 +20,8 @@ const ClusterHostsDynamicActionDialog: React.FC = () => {
   const handleSubmit = (actionRunConfig: AdcmDynamicActionRunConfig) => {
     dispatch(
       runClusterHostDynamicAction({
-        cluster,
-        clusterHost,
+        clusterId: cluster.id,
+        hostId: clusterHost.id,
         actionId: actionDetails.id,
         actionRunConfig,
       }),

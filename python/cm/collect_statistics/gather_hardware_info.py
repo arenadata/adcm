@@ -16,8 +16,8 @@ from core.types import HostID, HostName
 from django.db.models import Value
 from django.db.models.functions import Coalesce
 
+from cm.legacy.services.job.inventory import get_basic_info_for_hosts
 from cm.models import Host
-from cm.services.job.inventory import get_basic_info_for_hosts
 
 
 def get_inventory() -> dict:

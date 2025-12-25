@@ -11,8 +11,8 @@
 # limitations under the License.
 
 
-from cm.adcm_config.ansible import ansible_decrypt
-from cm.services.adcm import adcm_config, get_adcm_config_id
+from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.legacy.services.adcm import adcm_config, get_adcm_config_id
 
 from rbac.services.ldap.errors import LDAPConfigurationError
 from rbac.services.ldap.types import ConnectionSettings, GroupSettings, LDAPAttributes, LDAPSettings, UserSettings

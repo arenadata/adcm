@@ -9,7 +9,7 @@ import Icon from '@uikit/Icon/Icon';
 import type { TooltipProps } from '@uikit/Tooltip/Tooltip';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 
-type IconButtonVariant = 'primary' | 'secondary';
+type IconButtonVariant = 'primary' | 'secondary' | 'tertiary';
 export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'title'> {
   icon: IconsNames;
   size?: IconProps['size'];

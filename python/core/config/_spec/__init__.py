@@ -21,6 +21,7 @@ from core.config._spec.jsonschema import spec_to_jsonschema
 from core.config._spec.operations import (
     build_identifier_from_name,
     detect_deactivated_parameters,
+    get_secret_parameters_names,
 )
 from core.config._spec.spec import FullSpec, HierarchyValidationRule, SpecAttributes, SpecHierarchyLevel
 
@@ -31,6 +32,7 @@ __all__ = [
     "SpecHierarchyLevel",
     "build_identifier_from_name",
     "detect_deactivated_parameters",
+    "get_secret_parameters_names",
     "p",
     "spec_to_jsonschema",
 ]

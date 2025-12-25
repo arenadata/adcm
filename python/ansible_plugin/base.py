@@ -302,30 +302,6 @@ def _from_target_description(
             raise PluginRuntimeError(message=message)
 
 
-def build_vars_context_from_descriptor(obj: CoreObjectDescriptor) -> VarsContextSection:
-    """
-    Build a VarsContextSection based on the obj object's type and id.
-    """
-
-    type_to_field = {
-        "cluster": "cluster_id",
-        "service": "service_id",
-        "component": "component_id",
-        "provider": "provider_id",
-        "host": "host_id",
-    }
-
-    kwargs = {"type": obj.type.value}
-
-    # Set the correct *_id field based on object type
-    if obj.type in type_to_field:
-        kwargs[type_to_field[obj.type]] = obj.id
-    else:
-        raise ValueError(f"Unsupported owner type: {obj.type}")
-
-    return VarsContextSection(**kwargs)
-
-
 def retrieve_orm_object(
     object_: CoreObjectDescriptor, error_class: type[ADCMPluginError] = PluginTargetDetectionError
 ) -> ProductORMObject:

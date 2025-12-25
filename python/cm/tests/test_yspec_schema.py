@@ -13,11 +13,11 @@
 from pathlib import Path
 
 from adcm.tests.base import ParallelReadyTestCase
-from core.bundle_alt._yspec import FormatError, process_rule
+from core.legacy.bundle_alt import FormatError, process_rule
 from django.test import TestCase
 import yaml
 
-from cm.services.bundle_alt.load import _get_rules_for_yspec_schema
+from cm.legacy.services.bundle_alt.load import _get_rules_for_yspec_schema
 
 
 class TestYspecSchema(TestCase, ParallelReadyTestCase):

@@ -15,7 +15,7 @@ from unittest import TestCase
 from pydantic import ValidationError
 import yaml
 
-from core.bundle_alt.schema import (
+from core.legacy.bundle_alt.schema import (
     TYPE_SCHEMA_MAP,
     ActionProcessSpec,
     InternalConfigApplyScriptSchema,

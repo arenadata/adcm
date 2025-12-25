@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config.ansible import ansible_decrypt
+from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.legacy.services.config import ConfigAttrPair
+from cm.legacy.services.job.run import create_related_configs
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog
-from cm.services.config import ConfigAttrPair
-from cm.services.job.run import create_related_configs
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.types import Task
+from core.legacy.job.types import Task
 
 from ansible_plugin.base import CallResult
 from ansible_plugin.errors import PluginTargetError

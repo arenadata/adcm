@@ -43,6 +43,7 @@ import type { SelectOption } from '@uikit/Select/Select.types';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { BaseStatus } from '@uikit/Statusable/Statusable.types';
 import Switch from './Switch/Switch';
+import ExpandableSwitch from './Switch/ExpandableSwitch';
 import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
@@ -119,6 +120,7 @@ export {
   Statusable,
   type BaseStatus,
   Switch,
+  ExpandableSwitch,
   Table,
   TableRow,
   EllipsedTextTableCell,

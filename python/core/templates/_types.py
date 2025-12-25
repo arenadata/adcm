@@ -69,26 +69,30 @@ class RendererEnv:
     discovery_root: Path
 
 
-# Python Template
+# Template engines
 
 
 class PythonEngine(BaseModel):
     type: Literal[RenderEngineType.PYTHON]
 
 
-class PythonTemplate(BaseModel):
-    engine: PythonEngine
-    file: TemplateFileWithEntrypoint
-
-
-# Jinja2 Template
-
-
 class Jinja2Engine(BaseModel):
     type: Literal[RenderEngineType.JINJA2]
 
 
-class Jinja2Template(BaseModel):
+# Templates
+
+
+class _TemplateBaseModel(BaseModel, ABC):
+    pass
+
+
+class PythonTemplate(_TemplateBaseModel):
+    engine: PythonEngine
+    file: TemplateFileWithEntrypoint
+
+
+class Jinja2Template(_TemplateBaseModel):
     engine: Jinja2Engine
     file: TemplateFile
 
@@ -103,12 +107,20 @@ def engine_type_discriminator(value):
         except AttributeError:
             return None
 
-    return getattr(value.engine, "type", None)
+    try:
+        return value.engine.type
+    except AttributeError:
+        return None
 
 
+_discriminator_err_msg = f'Expected {" | ".join(cls.__name__ for cls in _TemplateBaseModel.__subclasses__())} template'
 Template = Annotated[
     Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
-    Field(discriminator=Discriminator(engine_type_discriminator)),
+    Field(
+        discriminator=Discriminator(
+            engine_type_discriminator, custom_error_type="invalid_template", custom_error_message=_discriminator_err_msg
+        )
+    ),
 ]
 
 

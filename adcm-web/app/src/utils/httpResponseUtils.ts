@@ -1,5 +1,4 @@
 import type { RequestError } from '@api';
-import { HttpStatus } from '@constants';
 
 export interface ResponseErrorData {
   code: string;
@@ -15,15 +14,11 @@ export const getErrorMessage = (requestError: RequestError) => {
 };
 
 export const getErrorCode = (requestError: RequestError) => {
-  const errorCode = requestError.response?.status;
+  const data = (requestError.response?.data ?? {}) as ResponseErrorData;
 
-  if (typeof errorCode === 'number') {
-    return errorCode;
-  }
-
-  return null;
+  return data.code;
 };
 
-export const isErrorConflict = (error: RequestError) => {
-  return getErrorCode(error) === HttpStatus.CONFLICT;
+export const isErrorConflict = (error: RequestError, errorCode: string) => {
+  return getErrorCode(error) === errorCode;
 };

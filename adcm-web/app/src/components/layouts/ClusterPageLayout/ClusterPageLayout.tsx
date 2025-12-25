@@ -4,6 +4,7 @@ import ClusterHeader from '@layouts/ClusterPageLayout/ClusterHeader/ClusterHeade
 import { useRequestCluster } from '@layouts/ClusterPageLayout/useRequestCluster';
 import ClusterDynamicActionDialog from '@pages/ClustersPage/Dialogs/ClusterDynamicActionDialog/ClusterDynamicActionDialog';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ClusterActionWizardDialog from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardDialog';
 
 const ClusterPageLayout: React.FC = () => {
   const { accessCheckStatus } = useRequestCluster();
@@ -14,6 +15,7 @@ const ClusterPageLayout: React.FC = () => {
         <ClusterHeader />
         <Outlet />
         <ClusterDynamicActionDialog />
+        <ClusterActionWizardDialog />
       </PermissionsChecker>
     </div>
   );

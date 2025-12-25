@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Generic, TypeVar
 
-from core.cluster.types import HostComponentEntry
+from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -24,12 +24,33 @@ from django.db import transaction
 from rbac.models import Policy
 import core
 
-from cm.adcm_config.utils import proto_ref
-from cm.api import check_license
-from cm.config.repo import convert_attr_to_adcm_meta
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.impl.config.repo import convert_attr_to_adcm_meta
+from cm.legacy.adcm_config.utils import proto_ref
+from cm.legacy.api import check_license
+from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
+from cm.legacy.services.concern import create_issue, retrieve_issue
+from cm.legacy.services.concern.cases import (
+    recalculate_concerns_on_cluster_upgrade,
+)
+from cm.legacy.services.concern.checks import object_configuration_has_issue
+from cm.legacy.services.concern.distribution import (
+    AffectedObjectConcernMap,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
+from cm.legacy.services.mapping import check_nothing, set_host_component_mapping
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.legacy.upgrade.before_upgrade_schemas import (
+    ClusterBeforeUpgrade,
+    DeletedObjectBeforeUpgrade,
+    DeletedServiceBeforeUpgrade,
+    ProviderBeforeUpgrade,
+)
+from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -49,26 +70,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from cm.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
-from cm.services.concern import create_issue, retrieve_issue
-from cm.services.concern.cases import (
-    recalculate_concerns_on_cluster_upgrade,
-)
-from cm.services.concern.checks import object_configuration_has_issue
-from cm.services.concern.distribution import (
-    AffectedObjectConcernMap,
-    distribute_concern_on_related_objects,
-    redistribute_issues_and_flags,
-)
-from cm.services.mapping import check_nothing, set_host_component_mapping
-from cm.status_api import notify_about_redistributed_concerns_from_maps
-from cm.upgrade.before_upgrade_schemas import (
-    ClusterBeforeUpgrade,
-    DeletedObjectBeforeUpgrade,
-    DeletedServiceBeforeUpgrade,
-    ProviderBeforeUpgrade,
-)
-from cm.utils import obj_ref
 
 OT = TypeVar("OT", Cluster, Provider)
 MT = TypeVar("MT")
@@ -515,7 +516,7 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         try:
             previous_spec = specs[previous_prototype_id]
         except KeyError:
-            previous_spec = (core.config.spec.FullSpec(), {})
+            previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service
@@ -609,7 +610,7 @@ def _restore_config_of_main_object_and_update_host_groups(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
@@ -680,7 +681,7 @@ def _restore_config_of_host_group(
 
 
 def switch_config(
-    obj: Cluster | Service | Component | Provider | Host,
+    obj: Cluster | Service | Component | Provider | Host | ADCM,
     new_prototype: Prototype,
     old_prototype: Prototype,
     config_service: core.config.ConfigService,
@@ -729,7 +730,7 @@ def _switch_configuration_version(
 
     update_result = update_for_new_spec(configuration=configuration, include_synchronization=False)
     if isinstance(update_result, Fail):
-        raise core.config.OperationError(f"Failed to adapt config: {str(update_result.value)}")
+        raise core.config.ConfigOperationError(f"Failed to adapt config: {str(update_result.value)}")
 
     config = update_result.value
 
@@ -743,7 +744,7 @@ def _switch_configuration_version(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt config of host group: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt config of host group: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
 

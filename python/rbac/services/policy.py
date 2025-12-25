@@ -13,8 +13,8 @@
 from functools import partial
 
 from cm.errors import AdcmEx, raise_adcm_ex
+from cm.legacy.status_api import send_object_update_event
 from cm.models import ADCMEntity
-from cm.status_api import send_object_update_event
 from core.types import RBACCoreType
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError

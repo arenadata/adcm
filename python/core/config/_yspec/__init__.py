@@ -17,10 +17,11 @@ Should be removed from other places and used via public API only (defined here).
 """
 
 from core.config._yspec.errors import FormatError, SchemaError
-from core.config._yspec.operations import process_rule
+from core.config._yspec.operations import check_rule, process_rule
 
 __all__ = [
     "FormatError",
     "SchemaError",
     "process_rule",
+    "check_rule",
 ]

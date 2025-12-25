@@ -15,8 +15,8 @@ from contextlib import contextmanager, suppress
 import os
 import re
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import raise_adcm_ex
+from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Group as DjangoGroup

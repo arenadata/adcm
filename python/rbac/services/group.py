@@ -14,7 +14,7 @@
 import functools
 
 from cm.errors import raise_adcm_ex
-from cm.status_api import send_object_update_event
+from cm.legacy.status_api import send_object_update_event
 from core.types import RBACCoreType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction

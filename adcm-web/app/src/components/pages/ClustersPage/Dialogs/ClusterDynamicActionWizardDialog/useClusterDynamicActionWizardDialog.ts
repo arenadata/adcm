@@ -1,10 +1,16 @@
-import { createClusterDynamicActionProcess } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import {
+  cleanupClusterActionDetails,
+  createClusterDynamicActionProcess,
+} from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import { cleanupClustersWizard, getProcessOnActionClick } from '@store/adcm/clusters/clustersWizardSlice';
-import { closeClusterWizardDialog, openClusterWizardDialog } from '@store/adcm/clusters/clustersWizardActionsSlice';
+import {
+  closeClusterWizardDialog,
+  openClusterWizardDialog,
+  setIsContinueProcessModal,
+} from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useDispatch, useStore } from '@hooks';
-import { useEffect, useState } from 'react';
-
-let wizardTitle = 'Manage install';
+import { useEffect, useMemo, useState } from 'react';
+import { defaultWizardTitle } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useClusterDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
@@ -17,6 +23,10 @@ export const useClusterDynamicActionWizardDialog = () => {
     actionId: number | null;
   }>({ clusterId: null, actionId: null });
 
+  const wizardTitle = useMemo(() => {
+    return actionDetails?.displayName || defaultWizardTitle;
+  }, [actionDetails]);
+
   useEffect(() => {
     if (actionDetails && cluster) {
       setSavedActionData({
@@ -28,7 +38,6 @@ export const useClusterDynamicActionWizardDialog = () => {
 
   useEffect(() => {
     if (!actionDetails || actionDetails.processes === null || !cluster) return;
-    wizardTitle = actionDetails.displayName;
 
     if (actionDetails.processes.length === 0) {
       dispatch(createClusterDynamicActionProcess({ clusterId: cluster.id, actionId: actionDetails.id }));
@@ -63,6 +72,8 @@ export const useClusterDynamicActionWizardDialog = () => {
   const handleClose = () => {
     dispatch(closeClusterWizardDialog());
     dispatch(cleanupClustersWizard());
+    dispatch(cleanupClusterActionDetails());
+    dispatch(setIsContinueProcessModal(false));
   };
 
   return {

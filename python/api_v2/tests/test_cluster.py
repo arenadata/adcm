@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 from adcm.feature_flags import use_new_config_processing
 from adcm.tests.base import BusinessLogicMixin
+from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -27,7 +28,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
 from django.contrib.contenttypes.models import ContentType
@@ -60,7 +60,7 @@ class TestCluster(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        with patch("cm.services.status.client.api_request") as patched_request:
+        with patch("cm.legacy.services.status.client.api_request") as patched_request:
             response = (self.client.v2 / "clusters").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)

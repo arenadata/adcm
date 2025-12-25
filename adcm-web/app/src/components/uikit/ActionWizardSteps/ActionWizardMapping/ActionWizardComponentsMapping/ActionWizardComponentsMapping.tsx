@@ -13,6 +13,7 @@ export interface ActionComponentsMappingProps extends Omit<ComponentsMappingProp
   rules: AdcmActionProcessMappingStepRules[];
   initiallyMappedHosts: Record<number, Set<number>>;
   clusterId: number | null;
+  onClose: () => void;
   isReadOnly?: boolean;
 }
 
@@ -21,6 +22,7 @@ const ActionWizardComponentsMapping = ({
   servicesMapping,
   rules,
   initiallyMappedHosts,
+  onClose,
   isReadOnly = false,
   ...restProps
 }: ActionComponentsMappingProps) => {
@@ -52,7 +54,7 @@ const ActionWizardComponentsMapping = ({
         {servicesMapping.length === 0 && (
           <div>
             Add services on the{' '}
-            <Link className="text-link" to={`/clusters/${clusterId}/services`}>
+            <Link className="text-link" to={`/clusters/${clusterId}/services`} onClick={onClose}>
               services page
             </Link>
           </div>

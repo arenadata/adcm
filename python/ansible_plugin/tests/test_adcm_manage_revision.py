@@ -13,10 +13,10 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_descriptor
+from cm.legacy.services.config import retrieve_primary_configs
+from cm.legacy.services.hierarchy import retrieve_object_hierarchy
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, ConfigRevision
-from cm.services.config import retrieve_primary_configs
-from cm.services.hierarchy import retrieve_object_hierarchy
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.executors.manage_revision import ADCMManageRevisionPluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins

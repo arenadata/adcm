@@ -15,9 +15,9 @@ from audit.alt.hooks import (
     extract_for_current_user,
 )
 from cm.errors import AdcmEx
-from cm.services.adcm import retrieve_password_requirements
-from cm.status_api import send_object_update_event
-from core.rbac.operations import update_user_password
+from cm.legacy.services.adcm import retrieve_password_requirements
+from cm.legacy.status_api import send_object_update_event
+from core.legacy.rbac.operations import update_user_password
 from core.types import RBACCoreType
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, extend_schema_view

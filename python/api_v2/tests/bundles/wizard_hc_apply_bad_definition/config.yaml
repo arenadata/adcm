@@ -10,7 +10,7 @@
       script_type: ansible
       wizard_template:
         file:
-          path: wizard_jinja/stages.j2
+          path: stages.j2
         engine:
           type: jinja2
       states:

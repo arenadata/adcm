@@ -14,7 +14,7 @@ from contextlib import suppress
 from typing import Collection, TypedDict
 
 from cm.converters import orm_object_to_core_type
-from cm.status_api import send_object_update_event
+from cm.legacy.status_api import send_object_update_event
 from core.types import CoreObjectDescriptor
 
 from ansible_plugin.base import (

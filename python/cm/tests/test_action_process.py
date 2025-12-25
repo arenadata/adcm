@@ -13,29 +13,30 @@
 from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
-import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from api_v2.generic.action.process.views import ContextGatherer
 from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
+from infra.services import get_config_service, get_wizard_service
+import core
 
-from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.action_process import repo
-from cm.services.action_process.operations import (
+from cm.legacy.services.action_process import repo
+from cm.legacy.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     initiate_process,
     submit_step,
 )
-from cm.services.action_process.schema_validation import (
+from cm.legacy.services.action_process.schema_validation import (
     Configuration,
     ProcessOperationType,
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.services.action_process.types import ProcessStepState
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.config._base import ConfigAttrPair
-from cm.services.job.run.repo import ActionRepoImpl
+from cm.legacy.services.action_process.types import ProcessStepState
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.run.repo import ActionRepoImpl
+from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
 
 StepName: TypeAlias = str
 
@@ -154,13 +155,12 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
-        from cm.services.job.inventory import get_action_process_context
+        from cm.legacy.services.job.context import get_action_process_context
 
         process = Process.objects.get(id=process_id)
         topology = retrieve_cluster_topology(cluster_id)
         return get_action_process_context(process=process, topology=topology).to_context()
 
-    @unittest.skip("ADCM-7359 Figure out action process package separation")
     def test_process_step_sequential_rendering(self):
         bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
         cluster = self.add_cluster(bundle=bundle, name="cc")
@@ -168,7 +168,11 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
         action_info = ActionRepoImpl.get_action(id=action.pk)
 
-        process_id = initiate_process(object_=object_, action=action_info)
+        config_service = get_config_service()
+
+        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
+
+        process_id = initiate_process(target=object_, action=action_info, context_gatherer=context_gatherer)
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertIsNotNone(ctx["current"])
@@ -181,9 +185,9 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
 
         process = repo.retrieve_process(process_id=process_id)
         context = OperationContext(
-            object=object_,
+            target=object_,
             action=action_info,
-            config_processor=lambda _, config: ConfigAttrPair(config=config.config, attr=config.adcm_meta),
+            config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
         payload = SubmitStepPayload(
             method=ProcessOperationType.SUBMIT,
@@ -194,7 +198,14 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
             ),
         )
 
-        submit_step(process=process, payload=payload, context=context, new_process_sync_key=uuid4())
+        submit_step(
+            process=process,
+            payload=payload,
+            context=context,
+            new_process_sync_key=uuid4(),
+            config_service=config_service,
+            context_gatherer=context_gatherer,
+        )
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertDictContainsSubset(

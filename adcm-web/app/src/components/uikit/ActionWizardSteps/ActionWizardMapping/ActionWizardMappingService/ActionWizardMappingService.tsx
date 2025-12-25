@@ -5,6 +5,7 @@ import type {
   AdcmMappingComponent,
   AdcmMappingComponentService,
 } from '@models/adcm';
+import { AdcmMaintenanceMode } from '@models/adcm';
 import cn from 'classnames';
 import { useMemo } from 'react';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
@@ -17,6 +18,11 @@ import {
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import s from './ActionWizardMappingService.module.scss';
 import type { AdcmActionProcessMappingStepRules } from '@models/adcm/wizard';
+import {
+  checkComponentMappingAvailability,
+  checkHostMappingAvailability,
+} from '@pages/cluster/ClusterMapping/ClusterMapping.utils';
+import type { ComponentAvailabilityErrors } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 
 const getComponentMapActions = (
   rules: { operation: AdcmHostComponentMapRuleAction; component: string; service: string }[],
@@ -78,24 +84,32 @@ const ActionWizardMappingService = ({
         const allowActions = getComponentMapActions(rules, service, componentMapping.component);
         const componentMappingErrors = mappingErrors[componentMapping.component.id];
 
-        const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
-          return checkComponentActionsMappingAvailability(component, allowActions);
+        const checkWizardComponentMappingAvailability = (
+          component: AdcmMappingComponent,
+        ): ComponentAvailabilityErrors => {
+          return component.maintenanceMode === AdcmMaintenanceMode.On
+            ? checkComponentMappingAvailability(component)
+            : checkComponentActionsMappingAvailability(component, allowActions);
         };
 
-        const checkHostMappingAvailability = (host: AdcmHostShortView) => {
-          return checkHostActionsMappingAvailability(
-            host,
-            allowActions,
-            initiallyMappedHosts[componentMapping.component.id],
-          );
+        const checkWizardHostMappingAvailability = (host: AdcmHostShortView): string | undefined => {
+          return host.maintenanceMode === AdcmMaintenanceMode.On
+            ? checkHostMappingAvailability(host)
+            : checkHostActionsMappingAvailability(
+                host,
+                allowActions,
+                initiallyMappedHosts[componentMapping.component.id],
+              );
         };
 
-        const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
-          return checkHostActionsUnmappingAvailability(
-            host,
-            allowActions,
-            initiallyMappedHosts[componentMapping.component.id],
-          );
+        const checkWizardHostUnmappingAvailability = (host: AdcmHostShortView): string | undefined => {
+          return host.maintenanceMode === AdcmMaintenanceMode.On
+            ? checkHostMappingAvailability(host)
+            : checkHostActionsUnmappingAvailability(
+                host,
+                allowActions,
+                initiallyMappedHosts[componentMapping.component.id],
+              );
         };
 
         return (
@@ -108,9 +122,9 @@ const ActionWizardMappingService = ({
             onMap={onMap}
             onUnmap={onUnmap}
             onInstallServices={onInstallServices}
-            checkComponentMappingAvailability={checkComponentMappingAvailability}
-            checkHostMappingAvailability={checkHostMappingAvailability}
-            checkHostUnmappingAvailability={checkHostUnmappingAvailability}
+            checkComponentMappingAvailability={checkWizardComponentMappingAvailability}
+            checkHostMappingAvailability={checkWizardHostMappingAvailability}
+            checkHostUnmappingAvailability={checkWizardHostUnmappingAvailability}
             isReadOnly={isReadOnly}
           />
         );

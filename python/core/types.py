@@ -150,11 +150,15 @@ class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
 
 
 ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
+ServiceDesc = Descriptor[Literal[ADCMCoreType.SERVICE]]
+ComponentDesc = Descriptor[Literal[ADCMCoreType.COMPONENT]]
 ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+HostDesc = Descriptor[Literal[ADCMCoreType.HOST]]
 ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
 TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]
+ActionDescriptor: TypeAlias = Descriptor[Literal["action"]]
 
 
 @dataclass(slots=True, frozen=True)

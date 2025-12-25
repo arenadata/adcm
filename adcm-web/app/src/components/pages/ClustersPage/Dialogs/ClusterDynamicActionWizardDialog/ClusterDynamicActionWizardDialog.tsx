@@ -1,7 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { type AdcmWizardStage, AdcmWizardStepType } from '@models/adcm/wizard';
 import { useClusterDynamicActionWizardDialog } from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/useClusterDynamicActionWizardDialog';
 import ActionWizard from '@uikit/ActionWizard/ActionWizard';
 import { ActionWizardValidationContextProvider } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContextProvider';
@@ -12,16 +11,11 @@ import {
   createProcess,
   setHasConflictError,
   setIsContinueProcessModal,
+  setSelectedStepId,
   startNewProcess,
 } from '@store/adcm/clusters/clustersWizardActionsSlice';
-
-const lastStepId = (stages: AdcmWizardStage[]) => {
-  return stages.flatMap((stage) => stage.steps).find((step) => step.type === AdcmWizardStepType.LastStep)?.id || null;
-};
-
-const checkForBrokenStep = (stages: AdcmWizardStage[]) => {
-  return stages.flatMap((stage) => stage.steps).find((step) => step.state === 'broken')?.id ?? undefined;
-};
+import { checkForBrokenStep, lastStepId } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
+import ClusterDynamicActionWizardStep from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardStep/ClusterDynamicActionWizardStep';
 
 const ClusterActionWizardDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -56,6 +50,14 @@ const ClusterActionWizardDialog: React.FC = () => {
       dispatch(getStep({ clusterId, actionId, processId, stepId: brokenStep }));
     }
   }, [dispatch, clusterId, actionId, processId, brokenStep]);
+
+  const handleSetBrokenStepError = (error?: string) => {
+    dispatch(setBrokenStepError(error));
+  };
+
+  const handleSetSelectedStepId = (id: number) => {
+    dispatch(setSelectedStepId(id));
+  };
 
   const handleCloseConflictDialog = () => {
     dispatch(setHasConflictError(false));
@@ -109,6 +111,9 @@ const ClusterActionWizardDialog: React.FC = () => {
               process={processWithStages ?? process}
               jobsData={jobsData}
               onClose={onClose}
+              onSetSelectedStepId={handleSetSelectedStepId}
+              onSetBrokenStepError={handleSetBrokenStepError}
+              entityDynamicActionWizardStepComponent={ClusterDynamicActionWizardStep}
             />
           </ActionWizardValidationContextProvider>
         </Modal>

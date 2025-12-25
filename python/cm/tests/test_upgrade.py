@@ -12,8 +12,9 @@
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 
-from cm.adcm_config.config import save_object_config, switch_config
-from cm.api import (
+from cm.errors import AdcmEx
+from cm.legacy.adcm_config.config import save_object_config, switch_config
+from cm.legacy.api import (
     add_cluster,
     add_host,
     add_host_provider,
@@ -21,8 +22,8 @@ from cm.api import (
     add_service_to_cluster,
     update_obj_config,
 )
-from cm.errors import AdcmEx
-from cm.issue import add_issue_on_linked_objects
+from cm.legacy.issue import add_issue_on_linked_objects
+from cm.legacy.upgrade import _switch_components, bundle_revert, check_upgrade, do_upgrade
 from cm.models import (
     Bundle,
     Component,
@@ -36,7 +37,6 @@ from cm.models import (
     Upgrade,
 )
 from cm.tests.utils import gen_cluster
-from cm.upgrade import _switch_components, bundle_revert, check_upgrade, do_upgrade
 
 
 def cook_cluster_bundle(ver):

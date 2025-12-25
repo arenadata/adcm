@@ -12,7 +12,7 @@
 
 from typing import Collection
 
-from cm.api import delete_host
+from cm.legacy.api import delete_host
 from cm.models import Host
 from core.types import ADCMCoreType, CoreObjectDescriptor
 

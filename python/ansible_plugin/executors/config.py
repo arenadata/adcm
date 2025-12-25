@@ -13,14 +13,14 @@
 from typing import Any, Collection, TypeAlias, TypedDict
 import re
 
-from application.migration.config import update_configuration_from_job
 from cm.converters import core_type_to_model
-from core.bundle_alt.schema import ConfigApplyParameterItem
+from core.legacy.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
 from infra.services import get_config_service
 from pydantic import model_validator
 from typing_extensions import Self
+from use_cases.transition.config import update_configuration_from_job
 import core
 
 from ansible_plugin.base import (

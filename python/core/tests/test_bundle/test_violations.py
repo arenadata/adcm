@@ -16,9 +16,9 @@ from unittest.mock import patch
 
 import yaml
 
-from core.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
-from core.bundle_alt.errors import BundleParsingError, BundleValidationError
-from core.bundle_alt.process import retrieve_bundle_definitions
+from core.legacy.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
+from core.legacy.bundle_alt.errors import BundleParsingError, BundleValidationError
+from core.legacy.bundle_alt.process import retrieve_bundle_definitions
 
 
 def fake_get_config_files(*_):

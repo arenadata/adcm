@@ -3,6 +3,7 @@ import ButtonGroup from '@uikit/ButtonGroup/ButtonGroup';
 import Panel from '@uikit/Panel/Panel';
 import s from './ActionWizardSteps.module.scss';
 import {
+  type AdcmActionProcessOperationStep,
   type AdcmActionProcessStep,
   type AdcmWizardJobsData,
   AdcmWizardStepStates,
@@ -10,24 +11,22 @@ import {
 } from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
-import ClusterDynamicActionWizardOperation from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardOperation/ClusterDynamicActionWizardOperation';
 import ActionWizardConfigurationEditor from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditor';
 import ActionWizardLastStage from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStage';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
 import type { AdcmJob } from '@models/adcm';
-import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
-import ClusterDynamicActionWizardMapping from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardMapping/ClusterDynamicActionWizardMapping';
-
-const wizardStepStates = new Set([AdcmWizardStepStates.Running, AdcmWizardStepStates.Completed]);
-
-const wizardStepType = new Set([
-  AdcmWizardStepType.Operation,
-  AdcmWizardStepType.Configuration,
-  AdcmWizardStepType.Mapping,
-]);
+import {
+  isFirstButtonDisabled,
+  isFirstButtonVisible,
+  isSecondButtonDisabled,
+  isStepFailed,
+} from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
+import ActionWizardMapping from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMapping';
 
 interface ActionWizardStepProps {
+  clusterId: number;
   jobsData: AdcmWizardJobsData;
   currentStep: number;
   stageNumber: number;
@@ -36,6 +35,10 @@ interface ActionWizardStepProps {
   onStepSubmit: (stepType: AdcmWizardStepType) => void;
   onStepChange: () => void;
   onStepReset: (stepId: number) => void;
+  entityDynamicActionWizardOperation: React.FC<{
+    step: AdcmActionProcessOperationStep;
+  }>;
+  onClose: () => void;
   selectedStep?: number;
 }
 
@@ -58,32 +61,8 @@ const stepPanelLabelClassName = (step: AdcmActionProcessStep, hasConflict: boole
   });
 };
 
-const isFirstButtonDisabled = (
-  step: AdcmActionProcessStep,
-  isCurrentStep: boolean,
-  isDraft: boolean,
-  isInRunningState: boolean,
-) => {
-  if ([AdcmWizardStepType.Configuration, AdcmWizardStepType.Mapping].includes(step.type)) {
-    return (isCurrentStep && !isDraft) || isInRunningState;
-  }
-
-  return wizardStepStates.has(step.state);
-};
-
-const isSecondButtonDisabled = (step: AdcmActionProcessStep) => {
-  if (step.type === AdcmWizardStepType.Operation) {
-    return step.state !== AdcmWizardStepStates.Completed;
-  }
-
-  return step.state === AdcmWizardStepStates.Completed;
-};
-
-const isFirstButtonVisible = (stepType: AdcmWizardStepType) => {
-  return wizardStepType.has(stepType);
-};
-
 const ActionWizardSteps = ({
+  clusterId,
   jobsData,
   selectedStep,
   currentStep,
@@ -93,8 +72,12 @@ const ActionWizardSteps = ({
   onStepSubmit,
   onStepChange,
   onStepReset,
+  entityDynamicActionWizardOperation,
+  onClose,
 }: ActionWizardStepProps) => {
   const { isValid, isDraft, setIsValid, setIsDraft } = useActionWizardValidationContext();
+  const WizardOperation = entityDynamicActionWizardOperation;
+
   const initialHiddenStates = useMemo(() => {
     return steps.reduce<Record<number, boolean>>((acc, step) => {
       acc[step.id] = step.id !== (selectedStep || currentStep);
@@ -192,9 +175,15 @@ const ActionWizardSteps = ({
               {step.type === AdcmWizardStepType.Configuration && (
                 <ActionWizardConfigurationEditor isReadOnly={!isCurrentStep} step={step} />
               )}
-              {step.type === AdcmWizardStepType.Operation && <ClusterDynamicActionWizardOperation step={step} />}
+              {step.type === AdcmWizardStepType.Operation && <WizardOperation step={step} />}
               {step.type === AdcmWizardStepType.Mapping && (
-                <ClusterDynamicActionWizardMapping isReadOnly={!isCurrentStep} step={step} />
+                <ActionWizardMapping
+                  onSetIsValid={setIsValid}
+                  clusterId={clusterId}
+                  isReadOnly={!isCurrentStep}
+                  onClose={onClose}
+                  step={step}
+                />
               )}
               {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
             </div>

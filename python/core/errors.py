@@ -15,6 +15,11 @@ from contextlib import contextmanager
 from core.types import ADCMLocalizedError, ADCMMessageError
 
 
+# todo should it be localized by default?
+class OperationError(ADCMLocalizedError):
+    ...
+
+
 class NotFoundError(ADCMMessageError):
     ...
 

@@ -13,13 +13,13 @@
 
 from pathlib import Path
 
-from core.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
 
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.job.inventory import get_inventory_data
 from cm.models import Action
-from cm.services.job.action import prepare_task_for_action
-from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 

@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
-from core.cluster.types import HostComponentEntry
+from core.legacy.cluster.types import HostComponentEntry
 
-from cm.api import add_service_to_cluster
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
+from cm.legacy.api import add_service_to_cluster
+from cm.legacy.issue import update_hierarchy_issues
+from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
     Bundle,
     Cluster,
@@ -25,7 +26,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.mapping import set_host_component_mapping
 
 
 class TestComponent(BaseTestCase):

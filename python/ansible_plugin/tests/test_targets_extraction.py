@@ -14,9 +14,9 @@ from pathlib import Path
 
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin, DummyExecutor
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Service
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.types import Task
+from core.legacy.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from ansible_plugin.base import (

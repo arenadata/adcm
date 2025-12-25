@@ -4,7 +4,6 @@ import {
   AdcmWizardMethodType,
   AdcmWizardStepType,
   type AdcmActionProcessStep,
-  type AdcmWizardStage,
   AdcmWizardStepStates,
 } from '@models/adcm/wizard';
 import { useDispatch, useStore } from '@hooks';
@@ -21,37 +20,17 @@ import type { RunClusterDynamicActionPayload } from '@store/adcm/clusters/cluste
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
 import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
+import { getCurrentStageNotDisabledStepIds, getMaxStepId } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
+import ClusterDynamicActionWizardOperation from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardOperation/ClusterDynamicActionWizardOperation';
 
 interface ClusterDynamicActionWizardStepProps {
   stageNumber: number;
+  onClose: () => void;
 }
-
-const getCurrentStageNotDisabledStepIds = (
-  currentStep: number,
-  currentStepFromEndpoint: number,
-  stages: AdcmWizardStage[],
-): number[] => {
-  const currentStage = stages.find((stage) =>
-    stage.steps.some((step) => step.id === currentStep && step.type !== AdcmWizardStepType.LastStep),
-  );
-
-  if (!currentStage) {
-    return [];
-  }
-
-  if (currentStage.steps.every((step) => step.state === AdcmWizardStepStates.Completed)) {
-    return currentStage.steps.map((step) => step.id);
-  }
-
-  return currentStage.steps.filter((step) => step.id <= currentStepFromEndpoint).map((step) => step.id);
-};
-
-const getMaxStepId = (steps: AdcmActionProcessStep[]) => {
-  return steps.length > 0 ? Math.max(...steps.map((step) => step.id)) : -1;
-};
 
 const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepProps> = ({
   stageNumber,
+  onClose,
 }: ClusterDynamicActionWizardStepProps) => {
   const dispatch = useDispatch();
 
@@ -63,7 +42,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
   const stepsWithData = useStore(({ adcm }) => adcm.clustersWizard.steps);
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
-  const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardActions.hostComponentMapDelta);
+  const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardMapping.hostComponentMapDelta);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
   const { formData } = useActionWizardLastStageContext();
@@ -296,10 +275,11 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     }
   };
 
-  if (!steps || !process || processId !== process.id) return null;
+  if (!steps || !process || !clusterId || processId !== process.id) return null;
 
   return (
     <ActionWizardSteps
+      clusterId={clusterId}
       jobsData={jobsData}
       selectedStep={selectedStep}
       currentStep={process.currentStep}
@@ -309,6 +289,8 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
       onStepSubmit={handleSubmitStep}
       onStepChange={handleChangeStep}
       onStepReset={handleResetStep}
+      onClose={onClose}
+      entityDynamicActionWizardOperation={ClusterDynamicActionWizardOperation}
     />
   );
 };

@@ -9,24 +9,16 @@ import {
   type AdcmWizardJobsData,
   type AdcmWizardStage,
   AdcmWizardStepStates,
-  AdcmWizardStepType,
 } from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
-import ClusterDynamicActionWizardStep from '@pages/ClustersPage/Dialogs/ClusterDynamicActionWizardDialog/ClusterDynamicActionWizardStep/ClusterDynamicActionWizardStep';
 import ActionWizardConfigurationEditorContextProvider from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContextProvider';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
 import ActionWizardLastStageContextProvider from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContextProvider';
 import ActionWizardBrokenStage from '@uikit/ActionWizardSteps/ActionWizardBrokenStage/ActionWizardBrokenStage';
 import FlexGroup from '@uikit/FlexGroup/FlexGroup';
-
-const tips = {
-  [AdcmWizardStepStates.Created]: 'Fill inputs',
-  [AdcmWizardStepStates.Completed]: 'Proceed to next step',
-  [AdcmWizardStepStates.Running]: 'Running',
-  [AdcmWizardStepStates.Broken]: 'Broken',
-};
+import { getStepTip } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 
 const getTitleIcon = (stage: AdcmWizardStage, isValid: boolean) => {
   if (stage.steps.some((step) => step.state === AdcmWizardStepStates.Running)) {
@@ -50,18 +42,6 @@ const stageLabelClassName = (stage: AdcmWizardStage, isValid: boolean, jobsData?
   });
 };
 
-const getStepTip = (stage: AdcmWizardStage, currentStep: number) => {
-  const step = stage.steps.find((step) => step.id === currentStep);
-
-  if (step) {
-    if (step.type === AdcmWizardStepType.Operation || step.type === AdcmWizardStepType.LastStep) {
-      return tips[AdcmWizardStepStates.Completed];
-    }
-
-    return tips[step.state as AdcmWizardStepStates];
-  }
-};
-
 interface ActionWizardProps {
   stages: AdcmWizardStage[];
   currentStep: number;
@@ -71,6 +51,12 @@ interface ActionWizardProps {
   selectedStep?: number;
   brokenStepError?: string;
   wizardTitle: string;
+  onSetBrokenStepError: (error?: string) => void;
+  onSetSelectedStepId: (id: number) => void;
+  entityDynamicActionWizardStepComponent: React.FC<{
+    stageNumber: number;
+    onClose: () => void;
+  }>;
 }
 
 const ActionWizard: React.FC<ActionWizardProps> = ({
@@ -82,8 +68,12 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
   process,
   jobsData,
   onClose,
+  onSetBrokenStepError,
+  onSetSelectedStepId,
+  entityDynamicActionWizardStepComponent,
 }) => {
   const stepId = selectedStep ?? currentStep;
+  const ActionWizardStepComponent = entityDynamicActionWizardStepComponent;
 
   const { isValid } = useActionWizardValidationContext();
 
@@ -91,12 +81,18 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
     return stages.findIndex((stage) => stage.steps.some((step) => step.id === stepId));
   }, [stages, selectedStep]);
 
-  if (!stages || stageIndex < 0) return null;
+  if (!stages || stageIndex < 0 || !ActionWizardStepComponent) return null;
 
   return (
     <div className={s.actionWizardLayout}>
       <aside className={s.actionWizardLayout__leftSidebarWrap} data-test="nav-menu">
-        <ActionWizardMap wizardTitle={wizardTitle} process={process} />
+        <ActionWizardMap
+          wizardTitle={wizardTitle}
+          process={process}
+          jobsData={jobsData}
+          onSetBrokenStepError={onSetBrokenStepError}
+          onSetSelectedStepId={onSetSelectedStepId}
+        />
       </aside>
       <div className={s.actionWizardLayout__content}>
         {brokenStepError && <ActionWizardBrokenStage brokenStepError={brokenStepError} onClose={onClose} />}
@@ -120,7 +116,7 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
             </header>
             <ActionWizardConfigurationEditorContextProvider>
               <ActionWizardLastStageContextProvider>
-                <ClusterDynamicActionWizardStep stageNumber={stageIndex + 1} />
+                <ActionWizardStepComponent stageNumber={stageIndex + 1} onClose={onClose} />
               </ActionWizardLastStageContextProvider>
             </ActionWizardConfigurationEditorContextProvider>
           </>

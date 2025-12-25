@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.tests.base import BusinessLogicMixin
-from cm.api import add_host_to_cluster, add_service_to_cluster
+from cm.legacy.api import add_host_to_cluster, add_service_to_cluster
 from cm.models import (
     Cluster,
     Component,

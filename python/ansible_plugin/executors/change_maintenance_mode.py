@@ -14,9 +14,9 @@ from contextlib import suppress
 from typing import Any, Collection
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.status.notify import reset_objects_in_mm
+from cm.legacy.status_api import send_object_update_event
 from cm.models import Host, MaintenanceMode
-from cm.services.status.notify import reset_objects_in_mm
-from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import field_validator

@@ -11,18 +11,15 @@
 # limitations under the License.
 
 
-from adcm.feature_flags import use_new_config_processing
-from application import bundle as bundle_use_case
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
-from cm.bundle import delete_bundle
+from cm.legacy.bundle import delete_bundle
 from cm.models import Bundle, ObjectType
-from cm.services.adcm import adcm_config, get_adcm_config_id
-from cm.services.bundle_alt.load import Directories, parse_bundle_from_request_to_db
-from django.conf import settings
+from dishka import FromDishka
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from infra.di.django import inject
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -40,6 +37,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.bundle import ParseBundleFromRequest
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.bundle.filters import BundleFilter
@@ -121,31 +119,17 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         },
     )
     @audit_create(name="Bundle uploaded", object_=ignore_object_search)
-    def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def create(self, request, *args, parse_bundle: FromDishka[ParseBundleFromRequest], **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        func = self.upload_bundle_new if use_new_config_processing(headers=request.headers) else self.upload_bundle_old
+        bundle_id = parse_bundle.do(request.data["file"])
 
-        bundle = func(request.data["file"])
+        new_bundle = self.get_queryset().get(id=bundle_id)
+        serializer = BundleSerializer(instance=new_bundle)
 
-        return Response(
-            status=HTTP_201_CREATED, data=BundleSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
-        )
-
-    def upload_bundle_new(self, file) -> Bundle:
-        return bundle_use_case.parse_bundle_from_request_to_db(file)
-
-    def upload_bundle_old(self, file) -> Bundle:
-        verified_signature_only = adcm_config(get_adcm_config_id()).config["global"]["accept_only_verified_bundles"]
-        return parse_bundle_from_request_to_db(
-            file_from_request=file,
-            directories=Directories(
-                downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR
-            ),
-            adcm_version=settings.ADCM_VERSION,
-            verified_signature_only=verified_signature_only,
-        )
+        return Response(status=HTTP_201_CREATED, data=serializer.data)
 
     @extend_schema(
         operation_id="deleteBundle",

@@ -3,14 +3,29 @@
   name: cluster_with_wizard
   version: &version '1.0'
   edition: community
-  actions: &actions
-    wizard_jinja:
+  actions:
+    wizard_jinja: &wizard_action
       type: job
       script: ./sleep.yaml
       script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stages.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    wizard_host_action_from_cluster: &host_action
+      type: job
+      script: scripts/sleep.yaml
+      script_type: ansible
+      host_action: true
+      ui_options:
+        disclaimer: "Test message!"
+      wizard_template:
+        file:
+          path: wizard_jinja/host_action/stages.j2
         engine:
           type: jinja2
       states:
@@ -27,12 +42,18 @@
   version: "0.1"
 
   actions:
-    <<: *actions
+    wizard_jinja:
+      <<: *wizard_action
+    wizard_host_action_from_service:
+      <<: *host_action
 
   config: *config
 
   components:
     component_1:
       actions:
-        <<: *actions
+        wizard_jinja:
+          <<: *wizard_action
+        wizard_host_action_from_component:
+          <<: *host_action
       config: *config

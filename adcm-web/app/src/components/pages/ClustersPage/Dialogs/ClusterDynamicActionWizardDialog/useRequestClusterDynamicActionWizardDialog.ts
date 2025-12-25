@@ -2,16 +2,8 @@ import { useDispatch, useRequestTimer, useStore } from '@hooks';
 import { getStep, loadSubJobLogFromBackend, refreshProcessStages } from '@store/adcm/clusters/clustersWizardSlice';
 import { getJob } from '@store/adcm/clusters/clustersWizardSlice';
 import type { AdcmActionProcessOperationStep } from '@models/adcm/wizard';
-import { AdcmJobStatus } from '@models/adcm';
 import { useEffect, useMemo } from 'react';
-
-const terminalStatuses = new Set([
-  AdcmJobStatus.Success,
-  AdcmJobStatus.Failed,
-  AdcmJobStatus.Locked,
-  AdcmJobStatus.Aborted,
-  AdcmJobStatus.Broken,
-]);
+import { terminalStatuses } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useRequestClusterDynamicActionWizardDialog = (step: AdcmActionProcessOperationStep) => {
   const dispatch = useDispatch();

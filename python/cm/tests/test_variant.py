@@ -12,8 +12,9 @@
 
 from adcm.tests.base import BaseTestCase
 
-from cm.api import add_host, add_host_provider, add_host_to_cluster
 from cm.errors import AdcmEx
+from cm.legacy.api import add_host, add_host_provider, add_host_to_cluster
+from cm.legacy.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
 from cm.models import (
     Bundle,
     Cluster,
@@ -22,7 +23,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
 
 
 def cook_cluster():

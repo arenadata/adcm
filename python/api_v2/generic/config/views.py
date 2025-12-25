@@ -12,14 +12,11 @@
 
 from typing import NoReturn, cast
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
-from application.migration.config import update_configuration_of_host_group, update_configuration_of_object
-from cm.api import update_obj_config
 from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject, PrototypeConfig
+from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from infra.services import get_config_service
@@ -32,6 +29,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
 )
+from use_cases.transition.config import update_configuration_of_host_group, update_configuration_of_object
 import core
 
 from api_v2.generic.config.filters import ConfigLogFilter
@@ -80,26 +78,10 @@ class ConfigLogViewSet(
         return ConfigLogSerializer
 
     def handle_exception(self, exc: Exception) -> Response:
-        if isinstance(exc, core.config.OperationError):
+        if isinstance(exc, core.config.ConfigOperationError):
             exc = AdcmEx(code="CONFIG_OPERATION_ERROR", msg=exc.args[0])
 
         return super().handle_exception(exc)
-
-    def old_create(self, parent_object, serializer):
-        from cm.services.config._base import convert_adcm_meta_to_attr, represent_string_as_json_type
-
-        prototype_configs = tuple(
-            PrototypeConfig.objects.filter(prototype=parent_object.prototype, type="json", action=None)
-        )
-
-        return update_obj_config(
-            obj_conf=parent_object.config,
-            config=represent_string_as_json_type(
-                prototype_configs=prototype_configs, value=serializer.validated_data["config"]
-            ),
-            attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["attr"]),
-            description=serializer.validated_data.get("description", ""),
-        )
 
     def new_create(self, parent_object: MainObject | ADCM | ConfigHostGroup, serializer: BaseSerializer):
         service = get_config_service()
@@ -139,15 +121,8 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
-        if use_new_config_processing(headers=request.headers):
-            create_new = self.new_create
-            convert = self.new_convert
-        else:
-            create_new = self.old_create
-            convert = self.old_convert
-
-        config_log = create_new(parent_object=parent_object, serializer=serializer)
-        config_log = convert(config_log, parent_object)
+        config_log = self.new_create(parent_object=parent_object, serializer=serializer)
+        config_log = self.new_convert(config_log, parent_object)
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
@@ -156,9 +131,7 @@ class ConfigLogViewSet(
         self._check_parent_permissions(parent_object)
 
         instance = self.get_object()
-        func = self.new_convert if use_new_config_processing(headers=request.headers) else self.old_convert
-
-        instance = func(instance, parent_object)
+        instance = self.new_convert(instance, parent_object)
         serializer = self.get_serializer(instance)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
@@ -167,15 +140,8 @@ class ConfigLogViewSet(
         self._check_parent_permissions()
         return super().list(request, *args, **kwargs)
 
-    def old_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
-        from cm.services.config import convert_attr_to_adcm_meta, represent_json_type_as_string
-
-        config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
-        config_log.config = represent_json_type_as_string(prototype=parent_object.prototype, value=config_log.config)
-        return config_log
-
     def new_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
-        from cm.config.convert import convert_attr_to_adcm_meta
+        from cm.impl.config.convert import convert_attr_to_adcm_meta
 
         match parent_object:
             case ConfigHostGroup():

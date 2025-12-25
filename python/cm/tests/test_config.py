@@ -16,8 +16,8 @@ from unittest import TestCase, mock
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from cm.services.config.spec import ConfigParamPlainSpec
-from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
+from cm.legacy.services.config.spec import ConfigParamPlainSpec
+from cm.legacy.services.job.inventory._config import update_configuration_for_inventory_inplace
 
 
 class ConfigHostGroupTest(TestCase):
@@ -65,7 +65,9 @@ class ConfigHostGroupTest(TestCase):
 
             return config[config_key]
 
-        with mock.patch("cm.services.job.inventory._config._build_string_path_for_file", new=patched_path_for_file):
+        with mock.patch(
+            "cm.legacy.services.job.inventory._config._build_string_path_for_file", new=patched_path_for_file
+        ):
             for invalid_type in ("password", "secrettext", "file", "secretfile"):
                 with self.subTest(f"{invalid_type}-unchanged"):
                     # even if unsfae is True by some mistake, it shouldn't work

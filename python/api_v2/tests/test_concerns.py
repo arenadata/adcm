@@ -16,6 +16,8 @@ from typing import Iterable
 
 from adcm.feature_flags import use_new_config_processing
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
+from cm.legacy.services.concern.messages import ConcernMessage
 from cm.models import (
     Action,
     ADCMEntity,
@@ -33,10 +35,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.concern.flags import BuiltInFlag, lower_flag
-from cm.services.concern.messages import ConcernMessage
 from cm.tests.mocks.task_runner import RunTaskMock
-from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
+from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -51,7 +51,7 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
 
 subtest_on_new_config_processing = partial(
-    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="cm.services.concern.checks"
+    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="cm.legacy.services.concern.checks"
 )
 
 

@@ -18,18 +18,11 @@ ConfigDict: TypeAlias = dict
 AttrDict: TypeAlias = dict
 
 
-class RelatedCHG(TypedDict):
-    config_group_id: int
-    config_id: int
-
-
 class RelatedConfigs(TypedDict):
     object_id: int
     object_type: str
     prototype_id: int
     primary_config_id: int
-    # field for storing related CHGs info (currently is out of scope)
-    # config_host_groups: list[RelatedCHG]
 
 
 class ConfigCoreObjectWithPrototype(NamedTuple):

@@ -24,8 +24,13 @@ import tarfile
 
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.converters import orm_object_to_core_type
+from cm.legacy.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
+from cm.legacy.services.bundle_alt.load import Directories, parse_bundle_archive
+from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.mapping import set_host_component_mapping
+from cm.legacy.utils import deep_merge
 from cm.models import (
     ADCM,
     Action,
@@ -44,21 +49,17 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.bundle_alt.load import Directories, parse_bundle_archive
-from cm.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-from cm.services.job.action import prepare_task_for_action
-from cm.services.mapping import set_host_component_mapping
-from cm.utils import deep_merge
-from core.cluster.types import HostComponentEntry
-from core.job.dto import TaskPayloadDTO
-from core.job.types import Task
-from core.rbac.dto import UserCreateDTO
-from core.rbac.operations import add_user_to_groups
+from core.legacy.cluster.types import HostComponentEntry
+from core.legacy.job.dto import TaskPayloadDTO
+from core.legacy.job.types import Task
+from core.legacy.rbac.dto import UserCreateDTO
+from core.legacy.rbac.operations import add_user_to_groups
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.test import Client, TestCase, override_settings
+from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.group import create as create_group
@@ -88,7 +89,7 @@ class ParallelReadyTestCase:
         override_settings(**cls.directories, ANSIBLE_SECRET="verysecretstuff")(cls)
 
     @staticmethod
-    def _prepare_temporal_directories_for_adcm() -> dict:
+    def _prepare_temporal_directories_for_adcm() -> dict[str, Path]:
         stack = Path(mkdtemp())
         data = Path(mkdtemp()) / "data"
 
@@ -173,6 +174,9 @@ class TestCaseWithCommonSetUpTearDown(TestCase):
 
 class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
     def setUp(self) -> None:
+        # TODO: ADCM-7513
+        get_config_service.cache_clear()
+
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
 

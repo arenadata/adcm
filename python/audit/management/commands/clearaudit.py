@@ -18,7 +18,7 @@ import os
 import csv
 import logging
 
-from cm.adcm_config.config import get_adcm_config
+from cm.legacy.adcm_config.config import get_adcm_config
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q

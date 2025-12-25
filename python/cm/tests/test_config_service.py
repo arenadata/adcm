@@ -41,7 +41,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
 
     def test_same_as_default_success(self):
         input_config = core.config.Configuration(
-            values=core.config.flat_to_nested(self.cluster_defaults),
+            values=core.config.flat_to_nested(self.cluster_defaults.values),
             attributes={"/activatable_group": core.config.Attributes(is_active=True)},
         )
         result = self.config_service.prepare_new_configuration(
@@ -53,7 +53,7 @@ class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, Tes
     def test_encryption_success(self):
         secret_value = "verysecret"
         default_config = core.config.Configuration(
-            values=core.config.flat_to_nested(self.cluster_defaults),
+            values=core.config.flat_to_nested(self.cluster_defaults.values),
             attributes={"/activatable_group": core.config.Attributes(is_active=True)},
         )
         input_config = deepcopy(default_config)

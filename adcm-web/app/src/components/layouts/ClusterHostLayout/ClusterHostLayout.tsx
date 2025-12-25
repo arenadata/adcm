@@ -5,6 +5,7 @@ import ClusterHostNavigation from './ClusterHostNavigation/ClusterHostNavigation
 import { useRequestClusterHost } from './useRequestHost';
 import ClusterHostsDynamicActionDialog from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/ClusterHostsDynamicActionDialog/ClusterHostsDynamicActionDialog';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ClusterHostsDynamicActionWizardDialog from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/ClusterHostsDynamicActionWizardDialog/ClusterHostsDynamicActionWizardDialog';
 
 const ClusterHostLayout: React.FC = () => {
   const { accessCheckStatus } = useRequestClusterHost();
@@ -16,6 +17,7 @@ const ClusterHostLayout: React.FC = () => {
         <ClusterHostNavigation />
         <Outlet />
         <ClusterHostsDynamicActionDialog />
+        <ClusterHostsDynamicActionWizardDialog />
       </PermissionsChecker>
     </div>
   );

@@ -16,11 +16,11 @@ from functools import wraps
 import os
 import errno
 
-from cm.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
-from cm.services.job.run.repo import JobRepoImpl
-from cm.status_api import send_task_status_update_event
-from core.job.dto import JobUpdateDTO, TaskUpdateDTO
-from core.job.types import ExecutionStatus
+from cm.legacy.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
+from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.status_api import send_task_status_update_event
+from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
+from core.legacy.job.types import ExecutionStatus
 from core.types import PID
 from django.db import connection
 from django.db.transaction import atomic

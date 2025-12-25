@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.status import notify
+from cm.legacy.services.status import notify
 from django.conf import settings
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response

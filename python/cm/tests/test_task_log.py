@@ -16,15 +16,15 @@ import io
 import tarfile
 
 from adcm.tests.base import BaseTestCase
-from core.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.utils import str_remove_non_alnum
 from cm.models import Action, ActionType, Bundle, Cluster, JobLog, LogStorage, Prototype, SubAction, TaskLog
-from cm.services.job.action import prepare_task_for_action
 from cm.tests.utils import gen_adcm
-from cm.utils import str_remove_non_alnum
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:

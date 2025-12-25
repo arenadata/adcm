@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
+from cm.legacy.services.action_process import repo
 from cm.models import Action
-from cm.services.action_process import repo
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, IntegerField
 from rest_framework.serializers import (

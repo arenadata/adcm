@@ -79,7 +79,7 @@ const ComponentContainer = ({
           return {
             label: host.name,
             value: host,
-            disabled: isReadOnly ?? !isEnabled,
+            disabled: isReadOnly || !isEnabled,
             title: hostsErrors[host.id].allowMapError ?? hostsErrors[host.id].allowUnmapError,
           };
         })
@@ -121,7 +121,7 @@ const ComponentContainer = ({
     [s.componentContainer_error]: !isMappingValid,
     [s.componentContainer_notRequired]: isNotRequired,
     [s.componentContainer_optional]: isOptional,
-    [s.componentContainer_disabled]: isReadOnly ?? componentNotAvailableError,
+    [s.componentContainer_disabled]: isReadOnly || componentNotAvailableError,
   });
 
   const titleClassName = cn(s.componentContainerHeader__title, {

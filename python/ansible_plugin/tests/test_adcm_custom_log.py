@@ -12,8 +12,8 @@
 
 from unittest.mock import patch
 
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import LogStorage
-from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.custom_log import ADCMCustomLogPluginExecutor

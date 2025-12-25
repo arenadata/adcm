@@ -22,8 +22,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from cm.legacy.services.transition.dump import dump
 from cm.models import Cluster
-from cm.services.transition.dump import dump
 
 
 def encrypt_data(pass_from_user: str, result: str) -> bytes:

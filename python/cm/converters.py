@@ -42,8 +42,6 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
             return Host
         case ADCMCoreType.ADCM:
             return ADCM
-        case _:
-            raise ValueError(f"Can't convert {core_type} to ORM model")
 
 
 def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupObject]:
@@ -52,8 +50,6 @@ def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupOb
 
     if host_group_type == ADCMHostGroupType.ACTION:
         return ActionHostGroup
-
-    raise ValueError(f"Can't convert {host_group_type} to ORM model")
 
 
 def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
@@ -70,8 +66,6 @@ def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
             return "host"
         case ADCMCoreType.ADCM:
             return "adcm"
-        case _:
-            raise ValueError(f"Can't convert {core_type} to type name in DB")
 
 
 def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
@@ -133,8 +127,6 @@ def action_target_type_to_model(
         case ExtraActionTargetType.ACTION_HOST_GROUP:
             return ActionHostGroup
 
-    raise ValueError(f"Can't convert {target_type} to ORM model")
-
 
 def orm_object_to_action_target_type(
     object_: ADCM | CoreObject | ActionHostGroup,
@@ -170,4 +162,4 @@ _model_name_to_audit_object_type_map = {
 
 
 def orm_object_to_action_target_descriptor(object_: ADCM | CoreObject | ActionHostGroup) -> ActionTargetDescriptor:
-    return ActionTargetDescriptor(id=object_.id, type=orm_object_to_action_target_type(object_=object_))
+    return ActionTargetDescriptor(id=object_.pk, type=orm_object_to_action_target_type(object_=object_))
