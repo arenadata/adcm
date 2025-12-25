@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0149_processstepinput_mapping"),
+        ("cm", "0150_migrate_empty_string_secrets"),
     ]
 
     operations = [
