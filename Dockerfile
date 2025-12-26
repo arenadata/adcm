@@ -61,14 +61,14 @@ COPY os/etc /etc
 COPY os/etc/crontabs/root /var/spool/cron/crontabs/root
 COPY --from=go_builder /code/bin/runstatus /adcm/go/bin/runstatus
 COPY --from=ui_builder /wwwroot /adcm/wwwroot
-COPY conf /adcm/conf
-COPY python/ansible_share/plugins /usr/share/ansible/plugins
-COPY python /adcm/python
 COPY --from=python_builder /usr/local/bin /usr/local/bin
 COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
 COPY --from=arenadata/ansible:2.9.27-python3.10 /venv/2.9 /venv/2.9
 COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
 COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
+COPY conf /adcm/conf
+COPY python/ansible_share/plugins /usr/share/ansible/plugins
+COPY python /adcm/python
 
 RUN python -m pip uninstall -y pip && \
     rm -rf /root/.cache/pip

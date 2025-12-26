@@ -289,6 +289,7 @@ class ConfigLog(ADCMModel):
     attr = models.JSONField(default=dict)
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
+    created_by = models.CharField(blank=True, max_length=255)
 
     __error_code__ = "CONFIG_NOT_FOUND"
 

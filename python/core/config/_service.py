@@ -26,7 +26,8 @@ from core.config._types import (
     ChangeRequest,
     ConfigOwner,
     Configuration,
-    ConfigurationWithID,
+    ConfigurationExtraInfo,
+    ConfigurationWithInfo,
     Defaults,
     FlatConfiguration,
     HostGroupConfigOwner,
@@ -38,6 +39,7 @@ from core.config._validate import (
     VariantValidator,
     Violations,
 )
+from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.result import Fail, Success, is_fail
 from core.settings import Directories
 from core.types import (
@@ -99,7 +101,7 @@ class ConfigService:
 
     # retrieve
 
-    def retrieve_current_configuration(self, owner: ObjectOrGroup) -> ConfigurationWithID:
+    def retrieve_current_configuration(self, owner: ObjectOrGroup) -> ConfigurationWithInfo:
         return self.repo.get_config(owner=owner)
 
     def retrieve_specification(self, owner: CoreObjectDescriptor) -> spec.FullSpec:
@@ -196,12 +198,11 @@ class ConfigService:
     # create
 
     def create_new_configuration_by_descriptor(
-        self,
-        configuration: Configuration,
-        description: str,
-        owner: ObjectOrGroup,
+        self, configuration: Configuration, configuration_extra_info: ConfigurationExtraInfo, owner: ObjectOrGroup
     ) -> ConfigID:
-        return self.repo.set_new_config_for_object(owner=owner, config=configuration, description=description)
+        return self.repo.set_new_config_for_object(
+            owner=owner, config=configuration, config_extra_info=configuration_extra_info
+        )
 
     def create_initial_configuration_if_required(self, owner: CoreObjectDescriptor) -> ConfigID | None:
         try:
@@ -217,7 +218,9 @@ class ConfigService:
         default_config = self.prepare_default_configuration(defaults=defaults, specification=specification)
 
         config_id = self.create_new_configuration_by_descriptor(
-            configuration=default_config, description="init", owner=owner
+            configuration=default_config,
+            configuration_extra_info=ConfigurationExtraInfo(description="init", created_by=SYSTEM_CONFIG_CREATOR),
+            owner=owner,
         )
 
         # bit of strange "leak" that in other cases it'll be outside of service
@@ -241,7 +244,11 @@ class ConfigService:
         ).value
 
         config_id = self.create_new_configuration_by_descriptor(
-            configuration=group_configuration, description=owner_configuration.description, owner=group
+            configuration=group_configuration,
+            configuration_extra_info=ConfigurationExtraInfo(
+                description=owner_configuration.extra_info.description, created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=group,
         )
 
         self.prepare_file_parameter_values_on_fs(

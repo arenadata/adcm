@@ -68,7 +68,7 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -330,7 +330,7 @@ class TestClusterCHG(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -661,7 +661,7 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -861,7 +861,7 @@ class TestServiceCHG(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -1147,7 +1147,7 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -1339,7 +1339,7 @@ class TestComponentCHG(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -1681,7 +1681,7 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -1897,7 +1897,7 @@ class TestProviderCHG(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -2213,7 +2213,7 @@ class TestHostConfig(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
-            sorted(["id", "isCurrent", "creationTime", "description"]),
+            sorted(["id", "isCurrent", "creationTime", "description", "createdBy"]),
         )
 
     def test_retrieve_success(self):
@@ -2362,7 +2362,7 @@ class TestADCMConfig(BaseAPITestCase):
         data = response.json()
         self.assertEqual(data["count"], 1)
         self.assertListEqual(
-            sorted(data["results"][0].keys()), sorted(["id", "isCurrent", "creationTime", "description"])
+            sorted(data["results"][0].keys()), sorted(["id", "isCurrent", "creationTime", "description", "createdBy"])
         )
         self.assertTrue(data["results"][0]["isCurrent"])
 

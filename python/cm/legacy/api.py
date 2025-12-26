@@ -503,7 +503,9 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
             concern_id, related_objects = raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    send_config_creation_event(object_=obj)
+    send_config_creation_event(
+        object_id=obj.id, object_type=obj.prototype.type, changes={"createdBy": config_log.created_by}
+    )
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
@@ -548,7 +550,9 @@ def set_object_config_with_plugin(
         old_config_id=old_config_log_id,
         new_config_id=config_log.id,
     )
-    send_config_creation_event(object_=obj)
+    send_config_creation_event(
+        object_id=obj.id, object_type=obj.prototype.type, changes={"createdBy": config_log.created_by}
+    )
 
 
 def get_hc(cluster: Cluster | None) -> list[dict] | None:

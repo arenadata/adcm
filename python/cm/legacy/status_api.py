@@ -124,14 +124,12 @@ def send_host_component_map_update_event(cluster_id: ClusterID) -> None:
     post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster_id)
 
 
-def send_config_creation_event(object_: ADCMEntity) -> None:
+def send_config_creation_event(object_id: int, object_type: str, changes: dict) -> None:
     post_event(
-        event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.prototype.type)), object_id=object_.pk
+        event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_type)),
+        object_id=object_id,
+        changes=changes,
     )
-
-
-def send_config_creation_event_by_descriptor(object_: CoreObjectDescriptor) -> None:
-    post_event(event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.type.value)), object_id=object_.id)
 
 
 def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
