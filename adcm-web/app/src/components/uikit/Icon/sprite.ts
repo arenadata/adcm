@@ -85,6 +85,7 @@ export const allowIconsNames = [
   'marker-alert',
   'marker-check',
   'marker-info',
+  'map',
   'triangle-alert',
   'drag-handle',
   'remove',

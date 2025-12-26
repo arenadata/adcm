@@ -65,6 +65,7 @@ import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
 import ActionMenu from './ActionMenu/ActionMenu';
 import EllipsedTextTableCell from './Table/TableCell/EllipsedTextTableCell';
 import WarningMessage from './WarningMessage/WarningMessage';
+import MiniMap from '@uikit/MiniMap/MiniMap';
 
 export {
   ActionMenu,
@@ -99,6 +100,7 @@ export {
   LabeledField,
   MarkerIcon,
   MarkedList,
+  MiniMap,
   type MarkerIconType,
   MultiSelectList,
   MultiSelectPanel,

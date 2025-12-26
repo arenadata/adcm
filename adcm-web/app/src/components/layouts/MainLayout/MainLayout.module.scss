@@ -9,7 +9,7 @@
 }
 
 .mainLayout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
 
   &__leftSidebarWrap {
@@ -23,6 +23,8 @@
   }
 
   &__mainContent {
+    overflow: auto;
+    box-sizing: border-box;
     min-width: 0;
     flex: 1;
     padding: var(--page-padding-v) var(--page-padding-h);

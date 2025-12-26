@@ -7,6 +7,7 @@ import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 import { useClusterAnsibleSettings } from './useClusterAnsibleSettings';
 import ClusterAnsibleSettingsToolbar from './ClusterAnsibleSettingsToolbar/ClusterAnsibleSettingsToolbar';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ClusterAnsibleSettings: React.FC = () => {
   const dispatch = useDispatch();
@@ -39,11 +40,13 @@ const ClusterAnsibleSettings: React.FC = () => {
     <PermissionsChecker requestState={accessConfigCheckStatus}>
       <ConfigurationFormContextProvider>
         <ClusterAnsibleSettingsToolbar onSave={onSave} onRevert={onReset} isConfigChanged={!!draftConfiguration} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
-        />
+        <ConfigurationMinimap>
+          <ConfigurationMain
+            isLoading={isConfigurationLoading}
+            configuration={selectedConfiguration}
+            onChangeConfiguration={setDraftConfiguration}
+          />
+        </ConfigurationMinimap>
       </ConfigurationFormContextProvider>
     </PermissionsChecker>
   );

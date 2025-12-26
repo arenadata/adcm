@@ -7,6 +7,7 @@ import ConfigurationEmptyState from '@commonComponents/configuration/Configurati
 import { useServicesPrimaryConfiguration } from './useServicesPrimaryConfiguration';
 import { useServicesPrimaryConfigurationsCompare } from './useServicesPrimaryConfigurationCompare';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ServicesPrimaryConfiguration: React.FC = () => {
   const {
@@ -43,11 +44,13 @@ const ServicesPrimaryConfiguration: React.FC = () => {
           <PermissionsChecker requestState={accessConfigCheckStatus}>
             <ConfigurationFormContextProvider>
               <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-              <ConfigurationMain
-                isLoading={isConfigurationLoading}
-                configuration={selectedConfiguration}
-                onChangeConfiguration={setDraftConfiguration}
-              />
+              <ConfigurationMinimap>
+                <ConfigurationMain
+                  isLoading={isConfigurationLoading}
+                  configuration={selectedConfiguration}
+                  onChangeConfiguration={setDraftConfiguration}
+                />
+              </ConfigurationMinimap>
             </ConfigurationFormContextProvider>
           </PermissionsChecker>
         </>

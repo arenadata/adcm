@@ -13,7 +13,7 @@ const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
       <aside className={s.mainLayout__leftSidebarWrap} data-test="nav-menu">
         <LeftSideBar className={s.mainLayout__leftSidebar} />
       </aside>
-      <div className={s.mainLayout__mainContent}>
+      <div id="mainLayout__mainContent" className={s.mainLayout__mainContent}>
         <MainHeader>
           <HeaderAdvancedInfo />
         </MainHeader>

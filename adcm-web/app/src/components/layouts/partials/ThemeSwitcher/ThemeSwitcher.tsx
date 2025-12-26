@@ -28,10 +28,12 @@ const ThemeSwitcher: React.FC = () => {
   const [theme, saveThemeToStorage] = useLocalStorage({ key: THEME_STORAGE_KEY });
 
   const darkOn = () => {
+    document.dispatchEvent(new CustomEvent('theme-switch', { detail: { themeName: 'theme-dark' } }));
     saveThemeToStorage(THEME.Dark);
     switchToTheme(THEME.Dark);
   };
   const lightOn = () => {
+    document.dispatchEvent(new CustomEvent('theme-switch', { detail: { themeName: 'theme-light' } }));
     saveThemeToStorage(THEME.Light);
     switchToTheme(THEME.Light);
   };

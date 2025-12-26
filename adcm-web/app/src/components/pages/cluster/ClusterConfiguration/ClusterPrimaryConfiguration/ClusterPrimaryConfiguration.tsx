@@ -10,6 +10,7 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationEmptyState from '@commonComponents/configuration/ConfigurationEmptyState/ConfigurationEmptyState';
 import { useClusterPrimaryConfiguration } from './useClusterPrimaryConfiguration';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ClusterPrimaryConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -61,11 +62,13 @@ const ClusterPrimaryConfiguration: React.FC = () => {
           <PermissionsChecker requestState={accessConfigCheckStatus}>
             <ConfigurationFormContextProvider>
               <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-              <ConfigurationMain
-                isLoading={isConfigurationLoading}
-                configuration={selectedConfiguration}
-                onChangeConfiguration={setDraftConfiguration}
-              />
+              <ConfigurationMinimap>
+                <ConfigurationMain
+                  isLoading={isConfigurationLoading}
+                  configuration={selectedConfiguration}
+                  onChangeConfiguration={setDraftConfiguration}
+                />
+              </ConfigurationMinimap>
             </ConfigurationFormContextProvider>
           </PermissionsChecker>
         </>

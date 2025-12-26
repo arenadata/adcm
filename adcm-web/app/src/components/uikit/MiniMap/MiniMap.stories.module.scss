@@ -1,0 +1,42 @@
+.pageHeader {
+  width: 100%;
+  height: 200px;
+  border: 1px solid red;
+  margin-bottom: 20px
+}
+
+.contentWrapper {
+  min-width: 700px;
+}
+
+.colorfulBlock {
+  padding: 120px;
+  font-size: 20px;
+  color: white;
+
+  &_green {
+    background: green;
+  }
+
+  &_lightgrey {
+    color: black;
+    background: lightgray;
+  }
+
+  &_grey {
+    background: grey;
+  }
+}
+
+.wideBlock {
+  min-width: 1000px;
+}
+
+.shortBlock {
+  width: fit-content;
+}
+
+.wrapperWithScroll {
+  max-height: 100vh;
+  overflow: auto;
+}
