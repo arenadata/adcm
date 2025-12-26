@@ -492,6 +492,8 @@ def _write_to_files_dir_with_prefix(
     fullname = f"{prefix}.{parameter_identifier}"
     filepath = target_dir / fullname
 
+    decoded_content = decrypt(content)
+
     # This patch is moved from `save_file_type`, it is deeply based on `parameter_identifier` format
     # which is not nice, yet I have no adequate solution for now.
     #
@@ -502,12 +504,10 @@ def _write_to_files_dir_with_prefix(
     # "Load key : invalid format" on next connect to host.
     if (
         is_parameter_file_name_startswith(file_name=parameter_identifier, name="ansible_ssh_private_key_file")
-        and content != ""
-        and content[-1] == "-"
+        and decoded_content != ""
+        and decoded_content[-1] == "-"
     ):
-        content += "\n"
-
-    decoded_content = decrypt(content)
+        decoded_content += "\n"
 
     filepath.write_text(data=decoded_content, encoding="utf-8")
     filepath.chmod(0o0600)
