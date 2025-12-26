@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Generic, TypeVar
 
+from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
@@ -589,7 +590,13 @@ def _restore_config_of_main_object_and_update_host_groups(
     description = "revert_upgrade"
 
     # create main config based on input
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     # update all existing configurations of host groups
     old_spec, old_defaults = old
@@ -618,7 +625,11 @@ def _restore_config_of_main_object_and_update_host_groups(
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration, description=description, owner=owner_group
+            configuration=updated_configuration,
+            configuration_extra_info=core.config.ConfigurationExtraInfo(
+                description=description, created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=owner_group,
         )
     prepare_files = partial(
         config_service.prepare_file_parameter_values_on_fs,
@@ -642,7 +653,13 @@ def _restore_config_of_main_object(
     description = "revert_upgrade"
 
     # create main config based on input
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     specification = config_service.retrieve_specification(owner=owner)
 
@@ -670,7 +687,11 @@ def _restore_config_of_host_group(
     )[0]
 
     config_service.create_new_configuration_by_descriptor(
-        configuration=updated_configuration, description=description, owner=owner
+        configuration=updated_configuration,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
     )
 
     config_service.prepare_file_parameter_values_on_fs(
@@ -734,7 +755,13 @@ def _switch_configuration_version(
 
     config = update_result.value
 
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
     adaptation_results = {
@@ -753,7 +780,11 @@ def _switch_configuration_version(
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration, description="upgrade", owner=owner_group
+            configuration=updated_configuration,
+            configuration_extra_info=core.config.ConfigurationExtraInfo(
+                description="upgrade", created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=owner_group,
         )
 
     prepare_files = partial(config_service.prepare_file_parameter_values_on_fs, specification=new_spec)

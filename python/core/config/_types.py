@@ -15,6 +15,7 @@ from typing import Any, Callable, Literal, TypeAlias
 
 from typing_extensions import Self
 
+from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
 
 EncryptFunc: TypeAlias = Callable[[str], str]
@@ -117,17 +118,23 @@ class Defaults:
 
 
 @dataclass(slots=True)
+class ConfigurationExtraInfo:
+    description: str
+    created_by: str
+
+
+@dataclass(slots=True)
 class Configuration:
     values: ConfigValues = field(default_factory=dict)
     attributes: ConfigAttrs = field(default_factory=dict)
 
 
 @dataclass(slots=True)
-class ConfigurationWithID(Configuration):
+class ConfigurationWithInfo(Configuration):
     # keep that way while it's direct dataclass descendant of `Configuration`
     # for inheritance simplicity
     id: ConfigID = 0
-    description: str = ""
+    extra_info: ConfigurationExtraInfo = ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
 
 
 @dataclass(slots=True)

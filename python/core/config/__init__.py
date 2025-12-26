@@ -34,13 +34,14 @@ from core.config._types import (
     HostGroupConfigOwner,
     ConfigValues,
     Configuration,
-    ConfigurationWithID,
+    ConfigurationWithInfo,
     Defaults,
     FlatConfiguration,
     ParameterFullName,
     ParameterLevelName,
     EncryptFunc,
     DecryptFunc,
+    ConfigurationExtraInfo,
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
@@ -57,7 +58,7 @@ __all__ = [
     "ConfigService",
     "ConfigValues",
     "Configuration",
-    "ConfigurationWithID",
+    "ConfigurationWithInfo",
     "DecryptFunc",
     "DefaultFileMissingError",
     "Defaults",
@@ -89,4 +90,5 @@ __all__ = [
     "secrets",
     "set_by_full_name",
     "spec",
+    "ConfigurationExtraInfo",
 ]

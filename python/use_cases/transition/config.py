@@ -17,13 +17,9 @@ from typing import Protocol, TypeAlias, TypeVar
 from cm import converters
 from cm.legacy.services.concern import delete_issue
 from cm.legacy.services.job.run import update_related_configs
-from cm.legacy.status_api import (
-    notify_about_new_concern,
-    send_config_creation_event,
-    send_config_creation_event_by_descriptor,
-)
+from cm.legacy.status_api import notify_about_new_concern, send_config_creation_event
 from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog, MainObject
-from core.config._types import ChangeRequest
+from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
 from rbac.roles import apply_policy_for_new_config
@@ -52,7 +48,7 @@ def update_configuration_of_object(
     owner: MainObject | ADCM,
     input_config: T,
     convert: InputConfigConverter[T],
-    description: str,
+    config_extra_info: core.config.ConfigurationExtraInfo,
     config_service: core.config.ConfigService,
 ) -> ConfigID:
     from cm.legacy.api import raise_outdated_config_flag_if_required
@@ -72,7 +68,9 @@ def update_configuration_of_object(
         )
 
         main_config_log_id = config_service.create_new_configuration_by_descriptor(
-            configuration=result.encrypted_config, description=description, owner=owner_descriptor
+            configuration=result.encrypted_config,
+            configuration_extra_info=config_extra_info,
+            owner=owner_descriptor,
         )
 
         configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner_descriptor)
@@ -82,7 +80,9 @@ def update_configuration_of_object(
 
         for owner_group, updated_configuration in updated_host_group_configs.items():
             config_service.create_new_configuration_by_descriptor(
-                configuration=updated_configuration, description=description, owner=owner_group
+                configuration=updated_configuration,
+                configuration_extra_info=config_extra_info,
+                owner=owner_group,
             )
 
         # related configs should be updated
@@ -106,7 +106,11 @@ def update_configuration_of_object(
             # since we have no "fallback" mechanism for write failures, have to write files within transaction
             prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)
 
-    send_config_creation_event(object_=owner)
+    send_config_creation_event(
+        object_id=owner.pk,
+        object_type=owner.prototype.type,
+        changes={"createdBy": config_extra_info.created_by},
+    )
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
@@ -118,7 +122,7 @@ def update_configuration_of_host_group(
     owner: MainObject | ADCM,
     input_config: T,
     convert: InputConfigConverter[T],
-    description: str = "",
+    config_extra_info: core.config.ConfigurationExtraInfo,
     group: ConfigHostGroup,
     config_service: core.config.ConfigService,
 ) -> ConfigID:
@@ -149,7 +153,7 @@ def update_configuration_of_host_group(
 
         config_id = config_service.create_new_configuration_by_descriptor(
             configuration=updated_configuration,
-            description=description,
+            configuration_extra_info=config_extra_info,
             owner=HostGroupDescriptor(id=group.pk, type=ADCMHostGroupType.CONFIG),
         )
 
@@ -166,7 +170,9 @@ def update_configuration_of_host_group(
             owner_prefix=file_owner_prefix,
         )
 
-    send_config_creation_event(object_=owner)
+    send_config_creation_event(
+        object_id=owner.pk, object_type=owner.prototype.type, changes={"createdBy": config_extra_info.created_by}
+    )
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
@@ -183,7 +189,7 @@ def update_configuration_from_job(
     config_service: core.config.ConfigService,
     # possible BS arguments, need to rethink them
     owner_orm: ADCMEntity,
-) -> tuple[list[ChangeRequest], HasChanged]:
+) -> tuple[list[core.config.ChangeRequest], HasChanged]:
     with atomic():
         specification, defaults = config_service.retrieve_specification_with_defaults(owner=owner)
         changes = convert(changes_input, specification)
@@ -198,7 +204,11 @@ def update_configuration_from_job(
             return changes, False
 
         config_id = config_service.create_new_configuration_by_descriptor(
-            configuration=result.encrypted_config, description=description, owner=owner
+            configuration=result.encrypted_config,
+            configuration_extra_info=core.config.ConfigurationExtraInfo(
+                description=description, created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=owner,
         )
         config_service.prepare_file_parameter_values_on_fs(
             configuration=result.encrypted_config,
@@ -217,7 +227,9 @@ def update_configuration_from_job(
             new_config_id=config_id,
         )
 
-    send_config_creation_event_by_descriptor(object_=owner)
+    send_config_creation_event(
+        object_id=owner.id, object_type=owner.type, changes={"createdBy": config_log_orm.created_by}
+    )
 
     return changes, True
 

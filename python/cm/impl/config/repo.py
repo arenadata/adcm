@@ -50,7 +50,7 @@ class ConfigPrototypeInfo:
 class ConfigRepo(config.ConfigRepoI):
     # retrieve
 
-    def get_config(self, owner: ObjectOrGroup) -> config.ConfigurationWithID:
+    def get_config(self, owner: ObjectOrGroup) -> config.ConfigurationWithInfo:
         owner_model = _detect_owner_model(owner)
 
         owner_orm = owner_model.objects.select_related("config").get(pk=owner.id)
@@ -68,9 +68,9 @@ class ConfigRepo(config.ConfigRepoI):
 
         configuration = _to_configuration(values=record.config, attrs=record.attr)
 
-        return config.ConfigurationWithID(
+        return config.ConfigurationWithInfo(
             id=current_id,
-            description=record.description,
+            extra_info=config.ConfigurationExtraInfo(description=record.description, created_by=record.created_by),
             values=configuration.values,
             attributes=configuration.attributes,
         )
@@ -219,7 +219,7 @@ class ConfigRepo(config.ConfigRepoI):
     # change
 
     def set_new_config_for_object(
-        self, config: config.Configuration, description: str, owner: ObjectOrGroup
+        self, config: config.Configuration, config_extra_info: config.ConfigurationExtraInfo, owner: ObjectOrGroup
     ) -> ConfigID:
         owner_model = _detect_owner_model(owner)
         owner_orm = owner_model.objects.select_related("config").get(id=owner.id)
@@ -240,7 +240,11 @@ class ConfigRepo(config.ConfigRepoI):
             owner_model.objects.filter(id=owner_orm.pk).update(config_id=owner_orm.config.pk)
 
         config_log = ConfigLog.objects.create(
-            obj_ref=owner_orm.config, config=config.values, attr=attr, description=description
+            obj_ref=owner_orm.config,
+            config=config.values,
+            attr=attr,
+            description=config_extra_info.description,
+            created_by=config_extra_info.created_by,
         )
 
         owner_orm.config.previous = owner_orm.config.current

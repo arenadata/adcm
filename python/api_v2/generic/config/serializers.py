@@ -26,7 +26,7 @@ class ConfigLogListSerializer(ModelSerializer):
 
     class Meta:
         model = ConfigLog
-        fields = ["id", "is_current", "creation_time", "description"]
+        fields = ["id", "is_current", "creation_time", "description", "created_by"]
 
     @staticmethod
     def get_is_current(config_log: ConfigLog) -> bool:

@@ -93,7 +93,9 @@ class ConfigLogViewSet(
             config_id = update_configuration_of_host_group(
                 input_config=serializer.validated_data,
                 convert=convert_serialized_config,
-                description=serializer.validated_data.get("description", ""),
+                config_extra_info=core.config.ConfigurationExtraInfo(
+                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
+                ),
                 owner=owner,
                 group=group,
                 config_service=service,
@@ -105,7 +107,9 @@ class ConfigLogViewSet(
             config_id = update_configuration_of_object(
                 input_config=serializer.validated_data,
                 convert=convert_serialized_config,
-                description=serializer.validated_data.get("description", ""),
+                config_extra_info=core.config.ConfigurationExtraInfo(
+                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
+                ),
                 owner=owner,
                 config_service=service,
             )

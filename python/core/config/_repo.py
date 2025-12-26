@@ -13,7 +13,7 @@
 from typing import Iterable, Literal, Protocol, TypeAlias, overload
 
 from core.config import spec
-from core.config._types import Configuration, ConfigurationWithID, Defaults, EncryptFunc
+from core.config._types import Configuration, ConfigurationExtraInfo, ConfigurationWithInfo, Defaults, EncryptFunc
 from core.types import (
     ActionDescriptor,
     ADCMHostGroupType,
@@ -49,7 +49,7 @@ ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | Descript
 class ConfigRepoI(Protocol):
     # retrieve
 
-    def get_config(self, owner: ObjectOrGroup) -> ConfigurationWithID:
+    def get_config(self, owner: ObjectOrGroup) -> ConfigurationWithInfo:
         ...
 
     @overload
@@ -118,5 +118,7 @@ class ConfigRepoI(Protocol):
 
     # change
 
-    def set_new_config_for_object(self, config: Configuration, description: str, owner: ObjectOrGroup) -> ConfigID:
+    def set_new_config_for_object(
+        self, config: Configuration, config_extra_info: ConfigurationExtraInfo, owner: ObjectOrGroup
+    ) -> ConfigID:
         ...
