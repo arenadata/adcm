@@ -48,7 +48,8 @@ def decrypt_empty_strings(apps, schema_editor):
         res = cursor.execute(migration_query).fetchone()
 
     if not res:
-        message = "Decryption of empty strings in configs is skipped, because 2.9 wasn't installed"
+        # it shouldn't be possible, because migrations are applied one by one
+        message = "Decryption of empty strings in configs is skipped, because 2.9 first migration is absent"
         log.info(message)
         return
 
@@ -106,6 +107,10 @@ def decrypt_empty_strings(apps, schema_editor):
     ]
     union_query = reduce(lambda x, y: x.union(y), main_object_queries)
     main_object_records = tuple(union_query.all())
+    if not main_object_queries:
+        message = "Decryption of empty strings in configs is skiped, because no objects are present"
+        log.info(message)
+        return
 
     object_config_prototype_mapping: dict[int, int] = {
         config_id: prototype_id for config_id, prototype_id, *_ in main_object_records
@@ -121,6 +126,7 @@ def decrypt_empty_strings(apps, schema_editor):
     chg_object_filter = reduce(
         lambda x, y: x | y,
         (Q(object_type_id=object_ct, object_id__in=object_ids) for object_ct, object_ids in grouped_by_ct.items()),
+        Q(),
     )
     chg_query = tuple(
         ConfigHostGroup.objects.filter(chg_object_filter).values_list("config", "object_id", "object_type")
@@ -176,5 +182,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(decrypt_empty_strings),
+        migrations.RunPython(decrypt_empty_strings, reverse_code=migrations.RunPython.noop),
     ]
