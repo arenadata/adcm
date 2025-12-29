@@ -1585,7 +1585,7 @@ class TestActionProcess(BaseAPITestCase):
         response = self.client.v2[cluster, "mapping"].post(
             data=[{"hostId": host.pk, "componentId": component.pk} for host in initial_hc],
         )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
 
         # init process
         response = self.client.v2[cluster, "actions", action.pk, "processes"].post()

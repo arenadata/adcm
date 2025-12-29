@@ -15,12 +15,13 @@ from typing import Annotated, Any, Literal, Sequence, TypeAlias, Union
 from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, field_validator, model_validator
 from typing_extensions import Self, TypedDict
 
+from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.validation import convert_config, is_correct_pattern, validate_name
 
 Name: TypeAlias = Annotated[str, AfterValidator(validate_name)]
 
 
-class _BaseConfigItemSchema(BaseModel):
+class _BaseConfigItemSchema(BundleModel):
     name: Name
     read_only: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
     writable: Annotated[Literal["any"] | list[str] | None, Field(default=None)]

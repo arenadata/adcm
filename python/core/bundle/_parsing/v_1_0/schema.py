@@ -27,6 +27,7 @@ from typing_extensions import Self, TypedDict
 
 from core import action
 from core.bundle._parsing.shared.model import BundleModel
+from core.bundle._parsing.shared.templates import Template
 from core.bundle._parsing.shared.validation import (
     convert_config,
     forbidden_mm_actions,
@@ -40,7 +41,8 @@ from core.bundle._parsing.shared.validation import (
     template_script_is_correct_path,
     validate_name,
 )
-from core.templates import Template
+
+# from core.templates import Template
 
 # pyright: reportIncompatibleVariableOverride=false, reportInvalidTypeForm=false
 

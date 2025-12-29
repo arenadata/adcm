@@ -77,7 +77,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         template_path: Path,
     ) -> ConfigDefinition:
         model_ = self._get_config_model()
-        parsed = model_.model_validate({"config": config}, strict=True)
+        parsed = model_.model_validate({"config": config})
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["config"]
 
         conversion_context = {
@@ -93,6 +93,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
 
         return result
 
+    @convert_validation_to_bundle_error
     def parse_scripts(
         self,
         scripts: list[dict],
@@ -101,7 +102,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         mode: Literal["action", "wizard"],
     ) -> list[action.JobSpec]:
         model_ = self._get_scripts_model(mode)
-        parsed = model_.model_validate({"scripts": scripts}, strict=True)
+        parsed = model_.model_validate({"scripts": scripts})
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
         for script in dumped:  # propagate `allow_to_terminate` attr from action if not set
@@ -150,7 +151,7 @@ def parse_root_entry(definition: dict, schema_map: dict[str, type[RootT]]) -> Ro
     except KeyError as e:
         raise BundleParsingError(f'Value "{def_type}" is not allowed') from e
 
-    return core_model.model_validate(definition, strict=True)
+    return core_model.model_validate(definition)
 
 
 def _check_is_not_duplicate(key: BundleDefinitionKey, existing_entries: Iterable[BundleDefinitionKey]) -> None:
