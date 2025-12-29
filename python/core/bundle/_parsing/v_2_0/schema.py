@@ -22,13 +22,13 @@ from pydantic import (
 )
 
 from core import action
+from core.bundle._parsing.shared.templates import Template
 from core.bundle._parsing.shared.validation import (
     min_less_than_max,
     patch_masking,
     template_script_is_correct_path,
     validate_name,
 )
-from core.templates import Template
 
 Version: TypeAlias = int | float | str
 Venv: TypeAlias = Annotated[

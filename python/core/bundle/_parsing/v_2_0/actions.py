@@ -177,7 +177,7 @@ class _ActionBase:
 
 @dataclass(slots=True)
 class ClusterObjectAction(_ActionBase):
-    scripts: list[ClusterScript]
+    scripts: Annotated[list[ClusterScript] | None, Field(default=None)]
     scripts_template: Annotated[ScriptsTemplate | None, Field(default=None)]
     config_template: Annotated[ConfigTemplate | None, Field(default=None)]
     wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
@@ -189,7 +189,7 @@ class ClusterObjectAction(_ActionBase):
     host_action: Annotated[bool, Field(default=None)]
 
     @model_validator(mode="after")
-    def validate_only_one_set_for_scripts(self):
+    def validate_exactly_one_set_for_scripts(self):
         specified = tuple(filter(None, (self.scripts, self.scripts_template)))
         if len(specified) != 1:
             raise ValueError(

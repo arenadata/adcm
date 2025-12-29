@@ -1182,7 +1182,7 @@ def parse(
     except KeyError as e:
         raise BundleParsingError(f'Value "{def_type}" is not allowed') from e
 
-    return core_model.model_validate(definition, strict=True)
+    return core_model.model_validate(definition)
 
 
 ###############

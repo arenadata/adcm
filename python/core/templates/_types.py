@@ -14,9 +14,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, field_serializer, field_validator
+from pydantic import BaseModel, field_serializer
 
 
 class RenderEngineType(str, Enum):
@@ -40,23 +40,16 @@ class TemplateRenderer(ABC):
 # Renderer Arguments
 
 
-class TemplateFile(BaseModel):
+@dataclass(slots=True)
+class TemplateFile:
     path: Path
-
-    # validators/serializers needed to read string path from bundle definition and dump data in json-compatible format
-    @field_validator("path", mode="before")
-    @classmethod
-    def string_path_to_path_cls(cls, value: Any) -> Any:
-        if isinstance(value, str):
-            return Path(value)
-
-        return value
 
     @field_serializer("path", when_used="always")
     def path_to_string(self, path: Path) -> str:
         return str(path)
 
 
+@dataclass(slots=True)
 class TemplateFileWithEntrypoint(TemplateFile):
     entrypoint: str
 
@@ -72,27 +65,25 @@ class RendererEnv:
 # Template engines
 
 
-class PythonEngine(BaseModel):
+@dataclass(slots=True)
+class PythonEngine:
     type: Literal[RenderEngineType.PYTHON]
 
 
-class Jinja2Engine(BaseModel):
+@dataclass(slots=True)
+class Jinja2Engine:
     type: Literal[RenderEngineType.JINJA2]
 
 
 # Templates
 
 
-class _TemplateBaseModel(BaseModel, ABC):
-    pass
-
-
-class PythonTemplate(_TemplateBaseModel):
+class PythonTemplate(BaseModel):
     engine: PythonEngine
     file: TemplateFileWithEntrypoint
 
 
-class Jinja2Template(_TemplateBaseModel):
+class Jinja2Template(BaseModel):
     engine: Jinja2Engine
     file: TemplateFile
 
@@ -100,36 +91,23 @@ class Jinja2Template(_TemplateBaseModel):
 # Template Generics
 
 
-def engine_type_discriminator(value):
-    if isinstance(value, dict):
-        try:
-            return value.get("engine", {}).get("type")
-        except AttributeError:
-            return None
-
-    try:
-        return value.engine.type
-    except AttributeError:
-        return None
-
-
-_discriminator_err_msg = f'Expected {" | ".join(cls.__name__ for cls in _TemplateBaseModel.__subclasses__())} template'
-Template = Annotated[
-    Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
-    Field(
-        discriminator=Discriminator(
-            engine_type_discriminator, custom_error_type="invalid_template", custom_error_message=_discriminator_err_msg
-        )
-    ),
-]
-
-
-class _OneOfTemplates(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    template: Template
+Template = Jinja2Template | PythonTemplate
 
 
 def parse_template(raw: dict) -> Template:
-    serialized = _OneOfTemplates.model_validate({"template": raw})
-    return serialized.template
+    try:
+        type_ = RenderEngineType(raw["engine"]["type"])
+    except KeyError as e:
+        message = f"Failed to detect template engine: {raw}"
+        raise ValueError(message) from e
+    except ValueError as e:
+        message = f"Unknown engine type: {raw}"
+        raise ValueError(message) from e
+
+    match type_:
+        case RenderEngineType.JINJA2:
+            model_ = Jinja2Template
+        case RenderEngineType.PYTHON:
+            model_ = PythonTemplate
+
+    return model_.model_validate(raw)

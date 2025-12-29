@@ -37,7 +37,7 @@ class TestBundleSchema(TestCase):
             entries = [entries]
 
         for item in entries:
-            schema = TYPE_SCHEMA_MAP[item["type"]].model_validate(item, strict=True)
+            schema = TYPE_SCHEMA_MAP[item["type"]].model_validate(item)
             schemas.append(schema.model_dump())
 
         return schemas

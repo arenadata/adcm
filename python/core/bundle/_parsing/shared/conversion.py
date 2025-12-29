@@ -308,9 +308,8 @@ def _normalize_path(result: str, context: dict) -> str:
 
 
 def _to_template_with_normalized_path(entity: dict, context: dict) -> Template:
-    template = parse_template(entity)
-    template.file.path = Path(_normalize_path(result=str(template.file.path), context=context))
-    return template
+    entity["file"]["path"] = _normalize_path(result=entity["file"]["path"], context=context)
+    return parse_template(entity)
 
 
 def _patch_upgrade_action_names(result: Definition) -> Definition:
