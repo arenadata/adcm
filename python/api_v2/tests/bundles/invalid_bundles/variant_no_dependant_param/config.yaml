@@ -1,0 +1,10 @@
+- type: cluster
+  version: 1
+  name: aa
+
+  config:
+    - name: my_list_variant
+      type: variant
+      source:
+        type: config
+        name: list_of_string

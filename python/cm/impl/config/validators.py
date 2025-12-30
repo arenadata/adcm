@@ -38,7 +38,7 @@ class MainConfigVariantResolver(config.MainConfigVariantResolver):
     def resolve(self, parameter: config.spec.p.VariantParameter) -> tuple:
         match parameter.source:
             case "config":
-                source_param = parameter.payload["name"]
+                source_param = config.names.ensure_full_name(parameter.payload["name"])
                 values = config.get_by_full_name(values=self.reference_config.values, name=source_param)
                 choices = tuple(values)
             case "builtin":
