@@ -36,15 +36,9 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         self.provider = self.add_provider(
             bundle=self.add_bundle(source_dir=self.bundles_dir / "provider"), name="provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster
-        )
-        self.host_2 = self.add_host(
-            bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster
-        )
-        self.host_3 = self.add_host(
-            bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host_3", cluster=self.cluster
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
+        self.host_3 = self.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
 
         self.service_not_simple, self.service_thesame = bulk_add_services_to_cluster(
             cluster=self.cluster,

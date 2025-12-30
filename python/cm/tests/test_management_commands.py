@@ -451,12 +451,12 @@ class TestStorage(BaseAPITestCase):
         adcm_user_role = Role.objects.get(name="ADCM User")
         Policy.objects.create(name="test policy", role=adcm_user_role, built_in=False)
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_1")
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
-        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
-        host_unmapped = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_unmapped")
+        host_1 = self.add_host(provider=self.provider, fqdn="test_host_1")
+        host_2 = self.add_host(provider=self.provider, fqdn="test_host_2")
+        host_3 = self.add_host(provider=self.provider, fqdn="test_host_3")
+        host_unmapped = self.add_host(provider=self.provider, fqdn="test_host_unmapped")
 
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_not_in_cluster")
+        self.add_host(provider=self.provider, fqdn="test_host_not_in_cluster")
 
         for host in (host_1, host_2, host_3, host_unmapped):
             self.add_host_to_cluster(cluster=self.cluster_1, host=host)

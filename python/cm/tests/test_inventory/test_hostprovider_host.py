@@ -21,8 +21,8 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
         self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
 
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2")
 
         self.action_on_provider = Action.objects.get(name="action_on_provider", prototype=self.provider.prototype)
         self.action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)

@@ -29,9 +29,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
         self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
 
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
         self.action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         self.action_on_provider = Action.objects.get(name="action_on_provider", prototype=self.provider.prototype)
@@ -302,9 +300,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
                 )
 
     def test_host_in_maintenance_mode_service_two_components(self):
-        host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
         component_1 = Component.objects.get(prototype__name="component_1", service=service)
         component_2 = Component.objects.get(prototype__name="component_2", service=service)
@@ -441,9 +437,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
                 )
 
     def test_service_in_maintenance_mode_service_two_components(self):
-        host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
         component_1 = Component.objects.get(prototype__name="component_1", service=service)
         component_2 = Component.objects.get(prototype__name="component_2", service=service)
@@ -580,9 +574,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):
                 )
 
     def test_component_in_maintenance_mode_service_two_components(self):
-        host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         service = self.add_services_to_cluster(service_names=["service_two_components"], cluster=self.cluster_1).first()
         component_1 = Component.objects.get(prototype__name="component_1", service=service)
         component_2 = Component.objects.get(prototype__name="component_2", service=service)

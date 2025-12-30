@@ -37,9 +37,9 @@ class TestCHGAudit(BaseAPITestCase):
             object_type=ContentType.objects.get_for_model(self.cluster_1),
             object_id=self.cluster_1.pk,
         )
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host")
+        self.host = self.add_host(provider=self.provider, fqdn="host")
         self.cluster_1_host_group.hosts.add(self.host)
-        self.new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="new_host")
+        self.new_host = self.add_host(provider=self.provider, fqdn="new_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
@@ -49,9 +49,7 @@ class TestCHGAudit(BaseAPITestCase):
             object_id=self.service_1.pk,
         )
         self.service_1_host_group.hosts.add(self.host)
-        self.host_for_service = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_service"
-        )
+        self.host_for_service = self.add_host(provider=self.provider, fqdn="host_for_service")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
 
         self.component_1 = Component.objects.get(

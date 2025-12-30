@@ -23,7 +23,7 @@ from cm.legacy.services.concern.distribution import (
 from cm.legacy.services.status.notify import reset_hc_map
 from cm.legacy.status_api import notify_about_new_concern, notify_about_redistributed_concerns_from_maps
 from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 import core
@@ -31,7 +31,7 @@ import core
 
 def create_hostprovider(
     prototype: Prototype, name: str, description: str, config_service: core.config.ConfigService
-) -> Provider:
+) -> ProviderID:
     if prototype.type != ADCMCoreType.PROVIDER.value:
         raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
@@ -53,12 +53,12 @@ def create_hostprovider(
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
-    return provider
+    return provider.pk
 
 
 def create_host(
     hostprovider: Provider, name: str, cluster: Cluster | None, config_service: core.config.ConfigService
-) -> Host:
+) -> HostID:
     with atomic():
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=hostprovider.prototype_id)  # pyright: ignore [reportAttributeAccessIssue]
         host_prototype = Prototype.objects.get(type=ADCMCoreType.HOST.value, bundle_id=bundle_id)
@@ -88,4 +88,4 @@ def create_host(
     reset_hc_map()
     notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
 
-    return host
+    return host.pk

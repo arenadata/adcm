@@ -12,7 +12,6 @@
 
 from typing import Collection
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -32,7 +31,7 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
-from cm.legacy.api import add_cluster, delete_cluster, partial, remove_host_from_cluster
+from cm.legacy.api import delete_cluster, remove_host_from_cluster
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import (
     ClusterDB,
@@ -378,12 +377,13 @@ class ClusterViewSet(
         if not prototype:
             raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-        func = (
-            partial(create_cluster, config_service=get_config_service())
-            if use_new_config_processing(request.headers)
-            else add_cluster
+        cluster_id = create_cluster(
+            prototype=prototype,
+            name=valid["name"],
+            description=valid["description"],
+            config_service=get_config_service(),
         )
-        cluster = func(prototype=prototype, name=valid["name"], description=valid["description"])
+        cluster = Cluster.objects.get(id=cluster_id)
 
         return Response(
             data=ClusterSerializer(cluster, context=self.get_serializer_context()).data, status=HTTP_201_CREATED

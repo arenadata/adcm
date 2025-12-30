@@ -41,8 +41,8 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.cluster_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "cluster_1_upgrade"))
         self.provider_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "provider_upgrade"))
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=None)
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=None)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=None)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=None)
         self.service_two_components = None
         self.component_1 = None
         self.component_2 = None

@@ -39,7 +39,7 @@ class ConfigLogSerializer(ConfigLogListSerializer):
 
     class Meta:
         model = ConfigLog
-        fields = ["id", "is_current", "creation_time", "config", "adcm_meta", "description"]
+        fields = ["id", "is_current", "creation_time", "config", "adcm_meta", "description", "created_by"]
 
     def validate_config(self, value):
         if isinstance(self.context["object_"], ADCM) and isinstance(value, dict):

@@ -42,8 +42,8 @@ class TestEffectsOfADCMAnsiblePlugins(
         self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Just Cluster")
 
         self.provider = self.add_provider(bundle=self.provider_bundle, name="Just HP")
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()

@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from unittest.mock import patch
 import secrets
 
-from adcm.feature_flags import use_new_config_processing
 from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
@@ -33,20 +31,14 @@ from rest_framework.status import (
 )
 from use_cases.transition.host.duplicate import create_duplicate
 
-from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
-
-subtest_on_new_config_processing = partial(
-    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.host.views"
-)
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(
-            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test-host"
-        )
+        self.host = self.add_host(provider=self.provider, fqdn="test-host")
 
         self.host_action = Action.objects.get(name="host_action", prototype=self.host.prototype)
         self.cluster_action = Action.objects.filter(prototype=self.cluster_1.prototype, host_action=True).first()
@@ -62,7 +54,7 @@ class TestHost(BaseAPITestCase):
         data = {
             "id": self.host.pk,
             "name": "test-host",
-            "description": "description",
+            "description": "",
             "state": "created",
             "status": 32,
             "hostprovider": {"id": self.provider.id, "name": "provider", "display_name": "provider"},
@@ -81,12 +73,7 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.data["maintenance_mode"], data["maintenance_mode"])
 
     def test_create_without_cluster_success(self):
-        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
-            with sub_test:
-                self._test_create_without_cluster_success(i)
-
-    def _test_create_without_cluster_success(self, i: int):
-        name = f"new-test-host-{i}"
+        name = "new-test-host-1"
         response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": name})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -149,7 +136,7 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(self.host.fqdn, new_test_host_fqdn)
 
     def test_update_name_fail(self):
-        new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="new_host")
+        new_host = self.add_host(provider=self.provider, fqdn="new_host")
 
         response = self.client.v2[self.host].patch(data={"name": new_host.name})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -276,22 +263,12 @@ class TestHost(BaseAPITestCase):
 
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
-        test_host_5 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1
-        )
-        test_host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2
-        )
+        test_host_5 = self.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
+        test_host_2 = self.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2)
 
-        test_host_7 = self.add_host(
-            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2
-        )
-        test_host_6 = self.add_host(
-            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1
-        )
-        self.add_host(
-            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="a_first_host"
-        )
+        test_host_7 = self.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2)
+        test_host_6 = self.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
+        self.add_host(provider=self.provider, fqdn="a_first_host")
         Host.objects.filter(id__in=[test_host_5.id, test_host_6.id]).update(state="running")
         Host.objects.filter(id__in=[test_host_2.id, test_host_7.id]).update(state="active")
 
@@ -361,16 +338,14 @@ class TestClusterHost(BaseAPITestCase):
         super().setUp()
         get_config_service.cache_clear()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test-host")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second-host")
-        self.control_free_host = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="not-bound-host"
-        )
+        self.host = self.add_host(provider=self.provider, fqdn="test-host")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="second-host")
+        self.control_free_host = self.add_host(provider=self.provider, fqdn="not-bound-host")
         self.control_host_same_cluster = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
+            provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
         )
         self.control_host_another_cluster = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
+            provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
         )
 
     def check_control_hosts(self) -> None:
@@ -677,17 +652,11 @@ class TestClusterHost(BaseAPITestCase):
     def test_ordering_success(self):
         provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
         self.add_host_to_cluster(self.cluster_1, self.host)
-        test_host_5 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1
-        )
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2", cluster=self.cluster_1)
+        test_host_5 = self.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
+        self.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_1)
 
-        test_host_7 = self.add_host(
-            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1
-        )
-        test_host_6 = self.add_host(
-            bundle=self.provider_bundle, provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1
-        )
+        test_host_7 = self.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1)
+        test_host_6 = self.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
 
         Host.objects.filter(id__in=[test_host_5.id, test_host_7.id]).update(state="running")
         Host.objects.filter(id__in=[self.host.id, test_host_6.id]).update(state="active")
@@ -859,7 +828,7 @@ class TestHostActions(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test-host")
+        self.host = self.add_host(provider=self.provider, fqdn="test-host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 
@@ -1030,8 +999,8 @@ class TestClusterHostComponent(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
@@ -1089,9 +1058,9 @@ class TestAdvancedFilters(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
-        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-3")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
 
         self.status_map = FullStatusMap(
             hosts={

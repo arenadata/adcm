@@ -82,8 +82,8 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
         self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
 
         self.cluster = self.add_cluster(

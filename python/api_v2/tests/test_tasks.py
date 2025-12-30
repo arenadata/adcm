@@ -320,7 +320,7 @@ class TestTaskObjects(BaseAPITestCase):
 
         self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="just-host")
+        self.host = self.add_host(provider=self.provider, fqdn="just-host")
 
         self.add_host_to_cluster(self.cluster_1, self.host)
         HostComponent.objects.create(

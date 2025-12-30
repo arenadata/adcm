@@ -442,9 +442,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
             cluster=self.cluster_1,
             service=self.service_to_delete,
             component=Component.objects.get(service=self.service_to_delete, prototype__name="component"),
-            host=self.add_host(
-                bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1
-            ),
+            host=self.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1),
         )
 
     def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:
@@ -554,10 +552,8 @@ class TestServicePermissions(BaseAPITestCase):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
-        self.host_with_component = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
-        )
+        self.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
+        self.host_with_component = self.add_host(provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1)
         component = Component.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
 
