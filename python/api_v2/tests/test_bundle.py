@@ -610,6 +610,23 @@ class TestBundle(BaseAPITestCase):
             self.assertEqual(response["level"], "error")
             self.assertIn("invalid_template: Expected PythonTemplate | Jinja2Template template", response["desc"])
 
+    def test_adcm_7600_incorrect_variant_param_disallowed(self):
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "variant_no_dependant_param",
+            target_dir=settings.TMP_DIR,
+        )
+
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        response = response.json()
+        self.assertEqual(response["code"], "BUNDLE_VALIDATION_ERROR")
+        self.assertEqual(response["level"], "error")
+        self.assertIn("/my_list_variant", response["desc"])
+        self.assertIn("variant", response["desc"])
+
 
 class TestBundleContract_V_2_0(BaseAPITestCase):  # noqa: N801
     @classmethod

@@ -167,7 +167,8 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> 
     # Maybe later these can be moved to parsing level,
     # because they are "sort-of" contract-dependant.
     for key, parameter in definition.parameters.items():
-        with localize_error(f"Configuration parameter: {key}"):
+        full_name = config.names.level_names_to_full_name(key)
+        with localize_error(f"Configuration parameter {full_name}"):
             if parameter.type in FILE_TYPES:
                 default = definition.default_values.get(key)
                 if default:
@@ -176,10 +177,21 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> 
                         default=default,
                         name=config.names.level_names_to_full_name(key),
                     )
+            elif parameter.type == "variant":
+                source = parameter.limits["source"]
+                if source["type"] == "config":
+                    name = (source["name"],)
+                    if name not in definition.parameters:
+                        dependency_name = config.names.level_names_to_full_name(name)
+                        message = (
+                            f"variant parameter is dependant on {dependency_name}, "
+                            "but it is missing in configuration"
+                        )
+                        raise BundleValidationError(message)
 
             elif parameter.type == "selection_group" and parameter.group_customization:
                 message = (
-                    "Selection group isn't allowed to be desynchronized from main configuration: "
+                    "selection group isn't allowed to be desynchronized from main configuration: "
                     "group_customization must be false"
                 )
                 raise BundleValidationError(message)
