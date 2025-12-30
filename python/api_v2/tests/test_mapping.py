@@ -41,13 +41,13 @@ class TestMapping(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_B")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test_host_B")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_A")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host_A")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_C")
+        self.host_3 = self.add_host(provider=self.provider, fqdn="test_host_C")
         self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_3)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
@@ -79,7 +79,7 @@ class TestMapping(BaseAPITestCase):
         )
 
     def test_create_mapping_success(self):
-        host_4 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_4")
+        host_4 = self.add_host(provider=self.provider, fqdn="test_host_4")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_4)
         data = [
             {"hostId": host_4.pk, "componentId": self.component_2.pk},
@@ -164,9 +164,7 @@ class TestMapping(BaseAPITestCase):
                     self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_create_mapping_duplicates_fail(self):
-        host_4 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_4", cluster=self.cluster_1
-        )
+        host_4 = self.add_host(provider=self.provider, fqdn="test_host_4", cluster=self.cluster_1)
 
         data = [
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
@@ -255,13 +253,11 @@ class TestMappingConstraints(BaseAPITestCase):
 
         provider = self.add_provider(bundle=provider_bundle, name="provider")
 
-        self.host_not_in_cluster = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host_not_in_cluster")
-        self.host_1 = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host_1", cluster=self.cluster)
-        self.host_2 = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host_2", cluster=self.cluster)
-        self.host_3 = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host_3", cluster=self.cluster)
-        self.foreign_host = self.add_host(
-            bundle=provider_bundle, provider=provider, fqdn="foreign_host", cluster=second_cluster
-        )
+        self.host_not_in_cluster = self.add_host(provider=provider, fqdn="host_not_in_cluster")
+        self.host_1 = self.add_host(provider=provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=provider, fqdn="host_2", cluster=self.cluster)
+        self.host_3 = self.add_host(provider=provider, fqdn="host_3", cluster=self.cluster)
+        self.foreign_host = self.add_host(provider=provider, fqdn="foreign_host", cluster=second_cluster)
 
     def test_host_not_in_cluster_fail(self):
         service_no_requires = self.add_services_to_cluster(
@@ -1246,12 +1242,8 @@ class ConfigHostGroupRelatedTests(BaseAPITestCase):
 
         self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
 
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         self.service_1 = Service.objects.get(prototype__name="service_1", cluster=self.cluster_1)
         self.component_1_from_s1 = Component.objects.get(prototype__name="component_1", service=self.service_1)

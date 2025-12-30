@@ -10,13 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.alt.api import audit_create, audit_delete
 from cm.errors import AdcmEx
-from cm.legacy.api import add_host_provider, delete_host_provider
+from cm.legacy.api import delete_host_provider
 from cm.models import ObjectType, Prototype, Provider
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -131,17 +129,16 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
 
         name = serializer.validated_data["name"]
         description = serializer.validated_data.get("description", "")
-
-        if use_new_config_processing(request.headers):
-            func = partial(create_hostprovider, config_service=get_config_service())
-        else:
-            func = add_host_provider
+        prototype = Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER)
 
         try:
-            prototype = Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER)
-            host_provider = func(prototype=prototype, name=name, description=description)
+            host_provider_id = create_hostprovider(
+                prototype=prototype, name=name, description=description, config_service=get_config_service()
+            )
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e
+
+        host_provider = Provider.objects.get(id=host_provider_id)
 
         return Response(data=ProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 

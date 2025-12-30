@@ -13,7 +13,6 @@
 
 from typing import NoReturn
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -28,10 +27,9 @@ from audit.alt.hooks import extract_current_from_response, extract_previous_from
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
 from cm.legacy.status_api import send_object_update_event
-from cm.models import Cluster, ConcernType, Host, MainObject, Prototype, Provider
+from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from core.types import ADCMCoreType
 from dishka import FromDishka
-from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -77,7 +75,7 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
     HostWithDuplicatesSerializer,
 )
-from api_v2.host.utils import create_host, maintenance_mode
+from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
 from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
 
@@ -225,29 +223,16 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        func = self._create_host_new if use_new_config_processing(request.headers) else self._create_host_old
-        host = func(request_provider, serializer, request_cluster)
+        host_id = create_host_new(
+            hostprovider=request_provider,
+            name=serializer.validated_data["fqdn"],
+            cluster=request_cluster,
+            config_service=get_config_service(),
+        )
+        host = Host.objects.get(id=host_id)
 
         return Response(
             data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
-        )
-
-    def _create_host_old(self, request_provider, serializer, request_cluster):
-        with atomic():
-            bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=request_provider.prototype_id)
-            return create_host(
-                bundle_id=bundle_id,
-                provider_id=request_provider.id,
-                fqdn=serializer.validated_data["fqdn"],
-                cluster=request_cluster,
-            )
-
-    def _create_host_new(self, provider, serializer, cluster):
-        return create_host_new(
-            hostprovider=provider,
-            name=serializer.validated_data["fqdn"],
-            cluster=cluster,
-            config_service=get_config_service(),
         )
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)

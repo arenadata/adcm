@@ -23,8 +23,8 @@ from cm.legacy.services.concern.cases import (
 from cm.legacy.services.concern.distribution import redistribute_issues_and_flags
 from cm.legacy.services.status.notify import reset_hc_map
 from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
-from core import result as r
-from core import types
+from core.result import Fail, Success
+from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, PrototypeID
 from django.db import transaction
 from django.db.models import Count, QuerySet
 from rbac.models import re_apply_object_policy
@@ -33,8 +33,8 @@ import core
 
 def create_cluster(
     prototype: models.Prototype, name: str, description: str, config_service: core.config.ConfigService
-) -> models.Cluster:
-    if prototype.type != types.ADCMCoreType.CLUSTER:
+) -> ClusterID:
+    if prototype.type != ADCMCoreType.CLUSTER:
         raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
     check_license(prototype)
@@ -52,15 +52,15 @@ def create_cluster(
     reset_hc_map()
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
-    return cluster
+    return cluster.pk
 
 
 def create_services_from_prototypes(
-    cluster: models.Cluster, prototype_ids: Iterable[types.PrototypeID], config_service: core.config.ConfigService
+    cluster: models.Cluster, prototype_ids: Iterable[PrototypeID], config_service: core.config.ConfigService
 ) -> tuple[models.Service, ...]:
     result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
     match result:
-        case r.Fail(err):
+        case Fail(err):
             raise err
 
     prototypes = result.value
@@ -84,26 +84,26 @@ def create_services_from_prototypes(
 
 # COPIED FROM api_v2.service.utils WITHIN ADCM-7090 (minor changes applied)
 def _validate_service_prototypes(
-    cluster: models.Cluster, ids: Iterable[types.PrototypeID]
-) -> r.Success[tuple[models.Prototype, ...]] | r.Fail[errors.AdcmEx]:
+    cluster: models.Cluster, ids: Iterable[PrototypeID]
+) -> Success[tuple[models.Prototype, ...]] | Fail[errors.AdcmEx]:
     prototypes = tuple(models.Prototype.objects.filter(pk__in=ids).select_related("bundle"))
 
     if not prototypes:
-        return r.Fail(errors.AdcmEx(code="PROTOTYPE_NOT_FOUND"))
+        return Fail(errors.AdcmEx(code="PROTOTYPE_NOT_FOUND"))
 
     if {proto.type for proto in prototypes}.difference({models.ObjectType.SERVICE.value}):
-        return r.Fail(
+        return Fail(
             errors.AdcmEx(code="OBJ_TYPE_ERROR", msg=f"All prototypes must be `{models.ObjectType.SERVICE.value}` type")
         )
 
     if "unaccepted" in {proto.license for proto in prototypes}:
-        return r.Fail(errors.AdcmEx(code="LICENSE_ERROR", msg="All licenses must be accepted"))
+        return Fail(errors.AdcmEx(code="LICENSE_ERROR", msg="All licenses must be accepted"))
 
     if models.Service.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
-        return r.Fail(errors.AdcmEx(code="SERVICE_CONFLICT"))
+        return Fail(errors.AdcmEx(code="SERVICE_CONFLICT"))
 
     if {proto.bundle.pk for proto in prototypes if not proto.shared}.difference({cluster.prototype.bundle.pk}):
-        return r.Fail(
+        return Fail(
             errors.AdcmEx(
                 code="SERVICE_CONFLICT",
                 msg=f"Some service prototype does not belong to bundle "
@@ -111,7 +111,7 @@ def _validate_service_prototypes(
             )
         )
 
-    return r.Success(prototypes)
+    return Success(prototypes)
 
 
 # COPIED FROM api_v2.service.utils WITHIN ADCM-7090 (minor changes applied)
@@ -168,12 +168,12 @@ def _create_cluster(
     prototype: models.Prototype, name: str, description: str, config_service: core.config.ConfigService
 ):
     cluster = models.Cluster.objects.create(prototype=prototype, name=name, description=description)
-    descriptor = types.CoreObjectDescriptor(id=cluster.pk, type=types.ADCMCoreType.CLUSTER)
+    descriptor = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
     config_service.create_initial_configuration_if_required(owner=descriptor)
     return cluster
 
 
-def _create_ansible_config(cluster_id: types.ClusterID):
+def _create_ansible_config(cluster_id: ClusterID):
     models.AnsibleConfig.objects.create(
         value={"defaults": {"forks": DEFAULT_FORKS_AMOUNT}},
         object_id=cluster_id,

@@ -46,11 +46,11 @@ class TestClusterAudit(BaseAPITestCase):
 
         self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host2")
-        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host3")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host2")
+        self.host_3 = self.add_host(provider=self.provider, fqdn="test_host3")
 
         self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
         self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")

@@ -88,6 +88,7 @@ class TestClusterConfig(BaseAPITestCase):
             "description": "init",
             "id": self.cluster_1_config.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
         self.assertDictEqual(response.json(), data)
 
@@ -356,6 +357,7 @@ class TestClusterCHG(BaseAPITestCase):
                 "/activatable_group/integer": {"isSynchronized": True},
             },
             "description": "init",
+            "createdBy": "system",
         }
         self.assertDictEqual(response.json(), data)
 
@@ -679,6 +681,7 @@ class TestServiceConfig(BaseAPITestCase):
             "description": "init",
             "id": self.service_1_initial_config.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
 
         actual_data = response.json()
@@ -883,6 +886,7 @@ class TestServiceCHG(BaseAPITestCase):
                 "/string": {"isSynchronized": True},
             },
             "description": "init",
+            "createdBy": "system",
         }
         actual_data = response.json()
         actual_data["config"]["group"]["password"] = ansible_decrypt(msg=actual_data["config"]["group"]["password"])
@@ -1165,6 +1169,7 @@ class TestComponentConfig(BaseAPITestCase):
             "description": "init",
             "id": self.component_1_initial_config.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
         actual_data = response.json()
         actual_data["config"]["secrettext"] = ansible_decrypt(msg=actual_data["config"]["secrettext"])
@@ -1361,6 +1366,7 @@ class TestComponentCHG(BaseAPITestCase):
                 "/secrettext": {"isSynchronized": True},
             },
             "description": "init",
+            "createdBy": "system",
         }
         actual_data = response.json()
         actual_data["config"]["secrettext"] = ansible_decrypt(msg=actual_data["config"]["secrettext"])
@@ -1669,7 +1675,7 @@ class TestProviderConfig(BaseAPITestCase):
 
         self.provider_initial_config = ConfigLog.objects.get(pk=self.provider.config.current)
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
@@ -1704,6 +1710,7 @@ class TestProviderConfig(BaseAPITestCase):
             "description": "init",
             "id": self.provider_initial_config.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
         actual_data = response.json()
         actual_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
@@ -1925,6 +1932,7 @@ class TestProviderCHG(BaseAPITestCase):
             "description": "init",
             "id": self.config_of_host_group.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
         actual_data = response.json()
         actual_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
@@ -2197,8 +2205,8 @@ class TestHostConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host-2")
+        self.host = self.add_host(provider=self.provider, fqdn="test_host")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host-2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
         self.host_config = ConfigLog.objects.get(pk=self.host.config.current)
@@ -2232,6 +2240,7 @@ class TestHostConfig(BaseAPITestCase):
             "description": "init",
             "id": self.host_config.pk,
             "isCurrent": True,
+            "createdBy": "system",
         }
         self.assertDictEqual(response.json(), data)
 

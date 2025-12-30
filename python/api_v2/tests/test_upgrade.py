@@ -211,7 +211,7 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
         component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
@@ -266,8 +266,8 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        host_1 = self.add_host(provider=self.provider, fqdn="first_host")
+        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -319,7 +319,7 @@ class TestUpgrade(BaseAPITestCase):
 
     @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         with RunTaskMock() as run_task:
@@ -385,7 +385,7 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -439,10 +439,10 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host_1 = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
 
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
 
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -630,12 +630,8 @@ class TestUpgrade(BaseAPITestCase):
         cluster = self.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
         self.assertIsNone(cluster.config)
 
-        self.add_host_to_cluster(
-            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
-        )
-        self.add_host_to_cluster(
-            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
-        )
+        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="first_host"))
+        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="second_host"))
 
         response = self.client.v2[cluster, "upgrades", upgrade].get()
 

@@ -25,12 +25,8 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
 
         self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         self.service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).get()

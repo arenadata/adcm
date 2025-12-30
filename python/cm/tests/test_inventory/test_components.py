@@ -24,9 +24,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
 
         self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
     def test_1_component_1_host(self):
         service: Service = self.add_services_to_cluster(
@@ -100,9 +98,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
@@ -221,9 +217,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
@@ -433,9 +427,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).get()

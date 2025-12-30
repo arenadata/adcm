@@ -10,9 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 
-from adcm.feature_flags import use_new_config_processing
 from cm.models import Action, ConfigHostGroup, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.status import (
@@ -23,11 +21,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
-
-subtest_on_new_config_processing = partial(
-    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.provider.views"
-)
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestProvider(BaseAPITestCase):
@@ -57,12 +51,7 @@ class TestProvider(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
-        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
-            with sub_test:
-                self._test_create_success(i)
-
-    def _test_create_success(self, i: int):
-        name = f"{self.host_provider.name} new {i}"
+        name = f"{self.host_provider.name} new 1"
         response = (self.client.v2 / "hostproviders").post(
             data={
                 "prototypeId": self.host_provider_bundle.prototype_set.get(name="provider").pk,

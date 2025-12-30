@@ -23,7 +23,6 @@ import string
 import tarfile
 
 from api_v2.prototype.utils import accept_license
-from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.converters import orm_object_to_core_type
 from cm.legacy.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.legacy.services.bundle_alt.load import Directories, parse_bundle_archive
@@ -67,6 +66,8 @@ from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.services.user import GroupDB, UserDB, create_new_user, perform_user_creation
 from rbac.upgrade.role import init_roles
+from use_cases.transition.cluster.create import create_cluster, create_services_from_prototypes
+from use_cases.transition.hostprovider.create import create_host, create_hostprovider
 
 APPLICATION_JSON = "application/json"
 
@@ -253,11 +254,6 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         prototype = Prototype.objects.get(bundle_id=bundle_pk, type=ObjectType.CLUSTER)
         return add_cluster(prototype=prototype, name=name)
 
-    def create_service(self, cluster_pk: int, name: str) -> Service:
-        cluster = Cluster.objects.get(id=cluster_pk)
-        prototypes = Prototype.objects.filter(name=name, bundle_id=cluster.bundle_id).all()
-        return bulk_add_services_to_cluster(cluster=cluster, prototypes=prototypes).get()
-
     def upload_bundle_create_cluster_config_log(
         self, bundle_path: Path, cluster_name: str = "test-cluster"
     ) -> tuple[Bundle, Cluster, ConfigLog]:
@@ -303,30 +299,30 @@ class BusinessLogicMixin(BundleLogicMixin):
     @staticmethod
     def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
+
         if prototype.license_path is not None:
             accept_license(prototype=prototype)
             prototype.refresh_from_db(fields=["license"])
-        return add_cluster(prototype=prototype, name=name, description=description)
+
+        cluster_id = create_cluster(
+            prototype=prototype, name=name, description=description, config_service=get_config_service()
+        )
+
+        return Cluster.objects.get(id=cluster_id)
 
     @staticmethod
     def add_provider(bundle: Bundle, name: str, description: str = "") -> Provider:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
-        return add_host_provider(prototype=prototype, name=name, description=description)
+        provider_id = create_hostprovider(
+            prototype=prototype, name=name, description=description, config_service=get_config_service()
+        )
 
-    def add_host(
-        self,
-        provider: Provider,
-        fqdn: str,
-        description: str = "",
-        cluster: Cluster | None = None,
-        bundle: Bundle | None = None,
-    ) -> Host:
-        prototype = Prototype.objects.filter(bundle=bundle or provider.prototype.bundle, type=ObjectType.HOST).first()
-        host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
-        if cluster is not None:
-            self.add_host_to_cluster(cluster=cluster, host=host)
+        return Provider.objects.get(id=provider_id)
 
-        return host
+    def add_host(self, provider: Provider, fqdn: str, cluster: Cluster | None = None) -> Host:
+        host_id = create_host(hostprovider=provider, name=fqdn, cluster=cluster, config_service=get_config_service())
+
+        return Host.objects.get(id=host_id)
 
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
@@ -336,8 +332,11 @@ class BusinessLogicMixin(BundleLogicMixin):
     def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[Service]:
         service_prototypes = Prototype.objects.filter(
             type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
+        ).values_list("id", flat=True)
+        services = create_services_from_prototypes(
+            cluster=cluster, prototype_ids=list(service_prototypes), config_service=get_config_service()
         )
-        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
+        return Service.objects.filter(id__in=[service.id for service in services])
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:

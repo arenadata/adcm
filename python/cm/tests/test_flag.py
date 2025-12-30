@@ -52,7 +52,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
         for provider in providers:
             for i in range(4):
-                self.add_host(bundle=provider.prototype.bundle, provider=provider, fqdn=f"{provider.name}-host-{i}")
+                self.add_host(provider=provider, fqdn=f"{provider.name}-host-{i}")
 
     def test_raise_lower_flag_on_one_object_success(self) -> None:
         expected_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name

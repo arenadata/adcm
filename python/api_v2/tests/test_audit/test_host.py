@@ -33,8 +33,8 @@ class TestHostAudit(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
         self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test_host")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host_2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
     def test_create_success(self):

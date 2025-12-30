@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from unittest.mock import patch
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.tests.base import BusinessLogicMixin
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
@@ -43,11 +41,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import BaseAPITestCase, subtests_on_feature_flag
-
-subtest_on_new_config_processing = partial(
-    subtests_on_feature_flag, flag_func=use_new_config_processing, override_in="api_v2.cluster.views"
-)
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestCluster(BaseAPITestCase):
@@ -143,15 +137,10 @@ class TestCluster(BaseAPITestCase):
             self.assertEqual(response.json()["results"][0]["id"], self.cluster_2.pk)
 
     def test_create_success(self):
-        for i, sub_test in enumerate(subtest_on_new_config_processing(self)):
-            with sub_test:
-                self._test_create_success(i)
-
-    def _test_create_success(self, i: int):
         response = (self.client.v2 / "clusters").post(
             data={
                 "prototype_id": self.cluster_1.prototype.pk,
-                "name": f"new_test_cluster-{i}",
+                "name": "new_test_cluster-1",
                 "description": "Test cluster description",
             },
         )

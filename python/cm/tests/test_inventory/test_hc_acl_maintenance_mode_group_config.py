@@ -24,10 +24,10 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
         self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster")
         self.provider = self.add_provider(bundle=provider_bundle, name="provider")
 
-        self.host_1 = self.add_host(bundle=provider_bundle, provider=self.provider, fqdn="host1", cluster=self.cluster)
-        self.host_2 = self.add_host(bundle=provider_bundle, provider=self.provider, fqdn="host2", cluster=self.cluster)
-        self.host_3 = self.add_host(bundle=provider_bundle, provider=self.provider, fqdn="host3", cluster=self.cluster)
-        self.host_4 = self.add_host(bundle=provider_bundle, provider=self.provider, fqdn="host4", cluster=self.cluster)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
+        self.host_3 = self.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
+        self.host_4 = self.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
 
         self.service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster

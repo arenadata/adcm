@@ -46,8 +46,8 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
