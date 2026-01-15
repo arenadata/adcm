@@ -41,13 +41,13 @@ from rest_framework.mixins import (
     ListModelMixin,
     RetrieveModelMixin,
 )
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import GenericViewSet
 
 
 class APIRoot(APIRootView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     api_root_dict = {
         "adcm": "adcm-detail",
         "clusters": "cluster-list",
