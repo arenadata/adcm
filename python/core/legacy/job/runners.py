@@ -38,9 +38,7 @@ class IntegrationsSettings(NamedTuple):
 class ConsulSettings(NamedTuple):
     url: str | None
     datacenter: str | None
-    client_cert_file: str | None
-    client_key_file: str | None
-    client_cacert_file: str | None
+    cacert_file: str | None
 
 
 class ExternalSettings(NamedTuple):

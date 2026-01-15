@@ -123,11 +123,7 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
-                url=settings.CONSUL_URL,
-                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
-                datacenter=settings.CONSUL_DATACENTER,
+                url=settings.CONSUL_URL, datacenter=settings.CONSUL_DATACENTER, cacert_file=settings.CONSUL_CACERT_FILE
             ),
         )
 
@@ -350,10 +346,8 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
                 url=settings.CONSUL_URL,
-                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
                 datacenter=settings.CONSUL_DATACENTER,
+                cacert_file=settings.CONSUL_CACERT_FILE,
             ),
         )
 

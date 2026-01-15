@@ -67,10 +67,8 @@ class ADCMAnsiblePluginTestMixin:
                 integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
                 consul=ConsulSettings(
                     url=settings.CONSUL_URL,
-                    client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                    client_cacert_file=settings.CONSUL_CACERT_FILE,
-                    client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
                     datacenter=settings.CONSUL_DATACENTER,
+                    cacert_file=settings.CONSUL_CACERT_FILE,
                 ),
             )
 

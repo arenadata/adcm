@@ -68,9 +68,7 @@ class JobEnv(BaseModel):
     status_api_token: str
     consul_url: str | None
     consul_datacenter: str | None
-    consul_client_cert_file: str | None
-    consul_client_key_file: str | None
-    consul_client_cacert_file: str | None
+    consul_cacert_file: str | None
 
 
 class JobData(BaseModel):
