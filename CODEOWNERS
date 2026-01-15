@@ -1,20 +1,20 @@
 /adcm-web/ @v.remizov @npp @i.kuzmin @v.paskov @d.bardin @k.fedorenko @a.latunov
-/data/ @aas @d.skrynnik @aer
-/conf/ @aas @d.skrynnik @aer
-/go/ @aas @d.skrynnik @aer
-/os/ @aas @d.skrynnik @aer
-/python/ @aas @d.skrynnik @aer
-/spec/ @aas @d.skrynnik @aer
-.dockerignore @aas @v.remizov @d.skrynnik @aer
-.gitignore @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
-.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @aer
-.pre-commit-config.yaml @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
-CODEOWNERS @aas @v.remizov @d.skrynnik @aer
-COPYRIGHT @aas @v.remizov @d.skrynnik @aer
-Dockerfile @aas @v.remizov @d.skrynnik @aer
-LICENSE @aas @v.remizov @d.skrynnik @aer
-license_checker.py @aas @d.skrynnik @aer
-Makefile @aas @d.skrynnik @aer
-poetry.lock @aas @d.skrynnik @aer @a.starovoitov
-pyproject.toml @aas @d.skrynnik @aer @a.starovoitov
-README.md @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
+/data/ @arenadata/teams/python/adcm
+/conf/ @arenadata/teams/python/adcm
+/go/ @arenadata/teams/python/adcm
+/os/ @arenadata/teams/python/adcm
+/python/ @arenadata/teams/python/adcm
+/spec/ @arenadata/teams/python/adcm
+.dockerignore @v.remizov @arenadata/teams/python/adcm
+.gitignore @v.remizov @d.bardin @arenadata/teams/python/adcm
+.gitlab-ci.yaml @v.remizov @arenadata/teams/python/adcm
+.pre-commit-config.yaml @v.remizov @d.bardin @k.fedorenko @arenadata/teams/python/adcm
+CODEOWNERS @v.remizov @arenadata/teams/python/adcm
+COPYRIGHT @v.remizov @arenadata/teams/python/adcm
+Dockerfile @v.remizov @arenadata/teams/python/adcm
+LICENSE @v.remizov @arenadata/teams/python/adcm
+license_checker.py @arenadata/teams/python/adcm
+Makefile @arenadata/teams/python/adcm
+poetry.lock  @arenadata/teams/python/adcm
+pyproject.toml @arenadata/teams/python/adcm
+README.md @v.remizov @d.bardin @k.fedorenko @arenadata/teams/python/adcm
