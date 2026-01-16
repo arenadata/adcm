@@ -30,7 +30,7 @@ from django.utils import timezone
 
 from cm.legacy import status_api
 from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
-from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.legacy.services.job.run.runners import JobSequenceRunner
 from cm.legacy.services.status import notify
 
@@ -61,6 +61,7 @@ def _get_runner(filter_predicate: Callable = id) -> TaskRunner:
         job_processor=JobProcessor(convert=_factory, filter_predicate=filter_predicate),
         settings=_prepare_settings(),
         repo=JobRepoImpl,
+        action_repo=ActionRepoImpl,
         environment=SubprocessRunnerEnvironment(),
         notifier=status_api,
         status_server=notify,

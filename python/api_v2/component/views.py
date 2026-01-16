@@ -310,6 +310,21 @@ class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
     ...
 
 
+@document_action_process_viewset(
+    object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
+)
+@audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(
+    object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
+)
+class ComponentActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
+    ...
+
+
 @document_config_viewset(object_type="component")
 @audit_config_viewset(type_in_name="Component", retrieve_owner=parent_component_from_lookup)
 class ComponentConfigViewSet(ConfigLogViewSet):

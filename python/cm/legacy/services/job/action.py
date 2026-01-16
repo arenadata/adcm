@@ -100,7 +100,13 @@ def run_action(
         if payload.process is None:
             raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
 
-        if not Process.objects.filter(id=payload.process.id, action=action, state=ProcessState.COMPLETED).exists():
+        if not Process.objects.filter(
+            id=payload.process.id,
+            action=action,
+            target_id=obj.id,
+            target_type=orm_object_to_action_target_type(obj).value,
+            state=ProcessState.COMPLETED,
+        ).exists():
             raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
 
     _check_no_target_conflict(target=action_objects.target, action=action)
@@ -246,7 +252,6 @@ def prepare_task_for_action(
         job_specifications = _render_scripts_from_template(
             template=action_info.scripts_template,
             action=orm_action,
-            owner=orm_owner,
             target=orm_target,
             context_gatherer=ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service()),
         )
@@ -272,7 +277,6 @@ def prepare_task_for_action(
 
 def _render_scripts_from_template(
     template: Template,
-    owner: Cluster | Service | Component | Host,
     target: Cluster | Service | Component | Host | ActionHostGroup,
     action: Action,
     context_gatherer: ContextGatherer,
@@ -284,8 +288,8 @@ def _render_scripts_from_template(
     process_id: core.action.wizard.ProcessID | None = (
         Process.objects.filter(
             action_id=action.pk,
-            object_id=target.pk,
-            object_type=orm_object_to_core_type(owner),
+            target_id=target.pk,
+            target_type=orm_object_to_action_target_type(target).value,
         )
         .values_list("id", flat=True)
         .order_by("-created_at")

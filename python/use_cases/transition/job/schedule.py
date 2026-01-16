@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Iterable, NamedTuple, NewType, TypeAlias
 
-from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
@@ -113,7 +113,11 @@ class ScheduleTask:
                 raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
 
             if not Process.objects.filter(
-                id=payload.process.id, action=action_orm, state=ProcessState.COMPLETED
+                id=payload.process.id,
+                action=action_orm,
+                target_id=target.pk,
+                target_type=orm_object_to_action_target_type(target).value,
+                state=ProcessState.COMPLETED,
             ).exists():
                 raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
 

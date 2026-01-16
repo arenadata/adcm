@@ -23,7 +23,7 @@ import os.path
 from adcm.feature_flags import use_new_config_processing
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.legacy.job.types import ScriptType
-from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor
+from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -1688,12 +1688,20 @@ DEFAULT_PROCESS_STATE = ProcessState.CREATED.value
 DEFAULT_PROCESS_STEP_STATE = ProcessStepState.CREATED.value
 
 
+PROCESS_TARGET_TYPE_CHOICES = [(i.value, i.value) for i in ADCMCoreType] + [
+    (i.value, i.value) for i in ExtraActionTargetType
+]
+PROCESS_OWNER_TYPE_CHOICES = [
+    (i.value, i.value) for i in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
+]
+
+
 class Process(models.Model):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField(default=0)
-    object_type = models.CharField(
-        max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
-    )
+    target_id = models.PositiveIntegerField(default=0)
+    target_type = models.CharField(max_length=100, choices=PROCESS_TARGET_TYPE_CHOICES, null=True)
+    owner_id = models.PositiveIntegerField(default=0)
+    owner_type = models.CharField(max_length=100, choices=PROCESS_OWNER_TYPE_CHOICES, null=True)
     current_step = models.OneToOneField(
         "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="current_for_process"
     )

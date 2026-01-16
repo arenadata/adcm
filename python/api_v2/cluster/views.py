@@ -1043,6 +1043,19 @@ class ClusterActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
     ...
 
 
+@document_action_process_viewset(object_type="clusterActionHostGroup", operation_id_variant="ClusterActionHostGroup")
+@audit_action_process_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(
+    object_type="clusterActionHostGroup", operation_id_variant="ClusterActionHostGroup"
+)
+class ClusterActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
+    ...
+
+
 @document_config_viewset(object_type="cluster")
 @audit_config_viewset(type_in_name="Cluster", retrieve_owner=parent_cluster_from_lookup)
 class ClusterConfigViewSet(ConfigLogViewSet):

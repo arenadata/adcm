@@ -216,7 +216,7 @@ class Task(BaseModel):
     bundle: BundleInfo | None
 
     # Target is an object on which action should be performed
-    # it's the same as owner for all cases except `host_action: true`
+    # it's the same as owner for all cases except `host_action: true` or action_host_group
     target: NamedActionObject | None
 
     selector: dict

@@ -19,12 +19,13 @@ from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.legacy.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
-    ActionID,
+    ActionTargetDescriptor,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
 from infra.services import get_config_service, get_wizard_service
 
+from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
@@ -266,7 +267,7 @@ class JobSequenceRunner(TaskRunner):
         if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
             self._update_calling_process(
                 process=finished_task.action_process,
-                action_id=task.action.id,
+                task=task,
                 task_owner=finished_task.owner,
                 context_gatherer=ContextGatherer(
                     config_service=get_config_service(), wizard_service=get_wizard_service()
@@ -350,21 +351,33 @@ class JobSequenceRunner(TaskRunner):
     def _update_calling_process(
         self,
         process: CallingProcess,
-        action_id: ActionID,
+        task: Task,
         task_owner: TaskOwner | None,
         context_gatherer: ContextGatherer,
     ) -> None:
         from cm.legacy.services.action_process.operations import complete_operation_step
+        from cm.legacy.services.action_process.types import ProcessContext
+        from cm.models import Action
 
         if not task_owner:
             raise RuntimeError("Task has no owner")
+
+        owner = CoreObjectDescriptor(id=task_owner.id, type=task_owner.type)
+        target = ActionTargetDescriptor(id=task.target.id, type=task.target.type)
+        process_context = ProcessContext(
+            action=self._action_repo.get_action(id=task.action.id),
+            action_orm=Action.objects.get(id=task.action.id),
+            owner=owner,
+            owner_orm=core_type_to_model(owner.type).objects.get(id=owner.id),
+            target=target,
+            target_orm=action_target_type_to_model(target.type).objects.get(id=target.id),
+        )
 
         complete_operation_step(
             process_id=process.id,
             process_sync_key=process.sync_key,
             step_id=process.step_id,
-            action_id=action_id,
-            object_=CoreObjectDescriptor(id=task_owner.id, type=task_owner.type),
+            process_context=process_context,
             is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
             context_gatherer=context_gatherer,
         )

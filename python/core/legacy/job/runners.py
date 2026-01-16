@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable, Iterable, NamedTuple, Protocol
 
 from core.legacy.job.executors import Executor
-from core.legacy.job.repo import JobRepoInterface
+from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.types import ExecutionStatus, Job, Task
 
 
@@ -110,6 +110,7 @@ class TaskRunner(ABC):
 
     # external dependencies
     _repo: JobRepoInterface
+    _action_repo: ActionRepoInterface
     _environment: RunnerEnvironment
 
     _runtime: RunnerRuntime
@@ -120,11 +121,13 @@ class TaskRunner(ABC):
         job_processor: JobProcessor,
         settings: ExternalSettings,
         repo: JobRepoInterface,
+        action_repo: ActionRepoInterface,
         environment: RunnerEnvironment,
     ):
         self._job_processor = job_processor
         self._settings = settings
         self._repo = repo
+        self._action_repo = action_repo
         self._environment = environment
         self._runtime = RunnerRuntime(task_id=-1)
 

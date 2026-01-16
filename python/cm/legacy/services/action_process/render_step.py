@@ -16,13 +16,15 @@ from core.legacy.bundle_alt.errors import BundleValidationError
 from core.legacy.job.types import JobSpec
 from core.mapping import MappingRule
 from core.templates._errors import RenderError
-from core.types import ActionID, ActionProcessID, ActionProcessStepID, CoreObjectDescriptor, PrototypeID
+from core.types import (
+    ActionProcessID,
+    ActionProcessStepID,
+)
 import core
 
-from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process import repo
-from cm.legacy.services.action_process.types import DBPrototypeConfig, ProcessStepState, StepUpdateDTO
+from cm.legacy.services.action_process.types import DBPrototypeConfig, ProcessContext, ProcessStepState, StepUpdateDTO
 from cm.legacy.services.bundle_alt.render import (
     ActionArgs,
     ContextGatherer,
@@ -38,9 +40,7 @@ from cm.logger import logger
 @dataclass(frozen=True, slots=True)
 class RenderStepContext:
     process_id: ActionProcessID
-    action_id: ActionID
-    target: CoreObjectDescriptor
-    owner_prototype_id: PrototypeID
+    process_context: ProcessContext
 
 
 def fill_step_spec(step_id: ActionProcessStepID, context: RenderStepContext, context_gatherer: ContextGatherer) -> None:
@@ -59,16 +59,14 @@ def _render_step(
     step = repo.retrieve_step(process_id=context.process_id, step_id=step_id)
     template = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec).template
 
-    action_orm = repo.retrieve_action_orm(action_id=context.action_id)
-    target_orm = core_type_to_model(context.target.type).objects.get(id=context.target.id)
-    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=context.owner_prototype_id)
+    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=context.process_context.action.owner_prototype.id)
     environment = Environment(bundle_root=bundle_root)
 
     match step.type:
         case core.action.wizard.StepType.CONFIGURATION:
             action_args = ActionArgs(
-                action=action_orm,
-                cluster_relative_object=target_orm,
+                action=context.process_context.action_orm,
+                cluster_relative_object=context.process_context.cluster_relative_object(),
                 wizard_process_id=process.id,
             )
             prototype_configs = render_config(
@@ -78,8 +76,8 @@ def _render_step(
 
         case core.action.wizard.StepType.OPERATION:
             task_args = TaskArgs(
-                target_object=target_orm,
-                action=action_orm,
+                target_object=context.process_context.target_orm,
+                action=context.process_context.action_orm,
                 config={},
                 verbose=False,
                 delta=None,
@@ -91,8 +89,8 @@ def _render_step(
 
         case core.action.wizard.StepType.MAPPING:
             task_args = TaskArgs(
-                target_object=target_orm,
-                action=action_orm,
+                target_object=context.process_context.target_orm,
+                action=context.process_context.action_orm,
                 config={},
                 verbose=False,
                 delta=None,

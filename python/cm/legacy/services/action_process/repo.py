@@ -20,6 +20,7 @@ from core.types import (
     ActionID,
     ActionProcessID,
     ActionProcessStepID,
+    ActionTargetDescriptor,
     ADCMCoreType,
     BundleID,
     ClusterID,
@@ -64,11 +65,15 @@ def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
     return Path(settings.BUNDLE_DIR, hash_)
 
 
-def create_process(object_: CoreObjectDescriptor, action_id: ActionID, stages: list[dict[str, Any]]) -> ActionProcess:
+def create_process(
+    target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action_id: ActionID, stages: list[dict[str, Any]]
+) -> ActionProcess:
     process = Process.objects.create(
         action_id=action_id,
-        object_id=object_.id,
-        object_type=object_.type.value,
+        target_id=target.id,
+        target_type=target.type.value,
+        owner_id=owner.id,
+        owner_type=owner.type.value,
         last_completed_step=None,
         flow_spec=stages,
         sync_key=uuid4(),

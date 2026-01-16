@@ -386,7 +386,7 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         if "action_host_group_pk" not in self.kwargs:
             return None
 
-        parent = super().get_parent_object()
+        parent = super().get_parent_object(ignore_groups=True)
 
         return (
             ActionHostGroup.objects.prefetch_related("object__prototype")

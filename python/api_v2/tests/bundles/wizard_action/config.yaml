@@ -18,7 +18,7 @@
 
     wizard_host_action_from_cluster: &host_action
       type: job
-      script: scripts/sleep.yaml
+      script: wizard_jinja/scripts/sleep.yaml
       script_type: ansible
       host_action: true
       ui_options:
@@ -30,6 +30,11 @@
           type: jinja2
       states:
         available: any
+
+    wizard_cluster_action: &action
+      <<: *host_action
+      host_action: false
+      allow_for_action_host_group: true
     
   config: &config
     - name: float
@@ -46,6 +51,8 @@
       <<: *wizard_action
     wizard_host_action_from_service:
       <<: *host_action
+    wizard_service_action:
+      <<: *action
 
   config: *config
 
@@ -56,4 +63,6 @@
           <<: *wizard_action
         wizard_host_action_from_component:
           <<: *host_action
+        wizard_component_action:
+          <<: *action
       config: *config
