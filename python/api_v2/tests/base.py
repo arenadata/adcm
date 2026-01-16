@@ -14,8 +14,10 @@ from http.cookies import SimpleCookie
 from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
-from typing import Any, TypeAlias
+from tempfile import gettempdir
+from typing import Any, Collection, TypeAlias
 from unittest.mock import patch
+import tarfile
 import unittest
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
@@ -32,6 +34,8 @@ from cm.models import (
     Host,
     JobLog,
     JobStatus,
+    ObjectType,
+    Prototype,
     Provider,
     Service,
     TaskLog,
@@ -43,11 +47,16 @@ from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.status import HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
 )
+
+
+# allow asserts
+# ruff: noqa: S101
 
 
 class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
@@ -248,3 +257,84 @@ def subtests_on_feature_flag(tc: unittest.TestCase, flag_func, override_in: str)
     for flag_value in (False,):
         with patch(f"{override_in}.{name}", return_value=flag_value):
             yield tc.subTest(f"{name}-{flag_value}")
+
+
+class APIV2Mixin:
+    client: ADCMTestClient
+
+    def _prepare_bundle_file(self, src: Path, dst: Path) -> Path:
+        with tarfile.open(dst, "w") as tar:
+            for file in src.iterdir():
+                tar.add(name=file, arcname=file.name)
+
+        return dst
+
+    def create_bundle(self, src: Path) -> Bundle:
+        if not src.is_dir():
+            raise ValueError(f"Not a dir: {src}")
+
+        dst = (Path(gettempdir()) / src.name).with_suffix(".tar")
+        archive = self._prepare_bundle_file(src=src, dst=dst)
+
+        with archive.open(encoding="utf-8") as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+        assert response.status_code == HTTP_201_CREATED, f"Bundle `{archive}` upload failed: {response.status_code}"
+
+        return Bundle.objects.get(id=response.json()["id"])
+
+    def create_cluster(self, bundle: Bundle, name: str, description: str = "") -> Cluster:
+        prototype_id = Prototype.objects.values_list("id", flat=True).get(bundle=bundle, type=ObjectType.CLUSTER)
+        response = (self.client.v2 / "clusters").post(
+            data={"prototypeId": prototype_id, "name": name, "description": description}
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Cluster creation failed: {response.status_code}"
+
+        return Cluster.objects.get(id=response.json()["id"])
+
+    def create_services(self, names: Collection[str], cluster: Cluster) -> list[Service]:
+        bundle_id = cluster.prototype.bundle_id
+        prototype_ids = Prototype.objects.values_list("id", flat=True).filter(
+            name__in=names, type=ObjectType.SERVICE, bundle_id=bundle_id
+        )
+        response = self.client.v2[cluster, "services"].post(data=[{"prototype_id": id_} for id_ in prototype_ids])
+        assert response.status_code == HTTP_201_CREATED, f"Service creation failed: {response.status_code}"
+
+        return list(Service.objects.filter(id__in=[r["id"] for r in response.json()]))
+
+    def create_mapping(self, cluster: Cluster, entries: Collection[tuple[Host, Component]]) -> None:
+        response = self.client.v2[cluster, "mapping"].post(
+            data=[{"hostId": host.id, "componentId": component.id} for host, component in entries]
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Mapping creation failed: {response.status_code}"
+
+    def create_provider(self, bundle: Bundle, name: str, description: str = "") -> Provider:
+        prototype_id = Prototype.objects.values_list("id", flat=True).get(bundle=bundle, type=ObjectType.PROVIDER)
+        response = (self.client.v2 / "hostproviders").post(
+            data={"prototypeId": prototype_id, "name": name, "description": description},
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Provider creation failed: {response.status_code}"
+
+        return Provider.objects.get(id=response.json()["id"])
+
+    def create_host(self, provider: Provider, name: str, cluster: Cluster | None = None) -> Host:
+        data = {"hostproviderId": provider.id, "name": name}
+        if cluster:
+            data["clusterId"] = cluster.id
+        response = (self.client.v2 / "hosts").post(data=data)
+        assert response.status_code == HTTP_201_CREATED, f"Host creation failed: {response.status_code}"
+
+        return Host.objects.get(id=response.json()["id"])
+
+    def create_action_host_group(
+        self, owner: Cluster | Service | Component, name: str, hosts: Collection[Host] = (), description: str = ""
+    ) -> ActionHostGroup:
+        response = self.client.v2[owner, "action-host-groups"].post(data={"name": name, "description": description})
+        assert response.status_code == HTTP_201_CREATED, f"ActionHostGroup creation failed: {response.status_code}"
+
+        ahg = ActionHostGroup.objects.get(id=response.json()["id"])
+
+        for host in hosts:
+            response = self.client.v2[ahg, "hosts"].post(data={"hostId": host.id})
+            assert response.status_code == HTTP_201_CREATED, f"Add host to {ahg} failed: {response.status_code}"
+
+        return ahg

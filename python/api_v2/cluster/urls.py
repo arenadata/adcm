@@ -16,6 +16,8 @@ import itertools
 from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 from api_v2.cluster.views import (
+    ClusterActionHostGroupActionsProcessStepViewSet,
+    ClusterActionHostGroupActionsProcessViewSet,
     ClusterActionHostGroupActionsViewSet,
     ClusterActionHostGroupHostsViewSet,
     ClusterActionHostGroupViewSet,
@@ -35,6 +37,8 @@ from api_v2.cluster.views import (
     HostClusterViewSet,
 )
 from api_v2.component.views import (
+    ComponentActionHostGroupActionsProcessStepViewSet,
+    ComponentActionHostGroupActionsProcessViewSet,
     ComponentActionHostGroupActionsViewSet,
     ComponentActionHostGroupHostsViewSet,
     ComponentActionHostGroupViewSet,
@@ -51,6 +55,8 @@ from api_v2.component.views import (
 from api_v2.generic.action_host_group.urls_helpers import add_action_host_groups_routers
 from api_v2.generic.config_host_group.urls_helpers import add_config_host_group_routers
 from api_v2.service.views import (
+    ServiceActionHostGroupActionsProcessStepViewSet,
+    ServiceActionHostGroupActionsProcessViewSet,
     ServiceActionHostGroupActionsViewSet,
     ServiceActionHostGroupHostsViewSet,
     ServiceActionHostGroupViewSet,
@@ -120,6 +126,8 @@ cluster_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ClusterActionHostGroupViewSet,
     ahg_hosts_viewset=ClusterActionHostGroupHostsViewSet,
     ahg_actions_viewset=ClusterActionHostGroupActionsViewSet,
+    ahg_process_viewset=ClusterActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ClusterActionHostGroupActionsProcessStepViewSet,
     parent_router=cluster_router,
     parent_prefix=CLUSTER_PREFIX,
     lookup="cluster",
@@ -150,6 +158,8 @@ service_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ServiceActionHostGroupViewSet,
     ahg_hosts_viewset=ServiceActionHostGroupHostsViewSet,
     ahg_actions_viewset=ServiceActionHostGroupActionsViewSet,
+    ahg_process_viewset=ServiceActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ServiceActionHostGroupActionsProcessStepViewSet,
     parent_router=service_router,
     parent_prefix=SERVICE_PREFIX,
     lookup="service",
@@ -194,6 +204,8 @@ component_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ComponentActionHostGroupViewSet,
     ahg_hosts_viewset=ComponentActionHostGroupHostsViewSet,
     ahg_actions_viewset=ComponentActionHostGroupActionsViewSet,
+    ahg_process_viewset=ComponentActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ComponentActionHostGroupActionsProcessStepViewSet,
     parent_router=component_router,
     parent_prefix=COMPONENT_PREFIX,
     lookup="component",

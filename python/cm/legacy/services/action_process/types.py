@@ -10,17 +10,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, Union, overload
 from uuid import UUID
 
 from core.legacy.bundle_alt.schema import ActionProcessStage
-from core.types import ActionProcessID, ActionProcessStepID, ADCMCoreType, ObjectID, TaskID
+from core.legacy.job.types import ActionInfo
+from core.types import (
+    ActionProcessID,
+    ActionProcessStepID,
+    ActionTargetDescriptor,
+    ADCMCoreType,
+    CoreObjectDescriptor,
+    ExtraActionTargetType,
+    ObjectID,
+    TaskID,
+)
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 import core
 
 from cm.legacy.services.action_process.schema_validation import HostComponentMapDelta
+
+if TYPE_CHECKING:
+    from cm.models import Action, ActionHostGroup, Cluster, Component, Host, Service
+
+
+ProcessOwner: TypeAlias = Union["Cluster", "Service", "Component"]
+ProcessTarget: TypeAlias = Union["Cluster", "Service", "Component", "Host", "ActionHostGroup"]
+ClusterRelativeObjectORM: TypeAlias = Union["Cluster", "Service", "Component", "Host"]
 
 
 class ProcessState(str, Enum):
@@ -84,8 +103,10 @@ class StepInputDTO(BaseModel):
 class ActionProcess(BaseModel):
     id: ActionProcessID
     sync_key: UUID
-    object_id: ObjectID
-    object_type: ADCMCoreType
+    target_id: ObjectID
+    target_type: ADCMCoreType | ExtraActionTargetType
+    owner_id: ObjectID
+    owner_type: ADCMCoreType
     flow_spec: list[ActionProcessStage] = Field(..., min_length=1)
     current_step_id: ActionProcessStepID | None = None
     last_completed_step_id: ActionProcessStepID | None = None
@@ -125,3 +146,27 @@ class SerializedPrototypeConfigs(BaseModel):
     configs: list[DBPrototypeConfig] = Field(min_length=1)
 
     model_config = ConfigDict(extra="forbid")
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessContext:
+    action: ActionInfo
+    action_orm: "Action"
+    target: ActionTargetDescriptor
+    target_orm: ProcessTarget
+    owner: CoreObjectDescriptor
+    owner_orm: ProcessOwner
+
+    @overload
+    def cluster_relative_object(self, as_descriptor: Literal[True]) -> CoreObjectDescriptor:
+        ...
+
+    @overload
+    def cluster_relative_object(self, as_descriptor: Literal[False]) -> ClusterRelativeObjectORM:
+        ...
+
+    def cluster_relative_object(self, as_descriptor: bool = False) -> ClusterRelativeObjectORM | CoreObjectDescriptor:
+        if self.target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
+            return self.owner if as_descriptor else self.owner_orm
+        else:
+            return CoreObjectDescriptor(id=self.target.id, type=self.target.type) if as_descriptor else self.target_orm

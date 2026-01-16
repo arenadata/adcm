@@ -65,7 +65,8 @@ class ADCMConfigView(ConfigLogViewSet):
             .order_by("-pk")
         )
 
-    def _get_parent_object_unsafe(self) -> ADCM:
+    def _get_parent_object_unsafe(self, ignore_groups: bool) -> ADCM:
+        _ = ignore_groups
         return ADCM.objects.get()
 
     @extend_schema(

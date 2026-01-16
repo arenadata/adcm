@@ -35,7 +35,7 @@ from cm.models import (
     Provider,
     Service,
 )
-from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
+from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType
 from django.conf import settings
 from django.utils import timezone
 from rbac.models import User
@@ -104,12 +104,12 @@ def get_action_configuration(
     return get_schema_config_meta(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
 
 
-def get_action_processes(action: Action, object_: CoreObjectDescriptor) -> list[Process]:
+def get_action_processes(action: Action, object_: ActionTargetDescriptor) -> list[Process]:
     # While we are returning one object, the last one is incomplete.
     if (
         process := Process.objects.filter(
-            object_id=object_.id,
-            object_type=object_.type,
+            target_id=object_.id,
+            target_type=object_.type,
             action=action,
             state=ProcessState.CREATED,
             created_at__gt=timezone.now() - settings.ACTION_PROCESS_STALE_STATE_TIMEOUT,
@@ -160,12 +160,11 @@ def check_process_object(process_id: int, action_id: ActionID, action_target: Ac
     if action_target.type in {
         ADCMCoreType.ADCM,
         ADCMCoreType.PROVIDER,
-        ExtraActionTargetType.ACTION_HOST_GROUP,
     }:
         msg = f"Objects of the '{action_target.type.value}' type do not support action processes"
         raise AdcmEx(code="ACTION_ERROR", msg=msg)
 
     if not Process.objects.filter(
-        id=process_id, action_id=action_id, object_id=action_target.id, object_type=action_target.type.value
+        id=process_id, action_id=action_id, target_id=action_target.id, target_type=action_target.type.value
     ).exists():
         raise NotFound(f"Process with id {process_id} do not exist")

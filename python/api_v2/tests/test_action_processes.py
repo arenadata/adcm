@@ -16,7 +16,7 @@ from typing import Any, Collection, Literal
 from uuid import uuid4
 
 from adcm.tests.client import APINode
-from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.converters import core_type_to_model, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.legacy.issue import add_concern_to_object
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
@@ -31,7 +31,7 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
+from cm.legacy.services.action_process.types import ProcessContext, ProcessState, ProcessStepState
 from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.concern import create_issue
 from cm.legacy.services.job.run.repo import ActionRepoImpl
@@ -59,7 +59,7 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from infra.services import get_config_service, get_wizard_service
@@ -202,9 +202,16 @@ class TestActionProcess(BaseAPITestCase):
     def submit_step(process_id: int, object_: CoreObjectDescriptor, payload: SubmitStepPayload, action_id: int):
         process = repo.retrieve_process(process_id=process_id)
         action_info = ActionRepoImpl.get_action(id=action_id)
+        object_orm = core_type_to_model(object_.type).objects.get(id=object_.id)
         context = OperationContext(
-            target=object_,
-            action=action_info,
+            process_context=ProcessContext(
+                action=action_info,
+                action_orm=Action.objects.get(id=action_id),
+                owner=object_,
+                owner_orm=object_orm,
+                target=ActionTargetDescriptor(id=object_.id, type=object_.type),
+                target_orm=object_orm,
+            ),
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
         context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
@@ -249,12 +256,12 @@ class TestActionProcess(BaseAPITestCase):
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
                     self.assertEqual(
                         Process.objects.filter(
-                            object_id=obj.pk, object_type=orm_object_to_core_type(obj).value
+                            target_id=obj.pk, target_type=orm_object_to_core_type(obj).value
                         ).count(),
                         1,
                     )
 
-                    process = Process.objects.get(object_id=obj.pk, object_type=orm_object_to_core_type(obj).value)
+                    process = Process.objects.get(target_id=obj.pk, target_type=orm_object_to_core_type(obj).value)
 
                     flags = ConcernItem.objects.filter(
                         owner_id=self.cluster_1.pk,
@@ -602,13 +609,20 @@ class TestActionProcess(BaseAPITestCase):
 
         context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
 
+        action_id = self.process_action_of_cluster.pk
+
         fill_step_spec(
             step_id=process.current_step_id,
             context=RenderStepContext(
                 process_id=process.id,
-                action_id=self.process_action_of_cluster.pk,
-                target=orm_object_to_core_descriptor(self.cluster_2),
-                owner_prototype_id=self.cluster_1.prototype_id,
+                process_context=ProcessContext(
+                    action=ActionRepoImpl.get_action(id=action_id),
+                    action_orm=Action.objects.get(id=action_id),
+                    owner=orm_object_to_core_descriptor(self.cluster_2),
+                    owner_orm=self.cluster_2,
+                    target=ActionTargetDescriptor(id=self.cluster_2.id, type=ADCMCoreType.CLUSTER),
+                    target_orm=self.cluster_2,
+                ),
             ),
             context_gatherer=context_gatherer,
         )

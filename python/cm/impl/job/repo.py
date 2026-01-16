@@ -13,17 +13,26 @@
 from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
-from typing import Final, Iterable
+from typing import Final, Iterable, cast
 import operator
 
 from core.legacy.job.types import ExecutionStatus, Job, JobParams, JobSpec, ScriptType, StateChanges, TaskMappingDelta
-from core.types import ActionID, CoreObjectDescriptor, HostGroupDescriptor, HostID, TaskID
+from core.types import (
+    ActionID,
+    ActionTargetDescriptor,
+    CoreObjectDescriptor,
+    ExtraActionTargetType,
+    HostGroupDescriptor,
+    HostID,
+    TaskID,
+)
 from django.db.models import F, Value
 import core
 
-from cm.converters import core_type_to_model, model_name_to_core_type
+from cm.converters import core_type_to_model, model_name_to_core_type, orm_object_to_core_descriptor
 from cm.models import (
     ADCM,
+    Action,
     ActionHostGroup,
     ADCMCoreType,
     Cluster,
@@ -85,6 +94,45 @@ class JobRepo(core.job.JobRepoI):
         )
 
         return tuple(map(_dict_to_job_spec, query))
+
+    # copied from cm.legacy.services.job.action._ActionLaunchObjects
+    def find_action_owner(self, action_id: ActionID, target: ActionTargetDescriptor) -> CoreObjectDescriptor:
+        match target.type:
+            case ADCMCoreType.HOST:
+                is_host_action, owner_type, owner_prototype_id = Action.objects.values_list(
+                    "host_action", "prototype__type", "prototype_id"
+                ).get(id=action_id)
+                cluster_id = Host.objects.values_list("cluster_id", flat=True).get(id=target.id)
+                if is_host_action and cluster_id:
+                    match owner_type:
+                        case "component":
+                            id_ = Component.objects.values_list("id", flat=True).get(
+                                cluster_id=cluster_id, prototype_id=owner_prototype_id
+                            )
+                            type_ = ADCMCoreType.COMPONENT
+                        case "service":
+                            id_ = Service.objects.values_list("id", flat=True).get(
+                                cluster_id=cluster_id, prototype_id=owner_prototype_id
+                            )
+                            type_ = ADCMCoreType.SERVICE
+                        case "cluster":
+                            id_ = cluster_id
+                            type_ = ADCMCoreType.CLUSTER
+                        case _:
+                            message = f"Can't handle {owner_type} type for owner of host action detection"
+                            raise NotImplementedError(message)
+                else:
+                    id_ = target.id
+                    type_ = target.type
+
+                return CoreObjectDescriptor(id=id_, type=type_)
+
+            case ExtraActionTargetType.ACTION_HOST_GROUP:
+                owner_orm = cast(Cluster | Service | Component, ActionHostGroup.objects.get(id=target.id).object)
+                return orm_object_to_core_descriptor(object_=owner_orm)
+
+            case _:  # cluster, service, component, provider
+                return CoreObjectDescriptor(id=target.id, type=target.type)
 
     # create
 

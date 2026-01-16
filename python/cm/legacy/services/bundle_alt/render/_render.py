@@ -24,6 +24,7 @@ from core.legacy.bundle_alt.schema import ActionProcessStage, DynamicScriptsSche
 from core.legacy.bundle_alt.validation import check_action_hc_acl_rules
 from core.legacy.job.types import JobSpec
 from core.templates import RendererEnv, Template, get_renderer
+from core.types import ClusterID
 import core
 
 from cm.legacy.services.action_process import repo
@@ -31,7 +32,7 @@ from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_e
 from cm.legacy.services.bundle_alt.load import parse_config_jinja
 from cm.legacy.services.bundle_alt.render._context import ActionArgs, ContextGatherer, TaskArgs
 from cm.legacy.utils import decrypt_secrets
-from cm.models import Cluster, Component, PrototypeConfig, Service
+from cm.models import ActionHostGroup, Cluster, Component, Host, PrototypeConfig, Service
 
 
 @dataclass(slots=True)
@@ -129,7 +130,9 @@ def render_hc_template(
         context_args=context_args,
     )
     rules = [core.mapping.MappingRule(**rule) for rule in raw]
-    _validate_mapping_spec(spec=rules, object_=context_args.target_object)
+
+    cluster_id = _retrieve_related_cluster_id(object_=context_args.target_object)
+    _validate_mapping_spec(spec=rules, cluster_id=cluster_id)
 
     return rules
 
@@ -168,7 +171,17 @@ def _ensure_render_result_is_list_of_dicts(value: Any) -> list[dict]:
     return value
 
 
-def _validate_mapping_spec(spec: list[core.mapping.MappingRule], object_: Cluster | Service | Component) -> None:
-    cluster_id = object_.pk if isinstance(object_, Cluster) else object_.cluster_id  # pyright: ignore [reportAttributeAccessIssue]
+def _validate_mapping_spec(spec: list[core.mapping.MappingRule], cluster_id: ClusterID) -> None:
     db_component_keys = repo.retrieve_cluster_component_definition_keys(cluster_id=cluster_id)
     check_action_hc_acl_rules(hostcomponentmap=[asdict(rule) for rule in spec], definitions=db_component_keys)
+
+
+def _retrieve_related_cluster_id(object_: Cluster | Service | Component | Host | ActionHostGroup) -> ClusterID:
+    if isinstance(object_, ActionHostGroup):
+        return _retrieve_related_cluster_id(object_=object_.object)
+
+    elif isinstance(object_, Cluster):
+        return object_.id
+
+    else:
+        return object_.cluster_id

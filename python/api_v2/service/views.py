@@ -380,6 +380,19 @@ class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
     ...
 
 
+@document_action_process_viewset(object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup")
+@audit_action_process_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(
+    object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup"
+)
+class ServiceActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
+    ...
+
+
 @document_config_viewset(object_type="service")
 @audit_config_viewset(type_in_name="Service", retrieve_owner=parent_service_from_lookup)
 class ServiceConfigViewSet(ConfigLogViewSet):

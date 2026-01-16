@@ -13,6 +13,7 @@
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+from api_v2.generic.action.process.views import ActionProcessViewSet, ProcessStepViewSet
 from api_v2.generic.action_host_group.views import (
     ActionHostGroupActionsViewSet,
     ActionHostGroupHostsViewSet,
@@ -22,35 +23,49 @@ from api_v2.generic.action_host_group.views import (
 ACTION_PREFIX = "actions"
 HOST_PREFIX = "hosts"
 ACTION_HOST_GROUPS_PREFIX = "action-host-groups"
+PROCESS_PREFIX = "processes"
+STEP_PREFIX = "steps"
 
 
 def add_action_host_groups_routers(
     ahg_viewset: type[ActionHostGroupViewSet],
     ahg_actions_viewset: type[ActionHostGroupActionsViewSet],
     ahg_hosts_viewset: type[ActionHostGroupHostsViewSet],
+    ahg_process_viewset: type[ActionProcessViewSet],
+    ahg_process_step_viewset: type[ProcessStepViewSet],
     parent_router: NestedSimpleRouter | SimpleRouter,
     parent_prefix: str,
     lookup: str,
 ) -> tuple[NestedSimpleRouter, ...]:
-    action_host_groups_router = NestedSimpleRouter(
-        parent_router=parent_router, parent_prefix=parent_prefix, lookup=lookup
-    )
-    action_host_groups_router.register(
-        prefix=ACTION_HOST_GROUPS_PREFIX, viewset=ahg_viewset, basename=f"{lookup}-action-host-group"
-    )
+    ahg_router = NestedSimpleRouter(parent_router=parent_router, parent_prefix=parent_prefix, lookup=lookup)
+    ahg_router.register(prefix=ACTION_HOST_GROUPS_PREFIX, viewset=ahg_viewset, basename=f"{lookup}-action-host-group")
 
-    action_host_groups_actions_router = NestedSimpleRouter(
-        parent_router=action_host_groups_router, parent_prefix=ACTION_HOST_GROUPS_PREFIX, lookup="action_host_group"
+    ahg_actions_router = NestedSimpleRouter(
+        parent_router=ahg_router, parent_prefix=ACTION_HOST_GROUPS_PREFIX, lookup="action_host_group"
     )
-    action_host_groups_actions_router.register(
+    ahg_actions_router.register(
         prefix=ACTION_PREFIX, viewset=ahg_actions_viewset, basename=f"{lookup}-action-host-group-action"
     )
 
-    action_host_groups_hosts_router = NestedSimpleRouter(
-        parent_router=action_host_groups_router, parent_prefix=ACTION_HOST_GROUPS_PREFIX, lookup="action_host_group"
+    ahg_hosts_router = NestedSimpleRouter(
+        parent_router=ahg_router, parent_prefix=ACTION_HOST_GROUPS_PREFIX, lookup="action_host_group"
     )
-    action_host_groups_hosts_router.register(
+    ahg_hosts_router.register(
         prefix=HOST_PREFIX, viewset=ahg_hosts_viewset, basename=f"{lookup}-action-host-group-host"
     )
 
-    return action_host_groups_router, action_host_groups_actions_router, action_host_groups_hosts_router
+    ahg_processes_router = NestedSimpleRouter(
+        parent_router=ahg_actions_router, parent_prefix=ACTION_PREFIX, lookup="action"
+    )
+    ahg_processes_router.register(
+        prefix=PROCESS_PREFIX, viewset=ahg_process_viewset, basename=f"{lookup}-action-host-group-action-process"
+    )
+
+    ahg_process_step_router = NestedSimpleRouter(
+        parent_router=ahg_processes_router, parent_prefix=PROCESS_PREFIX, lookup="process"
+    )
+    ahg_process_step_router.register(
+        prefix=STEP_PREFIX, viewset=ahg_process_step_viewset, basename=f"{lookup}-action-host-group-action-process-step"
+    )
+
+    return ahg_router, ahg_actions_router, ahg_hosts_router, ahg_processes_router, ahg_process_step_router

@@ -16,7 +16,7 @@ from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.generic.action.process.views import ContextGatherer
-from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from infra.services import get_config_service, get_wizard_service
 import core
 
@@ -33,7 +33,7 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.legacy.services.action_process.types import ProcessStepState
+from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
@@ -70,7 +70,13 @@ class TestActionProcessLogic(BaseTestCase):
                 }
             )
         process = Process.objects.create(
-            action=action, object_id=0, object_type=ADCMCoreType.CLUSTER, flow_spec=flow_spec, sync_key=uuid4()
+            action=action,
+            target_id=0,
+            target_type=ADCMCoreType.CLUSTER,
+            owner_id=0,
+            owner_type=ADCMCoreType.CLUSTER,
+            flow_spec=flow_spec,
+            sync_key=uuid4(),
         )
 
         steps_data = []
@@ -167,12 +173,20 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
         object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
         action_info = ActionRepoImpl.get_action(id=action.pk)
+        process_context = ProcessContext(
+            action=action_info,
+            action_orm=action,
+            owner=object_,
+            owner_orm=cluster,
+            target=ActionTargetDescriptor(id=object_.id, type=object_.type),
+            target_orm=cluster,
+        )
 
         config_service = get_config_service()
 
         context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
 
-        process_id = initiate_process(target=object_, action=action_info, context_gatherer=context_gatherer)
+        process_id = initiate_process(process_context=process_context, context_gatherer=context_gatherer)
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertIsNotNone(ctx["current"])
@@ -185,8 +199,7 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
 
         process = repo.retrieve_process(process_id=process_id)
         context = OperationContext(
-            target=object_,
-            action=action_info,
+            process_context=process_context,
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
         payload = SubmitStepPayload(

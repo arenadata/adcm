@@ -13,12 +13,14 @@
 from typing import Iterable, Literal
 
 from audit.models import AuditLogOperationType
-from cm.converters import orm_object_to_core_descriptor
+from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
-from cm.legacy.services.action_process.types import ProcessStepState
+from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from core.types import ActionTargetDescriptor
 from infra.services import get_config_service, get_wizard_service
 from rest_framework.status import (
     HTTP_200_OK,
@@ -138,9 +140,14 @@ class TestActionProcessAudit(BaseAPITestCase):
                     step_id=target_operation_step.id,
                     context=RenderStepContext(
                         process_id=process.id,
-                        action_id=action.id,
-                        target=orm_object_to_core_descriptor(obj),
-                        owner_prototype_id=obj.prototype_id,
+                        process_context=ProcessContext(
+                            action=ActionRepoImpl.get_action(id=action.id),
+                            action_orm=action,
+                            owner=orm_object_to_core_descriptor(obj),
+                            owner_orm=obj,
+                            target=ActionTargetDescriptor(id=obj.id, type=orm_object_to_action_target_type(obj)),
+                            target_orm=obj,
+                        ),
                     ),
                     context_gatherer=context_gatherer,
                 )

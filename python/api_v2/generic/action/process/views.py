@@ -13,11 +13,11 @@
 from dataclasses import asdict
 from typing import Any
 
-from adcm.mixins import GetParentObjectMixin, ParentObject
+from adcm.mixins import GetParentObjectMixin
 from cm.converters import (
     core_type_to_model,
+    orm_object_to_action_target_descriptor,
     orm_object_to_core_descriptor,
-    orm_object_to_core_type,
 )
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process import repo
@@ -31,18 +31,27 @@ from cm.legacy.services.action_process.errors import (
 )
 from cm.legacy.services.action_process.operations import OperationContext, initiate_process, perform_operation
 from cm.legacy.services.action_process.schema_validation import Configuration
-from cm.legacy.services.action_process.types import Step
+from cm.legacy.services.action_process.types import ProcessContext, Step
 from cm.legacy.services.bundle_alt.render import ContextGatherer
 from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
-from cm.models import Action, Process, ProcessStep, ProcessStepInput, PrototypeConfig, TaskLog
-from core.legacy.job.types import ActionInfo
+from cm.models import (
+    Action,
+    Process,
+    ProcessStep,
+    ProcessStepInput,
+    PrototypeConfig,
+    TaskLog,
+)
+from core.legacy.job import JobService
 from core.types import ActionProcessID, CoreObjectDescriptor
+from dishka import FromDishka
 from django.conf import settings
 from django.db.transaction import atomic
 from django.http.response import Http404
+from infra.di.django import inject
 from infra.services import get_config_service, get_wizard_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -105,11 +114,12 @@ class ActionProcessViewSet(
             case _:
                 raise NotImplementedError(f"No serializer for action: {self.action}")
 
-    def get_parent_and_action_supporting_process(self) -> tuple[ParentObject, ActionInfo]:
-        parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+    def get_process_context(self, job_service: JobService) -> ProcessContext:
+        target_orm = self.get_parent_object(raise_=NotFound("Parent object not found"))
 
         try:
             action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
+            action_orm = Action.objects.get(id=self.kwargs["action_pk"])
         except Action.DoesNotExist:
             raise NotFound("Action not found") from None
 
@@ -119,12 +129,22 @@ class ActionProcessViewSet(
                 msg=f"Action #{action.id} does not support action process functionality.",
             )
 
-        return parent_object, action
+        target = orm_object_to_action_target_descriptor(target_orm)
+        owner = job_service.repo.find_action_owner(action_id=action.id, target=target)
+        owner_orm = core_type_to_model(owner.type).objects.get(id=owner.id)
 
-    def retrieve(self, request, *args, pk: str, **kwargs):  # noqa: ARG002
-        parent_object, action_info = self.get_parent_and_action_supporting_process()
+        return ProcessContext(
+            action=action, action_orm=action_orm, target=target, target_orm=target_orm, owner=owner, owner_orm=owner_orm
+        )
+
+    @inject
+    def retrieve(self, request, *args, pk: str, job_service: FromDishka[JobService], **kwargs):  # noqa: ARG002
+        process_context = self.get_process_context(job_service=job_service)
+
         self.check_permissions_for_run(
-            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
+            request=request,
+            action=process_context.action_orm,
+            parent_object=process_context.cluster_relative_object(),
         )
         try:
             instance = self.get_object()
@@ -138,28 +158,36 @@ class ActionProcessViewSet(
         serializer = self.get_serializer(instance, context=context)
         return Response(serializer.data)
 
-    def create(self, request, *args, **kwargs):  # noqa: ARG002
-        target_orm, action_info = self.get_parent_and_action_supporting_process()
-        action = Action.objects.get(pk=action_info.id)
+    @inject
+    def create(self, request, *args, job_service: FromDishka[JobService], **kwargs):  # noqa: ARG002
+        process_context = self.get_process_context(job_service=job_service)
+        cluster_relative_object_orm = process_context.cluster_relative_object()
+        cluster_relative_object_cod = process_context.cluster_relative_object(as_descriptor=True)
 
-        self.check_permissions_for_run(request=request, action=action, parent_object=target_orm)
-        check_no_blocking_concerns(lock_owner=target_orm, action_name=action_info.name)
+        self.check_permissions_for_run(
+            request=request, action=process_context.action_orm, parent_object=cluster_relative_object_orm
+        )
+        check_no_blocking_concerns(lock_owner=cluster_relative_object_orm, action_name=process_context.action.name)
 
         # TODO: check if Process already exists
         with atomic():
             process_id = initiate_process(
-                target=orm_object_to_core_descriptor(target_orm),
-                action=action_info,
+                process_context=process_context,
                 context_gatherer=ContextGatherer(
                     config_service=get_config_service(), wizard_service=get_wizard_service()
                 ),
             )
+
             flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
-            targets = [CoreObjectDescriptor(id=target_orm.id, type=orm_object_to_core_type(target_orm))]
-            changed = raise_flag_for_process(flag=flag, on_objects=targets, action=action, action_owner=target_orm)
+            changed = raise_flag_for_process(
+                flag=flag,
+                on_objects=[cluster_relative_object_cod],
+                action=process_context.action_orm,
+                action_owner=cluster_relative_object_orm,
+            )
 
             if changed:
-                added = update_hierarchy_for_flag(flag=flag, on_objects=targets)
+                added = update_hierarchy_for_flag(flag=flag, on_objects=[cluster_relative_object_cod])
                 notify_about_redistributed_concerns_from_maps(added=added, removed={})
 
         context = {
@@ -175,12 +203,15 @@ class ActionProcessViewSet(
         return Response(data=serializer.data, status=HTTP_201_CREATED)
 
     @action(methods=["post"], detail=True, url_path="operation")
-    def operation(self, request, *_, pk: ActionProcessID, **_kw):  # noqa: ARG002
+    @inject
+    def operation(self, request, *_, pk: ActionProcessID, job_service: FromDishka[JobService], **_kw):  # noqa: ARG002
         process_id = int(pk)
-        parent_object, action_info = self.get_parent_and_action_supporting_process()
+        process_context = self.get_process_context(job_service=job_service)
 
         self.check_permissions_for_run(
-            request=request, action=Action.objects.get(pk=action_info.id), parent_object=parent_object
+            request=request,
+            action=Action.objects.get(pk=process_context.action.id),
+            parent_object=process_context.cluster_relative_object(),
         )
 
         serializer = self.get_serializer(data=request.data)
@@ -190,11 +221,7 @@ class ActionProcessViewSet(
         config_service = get_config_service()
         context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
 
-        context = OperationContext(
-            target=orm_object_to_core_descriptor(object_=parent_object),
-            action=action_info,
-            config_processor=self._convert_configuration,
-        )
+        context = OperationContext(process_context=process_context, config_processor=self._convert_configuration)
         perform_operation(
             process_id=process_id,
             payload=payload,

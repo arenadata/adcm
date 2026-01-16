@@ -180,7 +180,7 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> 
             elif parameter.type == "variant":
                 source = parameter.limits["source"]
                 if source["type"] == "config":
-                    name = (source["name"],)
+                    name = tuple(source["name"].split("/"))
                     if name not in definition.parameters:
                         dependency_name = config.names.level_names_to_full_name(name)
                         message = (

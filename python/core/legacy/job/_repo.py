@@ -14,7 +14,7 @@ from typing import Iterable, Protocol
 
 from core.legacy.job.dto import LogCreateDTO, TaskCreateDTO, TaskUpdateMainFieldsDTO
 from core.legacy.job.types import Job, JobSpec
-from core.types import ActionID, TaskID
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, TaskID
 
 
 class JobRepoI(Protocol):
@@ -24,6 +24,9 @@ class JobRepoI(Protocol):
         ...
 
     def find_scripts_of_action(self, action_id: ActionID) -> tuple[JobSpec, ...]:
+        ...
+
+    def find_action_owner(self, action_id: ActionID, target: ActionTargetDescriptor) -> CoreObjectDescriptor:
         ...
 
     # create

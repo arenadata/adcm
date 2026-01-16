@@ -168,8 +168,10 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         ]
         process = Process.objects.create(
             action=action,
-            object_id=1,
-            object_type="test_type",
+            target_id=1,
+            target_type="test_type",
+            owner_id=1,
+            owner_type="test_type",
             flow_spec=[
                 {
                     "name": "manage_ssl_stage",

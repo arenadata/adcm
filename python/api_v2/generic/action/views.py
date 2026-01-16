@@ -15,8 +15,6 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from cm.converters import (
     orm_object_to_action_target_descriptor,
-    orm_object_to_action_target_type,
-    orm_object_to_core_descriptor,
 )
 from cm.errors import AdcmEx
 from cm.models import (
@@ -29,7 +27,7 @@ from cm.models import (
 )
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.types import AssociatedProcess
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, ExtraActionTargetType
 from dishka import FromDishka
 from django.conf import settings
 from django.db.models import Q
@@ -202,13 +200,15 @@ class ActionViewSet(
         # processes = [last created process] - If processes are is supported by the action and the processes exists.
         processes = None
 
-        if action_.wizard_template and orm_object_to_action_target_type(object_=self.parent_object) in (
+        action_target = orm_object_to_action_target_descriptor(object_=self.parent_object)
+        if action_.wizard_template and action_target.type in (
             ADCMCoreType.CLUSTER,
             ADCMCoreType.SERVICE,
             ADCMCoreType.COMPONENT,
             ADCMCoreType.HOST,
+            ExtraActionTargetType.ACTION_HOST_GROUP,
         ):
-            processes = get_action_processes(action=action_, object_=orm_object_to_core_descriptor(self.parent_object))
+            processes = get_action_processes(action=action_, object_=action_target)
 
         serializer = self.get_serializer_class()(
             instance=action_,
