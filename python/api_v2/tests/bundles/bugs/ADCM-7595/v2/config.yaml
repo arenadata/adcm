@@ -1,0 +1,24 @@
+---
+- type: cluster
+  name: cluster_without_config
+  version: &version '2.2'
+  edition: community
+  config_group_customization: true
+
+  upgrade:
+    - name: Upgrade 1
+      versions:
+        min: 1.1
+        max: 1.1
+      description: New cool upgrade
+      states:
+        available: any
+        on_success: upgradable
+
+- name: service_1
+  type: service
+  version: *version
+
+  components:
+    component_1:
+      constraint: [ 0, + ]

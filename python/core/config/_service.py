@@ -56,6 +56,7 @@ from core.types import (
     PrototypeID,
     TaskDescriptor,
 )
+import core.config
 
 T = TypeVar("T")
 
@@ -126,7 +127,11 @@ class ConfigService:
     def retrieve_jsonschema(self, owner: ConfigOwner | HostGroupConfigOwner) -> dict:
         # scenario-like method, may be moved
 
-        specification, defaults = self.retrieve_specification_with_defaults(owner=owner.descriptor)
+        try:
+            specification, defaults = self.retrieve_specification_with_defaults(owner=owner.descriptor)
+        except core.config.ObjectWithoutConfigError:
+            specification = spec.FullSpec()
+            defaults = Defaults()
 
         match owner:
             case ConfigOwner(descriptor=config_source):

@@ -30,10 +30,12 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
     Host,
     JobLog,
     JobStatus,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     Provider,
@@ -47,7 +49,7 @@ from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
@@ -338,3 +340,15 @@ class APIV2Mixin:
             assert response.status_code == HTTP_201_CREATED, f"Add host to {ahg} failed: {response.status_code}"
 
         return ahg
+
+    def create_config_host_group(
+        self, owner: Cluster | Service | Component | Provider | Host, name: str, description: str = ""
+    ) -> ConfigHostGroup:
+        response = self.client.v2[owner, "config-groups"].post(data={"name": name, "description": description})
+        assert response.status_code == HTTP_201_CREATED, f"ConfigHostGroup creation failed: {response.status_code}"
+
+        return ConfigHostGroup.objects.get(id=response.json()["id"])
+
+    def set_maintenance_mode(self, obj: Service | Component | Host, value: MaintenanceMode) -> None:
+        response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
+        assert response.status_code == HTTP_200_OK, f"Setting maintenance mode failed: {response.status_code}"
