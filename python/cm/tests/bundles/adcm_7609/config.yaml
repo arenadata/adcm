@@ -1,0 +1,15 @@
+- type: cluster
+  name: cl
+  version: 1
+
+  actions:
+    aa:
+      type: task
+      scripts_template:
+        file:
+          path: wizard_jinja/scripts/template.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+

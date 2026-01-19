@@ -13,9 +13,13 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from core.bundle import BundleContext
+from core.dynamic_bundle.render import BundleRenderer
+from core.templates import parse_template
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.models import Action, JobLog
 from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -54,3 +58,28 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         self.assertEqual(jobs[0].name, "first")
         config = task_mock.target_task.config
         self.assertEqual(config, input_config["config"])
+
+
+class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+    def test_adcm_7609(self):
+        bundle_path = Path(__file__).parent / "bundles" / "adcm_7609"
+        bundle = self.add_bundle(bundle_path)
+        cluster = self.add_cluster(bundle=bundle, name="aa")
+        action = Action.objects.get(name="aa", prototype_id=cluster.prototype_id)
+
+        template = parse_template(action.scripts_template)
+        args = TaskArgs(target_object=cluster, action=action)
+        context = BundleContext(
+            # we'll use static path for this case
+            root=bundle_path,
+            contract_version="1.0",
+        )
+
+        with self.container() as container:
+            renderer = container.get(BundleRenderer[ActionArgs, TaskArgs])
+            scripts = renderer.render_scripts_for_action(
+                template=template, args=args, bundle_context=context, action_allow_to_terminate=False
+            )
+
+        self.assertEqual(len(scripts), 1)
+        self.assertEqual(scripts[0].script, "wizard_jinja/scripts/sleep.yaml")

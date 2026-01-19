@@ -47,7 +47,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         return self.bundle_service.parse_to_spec_with_defaults(
             data=data,
             bundle_context=bundle_context,
-            template_path=template.file.path.parent,
+            template_path=template.file.path,
         )
 
     def render_scripts_for_action(
@@ -66,7 +66,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         return self.bundle_service.parse_to_action_scripts(
             data=data,
             bundle_context=bundle_context,
-            template_path=template.file.path.parent,
+            template_path=template.file.path,
             action_allow_to_terminate=action_allow_to_terminate,
         )
 
@@ -86,7 +86,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         return self.bundle_service.parse_to_wizard_scripts(
             data=data,
             bundle_context=bundle_context,
-            template_path=template.file.path.parent,
+            template_path=template.file.path,
             action_allow_to_terminate=action_allow_to_terminate,
         )
 
