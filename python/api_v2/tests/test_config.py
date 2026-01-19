@@ -15,6 +15,8 @@ from unittest.mock import patch
 import json
 import unittest
 
+from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.client import ADCMTestClient
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.models import (
@@ -33,6 +35,8 @@ from cm.models import (
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from init_db import init
+from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -43,8 +47,9 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from rest_framework.test import APITestCase
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
 
 CONFIGS = "configs"
 CONFIG_SCHEMA = "config-schema"
@@ -3073,3 +3078,100 @@ class TestPatternInConfig(BaseAPITestCase):
                 response = self.run_action(target=self.cluster, action=action, config=ok_data)
 
             self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
+    client: ADCMTestClient
+    client_class = ADCMTestClient
+
+    _empty_schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Configuration",
+        "description": "",
+        "readOnly": False,
+        "adcmMeta": {
+            "isAdvanced": False,
+            "isInvisible": False,
+            "activation": None,
+            "synchronization": None,
+            "nullValue": None,
+            "isSecret": False,
+            "stringExtra": None,
+            "enumExtra": None,
+        },
+        "type": "object",
+        "properties": {},
+        "additionalProperties": False,
+        "required": [],
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.bundles_dir = Path(__file__).parent / "bundles"
+
+        init_roles()
+        init()
+
+    def setUp(self):
+        super().setUp()
+
+        self.client.login(username="admin", password="admin")
+
+        bundle_v1 = self.create_bundle(src=self.bundles_dir / "bugs" / "ADCM-7595" / "v1")
+        bundle_v2 = self.create_bundle(src=self.bundles_dir / "bugs" / "ADCM-7595" / "v2")
+
+        self.upgrade = Upgrade.objects.get(name="Upgrade 1", bundle=bundle_v2)
+
+        self.cluster = self.create_cluster(bundle=bundle_v1, name="Cluster with no config")
+        self.service = self.create_services(names=["service_1"], cluster=self.cluster)[0]
+        self.component = Component.objects.get(service=self.service, prototype__name="component_1")
+
+    def check_update_config_response(
+        self, obj: Cluster | Service | Component | ConfigHostGroup, expected_code: int, obj_repr: str = ""
+    ) -> None:
+        response = self.client.v2[obj, "configs"].post(
+            data={"description": "", "adcmMeta": {}, "config": {"float_field": 3.3}}
+        )
+        self.assertEqual(response.status_code, expected_code)
+
+        if expected_code != HTTP_201_CREATED:
+            expected_error = {
+                "code": "NO_CONFIG_ERROR",
+                "level": "error",
+                "desc": f"Unexpectedly got object without configuration: {obj_repr}",
+            }
+            self.assertDictEqual(response.json(), expected_error)
+
+    def test_adcm_7595_update_config_and_get_config_schema_of_object_without_config(self):
+        chgs = []
+        objects = [self.cluster, self.service, self.component]
+        for object_ in objects:
+            chg = self.create_config_host_group(owner=object_, name=f"{object_.__class__.__name__}-chg")
+            chgs.append(chg)
+
+        for object_ in [*objects, *chgs]:
+            response = self.client.v2[object_, "config-schema"].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertTrue(response.json()["properties"])
+            self.check_update_config_response(obj=object_, expected_code=HTTP_201_CREATED)
+
+        # upgrade cluster to version without configs
+        self.assertEqual(self.cluster.prototype.version, "1.1")
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.cluster.refresh_from_db()
+        self.assertEqual(self.cluster.prototype.version, "2.2")
+
+        for object_ in [*objects, *chgs]:
+            response = self.client.v2[object_, "config-schema"].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertFalse(response.json()["properties"])
+            self.assertEqual(response.json(), self._empty_schema)
+
+            if isinstance(object_, ConfigHostGroup):
+                obj_repr = f"{object_.object.__class__.__name__.lower()} #{object_.object.id}"
+            else:
+                obj_repr = f"{object_.__class__.__name__.lower()} #{object_.id}"
+            self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
