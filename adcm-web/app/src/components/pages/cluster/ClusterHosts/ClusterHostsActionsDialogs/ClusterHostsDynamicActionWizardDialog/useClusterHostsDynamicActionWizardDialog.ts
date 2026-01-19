@@ -1,4 +1,5 @@
 import { useDispatch, useStore } from '@hooks';
+import { useRemoveActionIdFromUrl } from '@hooks/useRemoveActionIdFromUrl/useRemoveActionIdFromUrl';
 import { useEffect, useMemo, useState } from 'react';
 import { cleanupClusterHostsWizard, getProcessOnActionClick } from '@store/adcm/cluster/hosts/hostsWizardSlice';
 import {
@@ -14,6 +15,7 @@ import { defaultWizardTitle } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useClusterHostsDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
+  const removeActionIdFromUrl = useRemoveActionIdFromUrl();
   const actionDetails = useStore((s) => s.adcm.hostsDynamicActions.dialog.actionDetails);
   const cluster = useStore((s) => s.adcm.cluster.cluster);
   const host = useStore((s) => s.adcm.hostsDynamicActions.dialog.host);
@@ -74,8 +76,9 @@ export const useClusterHostsDynamicActionWizardDialog = () => {
           actionId: savedActionData.actionId,
         }),
       );
+      removeActionIdFromUrl();
     }
-  }, [dispatch, actionDetails?.processes, savedActionData]);
+  }, [dispatch, actionDetails?.processes, savedActionData, removeActionIdFromUrl]);
 
   const handleClose = () => {
     dispatch(closeClusterHostsWizardDialog());

@@ -2,6 +2,7 @@ import type { AdcmConcerns, AdcmConcernServicePlaceholder } from '@models/adcm/c
 import { AdcmConcernPlaceholderType } from '@models/adcm/concern';
 import { generatePath } from 'react-router-dom';
 import qs from 'qs';
+import { searchParamActionId } from '@constants';
 
 export interface ConcernObjectPathsData {
   path?: string;
@@ -22,9 +23,10 @@ const concernPlaceholderTypeUrlDict: Record<string, string> = {
   [AdcmConcernPlaceholderType.Job]: '/jobs/:taskId/', // backend sends taskId as jobId
   [AdcmConcernPlaceholderType.Prototype]: '',
   [AdcmConcernPlaceholderType.Adcm]: '',
-  [AdcmConcernPlaceholderType.Cluster]: '/clusters/:clusterId/',
-  [AdcmConcernPlaceholderType.Service]: '/clusters/:clusterId/services/:serviceId/',
-  [AdcmConcernPlaceholderType.Component]: '/clusters/:clusterId/services/:serviceId/components/:componentId/',
+  [AdcmConcernPlaceholderType.Cluster]: '/clusters/:clusterId/overview',
+  [AdcmConcernPlaceholderType.Service]: '/clusters/:clusterId/services/:serviceId/primary-configuration',
+  [AdcmConcernPlaceholderType.Component]:
+    '/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration',
   [AdcmConcernPlaceholderType.Host]: '/hosts/:hostId/',
   [AdcmConcernPlaceholderType.Provider]: '/hostproviders/:providerId/',
 };
@@ -75,7 +77,7 @@ export const getConcernLinkObjectPathsDataArray = (concerns?: AdcmConcerns[]): A
 
       const actionId = placeholderItem.params.actionId;
       if (actionId !== undefined) {
-        path = addQueryParamsToPath(path, { actionId });
+        path = addQueryParamsToPath(path, { [searchParamActionId]: actionId });
       }
 
       linksDataMap.set(key, {
