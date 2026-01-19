@@ -384,6 +384,7 @@ SPECTACULAR_SETTINGS = {
         "RoleTypeEnum": "rbac.models.RoleTypes",
     },
     "GENERIC_ADDITIONAL_PROPERTIES": None,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }
 
 USERNAME_MAX_LENGTH = 150
