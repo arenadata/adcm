@@ -11,6 +11,7 @@ import {
 import { useEffect } from 'react';
 import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useOpenActionDialogFromUrl, componentActionDialogConfig } from '@hooks/useOpenActionDialogFromUrl';
 
 export const useRequestServiceComponent = () => {
   const dispatch = useDispatch();
@@ -35,4 +36,6 @@ export const useRequestServiceComponent = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetServiceComponent, () => {}, 0, [clusterId, serviceId, componentId]);
+
+  useOpenActionDialogFromUrl(componentActionDialogConfig);
 };

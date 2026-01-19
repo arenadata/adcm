@@ -9,6 +9,7 @@ import {
   loadClustersDynamicActions,
 } from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useOpenActionDialogFromUrl, clusterActionDialogConfig } from '@hooks/useOpenActionDialogFromUrl';
 
 export const useRequestCluster = () => {
   const dispatch = useDispatch();
@@ -38,6 +39,8 @@ export const useRequestCluster = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId]);
+
+  useOpenActionDialogFromUrl(clusterActionDialogConfig);
 
   return {
     accessCheckStatus,

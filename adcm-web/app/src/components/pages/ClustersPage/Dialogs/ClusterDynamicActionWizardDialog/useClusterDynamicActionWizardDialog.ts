@@ -9,11 +9,13 @@ import {
   setIsContinueProcessModal,
 } from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useDispatch, useStore } from '@hooks';
+import { useRemoveActionIdFromUrl } from '@hooks/useRemoveActionIdFromUrl/useRemoveActionIdFromUrl';
 import { useEffect, useMemo, useState } from 'react';
 import { defaultWizardTitle } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useClusterDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
+  const removeActionIdFromUrl = useRemoveActionIdFromUrl();
   const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
   const cluster = useStore((s) => s.adcm.clustersDynamicActions.dialog.cluster);
   const processWithStages = useStore((s) => s.adcm.clustersWizard.process);
@@ -66,8 +68,9 @@ export const useClusterDynamicActionWizardDialog = () => {
           actionId: savedActionData.actionId,
         }),
       );
+      removeActionIdFromUrl();
     }
-  }, [dispatch, actionDetails?.processes, savedActionData]);
+  }, [dispatch, actionDetails?.processes, savedActionData, removeActionIdFromUrl]);
 
   const handleClose = () => {
     dispatch(closeClusterWizardDialog());
