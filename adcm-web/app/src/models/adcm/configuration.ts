@@ -51,6 +51,7 @@ export interface AdcmConfigShortView {
   isCurrent: boolean;
   creationTime: string; //ISO Date
   description: string;
+  createdBy: string;
 }
 
 export interface AdcmConfig extends AdcmConfigShortView {

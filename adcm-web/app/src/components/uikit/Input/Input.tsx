@@ -7,6 +7,7 @@ export interface InputProps extends FieldProps, React.InputHTMLAttributes<HTMLIn
   endAdornment?: React.ReactNode;
   startAdornment?: React.ReactNode;
   containerRef?: React.Ref<HTMLDivElement>;
+  customContent?: React.ReactNode;
 }
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
@@ -19,6 +20,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       disabled,
       containerRef,
       style,
+      customContent,
       ...props
     },
     ref,
@@ -28,7 +30,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={cn(className, fieldClasses)} ref={containerRef} style={style}>
         {startAdornment}
-        <input ref={ref} className={inputClasses} {...props} disabled={disabled} />
+        {customContent ? (
+          <div className={inputClasses} {...props}>
+            {customContent}
+          </div>
+        ) : (
+          <input ref={ref} className={inputClasses} {...props} disabled={disabled} />
+        )}
         {endAdornment}
       </div>
     );

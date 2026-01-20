@@ -54,6 +54,7 @@ const ConfigVersionCell: React.FC<ConfigVersionCellProps> = ({
         </div>
       </div>
       <div>{configVersion.creationTime ? prepareDate(configVersion.creationTime) : <>&nbsp;</>}</div>
+      <div className={s.configVersionCell__createdBy}>{configVersion.createdBy}</div>
       <div className={s.configVersionCell__description}>{configVersion.description}</div>
     </div>
   );
