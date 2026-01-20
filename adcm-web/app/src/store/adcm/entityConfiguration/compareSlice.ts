@@ -93,7 +93,15 @@ const entityConfigurationsCompareSlice = createSlice({
     });
     builder.addCase(getRightConfiguration.fulfilled, (state, action) => {
       const {
-        config: { config: configurationData, adcmMeta: attributes, id, creationTime, description, isCurrent },
+        config: {
+          config: configurationData,
+          adcmMeta: attributes,
+          id,
+          creationTime,
+          createdBy,
+          description,
+          isCurrent,
+        },
         schema,
       } = action.payload;
 
@@ -102,6 +110,7 @@ const entityConfigurationsCompareSlice = createSlice({
         creationTime,
         description,
         isCurrent,
+        createdBy,
         configuration: {
           configurationData,
           attributes,

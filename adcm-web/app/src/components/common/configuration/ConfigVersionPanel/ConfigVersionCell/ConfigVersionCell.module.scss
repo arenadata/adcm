@@ -4,6 +4,7 @@
     --config-version-cell-border-selected: var(--color-xgreen-saturated);
     --config-version-cell-background-selected: var(--color-xdark-new-full);
     --config-version-cell-background-hover: var(--color-xdark-new-50);
+    --config-version-cell-created-by-color: var(--color-xgray-lighter);
   }
 
   body.theme-light {
@@ -11,6 +12,7 @@
     --config-version-cell-border-selected: var(--color-xgreen-saturated);
     --config-version-cell-background-selected: var(--color-xgray-alt);
     --config-version-cell-background-hover: #EEF2F5;
+    --config-version-cell-created-by-color: var(--color-xgray-new-darker);
   }
 }
 
@@ -57,6 +59,11 @@
 
   &:hover {
     background-color: var(--config-version-cell-background-hover);
+  }
+
+  &__createdBy {
+    word-wrap: break-word;
+    color: var(--config-version-cell-created-by-color);
   }
 
   &__description {

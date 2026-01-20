@@ -22,24 +22,28 @@ const configs = [
     isCurrent: true,
     creationTime: '2023-09-27T10:29:11.735713Z',
     description: '',
+    createdBy: '',
   },
   {
     id: null,
     isCurrent: false,
     creationTime: '',
     description: 'Editing mode',
+    createdBy: '',
   },
   {
     id: 9,
     isCurrent: false,
     creationTime: '2023-09-27T10:29:02.053948Z',
     description: '',
+    createdBy: '',
   },
   {
     id: 4,
     isCurrent: false,
     creationTime: '2023-09-27T08:37:29.465944Z',
     description: 'init',
+    createdBy: '',
   },
 ];
 

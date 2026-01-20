@@ -19,6 +19,7 @@ export interface SingleSelectParams<T> {
   options: SelectOption<T>[];
   value: T | null;
   onChange: (value: T | null) => void;
+  renderValue?: (value: T | null, options: SelectOption<T>[]) => React.ReactNode;
 }
 
 interface CommonSelectParams {

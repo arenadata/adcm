@@ -2,12 +2,14 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { DialogV2, LabeledField, Select } from '@uikit';
 import type { AdcmConfigShortView, AdcmConfiguration, AdcmFullConfigurationInfo } from '@models/adcm';
+import type { SelectOption } from '@uikit/Select/Select.types';
 import CompareJson from '@uikit/CompareJson/CompareJson';
-import { dateToString } from '@utils/date/dateConvertUtils';
 import cn from 'classnames';
 import s from './ConfigurationCompareDialog.module.scss';
 import type { JSONObject } from '@models/json';
 import { getCompareView } from './CompareConfiguration.utils';
+import { prepareDate, renderConfigContent, createConfigSelectItem } from './ConfigurationCompareDialog.helpers';
+import { useStore } from '@hooks';
 
 export type ConfigurationsCompareOptions = {
   leftConfiguration: AdcmFullConfigurationInfo | null;
@@ -25,10 +27,6 @@ interface ConfigurationCompareDialogProps {
   configVersions: AdcmConfigShortView[];
 }
 
-const prepareDate = (value: string) => {
-  return dateToString(new Date(value), { toUtc: true });
-};
-
 const noDialogControl = <></>;
 
 const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
@@ -45,6 +43,8 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
   const [rightViewData, setRightViewData] = useState<JSONObject | null>(null);
   const isOpen = localLeftConfigId !== null && localRightConfigId !== null;
 
+  const username = useStore((state) => state.auth.username);
+
   const draftFullConfigurationInfo = useMemo<AdcmFullConfigurationInfo | null>(() => {
     if (draftConfiguration === null) return null;
 
@@ -52,10 +52,11 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
       id: 0,
       creationTime: '',
       description: '',
+      createdBy: username,
       isCurrent: false,
       configuration: draftConfiguration,
     };
-  }, [draftConfiguration]);
+  }, [draftConfiguration, username]);
 
   const localLeftConfiguration = localLeftConfigId === 0 ? draftFullConfigurationInfo : leftConfiguration;
   const localRightConfiguration = localRightConfigId === 0 ? draftFullConfigurationInfo : rightConfiguration;
@@ -89,20 +90,32 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
     }
   }, [setRightViewData, localRightConfiguration?.configuration]);
 
+  const ConfigSelectItem = useMemo(() => createConfigSelectItem(configVersions), [configVersions]);
+
   const configsOptions = useMemo(() => {
-    const configsOptions = configVersions.map((config) => ({
-      value: config.id,
-      label: `${prepareDate(config.creationTime)} - ${config.description || config.id}`,
-    }));
+    const options: SelectOption<number>[] = configVersions.map((config) => {
+      const date = prepareDate(config.creationTime);
+      const description = config.description || String(config.id);
+      return {
+        value: config.id,
+        label: `${date} - ${description}`,
+        ItemComponent: ConfigSelectItem,
+      };
+    });
 
     if (draftFullConfigurationInfo !== null) {
-      configsOptions.unshift({
+      options.unshift({
         value: 0,
         label: 'now - Draft Configuration',
+        ItemComponent: ConfigSelectItem,
       });
     }
-    return configsOptions;
-  }, [configVersions, draftFullConfigurationInfo]);
+    return options;
+  }, [configVersions, draftFullConfigurationInfo, ConfigSelectItem]);
+
+  const handleRenderConfigValue = (value: number | null) => {
+    return renderConfigContent(value, configVersions);
+  };
 
   if (!isOpen) return null;
 
@@ -117,10 +130,20 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
       <div>
         <div className={s.configurationCompareDialog__toolbar}>
           <LabeledField label="Left Configuration">
-            <Select options={configsOptions} value={localLeftConfigId} onChange={setLocalLeftConfigId} />
+            <Select
+              options={configsOptions}
+              value={localLeftConfigId}
+              onChange={setLocalLeftConfigId}
+              renderValue={handleRenderConfigValue}
+            />
           </LabeledField>
           <LabeledField label="Right Configuration">
-            <Select options={configsOptions} value={localRightConfigId} onChange={setLocalRightConfigId} />
+            <Select
+              options={configsOptions}
+              value={localRightConfigId}
+              onChange={setLocalRightConfigId}
+              renderValue={handleRenderConfigValue}
+            />
           </LabeledField>
         </div>
         <div className={cn(s.configurationCompareDialog__body, 'scroll')}>

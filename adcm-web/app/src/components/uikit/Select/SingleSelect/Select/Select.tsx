@@ -28,6 +28,7 @@ function SelectComponent<T>(
     offset,
     dependencyWidth = 'min-parent',
     dataTest = 'select-popover',
+    renderValue,
     ...props
   }: SelectProps<T>,
   ref: React.ForwardedRef<HTMLInputElement>,
@@ -46,6 +47,13 @@ function SelectComponent<T>(
     return currentOption?.label ?? '';
   }, [options, value]);
 
+  const customContent = useMemo(() => {
+    if (renderValue) {
+      return renderValue(value, options);
+    }
+    return null;
+  }, [renderValue, value, options]);
+
   return (
     <div>
       <CommonSelectField
@@ -55,6 +63,7 @@ function SelectComponent<T>(
         isOpen={isOpen}
         value={selectedOptionLabel}
         containerRef={containerReference}
+        customValueRender={customContent}
       />
       <Popover
         isOpen={isOpen}

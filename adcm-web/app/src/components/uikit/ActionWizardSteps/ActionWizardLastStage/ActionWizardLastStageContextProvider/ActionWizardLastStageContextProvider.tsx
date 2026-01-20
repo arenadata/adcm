@@ -11,7 +11,7 @@ interface LastStageContextProviderProps {
 const initialFormData: AdcmWizardLastStageContextProps = {
   isVerbose: false,
   shouldBlockObject: true,
-  description:'',
+  description: '',
 };
 
 const ActionWizardLastStageContextProvider: React.FC<LastStageContextProviderProps> = ({ children }) => {
