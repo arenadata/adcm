@@ -144,6 +144,11 @@ ERRORS = {
         HTTP_409_CONFLICT,
         ERR,
     ),
+    "INVALID_HC_SERVICE_NOT_IN_CREATED_STATE": (
+        "You can't save hc with services in states other than 'created'",
+        HTTP_409_CONFLICT,
+        ERR,
+    ),
     "NO_CERT_FILE": (
         "missing cert file for `ldaps://` connection",
         HTTP_400_BAD_REQUEST,

@@ -1,0 +1,10 @@
+- name: first_stage
+  display_name: "First stage"
+  steps:
+    - name: step_1_mapping
+      display_name: "Stage1 Step1. Mapping"
+      hc_template:
+        file:
+          path: wizard_jinja/mapping/mapping_step.j2
+        engine:
+          type: jinja2

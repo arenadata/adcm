@@ -101,7 +101,7 @@ class TestActionProcess(BaseAPITestCase):
         self.cluster_3 = self.add_cluster(bundle=self.bundle_3, name="cluster_3", description="cluster_3")
         self.process_action_of_cluster = self.get_object_action_with_process(self.cluster_1)
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.filter(service=self.service_1).get()
+        self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
         provider_bundle_path = self.test_bundles_dir / "provider"
         self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
@@ -1822,33 +1822,6 @@ class TestActionProcess(BaseAPITestCase):
 
             response = self.client.v2[host, "maintenance-mode"].post(data={"maintenanceMode": "off"})
             self.assertEqual(response.status_code, HTTP_200_OK)
-
-        # TODO: uncomment when "forbid-to-map-MM-components" functionality is ready
-        # with self.subTest("Service in mm"):
-        #     response = self.client.v2[component, "maintenance-mode"].post(data={"maintenanceMode": "on"})
-        #     self.assertEqual(response.status_code, HTTP_200_OK)
-        #
-        #     response = operations_endpoint.post(data=payload)
-        #     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        #
-        #     expected_response = {}
-        #     self.assertDictEqual(response.json(), expected_response)
-        #
-        #     response = self.client.v2[component, "maintenance-mode"].post(data={"maintenanceMode": "off"})
-        #     self.assertEqual(response.status_code, HTTP_200_OK)
-        #
-        # with self.subTest("Component in mm"):
-        #     response = self.client.v2[service, "maintenance-mode"].post(data={"maintenanceMode": "on"})
-        #     self.assertEqual(response.status_code, HTTP_200_OK)
-        #
-        #     response = operations_endpoint.post(data=payload)
-        #     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        #
-        #     expected_response = {}
-        #     self.assertDictEqual(response.json(), expected_response)
-        #
-        #     response = self.client.v2[service, "maintenance-mode"].post(data={"maintenanceMode": "off"})
-        #     self.assertEqual(response.status_code, HTTP_200_OK)
 
     def _7313_prepare_env_get_operation_endpoint_and_process(
         self, cluster: Cluster, action_name: str

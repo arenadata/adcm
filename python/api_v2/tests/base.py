@@ -15,7 +15,7 @@ from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
-from typing import Any, Collection, TypeAlias
+from typing import Any, Collection, Literal, TypeAlias
 from unittest.mock import patch
 import tarfile
 import unittest
@@ -23,6 +23,7 @@ import unittest
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from audit.models import AuditLog, AuditObjectType, AuditSession
+from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
     ADCM,
     Action,
@@ -43,6 +44,9 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
+from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.legacy.cluster.types import ObjectMaintenanceModeState
+from core.types import ClusterID
 from django.conf import settings
 from django.http import HttpRequest
 from infra.services import get_config_service
@@ -284,10 +288,14 @@ class APIV2Mixin:
 
         return Bundle.objects.get(id=response.json()["id"])
 
-    def create_cluster(self, bundle: Bundle, name: str, description: str = "") -> Cluster:
-        prototype_id = Prototype.objects.values_list("id", flat=True).get(bundle=bundle, type=ObjectType.CLUSTER)
+    def create_cluster(self, bundle: Bundle, name: str, description: str = "", accept_license: bool = True) -> Cluster:
+        prototype = Prototype.objects.only("id", "license").get(bundle=bundle, type=ObjectType.CLUSTER)
+        if prototype.license == "unaccepted" and accept_license:
+            response = self.client.v2[prototype, "license", "accept"].post()
+            assert response.status_code == HTTP_200_OK, f"Accept license failed: {response.status_code}"
+
         response = (self.client.v2 / "clusters").post(
-            data={"prototypeId": prototype_id, "name": name, "description": description}
+            data={"prototypeId": prototype.id, "name": name, "description": description}
         )
         assert response.status_code == HTTP_201_CREATED, f"Cluster creation failed: {response.status_code}"
 
@@ -352,3 +360,45 @@ class APIV2Mixin:
     def set_maintenance_mode(self, obj: Service | Component | Host, value: MaintenanceMode) -> None:
         response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
         assert response.status_code == HTTP_200_OK, f"Setting maintenance mode failed: {response.status_code}"
+
+    def run_task(
+        self,
+        object_: Cluster | Service | Component | Provider | Host | ActionHostGroup,
+        action: Action,
+        mapping: Collection[tuple[Host, Component]] = (),
+        config: dict[Literal["config", "adcmMeta"], dict] | None = None,
+        expected_code: int = HTTP_200_OK,
+        **mock_kwargs,
+    ) -> RunTaskMock:
+        hc = {"hostComponentMap": [{"hostId": host.id, "componentId": component.id} for host, component in mapping]}
+        config = config or {"config": {}, "adcmMeta": {}}
+
+        with RunTaskMock(**mock_kwargs) as run_task:
+            response = self.client.v2[object_, "actions", action, "run"].post(data={"isVerbose": False, **config, **hc})
+
+        assert response.status_code == expected_code, f"Unexpected run result: {response.status_code}"
+
+        return run_task
+
+
+class TestUtilsMixin:
+    def check_mm_is_on_only_for(self, obj: Component | Host | None, cluster_id: ClusterID):
+        objects_mm = calculate_maintenance_mode_for_cluster_objects(
+            topology=retrieve_cluster_topology(cluster_id=cluster_id),
+            own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster_id,)),
+        )
+        components_mm = objects_mm.components
+        hosts_mm = objects_mm.hosts
+
+        if isinstance(obj, Component):
+            self.assertEqual(components_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+        elif isinstance(obj, Host):
+            self.assertEqual(hosts_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+        elif obj is None:
+            pass
+        else:
+            raise ValueError(f"Unexpected object type: {type(obj)}")
+
+        self.assertSetEqual(set(objects_mm.services.values()), {ObjectMaintenanceModeState.OFF})
+        self.assertSetEqual(set(components_mm.values()), {ObjectMaintenanceModeState.OFF})
+        self.assertSetEqual(set(hosts_mm.values()), {ObjectMaintenanceModeState.OFF})

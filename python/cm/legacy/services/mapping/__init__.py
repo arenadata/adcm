@@ -13,10 +13,11 @@
 from cm.legacy.services.mapping._base import (
     change_host_component_mapping,
     change_host_component_mapping_no_lock,
-    check_all,
+    check_for_action_mapping,
+    check_for_main_mapping,
+    check_for_wizard_mapping_step,
     check_no_host_in_mm,
     check_nothing,
-    check_only_mapping,
     set_host_component_mapping,
     set_host_component_mapping_no_lock,
 )
@@ -24,8 +25,9 @@ from cm.legacy.services.mapping._repo import lock_cluster_mapping
 
 __all__ = [
     "check_nothing",
-    "check_only_mapping",
-    "check_all",
+    "check_for_main_mapping",
+    "check_for_action_mapping",
+    "check_for_wizard_mapping_step",
     "set_host_component_mapping",
     "set_host_component_mapping_no_lock",
     "change_host_component_mapping",

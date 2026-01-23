@@ -15,6 +15,7 @@ from typing import Iterable, NamedTuple, NewType, TypeAlias
 
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
+from cm.legacy.services import mapping
 from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
@@ -24,14 +25,12 @@ from cm.legacy.services.bundle_alt.render import (
     TaskArgs,
 )
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.config.jinja import get_jinja_config
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template_new
 from cm.legacy.services.job.run import start_task
 from cm.legacy.services.job.types import ActionHCRule
-from cm.legacy.services.mapping import check_no_host_in_mm
 from cm.legacy.status_api import send_task_status_update_event
 from cm.models import (
     ADCM,
@@ -543,14 +542,13 @@ def _check_hostcomponent_and_get_delta(
     )
 
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
-    check_mapping_restrictions(
-        mapping_restrictions=bundle_restrictions.mapping,
-        topology=new_topology,
-        error_message_template=mapping_restriction_err_template,
-    )
-
     host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
-    check_no_host_in_mm(host_difference.mapped.all)
+    mapping.check_for_action_mapping(  # TODO: put checks above and below to this use case
+        bundle_restrictions=bundle_restrictions,
+        new_topology=new_topology,
+        host_difference=host_difference,
+        err_template=mapping_restriction_err_template,
+    )
     # some of newly mapped hosts may have concerns
     _check_no_blocking_concerns_on_hosts(host_difference.mapped.all)
 

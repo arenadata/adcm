@@ -579,7 +579,7 @@ def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta,
     host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
 
-    mapping.check_all(
+    mapping.check_for_wizard_mapping_step(
         bundle_restrictions=bundle_restrictions,
         new_topology=new_topology,
         host_difference=host_difference,

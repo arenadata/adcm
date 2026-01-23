@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
+from adcm.dependencies import prepare_container
+from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Bundle,
     Cluster,
@@ -25,6 +30,9 @@ from cm.models import (
     Upgrade,
 )
 from django.db.models import F
+from infra.services import get_config_service
+from init_db import init
+from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -33,8 +41,9 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
 )
+from rest_framework.test import APITestCase
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
 
 
 class TestMapping(BaseAPITestCase):
@@ -1334,3 +1343,107 @@ class ConfigHostGroupRelatedTests(BaseAPITestCase):
 
         host_group.refresh_from_db()
         self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+
+
+class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMixin):
+    client: ADCMTestClient
+    client_class = ADCMTestClient
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        prepare_container.cache_clear()
+        get_config_service.cache_clear()  # TODO: ADCM-7513
+        cls.test_bundles_dir = Path(__file__).parent / "bundles"
+        init_roles()
+        init()
+
+    def setUp(self):
+        self.client.login(username="admin", password="admin")
+
+        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "cluster_one")
+        self.cluster_1 = self.create_cluster(bundle=cluster_bundle, name="Test cluster for mapping")
+        self.service_1 = self.create_services(names=["service_1"], cluster=self.cluster_1)[0]
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
+        # existence check, needed to set component's MM = ON without affecting service's MM
+        Component.objects.get(prototype__name="component_2", service=self.service_1)
+
+        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
+        provider = self.create_provider(bundle=provider_bundle, name="provider")
+        self.host_1 = self.create_host(provider=provider, name="host-1", cluster=self.cluster_1)
+        self.host_2 = self.create_host(provider=provider, name="host-2", cluster=self.cluster_1)
+
+    def test_add_remove_simple_success(self):
+        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
+        )
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_add_host_in_mm_fail(self):
+        self.service_1.refresh_from_db()
+        self.assertEqual(self.service_1.state, "created")
+        self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
+            self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_1),))
+
+    def test_adcm_7530_add_host_not_in_mm_to_service_not_in_created_state_fail(self):
+        self.service_1.state = "not created"
+        self.service_1.save(update_fields=["state"])
+
+        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
+            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_add_host_in_mm_to_service_not_in_created_state_fail(self):
+        self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
+        self.service_1.state = "not created"
+        self.service_1.save(update_fields=["state"])
+
+        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
+            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_remove_host_in_mm_success(self):
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
+        )
+        self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_remove_host_not_in_mm_from_service_not_in_created_state_fail(self):
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
+        )
+        self.service_1.state = "not created"
+        self.service_1.save(update_fields=["state"])
+
+        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
+            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_remove_host_in_mm_from_service_not_in_created_state_fail(self):
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
+        )
+        self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
+        self.service_1.state = "not created"
+        self.service_1.save(update_fields=["state"])
+
+        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
+            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+    def test_adcm_7530_add_remove_from_component_in_mm_success(self):
+        self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster_1.id)
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
+        )
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
