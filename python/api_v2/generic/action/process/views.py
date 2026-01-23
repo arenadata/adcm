@@ -15,6 +15,7 @@ from typing import Any
 
 from adcm.mixins import GetParentObjectMixin
 from cm.converters import (
+    action_target_type_to_model,
     core_type_to_model,
     orm_object_to_action_target_descriptor,
     orm_object_to_core_descriptor,
@@ -46,7 +47,7 @@ from cm.models import (
     TaskLog,
 )
 from core.legacy.job import JobService
-from core.types import ActionProcessID, CoreObjectDescriptor
+from core.types import ActionProcessID, ActionTargetDescriptor, ExtraActionTargetType
 from dishka import FromDishka
 from django.conf import settings
 from django.db.transaction import atomic
@@ -271,20 +272,20 @@ class ProcessStepViewSet(
             request=request, action=Action.objects.get(pk=action_id), parent_object=parent_object
         )
 
-        object_ = orm_object_to_core_descriptor(parent_object)
+        target = orm_object_to_action_target_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
         data = step.model_dump(include={"id", "name", "display_name", "type", "state"})
 
         config_service = get_config_service()
 
-        serialized_data = serialize_step(step=step, object_=object_, base_data=data, config_service=config_service)
+        serialized_data = serialize_step(step=step, object_=target, base_data=data, config_service=config_service)
 
         return Response(data=serialized_data, status=HTTP_200_OK)
 
 
 def serialize_step(
-    step: Step, object_: CoreObjectDescriptor, base_data: dict, config_service: core.config.ConfigService
+    step: Step, object_: ActionTargetDescriptor, base_data: dict, config_service: core.config.ConfigService
 ) -> dict:
     if step.is_render_required:
         raise AdcmEx("ACTION_PROCESS_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
@@ -304,14 +305,17 @@ def serialize_step(
 
 def _serialize_config_step(
     step: Step,
-    object_: CoreObjectDescriptor,
+    object_: ActionTargetDescriptor,
     step_input: ProcessStepInput | None,
     base_data: dict,
     config_service: core.config.ConfigService,
 ) -> dict:
     from cm.impl.config.repo import build_specification_from_prototype_config_records
 
-    object_orm = core_type_to_model(object_.type).objects.get(pk=object_.id)
+    object_orm = action_target_type_to_model(object_.type).objects.get(pk=object_.id)
+    if object_.type == ExtraActionTargetType.ACTION_HOST_GROUP:
+        object_orm = object_orm.object
+    owner = orm_object_to_core_descriptor(object_orm)
 
     prototype_configs = tuple(PrototypeConfig(**config) for config in step.step_spec)
     spec, defaults = build_specification_from_prototype_config_records(
@@ -323,7 +327,7 @@ def _serialize_config_step(
     schema = config_service.retrieve_jsonschema_for_action(
         action_specification=spec,
         action_config_defaults=defaults,
-        action_owner=core.config.ConfigOwner(descriptor=object_, state=object_orm.state),
+        action_owner=core.config.ConfigOwner(descriptor=owner, state=object_orm.state),
     )
 
     if step_input:

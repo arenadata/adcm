@@ -105,6 +105,16 @@ class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(response.json()["processes"], [])
 
+    def check_step_retrieval(self, name: str, process: Process, action_endpoint: APINode) -> None:
+        target_step = ProcessStep.objects.get(process=process, name=name)
+        response = (action_endpoint / "processes" / process / "steps" / target_step).get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        response = response.json()
+        self.assertEqual(response["id"], target_step.id)
+        self.assertEqual(response["name"], name)
+        self.assertEqual(response["state"], "created")
+
     def check_process_creation(self, ahg: ActionHostGroup, action: Action) -> tuple[Process, APINode]:
         owner_concerns = ConcernItem.objects.filter(
             owner_id=ahg.object.id,
@@ -236,9 +246,16 @@ class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         process, action_endpoint = self.check_process_creation(ahg=ahg, action=action)
 
         operation_endpoint = action_endpoint / "processes" / process / "operation"
-        self.check_first_config_step(process=process, name="step_1_config", operation_endpoint=operation_endpoint)
-        self.check_second_mapping_step(process=process, name="step_2_mapping", operation_endpoint=operation_endpoint)
-        self.check_third_operation_step(process=process, name="step_3_operation", operation_endpoint=operation_endpoint)
+        step_1_name, step_2_name, step_3_name = "step_1_config", "step_2_mapping", "step_3_operation"
+
+        self.check_step_retrieval(name=step_1_name, process=process, action_endpoint=action_endpoint)
+        self.check_first_config_step(process=process, name=step_1_name, operation_endpoint=operation_endpoint)
+
+        self.check_step_retrieval(name=step_2_name, process=process, action_endpoint=action_endpoint)
+        self.check_second_mapping_step(process=process, name=step_2_name, operation_endpoint=operation_endpoint)
+
+        self.check_step_retrieval(name=step_3_name, process=process, action_endpoint=action_endpoint)
+        self.check_third_operation_step(process=process, name=step_3_name, operation_endpoint=operation_endpoint)
 
         self.check_complete_process(process=process, ahg=ahg, operation_endpoint=operation_endpoint)
         self.check_run_wizard_final_action(process=process, action_endpoint=action_endpoint)
