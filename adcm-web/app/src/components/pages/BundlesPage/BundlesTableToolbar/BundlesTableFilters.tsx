@@ -12,7 +12,7 @@ const BundlesTableFilters = () => {
 
   const productsOptions = useMemo(() => {
     return products.map(({ name, displayName }) => ({
-      value: name,
+      value: displayName || name,
       label: displayName || name,
     }));
   }, [products]);
