@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 from itertools import chain
-from typing import Iterable, Protocol
+from typing import Collection, Iterable, Protocol
 
 from core.legacy.bundle.types import BundleRestrictions
 from core.legacy.cluster.operations import (
@@ -20,9 +20,13 @@ from core.legacy.cluster.operations import (
     create_topology_with_new_mapping,
     find_hosts_difference,
 )
-from core.legacy.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
+from core.legacy.cluster.types import (
+    ClusterTopology,
+    HostComponentEntry,
+    TopologyHostDiff,
+)
 from core.legacy.job.types import TaskMappingDelta
-from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
+from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID, ServiceID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.models import Policy
@@ -46,7 +50,7 @@ from cm.legacy.services.concern.distribution import (
 )
 from cm.legacy.services.concern.locks import retrieve_lock_on_object
 from cm.legacy.services.config_host_group import ConfigHostGroupRepo
-from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
+from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping, retrieve_services_states
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
@@ -65,34 +69,51 @@ def check_nothing(
     _ = bundle_restrictions, new_topology, host_difference
 
 
-def check_only_mapping(
+# USE CASES
+
+
+def check_for_action_mapping(
     bundle_restrictions: BundleRestrictions,
     new_topology: ClusterTopology,
     host_difference: TopologyHostDiff,
-    error_template="{}",
+    err_template: str = "{}",
 ) -> None:
-    _ = host_difference
     check_mapping_restrictions(
-        mapping_restrictions=bundle_restrictions.mapping, topology=new_topology, error_message_template=error_template
+        mapping_restrictions=bundle_restrictions.mapping,
+        topology=new_topology,
+        error_message_template=err_template,
     )
+    check_no_host_in_mm(host_difference.mapped.all)
 
 
-def check_all(
+def check_for_wizard_mapping_step(
     bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
 ) -> None:
     check_service_requirements(services_restrictions=bundle_restrictions.service_requires, topology=new_topology)
-    check_only_mapping(
+    check_for_action_mapping(
         bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
     )
-    # TODO: forbid to `add` components in MM, `remove` is allowed
-    check_no_host_in_mm(host_difference.mapped.all)
+
+
+def check_for_main_mapping(
+    bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
+) -> None:
+    check_for_wizard_mapping_step(
+        bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
+    )
+
+    affected_services: set[ServiceID] = set(host_difference.mapped.services).union(host_difference.unmapped.services)
+    check_services_in_created_state(services=affected_services)
+
+
+# END USE CASES
 
 
 def set_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
-    checks_func: PerformMappingChecks = check_all,
+    checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
@@ -108,7 +129,7 @@ def set_host_component_mapping_no_lock(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
-    checks_func: PerformMappingChecks = check_all,
+    checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     new_mapping = tuple(new_mapping)
     mapping_delta = _retrieve_delta_from_new_mapping(cluster_id=cluster_id, new_mapping=new_mapping)
@@ -121,7 +142,7 @@ def change_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
-    checks_func: PerformMappingChecks = check_all,
+    checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
@@ -134,7 +155,7 @@ def change_host_component_mapping_no_lock(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
-    checks_func: PerformMappingChecks = check_all,
+    checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     _change_host_component_mapping(
         cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
@@ -146,11 +167,17 @@ def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
         raise AdcmEx("INVALID_HC_HOST_IN_MM")
 
 
+def check_services_in_created_state(services: Collection[ServiceID]) -> None:
+    states = retrieve_services_states(services=services)
+    if set(states.values()).difference({"created"}):
+        raise AdcmEx("INVALID_HC_SERVICE_NOT_IN_CREATED_STATE")
+
+
 def _change_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
-    checks_func: PerformMappingChecks = check_all,
+    checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
     # prepare
     current_topology = retrieve_cluster_topology(cluster_id=cluster_id)

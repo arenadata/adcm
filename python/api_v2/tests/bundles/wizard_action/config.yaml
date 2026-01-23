@@ -3,6 +3,8 @@
   name: cluster_with_wizard
   version: &version '1.0'
   edition: community
+  allow_maintenance_mode: true
+
   actions:
     wizard_jinja: &wizard_action
       type: job
@@ -11,6 +13,18 @@
       wizard_template:
         file:
           path: wizard_jinja/stages.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    wizard_with_mapping_only:
+      type: job
+      script: ./sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/mapping/stages.j2
         engine:
           type: jinja2
       states:
@@ -35,7 +49,7 @@
       <<: *host_action
       host_action: false
       allow_for_action_host_group: true
-    
+
   config: &config
     - name: float
       type: float
@@ -57,7 +71,7 @@
   config: *config
 
   components:
-    component_1:
+    component_1: &component
       actions:
         wizard_jinja:
           <<: *wizard_action
@@ -66,3 +80,5 @@
         wizard_component_action:
           <<: *action
       config: *config
+    component_2:
+      <<: *component

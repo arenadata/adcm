@@ -83,6 +83,7 @@
               default: text
     with_hc:
       <<: *action
+      allow_in_maintenance_mode: true
       hc_acl:
         - action: add
           service: service_1

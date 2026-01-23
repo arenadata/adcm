@@ -180,9 +180,9 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> 
             elif parameter.type == "variant":
                 source = parameter.limits["source"]
                 if source["type"] == "config":
-                    name = tuple(source["name"].split("/"))
+                    dependency_name = config.names.ensure_full_name(source["name"])
+                    name = config.names.full_name_to_level_names(dependency_name)
                     if name not in definition.parameters:
-                        dependency_name = config.names.level_names_to_full_name(name)
                         message = (
                             f"variant parameter is dependant on {dependency_name}, "
                             "but it is missing in configuration"
