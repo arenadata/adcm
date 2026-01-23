@@ -115,13 +115,16 @@ const ComponentContainer = ({
 
   const isMappingValid = mappingErrors === undefined;
   const isNotRequired = isMappingValid && hosts.length === 0;
-  const isOptional = component.constraints[0] === 0 && hosts.length === 0;
+  const isOptional = component.constraints[0] === 0 && hosts.length === 0 && !componentNotAvailableError;
+
+  // isNotRequired
 
   const containerClassName = cn(s.componentContainer, {
-    [s.componentContainer_error]: !isMappingValid,
-    [s.componentContainer_notRequired]: isNotRequired,
+    [s.componentContainer_valid]: hosts.length > 0 && isMappingValid,
     [s.componentContainer_optional]: isOptional,
     [s.componentContainer_disabled]: isReadOnly || componentNotAvailableError,
+    [s.componentContainer_notRequired]: isNotRequired,
+    [s.componentContainer_error]: !isMappingValid,
   });
 
   const titleClassName = cn(s.componentContainerHeader__title, {

@@ -2,17 +2,16 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { AdcmActionProcessMappingStep } from '@models/adcm/wizard';
 import { useDispatch, useLocalStorage, usePrevious, useStore } from '@hooks';
-import { getInitiallyMappedHostsDictionary } from '@commonComponents/DynamicActionDialog/DynamicActionSteps/DynamicActionHostMapping/DynamicActionHostMapping.utils';
 import { LoadState } from '@models/loadState';
 import type { AdcmMappingComponent } from '@models/adcm';
 import ActionWizardMappingToolbar from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMappingToolbar/ActionWizardMappingToolbar';
-import HostsMapping from '@pages/cluster/ClusterMapping/HostsMapping/HostsMapping';
 import ActionWizardComponentsMapping from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardComponentsMapping/ActionWizardComponentsMapping';
 import RequiredServicesDialog from '@pages/cluster/ClusterMapping/RequiredServicesDialog/RequiredServicesDialog';
 import { applyMappingDelta } from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMapping.utils';
 import { useActionWizardMapping } from '@uikit/ActionWizardSteps/ActionWizardMapping/useActionWizardMapping';
 import s from './ActionWizardMapping.module.scss';
 import { getMappings, openRequiredServicesDialog } from '@store/adcm/clusters/clustersWizardMappingSlice';
+import ActionWizardHostsMapping from './ActionWizardHostsMapping/ActionWizardHostsMapping.tsx';
 
 interface ActionWizardMappingProps {
   clusterId: number;
@@ -50,8 +49,6 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
     [mapping, step.cumulativeDelta],
   );
 
-  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mappingWithDelta), [mappingWithDelta]);
-
   const {
     localMapping,
     mappingFilter,
@@ -64,6 +61,8 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
     handleUnmap,
     handleMappingFilterChange,
     handleMappingSortDirectionChange,
+    initiallyMappedHosts,
+    initiallyMappedComponents,
   } = useActionWizardMapping(
     mappingWithDelta,
     hosts,
@@ -110,8 +109,8 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
         onSortDirectionChange={handleMappingSortDirectionChange}
       />
       {isHostsPreviewMode ? (
-        <HostsMapping
-          //
+        <ActionWizardHostsMapping
+          servicesMapping={servicesMapping}
           components={components}
           hostsMapping={hostsMapping}
           mappingFilter={mappingFilter}
@@ -120,9 +119,13 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
           onUnmap={handleUnmap}
           onInstallServices={handleInstallServices}
           isReadOnly={isReadOnly}
+          initiallyMappedHosts={initiallyMappedHosts}
+          initiallyMappedComponents={initiallyMappedComponents}
+          rules={step.rules}
         />
       ) : (
         <ActionWizardComponentsMapping
+          sortDirection={mappingSortDirection}
           clusterId={clusterId}
           hosts={hosts}
           rules={step.rules}

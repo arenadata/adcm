@@ -18,8 +18,7 @@ import {
   checkComponentActionsMappingAvailability,
   checkHostActionsMappingAvailability,
   checkHostActionsUnmappingAvailability,
-  getComponentMapActions,
-  getInitiallyMappedHostsDictionary,
+  sortExtendedComponentsMapping,
 } from './DynamicActionHostMapping.utils';
 
 interface DynamicActionHostMappingProps {
@@ -57,6 +56,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     handleMapHostsToComponent,
     handleUnmap,
     handleReset,
+    initiallyMappedHosts,
   } = useClusterMapping(mapping, hosts, components, notAddedServicesDictionary, true);
 
   const isServicesMappingEmpty = servicesMapping.length === 0;
@@ -70,7 +70,11 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   };
 
   const hasErrors = Object.keys(mappingErrors).length > 0;
-  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mapping), [mapping]);
+
+  const sortedExtendedComponentsMapping = useMemo(
+    () => sortExtendedComponentsMapping(servicesMapping, actionDetails),
+    [servicesMapping, actionDetails],
+  );
 
   return (
     <div>
@@ -99,47 +103,45 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
               </Link>
             </div>
           )}
-          {servicesMapping.flatMap(({ service, componentsMapping }) =>
-            componentsMapping.map((componentMapping) => {
-              const allowActions = getComponentMapActions(actionDetails, service, componentMapping.component);
-              const componentMappingErrors = mappingErrors[componentMapping.component.id];
+          {sortedExtendedComponentsMapping.map((componentMapping) => {
+            const componentMappingErrors = mappingErrors[componentMapping.component.id];
+            const allowActions = componentMapping.allowedActions;
 
-              const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
-                return checkComponentActionsMappingAvailability(component, allowActions);
-              };
+            const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
+              return checkComponentActionsMappingAvailability(component, allowActions);
+            };
 
-              const checkHostMappingAvailability = (host: AdcmHostShortView) => {
-                return checkHostActionsMappingAvailability(
-                  host,
-                  allowActions,
-                  initiallyMappedHosts[componentMapping.component.id],
-                );
-              };
-
-              const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
-                return checkHostActionsUnmappingAvailability(
-                  host,
-                  allowActions,
-                  initiallyMappedHosts[componentMapping.component.id],
-                );
-              };
-
-              return (
-                <ComponentContainer
-                  key={componentMapping.component.id}
-                  componentMapping={componentMapping}
-                  filter={mappingFilter}
-                  allHosts={hosts}
-                  mappingErrors={componentMappingErrors}
-                  onMap={handleMapHostsToComponent}
-                  onUnmap={handleUnmap}
-                  checkComponentMappingAvailability={checkComponentMappingAvailability}
-                  checkHostMappingAvailability={checkHostMappingAvailability}
-                  checkHostUnmappingAvailability={checkHostUnmappingAvailability}
-                />
+            const checkHostMappingAvailability = (host: AdcmHostShortView) => {
+              return checkHostActionsMappingAvailability(
+                host,
+                allowActions,
+                initiallyMappedHosts[componentMapping.component.id],
               );
-            }),
-          )}
+            };
+
+            const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
+              return checkHostActionsUnmappingAvailability(
+                host,
+                allowActions,
+                initiallyMappedHosts[componentMapping.component.id],
+              );
+            };
+
+            return (
+              <ComponentContainer
+                key={componentMapping.component.id}
+                componentMapping={componentMapping}
+                filter={mappingFilter}
+                allHosts={hosts}
+                mappingErrors={componentMappingErrors}
+                onMap={handleMapHostsToComponent}
+                onUnmap={handleUnmap}
+                checkComponentMappingAvailability={checkComponentMappingAvailability}
+                checkHostMappingAvailability={checkHostMappingAvailability}
+                checkHostUnmappingAvailability={checkHostUnmappingAvailability}
+              />
+            );
+          })}
         </div>
       )}
     </div>

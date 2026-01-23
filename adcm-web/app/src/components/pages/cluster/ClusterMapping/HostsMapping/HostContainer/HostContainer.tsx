@@ -4,7 +4,6 @@ import { Tags } from '@uikit';
 import MappedComponent from './MappedComponent/MappedComponent';
 import type { ComponentsMappingErrors, HostMapping, MappingFilter } from '../../ClusterMapping.types';
 import type { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
-import { checkHostMappingAvailability, checkComponentMappingAvailability } from '../../ClusterMapping.utils';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import s from './HostContainer.module.scss';
@@ -19,6 +18,9 @@ export interface HostContainerProps {
   onMap: (components: AdcmMappingComponent[], host: AdcmHostShortView) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   isReadOnly?: boolean;
+  checkHostAvailability: (host: AdcmHostShortView) => string | undefined;
+  checkComponentMappingAvailability: (component: AdcmMappingComponent) => string | undefined;
+  checkComponentUnmappingAvailability: (component: AdcmMappingComponent) => string | undefined;
 }
 
 const HostContainer = ({
@@ -27,6 +29,9 @@ const HostContainer = ({
   mappingErrors,
   filter,
   className,
+  checkHostAvailability,
+  checkComponentMappingAvailability,
+  checkComponentUnmappingAvailability,
   onMap,
   onUnmap,
   isReadOnly = false,
@@ -35,22 +40,45 @@ const HostContainer = ({
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
 
-  const hostNotAvailableError = checkHostMappingAvailability(host);
+  const componentsSets = useMemo(() => new Set(components.map((c) => c.id)), [components]);
+
+  const componentsErrors = useMemo(() => {
+    const result: { [componentId: number]: { allowMapError?: string; allowUnmapError?: string } } = {};
+
+    for (const component of allComponents) {
+      result[component.id] = {
+        allowMapError: checkComponentMappingAvailability(component),
+        allowUnmapError: checkComponentUnmappingAvailability(component),
+      };
+    }
+
+    return result;
+  }, [allComponents, host]);
+
+  const hostNotAvailableError = checkHostAvailability(host);
 
   const componentsOptions = useMemo<SelectOption<AdcmMappingComponent>[]>(
     () =>
       allComponents
         .map((component) => {
-          const { componentNotAvailableError } = checkComponentMappingAvailability(component);
+          const isEnabled = Boolean(
+            (componentsErrors[component.id].allowMapError === undefined && !componentsSets.has(component.id)) ||
+              (componentsErrors[component.id].allowUnmapError === undefined && componentsSets.has(component.id)),
+          );
+
+          const title = !isEnabled
+            ? (componentsErrors[component.id].allowMapError ?? componentsErrors[component.id].allowUnmapError)
+            : undefined;
+
           return {
             label: component.displayName,
             value: component,
-            disabled: isReadOnly || Boolean(componentNotAvailableError),
-            title: componentNotAvailableError,
+            disabled: isReadOnly || !isEnabled,
+            title,
           };
         })
         .sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1)),
-    [allComponents],
+    [allComponents, componentsErrors],
   );
 
   const visibleHostComponents = useMemo(
@@ -100,7 +128,7 @@ const HostContainer = ({
         {visibleHostComponents.length > 0 && (
           <Tags className={s.hostContainer__components}>
             {visibleHostComponents.map((component) => {
-              const { componentNotAvailableError } = checkComponentMappingAvailability(component);
+              const error = componentsErrors[component.id].allowUnmapError;
               return (
                 <MappedComponent
                   key={component.id}
@@ -108,8 +136,8 @@ const HostContainer = ({
                   label={component.displayName}
                   mappingErrors={mappingErrors[component.id]}
                   onDeleteClick={handleDelete}
-                  deleteButtonTooltip={hostNotAvailableError ?? componentNotAvailableError}
-                  isDisabled={isReadOnly || Boolean(hostNotAvailableError || componentNotAvailableError)}
+                  deleteButtonTooltip={error}
+                  isDisabled={isReadOnly || Boolean(error)}
                 />
               );
             })}

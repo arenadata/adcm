@@ -3,15 +3,13 @@ import {
   AdcmHostComponentMapRuleAction,
   type AdcmHostShortView,
   AdcmMaintenanceMode,
-  type AdcmMapping,
   type AdcmMappingComponent,
   type AdcmMappingComponentService,
   type HostId,
 } from '@models/adcm';
-import type {
-  ComponentAvailabilityErrors,
-  InitiallyMappedHostsDictionary,
-} from '@pages/cluster/ClusterMapping/ClusterMapping.types';
+import type { ComponentAvailabilityErrors, ServiceMapping } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
+import { sortBy } from '@utils/arrayUtils.ts';
+import { componentsMappingSortByName } from '@pages/cluster/ClusterMapping/ClusterMapping.utils.ts';
 
 export const getComponentMapActions = (
   actionDetails: AdcmDynamicActionDetails,
@@ -29,45 +27,36 @@ export const getComponentMapActions = (
   return result;
 };
 
-export const getInitiallyMappedHostsDictionary = (mapping: AdcmMapping[]) => {
-  const result: InitiallyMappedHostsDictionary = {};
-
-  for (const m of mapping) {
-    if (result[m.componentId] === undefined) {
-      result[m.componentId] = new Set();
-    }
-
-    result[m.componentId].add(m.hostId);
-  }
-
-  return result;
-};
-
 export const checkComponentActionsMappingAvailability = (
   _component: AdcmMappingComponent,
   allowActions: Set<AdcmHostComponentMapRuleAction>,
 ): ComponentAvailabilityErrors => {
   const result: ComponentAvailabilityErrors = {};
 
-  result.componentNotAvailableError =
-    allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : result.componentNotAvailableError;
+  if (allowActions.size === 0) {
+    result.componentNotAvailableError = 'Mapping is not allowed in action configuration';
+  }
+
   return result;
 };
 
 export const checkHostActionsMappingAvailability = (
   host: AdcmHostShortView,
-  allowActions: Set<AdcmHostComponentMapRuleAction>,
+  allowActions: Set<AdcmHostComponentMapRuleAction> = new Set([
+    AdcmHostComponentMapRuleAction.Add,
+    AdcmHostComponentMapRuleAction.Remove,
+  ]),
   initiallyMappedHosts: Set<HostId> = new Set(),
 ): string | undefined => {
   // always allow revert removable INCLUDES to initial hosts
   if (initiallyMappedHosts.has(host.id)) return undefined;
 
-  if (host.maintenanceMode !== AdcmMaintenanceMode.Off) {
-    return 'Maintenance mode on the host must be Off';
-  }
-
   if (!allowActions.has(AdcmHostComponentMapRuleAction.Add)) {
     return 'Adding host is not allowed in the action configuration';
+  }
+
+  if (host.maintenanceMode !== AdcmMaintenanceMode.Off) {
+    return 'Maintenance mode on the host must be Off';
   }
 
   return undefined;
@@ -75,7 +64,10 @@ export const checkHostActionsMappingAvailability = (
 
 export const checkHostActionsUnmappingAvailability = (
   host: AdcmHostShortView,
-  allowActions: Set<AdcmHostComponentMapRuleAction>,
+  allowActions: Set<AdcmHostComponentMapRuleAction> = new Set([
+    AdcmHostComponentMapRuleAction.Add,
+    AdcmHostComponentMapRuleAction.Remove,
+  ]),
   initiallyMappedHosts: Set<HostId> = new Set(),
 ): string | undefined => {
   // always allow revert appendable NOT includes to initial hosts
@@ -86,4 +78,30 @@ export const checkHostActionsUnmappingAvailability = (
   }
 
   return undefined;
+};
+
+const extendComponentsMapping = (serviceMapping: ServiceMapping[], actionDetails: AdcmDynamicActionDetails) => {
+  return serviceMapping.flatMap(({ service, componentsMapping }) =>
+    componentsMapping.map((componentMapping) => {
+      const component = componentMapping.component;
+      const allowActions = getComponentMapActions(actionDetails, service, component);
+
+      return {
+        ...componentMapping,
+        allowedActions: allowActions,
+      };
+    }),
+  );
+};
+
+export const sortExtendedComponentsMapping = (
+  serviceMapping: ServiceMapping[],
+  actionDetails: AdcmDynamicActionDetails,
+) => {
+  const extendedMapping = extendComponentsMapping(serviceMapping, actionDetails);
+
+  return sortBy(extendedMapping, [
+    (a, b) => b.allowedActions.size - a.allowedActions.size,
+    (a, b) => componentsMappingSortByName(a.component, b.component),
+  ]);
 };
