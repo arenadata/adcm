@@ -33,10 +33,13 @@
   border-radius: 10px;
   border: 2px solid var(--component-container-default-border-color);
   background: var(--component-container-background);
-  border-color: var(--component-container-valid-color);
 
   &:not(:last-child) {
     margin-bottom: 8px;
+  }
+
+  &_valid {
+    border-color: var(--component-container-valid-color);
   }
 
   &_error {

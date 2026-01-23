@@ -4,12 +4,18 @@ import type { AnchorBarItem } from '@uikit';
 import { AnchorBar, AnchorList } from '@uikit';
 import Service from './Service/Service';
 import type { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
-import type { MappingFilter, ComponentsMappingErrors, ServiceMapping } from '../ClusterMapping.types';
+import type {
+  MappingFilter,
+  ComponentsMappingErrors,
+  ServiceMapping,
+  InitiallyMappedHostsDictionary,
+} from '../ClusterMapping.types';
 import s from './ComponentsMapping.module.scss';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
 export interface ComponentsMappingProps {
+  initiallyMappedHosts: InitiallyMappedHostsDictionary;
   hosts: AdcmHostShortView[];
   servicesMapping: ServiceMapping[];
   mappingErrors: ComponentsMappingErrors;

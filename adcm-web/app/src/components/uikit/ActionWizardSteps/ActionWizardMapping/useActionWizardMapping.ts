@@ -14,6 +14,8 @@ import type { SortDirection } from '@models/table';
 import {
   getComponentsMapping,
   getHostsMapping,
+  getInitiallyMappedComponentsDictionary,
+  getInitiallyMappedHostsDictionary,
   getServicesMapping,
   mapComponentsToHost,
   mapHostsToComponent,
@@ -85,20 +87,17 @@ export const useActionWizardMapping = (
   );
 
   const hostsMapping: HostMapping[] = useMemo(() => {
-    const result = isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : [];
-    result.sort((a, b) => a.host.name.localeCompare(b.host.name));
-    if (mappingSortDirection === 'desc') {
-      result.reverse();
-    }
-    return result;
+    if (!isLoaded) return [];
+    return getHostsMapping(localMapping, hosts, componentsDictionary, {
+      sortBy: 'name',
+      sortDirection: mappingSortDirection,
+    });
   }, [hosts, componentsDictionary, isLoaded, localMapping, mappingSortDirection]);
 
   const servicesMapping: ServiceMapping[] = useMemo(() => {
-    const result = isLoaded ? getServicesMapping(componentsMapping) : [];
-    if (mappingSortDirection === 'desc') {
-      result.reverse();
-    }
-    return result;
+    if (!isLoaded) return [];
+
+    return getServicesMapping(componentsMapping, { sortBy: 'name', sortDirection: mappingSortDirection });
   }, [isLoaded, componentsMapping, mappingSortDirection]);
 
   const servicesMappingDictionary = useMemo(
@@ -149,6 +148,9 @@ export const useActionWizardMapping = (
     });
   };
 
+  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mapping), [mapping]);
+  const initiallyMappedComponents = useMemo(() => getInitiallyMappedComponentsDictionary(mapping), [mapping]);
+
   return {
     hosts,
     hostsMapping,
@@ -163,5 +165,7 @@ export const useActionWizardMapping = (
     handleMapHostsToComponent,
     handleMapComponentsToHost,
     handleUnmap,
+    initiallyMappedHosts,
+    initiallyMappedComponents,
   };
 };

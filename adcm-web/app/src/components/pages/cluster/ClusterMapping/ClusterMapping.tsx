@@ -17,50 +17,28 @@ import {
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useClusterMapping } from './useClusterMapping';
 import s from './ClusterMapping.module.scss';
-import type { AdcmMappingComponent } from '@models/adcm';
+import type { AdcmMappingComponent, HostId } from '@models/adcm';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import {
+  checkComponentMappingAvailability,
+  checkHostMappingAvailability,
+  checkHostUnmappingAvailability,
+} from './ClusterMapping.utils.ts';
 
-const ClusterMapping: React.FC = () => {
+interface ClusterMappingProps {
+  isHostsPreviewMode: boolean | null;
+  saveIsHostsPreviewModeToStorage: (itemData: boolean) => void;
+}
+
+const ClusterMapping: React.FC<ClusterMappingProps> = ({ isHostsPreviewMode, saveIsHostsPreviewModeToStorage }) => {
   const dispatch = useDispatch();
-
-  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const { mapping, hosts, components, loading, saving } = useStore(({ adcm }) => adcm.clusterMapping);
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
-  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterMapping.accessCheckStatus);
 
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
 
-  const [isHostsPreviewMode, saveIsHostsPreviewModeToStorage] = useLocalStorage<boolean>({
-    key: 'adcm/clusters_mapping_hostsPreviewMode',
-    initData: false,
-    isUserDependencies: true,
-  });
   const [hasSaveError, setHasSaveError] = useState(false);
-
-  useEffect(() => {
-    if (!Number.isNaN(clusterId)) {
-      dispatch(getMappings({ clusterId }));
-      dispatch(getNotAddedServices({ clusterId }));
-    }
-
-    return () => {
-      dispatch(cleanupMappings());
-    };
-  }, [clusterId, dispatch]);
-
-  useEffect(() => {
-    if (cluster) {
-      dispatch(
-        setBreadcrumbs([
-          { href: '/clusters', label: 'Clusters' },
-          { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { label: 'Mapping' },
-          { label: isHostsPreviewMode ? 'Hosts view' : 'Components view' },
-        ]),
-      );
-    }
-  }, [cluster, isHostsPreviewMode, dispatch]);
 
   const {
     localMapping,
@@ -76,6 +54,8 @@ const ClusterMapping: React.FC = () => {
     handleMappingFilterChange,
     handleMappingSortDirectionChange,
     handleReset,
+    initiallyMappedHosts,
+    initiallyMappedComponents,
   } = useClusterMapping(mapping, hosts, components, notAddedServicesDictionary, loading.state === 'completed');
 
   const prevLocalMapping = usePrevious(localMapping);
@@ -105,7 +85,7 @@ const ClusterMapping: React.FC = () => {
   const isValid = Object.keys(mappingErrors).length === 0;
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
+    <>
       <div className={s.clusterMapping}>
         <ClusterMappingToolbar
           filter={mappingFilter}
@@ -128,7 +108,6 @@ const ClusterMapping: React.FC = () => {
         />
         {isHostsPreviewMode ? (
           <HostsMapping
-            //
             components={components}
             hostsMapping={hostsMapping}
             mappingFilter={mappingFilter}
@@ -136,6 +115,29 @@ const ClusterMapping: React.FC = () => {
             onMap={handleMapComponentsToHost}
             onUnmap={handleUnmap}
             onInstallServices={handleInstallServices}
+            checkComponentMappingAvailability={checkComponentMappingAvailability}
+            checkHostMappingAvailability={(host, component) => {
+              let initMappedHosts: Set<HostId> | undefined;
+              if (component?.id) {
+                // if check mapping to component - get initMappedHosts by componentId
+                initMappedHosts = initiallyMappedHosts[component?.id];
+              } else if (initiallyMappedComponents[host.id]?.size) {
+                // alter case - we check absolute available of host:
+                // we should check case, when host had mapped components but user local remove it
+                // in this case we don't full block this host, and we create fake initMappedHosts with this hostId
+                initMappedHosts = new Set([host.id]);
+              }
+              return checkHostMappingAvailability(host, initMappedHosts);
+            }}
+            checkHostUnmappingAvailability={(host, component) => {
+              let initMappedHosts: Set<HostId> | undefined;
+              if (component?.id) {
+                initMappedHosts = initiallyMappedHosts[component?.id];
+              } else if (initiallyMappedComponents[host.id]?.size) {
+                initMappedHosts = new Set([host.id]);
+              }
+              return checkHostUnmappingAvailability(host, initMappedHosts);
+            }}
           />
         ) : (
           <ComponentsMapping
@@ -146,13 +148,62 @@ const ClusterMapping: React.FC = () => {
             onMap={handleMapHostsToComponent}
             onUnmap={handleUnmap}
             onInstallServices={handleInstallServices}
+            initiallyMappedHosts={initiallyMappedHosts}
           />
         )}
 
         <RequiredServicesDialog />
       </div>
+    </>
+  );
+};
+
+const ClusterMappingWrapper: React.FC = () => {
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterMapping.accessCheckStatus);
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const dispatch = useDispatch();
+
+  const { clusterId: clusterIdFromUrl } = useParams();
+  const clusterId = Number(clusterIdFromUrl);
+
+  const [isHostsPreviewMode, saveIsHostsPreviewModeToStorage] = useLocalStorage<boolean>({
+    key: 'adcm/clusters_mapping_hostsPreviewMode',
+    initData: false,
+    isUserDependencies: true,
+  });
+
+  useEffect(() => {
+    if (!Number.isNaN(clusterId)) {
+      dispatch(getMappings({ clusterId }));
+      dispatch(getNotAddedServices({ clusterId }));
+    }
+
+    return () => {
+      dispatch(cleanupMappings());
+    };
+  }, [clusterId, dispatch]);
+
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Mapping' },
+          { label: isHostsPreviewMode ? 'Hosts view' : 'Components view' },
+        ]),
+      );
+    }
+  }, [cluster, isHostsPreviewMode, dispatch]);
+
+  return (
+    <PermissionsChecker requestState={accessCheckStatus}>
+      <ClusterMapping
+        isHostsPreviewMode={isHostsPreviewMode}
+        saveIsHostsPreviewModeToStorage={saveIsHostsPreviewModeToStorage}
+      />
     </PermissionsChecker>
   );
 };
 
-export default ClusterMapping;
+export default ClusterMappingWrapper;

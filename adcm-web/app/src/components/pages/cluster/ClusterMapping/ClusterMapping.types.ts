@@ -51,6 +51,7 @@ export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
 export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
 export type InitiallyMappedHostsDictionary = Record<ComponentId, Set<HostId>>;
+export type InitiallyMappedComponentsDictionary = Record<HostId, Set<ComponentId>>;
 
 export type ComponentsMappingErrors = Record<ComponentId, ComponentMappingErrors>;
 

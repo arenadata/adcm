@@ -1,8 +1,7 @@
 import type { MappingFilter } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 import type { SortDirection } from '@models/table';
-import { IconButton, Panel, SearchInput, Switch } from '@uikit';
+import { Panel, SearchInput, Switch } from '@uikit';
 import s from './ActionWizardMappingToolbar.module.scss';
-import cn from 'classnames';
 
 export interface ActionWizardMappingToolbarProps {
   filter: MappingFilter;
@@ -15,11 +14,11 @@ export interface ActionWizardMappingToolbarProps {
 
 const ActionWizardMappingToolbar = ({
   filter,
-  sortDirection,
+  // sortDirection,
   isHostsPreviewMode = false,
   onHostModeChange,
   onFilterChange,
-  onSortDirectionChange,
+  // onSortDirectionChange,
 }: ActionWizardMappingToolbarProps) => {
   const handleFilterHostsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({
@@ -37,13 +36,13 @@ const ActionWizardMappingToolbar = ({
     onFilterChange({ isHideEmpty: event.target.checked });
   };
 
-  const handleOrderChange = () => {
-    onSortDirectionChange(sortDirection === 'desc' ? 'asc' : 'desc');
-  };
-
-  const sortIconClassName = cn(s.actionWizardMappingToolbar__sortIcon, {
-    [s.actionWizardMappingToolbar__sortIcon_desc]: sortDirection === 'desc',
-  });
+  // const handleOrderChange = () => {
+  //   onSortDirectionChange(sortDirection === 'desc' ? 'asc' : 'desc');
+  // };
+  //
+  // const sortIconClassName = cn(s.actionWizardMappingToolbar__sortIcon, {
+  //   [s.actionWizardMappingToolbar__sortIcon_desc]: sortDirection === 'desc',
+  // });
 
   return (
     <Panel className={s.actionWizardMappingToolbar} data-test="configuration-toolbar">
@@ -70,11 +69,10 @@ const ActionWizardMappingToolbar = ({
             label="Hosts mode"
           />
         )}
-        <div className={s.actionWizardMappingToolbar__sortIconWrapper}>
-          {/* eslint-disable-next-line prettier/prettier*/}
+        {/*<div className={s.actionWizardMappingToolbar__sortIconWrapper}>
           <IconButton icon="arrow" size="medium" className={sortIconClassName} onClick={handleOrderChange} /> A - Z
           order
-        </div>
+        </div>*/}
         <Switch
           //
           size="small"
