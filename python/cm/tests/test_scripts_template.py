@@ -23,6 +23,7 @@ from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_f
 from cm.legacy.services.bundle_alt.render import ContextGatherer, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
+    ADCM,
     Action,
     ConfigLog,
     MaintenanceMode,
@@ -65,7 +66,9 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         common_config["password"] = ansible_decrypt(common_config["password"])
 
         self.expected_env_part = {
+            "adcm": {"uuid": str(ADCM.objects.filter().values("uuid").first()["uuid"])},
             "cluster": {
+                "uuid": str(self.cluster.uuid),
                 "before_upgrade": {"state": None, "config": None},
                 "edition": self.cluster.edition,
                 "config": common_config,
@@ -78,6 +81,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
             },
             "services": {
                 self.service.prototype.name: {
+                    "uuid": str(self.service.uuid),
                     "before_upgrade": {"state": None, "config": None},
                     "config": common_config,
                     "id": self.service.pk,
@@ -87,6 +91,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
                     "maintenance_mode": self.service.maintenance_mode == MaintenanceMode.ON,
                     "version": self.service.prototype.version,
                     self.component.prototype.name: {
+                        "uuid": str(self.component.uuid),
                         "before_upgrade": {"state": None, "config": None},
                         "component_id": self.component.pk,
                         "config": common_config,
@@ -97,6 +102,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
                     },
                 }
             },
+            "env": {"consul_cacert_file": None, "consul_datacenter": None, "consul_url": None},
             "groups": {
                 "CLUSTER": [host.fqdn],
                 "service_one_component": [host.fqdn],

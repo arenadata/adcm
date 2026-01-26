@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 from itertools import chain
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 from typing import Collection, NamedTuple, TypeAlias
 
 from core.types import ADCMCoreType, CoreObjectDescriptor, PrototypeID
@@ -190,7 +190,7 @@ def _fill_imports_with_defaults_inplace(
     if not still_required_to_fill:
         return imports
 
-    required_prototypes = set(map(itemgetter(1), still_required_to_fill))
+    required_prototypes = set(map(attrgetter("prototype_id"), map(itemgetter(1), still_required_to_fill)))
     specifications = config_service.retrieve_specifications_by_prototypes(prototypes=required_prototypes)
 
     cluster_query = Cluster.objects.values(
@@ -214,7 +214,7 @@ def _fill_imports_with_defaults_inplace(
             specification=specifications[target.prototype_id],
             file_owner=object_,
         )
-        config_ = updated_configuration.values
+        config_ = _extract_required_fields(config=updated_configuration.values, fields=target.default)
         imports[import_name] = [config_] if target.multibind else config_
 
     return imports

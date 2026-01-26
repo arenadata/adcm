@@ -12,11 +12,12 @@
 
 from enum import Enum
 from typing import Any, Literal, TypeAlias, TypedDict
+from uuid import UUID
 
 from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
 
-from cm.legacy.services.job.inventory import ProcessContext
+from cm.legacy.services.job.context import ProcessContext
 
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
 ShortHostInfo: TypeAlias = ShortObjectInfo
@@ -93,7 +94,7 @@ class JobData(BaseModel):
 
 
 class ADCMJobConfig(BaseModel):
-    uuid: str
+    uuid: UUID
     config: dict[str, Any]
 
 

@@ -13,7 +13,7 @@
 from copy import deepcopy
 from uuid import UUID
 
-from core.legacy.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import LaunchOptions, TaskPayloadDTO
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -21,7 +21,7 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import CoreObjectDescriptor
 from django.conf import settings
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
@@ -33,7 +33,7 @@ from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.utils import decrypt_secrets
-from cm.models import Action, Component
+from cm.models import Action, Component, ConcernItem
 from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_action_host_group import ScheduleTask
@@ -46,7 +46,12 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         "secrettext": "awe\nsopme\n\ttext\n",
         "list": ["1", "5", "baset"],
         "variant_inline": "f",
-        "plain_group": {"file": "contente\t\n\n\n\tbest\n\t   ", "map": {"k": "v", "key": "val"}, "simple": None},
+        "plain_group": {
+            "file": "contente\t\n\n\n\tbest\n\t   ",
+            "map": {"k": "v", "key": "val"},
+            "simple": None,
+            "listofstuff": None,
+        },
         "integer": None,
         "float": None,
         "string": None,
@@ -59,6 +64,8 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         "variant_builtin": None,
         "activatable_group": {"simple": "inactive", "list": ["one", "two"]},
         "source_list": ["ok", "fail"],
+        "text": None,
+        "variant_config": None,
     }
 
     FULL_CONFIG = {
@@ -135,24 +142,33 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
             (self.provider, self.FULL_CONFIG, "provider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
+            ConcernItem.objects.all().delete()
+
             # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
             action_name = "with_config" if type_name != "cluster" else "dummy"
             active = type_name in ("service", "provider")
             config_diff = {} if type_name != "provider" else {"variant_builtin": "host-3"}
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
-            obj_ = CoreObjectDescriptor(
-                id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
-            )
-            task = prepare_task_for_action(
-                target=obj_,
-                orm_owner=object_,
-                orm_target=object_,
-                action=action.pk,
-                payload=TaskPayloadDTO(
-                    conf=(deepcopy(config) or {}) | config_diff, attr={"activatable_group": {"active": active}}
-                ),
-            )
+
+            with RunTaskMock() as run_task:
+                configuration = None
+                if config is not None:
+                    configuration = ConfigurationDTO(
+                        convert=lambda x, _: x,
+                        input_config=core.config.Configuration(
+                            values=(deepcopy(config) or {}) | config_diff,
+                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                        ),
+                    )
+                with self.container() as container:
+                    container.get(ScheduleTask).do(
+                        action_orm=action,
+                        target=object_,
+                        payload=RunActionDTO(configuration=configuration),
+                    )
+
+            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
@@ -180,22 +196,31 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
             (self.service, self.CONFIG_WITH_NONES, "service"),
             (self.component, None, "component"),
         ):
+            ConcernItem.objects.all().delete()
             # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
             action_name = "with_config_on_host" if type_name != "component" else "without_config_on_host"
             active = type_name == "cluster"
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
-            target = CoreObjectDescriptor(id=self.host_1.pk, type=ADCMCoreType.HOST)
 
-            task = prepare_task_for_action(
-                target=target,
-                orm_owner=object_,
-                orm_target=self.host_1,
-                action=action.pk,
-                payload=TaskPayloadDTO(
-                    verbose=True, conf=deepcopy(config), attr={"activatable_group": {"active": active}}
-                ),
-            )
+            with RunTaskMock() as run_task:
+                configuration = None
+                if config is not None:
+                    configuration = ConfigurationDTO(
+                        convert=lambda x, _: x,
+                        input_config=core.config.Configuration(
+                            values=(deepcopy(config) or {}) | config_diff,
+                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                        ),
+                    )
+                with self.container() as container:
+                    container.get(ScheduleTask).do(
+                        action_orm=action,
+                        target=self.host_1,
+                        payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
+                    )
+
+            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):

@@ -20,7 +20,7 @@ from core.legacy.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.legacy.job.errors import TaskCreateError
 from core.legacy.job.types import AssociatedProcess, JobSpec, ScriptType, Task, TaskMappingDelta
 from core.templates import Template
-from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, GeneralEntityDescriptor, HostID
+from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
 from django.conf import settings
 from django.db.transaction import atomic
 from infra.services import get_config_service, get_wizard_service
@@ -37,10 +37,8 @@ from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs, render_scripts
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.checks import check_mapping_restrictions
-from cm.legacy.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
-from cm.legacy.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template
 from cm.legacy.services.job.run import start_task
 from cm.legacy.services.job.run.repo import ActionRepoImpl, JobRepoImpl
@@ -207,29 +205,7 @@ def prepare_task_for_action(
     task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     if payload.conf:
-        orm_task = TaskLog.objects.get(id=task.id)
-
-        _process_run_config(
-            action=orm_action,
-            owner=orm_owner,
-            task=orm_task,
-            conf=payload.conf,
-            attr=payload.attr or {},
-            spec=spec,
-            flat_spec=flat_spec,
-        )
-
-        orm_task.config = update_configuration_for_inventory_inplace(
-            configuration=payload.conf,
-            attributes=payload.attr or {},
-            specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
-            config_owner=GeneralEntityDescriptor(id=task.id, type="task"),
-        )
-
-        orm_task.save(update_fields=["config"])
-        # reread to update config
-        # ! this should be reworked when "layering" will be performed
-        task = job_repo.get_task(id=task.id)
+        raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
 
     if action_info.scripts_jinja:
         job_specifications = tuple(

@@ -31,6 +31,7 @@
     },
     "name": "Main Cluster",
     "id": {{ cluster.id }},
+    "uuid": "{{ cluster.uuid }}",
     "version": "1.0",
     "edition": "community",
     "state": "created",
@@ -77,6 +78,7 @@
   "services": {
     "all_params": {
       "id": {{ service.id }},
+      "uuid": "{{ service.uuid }}",
       "version": "1.1",
       "state": "created",
       "multi_state": [],
@@ -123,6 +125,7 @@
       },
       "all_params_component": {
         "component_id": {{ component.id }},
+        "uuid": "{{ component.uuid }}",
         "config": {
           "plain_group": {
             "simple": "ingroup",

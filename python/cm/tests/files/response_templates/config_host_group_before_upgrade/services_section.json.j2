@@ -1,6 +1,7 @@
 {
   "service_two_components": {
     "id": {{ service.id }},
+    "uuid": "{{ service.uuid }}",
     "version": "2.0",
     "state": "created",
     "multi_state": [],
@@ -30,6 +31,7 @@
     },
     "component_1": {
       "component_id": {{ component_1.id }},
+      "uuid": "{{ component_1.uuid }}",
       "config": {
         "integer": {{ component_1_config_integer | default(100) }},
         "string": "string",
@@ -73,6 +75,7 @@
     },
     "component_2": {
       "component_id": {{ component_2.id }},
+      "uuid": "{{ component_2.uuid }}",
       "config": {
         "integer": 100,
         "string": "string",

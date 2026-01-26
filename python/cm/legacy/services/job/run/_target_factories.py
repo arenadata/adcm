@@ -16,11 +16,9 @@ from functools import partial
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
-from uuid import UUID
 import json
 import traceback
 
-from adcm.feature_flags import use_new_config_processing
 from ansible_plugin.utils import finish_check
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.dto import TaskUpdateDTO
@@ -41,9 +39,7 @@ from cm.errors import AdcmEx
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.config import ConfigAttrPair
-from cm.legacy.services.config.spec import retrieve_flat_spec_for_objects
 from cm.legacy.services.job import context as context_m
-from cm.legacy.services.job import inventory as inventory_m
 from cm.legacy.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
@@ -70,7 +66,6 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     Component,
-    ConfigLog,
     LogStorage,
     Process,
     Prototype,
@@ -150,20 +145,15 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
 
     task_ = TaskLog.objects.get(id=task.id)
 
-    if use_new_config_processing():
-        from use_cases.legacy.upgrade import build_switch_revert_callbacks
+    from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
-        from cm.legacy.bundle_switch_revert import bundle_switch
+    from cm.legacy.bundle_switch_revert import bundle_switch
 
-        config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service)
-        bundle_switch(
-            obj=task_.task_object, upgrade=task_.action.upgrade, callbacks=callbacks, config_service=config_service
-        )
-    else:
-        from cm.legacy.upgrade import bundle_switch
-
-        bundle_switch(obj=task_.task_object, upgrade=task_.action.upgrade)
+    config_service = get_config_service()
+    callbacks = build_switch_revert_callbacks(config_service=config_service)
+    bundle_switch(
+        obj=task_.task_object, upgrade=task_.action.upgrade, callbacks=callbacks, config_service=config_service
+    )
 
     _switch_hc_if_required(task=task)
 
@@ -179,19 +169,15 @@ def internal_script_bundle_revert(task: Task, job: Job) -> int:
     task_ = TaskLog.objects.get(id=task.id)
 
     try:
-        if use_new_config_processing():
-            from use_cases.legacy.upgrade import build_switch_revert_callbacks
+        from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
-            from cm.legacy.bundle_switch_revert import bundle_revert
+        from cm.legacy.bundle_switch_revert import bundle_revert
 
-            config_service = get_config_service()
-            callbacks = build_switch_revert_callbacks(config_service=config_service)
+        config_service = get_config_service()
+        callbacks = build_switch_revert_callbacks(config_service=config_service)
 
-            bundle_revert(obj=task_.task_object, callbacks=callbacks, config_service=config_service)
-        else:
-            from cm.legacy.upgrade import bundle_revert
+        bundle_revert(obj=task_.task_object, callbacks=callbacks, config_service=config_service)
 
-            bundle_revert(obj=task_.task_object)
     except ObjectDoesNotExist as error:
         # This is a hack. We can do this, since all AdcmEx are intercepted in the Executer,
         # and a message is generated in the log there.
@@ -256,16 +242,16 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
 
 def internal_script_config_apply(task: Task, job: Job) -> int:
-    func = _apply_config_changes_new if use_new_config_processing() else _apply_config_changes
-
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
-        func(job.id, changing_object, change["parameters"], f"{task.action.display_name} process update")
+        _apply_config_changes(
+            job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
+        )
     return 0
 
 
-def _apply_config_changes_new(
+def _apply_config_changes(
     job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
 ) -> None:
     from use_cases.transition.config import update_configuration_from_job
@@ -282,34 +268,6 @@ def _apply_config_changes_new(
         config_service=config_service,
         owner_orm=db_object,
     )
-
-
-def _apply_config_changes(
-    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
-) -> tuple[dict, bool]:
-    from ansible_plugin.executors.config_old import _fill_config_and_attr
-
-    from cm.legacy.api import set_object_config_with_plugin
-
-    configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
-    spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
-
-    changes = _prepare_changes(parameters, spec)
-
-    changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
-
-    if not changed:
-        return changes.config, False
-
-    set_object_config_with_plugin(
-        job_id=job_id,
-        obj=db_object,
-        config=configuration.config,
-        attr=configuration.attr,
-        description=changes_description,
-    )
-
-    return changes.config, True
 
 
 def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
@@ -472,13 +430,6 @@ def _switch_hc_if_required(task: Task) -> None:
 # ENVIRONMENT BUILDERS
 
 
-class UiidJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, UUID):
-            return str(obj)
-        return super().default(obj)
-
-
 def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
     cluster_id, topology = None, None
     if task.owner:
@@ -498,7 +449,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
 
     inventory = prepare_ansible_inventory(task=task, topology=topology)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
-        json.dump(obj=inventory, fp=file_descriptor, cls=UiidJSONEncoder, separators=(",", ":"))
+        json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
     ansible_cfg_config_parser: ConfigParser = prepare_ansible_cfg(task=task)
     with (job_run_dir / "ansible.cfg").open(mode="w", encoding="utf-8") as config_file:
@@ -511,14 +462,12 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
     if task.action.hc_acl:
         delta = task.hostcomponent.mapping_delta
 
-    module = context_m if use_new_config_processing() else inventory_m
-
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = module.get_action_process_context(process, topology)
+        process_context = context_m.get_action_process_context(process, topology)
         process_mapping_delta = process_context.cumulative_delta
 
-    return module.get_inventory_data(
+    return context_m.get_inventory_data(
         target=task.target,
         is_host_action=task.action.is_host_action,
         delta=delta,
@@ -558,22 +507,16 @@ def prepare_ansible_job_config(
 
     process_context = None
 
-    if use_new_config_processing():
-        config_service = get_config_service()
-        get_action_process_context = context_m.get_action_process_context
-        get_adcm_configuration = partial(context_m.get_adcm_configuration, config_service=config_service)
-    else:
-        get_action_process_context = inventory_m.get_action_process_context
-        get_adcm_configuration = inventory_m.get_adcm_configuration
-
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = get_action_process_context(process, topology)
+        process_context = context_m.get_action_process_context(process, topology)
 
     adcm = ADCM.objects.select_related("config").get()
 
     return JobConfig(
-        adcm=ADCMJobConfig(uuid=str(adcm.uuid), config=get_adcm_configuration(adcm)),
+        adcm=ADCMJobConfig(
+            uuid=adcm.uuid, config=context_m.get_adcm_configuration(adcm, config_service=get_config_service())
+        ),
         context=context_m.get_run_context(task=task),
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),
@@ -587,7 +530,7 @@ def prepare_ansible_job_config(
         ),
         job=job_data,
         process=process_context.to_context() if process_context else None,
-    ).model_dump(exclude_unset=True)
+    ).model_dump(mode="json", exclude_unset=True)
 
 
 def prepare_ansible_cfg(task: Task) -> ConfigParser:

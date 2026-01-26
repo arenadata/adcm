@@ -31,7 +31,7 @@ from django.db.models.functions import Coalesce
 import core
 
 from cm.legacy.services.config_host_group import ConfigHostGroupInfo, ConfigHostGroupName
-from cm.legacy.services.job.inventory._types import ObjectsInInventoryMap
+from cm.legacy.services.job.context._types import ObjectsInInventoryMap
 from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 
 

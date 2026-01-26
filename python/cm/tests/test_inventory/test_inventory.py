@@ -24,10 +24,9 @@ from cm.converters import model_name_to_core_type
 from cm.legacy.api import add_service_to_cluster, update_obj_config
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import ObjectWithAction
-from cm.legacy.services.job.inventory import get_inventory_data
-from cm.legacy.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
+from cm.legacy.services.job.context import get_inventory_data
+from cm.legacy.services.job.context._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.legacy.services.job.types import HcAclAction
-from cm.legacy.utils import strip_uuid
 from cm.models import (
     Action,
     Component,
@@ -78,12 +77,20 @@ class TestInventory(BaseTestCase):
         cluster_inv = {
             "all": {
                 "children": {"CLUSTER": {"hosts": {host2.fqdn: {}}}},
-                "hosts": {host2.fqdn: {"adcm_hostid": host2.pk, "state": "created", "multi_state": []}},
+                "hosts": {
+                    host2.fqdn: {
+                        "adcm_hostid": host2.pk,
+                        "uuid": str(host2.uuid),
+                        "state": "created",
+                        "multi_state": [],
+                    }
+                },
                 "vars": {
                     "cluster": {
                         "config": {},
                         "name": "cluster",
                         "id": self.cluster.pk,
+                        "uuid": str(self.cluster.uuid),
                         "version": "1.0.0",
                         "edition": "community",
                         "state": "created",
@@ -97,7 +104,14 @@ class TestInventory(BaseTestCase):
         host_inv = {
             "all": {
                 "children": {"HOST": {"hosts": {self.host.fqdn: {}}}},
-                "hosts": {self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []}},
+                "hosts": {
+                    self.host.fqdn: {
+                        "adcm_hostid": self.host.pk,
+                        "uuid": str(self.host.uuid),
+                        "state": "created",
+                        "multi_state": [],
+                    }
+                },
                 "vars": {
                     "provider": {
                         "config": {},
@@ -122,8 +136,13 @@ class TestInventory(BaseTestCase):
                     },
                 },
                 "hosts": {
-                    self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []},
-                    "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
+                    self.host.fqdn: {
+                        "adcm_hostid": self.host.pk,
+                        "uuid": str(self.host.uuid),
+                        "state": "created",
+                        "multi_state": [],
+                    },
+                    "h2": {"adcm_hostid": host2.pk, "uuid": str(host2.uuid), "state": "created", "multi_state": []},
                 },
                 "vars": {
                     "provider": {
@@ -149,7 +168,7 @@ class TestInventory(BaseTestCase):
             target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
             with self.subTest(obj=obj, inv=inv):
                 actual_data = get_inventory_data(target=target, is_host_action=action.host_action)
-                self.assertDictEqual(strip_uuid(actual_data), inv)
+                self.assertDictEqual(actual_data, inv)
 
 
 class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):

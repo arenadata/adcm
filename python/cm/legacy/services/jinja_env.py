@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from cm.legacy.services.cluster import retrieve_related_cluster_topology
-from cm.legacy.services.job import context, inventory
+from cm.legacy.services.job import context
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -55,17 +55,17 @@ class TaskContext(TypedDict):
 
 
 class JinjaScriptsEnvironment(BaseModel):
-    cluster: Annotated[dict, inventory.ClusterNode]
-    services: dict[ServiceName, Annotated[dict, inventory.ServiceNode]]
-    groups: dict[inventory.HostGroupName, list[HostName]]
+    cluster: Annotated[dict, context.ClusterNode]
+    services: dict[ServiceName, Annotated[dict, context.ServiceNode]]
+    groups: dict[context.HostGroupName, list[HostName]]
     task: TaskContext
     action: ActionContext | ActionContextWithProcess
 
 
 class JinjaConfigsEnvironment(BaseModel):
-    cluster: inventory.ClusterNode
-    services: dict[str, inventory.ServiceNode]
-    groups: dict[inventory.HostGroupName, list[HostName]]
+    cluster: context.ClusterNode
+    services: dict[str, context.ServiceNode]
+    groups: dict[context.HostGroupName, list[HostName]]
     action: ActionContext | ActionContextWithProcess
 
 
@@ -82,7 +82,7 @@ def get_env_for_jinja_scripts(
     if use_new_config_processing():
         func = partial(context.get_cluster_vars, config_service=get_config_service())
     else:
-        func = inventory.get_cluster_vars
+        func = context.get_cluster_vars
 
     cluster_vars = func(topology=cluster_topology)
 
@@ -115,7 +115,7 @@ def get_env_for_jinja_config(
     if use_new_config_processing():
         func = partial(context.get_cluster_vars, config_service=get_config_service())
     else:
-        func = inventory.get_cluster_vars
+        func = context.get_cluster_vars
     clusters_vars = func(topology=cluster_topology)
     groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology)
     action = _get_action_info(action=action, process=process)
@@ -129,8 +129,8 @@ def get_env_for_jinja_config(
 
 
 def _get_host_group_names_only(
-    host_groups: dict[inventory.HostGroupName, list[tuple[HostID, HostName]]],
-) -> dict[inventory.HostGroupName, list[HostName]]:
+    host_groups: dict[context.HostGroupName, list[tuple[HostID, HostName]]],
+) -> dict[context.HostGroupName, list[HostName]]:
     return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}
 
 
@@ -155,15 +155,14 @@ def _get_action_info(action: Action, process: Process | None = None) -> ActionCo
 
 def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology, hc_delta: TaskMappingDelta | None = None
-) -> dict[inventory.HostGroupName, list[HostName]]:
+) -> dict[context.HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    module = context if use_new_config_processing() else inventory
-    host_groups = module.sort_hosts_within_groups(
-        module.detect_host_groups_for_cluster_bundle_action(
+    host_groups = context.sort_hosts_within_groups(
+        context.detect_host_groups_for_cluster_bundle_action(
             cluster_topology=cluster_topology,
             hosts_in_maintenance_mode=hosts_in_maintenance_mode,
             hc_delta=hc_delta or TaskMappingDelta(),
