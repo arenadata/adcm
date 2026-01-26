@@ -44,7 +44,7 @@ from cm.legacy.services.job.context._config import (
 )
 from cm.legacy.services.job.context._groups import detect_host_groups_for_cluster_bundle_action
 from cm.legacy.services.job.context._imports import get_imports_for_inventory
-from cm.legacy.services.job.inventory._types import (
+from cm.legacy.services.job.context._types import (
     ClusterNode,
     ClusterVars,
     ComponentNode,
@@ -221,7 +221,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     )
 
     cluster_vars_dict = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes).model_dump(
-        by_alias=True, exclude_defaults=True
+        mode="json", by_alias=True, exclude_defaults=True
     )
 
     alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
@@ -242,7 +242,9 @@ def _get_inventory_for_action_from_cluster_bundle(
             },
             "vars": cluster_vars_dict,
             "hosts": {
-                host_name: basic_nodes[ADCMCoreType.HOST, host_id].model_dump(by_alias=True, exclude_defaults=True)
+                host_name: basic_nodes[ADCMCoreType.HOST, host_id].model_dump(
+                    mode="json", by_alias=True, exclude_defaults=True
+                )
                 | alternative_host_nodes.get(host_name, {})
                 for host_tuples in sorted_host_groups.values()
                 for host_id, host_name in host_tuples
@@ -287,7 +289,9 @@ def _get_inventory_for_action_from_provider_bundle(
     )
 
     provider_vars = {
-        "provider": nodes_info[ADCMCoreType.PROVIDER, provider_id].dict(by_alias=True, exclude_defaults=True)
+        "provider": nodes_info[ADCMCoreType.PROVIDER, provider_id].model_dump(
+            mode="json", by_alias=True, exclude_defaults=True
+        )
     }
 
     alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_provider_groups(
@@ -306,7 +310,9 @@ def _get_inventory_for_action_from_provider_bundle(
             },
             "vars": provider_vars,
             "hosts": {
-                host_name: nodes_info[ADCMCoreType.HOST, host_id].model_dump(by_alias=True, exclude_defaults=True)
+                host_name: nodes_info[ADCMCoreType.HOST, host_id].model_dump(
+                    mode="json", by_alias=True, exclude_defaults=True
+                )
                 | alternative_host_nodes.get(host_name, {})
                 for host_id, host_name in sorted(set(hosts_group), key=itemgetter(0))
             },

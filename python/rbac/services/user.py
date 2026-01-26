@@ -69,7 +69,7 @@ class UserDB:
 
     @staticmethod
     def create_user(data: UserCreateDTO) -> UserID:
-        return User.objects.create_user(**data.dict()).pk
+        return User.objects.create_user(**data.model_dump()).pk
 
     @staticmethod
     def update_user(user_id: UserID, **fields: Any) -> UserID:
@@ -218,7 +218,7 @@ def _perform_user_update(
                 send_object_update_event,
                 obj_id=user_id,
                 obj_type=RBACCoreType.USER.value,
-                changes=dict(camelize(update_data.dict())),
+                changes=dict(camelize(update_data.model_dump())),
             )
         )
 

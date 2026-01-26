@@ -37,12 +37,14 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -70,6 +72,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -105,6 +108,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 {
                     "adcm_hostid": self.host_1.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
+                    "uuid": self.host_1.uuid,
                     "provider_config_integer": 101,
                     "provider_id": self.provider.pk,
                 },
@@ -113,6 +117,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -148,6 +153,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 {
                     "adcm_hostid": self.host_1.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
+                    "uuid": self.host_1.uuid,
                     "provider_id": self.provider.pk,
                     "provider_config_integer": 101,
                 },
@@ -184,6 +190,7 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (

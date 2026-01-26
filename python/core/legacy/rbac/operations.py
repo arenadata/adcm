@@ -85,7 +85,7 @@ def update_user_information(user_id: UserID, data: UserUpdateDTO, db: UserDBProt
     if data.email and user_with_email is not None and user_with_email.id != user_id:
         raise EmailTakenError()
 
-    return db.update_user(user_id=user_id, **data.dict(exclude_none=True))
+    return db.update_user(user_id=user_id, **data.model_dump(exclude_none=True))
 
 
 def update_user_password(

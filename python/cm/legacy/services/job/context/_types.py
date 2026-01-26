@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from typing import Literal, TypeAlias
 from uuid import UUID
 
@@ -115,3 +116,9 @@ CurrentStep = dict[Literal["step", "stage"], str]
 class ProcessContext(TypedDict):
     current: CurrentStep | None
     stages: dict[str, dict]
+
+
+@dataclass(slots=True)
+class ProcessStepPair:
+    process_id: int
+    step_id: int

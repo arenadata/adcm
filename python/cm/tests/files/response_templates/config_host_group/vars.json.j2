@@ -1,5 +1,6 @@
 {
   "cluster": {
+    "uuid": "{{ cluster.uuid }}",
     "config": {
       "plain_group": {
         "simple": "ingroup",
@@ -71,6 +72,7 @@
   "services": {
     "not_simple": {
       "id": {{ not_simple.id }},
+      "uuid": "{{ not_simple.uuid }}",
       "version": "4.3",
       "state": "created",
       "multi_state": [],
@@ -139,6 +141,7 @@
       },
       "not_simple_component": {
         "component_id": {{ not_simple_component.id }},
+        "uuid": "{{ not_simple_component.uuid }}",
         "config": {
           "plain_group": {
             "simple": "ingroup",
@@ -207,6 +210,7 @@
       },
       "another_not_simple_component": {
         "component_id": {{ another_not_simple_component.id }},
+        "uuid": "{{ another_not_simple_component.uuid }}",
         "config": {
           "plain_group": {
             "simple": "ingroup",
@@ -276,6 +280,7 @@
     },
     "thesame": {
       "id": {{ thesame.id }},
+      "uuid": "{{ thesame.uuid }}",
       "version": "2.1",
       "state": "created",
       "multi_state": [],
@@ -347,6 +352,7 @@
       },
       "thesame_component": {
         "component_id": {{ thesame_component.id }},
+        "uuid": "{{ thesame_component.uuid }}",
         "config": {
           "plain_group": {
             "simple": "ingroup",
@@ -415,6 +421,7 @@
       },
       "another_thesame_component": {
         "component_id": {{ another_thesame_component.id }},
+        "uuid": "{{ another_thesame_component.uuid }}",
         "config": {
           "plain_group": {
             "simple": "ingroup",

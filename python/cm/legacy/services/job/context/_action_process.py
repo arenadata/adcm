@@ -19,7 +19,7 @@ from infra.services import get_config_service
 import core
 
 from cm.impl.config.repo import build_specification
-from cm.legacy.services.job.inventory._types import CurrentStep, ProcessContext
+from cm.legacy.services.job.context._types import CurrentStep, ProcessContext
 from cm.models import Process, ProcessStep, PrototypeConfig
 
 

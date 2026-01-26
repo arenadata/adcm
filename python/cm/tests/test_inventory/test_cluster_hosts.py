@@ -18,7 +18,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
 
 from cm.legacy.services.job.action import prepare_task_for_action
-from cm.legacy.services.job.inventory import get_inventory_data
+from cm.legacy.services.job.context import get_inventory_data
 from cm.models import Action
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -46,6 +46,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -72,12 +73,14 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -91,6 +94,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -126,18 +130,21 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("hosts", host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,
+                    "uuid": host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -151,6 +158,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -171,6 +179,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,
+                    "uuid": host_2.uuid,
                 },
             ),
             ("vars", "provider"): (

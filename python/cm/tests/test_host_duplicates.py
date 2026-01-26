@@ -17,7 +17,7 @@ from core.types import ActionTargetDescriptor, ADCMCoreType
 from infra.services import get_config_service
 from use_cases.transition.host.duplicate import create_duplicate
 
-from cm.legacy.services.job.inventory._base import get_inventory_data
+from cm.legacy.services.job.context import get_inventory_data
 
 
 class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):

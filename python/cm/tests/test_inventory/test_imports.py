@@ -13,10 +13,11 @@
 from typing import Iterable
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from infra.services import get_config_service
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.api import DataForMultiBind, multi_bind
-from cm.legacy.services.job.inventory import get_imports_for_inventory, get_inventory_data
+from cm.legacy.services.job.context import get_imports_for_inventory, get_inventory_data
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
@@ -56,6 +57,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        get_config_service.cache_clear()
 
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
@@ -287,7 +289,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 30.43}}],
             "very_complex": {"activatable_group": None, "plain_group": {"listofstuff": ["204"]}},
         }
-        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
+        result = decrypt_secrets(
+            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+        )
         self.assertDictEqual(result, expected)
 
     def test_imports_have_default_one_import_succeess(self) -> None:
@@ -315,7 +319,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 500.5}}],
         }
 
-        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
+        result = decrypt_secrets(
+            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+        )
         self.assertDictEqual(result, expected)
 
     def test_imports_have_default_all_imported_success(self) -> None:
@@ -355,7 +361,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 },
             ],
         }
-        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
+        result = decrypt_secrets(
+            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+        )
 
         # sorted for test, in this case, the order is not important
         result["for_export"] = sorted(result["for_export"], key=lambda i: i["just_integer"])

@@ -11,25 +11,23 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from functools import partial
+from uuid import UUID
 
-from adcm.feature_flags import use_new_config_processing
 from core.action._context._wizard_process import construct_process_info
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
+from django.conf import settings
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 import core
 
 from cm.legacy.services.cluster import retrieve_related_cluster_topology
 from cm.legacy.services.job import context as context_m
-from cm.legacy.services.job import inventory
-from cm.legacy.services.job.inventory import (
-    sort_hosts_within_groups,
-)
-from cm.legacy.services.job.inventory._base import add_mapping_groups_from_process_steps
+from cm.legacy.services.job.context import sort_hosts_within_groups
+from cm.legacy.services.job.context._base import add_mapping_groups_from_process_steps
 from cm.models import (
+    ADCM,
     Action,
     ActionHostGroup,
     Cluster,
@@ -65,13 +63,23 @@ class TaskArgs:
 # For Internal Typehint Purposes
 
 
+class _ADCM(BaseModel):
+    uuid: UUID
+
+
+class _Env(TypedDict):
+    consul_url: str | None
+    consul_datacenter: str | None
+    consul_cacert_file: str | None
+
+
 class _ActionContext(TypedDict):
     owner_group: str
     name: str
 
 
 class _ActionWithProcessContext(_ActionContext):
-    process: inventory.ProcessContext
+    process: context_m.ProcessContext
 
 
 class _TaskContext(TypedDict):
@@ -80,10 +88,12 @@ class _TaskContext(TypedDict):
 
 
 class ActionRenderContext(BaseModel):
-    cluster: inventory.ClusterNode
-    services: dict[ServiceName, inventory.ServiceNode]
-    groups: dict[inventory.HostGroupName, list[HostName]]
+    cluster: context_m.ClusterNode
+    services: dict[ServiceName, context_m.ServiceNode]
+    groups: dict[context_m.HostGroupName, list[HostName]]
     action: _ActionContext | _ActionWithProcessContext
+    env: _Env
+    adcm: _ADCM
 
 
 class TaskRenderContext(ActionRenderContext):
@@ -144,7 +154,9 @@ class ContextGatherer:
             groups=action_context.groups,
             task=task_context,
             action=action_context.action,
-        ).model_dump(mode="python", by_alias=True)
+            env=action_context.env,
+            adcm=action_context.adcm,
+        ).model_dump(mode="json", by_alias=True)
 
     def _prepare_context_for_action(
         self,
@@ -156,12 +168,7 @@ class ContextGatherer:
     ) -> ActionRenderContext:
         cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
 
-        if use_new_config_processing():
-            get_cluster_vars = partial(context_m.get_cluster_vars, config_service=self.config_service)
-        else:
-            get_cluster_vars = inventory.get_cluster_vars
-
-        clusters_vars = get_cluster_vars(topology=cluster_topology)
+        clusters_vars = context_m.get_cluster_vars(topology=cluster_topology, config_service=self.config_service)
 
         process_cumulative_delta = {}
 
@@ -191,6 +198,12 @@ class ContextGatherer:
             services=clusters_vars.services,
             groups=groups,
             action=action_context,
+            env=_Env(
+                consul_url=settings.CONSUL_URL,
+                consul_datacenter=settings.CONSUL_DATACENTER,
+                consul_cacert_file=settings.CONSUL_CACERT_FILE,
+            ),
+            adcm=_get_adcm_info(),
         )
 
 
@@ -198,8 +211,8 @@ class ContextGatherer:
 
 
 def _get_host_group_names_only(
-    host_groups: dict[inventory.HostGroupName, list[tuple[HostID, HostName]]],
-) -> dict[inventory.HostGroupName, list[HostName]]:
+    host_groups: dict[context_m.HostGroupName, list[tuple[HostID, HostName]]],
+) -> dict[context_m.HostGroupName, list[HostName]]:
     return {group_name: [host_name for _, host_name in group_data] for group_name, group_data in host_groups.items()}
 
 
@@ -221,14 +234,13 @@ def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology,
     hc_delta: TaskMappingDelta,
     process_cumulative_delta: dict[str, set[tuple[int, str]]],
-) -> dict[inventory.HostGroupName, list[HostName]]:
+) -> dict[context_m.HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    module = context_m if use_new_config_processing() else inventory
-    host_groups = module.detect_host_groups_for_cluster_bundle_action(
+    host_groups = context_m.detect_host_groups_for_cluster_bundle_action(
         cluster_topology=cluster_topology,
         hosts_in_maintenance_mode=hosts_in_maintenance_mode,
         hc_delta=hc_delta,
@@ -252,3 +264,7 @@ def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[
             )
         )
     )
+
+
+def _get_adcm_info() -> _ADCM:
+    return _ADCM(uuid=ADCM.objects.filter().values("uuid").last()["uuid"])

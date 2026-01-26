@@ -29,7 +29,7 @@ from cm.legacy.services.job.context._base import (
 from cm.legacy.services.job.context._config import get_adcm_configuration, get_config_info, get_objects_configurations
 from cm.legacy.services.job.context._groups import detect_host_groups_for_cluster_bundle_action
 from cm.legacy.services.job.context._imports import get_imports_for_inventory
-from cm.legacy.services.job.inventory._types import (
+from cm.legacy.services.job.context._types import (
     ClusterNode,
     ClusterVars,
     ComponentNode,

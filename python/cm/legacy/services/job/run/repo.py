@@ -267,7 +267,7 @@ class JobRepoImpl(JobRepoInterface):
             JobLog(
                 task_id=task_id,
                 status=ExecutionStatus.CREATED.value,
-                **job.dict(),
+                **job.model_dump(),
             )
             for job in jobs
         )

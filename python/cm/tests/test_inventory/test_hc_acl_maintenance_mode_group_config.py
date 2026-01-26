@@ -100,30 +100,40 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                     "cluster_id": self.cluster.pk,
+                    "cluster_uuid": self.cluster.uuid,
                     "cluster_config_integer": 101,
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "component_1_id": self.component_1.pk,
+                    "component_1_uuid": self.component_1.uuid,
                     "component_2_id": self.component_2.pk,
+                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
             ("hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_3.pk},
+                {"adcm_hostid": self.host_3.pk, "uuid": self.host_3.uuid},
             ),
             ("hosts", f"{self.host_4.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_4.pk},
+                {"adcm_hostid": self.host_4.pk, "uuid": self.host_4.uuid},
             ),
             ("hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                     "cluster_id": self.cluster.pk,
                     "cluster_config_integer": 101,
+                    "cluster_uuid": self.cluster.uuid,
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "component_1_id": self.component_1.pk,
+                    "component_1_uuid": self.component_1.uuid,
                     "component_2_id": self.component_2.pk,
+                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
@@ -131,14 +141,18 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                 {
                     "id": self.cluster.pk,
                     "name": self.cluster.name,
+                    "uuid": self.cluster.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "component_1_id": self.component_1.pk,
+                    "component_1_uuid": self.component_1.uuid,
                     "component_2_id": self.component_2.pk,
+                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
         }
