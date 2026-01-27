@@ -228,6 +228,7 @@ def prepare_task_for_action(
         job_specifications = _render_scripts_from_template(
             template=action_info.scripts_template,
             action=orm_action,
+            owner=orm_owner,
             target=orm_target,
             context_gatherer=ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service()),
         )
@@ -254,6 +255,7 @@ def prepare_task_for_action(
 def _render_scripts_from_template(
     template: Template,
     target: Cluster | Service | Component | Host | ActionHostGroup,
+    owner: Cluster | Service | Component,
     action: Action,
     context_gatherer: ContextGatherer,
 ) -> tuple[JobSpec, ...]:
@@ -275,6 +277,7 @@ def _render_scripts_from_template(
     environment = Environment(bundle_root=bundle_root)
     task_args = TaskArgs(
         target_object=target,
+        owner_object=owner,
         action=action,
         config={},
         verbose=False,

@@ -165,9 +165,14 @@ class ScheduleTask:
                     )
 
                 case Cluster() | Service() | Component():
+                    if isinstance(action_objects.target, Provider | ADCM):
+                        message = f"Can't handle target {type(action_objects.target)} for cluster hierarchy action"
+                        raise TypeError(message)
+
                     action_args = ActionArgs(
                         action=action_orm,
-                        cluster_relative_object=action_objects.owner,
+                        owner_object=action_objects.owner,
+                        target_object=action_objects.target,
                         wizard_process_id=process_id,
                     )
                     spec_pair = _resolve_spec(
@@ -222,6 +227,7 @@ class ScheduleTask:
 
                     task_args = TaskArgs(
                         target_object=action_objects.target,
+                        owner_object=action_objects.owner,
                         action=action_orm,
                         config=config_to_set or {},
                         verbose=payload.launch.is_verbose,
@@ -285,8 +291,15 @@ class RetrieveConfigurationForAction:
                     root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash,
                     contract_version=action_orm.prototype.bundle.contract_version,
                 )
+                if isinstance(action_objects.target, Provider | ADCM):
+                    message = f"Can't handle target {type(action_objects.target)} for cluster hierarchy action"
+                    raise TypeError(message)
+
                 action_args = ActionArgs(
-                    action=action_orm, cluster_relative_object=action_objects.owner, wizard_process_id=None
+                    action=action_orm,
+                    owner_object=action_objects.owner,
+                    target_object=action_objects.target,
+                    wizard_process_id=None,
                 )
                 spec_pair = _resolve_spec(
                     action=action_orm,
@@ -331,9 +344,7 @@ def _resolve_spec(
         return _retrieve_static_spec(action_id=action.pk, config_service=config_service)
 
     if action.config_jinja:
-        prototype_configs, _ = get_jinja_config(
-            action=action, cluster_relative_object=action_args.cluster_relative_object
-        )
+        prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=action_args.owner_object)
         # todo rework, it shouldn't be imported in here, nor used "plainly" at all
         from cm.impl.config.repo import build_specification_from_prototype_config_records
 

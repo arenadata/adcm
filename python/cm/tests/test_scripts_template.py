@@ -115,7 +115,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         )
 
     def test_env_for_cluster(self):
-        args = TaskArgs(target_object=self.cluster, action=self.cluster_action)
+        args = TaskArgs(target_object=self.cluster, owner_object=self.cluster, action=self.cluster_action)
         env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
@@ -124,7 +124,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_service(self):
-        args = TaskArgs(target_object=self.service, action=self.service_action)
+        args = TaskArgs(target_object=self.service, owner_object=self.service, action=self.service_action)
         env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
@@ -133,7 +133,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_component(self):
-        args = TaskArgs(target_object=self.component, action=self.component_action)
+        args = TaskArgs(target_object=self.component, owner_object=self.component, action=self.component_action)
         env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
@@ -145,7 +145,7 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
         self.assertDictEqual(env, expected_env)
 
     def test_env_for_host(self):
-        args = TaskArgs(target_object=self.host, action=self.component_host_action)
+        args = TaskArgs(target_object=self.host, owner_object=self.component, action=self.component_host_action)
         env = decrypt_secrets(source=self.context_gatherer.prepare_context_for_task(args=args))
         expected_env = {
             **self.expected_env_part,
@@ -225,7 +225,12 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
             created_at=timezone.now(),
             state="created",
         )
-        args = TaskArgs(target_object=self.cluster, action=self.cluster_action, wizard_process_id=process.pk)
+        args = TaskArgs(
+            target_object=self.cluster,
+            owner_object=self.cluster,
+            action=self.cluster_action,
+            wizard_process_id=process.pk,
+        )
         encrypted_env = self.context_gatherer.prepare_context_for_task(args=args)
         env = decrypt_secrets(source=encrypted_env)
         expected_env = {

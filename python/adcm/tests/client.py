@@ -29,6 +29,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from django.db.models import Model
 from django.test.client import AsyncClient
 from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
@@ -120,7 +121,7 @@ class V2RootNode(RootNode):
         ConcernItem: "concerns",
     }
 
-    def __getitem__(self, item: PathObject | tuple[PathObject | str | int | WithID, ...]) -> APINode:
+    def __getitem__(self, item: PathObject | tuple[PathObject | str | int | WithID | Model, ...]) -> APINode:
         if isinstance(item, tuple):
             path_object, *tail_ = item
             tail = tuple(str(entry) if isinstance(entry, (str, int)) else str(entry.id) for entry in tail_)

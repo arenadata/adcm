@@ -62,40 +62,29 @@ def _render_step(
     bundle_root = repo.get_bundle_root_from_prototype(prototype_id=context.process_context.action.owner_prototype.id)
     environment = Environment(bundle_root=bundle_root)
 
+    action_args = ActionArgs(
+        action=context.process_context.action_orm,
+        owner_object=context.process_context.owner_orm,
+        target_object=context.process_context.target_orm,
+        wizard_process_id=process.id,
+    )
     match step.type:
         case core.action.wizard.StepType.CONFIGURATION:
-            action_args = ActionArgs(
-                action=context.process_context.action_orm,
-                cluster_relative_object=context.process_context.cluster_relative_object(),
-                wizard_process_id=process.id,
-            )
             prototype_configs = render_config(
                 template=template, environment=environment, context_args=action_args, context_gatherer=context_gatherer
             )
             step_spec = repo.serialize_prototype_configs(data=prototype_configs)
 
         case core.action.wizard.StepType.OPERATION:
-            task_args = TaskArgs(
-                target_object=context.process_context.target_orm,
-                action=context.process_context.action_orm,
-                config={},
-                verbose=False,
-                delta=None,
-                wizard_process_id=process.id,
-            )
+            task_args = TaskArgs.from_action_args(args=action_args)
+            task_args.config = {}
             step_spec = render_scripts(
                 template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
             )
 
         case core.action.wizard.StepType.MAPPING:
-            task_args = TaskArgs(
-                target_object=context.process_context.target_orm,
-                action=context.process_context.action_orm,
-                config={},
-                verbose=False,
-                delta=None,
-                wizard_process_id=process.id,
-            )
+            task_args = TaskArgs.from_action_args(args=action_args)
+            task_args.config = {}
             step_spec = render_hc_template(
                 template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
             )
