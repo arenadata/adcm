@@ -12,22 +12,25 @@
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import Annotated, Literal
+from functools import partial
+from pathlib import Path
+from typing import Annotated, Callable, Literal
 
-from pydantic import ConfigDict, Discriminator, Field, Tag
+from pydantic import AfterValidator, ConfigDict, Discriminator, Field, Tag
 
+from core import templates
 from core.bundle._parsing.shared.model import BundleModel
-from core.templates import RenderEngineType
+from core.bundle._parsing.shared.validation import template_script_is_correct_path
 
 
 @dataclass(slots=True)
 class PythonEngine:
-    type: Literal[RenderEngineType.PYTHON]
+    type: Literal[templates.RenderEngineType.PYTHON]
 
 
 @dataclass(slots=True)
 class Jinja2Engine:
-    type: Literal[RenderEngineType.JINJA2]
+    type: Literal[templates.RenderEngineType.JINJA2]
 
 
 @dataclass(slots=True)
@@ -48,10 +51,22 @@ class PythonTemplate(_TemplateBaseModel):
     engine: PythonEngine
     file: TemplateFileWithEntrypoint
 
+    def to_core_template(self, resolve_path: Callable[[str], Path]) -> templates.PythonTemplate:
+        engine = templates.PythonEngine(type=templates.RenderEngineType.PYTHON)
+        path = resolve_path(self.file.path)
+        file_ = templates.TemplateFileWithEntrypoint(path=path, entrypoint=self.file.entrypoint)
+        return templates.PythonTemplate(engine=engine, file=file_)
+
 
 class Jinja2Template(_TemplateBaseModel):
     engine: Jinja2Engine
     file: TemplateFile
+
+    def to_core_template(self, resolve_path: Callable[[str], Path]) -> templates.Jinja2Template:
+        engine = templates.Jinja2Engine(type=templates.RenderEngineType.JINJA2)
+        path = resolve_path(self.file.path)
+        file_ = templates.TemplateFile(path=path)
+        return templates.Jinja2Template(engine=engine, file=file_)
 
 
 def engine_type_discriminator(value):
@@ -76,3 +91,15 @@ Template = Annotated[
     Annotated[Jinja2Template, Tag("jinja2")] | Annotated[PythonTemplate, Tag("python")],
     Field(discriminator=_TemplateDiscriminator),
 ]
+# Template Examples
+
+WizardTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="wizard_template"))
+]
+ScriptsTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="scripts_template"))
+]
+ConfigTemplate = Annotated[
+    Template, AfterValidator(partial(template_script_is_correct_path, field_name="config_template"))
+]
+HCTemplate = Annotated[Template, AfterValidator(partial(template_script_is_correct_path, field_name="hc_template"))]

@@ -18,7 +18,14 @@ from core.bundle._predicates import is_component_key
 from core.bundle._repo import BundleRepoI
 from core.bundle._representation import build_parent_key_safe
 from core.bundle._service import BundleService
-from core.bundle._types import BundleContext, BundleDefinitionKey, BundleInfo, BundleUnpackingInfo, SignatureStatus
+from core.bundle._types import (
+    BundleContext,
+    BundleDefinitionKey,
+    BundleInfo,
+    BundleUnpackingInfo,
+    ComponentKey,
+    SignatureStatus,
+)
 from core.bundle._validate import ConvertConfigDefinition
 
 __all__ = [
@@ -32,6 +39,7 @@ __all__ = [
     "BundleService",
     "BundleUnpackingInfo",
     "BundleValidationError",
+    "ComponentKey",
     "ConvertConfigDefinition",
     "SignatureStatus",
     "build_parent_key_safe",

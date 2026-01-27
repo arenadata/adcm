@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import asdict
 from typing import Iterable, Literal
 
 from audit.models import AuditLogOperationType
@@ -17,11 +18,11 @@ from cm.converters import orm_object_to_action_target_type, orm_object_to_core_d
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
-from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionTargetDescriptor
-from infra.services import get_config_service, get_wizard_service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -29,6 +30,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+import core
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -76,8 +78,13 @@ class TestActionProcessAudit(BaseAPITestCase):
             ProcessStepInput.objects.create(step_id=step.id, job=None, configuration=test_input)
 
     def test_audit_record_process_operation(self):
-        test_spec, test_input, previous_step_names = (
-            [{"name": "spec", "subname": "", "type": "string"}],
+        test_spec = (
+            core.config.spec.FullSpec.from_parameters(
+                core.config.spec.p.StringParameter(identifier=core.config.spec.p.Identifier(name="spec", full="/spec"))
+            ).model_dump(),
+            asdict(core.config.Defaults()),
+        )
+        test_input, previous_step_names = (
             {"values": {}, "attributes": {}},
             {"stage1_step1", "stage2_step1"},
         )
@@ -131,9 +138,10 @@ class TestActionProcessAudit(BaseAPITestCase):
                 self.fill_steps_for_process(process.id, test_spec, test_input, previous_step_names)
                 action = self.get_object_action_with_process(obj)
 
-                context_gatherer = ContextGatherer(
-                    config_service=get_config_service(), wizard_service=get_wizard_service()
-                )
+                # don't copy this implementation, it's a hack, may not work in most cases
+                from adcm.dependencies import prepare_container
+
+                container = prepare_container()
 
                 # render step
                 fill_step_spec(
@@ -149,7 +157,7 @@ class TestActionProcessAudit(BaseAPITestCase):
                             target_orm=obj,
                         ),
                     ),
-                    context_gatherer=context_gatherer,
+                    bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
                 )
 
                 response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(

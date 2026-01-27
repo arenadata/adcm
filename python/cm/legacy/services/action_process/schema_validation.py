@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 from uuid import UUID
 
 from core.types import ActionProcessStepID
@@ -45,8 +45,8 @@ class HCMappingRule(BaseModel):
 
 
 class HostComponentMapDelta(BaseModel):
-    add: Optional[list[HCMappingRule]] = Field(default_factory=list)
-    remove: Optional[list[HCMappingRule]] = Field(default_factory=list)
+    add: list[HCMappingRule] = Field(default_factory=list)
+    remove: list[HCMappingRule] = Field(default_factory=list)
 
 
 # Submit

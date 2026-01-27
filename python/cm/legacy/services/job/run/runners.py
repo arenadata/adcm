@@ -15,6 +15,7 @@ from typing import Any, Protocol
 import os
 import signal
 
+from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.legacy.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
@@ -23,10 +24,9 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
 )
-from infra.services import get_config_service, get_wizard_service
 
 from cm.converters import action_target_type_to_model, core_type_to_model
-from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -75,6 +75,10 @@ class JobSequenceRunner(TaskRunner):
         self._status_server = status_server
         self._logger = logger
 
+        from adcm.dependencies import prepare_container
+
+        self._container = prepare_container()
+
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True
         for job_to_terminate in filter(
@@ -103,38 +107,39 @@ class JobSequenceRunner(TaskRunner):
             )
 
     def run(self, task_id: int):
-        task, configured_jobs = self._configure(task_id=task_id)
-        self._start(task_id=task_id)
+        with self._container():
+            task, configured_jobs = self._configure(task_id=task_id)
+            self._start(task_id=task_id)
 
-        last_processed_job = None
-        last_job_result = None
-        for current_job in configured_jobs:
-            task = self._get_updated_task(task=task)
-            self._prepare_job_environment(task=task, target=current_job)
+            last_processed_job = None
+            last_job_result = None
+            for current_job in configured_jobs:
+                task = self._get_updated_task(task=task)
+                self._prepare_job_environment(task=task, target=current_job)
 
-            last_processed_job = current_job.job
-            last_job_result = self._execute_job(task=task, target=current_job)
+                last_processed_job = current_job.job
+                last_job_result = self._execute_job(task=task, target=current_job)
 
-            if self._runtime.status != ExecutionStatus.ABORTED and last_job_result not in (
-                ExecutionStatus.SUCCESS,
-                ExecutionStatus.ABORTED,
+                if self._runtime.status != ExecutionStatus.ABORTED and last_job_result not in (
+                    ExecutionStatus.SUCCESS,
+                    ExecutionStatus.ABORTED,
+                ):
+                    self._runtime.status = ExecutionStatus.FAILED
+
+                if not self._should_proceed(last_job_result=last_job_result):
+                    break
+
+            if self._runtime.termination.is_requested or (
+                last_job_result == ExecutionStatus.ABORTED and last_processed_job.id == configured_jobs[-1].job.id
             ):
-                self._runtime.status = ExecutionStatus.FAILED
+                self._runtime.status = ExecutionStatus.ABORTED
+            elif self._runtime.status == ExecutionStatus.RUNNING:
+                if last_job_result in (ExecutionStatus.ABORTED, None):
+                    self._runtime.status = ExecutionStatus.SUCCESS
+                else:
+                    self._runtime.status = last_job_result
 
-            if not self._should_proceed(last_job_result=last_job_result):
-                break
-
-        if self._runtime.termination.is_requested or (
-            last_job_result == ExecutionStatus.ABORTED and last_processed_job.id == configured_jobs[-1].job.id
-        ):
-            self._runtime.status = ExecutionStatus.ABORTED
-        elif self._runtime.status == ExecutionStatus.RUNNING:
-            if last_job_result in (ExecutionStatus.ABORTED, None):
-                self._runtime.status = ExecutionStatus.SUCCESS
-            else:
-                self._runtime.status = last_job_result
-
-        self._finish(task=task, last_job=last_processed_job)
+            self._finish(task=task, last_job=last_processed_job)
 
     def _configure(self, task_id: int) -> tuple[Task, tuple[ExecutionTarget, ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
@@ -266,12 +271,7 @@ class JobSequenceRunner(TaskRunner):
         finished_task = self._repo.get_task(id=task.id)
         if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
             self._update_calling_process(
-                process=finished_task.action_process,
-                task=task,
-                task_owner=finished_task.owner,
-                context_gatherer=ContextGatherer(
-                    config_service=get_config_service(), wizard_service=get_wizard_service()
-                ),
+                process=finished_task.action_process, task=task, task_owner=finished_task.owner
             )
         elif finished_task.owner:
             # Owner should be updated only when action's not a part of operation step of wizard process.
@@ -353,7 +353,6 @@ class JobSequenceRunner(TaskRunner):
         process: CallingProcess,
         task: Task,
         task_owner: TaskOwner | None,
-        context_gatherer: ContextGatherer,
     ) -> None:
         from cm.legacy.services.action_process.operations import complete_operation_step
         from cm.legacy.services.action_process.types import ProcessContext
@@ -379,5 +378,5 @@ class JobSequenceRunner(TaskRunner):
             step_id=process.step_id,
             process_context=process_context,
             is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
-            context_gatherer=context_gatherer,
+            bundle_renderer=self._container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )

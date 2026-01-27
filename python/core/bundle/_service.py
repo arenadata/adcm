@@ -15,7 +15,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Collection
 
-from core import action, config
+from core import action, config, mapping
 from core.bundle import parsing
 from core.bundle._definitions import DefinitionsMap
 from core.bundle._files import get_config_files
@@ -108,3 +108,21 @@ class BundleService:
             action_allow_to_terminate=action_allow_to_terminate,
             mode="wizard",
         )
+
+    def parse_to_wizard_stages(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+    ) -> list[action.wizard.Stage]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        return parser.parse_wizard_stages(stages=data, template_path=template_path)
+
+    def parse_to_mapping_rules(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+    ) -> list[mapping.MappingRule]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        component_keys = self.repo.retrieve_component_keys(bundle_id=bundle_context.id)
+        return parser.parse_mapping_rules(rules=data, component_keys=component_keys)

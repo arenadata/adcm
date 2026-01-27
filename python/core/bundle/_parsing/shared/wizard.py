@@ -1,0 +1,77 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from pydantic import Field, model_validator
+
+from core import action
+from core.bundle._parsing.shared.model import BundleModel
+from core.bundle._parsing.shared.templates import ConfigTemplate, HCTemplate, ScriptsTemplate, Template
+
+
+class _Names(BundleModel):
+    name: str
+    display_name: str
+
+
+class OperationStep(_Names):
+    scripts_template: ScriptsTemplate
+    ui_options: action.wizard.OperationUIOptions
+
+    @property
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.OPERATION
+
+    @property
+    def template(self) -> Template:
+        return self.scripts_template
+
+
+class ConfigurationStep(_Names):
+    config_template: ConfigTemplate
+
+    @property
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.CONFIGURATION
+
+    @property
+    def template(self) -> Template:
+        return self.config_template
+
+
+class MappingStep(_Names):
+    hc_template: HCTemplate
+
+    @property
+    def type(self) -> action.wizard.StepType:
+        return action.wizard.StepType.MAPPING
+
+    @property
+    def template(self) -> Template:
+        return self.hc_template
+
+
+WizardProcessStep = OperationStep | ConfigurationStep | MappingStep
+
+
+class WizardProcessStage(_Names):
+    steps: list[WizardProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
+
+    @model_validator(mode="after")
+    def steps_names_are_unique(self):
+        step_names = set()
+        for step in self.steps:
+            if step.name in step_names:
+                raise ValueError(f"Duplicate step name: {step.name}")
+
+            step_names.add(step.name)
+
+        return self

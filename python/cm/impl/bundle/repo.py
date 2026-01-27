@@ -20,7 +20,7 @@ import hashlib
 
 from core import action, bundle
 from core.bundle._types import BundleInfo
-from core.types import BundleID
+from core.types import ADCMCoreType, BundleID
 from django.db import IntegrityError
 from pydantic import BaseModel
 
@@ -144,6 +144,13 @@ class BundleRepo(bundle.BundleRepoI):
 
     def recollect_categories(self) -> None:
         ProductCategory.re_collect()
+
+    def retrieve_component_keys(self, bundle_id: BundleID) -> set[bundle.ComponentKey]:
+        prototype_qs = Prototype.objects.values_list("name", "parent__name").filter(
+            bundle_id=bundle_id, type=ADCMCoreType.COMPONENT
+        )
+
+        return {("component", parent_name, name) for name, parent_name in prototype_qs}
 
 
 def convert_config_definition_to_orm_model(

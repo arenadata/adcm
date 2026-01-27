@@ -15,7 +15,7 @@ from typing import Any, Generator, Literal, TypeAlias
 from uuid import UUID, uuid4
 
 from core.action import wizard
-from core.legacy.bundle_alt.schema import ActionProcessStage, ActionProcessStep
+from core.legacy.bundle_alt.schema import ActionProcessStage
 from core.types import (
     ActionID,
     ActionProcessID,
@@ -29,6 +29,8 @@ from core.types import (
     TaskID,
 )
 from django.conf import settings
+from pydantic import RootModel
+import core
 
 from cm.converters import core_type_to_model
 from cm.legacy.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
@@ -58,6 +60,8 @@ from cm.models import (
 
 WasUpdated: TypeAlias = bool
 
+_Stages = RootModel[list[core.action.wizard.Stage]]
+
 
 def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
     hash_ = Prototype.objects.values_list("bundle__hash", flat=True).get(id=prototype_id)
@@ -66,7 +70,10 @@ def get_bundle_root_from_prototype(prototype_id: PrototypeID) -> Path:
 
 
 def create_process(
-    target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action_id: ActionID, stages: list[dict[str, Any]]
+    target: ActionTargetDescriptor,
+    owner: CoreObjectDescriptor,
+    action_id: ActionID,
+    stages: list[core.action.wizard.Stage],
 ) -> ActionProcess:
     process = Process.objects.create(
         action_id=action_id,
@@ -75,14 +82,14 @@ def create_process(
         owner_id=owner.id,
         owner_type=owner.type.value,
         last_completed_step=None,
-        flow_spec=stages,
+        flow_spec=_Stages(stages).model_dump(),
         sync_key=uuid4(),
     )
 
     return ActionProcess.model_validate(process, from_attributes=True)
 
 
-def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> list[ProcessStep]:
+def create_steps(process_id: ActionProcessID, stages: list[core.action.wizard.Stage]) -> list[ProcessStep]:
     objects = []
     for stage in stages:
         for step in stage.steps:
@@ -92,7 +99,7 @@ def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) 
                     type=step.type.value,
                     name=step.name,
                     stage=stage.name,
-                    display_name=step.display_name,
+                    display_name=step.extra.display_name,
                     step_spec=None,
                 )
             )
@@ -139,6 +146,9 @@ def retrieve_step(process_id: ActionProcessID, step_id: ActionProcessStepID) -> 
     try:
         return next(retrieve_steps(process_id=process_id, id=step_id))
     except StopIteration as error:
+        if not Process.objects.filter(id=process_id).exists():
+            raise ActionProcessNotFoundError() from error
+
         raise ActionProcessStepNotFoundError() from error
 
 
@@ -149,10 +159,7 @@ def retrieve_running_step_ids(process_id: ActionProcessID) -> set[ActionProcessS
 
 
 def retrieve_steps(process_id: ActionProcessID, **kwargs) -> Generator[Step, None, None]:
-    flow_spec = retrieve_process(process_id=process_id).flow_spec
     for step_orm in ProcessStep.objects.filter(process_id=process_id, **kwargs).order_by("id"):
-        step_orm.type = find_step_spec_declaration(step=step_orm, process_flow_spec=flow_spec).type
-
         yield Step.model_validate(step_orm, from_attributes=True)
 
 
@@ -166,6 +173,12 @@ def retrieve_process(process_id: ActionProcessID) -> ActionProcess:
 
 
 def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
+    # patch for serialization of config (because of exclude_unset)
+    if data.step_spec is not None:
+        match data.step_spec:
+            case (core.config.spec.FullSpec(), _):
+                data.step_spec = (data.step_spec[0].model_dump(), data.step_spec[1])
+
     ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
 
 
@@ -209,13 +222,15 @@ def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID, new_syn
     return bool(rows_matched)
 
 
-def find_step_spec_declaration(step: Step, process_flow_spec: list[ActionProcessStage]) -> ActionProcessStep:
+def find_step_spec_declaration(
+    step: Step, process_flow_spec: list[core.action.wizard.Stage]
+) -> core.action.wizard.StepDefinition:
     if not process_flow_spec:
         raise RuntimeError("process.flow_spec is empty")
 
     for raw_stage in process_flow_spec:
         for raw_step in raw_stage.steps:
-            if (raw_step.name, raw_step.display_name) == (step.name, step.display_name):
+            if (raw_stage.name, raw_step.name) == (step.stage, step.name):
                 return raw_step
 
     raise RuntimeError(f"Can't find flow_spec for {step}")
@@ -256,3 +271,12 @@ def retrieve_related_cluster_id_and_cluster_bundle_id(object_: CoreObjectDescrip
         values = ("id", "prototype__bundle_id")
 
     return core_type_to_model(object_.type).objects.values_list(*values).get(id=object_.id)
+
+
+def get_bundle_context_from_prototype(prototype_id: PrototypeID) -> core.bundle.BundleContext:
+    bundle_id, hash_, contract_version = Prototype.objects.values_list(
+        "bundle_id", "bundle__hash", "bundle__contract_version"
+    ).get(id=prototype_id)
+    path = Path(settings.BUNDLE_DIR, hash_)
+
+    return core.bundle.BundleContext(id=bundle_id, root=path, contract_version=contract_version)

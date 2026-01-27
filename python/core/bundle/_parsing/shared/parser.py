@@ -11,17 +11,21 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from functools import partial
 from pathlib import Path
-from typing import Generic, Iterable, Literal, TypeAlias, TypeVar
+from typing import Collection, Generic, Iterable, Literal, TypeAlias, TypeVar
 
-from core import action
+from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._errors import BundleParsingError, convert_validation_to_bundle_error
-from core.bundle._parsing.shared.conversion import extract_config, extract_scripts
+from core.bundle._parsing.shared.conversion import detect_relative_path_to_bundle_root, extract_config, extract_scripts
 from core.bundle._parsing.shared.model import BundleModel
+from core.bundle._parsing.shared.targets import ActionWizardStages, MappingRules
+from core.bundle._parsing.shared.wizard import ConfigurationStep, MappingStep, OperationStep
 from core.bundle._parsing.types import BundleParser, RootEntry
 from core.bundle._representation import repr_from_raw
-from core.bundle._types import BundleDefinitionKey
+from core.bundle._types import BundleDefinitionKey, ComponentKey
+from core.bundle._validate import check_action_hc_acl_rules
 from core.errors import localize_error
 
 _RelativePath: TypeAlias = str
@@ -116,6 +120,64 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
             raise BundleParsingError(message)
 
         return result
+
+    @convert_validation_to_bundle_error
+    def parse_wizard_stages(
+        self,
+        stages: list[dict],
+        template_path: Path,
+    ) -> list[action.wizard.Stage]:
+        parsed = ActionWizardStages.model_validate(stages)
+
+        resolve_path = partial(detect_relative_path_to_bundle_root, source_file_dir=template_path.parent)
+
+        result = []
+
+        for stage in parsed.root:
+            result_steps = []
+
+            for step in stage.steps:
+                meta = action.wizard.StepExtra(display_name=step.display_name)
+
+                template = step.template.to_core_template(resolve_path=resolve_path)
+
+                match step:
+                    case ConfigurationStep():
+                        step_definition = action.wizard.ConfigStepDefinition(
+                            name=step.name, type=action.wizard.StepType.CONFIGURATION, template=template, extra=meta
+                        )
+
+                    case OperationStep(ui_options=ui_options):
+                        meta = action.wizard.OperationStepExtra(display_name=meta.display_name, ui_options=ui_options)
+                        step_definition = action.wizard.OperationStepDefinition(
+                            name=step.name, type=action.wizard.StepType.OPERATION, template=template, extra=meta
+                        )
+
+                    case MappingStep():
+                        step_definition = action.wizard.MappingStepDefinition(
+                            name=step.name, type=action.wizard.StepType.MAPPING, template=template, extra=meta
+                        )
+
+                result_steps.append(step_definition)
+
+            result_stage = action.wizard.Stage(
+                name=stage.name, extra=action.wizard.StageExtra(display_name=stage.display_name), steps=result_steps
+            )
+
+            result.append(result_stage)
+
+        return result
+
+    @convert_validation_to_bundle_error
+    def parse_mapping_rules(
+        self, rules: list[dict], component_keys: Collection[ComponentKey]
+    ) -> list[mapping.MappingRule]:
+        parsed = MappingRules.model_validate(rules)
+
+        dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)
+        check_action_hc_acl_rules(hostcomponentmap=dumped, definitions=component_keys)
+
+        return parsed.root
 
     # Steps
 

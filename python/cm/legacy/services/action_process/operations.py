@@ -18,6 +18,7 @@ from typing import Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
+from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
 from core.legacy.job.dto import LogCreateDTO, TaskPayloadDTO
@@ -36,7 +37,6 @@ from django.utils import timezone
 from typing_extensions import Self
 import core
 
-from cm.impl.config.repo import build_specification
 from cm.legacy.services import mapping
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.errors import (
@@ -69,13 +69,14 @@ from cm.legacy.services.action_process.types import (
     StepUpdateDTO,
 )
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, Environment, render_process
+from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.job.run import start_task
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.logger import logger
-from cm.models import ProcessStep, ProcessStepInput, PrototypeConfig
+from cm.models import ProcessStep, ProcessStepInput
 
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -153,43 +154,44 @@ def find_current_and_last_completed_steps(
     return current, last_completed
 
 
-def initiate_process(process_context: ProcessContext, context_gatherer: ContextGatherer) -> ActionProcessID:
-    bundle_root = repo.get_bundle_root_from_prototype(prototype_id=process_context.action.owner_prototype.id)
-    environment = Environment(bundle_root=bundle_root)
-
+@convert_bundle_errors_to_adcm_ex
+def initiate_process(
+    process_context: ProcessContext, bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
+) -> ActionProcessID:
     action_args = ActionArgs(
         action=process_context.action_orm,
         owner_object=process_context.owner_orm,
         target_object=process_context.target_orm,
         wizard_process_id=None,
     )
-    stages = render_process(
+    bundle_context = repo.get_bundle_context_from_prototype(prototype_id=process_context.action.owner_prototype.id)
+
+    stages = bundle_renderer.render_wizard_stages(
         template=process_context.action.wizard_template,
-        environment=environment,
-        context_args=action_args,
-        context_gatherer=context_gatherer,
+        bundle_context=bundle_context,
+        args=action_args,
     )
-    db_stages = repo.convert_stages_to_db_format(stages=stages)
+
     process = repo.create_process(
         target=process_context.target,
         owner=process_context.owner,
         action_id=process_context.action.id,
-        stages=db_stages,
+        stages=stages,
     )
 
     # Works with bulk_create only if the Step model’s primary key is an AutoField, ignore_conflicts=False and
     # db is PostgreSQL, MariaDB, or SQLite 3.35+
     # https://docs.djangoproject.com/en/5.1/ref/models/querysets/#bulk-create
     steps = repo.create_steps(process_id=process.id, stages=stages)
-    current_step_id = steps[0].id
+    current_step_id = steps[0].pk
 
     repo.update_process(
         process_id=process.id,
-        data=ProcessUpdateDTO(current_step=current_step_id, flow_spec=db_stages),
+        data=ProcessUpdateDTO(current_step=current_step_id),
     )
 
     context = RenderStepContext(process_id=process.id, process_context=process_context)
-    fill_step_spec(step_id=current_step_id, context=context, context_gatherer=context_gatherer)
+    fill_step_spec(step_id=current_step_id, context=context, bundle_renderer=bundle_renderer)
 
     return process.id
 
@@ -203,7 +205,7 @@ def complete_step(
     process_id: ActionProcessID,
     step_id: ActionProcessStepID,
     process_context: ProcessContext,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     """Set step's status to `completed`, process's current_step and last_completed_step; render next step"""
 
@@ -218,7 +220,7 @@ def complete_step(
     )
     if current_id:
         context = RenderStepContext(process_id=process_id, process_context=process_context)
-        fill_step_spec(step_id=current_id, context=context, context_gatherer=context_gatherer)
+        fill_step_spec(step_id=current_id, context=context, bundle_renderer=bundle_renderer)
 
 
 def complete_operation_step(
@@ -227,7 +229,7 @@ def complete_operation_step(
     step_id: ActionProcessStepID,
     process_context: ProcessContext,
     is_operation_success: bool,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     update_process_sync_key(process_id=process_id, sync_key=process_sync_key, new_sync_key=uuid.uuid4())
 
@@ -239,7 +241,7 @@ def complete_operation_step(
         return
 
     complete_step(
-        process_id=process_id, step_id=step_id, process_context=process_context, context_gatherer=context_gatherer
+        process_id=process_id, step_id=step_id, process_context=process_context, bundle_renderer=bundle_renderer
     )
 
 
@@ -308,13 +310,14 @@ def convert_db_errors(func):
 
 
 @convert_db_errors
+@convert_bundle_errors_to_adcm_ex
 @atomic
 def perform_operation(
     process_id: ActionProcessID,
     payload: OperationPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
@@ -329,11 +332,11 @@ def perform_operation(
                 context=context,
                 new_process_sync_key=new_process_sync_key,
                 config_service=config_service,
-                context_gatherer=context_gatherer,
+                bundle_renderer=bundle_renderer,
             )
 
         case ProcessOperationType.RESET:
-            reset_step(process=process, payload=payload, context=context, context_gatherer=context_gatherer)
+            reset_step(process=process, payload=payload, context=context, bundle_renderer=bundle_renderer)
 
         case ProcessOperationType.COMPLETE:
             complete_process(process=process)
@@ -348,13 +351,14 @@ def perform_operation(
     )
 
 
+@convert_bundle_errors_to_adcm_ex
 def submit_step(
     process: ActionProcess,
     new_process_sync_key: UUID,
     payload: SubmitStepPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
@@ -373,7 +377,7 @@ def submit_step(
                 input_config=payload.params.configuration,
                 context=context,
                 config_service=config_service,
-                context_gatherer=context_gatherer,
+                bundle_renderer=bundle_renderer,
             )
 
         case core.action.wizard.StepType.OPERATION:
@@ -395,7 +399,7 @@ def submit_step(
                 step=step,
                 hc_mapping_delta=payload.params.host_component_map_delta,
                 context=context,
-                context_gatherer=context_gatherer,
+                bundle_renderer=bundle_renderer,
             )
 
 
@@ -405,7 +409,7 @@ def _operation_submit_mapping(
     hc_mapping_delta: HostComponentMapDelta,
     *,
     context: OperationContext,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     step_input_data = StepInputDTO(
         configuration=None, job_id=None, mapping=MappingInputDTO(delta=hc_mapping_delta), created_at=timezone.now()
@@ -424,12 +428,16 @@ def _operation_submit_mapping(
         process_id=process.id,
         step_id=step.id,
         process_context=context.process_context,
-        context_gatherer=context_gatherer,
+        bundle_renderer=bundle_renderer,
     )
 
 
+@convert_bundle_errors_to_adcm_ex
 def reset_step(
-    process: ActionProcess, payload: ResetStepPayload, context: OperationContext, context_gatherer: ContextGatherer
+    process: ActionProcess,
+    payload: ResetStepPayload,
+    context: OperationContext,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     _check_no_running_steps(process=process)
 
@@ -444,7 +452,7 @@ def reset_step(
     )
     if current_id:
         render_context = RenderStepContext(process_id=process.id, process_context=context.process_context)
-        fill_step_spec(step_id=current_id, context=render_context, context_gatherer=context_gatherer)
+        fill_step_spec(step_id=current_id, context=render_context, bundle_renderer=bundle_renderer)
 
 
 def _operation_submit_job(
@@ -476,7 +484,7 @@ def _operation_submit_job(
 
     task_orm = repo.retrieve_task_orm(task_id=task.id)
 
-    step_input_data = StepInputDTO(job_id=task_orm.id, created_at=timezone.now())
+    step_input_data = StepInputDTO(job_id=task_orm.pk, created_at=timezone.now())
     repo.upsert_step_input(step_id=step_id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step_id)
@@ -493,10 +501,16 @@ def _operation_submit_config(
     *,
     context: OperationContext,
     config_service: core.config.ConfigService,
-    context_gatherer: ContextGatherer,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
-    prototype_conifgs = tuple(PrototypeConfig(**cfg) for cfg in step.step_spec)
-    specification = build_specification(records=prototype_conifgs, group_customization_flag=False)
+    step_spec = step.spec
+    if step_spec is None:
+        raise RuntimeError("Step spec is unexpectedly missing")
+
+    specification = step_spec[0]
+    if not isinstance(specification, core.config.spec.FullSpec):
+        raise TypeError(f"Config step spec is unexpectedly not full spec: {type(specification)=} {step=}")
+
     config_object = context.process_context.cluster_relative_object(as_descriptor=True)
 
     try:
@@ -524,7 +538,7 @@ def _operation_submit_config(
         process_id=process.id,
         step_id=step.id,
         process_context=context.process_context,
-        context_gatherer=context_gatherer,
+        bundle_renderer=bundle_renderer,
     )
 
 

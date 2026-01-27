@@ -12,10 +12,11 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Literal, Protocol, TypeAlias
+from typing import Any, Collection, Iterable, Literal, Protocol, TypeAlias
 
-from core import action
+from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
+from core.bundle._types import ComponentKey
 
 VersionTag: TypeAlias = str
 VersionSupportStatus: TypeAlias = Literal["supported", "deprecated"]
@@ -58,4 +59,16 @@ class BundleParser(Protocol):
         action_allow_to_terminate: bool,
         mode: Literal["action", "wizard"],
     ) -> list[action.JobSpec]:
+        ...
+
+    def parse_wizard_stages(
+        self,
+        stages: list[dict],
+        template_path: Path,
+    ) -> list[action.wizard.Stage]:
+        ...
+
+    def parse_mapping_rules(
+        self, rules: list[dict], component_keys: Collection[ComponentKey]
+    ) -> list[mapping.MappingRule]:
         ...
