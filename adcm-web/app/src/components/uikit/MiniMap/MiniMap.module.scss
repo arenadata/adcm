@@ -8,6 +8,7 @@
 .minimapContentWrapper {
   white-space: nowrap;
   max-width: 100%;
+  min-width: 0; // important style. Without this style we catch horizontal scrollbar on configurations (with long text fields)
 }
 
 .minimap {
