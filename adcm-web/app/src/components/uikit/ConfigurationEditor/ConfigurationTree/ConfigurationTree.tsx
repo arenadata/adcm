@@ -97,8 +97,6 @@ const ConfigurationTree = ({
   const viewConfigTree = buildConfigurationTree(configNode, filter, treeState);
 
   const { isValid, configurationErrors } = validate(schema, configuration, attributes);
-  // todo: remove commented for debugging process
-  // !isValid && console.error(configurationErrors);
 
   useEffect(() => {
     onChangeIsValid?.(isValid);
@@ -117,12 +115,11 @@ const ConfigurationTree = ({
   };
 
   const handleGetNodeClassName = (node: ConfigurationNodeView) => {
-    let isBeforeFailedNode = false;
     const hasError = configurationErrors[node.key] !== undefined;
     const isSelected = node.key === treeState.selectedNode?.key;
 
     const failedNodeInfo = getFailedNodeInfo(nodeDictionary, configurationErrors, node.data.parentNode.key || node.key);
-    isBeforeFailedNode = failedNodeInfo ? failedNodeInfo.lastFailedNodeIndex > node.index : false;
+    const isBeforeFailedNode = failedNodeInfo ? failedNodeInfo.lastFailedNodeIndex > node.index : false;
 
     return getNodeClassName(node, hasError, isSelected, isBeforeFailedNode);
   };
@@ -207,6 +204,7 @@ const ConfigurationTree = ({
         node={viewConfigTree}
         treeRef={ref}
         isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
+        areExpandedAll={areExpandedAll}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
       />
