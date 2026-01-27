@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Generic, Literal, TypeAlias, TypeVar
 
-from core import config
+from core import config, templates
 from core.action import JobSpec
 from core.mapping import MappingOperation, MappingPair, MappingRule
 
@@ -52,14 +52,12 @@ ConfigStepSpec: TypeAlias = tuple[config.spec.FullSpec, config.Defaults]
 ConfigStepData: TypeAlias = config.Configuration
 
 
-# use cases are unknown for now, likely the commented type
-OperationStepSpec: TypeAlias = Any  # list[JobSpec]
+OperationStepSpec: TypeAlias = list[JobSpec]
 
 # use cases are unknown for now
 OperationStepData: TypeAlias = Any
 
-# use cases are unknown for now, likely the commented type
-MappingStepSpec: TypeAlias = Any  # list[MappingRule]
+MappingStepSpec: TypeAlias = list[MappingRule]
 
 Delta = dict[MappingOperation, list[MappingPair]]
 
@@ -109,3 +107,62 @@ OperationStepWithData: TypeAlias = tuple[OperationStep, OperationStepData | None
 MappingStepWithData: TypeAlias = tuple[MappingStep, MappingStepData | None]
 
 StepWithData: TypeAlias = ConfigStepWithData | OperationStepWithData | MappingStepWithData
+StepWithTemplate: TypeAlias = tuple[Step, templates.Template]
+
+# "Full" Objects
+
+
+@dataclass(slots=True)
+class OperationUIOptions:
+    button_name: str
+
+
+@dataclass(slots=True)
+class StepExtra:
+    display_name: str
+
+
+@dataclass(slots=True)
+class OperationStepExtra(StepExtra):
+    ui_options: OperationUIOptions
+
+
+M = TypeVar("M", bound=StepExtra | OperationStepExtra)
+
+
+@dataclass(slots=True)
+class _StepDefinition(Generic[ST, M]):
+    type: ST
+    template: templates.Template
+    name: str
+    extra: M
+
+
+@dataclass(slots=True)
+class ConfigStepDefinition(_StepDefinition[StepType.CONFIGURATION, StepExtra]):
+    ...
+
+
+@dataclass(slots=True)
+class OperationStepDefinition(_StepDefinition[StepType.OPERATION, OperationStepExtra]):
+    ...
+
+
+@dataclass(slots=True)
+class MappingStepDefinition(_StepDefinition[StepType.MAPPING, StepExtra]):
+    ...
+
+
+StepDefinition: TypeAlias = ConfigStepDefinition | OperationStepDefinition | MappingStepDefinition
+
+
+@dataclass(slots=True)
+class StageExtra:
+    display_name: str
+
+
+@dataclass(slots=True)
+class Stage:
+    name: str
+    extra: StageExtra
+    steps: list[StepDefinition]

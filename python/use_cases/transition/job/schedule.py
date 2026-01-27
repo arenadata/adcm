@@ -146,6 +146,7 @@ class ScheduleTask:
 
             process_id = None if not payload.process else payload.process.id
             bundle_context = core.bundle.BundleContext(
+                id=action_orm.prototype.bundle.id,
                 root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash,
                 contract_version=action_orm.prototype.bundle.contract_version,
             )
@@ -288,6 +289,7 @@ class RetrieveConfigurationForAction:
 
             case Cluster() | Service() | Component():
                 bundle_context = core.bundle.BundleContext(
+                    id=action_orm.prototype.bundle.id,
                     root=settings.BUNDLE_DIR / action_orm.prototype.bundle.hash,
                     contract_version=action_orm.prototype.bundle.contract_version,
                 )

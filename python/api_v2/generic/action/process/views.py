@@ -33,7 +33,7 @@ from cm.legacy.services.action_process.errors import (
 from cm.legacy.services.action_process.operations import OperationContext, initiate_process, perform_operation
 from cm.legacy.services.action_process.schema_validation import Configuration
 from cm.legacy.services.action_process.types import ProcessContext, Step
-from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
 from cm.legacy.services.job.run.repo import ActionRepoImpl
@@ -43,17 +43,16 @@ from cm.models import (
     Process,
     ProcessStep,
     ProcessStepInput,
-    PrototypeConfig,
     TaskLog,
 )
+from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job import JobService
 from core.types import ActionProcessID, ActionTargetDescriptor, ExtraActionTargetType
 from dishka import FromDishka
-from django.conf import settings
 from django.db.transaction import atomic
 from django.http.response import Http404
 from infra.di.django import inject
-from infra.services import get_config_service, get_wizard_service
+from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -160,7 +159,13 @@ class ActionProcessViewSet(
         return Response(serializer.data)
 
     @inject
-    def create(self, request, *args, job_service: FromDishka[JobService], **kwargs):  # noqa: ARG002
+    def create(
+        self,
+        request,
+        job_service: FromDishka[JobService],
+        bundle_renderer: FromDishka[BundleRenderer[ActionArgs, TaskArgs]],
+        **_,
+    ):
         process_context = self.get_process_context(job_service=job_service)
         cluster_relative_object_orm = process_context.cluster_relative_object()
         cluster_relative_object_cod = process_context.cluster_relative_object(as_descriptor=True)
@@ -172,12 +177,7 @@ class ActionProcessViewSet(
 
         # TODO: check if Process already exists
         with atomic():
-            process_id = initiate_process(
-                process_context=process_context,
-                context_gatherer=ContextGatherer(
-                    config_service=get_config_service(), wizard_service=get_wizard_service()
-                ),
-            )
+            process_id = initiate_process(process_context=process_context, bundle_renderer=bundle_renderer)
 
             flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
             changed = raise_flag_for_process(
@@ -205,7 +205,16 @@ class ActionProcessViewSet(
 
     @action(methods=["post"], detail=True, url_path="operation")
     @inject
-    def operation(self, request, *_, pk: ActionProcessID, job_service: FromDishka[JobService], **_kw):  # noqa: ARG002
+    def operation(
+        self,
+        request,
+        *,
+        pk: ActionProcessID,
+        job_service: FromDishka[JobService],
+        config_service: FromDishka[core.config.ConfigService],
+        bundle_renderer: FromDishka[BundleRenderer[ActionArgs, TaskArgs]],
+        **_,
+    ):  # noqa: ARG002
         process_id = int(pk)
         process_context = self.get_process_context(job_service=job_service)
 
@@ -219,16 +228,13 @@ class ActionProcessViewSet(
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
-        config_service = get_config_service()
-        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
-
         context = OperationContext(process_context=process_context, config_processor=self._convert_configuration)
         perform_operation(
             process_id=process_id,
             payload=payload,
             context=context,
             config_service=config_service,
-            context_gatherer=context_gatherer,
+            bundle_renderer=bundle_renderer,
         )
 
         return Response(
@@ -310,20 +316,20 @@ def _serialize_config_step(
     base_data: dict,
     config_service: core.config.ConfigService,
 ) -> dict:
-    from cm.impl.config.repo import build_specification_from_prototype_config_records
+    if not (isinstance(step.spec, tuple) and len(step.spec) == 2):
+        message = f"Incorrect spec for config step: {step=}"
+        raise ValueError(message)
 
     object_orm = action_target_type_to_model(object_.type).objects.get(pk=object_.id)
     if object_.type == ExtraActionTargetType.ACTION_HOST_GROUP:
         object_orm = object_orm.object
     owner = orm_object_to_core_descriptor(object_orm)
 
-    prototype_configs = tuple(PrototypeConfig(**config) for config in step.step_spec)
-    spec, defaults = build_specification_from_prototype_config_records(
-        records=prototype_configs,
-        group_customization_flag=False,
-        secrets_service=config_service.secrets,
-        bundle_root=settings.BUNDLE_DIR / object_orm.prototype.bundle.hash,
-    )
+    spec, defaults = step.spec
+    if not (isinstance(spec, core.config.spec.FullSpec) and isinstance(defaults, core.config.Defaults)):
+        message = f"Incorrect spec for config step: {spec=} {defaults=}"
+        raise TypeError(message)
+
     schema = config_service.retrieve_jsonschema_for_action(
         action_specification=spec,
         action_config_defaults=defaults,
@@ -364,7 +370,10 @@ def _serialize_operation_step(
 ) -> dict:
     process = repo.retrieve_process(process_id=step.process_id)
     step_spec_declaration = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec)
-    ui_options = step_spec_declaration.model_dump(include={"ui_options"}).get("ui_options")
+    if not isinstance(step_spec_declaration.extra, core.action.wizard.OperationStepExtra):
+        raise TypeError(f"Incorrect extra for operation step: {step_spec_declaration=}")
+
+    ui_options = asdict(step_spec_declaration.extra.ui_options)
 
     task_data = None
     if step_input:

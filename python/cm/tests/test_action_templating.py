@@ -70,6 +70,7 @@ class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCas
         template = parse_template(action.scripts_template)
         args = TaskArgs(target_object=cluster, owner_object=cluster, action=action)
         context = BundleContext(
+            id=bundle.pk,
             # we'll use static path for this case
             root=bundle_path,
             contract_version="1.0",

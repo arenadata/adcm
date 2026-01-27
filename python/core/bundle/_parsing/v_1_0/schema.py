@@ -25,7 +25,6 @@ from pydantic import (
 )
 from typing_extensions import Self, TypedDict
 
-from core import action
 from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.templates import Template
 from core.bundle._parsing.shared.validation import (
@@ -619,96 +618,6 @@ class VersionsSchema(_BaseModel):
 
         if self.max is not None and self.max_strict is not None:
             raise ValueError("max and max_strict can not be used simultaneously in versions")
-
-        return self
-
-
-##########################
-# ACTION PROCESS (WIZARD)
-##########################
-
-
-class _Names(_BaseModel):
-    name: str
-    display_name: str
-
-
-# Step Schemas
-
-
-class _StepOperationUIOptions(_BaseModel):
-    button_name: str
-
-
-class OperationStep(_Names):
-    scripts_template: ScriptsTemplate
-    ui_options: _StepOperationUIOptions
-
-    @property
-    def type(self) -> action.wizard.StepType:
-        return action.wizard.StepType.OPERATION
-
-    @property
-    def template(self) -> Template:
-        return self.scripts_template
-
-
-class ConfigurationStep(_Names):
-    config_template: ConfigTemplate
-
-    @property
-    def type(self) -> action.wizard.StepType:
-        return action.wizard.StepType.CONFIGURATION
-
-    @property
-    def template(self) -> Template:
-        return self.config_template
-
-
-class MappingStep(_Names):
-    hc_template: HCTemplate
-
-    @property
-    def type(self) -> action.wizard.StepType:
-        return action.wizard.StepType.MAPPING
-
-    @property
-    def template(self) -> Template:
-        return self.hc_template
-
-
-ActionProcessStep = OperationStep | ConfigurationStep | MappingStep
-
-
-# Stage & Action Process Schema
-
-
-class ActionProcessStage(_Names):
-    steps: list[ActionProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
-
-    @model_validator(mode="after")
-    def steps_names_are_unique(self):
-        step_names = set()
-        for step in self.steps:
-            if step.name in step_names:
-                raise ValueError(f"Duplicate step name: {step.name}")
-
-            step_names.add(step.name)
-
-        return self
-
-
-class ActionProcessSpec(_BaseModel):
-    stages: list[ActionProcessStage]
-
-    @model_validator(mode="after")
-    def stage_names_are_unique(self):
-        stage_names = set()
-        for stage in self.stages:
-            if stage.name in stage_names:
-                raise ValueError(f"Duplicate stage name: {stage.name}")
-
-            stage_names.add(stage.name)
 
         return self
 

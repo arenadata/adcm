@@ -15,9 +15,8 @@ from typing import TypeAlias
 from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from api_v2.generic.action.process.views import ContextGatherer
+from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
-from infra.services import get_config_service, get_wizard_service
 import core
 
 from cm.legacy.services.action_process import repo
@@ -34,9 +33,11 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitStepPayload,
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
+from cm.tests.dependencies import WithDishkaContainer
 
 StepName: TypeAlias = str
 
@@ -157,7 +158,7 @@ class TestActionProcessLogic(BaseTestCase):
             self.assertEqual(last_completed, steps_name_id_map["step_4"])
 
 
-class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
@@ -182,43 +183,41 @@ class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
             target_orm=cluster,
         )
 
-        config_service = get_config_service()
+        with self.container() as container:
+            bundle_renderer = container.get(BundleRenderer[ActionArgs, TaskArgs])
+            process_id = initiate_process(process_context=process_context, bundle_renderer=bundle_renderer)
 
-        context_gatherer = ContextGatherer(config_service=config_service, wizard_service=get_wizard_service())
+            ctx = self.get_process_context(process_id, cluster.id)
+            self.assertIsNotNone(ctx["current"])
+            self.assertDictEqual(ctx["current"], {"stage": "first_stage", "step": "stage1_step1"})
+            self.assertDictEqual(
+                ctx["stages"], {f"{stage_name}_stage": {} for stage_name in ("first", "second", "third", "fourth")}
+            )
 
-        process_id = initiate_process(process_context=process_context, context_gatherer=context_gatherer)
+            config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
 
-        ctx = self.get_process_context(process_id, cluster.id)
-        self.assertIsNotNone(ctx["current"])
-        self.assertDictEqual(ctx["current"], {"stage": "first_stage", "step": "stage1_step1"})
-        self.assertDictEqual(
-            ctx["stages"], {f"{stage_name}_stage": {} for stage_name in ("first", "second", "third", "fourth")}
-        )
+            process = repo.retrieve_process(process_id=process_id)
+            context = OperationContext(
+                process_context=process_context,
+                config_processor=lambda x, _: core.config.Configuration(values=x.config),
+            )
+            payload = SubmitStepPayload(
+                method=ProcessOperationType.SUBMIT,
+                params=SubmitConfigurationStepParams(
+                    process_sync_key=process.sync_key,
+                    step_id=process.current_step_id,
+                    configuration=Configuration(config=config, adcm_meta={}),
+                ),
+            )
 
-        config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
-
-        process = repo.retrieve_process(process_id=process_id)
-        context = OperationContext(
-            process_context=process_context,
-            config_processor=lambda x, _: core.config.Configuration(values=x.config),
-        )
-        payload = SubmitStepPayload(
-            method=ProcessOperationType.SUBMIT,
-            params=SubmitConfigurationStepParams(
-                process_sync_key=process.sync_key,
-                step_id=process.current_step_id,
-                configuration=Configuration(config=config, adcm_meta={}),
-            ),
-        )
-
-        submit_step(
-            process=process,
-            payload=payload,
-            context=context,
-            new_process_sync_key=uuid4(),
-            config_service=config_service,
-            context_gatherer=context_gatherer,
-        )
+            submit_step(
+                process=process,
+                payload=payload,
+                context=context,
+                new_process_sync_key=uuid4(),
+                config_service=container.get(core.config.ConfigService),
+                bundle_renderer=bundle_renderer,
+            )
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertDictContainsSubset(

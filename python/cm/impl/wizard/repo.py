@@ -12,37 +12,24 @@
 
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable
 
-from core import config, mapping
+from core import action, config, mapping
 from core.action import wizard
 
-from cm.impl.common.config_spec import build_defaults, build_specification
-from cm.models import Process, ProcessStep, ProcessStepInput, PrototypeConfig
-
-_BuildDefaults = Callable[[Iterable[PrototypeConfig], config.spec.FullSpec], config.Defaults]
+from cm.models import ProcessStep, ProcessStepInput
 
 
 @dataclass(slots=True)
 class WizardRepo(wizard.WizardRepoI):
-    def get_steps_with_data(
-        self,
-        process_id: wizard.ProcessID,
-        *,
-        bundles_dir: Path,
-    ) -> list[wizard.StepWithData]:
-        bundle_hash = Process.objects.values_list("action__prototype__bundle__hash", flat=True).get(id=process_id)
-        bundle_root = bundles_dir / bundle_hash
-        # note that defaults aren't encrypted in here as it should be everywhere
-        build_defaults_ = partial(build_defaults, encrypt=lambda x: x, bundle_root=bundle_root)
-        return get_steps_with_data(process_id=process_id, build_defaults_=build_defaults_)
+    def get_steps_with_data(self, process_id: wizard.ProcessID) -> list[wizard.StepWithData]:
+        return get_steps_with_data(process_id=process_id)
 
 
-def get_steps_with_data(process_id: wizard.ProcessID, build_defaults_: _BuildDefaults) -> list[wizard.StepWithData]:
+def get_steps_with_data(process_id: wizard.ProcessID) -> list[wizard.StepWithData]:
     step_input_relation = "processstepinput"
     query = ProcessStep.objects.select_related(step_input_relation).filter(process_id=process_id).order_by("id")
-    serialize = partial(serialize_step, extract_data=return_step_input, build_defaults_=build_defaults_)
+    serialize = partial(serialize_step, extract_data=return_step_input)
     return list(map(serialize, query))
 
 
@@ -53,7 +40,6 @@ def return_step_input(step: ProcessStep) -> ProcessStepInput | None:
 def serialize_step(
     orm_step: ProcessStep,
     extract_data: Callable[[ProcessStep], ProcessStepInput | None],
-    build_defaults_: _BuildDefaults,
 ) -> wizard.StepWithData:
     type_ = wizard.StepType(orm_step.type)
     state = wizard.StepState(orm_step.state)
@@ -69,7 +55,7 @@ def serialize_step(
     match type_:
         case wizard.StepType.CONFIGURATION:
             if orm_step.step_spec is not None:
-                spec = to_step_config_spec(orm_step.step_spec, build_defaults_=build_defaults_)
+                spec = to_step_config_spec(orm_step.step_spec)
 
             if step_input is not None:
                 data = to_step_config_data(step_input)
@@ -100,23 +86,17 @@ def serialize_step(
             return step, data
 
 
-def to_step_config_spec(spec: list[dict], build_defaults_: _BuildDefaults) -> wizard.ConfigStepSpec:
-    prototype_configs = tuple(PrototypeConfig(**rec) for rec in spec)
-    specification = build_specification(records=prototype_configs, group_customization_flag=False)
-    defaults = build_defaults_(prototype_configs, specification)
-    return specification, defaults
+def to_step_config_spec(spec: list[dict]) -> wizard.ConfigStepSpec:
+    spec_raw, defaults_raw = spec
+    return config.spec.FullSpec.model_validate(spec_raw), config.Defaults(**defaults_raw)
 
 
 def to_step_operation_spec(spec: Any) -> wizard.OperationStepSpec:
-    # type is not designed yet, return unusable dummy
-    _ = spec
-    return 1
+    return [action.JobSpec.model_validate(rec) for rec in spec]
 
 
 def to_step_mapping_spec(spec: Any) -> wizard.MappingStepSpec:
-    # type is not designed yet, return unusable dummy
-    _ = spec
-    return 1
+    return [mapping.MappingRule(**record) for record in spec]
 
 
 def to_step_config_data(data: ProcessStepInput) -> wizard.ConfigStepData:

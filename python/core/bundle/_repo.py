@@ -13,7 +13,7 @@
 from typing import Protocol
 
 from core.bundle._definitions import DefinitionsMap
-from core.bundle._types import BundleInfo
+from core.bundle._types import BundleInfo, ComponentKey
 from core.types import BundleID
 
 
@@ -25,4 +25,7 @@ class BundleRepoI(Protocol):
         ...
 
     def recollect_categories(self) -> None:
+        ...
+
+    def retrieve_component_keys(self, bundle_id: BundleID) -> set[ComponentKey]:
         ...

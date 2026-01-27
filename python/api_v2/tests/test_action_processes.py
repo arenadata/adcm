@@ -32,7 +32,7 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitStepPayload,
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessState, ProcessStepState
-from cm.legacy.services.bundle_alt.render import ContextGatherer
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.concern import create_issue
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import (
@@ -52,6 +52,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
+from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -62,7 +63,6 @@ from core.legacy.job.runners import (
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service, get_wizard_service
 from jinja2 import Template
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -214,15 +214,19 @@ class TestActionProcess(BaseAPITestCase):
             ),
             config_processor=lambda x, _: core.config.Configuration(values=x.config),
         )
-        context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
+
+        # don't copy this implementation, it's a hack, may not work in most cases
+        from adcm.dependencies import prepare_container
+
+        container = prepare_container()
 
         submit_step(
             process=process,
             payload=payload,
             context=context,
             new_process_sync_key=uuid4(),
-            config_service=get_config_service(),
-            context_gatherer=context_gatherer,
+            config_service=container.get(core.config.ConfigService),
+            bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )
 
     def test_create_process_success(self):
@@ -411,37 +415,6 @@ class TestActionProcess(BaseAPITestCase):
                     }
                     self.assertDictEqual(response.json(), expected_response)
 
-                    target_step.refresh_from_db()
-                    expected_spec = [
-                        {
-                            "name": "integer_field",
-                            "type": "integer",
-                            "limits": {},
-                            "default": 2,
-                            "subname": "",
-                            "required": True,
-                            "ui_options": {},
-                            "description": "",
-                            "display_name": "integer_field",
-                            "ansible_options": {"unsafe": False},
-                            "group_customization": False,
-                        },
-                        {
-                            "name": "string_field",
-                            "type": "string",
-                            "limits": {},
-                            "default": "string_value",
-                            "subname": "",
-                            "required": True,
-                            "ui_options": {},
-                            "description": "",
-                            "display_name": "string_field",
-                            "ansible_options": {"unsafe": False},
-                            "group_customization": False,
-                        },
-                    ]
-                    self.assertListEqual(target_step.step_spec, expected_spec)
-
                     response_template = (
                         self.test_files_dir / "responses" / "action_process" / "retrieve_config_step.yml"
                     )
@@ -607,9 +580,12 @@ class TestActionProcess(BaseAPITestCase):
 
         process.refresh_from_db()
 
-        context_gatherer = ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service())
-
         action_id = self.process_action_of_cluster.pk
+
+        # don't copy this implementation, it's a hack, may not work in most cases
+        from adcm.dependencies import prepare_container
+
+        container = prepare_container()
 
         fill_step_spec(
             step_id=process.current_step_id,
@@ -624,7 +600,7 @@ class TestActionProcess(BaseAPITestCase):
                     target_orm=self.cluster_2,
                 ),
             ),
-            context_gatherer=context_gatherer,
+            bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )
         step = ProcessStep.objects.get(id=process.current_step_id)
         self.assertEqual(step.state, ProcessStepState.BROKEN.value)
@@ -2089,18 +2065,27 @@ class TestActionProcess(BaseAPITestCase):
         expected_step_spec = {
             "step_1_config": [
                 {
-                    "name": "float",
-                    "type": "float",
-                    "limits": {},
-                    "default": 0.1,
-                    "subname": "",
-                    "required": False,
-                    "ui_options": {},
-                    "description": "",
-                    "display_name": "float",
-                    "ansible_options": {"unsafe": False},
-                    "group_customization": False,
-                }
+                    "groups": {},
+                    "hierarchy": {"child_groups": {}, "fields": ["float"], "rule": "all"},
+                    "parameters": {
+                        "/float": {
+                            "extra": {
+                                "description": "",
+                                "display_name": "float",
+                                "edit_rule": {"writable": "any"},
+                                "ui_options": {},
+                            },
+                            "identifier": {"full": "/float", "name": "float"},
+                            "is_desyncable": False,
+                            "is_float": True,
+                            "is_required": False,
+                            "max": None,
+                            "min": None,
+                            "type": "number",
+                        }
+                    },
+                },
+                {"values": {"/float": 0.1}, "selection": {}, "activation": {}},
             ],
             "step_2_mapping": [{"service": service.name, "component": component.name, "operation": "remove"}],
             "step_3_operation": [

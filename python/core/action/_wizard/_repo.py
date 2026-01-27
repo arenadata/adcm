@@ -10,17 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from typing import Protocol
 
 from core.action._wizard._types import ProcessID, StepWithData
 
 
 class WizardRepoI(Protocol):
-    def get_steps_with_data(
-        self,
-        process_id: ProcessID,
-        *,
-        bundles_dir: Path,
-    ) -> list[StepWithData]:
+    def get_steps_with_data(self, process_id: ProcessID) -> list[StepWithData]:
         ...

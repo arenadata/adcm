@@ -284,7 +284,7 @@ class APIV2Mixin:
         dst = (Path(gettempdir()) / src.name).with_suffix(".tar")
         archive = self._prepare_bundle_file(src=src, dst=dst)
 
-        with archive.open(encoding="utf-8") as f:
+        with archive.open(mode="rb") as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
         assert response.status_code == HTTP_201_CREATED, f"Bundle `{archive}` upload failed: {response.status_code}"
 

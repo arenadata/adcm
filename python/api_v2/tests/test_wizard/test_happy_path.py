@@ -68,18 +68,27 @@ class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         self.expected_step_spec = {
             "step_1_config": [
                 {
-                    "name": "float",
-                    "type": "float",
-                    "limits": {},
-                    "default": 0.1,
-                    "subname": "",
-                    "required": False,
-                    "ui_options": {},
-                    "description": "",
-                    "display_name": "float",
-                    "ansible_options": {"unsafe": False},
-                    "group_customization": False,
-                }
+                    "groups": {},
+                    "hierarchy": {"child_groups": {}, "fields": ["float"], "rule": "all"},
+                    "parameters": {
+                        "/float": {
+                            "extra": {
+                                "description": "",
+                                "display_name": "float",
+                                "edit_rule": {"writable": "any"},
+                                "ui_options": {},
+                            },
+                            "identifier": {"full": "/float", "name": "float"},
+                            "is_desyncable": False,
+                            "is_float": True,
+                            "is_required": False,
+                            "max": None,
+                            "min": None,
+                            "type": "number",
+                        }
+                    },
+                },
+                {"activation": {}, "selection": {}, "values": {"/float": 0.1}},
             ],
             "step_2_mapping": [
                 {"service": self.component.service.name, "component": self.component.name, "operation": "remove"}

@@ -38,7 +38,7 @@ from core.templates import Template, parse_template
 
 
 # COPY Start (for ADCM-6370 copied from cm)
-def detect_relative_path_to_bundle_root(source_file_dir: str | Path, raw_path: str) -> Path:
+def detect_relative_path_to_bundle_root(raw_path: str, source_file_dir: str | Path) -> Path:
     """
     :param source_file_dir: Directory with file where given `path` is defined
     :param raw_path: Path to resolve
@@ -300,7 +300,7 @@ def _ensure_list(result: list | Any) -> list:
 
 
 def _normalize_path(result: str, context: dict) -> str:
-    path_from_root = detect_relative_path_to_bundle_root(context["path"], result)
+    path_from_root = detect_relative_path_to_bundle_root(raw_path=result, source_file_dir=context["path"])
     return str(path_from_root)
 
 

@@ -17,6 +17,8 @@ from typing import Literal, TypeAlias
 
 from typing_extensions import Self
 
+from core.types import BundleID
+
 
 class SignatureStatus(str, Enum):
     VALID = "valid"
@@ -70,10 +72,12 @@ class BundleInfo:
 # ADCMBundleDefinitionKey: TypeAlias = UniqueKey[Literal[ADCMCoreType.ADCM]]
 #
 # BundleDefinitionKey: TypeAlias = ClusterBundleDefinitionKey | ProviderBundleDefinitionKey | ADCMBundleDefinitionKey
-BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | tuple[Literal["component"], str, str]
+ComponentKey: TypeAlias = tuple[Literal["component"], str, str]
+BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | ComponentKey
 
 
 @dataclass(slots=True)
 class BundleContext:
+    id: BundleID
     root: Path
     contract_version: str

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generic, Protocol, TypeVar
 
-from core import action, bundle, config, templates
+from core import action, bundle, config, mapping, templates
 from core.dynamic_bundle.types import ContextGathererI
 
 
@@ -89,6 +89,33 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
             template_path=template.file.path,
             action_allow_to_terminate=action_allow_to_terminate,
         )
+
+    def render_wizard_stages(
+        self, template: templates.Template, args: CtxAT, bundle_context: bundle.BundleContext
+    ) -> list[action.wizard.Stage]:
+        render_context = self.context.prepare_context_for_action(args)
+
+        data = self._render_template(
+            template=template, encrypted_context=render_context, bundle_root=bundle_context.root
+        )
+
+        return self.bundle_service.parse_to_wizard_stages(
+            data=data, bundle_context=bundle_context, template_path=template.file.path
+        )
+
+    def render_mapping_rules(
+        self,
+        template: templates.Template,
+        args: CtxTT,
+        bundle_context: bundle.BundleContext,
+    ) -> list[mapping.MappingRule]:
+        render_context = self.context.prepare_context_for_task(args)
+
+        data = self._render_template(
+            template=template, encrypted_context=render_context, bundle_root=bundle_context.root
+        )
+
+        return self.bundle_service.parse_to_mapping_rules(data=data, bundle_context=bundle_context)
 
     def _render_template(
         self,

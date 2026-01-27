@@ -18,9 +18,8 @@ from core.types import Descriptor
 from infra.services import get_config_service
 import core
 
-from cm.impl.config.repo import build_specification
 from cm.legacy.services.job.context._types import CurrentStep, ProcessContext
-from cm.models import Process, ProcessStep, PrototypeConfig
+from cm.models import Process, ProcessStep
 
 
 @dataclass(slots=True)
@@ -53,11 +52,12 @@ def get_action_process_context(process: Process, topology: ClusterTopology) -> P
             if process.current_step and step_obj.id == process.current_step.id:
                 current = {"step": step["name"], "stage": stage["name"]}
 
-            if _is_config_step(step) and hasattr(step_obj, "processstepinput"):
-                step_data = _build_config_for_step(process=process, step_obj=step_obj)
-
-            if _is_mapping_step(step) and hasattr(step_obj, "processstepinput") and step_obj.processstepinput.mapping:
-                step_data["groups"], cumulative_groups = _build_mapping_for_step(step_obj, topology)
+            if hasattr(step_obj, "processstepinput"):
+                match step["type"]:
+                    case core.action.wizard.StepType.CONFIGURATION:
+                        step_data = _build_config_for_step(process=process, step_obj=step_obj)
+                    case core.action.wizard.StepType.MAPPING if step_obj.processstepinput.mapping:
+                        step_data["groups"], cumulative_groups = _build_mapping_for_step(step_obj, topology)
 
             if step_data:
                 stages[stage["name"]][step["name"]] = step_data
@@ -70,9 +70,7 @@ def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
 
     config_service = get_config_service()
 
-    prototype_configs = tuple(PrototypeConfig(**config) for config in step_obj.step_spec)
-    specification = build_specification(records=prototype_configs, group_customization_flag=False)
-
+    specification = core.config.spec.FullSpec.model_validate(step_obj.step_spec[0])
     attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"].items()}
 
     configuration = config_service.prepare_configuration_for_ansible(
@@ -111,12 +109,3 @@ def _build_groups(
     for group_name in groups:
         groups[group_name].sort()
     return groups
-
-
-def _is_config_step(step: dict) -> bool:
-    # left this check as there's no "type" field for now in step spec/obj
-    return "config_template" in step
-
-
-def _is_mapping_step(step: dict) -> bool:
-    return "hc_template" in step

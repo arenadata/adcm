@@ -23,4 +23,4 @@ class WizardService:
     directories: Directories
 
     def retrieve_steps_and_data_for_process(self, process_id: ProcessID) -> list[StepWithData]:
-        return self.repo.get_steps_with_data(process_id=process_id, bundles_dir=self.directories.bundles)
+        return self.repo.get_steps_with_data(process_id=process_id)

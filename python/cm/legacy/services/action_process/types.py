@@ -13,6 +13,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, Union, overload
 from uuid import UUID
 
@@ -107,7 +108,7 @@ class ActionProcess(BaseModel):
     target_type: ADCMCoreType | ExtraActionTargetType
     owner_id: ObjectID
     owner_type: ADCMCoreType
-    flow_spec: list[ActionProcessStage] = Field(..., min_length=1)
+    flow_spec: list[core.action.wizard.Stage] = Field(..., min_length=1)
     current_step_id: ActionProcessStepID | None = None
     last_completed_step_id: ActionProcessStepID | None = None
 
@@ -116,8 +117,9 @@ class Step(BaseModel):
     id: ActionProcessStepID
     process_id: ActionProcessID
     name: str
+    stage: str
     display_name: str
-    step_spec: Any = None
+    step_spec: list[dict] | None = None
     type: core.action.wizard.StepType
     state: ProcessStepState
 
@@ -126,6 +128,31 @@ class Step(BaseModel):
     @property
     def is_render_required(self) -> bool:
         return self.step_spec is None
+
+    @cached_property
+    def spec(
+        self,
+    ) -> (
+        core.action.wizard.ConfigStepSpec
+        | core.action.wizard.OperationStepSpec
+        | core.action.wizard.MappingStepSpec
+        | None
+    ):
+        if self.step_spec is None:
+            return None
+
+        match self.type:
+            case core.action.wizard.StepType.CONFIGURATION:
+                raw_spec, raw_defaults = self.step_spec
+                config_spec = core.config.spec.FullSpec.model_validate(raw_spec)
+                config_defaults = core.config.Defaults(**raw_defaults)
+                return config_spec, config_defaults
+
+            case core.action.wizard.StepType.OPERATION:
+                return [core.action.JobSpec.model_validate(record) for record in self.step_spec]
+
+            case core.action.wizard.StepType.MAPPING:
+                return [core.mapping.MappingRule(**record) for record in self.step_spec]
 
 
 class DBPrototypeConfig(BaseModel):
@@ -162,7 +189,7 @@ class ProcessContext:
         ...
 
     @overload
-    def cluster_relative_object(self, as_descriptor: Literal[False]) -> ClusterRelativeObjectORM:
+    def cluster_relative_object(self, as_descriptor: Literal[False] = False) -> ClusterRelativeObjectORM:
         ...
 
     def cluster_relative_object(self, as_descriptor: bool = False) -> ClusterRelativeObjectORM | CoreObjectDescriptor:
