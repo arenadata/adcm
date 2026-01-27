@@ -60,6 +60,8 @@ AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
 )
 
+TEST_BUNDLES_DIR = Path(__file__).parent / "bundles"
+TEST_FILES_DIR = Path(__file__).parent / "files"
 
 # allow asserts
 # ruff: noqa: S101

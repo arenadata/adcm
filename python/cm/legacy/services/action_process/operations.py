@@ -159,7 +159,8 @@ def initiate_process(process_context: ProcessContext, context_gatherer: ContextG
 
     action_args = ActionArgs(
         action=process_context.action_orm,
-        cluster_relative_object=process_context.cluster_relative_object(),
+        owner_object=process_context.owner_orm,
+        target_object=process_context.target_orm,
         wizard_process_id=None,
     )
     stages = render_process(

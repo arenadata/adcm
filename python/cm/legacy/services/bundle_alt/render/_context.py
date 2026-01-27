@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from typing import TypeAlias
 from uuid import UUID
 
 from core.action._context._wizard_process import construct_process_info
@@ -19,7 +20,7 @@ from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
 from django.conf import settings
 from pydantic import BaseModel
-from typing_extensions import TypedDict
+from typing_extensions import Self, TypedDict
 import core
 
 from cm.legacy.services.cluster import retrieve_related_cluster_topology
@@ -42,22 +43,35 @@ from cm.models import (
 # For keeping garbage coupled
 
 
+_ActionOwner: TypeAlias = Cluster | Service | Component
+_ActionTarget: TypeAlias = _ActionOwner | Host | ActionHostGroup
+
+
 @dataclass(slots=True)
 class ActionArgs:
     action: Action
-    cluster_relative_object: Cluster | Service | Component | Host
+
+    target_object: _ActionTarget
+    owner_object: _ActionOwner
+
     wizard_process_id: core.action.wizard.ProcessID | None = None
 
 
 @dataclass(slots=True)
-class TaskArgs:
-    target_object: Cluster | Service | Component | Host | ActionHostGroup
-    action: Action
-    wizard_process_id: core.action.wizard.ProcessID | None = None
-
+class TaskArgs(ActionArgs):
     config: dict | None = None
     verbose: bool = False
     delta: TaskMappingDelta | None = None
+
+    @classmethod
+    def from_action_args(cls, args: ActionArgs, **kwargs) -> Self:
+        return cls(
+            action=args.action,
+            target_object=args.target_object,
+            owner_object=args.owner_object,
+            wizard_process_id=args.wizard_process_id,
+            **kwargs,
+        )
 
 
 # For Internal Typehint Purposes
@@ -112,39 +126,11 @@ class ContextGatherer:
         self,
         args: ActionArgs,
     ) -> dict:
-        context = self._prepare_context_for_action(
-            action=args.action,
-            cluster_relative_object=args.cluster_relative_object,
-            wizard_process_id=args.wizard_process_id,
-            delta=TaskMappingDelta(),
-        )
+        context = self._prepare_context_for_action(args=args, delta=TaskMappingDelta())
         return context.model_dump(mode="python", by_alias=True)
 
     def prepare_context_for_task(self, args: TaskArgs) -> dict:
-        target_object = args.target_object
-        extra_groups = {}
-
-        if isinstance(target_object, ActionHostGroup):
-            target_group_hosts = _get_names_of_hosts_in_action_host_group(target_object.pk)
-            extra_groups = {"target": target_group_hosts}
-
-            # override target object for further processing
-            target_object = target_object.object
-        elif isinstance(target_object, Host):
-            extra_groups = {"target": _get_target_for_host(target_object.fqdn)}
-
-        if not isinstance(target_object, (Cluster, Service, Component, Host)):
-            message = f"Target for task context can't be of type {type(target_object)}"
-            raise TypeError(message)
-
-        action_context = self._prepare_context_for_action(
-            action=args.action,
-            cluster_relative_object=target_object,
-            wizard_process_id=args.wizard_process_id,
-            delta=args.delta or TaskMappingDelta(),
-        )
-
-        action_context.groups |= extra_groups
+        action_context = self._prepare_context_for_action(args=args, delta=args.delta or TaskMappingDelta())
 
         task_context = _TaskContext(config=args.config, verbose=args.verbose)
 
@@ -161,24 +147,22 @@ class ContextGatherer:
     def _prepare_context_for_action(
         self,
         *,
-        action: Action,
-        cluster_relative_object: Cluster | Service | Component | Host,
+        args: ActionArgs,
         delta: TaskMappingDelta,
-        wizard_process_id: core.action.wizard.ProcessID | None,
     ) -> ActionRenderContext:
-        cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
+        cluster_topology = retrieve_related_cluster_topology(orm_object=args.owner_object)
 
         clusters_vars = context_m.get_cluster_vars(topology=cluster_topology, config_service=self.config_service)
 
         process_cumulative_delta = {}
 
-        action_context = _get_action_info(action=action)
+        action_context = _get_action_info(action=args.action)
 
-        if wizard_process_id:
+        if args.wizard_process_id:
             component_map = {v: k for k, v in cluster_topology.component_full_name_id_mapping.items()}
-            steps = self.wizard_service.retrieve_steps_and_data_for_process(process_id=wizard_process_id)
+            steps = self.wizard_service.retrieve_steps_and_data_for_process(process_id=args.wizard_process_id)
             process_context = construct_process_info(
-                process_id=wizard_process_id,
+                process_id=args.wizard_process_id,
                 steps_with_data=steps,
                 component_map=component_map,
                 host_map=cluster_topology.hosts,
@@ -192,6 +176,13 @@ class ContextGatherer:
             hc_delta=delta,
             process_cumulative_delta=process_cumulative_delta,
         )
+        match args.target_object:
+            case Host(fqdn=name):
+                groups["target"] = _get_target_for_host(name)
+
+            case ActionHostGroup(pk=group_id):
+                target_group_hosts = _get_names_of_hosts_in_action_host_group(group_id)
+                groups["target"] = target_group_hosts
 
         return ActionRenderContext(
             cluster=clusters_vars.cluster,

@@ -68,7 +68,7 @@ class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCas
         action = Action.objects.get(name="aa", prototype_id=cluster.prototype_id)
 
         template = parse_template(action.scripts_template)
-        args = TaskArgs(target_object=cluster, action=action)
+        args = TaskArgs(target_object=cluster, owner_object=cluster, action=action)
         context = BundleContext(
             # we'll use static path for this case
             root=bundle_path,

@@ -1,0 +1,4 @@
+- name: groups_in_context
+  type: json
+  default: {{ groups }}
+  

@@ -174,12 +174,10 @@ class ActionViewSet(
 
         self.check_permissions_for_run(request=request, action=action_, parent_object=self.parent_object)
 
-        target = self._get_actions_owner()
+        if not isinstance(self.parent_object, ActionTarget):
+            raise TypeError(f"Can't get configuration for {self.parent_object=}")
 
-        if not isinstance(target, ActionTarget):
-            raise TypeError(f"Can't get configuration for {target=}")
-
-        result = retrieve_configuration.do(action_orm=action_, target=target)
+        result = retrieve_configuration.do(action_orm=action_, target=self.parent_object)
 
         config_schema = config = adcm_meta = None
 
