@@ -87,7 +87,8 @@ class JobSequenceRunner(TaskRunner):
         ):
             self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {job_to_terminate.pid}")
             try:
-                os.kill(job_to_terminate.pid, signal.SIGTERM)
+                pgroup = os.getpgid(job_to_terminate.pid)
+                os.killpg(pgroup, signal.SIGTERM)
             except OSError:
                 self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {job_to_terminate.pid}")
 

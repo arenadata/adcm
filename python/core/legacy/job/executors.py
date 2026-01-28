@@ -107,6 +107,7 @@ class ProcessExecutor(Executor[BundleExecutorConfig], WithErrOutLogsMixin, ABC):
             env=environment,
             stdout=self._out_log,
             stderr=self._err_log,
+            start_new_session=True,
         )
 
         return self
