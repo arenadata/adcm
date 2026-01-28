@@ -1029,6 +1029,7 @@ class ADCMSchema(_BaseObjectSchema):
 
 class ClusterSchema(_BaseObjectSchema):
     type: Literal["cluster"]
+    contract_version: Annotated[Literal["1.0"], Field(default="1.0")]
     upgrade: Annotated[list[ClusterUpgradeSchema] | None, Field(default=None)]
     imports: Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]
     export: Annotated[str | list[str] | None, Field(default=None)]
@@ -1085,6 +1086,7 @@ class HostSchema(_BaseObjectSchema):
 
 class ProviderSchema(_BaseObjectSchema):
     type: Literal["provider"]
+    contract_version: Annotated[Literal["1.0"], Field(default="1.0")]
     upgrade: Annotated[list[ProviderUpgradeSchema] | None, Field(default=None)]
     config_group_customization: Annotated[bool | None, Field(default=None)]
     actions: PROVIDER_ACTIONS_TYPE
