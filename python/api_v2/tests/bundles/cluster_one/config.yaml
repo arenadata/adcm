@@ -8,7 +8,7 @@
   allow_maintenance_mode: true
   flag_autogeneration:
     enable_outdated_config: true
-  config:
+  config: &config
     - name: boolean
       type: boolean
       default: true
@@ -288,3 +288,7 @@
   components:
     will_have_bound_to:
       description: This component will have `bound_to` constraint after upgrade
+
+    will_miss_config:
+      description: This component will not have config after upgrade
+      config: *config

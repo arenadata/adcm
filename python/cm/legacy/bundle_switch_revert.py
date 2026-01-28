@@ -519,6 +519,7 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         except KeyError:
             previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
+        _restore_config_host_groups(obj=obj)
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service
         )
@@ -578,6 +579,30 @@ def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Con
         for key, value in meta_attributes.items()
     }
     return core.config.Configuration(values=raw_values, attributes=attributes)
+
+
+def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -> None:
+    """Creates absent CHGs, listed in `before_upgrade`"""
+    chgs_before_upgrade: set[str] = set(obj.before_upgrade.get("config_host_groups", ()))
+    if not chgs_before_upgrade:
+        return
+
+    obj_ct = ContentType.objects.get_for_model(obj)
+    existing_chgs: set[str] = set(
+        ConfigHostGroup.objects.filter(object_id=obj.id, object_type=obj_ct).values_list("name", flat=True)
+    )
+    to_create = chgs_before_upgrade.difference(existing_chgs)
+
+    for chg_name in to_create:
+        config_host_group = ConfigHostGroup.objects.create(
+            name=chg_name,
+            description="revert_upgrade",
+            object_id=obj.pk,
+            object_type=obj_ct,
+        )
+        config_host_group.hosts.set(
+            Host.objects.filter(fqdn__in=obj.before_upgrade["config_host_groups"][chg_name].get("hosts", ()))
+        )
 
 
 def _restore_config_of_main_object_and_update_host_groups(
@@ -713,6 +738,7 @@ def switch_config(
 
     old = specs_and_defaults[old_prototype.pk]
     new = specs_and_defaults[new_prototype.pk]
+    _remove_chgs_on_empty_spec(obj=obj, full_spec=new[0])
 
     owner = orm_object_to_core_descriptor(obj)
 
@@ -726,6 +752,19 @@ def switch_config(
         if new_defaults:
             # assume it's non-empty config
             config_service.create_initial_configuration(owner=owner, specification=new_spec, defaults=new_defaults)
+
+
+def _remove_chgs_on_empty_spec(
+    obj: Cluster | Service | Component | Provider | Host | ADCM, full_spec: core.config.spec.FullSpec
+) -> None:
+    if not full_spec.is_empty:
+        return
+
+    chg_qs = ConfigHostGroup.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj))
+    if chg_qs.exists():
+        repr_ = ", ".join(f"<ConfigHostGroup #{chg.id} {chg.name}>" for chg in chg_qs)
+        logger.warning(f"Removing configuration host groups: {repr_} of <{obj}> without configuration")
+        chg_qs.delete()
 
 
 def _switch_configuration_version(

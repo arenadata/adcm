@@ -85,7 +85,7 @@ class TestPrototype(BaseAPITestCase):
 
         filters = {
             "id": (prototype.pk, 0, 1),
-            "bundleId": (prototype.bundle.id, 0, 18),
+            "bundleId": (prototype.bundle.id, 0, 19),
             "displayName": (prototype.display_name, "wrong", 2),
             "type": (ObjectType.CLUSTER.value, ObjectType.ADCM.value, 2),
         }

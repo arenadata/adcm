@@ -135,3 +135,7 @@ class FullSpec(BaseModel):
                 instance.parameters[param.identifier.full] = param
 
         return instance
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.parameters and not self.groups
