@@ -18,7 +18,3 @@
 - name: service_1
   type: service
   version: *version
-
-  components:
-    component_1:
-      constraint: [ 0, + ]

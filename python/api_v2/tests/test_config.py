@@ -15,9 +15,11 @@ from unittest.mock import patch
 import json
 import unittest
 
+from adcm.dependencies import prepare_container
 from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.models import (
     ADCM,
@@ -35,6 +37,7 @@ from cm.models import (
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
@@ -48,6 +51,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APITestCase
+from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
 from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
 
@@ -3109,8 +3113,10 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.bundles_dir = Path(__file__).parent / "bundles"
+        prepare_container.cache_clear()
+        get_config_service.cache_clear()  # TODO: ADCM-7513
 
+        cls.bundles_dir = Path(__file__).parent / "bundles"
         init_roles()
         init()
 
@@ -3128,6 +3134,17 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         self.service = self.create_services(names=["service_1"], cluster=self.cluster)[0]
         self.component = Component.objects.get(service=self.service, prototype__name="component_1")
 
+        provider_bundle = self.create_bundle(src=self.bundles_dir / "provider")
+        provider = self.create_provider(bundle=provider_bundle, name="Test provider")
+        self.host_1 = self.create_host(provider=provider, cluster=self.cluster, name="host-1")
+        self.host_2 = self.create_host(provider=provider, cluster=self.cluster, name="host-2")
+        self.host_3 = self.create_host(provider=provider, cluster=self.cluster, name="host-3")
+
+        self.create_mapping(
+            cluster=self.cluster,
+            entries=((self.host_1, self.component), (self.host_2, self.component), (self.host_3, self.component)),
+        )
+
     def check_update_config_response(
         self, obj: Cluster | Service | Component | ConfigHostGroup, expected_code: int, obj_repr: str = ""
     ) -> None:
@@ -3144,27 +3161,55 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
             }
             self.assertDictEqual(response.json(), expected_error)
 
-    def test_adcm_7595_update_config_and_get_config_schema_of_object_without_config(self):
+    def test_adcm_7595_7656_update_config_and_get_config_schema_of_object_without_config(self):
+        """
+        Scenario:
+            cluster, service, component, each with CHG
+            upgrade: cluster, service without configs, component is deleted
+            revert
+        """
+
         chgs = []
-        objects = [self.cluster, self.service, self.component]
-        for object_ in objects:
-            chg = self.create_config_host_group(owner=object_, name=f"{object_.__class__.__name__}-chg")
+        objects = [
+            (self.cluster, self.host_1, self.host_2),
+            (self.service, self.host_2, self.host_3),
+            (self.component, self.host_3, self.host_1),
+        ]
+        for object_, *hosts in objects:
+            chg = self.create_config_host_group(owner=object_, hosts=hosts, name=f"{object_.__class__.__name__}-chg")
             chgs.append(chg)
 
+        objects = [tup[0] for tup in objects]
         for object_ in [*objects, *chgs]:
             response = self.client.v2[object_, "config-schema"].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertTrue(response.json()["properties"])
             self.check_update_config_response(obj=object_, expected_code=HTTP_201_CREATED)
 
+        chg_hosts_map_initial = {
+            (chg.name, chg.object_type_id): {(host.id, host.fqdn) for host in chg.hosts.all()}
+            for chg in ConfigHostGroup.objects.all()
+        }
+
         # upgrade cluster to version without configs
+        self.cluster.refresh_from_db()
         self.assertEqual(self.cluster.prototype.version, "1.1")
+        self.assertDictEqual(self.cluster.before_upgrade, {"state": None})
+
         response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
         self.cluster.refresh_from_db()
         self.assertEqual(self.cluster.prototype.version, "2.2")
 
-        for object_ in [*objects, *chgs]:
+        # CHGs must be removed after upgrade to no-config version
+        for chg in chgs:
+            self.assertFalse(ConfigHostGroup.objects.filter(id=chg.id).exists())
+            response = self.client.v2[chg].get()
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.assertFalse(self.cluster.components.exists())  # component is removed by upgrade
+        for object_ in [self.cluster, self.service]:
             response = self.client.v2[object_, "config-schema"].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertFalse(response.json()["properties"])
@@ -3175,3 +3220,23 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
             else:
                 obj_repr = f"{object_.__class__.__name__.lower()} #{object_.id}"
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
+
+        # revert upgrade
+        config_service = get_config_service()
+        callbacks = build_switch_revert_callbacks(config_service=config_service)
+        bundle_revert(obj=self.cluster, callbacks=callbacks, config_service=config_service)
+
+        # CHGs must be restored
+        chg_hosts_map = {
+            (chg.name, chg.object_type_id): {(host.id, host.fqdn) for host in chg.hosts.all()}
+            for chg in ConfigHostGroup.objects.all()
+        }
+        self.assertDictEqual(chg_hosts_map, chg_hosts_map_initial)
+
+        objects = [self.cluster, self.cluster.services.get(), self.cluster.components.get()]
+        chgs = ConfigHostGroup.objects.filter(name__in=(tup[0] for tup in chg_hosts_map))
+        for object_ in [*objects, *chgs]:
+            response = self.client.v2[object_, "config-schema"].get()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertTrue(response.json()["properties"])
+            self.check_update_config_response(obj=object_, expected_code=HTTP_201_CREATED)

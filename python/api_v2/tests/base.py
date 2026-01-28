@@ -352,12 +352,22 @@ class APIV2Mixin:
         return ahg
 
     def create_config_host_group(
-        self, owner: Cluster | Service | Component | Provider | Host, name: str, description: str = ""
+        self,
+        owner: Cluster | Service | Component | Provider | Host,
+        name: str,
+        hosts: Collection[Host] = (),
+        description: str = "",
     ) -> ConfigHostGroup:
         response = self.client.v2[owner, "config-groups"].post(data={"name": name, "description": description})
         assert response.status_code == HTTP_201_CREATED, f"ConfigHostGroup creation failed: {response.status_code}"
 
-        return ConfigHostGroup.objects.get(id=response.json()["id"])
+        chg = ConfigHostGroup.objects.get(id=response.json()["id"])
+
+        for host in hosts:
+            response = self.client.v2[chg, "hosts"].post(data={"hostId": host.id})
+            assert response.status_code == HTTP_201_CREATED, f"Add host to {chg} failed: {response.status_code}"
+
+        return chg
 
     def set_maintenance_mode(self, obj: Service | Component | Host, value: MaintenanceMode) -> None:
         response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
