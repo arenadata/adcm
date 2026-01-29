@@ -85,6 +85,7 @@
   transition: background-color 250ms, border-color 250ms;
 
   background: var(--node-content-background);
+  padding: 0 10px 0 0;
 
   &:hover {
     --node-content-background: var(--node-content-background-hover);
@@ -115,8 +116,6 @@
 
   &:has(&__value),
   &:has(label) {
-    padding: 0 10px 0 0;
-
     &:has(> .nodeContent__dragHandle) {
       padding: 0 10px 0 20px;
 
