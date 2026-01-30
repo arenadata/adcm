@@ -165,7 +165,9 @@ class JobRepo(core.job.JobRepoI):
             selector=selector,
             is_blocking=payload.launch.is_blocking,
             process=payload.process.model_dump(mode="json") if payload.process else None,
-            description=payload.description,
+            name=payload.extra.name,
+            display_name=payload.extra.display_name,
+            description=payload.extra.description,
         )
 
         return task.pk

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import suppress
 from http.cookies import SimpleCookie
 from importlib import import_module
 from pathlib import Path
@@ -286,7 +287,14 @@ class APIV2Mixin:
 
         with archive.open(mode="rb") as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
-        assert response.status_code == HTTP_201_CREATED, f"Bundle `{archive}` upload failed: {response.status_code}"
+
+        if response.status_code != HTTP_201_CREATED:
+            reason = "unknown"
+            with suppress(Exception):
+                reason = response.json()
+
+            message = f"Bundle `{archive}` upload failed ({response.status_code=}) with reason: {reason}"
+            raise RuntimeError(message)
 
         return Bundle.objects.get(id=response.json()["id"])
 

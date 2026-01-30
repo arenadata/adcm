@@ -234,6 +234,7 @@ class ActionProcessViewSet(
             payload=payload,
             context=context,
             config_service=config_service,
+            job_service=job_service,
             bundle_renderer=bundle_renderer,
         )
 

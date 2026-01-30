@@ -18,6 +18,14 @@
       states:
         available: any
 
+    wizard_operation_as_first:
+      <<: *wizard_action
+      wizard_template:
+        file:
+          path: wizard_jinja/stages_operation_first.j2
+        engine:
+          type: jinja2
+
     wizard_with_mapping_only:
       type: job
       script: ./sleep.yaml

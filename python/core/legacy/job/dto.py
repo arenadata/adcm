@@ -81,13 +81,20 @@ class LaunchOptions:
     is_blocking: bool = True
 
 
+@dataclass(slots=True)
+class TaskExtraInfo:
+    name: str
+    display_name: str
+    description: str
+
+
 class TaskCreateDTO(BaseModel):
     owner: CoreObjectDescriptor
     target: CoreObjectDescriptor | HostGroupDescriptor
     action_id: ActionID
+    extra: TaskExtraInfo
     launch: LaunchOptions = Field(default_factory=LaunchOptions)
-    process: AssociatedProcess | None = None
-    description: str = ""
+    process: AssociatedProcess | CallingProcess | None = None
 
 
 class TaskUpdateMainFieldsDTO(BaseModel):

@@ -21,6 +21,7 @@ from cm.legacy.issue import add_concern_to_object
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
     OperationContext,
+    SubmitOperationStepParams,
     find_current_and_last_completed_steps,
     submit_step,
 )
@@ -77,6 +78,8 @@ import core
 import yaml
 
 from api_v2.tests.base import BaseAPITestCase
+
+PATCH_PATH = "cm.legacy.services.action_process.operations.start_task"
 
 
 def render_template(file: Path, context: dict) -> Any:
@@ -165,13 +168,14 @@ class TestActionProcess(BaseAPITestCase):
         steps_qs.filter(id__in=self_and_next_ids).update(state=ProcessStepState.CREATED)
         ProcessStepInput.objects.filter(step_id__in=self_and_next_ids).delete()
 
-    def start_process(self, obj: Cluster | Service | Component):
-        endpoint = self.get_endpoint_to_processes(obj)
+    def start_process(self, obj: Cluster | Service | Component, action: Action | None = None):
+        endpoint = self.get_endpoint_to_processes(obj, action=action)
         response = endpoint.post(data={})
         return response.json()["id"]
 
-    def get_endpoint_to_processes(self, obj: Cluster | Service | Component):
-        return self.client.v2[obj, "actions", self.get_object_action_with_process(obj).pk, "processes"]
+    def get_endpoint_to_processes(self, obj: Cluster | Service | Component, action: Action | None = None):
+        action_ = action or self.get_object_action_with_process(obj)
+        return self.client.v2[obj, "actions", action_.pk, "processes"]
 
     def get_process(self, process_id: int) -> Process:
         return Process.objects.get(pk=process_id)
@@ -226,6 +230,7 @@ class TestActionProcess(BaseAPITestCase):
             context=context,
             new_process_sync_key=uuid4(),
             config_service=container.get(core.config.ConfigService),
+            job_service=container.get(core.job.JobService),
             bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )
 
@@ -1327,24 +1332,27 @@ class TestActionProcess(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_adcm_7151_task_display_name_success(self):
-        action = self.get_object_action_with_process(obj=self.cluster_3)
-        process = self.get_process(self.start_process(self.cluster_3))
-        step = ProcessStep.objects.create(process=process, name="1", display_name="Step's display_name")
+        action = Action.objects.get(name="wizard_operation_as_first", prototype=self.cluster_1.prototype)
+        process = self.get_process(self.start_process(self.cluster_1, action=action))
+        expected_display_name = f"{action.display_name} (find me In here)"
+        with RunTaskMock(run_patch_path=PATCH_PATH) as run_task:
+            self.submit_step(
+                process_id=process.pk,
+                action_id=action.pk,
+                object_=CoreObjectDescriptor(id=self.cluster_1.pk, type=ADCMCoreType.CLUSTER),
+                payload=SubmitStepPayload(
+                    method=ProcessOperationType.SUBMIT,
+                    params=SubmitOperationStepParams(
+                        step_id=process.current_step.pk, process_sync_key=process.sync_key
+                    ),
+                ),
+            )
+        task_with_step = run_task.target_task
+        self.assertIsNotNone(task_with_step)
 
-        task_with_step = TaskLog.objects.create(task_object=self.cluster_3, action=action, status="created")
-        ProcessStepInput.objects.create(step=step, job=task_with_step)
-
-        plain_task = TaskLog.objects.create(task_object=self.cluster_3, action=action, status="created")
-
-        # get task with step
         response = self.client.v2[task_with_step].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["displayName"], f"{task_with_step.action.display_name} ({step.display_name})")
-
-        # get plain task
-        response = self.client.v2[plain_task].get()
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["displayName"], plain_task.action.display_name)
+        self.assertEqual(response.json()["displayName"], expected_display_name)
 
         # get tasks list
         response = (self.client.v2 / "tasks").get()
@@ -1352,12 +1360,7 @@ class TestActionProcess(BaseAPITestCase):
         response = response.json()["results"]
 
         task_with_step_response = [task for task in response if task["id"] == task_with_step.id][0]
-        self.assertEqual(
-            task_with_step_response["displayName"], f"{task_with_step.action.display_name} ({step.display_name})"
-        )
-
-        plain_task_response = [task for task in response if task["id"] == plain_task.id][0]
-        self.assertEqual(plain_task_response["displayName"], task_with_step.action.display_name)
+        self.assertEqual(task_with_step_response["displayName"], expected_display_name)
 
     def test_adcm_7302_submit_mapping_step_restrictions_fail(self):
         self.add_services_to_cluster(["service_1", "service_2"], cluster=self.cluster_3)
@@ -2176,7 +2179,7 @@ class TestActionProcess(BaseAPITestCase):
                 self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-                with RunTaskMock(run_patch_path="cm.legacy.services.action_process.operations.start_task") as run_task:
+                with RunTaskMock(run_patch_path=PATCH_PATH) as run_task:
                     response = operation_endpoint.post(
                         data={
                             "method": ProcessOperationType.SUBMIT,

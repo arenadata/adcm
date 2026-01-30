@@ -59,8 +59,8 @@ class JobListSerializer(ModelSerializer):
 
 
 class TaskSerializer(ModelSerializer):
-    name = CharField(source="action.name", allow_null=True)
-    display_name = SerializerMethodField()
+    name = CharField()
+    display_name = CharField()
     is_terminatable = SerializerMethodField()
     action = ActionNameSerializer(read_only=True, allow_null=True)
     objects = SerializerMethodField()
@@ -98,17 +98,6 @@ class TaskSerializer(ModelSerializer):
     @extend_schema_field(field=TaskObjectsFieldSerializer(many=True), component_name="TaskObjectsField")
     def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
         return [{"type": k, **v} for k, v in sorted(obj.selector.items(), key=lambda k: OBJECT_ORDER[k[0]])]
-
-    @staticmethod
-    def get_display_name(obj: TaskLog) -> str | None:
-        if not obj.action:
-            return None
-
-        step_display_name = (
-            f" ({obj.step_display_name})" if hasattr(obj, "step_display_name") and obj.step_display_name else ""
-        )
-
-        return f"{obj.action.display_name}{step_display_name}"
 
 
 class TaskListSerializer(TaskSerializer):
