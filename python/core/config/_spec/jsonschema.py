@@ -265,6 +265,9 @@ def _group_parameter_to_schema(group: ParameterGroup, context: _Context) -> JSON
         if context.is_group_config:
             is_allow_change = group.identifier.full in context.spec.attributes.desyncable_parameters
             schema["adcmMeta"]["synchronization"] = {"isAllowChange": is_allow_change}
+    elif group.selection and context.is_group_config:
+        # patch for UI to disallow change of selection group
+        schema["adcmMeta"]["synchronization"] = {"isAllowChange": False}
 
     return schema
 
