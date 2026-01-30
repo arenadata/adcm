@@ -1492,6 +1492,43 @@ components:
       - componentId
       - hostId
       - id
+    MappingDelta:
+      type: object
+      properties:
+        add:
+          type: array
+          items:
+            $ref: '#/components/schemas/MappingDeltaItem'
+        remove:
+          type: array
+          items:
+            $ref: '#/components/schemas/MappingDeltaItem'
+      required:
+      - add
+      - remove
+    MappingDeltaItem:
+      type: object
+      properties:
+        hostId:
+          type: integer
+        componentId:
+          type: integer
+      required:
+      - componentId
+      - hostId
+    MappingRule:
+      type: object
+      properties:
+        operation:
+          type: string
+        component:
+          type: string
+        service:
+          type: string
+      required:
+      - component
+      - operation
+      - service
     NameEnum:
       enum:
       - ADCM
@@ -2255,10 +2292,11 @@ components:
       oneOf:
       - $ref: '#/components/schemas/StepConfiguration'
       - $ref: '#/components/schemas/StepOperation'
+      - $ref: '#/components/schemas/StepMapping'
       discriminator:
         propertyName: type
         mapping:
-          None: '#/components/schemas/StepOperation'
+          None: '#/components/schemas/StepMapping'
     Profile:
       type: object
       properties:
@@ -3193,6 +3231,38 @@ components:
       - adcmMeta
       - config
       - configSchema
+    StepMapping:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/MappingRule'
+        delta:
+          allOf:
+          - $ref: '#/components/schemas/MappingDelta'
+          nullable: true
+        cumulativeDelta:
+          allOf:
+          - $ref: '#/components/schemas/MappingDelta'
+          nullable: true
+      required:
+      - displayName
+      - id
+      - name
+      - rules
+      - state
+      - type
     StepOperation:
       type: object
       properties:
@@ -5156,27 +5226,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: acaf8488-67fa-4e04-84fe-6e3dae7fefea
+                    processSyncKey: aa559baa-652f-4fa7-90bc-9d3e0034daf6
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 3d0a48db-4eff-45e3-89fb-9c54e93cff43
+                    processSyncKey: bf2be1c4-e96c-4dc5-92c3-082667c1b7c6
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 01ffa3b8-ffb9-438b-9e96-d907a456906f
+                    processSyncKey: 1d68ff24-f78b-4ade-8db1-432e0d911804
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: b0844582-5102-4a67-bdf4-ebad425c5b40
+                    processSyncKey: cf6929ab-6f89-4396-ac87-8442338ccfbb
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5309,18 +5379,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -5359,12 +5434,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -6236,27 +6332,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 5bbd818e-2904-4df1-8640-97b18d411852
+                    processSyncKey: 92bed407-294e-42b9-b5ea-831364f9e0f6
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 449b68b7-6070-478b-bfa4-4406c778106d
+                    processSyncKey: 56ab97a7-37b5-4437-af6e-c3eb5fb4443f
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 571b9350-781d-43a0-9437-fb0970eccec1
+                    processSyncKey: 77127d27-e855-4a7e-892b-e67a3c16e919
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: c96dd2ec-394c-401e-ba76-a08b62de519e
+                    processSyncKey: 64a586d3-81d7-427e-ad37-4adf46b0721b
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6382,18 +6478,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -6432,12 +6533,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -8169,27 +8291,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: dfc03ac7-95a9-470e-b370-e0f449c0da43
+                    processSyncKey: 28612542-e613-4d67-8e5a-5ecbaa111fce
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: ec5aec96-5843-4c05-adca-9f4aac79b911
+                    processSyncKey: 52e62472-9c51-411a-8120-7c8260770084
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 89826aa8-fb22-42f2-99d4-c60adcad5b9f
+                    processSyncKey: ac72fb7e-0b7f-4ca4-ab7d-192b6861d7ef
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 19c6b0ee-0514-40c2-9951-0ef5a0d7b756
+                    processSyncKey: 4ef34906-9e71-45fb-aec1-f5b1da195a68
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8321,18 +8443,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -8371,12 +8498,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -9857,27 +10005,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 28fecd94-b83d-467f-b503-3f7515037f5e
+                    processSyncKey: 29666e30-2a42-4881-94cc-87ebebb644e0
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 360158e8-3d70-44e8-8e24-e55f4c77ae0b
+                    processSyncKey: 176e21b7-8b0d-47ec-a5e5-70be194e6e87
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: cb208e9b-0b32-4362-953a-b820fd61cd6c
+                    processSyncKey: 0c7ac1c2-ffa4-4d91-9571-75ed568df98b
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 9b42668d-66ed-48a7-83c8-6480556bc009
+                    processSyncKey: 184a87da-746f-4f31-bc5a-7fa4002a0859
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10016,18 +10164,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -10066,12 +10219,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -11027,27 +11201,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: fd46c118-b194-4f05-9c08-e74fcdab6efa
+                    processSyncKey: d3b07424-3835-4820-8f19-8a7cf1cde9ae
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 1eacd49c-5c4a-4adb-9580-d86d051071cd
+                    processSyncKey: da59e4ed-489d-4a05-a64f-2c0fe2de02fa
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 99c0816c-1fb4-428c-82a7-666f7206d7c6
+                    processSyncKey: 84b8c5a2-fb93-4390-99a8-991f3ddbbc2e
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 55011cf9-b8b0-421e-b65f-be30cf9eaa86
+                    processSyncKey: 2befb8e3-9376-4069-ae34-eac5960b2815
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11179,18 +11353,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -11229,12 +11408,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -11949,27 +12149,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: e6e05c74-ab1e-4dea-b0e9-73fdf9f71aa3
+                    processSyncKey: 9da18a6b-e7a3-497a-8c9d-d13a7d8f9c81
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 467b498d-8169-45c0-8429-58489223644c
+                    processSyncKey: fbb0c510-e079-49d4-b5e0-950809a69f8c
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: d67b6385-e54e-4383-83b1-0213a9888bc2
+                    processSyncKey: 5c0d15c0-1622-4555-84dc-39a100a77cb1
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 75474581-422b-4095-bf3e-e30abc684c20
+                    processSyncKey: af61d5bb-e3dd-46f8-afd3-abc37b68520d
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12114,18 +12314,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -12164,12 +12369,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
@@ -13209,27 +13435,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 52486e58-eb4b-4ec6-93ec-2d48c74d7522
+                    processSyncKey: 927eb6e9-505b-4e28-95d3-b0dcef975bec
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 4bf5e640-db54-40b8-9f73-a964d3e68181
+                    processSyncKey: 275294e6-dc41-4fe8-a720-35c27be4af13
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 1d4c95b1-5f99-465f-9b22-8fc3946bccac
+                    processSyncKey: 4a58fe5a-accb-4260-bb4e-e4a99b5c51e0
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: cbfb8cd6-2206-41b8-b4e8-802bc099dd0c
+                    processSyncKey: 9d3b5bb6-81a9-434b-b33c-61278bd29287
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -13367,18 +13593,23 @@ paths:
               examples:
                 OperationStep:
                   value:
+                    id: 1
+                    type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
-                    id: 1
                     state: created
                     task:
                       id: 8
-                    type: operation
                     uiOptions:
                       buttonName: ButtonName
                   summary: Operation step
                 ConfigurationStep:
                   value:
+                    id: 1
+                    type: configuration
+                    name: stage1_step1
+                    displayName: Stage1.Step1
+                    state: created
                     configuration:
                       adcmMeta: {}
                       config:
@@ -13417,12 +13648,33 @@ paths:
                         - integer_field
                         title: Configuration
                         type: object
+                  summary: Configuration step
+                MappingStep:
+                  value:
+                    id: 1
+                    type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
-                    id: 1
                     state: created
-                    type: configuration
-                  summary: Configuration step
+                    rules:
+                    - operation: add
+                      component: component
+                      service: service
+                    delta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                    cumulativeDelta:
+                      add:
+                      - hostId: 1
+                        componentId: 1
+                      remove:
+                      - hostId: 2
+                        componentId: 2
+                  summary: Mapping step
           description: ''
         '404':
           description: Not found
