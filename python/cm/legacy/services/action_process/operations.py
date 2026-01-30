@@ -21,7 +21,6 @@ import uuid
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.legacy.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.legacy.job.types import CallingProcess, JobSpec
 from core.types import (
     ActionProcessID,
@@ -74,7 +73,6 @@ from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.job.run import start_task
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.logger import logger
 from cm.models import ProcessStep, ProcessStepInput
 
@@ -317,6 +315,7 @@ def perform_operation(
     payload: OperationPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
+    job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     process = repo.retrieve_process(process_id=process_id)
@@ -332,6 +331,7 @@ def perform_operation(
                 context=context,
                 new_process_sync_key=new_process_sync_key,
                 config_service=config_service,
+                job_service=job_service,
                 bundle_renderer=bundle_renderer,
             )
 
@@ -358,6 +358,7 @@ def submit_step(
     payload: SubmitStepPayload,
     context: OperationContext,
     config_service: core.config.ConfigService,
+    job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
@@ -389,6 +390,7 @@ def submit_step(
                 step_id=payload.params.step_id,
                 new_process_sync_key=new_process_sync_key,
                 process_context=context.process_context,
+                job_service=job_service,
             )
         case core.action.wizard.StepType.MAPPING:
             if not isinstance(payload.params, SubmitMappingStepParams):
@@ -461,28 +463,29 @@ def _operation_submit_job(
     new_process_sync_key: UUID,
     *,
     process_context: ProcessContext,
+    job_service: core.job.JobService,
 ) -> None:
-    job_repo = JobRepoImpl
-
     step = repo.retrieve_step(process_id=process.id, step_id=step_id)
-    payload = TaskPayloadDTO(
-        process=CallingProcess(id=process.id, sync_key=new_process_sync_key, step_id=process.current_step_id)
+    if not step.step_spec:
+        message = f"Step is not rendered: {step=}"
+        raise RuntimeError(message)
+
+    task_display_name = f"{process_context.action_orm.display_name} ({step.display_name})"
+    task_extra = core.job.dto.TaskExtraInfo(
+        name=process_context.action.name, display_name=task_display_name, description=""
+    )
+    payload = core.job.dto.TaskCreateDTO(
+        owner=process_context.owner,
+        target=process_context.target.as_core_or_group_descriptor,
+        action_id=process_context.action.id,
+        extra=task_extra,
+        process=CallingProcess(id=process.id, sync_key=new_process_sync_key, step_id=step_id),
     )
 
-    task = job_repo.create_task(
-        target=process_context.target, owner=process_context.owner, action=process_context.action, payload=payload
-    )
-    job_repo.create_jobs(task_id=task.id, jobs=[JobSpec(**job) for job in step.step_spec])
+    task_id = job_service.create_task(payload=payload)
+    job_service.create_jobs(task_id=task_id, scripts=tuple(JobSpec(**job) for job in step.step_spec))
 
-    logs = []
-    for job in job_repo.get_task_jobs(task_id=task.id):
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
-
-    if logs:
-        job_repo.create_logs(logs)
-
-    task_orm = repo.retrieve_task_orm(task_id=task.id)
+    task_orm = repo.retrieve_task_orm(task_id=task_id)
 
     step_input_data = StepInputDTO(job_id=task_orm.pk, created_at=timezone.now())
     repo.upsert_step_input(step_id=step_id, data=step_input_data)
@@ -491,6 +494,7 @@ def _operation_submit_job(
     repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.RUNNING))
 
     # todo write pid to task (executor)
+    # todo actually should use starter to avoid hardcoding
     start_task(task=task_orm)
 
 

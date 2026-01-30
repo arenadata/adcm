@@ -216,6 +216,7 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
                 context=context,
                 new_process_sync_key=uuid4(),
                 config_service=container.get(core.config.ConfigService),
+                job_service=container.get(core.job.JobService),
                 bundle_renderer=bundle_renderer,
             )
 

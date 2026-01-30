@@ -1402,6 +1402,10 @@ class TaskLog(ADCMModel):
     executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
     process = models.JSONField(null=True, default=None)
+
+    # default for name is made for tasks that have no action after bundle is deleted
+    name = models.CharField(max_length=1200, default="-")
+    display_name = models.CharField(max_length=1200, default="-")
     description = models.CharField(max_length=255, blank=True, default="")
 
     """

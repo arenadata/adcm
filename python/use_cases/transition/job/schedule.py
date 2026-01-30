@@ -134,13 +134,16 @@ class ScheduleTask:
                 case _:
                     target_descriptor = orm_object_to_core_descriptor(action_objects.target)
 
+            task_extra = core.job.dto.TaskExtraInfo(
+                name=action_orm.name, display_name=action_orm.display_name, description=payload.description
+            )
             create_dto = core.job.dto.TaskCreateDTO(
                 action_id=action_orm.pk,
                 owner=descriptor,
                 target=target_descriptor,
                 launch=payload.launch,
                 process=payload.process,
-                description=payload.description,
+                extra=task_extra,
             )
             task_id = self.job_service.create_task(payload=create_dto)
 
