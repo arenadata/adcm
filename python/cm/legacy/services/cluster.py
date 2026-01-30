@@ -27,14 +27,13 @@ from core.legacy.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
-from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, ShortObjectInfo
+from core.types import ClusterID, HostID, ShortObjectInfo
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
-from cm.legacy.services.concern import create_issue, delete_issue
 from cm.legacy.status_api import notify_about_new_concern
-from cm.models import Cluster, Component, ConcernCause, Host, HostComponent, Service
+from cm.models import Cluster, Component, Host, HostComponent, Service
 
 
 class ClusterDB(HostClusterDBProtocol):
@@ -125,26 +124,19 @@ def perform_host_to_cluster_map(
     # this import should be resolved later:
     # concerns management should be passed in here the same way as `status_service`,
     # because it's a dependency that shouldn't be directly set
-    from cm.legacy.services.concern.checks import cluster_mapping_has_issue_orm_version
-    from cm.legacy.services.concern.distribution import distribute_concern_on_related_objects
+    from cm.transition.concern import create_and_distribute_hostcomponent_concern_on_add_host_to_cluster
 
     with atomic():
         add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=ClusterDB)
         cluster = Cluster.objects.get(id=cluster_id)
-        cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-
-        concern_id = None
-        related_objects = {}
-        if not cluster_mapping_has_issue_orm_version(cluster=cluster):
-            delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-        elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
-            concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-            concern_id = concern.id
-            related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
-
+        concern_id, related_objects = create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
+            cluster=cluster
+        )
         re_apply_object_policy(apply_object=cluster)
 
+    # Update hc map in Status Server
     status_service.reset_hc_map()
+    # Send events
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 

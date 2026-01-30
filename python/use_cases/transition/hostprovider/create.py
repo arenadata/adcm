@@ -23,6 +23,7 @@ from cm.legacy.services.concern.distribution import (
 from cm.legacy.services.status.notify import reset_hc_map
 from cm.legacy.status_api import notify_about_new_concern, notify_about_redistributed_concerns_from_maps
 from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
+from cm.transition.concern import create_and_distribute_hostcomponent_concern_on_add_host_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
@@ -69,23 +70,43 @@ def create_host(
         descriptor = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST)
         config_service.create_initial_configuration_if_required(owner=descriptor)
 
+        cluster = host.cluster
+        # Calculate concerns
+        ## calculate host concerns (config)
         concern_map = {ADCMCoreType.HOST: {host.pk: set()}}
         host_concern_map = recalculate_own_concerns_on_add_hosts(host=host)
+
         if host_concern_map:
             concern_id = next(iter(host_concern_map[ADCMCoreType.HOST][host.pk]))
             host.concerns.add(concern_id)
             concern_map[ADCMCoreType.HOST][host.pk].add(concern_id)
 
+        ## distribute concerns to host from provider
         attached_concern_map = distribute_concern_from_provider_to_host(host_id=host.pk)
+
         if attached_concern_map:
             concern_map[ADCMCoreType.HOST][host.pk] |= attached_concern_map[ADCMCoreType.HOST][host.pk]
 
+        concern_id = None
+        related_objects = {}
+
+        if cluster is not None:
+            concern_id, related_objects = create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
+                cluster=cluster
+            )
+
+        # Re apply policies
         re_apply_object_policy(apply_object=host.provider)
 
-        if cluster := host.cluster:
+        if cluster:
             re_apply_object_policy(apply_object=cluster)
 
+    # Update hc map in Status Server
     reset_hc_map()
+    # Send events
     notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
+
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return host.pk
