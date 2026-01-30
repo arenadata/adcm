@@ -31,7 +31,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import ErrorSerializer, responses
-from api_v2.generic.action.process.serializers import ProcessSerializer
+from api_v2.generic.action.process.serializers import MappingDeltaSerializer, MappingRuleSerializer, ProcessSerializer
 
 
 class Step(Serializer):
@@ -62,6 +62,12 @@ class StepTask(Serializer):
 class StepOperation(Step):
     ui_options = DictField()
     task = StepTask(allow_null=True)
+
+
+class StepMapping(Step):
+    rules = MappingRuleSerializer(many=True)
+    delta = MappingDeltaSerializer(allow_null=True, default=None)
+    cumulative_delta = MappingDeltaSerializer(allow_null=True, default=None)
 
 
 class ResetStepParamsSerializer(Serializer):
@@ -226,6 +232,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                         serializers=[
                             StepConfiguration,
                             StepOperation,
+                            StepMapping,
                         ],
                         resource_type_field_name="type",
                     ),
@@ -233,18 +240,23 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                         OpenApiExample(
                             "Operation step",
                             value={
+                                "id": 1,
+                                "type": "operation",
                                 "name": "stage2_step2",
                                 "displayName": "Stage2.Step2",
-                                "id": 1,
                                 "state": "created",
                                 "task": {"id": 8},
-                                "type": "operation",
                                 "uiOptions": {"buttonName": "ButtonName"},
                             },
                         ),
                         OpenApiExample(
                             "Configuration step",
                             value={
+                                "id": 1,
+                                "type": "configuration",
+                                "name": "stage1_step1",
+                                "displayName": "Stage1.Step1",
+                                "state": "created",
                                 "configuration": {
                                     "adcmMeta": {},
                                     "config": {"integer_field": 1, "string_field": "string_value"},
@@ -286,11 +298,25 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                         "type": "object",
                                     },
                                 },
+                            },
+                        ),
+                        OpenApiExample(
+                            "Mapping step",
+                            value={
+                                "id": 1,
+                                "type": "configuration",
                                 "name": "stage1_step1",
                                 "displayName": "Stage1.Step1",
-                                "id": 1,
                                 "state": "created",
-                                "type": "configuration",
+                                "rules": [{"operation": "add", "component": "component", "service": "service"}],
+                                "delta": {
+                                    "add": [{"hostId": 1, "componentId": 1}],
+                                    "remove": [{"hostId": 2, "componentId": 2}],
+                                },
+                                "cumulativeDelta": {
+                                    "add": [{"hostId": 1, "componentId": 1}],
+                                    "remove": [{"hostId": 2, "componentId": 2}],
+                                },
                             },
                         ),
                     ],
