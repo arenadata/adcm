@@ -10,20 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable
+from typing import Iterable
 
-from core.types import ClusterID, ComponentID, HostID, ServiceID
+from core.types import ClusterID, ComponentID, HostID
 from django.db.models import Q
 
-from cm.models import Component, HostComponent, Service
+from cm.models import Component, HostComponent
 
 
 def lock_cluster_mapping(cluster_id: ClusterID) -> None:
     tuple(HostComponent.objects.select_for_update().filter(cluster_id=cluster_id).values_list("id"))
-
-
-def retrieve_services_states(services: Collection[ServiceID]) -> dict[ServiceID, str]:
-    return dict(Service.objects.values_list("id", "state").filter(id__in=services))
 
 
 def _apply_mapping_delta_in_db(

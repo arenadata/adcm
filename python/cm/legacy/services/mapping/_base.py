@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 from itertools import chain
-from typing import Collection, Iterable, Protocol
+from typing import Iterable, Protocol
 
 from core.legacy.bundle.types import BundleRestrictions
 from core.legacy.cluster.operations import (
@@ -26,7 +26,7 @@ from core.legacy.cluster.types import (
     TopologyHostDiff,
 )
 from core.legacy.job.types import TaskMappingDelta
-from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID, ServiceID
+from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.models import Policy
@@ -50,7 +50,7 @@ from cm.legacy.services.concern.distribution import (
 )
 from cm.legacy.services.concern.locks import retrieve_lock_on_object
 from cm.legacy.services.config_host_group import ConfigHostGroupRepo
-from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping, retrieve_services_states
+from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
@@ -86,24 +86,13 @@ def check_for_action_mapping(
     check_no_host_in_mm(host_difference.mapped.all)
 
 
-def check_for_wizard_mapping_step(
+def check_for_main_mapping(
     bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
 ) -> None:
     check_service_requirements(services_restrictions=bundle_restrictions.service_requires, topology=new_topology)
     check_for_action_mapping(
         bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
     )
-
-
-def check_for_main_mapping(
-    bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
-) -> None:
-    check_for_wizard_mapping_step(
-        bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
-    )
-
-    affected_services: set[ServiceID] = set(host_difference.mapped.services).union(host_difference.unmapped.services)
-    check_services_in_created_state(services=affected_services)
 
 
 # END USE CASES
@@ -165,12 +154,6 @@ def change_host_component_mapping_no_lock(
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
     if Host.objects.filter(id__in=hosts).exclude(maintenance_mode=MaintenanceMode.OFF).exists():
         raise AdcmEx("INVALID_HC_HOST_IN_MM")
-
-
-def check_services_in_created_state(services: Collection[ServiceID]) -> None:
-    states = retrieve_services_states(services=services)
-    if set(states.values()).difference({"created"}):
-        raise AdcmEx("INVALID_HC_SERVICE_NOT_IN_CREATED_STATE")
 
 
 def _change_host_component_mapping(
