@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Button } from '@uikit';
+import { Button, Icon, Tooltip } from '@uikit';
 import s from './ConfigVersionCell.module.scss';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { dateToString } from '@utils/date/dateConvertUtils';
@@ -12,6 +12,7 @@ interface ConfigVersionCellProps {
   onSelectConfigVersion: (configId: ConfigVersion['id']) => void;
   onSelectAction: (props: SelectVersionAction) => void;
   isSelected: boolean;
+  isConfigurationUpdated?: boolean;
 }
 
 const prepareDate = (value: string) => {
@@ -23,6 +24,7 @@ const ConfigVersionCell: React.FC<ConfigVersionCellProps> = ({
   onSelectAction,
   onSelectConfigVersion,
   isSelected = false,
+  isConfigurationUpdated = false,
 }) => {
   const actionsOptions = [
     {
@@ -41,11 +43,22 @@ const ConfigVersionCell: React.FC<ConfigVersionCellProps> = ({
   };
 
   return (
-    <div className={cn(s.configVersionCell, { [s.configVersionCell_selected]: isSelected })} onClick={handleSelectCell}>
+    <div
+      className={cn(s.configVersionCell, {
+        [s.configVersionCell_selected]: isSelected,
+        [s.configVersionCell_updated]: isConfigurationUpdated,
+      })}
+      onClick={handleSelectCell}
+    >
       <div className={s.configVersionCell__header}>
         <div className={s.configVersionCell__title}>
           {configVersion.isCurrent ? 'current' : ''}
           {configVersion.id === 0 ? 'Editing mode' : ''}
+          {isConfigurationUpdated && (
+            <Tooltip label="The configuration was updated due to parallel operations." placement="bottom">
+              <Icon name="hint-mark" size={16} className={s.configVersionCell__warningIcon} />
+            </Tooltip>
+          )}
         </div>
         <div onClick={(event) => event.stopPropagation()}>
           <ActionMenu placement="bottom-end" value={null} options={actionsOptions} onChange={handleSelectAction}>

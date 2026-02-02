@@ -80,6 +80,7 @@ export const allowIconsNames = [
   'g3-link',
   'g3-unlink',
   'hint',
+  'hint-mark',
   'lamp',
   'marker',
   'marker-alert',

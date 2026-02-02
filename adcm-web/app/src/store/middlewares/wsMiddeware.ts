@@ -1,15 +1,22 @@
-import type { Action, Middleware } from 'redux';
+import type { Action, AnyAction, Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { wsHost } from '@constants';
-import type { RootState } from '../store';
-import { wsActions } from './wsMiddleware.constants';
+import type { AppStore, RootState } from '../store';
+import { wsActions, wsCreateConfigActions } from './wsMiddleware.constants';
 import type { ActionCreatorWithPayload } from '@reduxjs/toolkit';
 import type { AdcmBackendEvent } from '@models/adcm';
 import { WsClient } from '@api/wsClient/wsClient';
 import { login, checkSession, logout } from '@store/authSlice';
+import { createConfigrationEventHandle } from '@store/adcm/entityConfiguration/configurationSlice';
 
 const wsClient = new WsClient(`${wsHost}/ws/event/`);
 
 type WsActions = { [key: string]: ActionCreatorWithPayload<unknown> };
+
+const wsActionSuccessHandle = (message: AdcmBackendEvent, thunkAPI: MiddlewareAPI<Dispatch<AnyAction>, AppStore>) => {
+  if (wsCreateConfigActions.includes(message.event)) {
+    createConfigrationEventHandle(message, thunkAPI);
+  }
+};
 
 export const wsMiddleware: Middleware<
   // biome-ignore lint/complexity/noBannedTypes: <explanation>
@@ -22,6 +29,7 @@ export const wsMiddleware: Middleware<
 
     if (wsAction) {
       storeApi.dispatch(wsAction(message));
+      wsActionSuccessHandle(message, storeApi);
     }
   };
 

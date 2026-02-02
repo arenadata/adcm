@@ -39,6 +39,7 @@ const ConfigVersionPanel: React.FC<ConfigVersionPanelProps> = ({
   draftDescription = '',
 }) => {
   const username = useStore((state) => state.auth.username);
+  const isConfigurationUpdated = useStore((state) => state.adcm.entityConfiguration.isConfigurationUpdated);
 
   return (
     <div className={s.configVersionPanel} data-test="configuration-version-container">
@@ -56,6 +57,7 @@ const ConfigVersionPanel: React.FC<ConfigVersionPanelProps> = ({
             onSelectConfigVersion={onSelectConfigVersion}
             onSelectAction={onSelectAction}
             isSelected={selectedConfigId === 0}
+            isConfigurationUpdated={false}
           />
         )}
         {configsVersions.map((config) => (
@@ -65,6 +67,7 @@ const ConfigVersionPanel: React.FC<ConfigVersionPanelProps> = ({
             onSelectConfigVersion={onSelectConfigVersion}
             onSelectAction={onSelectAction}
             isSelected={selectedConfigId === config.id}
+            isConfigurationUpdated={isConfigurationUpdated && config.isCurrent}
           />
         ))}
       </div>

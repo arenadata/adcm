@@ -174,3 +174,15 @@ export const ApiRequests: ApiRequestsDictionary = {
       ),
   },
 };
+
+export const entityTypeDict: Record<string, string> = {
+  cluster: 'cluster',
+  service: 'service',
+  settings: 'settings',
+  host: 'host',
+  'host-provider': 'hostProvider',
+  'service-component': 'component',
+  'service-component-config-group': 'component',
+  'cluster-config-group': 'cluster',
+  'service-config-group': 'service',
+};
