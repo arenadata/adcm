@@ -1,8 +1,8 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { type AnyAction, type Dispatch, type MiddlewareAPI, createSlice } from '@reduxjs/toolkit';
 import type { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import type { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm/configuration';
-import { showError } from '@store/notificationsSlice';
+import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -11,10 +11,13 @@ import type {
   CreateEntityConfigurationArgs,
   LoadEntityConfigurationArgs,
   LoadEntityConfigurationVersionsArgs,
+  EntityType,
 } from './entityConfiguration.types';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
-import type { Batch } from '@models/adcm';
+import type { AdcmBackendEvent, Batch, CreateConfigEvent } from '@models/adcm';
+import { entityTypeDict } from './entityConfiguration.constants';
+import type { AppStore } from '@store/store';
 
 type AdcmEntityConfigurationState = {
   isConfigurationLoading: boolean;
@@ -23,6 +26,11 @@ type AdcmEntityConfigurationState = {
   isVersionsLoading: boolean;
   accessCheckStatus: RequestState;
   accessConfigCheckStatus: RequestState;
+  isConfigurationUpdated: boolean;
+  entity: {
+    type?: string;
+    [key: string]: string | number | undefined;
+  };
 };
 
 const createConfiguration = createAsyncThunk(
@@ -105,6 +113,62 @@ const getConfigurationsVersions = createAsyncThunk(
   },
 );
 
+// Mapping from event name to EntityType
+const eventToEntityTypeMap: Record<CreateConfigEvent['event'], EntityType> = {
+  create_adcm_config: 'settings',
+  create_cluster_config: 'cluster',
+  create_service_config: 'service',
+  create_component_config: 'service-component',
+  create_hostprovider_config: 'host-provider',
+  create_host_config: 'host',
+};
+
+const createConfigrationEventHandle = (
+  message: AdcmBackendEvent,
+  thunkAPI: MiddlewareAPI<Dispatch<AnyAction>, AppStore>,
+) => {
+  if (!('event' in message) || !(message.event in eventToEntityTypeMap)) {
+    return;
+  }
+
+  const configEvent = message as CreateConfigEvent;
+  const state = thunkAPI.getState();
+  const {
+    adcm: {
+      entityConfiguration: { entity },
+    },
+    auth: { username },
+  } = state;
+
+  const currentEntityType = entity.type;
+  const eventEntityType = eventToEntityTypeMap[configEvent.event];
+
+  if (!eventEntityType || !currentEntityType) {
+    return;
+  }
+
+  const createdBy = configEvent.object.changes.createdBy;
+  if (createdBy === username) {
+    return;
+  }
+
+  const eventEntityTypeTransformed = entityTypeDict[eventEntityType];
+
+  const isRelevantEvent =
+    eventEntityType === 'settings'
+      ? currentEntityType === 'settings'
+      : currentEntityType === eventEntityTypeTransformed &&
+        entity[`${eventEntityTypeTransformed}Id`] === configEvent.object.id;
+
+  if (isRelevantEvent) {
+    thunkAPI.dispatch(setIsConfigurationUpdated(true));
+
+    const messageText = `The configuration was updated due to parallel operations. Changed by ${createdBy}`;
+
+    thunkAPI.dispatch(showInfo({ message: messageText }));
+  }
+};
+
 const createInitialState = (): AdcmEntityConfigurationState => ({
   isVersionsLoading: false,
   isConfigurationLoading: false,
@@ -112,6 +176,10 @@ const createInitialState = (): AdcmEntityConfigurationState => ({
   configVersions: [],
   accessCheckStatus: RequestState.NotRequested,
   accessConfigCheckStatus: RequestState.NotRequested,
+  isConfigurationUpdated: false,
+  entity: {
+    type: undefined,
+  },
 });
 
 const entityConfigurationSlice = createSlice({
@@ -126,6 +194,9 @@ const entityConfigurationSlice = createSlice({
     },
     setIsVersionsLoading(state, action) {
       state.isVersionsLoading = action.payload;
+    },
+    setIsConfigurationUpdated(state, action) {
+      state.isConfigurationUpdated = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -157,23 +228,42 @@ const entityConfigurationSlice = createSlice({
     builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
       state.accessCheckStatus = RequestState.Completed;
+      state.isConfigurationUpdated = false;
     });
-    builder.addCase(getConfigurationsVersions.pending, (state) => {
+    builder.addCase(getConfigurationsVersions.pending, (state, action) => {
       state.accessCheckStatus = RequestState.Pending;
+      const entityType = entityTypeDict[action.meta.arg.entityType];
+
+      if (entityType === 'settings') {
+        state.entity = { type: entityType };
+      } else {
+        for (const [key, value] of Object.entries(action.meta.arg.args)) {
+          if (key === `${entityType}Id`) {
+            state.entity = {
+              type: entityType,
+              [key]: value,
+            };
+          }
+        }
+      }
     });
     builder.addCase(getConfigurationsVersions.rejected, (state, action) => {
       state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.configVersions = [];
+      state.entity = { type: undefined };
     });
   },
 });
 
-const { cleanup, setIsConfigurationLoading, setIsVersionsLoading } = entityConfigurationSlice.actions;
+const { cleanup, setIsConfigurationLoading, setIsVersionsLoading, setIsConfigurationUpdated } =
+  entityConfigurationSlice.actions;
 export {
   getConfiguration,
   getConfigurationsVersions,
   cleanup,
   createWithUpdateConfigurations,
   createWithUpdateAnsibleSettings,
+  createConfigrationEventHandle,
+  setIsConfigurationUpdated,
 };
 export default entityConfigurationSlice.reducer;

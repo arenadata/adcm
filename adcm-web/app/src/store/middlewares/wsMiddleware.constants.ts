@@ -47,3 +47,12 @@ export const wsActions = {
   update_hostcomponentmap: createAction<UpdateHostComponentMapEvent>('adcm/ws/update_hostcomponentmap'),
   // biome-ignore lint/suspicious/noExplicitAny:
 } satisfies { [key in AdcmBackendEvent['event']]: ActionCreatorWithPayload<any> };
+
+export const wsCreateConfigActions = [
+  'create_adcm_config',
+  'create_cluster_config',
+  'create_service_config',
+  'create_component_config',
+  'create_hostprovider_config',
+  'create_host_config',
+];
