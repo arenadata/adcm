@@ -1390,13 +1390,12 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
         with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
             self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_1),))
 
-    def test_adcm_7530_add_host_not_in_mm_to_service_not_in_created_state_fail(self):
+    def test_adcm_7530_add_host_not_in_mm_to_service_not_in_created_state_success(self):
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
 
         self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
-        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
-            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_add_host_in_mm_to_service_not_in_created_state_fail(self):
         self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
@@ -1416,7 +1415,7 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
         self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
-    def test_adcm_7530_remove_host_not_in_mm_from_service_not_in_created_state_fail(self):
+    def test_adcm_7530_remove_host_not_in_mm_from_service_not_in_created_state_success(self):
         self.create_mapping(
             cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
         )
@@ -1424,10 +1423,9 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
         self.service_1.save(update_fields=["state"])
 
         self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
-        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
-            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
-    def test_adcm_7530_remove_host_in_mm_from_service_not_in_created_state_fail(self):
+    def test_adcm_7530_remove_host_in_mm_from_service_not_in_created_state_success(self):
         self.create_mapping(
             cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
         )
@@ -1436,8 +1434,7 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
         self.service_1.save(update_fields=["state"])
 
         self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
-        with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
-            self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_add_remove_from_component_in_mm_success(self):
         self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
