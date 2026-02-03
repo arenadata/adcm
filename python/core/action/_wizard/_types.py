@@ -41,6 +41,12 @@ class StepType(str, Enum):
     OPERATION = "operation"
 
 
+class ProcessState(str, Enum):
+    CREATED = "created"
+    BROKEN = "broken"
+    COMPLETED = "completed"
+
+
 class StepState(str, Enum):
     CREATED = "created"
     RUNNING = "running"

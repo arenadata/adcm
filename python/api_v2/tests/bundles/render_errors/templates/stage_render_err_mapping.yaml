@@ -1,0 +1,11 @@
+- name: one
+  display_name: One
+  steps:
+    - name: mapping
+      display_name: Mapping
+      hc_template:
+        file:
+          path: templates/render_error.yaml
+        engine:
+          type: jinja2
+
