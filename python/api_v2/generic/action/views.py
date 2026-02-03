@@ -164,10 +164,9 @@ class ActionViewSet(
     def retrieve(
         self,
         request,
-        *_,
         config_service: FromDishka[core.config.ConfigService],
         retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
-        **__,
+        **_,
     ):
         self.parent_object = self.get_parent_object()
         action_: Action = self.get_object()

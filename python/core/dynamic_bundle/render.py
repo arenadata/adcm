@@ -131,7 +131,12 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
 
         template_environment = templates.RendererEnv(discovery_root=bundle_root)
         renderer = templates.get_renderer(template=template, environment=template_environment)
-        rendered_data = renderer.render(context=decrypted_context)
+
+        try:
+            rendered_data = renderer.render(context=decrypted_context)
+        except templates.RenderError as e:
+            message = f"Failed to render template: {e.args[0]}"
+            raise bundle.BundleParsingError(message=message) from e
 
         return _ensure_render_result_is_list_of_dicts(rendered_data)
 

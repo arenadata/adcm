@@ -1,0 +1,11 @@
+- name: aaa
+  display_name: aaa
+  steps:
+    - name: ooo
+      display_name: ooo
+      config_template:
+        file:
+          path: doesnotexist.yaml
+        engine:
+          type: jinja2
+

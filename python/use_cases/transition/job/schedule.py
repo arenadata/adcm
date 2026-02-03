@@ -402,6 +402,7 @@ def _prepare_configuration(
             raise AdcmEx(code="TASK_ERROR", msg="No configuration expected for action")
 
 
+@convert_bundle_errors_to_adcm_ex
 def _resolve_scripts(
     action: Action,
     bundle_context: core.bundle.BundleContext,

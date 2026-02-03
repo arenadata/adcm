@@ -97,6 +97,7 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 exclude = [
     "python/core/tests/test_templates/files/python/incorrect.py",
+    "python/api_v2/tests/bundles/render_errors/templates/syntax_error.py",
 ]
 
 [tool.ruff.lint.isort]
