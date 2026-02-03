@@ -13,8 +13,8 @@
 from collections import deque
 from typing import Callable, Iterable, TypeAlias
 
+from adcm.dependencies import prepare_container
 from api_v2.host.utils import create_host
-from api_v2.service.utils import bulk_add_services_to_cluster
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import (
     BundleID,
@@ -28,8 +28,10 @@ from core.types import (
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
+from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
+import dishka
 
-from cm.legacy.api import add_cluster, add_host_provider, update_obj_config
+from cm.legacy.api import add_host_provider, update_obj_config
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.legacy.services.status import notify
@@ -89,7 +91,10 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
     hosts = create_new_hosts(hosts=data.hosts, providers=providers)
 
     report("Cluster creation")
-    return create_cluster(cluster=data.cluster, bundles=bundles, hosts=hosts)
+    # this whole function is actually a Use Case, yet for a time being I directly use container building
+    di_container = prepare_container()
+    with di_container() as container:
+        return create_cluster(cluster=data.cluster, bundles=bundles, hosts=hosts, container=container)
 
 
 def discover_bundles(required_bundles: Iterable[BundleHash]) -> BundleHashIDMap:
@@ -149,18 +154,28 @@ def create_new_hosts(hosts: Iterable[HostInfo], providers: ProviderNameIDsMap) -
     return result
 
 
-def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNameIDMap) -> ClusterID:
+def create_cluster(
+    cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNameIDMap, container: dishka.Container
+) -> ClusterID:
     bundle_id = bundles[cluster.bundle]
     cluster_prototype = Prototype.objects.get(bundle_id=bundle_id, type=ObjectType.CLUSTER)
 
-    cluster_object = add_cluster(prototype=cluster_prototype, name=cluster.name, description=cluster.description)
+    create_cluster_use_case = container.get(CreateCluster)
+    cluster_object = create_cluster_use_case.do(
+        prototype=cluster_prototype, name=cluster.name, description=cluster.description
+    )
+
     AnsibleConfig.objects.filter(
         object_id=cluster_object.id, object_type=ContentType.objects.get_for_model(Cluster)
     ).update(value=cluster.ansible_config)
-    services_to_add = Prototype.objects.filter(
+
+    services_to_add = Prototype.objects.values_list("id", flat=True).filter(
         bundle_id=bundle_id, type=ObjectType.SERVICE, name__in=(service.name for service in cluster.services.values())
     )
-    bulk_add_services_to_cluster(cluster=cluster_object, prototypes=services_to_add)
+
+    add_services_use_case = container.get(CreateServicesFromPrototypes)
+    add_services_use_case.do(cluster=cluster_object, prototype_ids=services_to_add)
+
     perform_host_to_cluster_map(cluster_id=cluster_object.id, hosts=hosts.values(), status_service=notify)
 
     _restore_state(target=cluster_object, condition=cluster.condition)

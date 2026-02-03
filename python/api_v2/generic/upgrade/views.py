@@ -36,17 +36,16 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from use_cases.dto import ConfigurationDTO, UpgradeActionDTO
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask
 from use_cases.transition.upgrade import upgrade_object
 import core
 
 from api_v2.generic.action.serializers import UpgradeRunSerializer
-from api_v2.generic.action.utils import get_action_configuration
 from api_v2.generic.upgrade.filters import UpgradeFilter
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
-from api_v2.utils.config import convert_main_config
+from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -112,28 +111,34 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         return get_object_or_404(queryset, **filter_kwargs)
 
     def get_parent_object_for_user(self, user: User) -> Cluster | Provider:
-        parent: Cluster | Provider | None = self.get_parent_object()
-        if parent is None or not isinstance(parent, (Cluster, Provider)):
-            message = "Can't find upgrade's parent object"
-            raise NotFound(message)
+        parent = self.get_parent_object()
+        match parent:
+            case Cluster():
+                cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
 
-        if isinstance(parent, Cluster):
-            cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
-            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster) and not user.has_perm(
-                perm=VIEW_CLUSTER_UPGRADE_PERM
-            ):
-                raise PermissionDenied(f"You can't view upgrades of {cluster}")
-            return cluster
+                if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster) and not user.has_perm(
+                    perm=VIEW_CLUSTER_UPGRADE_PERM
+                ):
+                    raise PermissionDenied(f"You can't view upgrades of {cluster}")
 
-        if isinstance(parent, Provider):
-            provider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=Provider, id=parent.pk)
-            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=provider) and not user.has_perm(
-                perm=VIEW_PROVIDER_UPGRADE_PERM
-            ):
-                raise PermissionDenied(f"You can't view upgrades of {provider}")
-            return provider
+                return cluster
 
-        raise ValueError("Wrong object")
+            case Provider():
+                provider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=Provider, id=parent.pk)
+
+                if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=provider) and not user.has_perm(
+                    perm=VIEW_PROVIDER_UPGRADE_PERM
+                ):
+                    raise PermissionDenied(f"You can't view upgrades of {provider}")
+
+                return provider
+
+            case None:
+                message = "Can't find upgrade's parent object"
+                raise NotFound(message)
+
+            case _:
+                raise ValueError("Wrong object")
 
     def get_upgrade(self, parent: Cluster | Provider):
         upgrade = self.get_object()
@@ -154,21 +159,35 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         serializer = self.get_serializer_class()(instance=queryset, many=True)
         return Response(data=serializer.data)
 
-    def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    @inject
+    def retrieve(
+        self,
+        request: Request,
+        retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
+        config_service: FromDishka[core.config.ConfigService],
+        **_,
+    ) -> Response:  # noqa: ARG001, ARG002
         parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
 
         upgrade = self.get_upgrade(parent=parent)
 
-        config_schema = None
+        jsonschema = None
         config = None
         adcm_meta = None
 
         if upgrade.action:
-            config_schema, config, adcm_meta = get_action_configuration(action_=upgrade.action, object_=parent)
+            result = retrieve_configuration.do(action_orm=upgrade.action, target=parent)
+            if result:
+                spec, defaults, default_config, owner = result
+                adcm_meta = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
+                config = convert_json_fields_to_strings(values=default_config.values, spec=spec, inplace=True)
+                jsonschema = config_service.retrieve_jsonschema_for_action(
+                    action_specification=spec, action_config_defaults=defaults, action_owner=owner
+                )
 
         serializer = self.get_serializer_class()(
             instance=upgrade,
-            context={"parent": parent, "config_schema": config_schema, "config": config, "adcm_meta": adcm_meta},
+            context={"parent": parent, "config_schema": jsonschema, "config": config, "adcm_meta": adcm_meta},
         )
 
         return Response(serializer.data)

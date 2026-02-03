@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from typing import Annotated
 
-from adcm.feature_flags import use_new_config_processing
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName, ServiceName
@@ -79,12 +77,8 @@ def get_env_for_jinja_scripts(
         target_object = target_object.object
 
     cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
-    if use_new_config_processing():
-        func = partial(context.get_cluster_vars, config_service=get_config_service())
-    else:
-        func = context.get_cluster_vars
 
-    cluster_vars = func(topology=cluster_topology)
+    cluster_vars = context.get_cluster_vars(topology=cluster_topology, config_service=get_config_service())
 
     host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=delta)
     if action_group:
@@ -112,11 +106,7 @@ def get_env_for_jinja_config(
     action: Action, cluster_relative_object: Cluster | Service | Component | Host, process: Process | None = None
 ) -> dict:
     cluster_topology = retrieve_related_cluster_topology(orm_object=cluster_relative_object)
-    if use_new_config_processing():
-        func = partial(context.get_cluster_vars, config_service=get_config_service())
-    else:
-        func = context.get_cluster_vars
-    clusters_vars = func(topology=cluster_topology)
+    clusters_vars = context.get_cluster_vars(topology=cluster_topology, config_service=get_config_service())
     groups = _get_host_group_names_for_cluster(cluster_topology=cluster_topology)
     action = _get_action_info(action=action, process=process)
 

@@ -16,7 +16,6 @@ from operator import itemgetter
 from unittest.mock import patch
 
 from cm.converters import model_name_to_core_type
-from cm.legacy.api import delete_service
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.models import (
     ADCM,
@@ -36,6 +35,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from use_cases.transition.cluster.delete import DeleteService
 import pytz
 
 from api_v2.tests.base import BaseAPITestCase
@@ -275,8 +275,8 @@ class TestTask(BaseAPITestCase):
             service_admin_response = log_list_endpoint.get()
             self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
-            # delete service
-            delete_service(service=self.service_1)
+            # delete service skipping some checks
+            DeleteService().do(service=self.service_1)
 
             # check tasklog visibility for cluster admin
             self.client.login(**cluster_admin_credentials)

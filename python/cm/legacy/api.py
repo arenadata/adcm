@@ -10,16 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
 from functools import partial
 from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
 from rbac.models import re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
@@ -32,12 +29,11 @@ from cm.converters import (
 )
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.legacy.adcm_config.config import (
-    init_object_config,
     process_json_config,
-    reraise_file_errors_as_adcm_ex,
     save_object_config,
 )
 from cm.legacy.adcm_config.utils import proto_ref
+from cm.legacy.config import init_object_config
 from cm.legacy.issue import (
     add_concern_to_object,
     unlink_concern_from_object,
@@ -68,7 +64,6 @@ from cm.legacy.status_api import (
     notify_about_new_concern,
     notify_about_redistributed_concerns_from_maps,
     send_config_creation_event,
-    send_delete_service_event,
 )
 from cm.legacy.utils import obj_ref
 from cm.logger import logger
@@ -274,50 +269,6 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     logger.info("host #%s is deleted", host_pk)
 
 
-def delete_service(service: Service) -> None:
-    service_pk = service.pk
-
-    delete_concerns_of_removed_objects(
-        objects={
-            ADCMCoreType.SERVICE: (service_pk,),
-            ADCMCoreType.COMPONENT: tuple(Component.objects.values_list("id", flat=True).filter(service_id=service_pk)),
-        }
-    )
-
-    service.delete()
-
-    cluster = service.cluster
-    cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-    concern_id = None
-    related_objects = {}
-    if not cluster_mapping_has_issue_orm_version(cluster=cluster):
-        delete_issue(
-            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
-        )
-    elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
-        concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-        concern_id = concern.id
-        related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern_id)
-
-    keep_objects = defaultdict(set)
-    for task in TaskLog.objects.filter(
-        object_type=ContentType.objects.get_for_model(Service), object_id=service_pk
-    ).prefetch_related("joblog_set", "joblog_set__logstorage_set"):
-        keep_objects[task.__class__].add(task.pk)
-        for job in task.joblog_set.all():
-            keep_objects[job.__class__].add(job.pk)
-            for log in job.logstorage_set.all():
-                keep_objects[log.__class__].add(log.pk)
-
-    re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
-
-    reset_hc_map()
-    on_commit(func=partial(send_delete_service_event, service_id=service_pk))
-    if concern_id:
-        on_commit(func=partial(notify_about_new_concern, concern_id=concern_id, related_objects=related_objects))
-    logger.info("service #%s is deleted", service_pk)
-
-
 def delete_cluster(cluster: Cluster) -> None:
     tasks = []
     for lock in cluster.concerns.filter(type=ConcernType.LOCK):
@@ -386,16 +337,6 @@ def remove_host_from_cluster(host: Host) -> Host:
     return host
 
 
-def unbind(cbind):
-    import_obj = get_bind_obj(cbind.cluster, cbind.service)
-    export_obj = get_bind_obj(cbind.source_cluster, cbind.source_service)
-    check_import_default(import_obj, export_obj)
-
-    with atomic():
-        cbind.delete()
-        update_hierarchy_issues(cbind.cluster)
-
-
 def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> Service:
     if proto.type != "service":
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
@@ -439,27 +380,6 @@ def add_components_to_service(cluster: Cluster, service: Service) -> None:
         obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
         service_component.save(update_fields=["config"])
-
-
-def get_license(proto: Prototype) -> str | None:
-    if not proto.license_path:
-        return None
-
-    if not isinstance(proto, Prototype):
-        raise AdcmEx("LICENSE_ERROR")
-
-    with reraise_file_errors_as_adcm_ex(filepath=proto.license_path, reference="license file"):
-        return (settings.BUNDLE_DIR / proto.bundle.hash / proto.license_path).read_text(encoding="utf-8")
-
-
-def accept_license(proto: Prototype) -> None:
-    if not proto.license_path:
-        raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
-
-    if proto.license == "absent":
-        raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
-
-    Prototype.objects.filter(license_hash=proto.license_hash, license="unaccepted").update(license="accepted")
 
 
 def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
@@ -560,49 +480,6 @@ def get_hc(cluster: Cluster | None) -> list[dict] | None:
         return None
 
     return list(HostComponent.objects.values("host_id", "service_id", "component_id").filter(cluster=cluster))
-
-
-def check_sub_key(hc_in):
-    def check_sub(_sub_key, _sub_type, _item):
-        if _sub_key not in _item:
-            raise_adcm_ex("INVALID_INPUT", f'"{_sub_key}" sub-field of hostcomponent is required')
-
-        if not isinstance(_item[_sub_key], _sub_type):
-            raise_adcm_ex("INVALID_INPUT", f'"{_sub_key}" sub-field of hostcomponent should be "{_sub_type}"')
-
-    seen = {}
-    if not isinstance(hc_in, list):
-        raise_adcm_ex("INVALID_INPUT", "hostcomponent should be array")
-
-    for item in hc_in:
-        for sub_key, sub_type in (("service_id", int), ("host_id", int), ("component_id", int)):
-            check_sub(sub_key, sub_type, item)
-
-        key = (item.get("service_id", ""), item.get("host_id", ""), item.get("component_id", ""))
-        if key not in seen:
-            seen[key] = 1
-        else:
-            raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
-
-
-def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, Component]]:
-    host_comp_list = []
-    for item in hc_in:
-        host = Host.obj.get(pk=item["host_id"])
-        service = Service.obj.get(pk=item["service_id"], cluster=cluster)
-        comp = Component.obj.get(pk=item["component_id"], cluster=cluster, service=service)
-        if not host.cluster:
-            raise_adcm_ex("FOREIGN_HOST", f"host #{host.pk} {host.fqdn} does not belong to any cluster")
-
-        if host.cluster.pk != cluster.pk:
-            raise_adcm_ex(
-                "FOREIGN_HOST",
-                f"host {host.fqdn} (cluster #{host.cluster.pk}) does not belong to cluster #{cluster.pk}",
-            )
-
-        host_comp_list.append((service, host, comp))
-
-    return host_comp_list
 
 
 def get_bind(cluster: Cluster, service: Service | None, source_cluster: Cluster, source_service: Service | None):
@@ -843,60 +720,6 @@ def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataFo
         on_commit(func=partial(notify_about_new_concern, concern_id=concern.id, related_objects=related_objects))
 
     return get_import(cluster=cluster, service=service)
-
-
-def bind(cluster: Cluster, service: Service | None, export_cluster: Cluster, export_service_pk: int | None) -> dict:
-    """
-    Adapter between old and new bind interface
-    /api/.../bind/ -> /api/.../import/
-    bind() -> multi_bind()
-    """
-
-    export_service = None
-    if export_service_pk:
-        export_service = Service.obj.get(cluster=export_cluster, id=export_service_pk)
-        if not PrototypeExport.objects.filter(prototype=export_service.prototype):
-            raise_adcm_ex(code="BIND_ERROR", msg=f"{obj_ref(export_service)} do not have exports")
-
-        name = export_service.prototype.name
-    else:
-        if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
-            raise_adcm_ex(code="BIND_ERROR", msg=f"{obj_ref(export_cluster)} does not have exports")
-
-        name = export_cluster.prototype.name
-
-    import_obj = cluster
-    if service:
-        import_obj = service
-
-    prototype_import = None
-    try:
-        prototype_import = PrototypeImport.obj.get(prototype=import_obj.prototype, name=name)
-    except MultipleObjectsReturned:
-        raise_adcm_ex(code="BIND_ERROR", msg="Old api does not support multi bind. Go to /api/v1/.../import/")
-
-    bind_list = []
-    for imp in get_import(cluster=cluster, service=service):
-        for exp in imp["exports"]:
-            if exp["binded"]:
-                bind_list.append({"import_id": imp["id"], "export_id": exp["id"]})
-
-    item = {"import_id": prototype_import.id, "export_id": {"cluster_id": export_cluster.pk}}
-    if export_service:
-        item["export_id"]["service_id"] = export_service.pk
-
-    bind_list.append(item)
-
-    multi_bind(cluster=cluster, service=service, bind_list=bind_list)
-    res = {
-        "export_cluster_id": export_cluster.pk,
-        "export_cluster_name": export_cluster.name,
-        "export_cluster_prototype_name": export_cluster.prototype.name,
-    }
-    if export_service:
-        res["export_service_id"] = export_service.pk
-
-    return res
 
 
 def check_multi_bind(actual_import, cluster, service, export_cluster, export_service, cluster_bind_list=None):

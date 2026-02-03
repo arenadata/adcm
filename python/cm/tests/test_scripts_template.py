@@ -15,12 +15,12 @@ from uuid import uuid4
 import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
+from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.action.process.types import ProcessState
 from django.utils import timezone
-from infra.services import get_config_service, get_wizard_service
 
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.legacy.services.bundle_alt.render import ContextGatherer, TaskArgs
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     ADCM,
@@ -31,9 +31,10 @@ from cm.models import (
     ProcessStep,
     ProcessStepInput,
 )
+from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestScriptsTemplateEnvironment(WithDishkaContainer, BusinessLogicMixin, TaskTestMixin, BaseTestCase):
     # COPIED FROM cm.tests.test_jinja_scripts.TestJinjaScriptsEnvironment
 
     maxDiff = None
@@ -110,9 +111,8 @@ class TestScriptsTemplateEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTest
             },
             "task": {"config": None, "verbose": False},
         }
-        self.context_gatherer = ContextGatherer(
-            config_service=get_config_service(), wizard_service=get_wizard_service()
-        )
+        with self.container() as container:
+            self.context_gatherer = container.get(ContextGathererI[ActionArgs, TaskArgs])
 
     def test_env_for_cluster(self):
         args = TaskArgs(target_object=self.cluster, owner_object=self.cluster, action=self.cluster_action)
