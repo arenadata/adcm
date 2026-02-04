@@ -30,12 +30,8 @@ from core.bundle._parsing.shared.validation import (
 )
 
 Version: TypeAlias = int | float | str
-Venv: TypeAlias = Annotated[
-    Literal["default", "2.8", "2.9", "2.16"] | None,
-    Field(default=None),
-    # fixme cast is too broad, but required since round trip load
-    BeforeValidator(lambda x: str(x) if x is not None else x),
-]
+MainVenv: TypeAlias = Literal["2.9", "2.16"]
+ChildVenv: TypeAlias = Annotated[MainVenv | None, Field(default=None)]
 Monitoring: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(default=None)]
 
 Name: TypeAlias = Annotated[str, AfterValidator(validate_name)]
