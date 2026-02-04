@@ -22,7 +22,7 @@ from core.bundle._parsing.v_2_0.actions import (
     BundleSwitchInternalScript,
     StateActionResultSchema,
 )
-from core.bundle._parsing.v_2_0.schema import Masking, StatesSchema, Venv, VersionsSchema
+from core.bundle._parsing.v_2_0.schema import Masking, StatesSchema, VersionsSchema
 
 BundleSwitchOrRevertInternalScript = Annotated[
     BundleSwitchInternalScript | BundleRevertInternalScript, Field(discriminator="script")
@@ -46,7 +46,6 @@ class UpgradeWithAction(SimpleUpgrade):
     config: ConfigAsListDictOrNoneNoDuplicates
 
     scripts: Annotated[list[UpgradeScript] | None, Field(default=None)]
-    venv: Venv
 
     masking: Masking
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]

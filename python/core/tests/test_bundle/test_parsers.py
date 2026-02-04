@@ -49,7 +49,7 @@ class V1Implementation:
 class V2Implementation:
     @classmethod
     def build_cluster_entry(cls) -> dict:
-        return {"type": "cluster", "name": "aa", "version": "1", "contract_version": "2.0"}
+        return {"type": "cluster", "venv": "2.16", "name": "aa", "version": "1", "contract_version": "2.0"}
 
     @classmethod
     def build_parser(cls) -> BundleParser:

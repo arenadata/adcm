@@ -24,16 +24,17 @@ from core.bundle._parsing.v_2_0.actions import (
     ProviderActions,
 )
 from core.bundle._parsing.v_2_0.schema import (
+    ChildVenv,
     ComponentRequiresSchema,
     Export,
     FlagAutogeneration,
     FlagAutogenerationSchema,
     Imports,
     License,
+    MainVenv,
     Monitoring,
     Name,
     ServiceRequiresSchema,
-    Venv,
     Version,
 )
 from core.bundle._parsing.v_2_0.upgrades import Upgrades
@@ -53,7 +54,7 @@ class Component(BundleModel):
     description: Annotated[str | None, Field(default=None)]
 
     actions: ClusterActions
-    venv: Venv
+    venv: ChildVenv
 
     config: ConfigAsListDictOrNone
     config_group_customization: Annotated[bool | None, Field(default=None)]
@@ -77,7 +78,7 @@ class Service(BundleModel):
     edition: Annotated[str | None, Field(default=None)]
 
     actions: ClusterActions
-    venv: Venv
+    venv: ChildVenv
 
     config: ConfigAsListDictOrNone
     config_group_customization: Annotated[bool | None, Field(default=None)]
@@ -109,7 +110,7 @@ class Cluster(BundleModel):
     edition: Annotated[str | None, Field(default=None)]
 
     actions: ClusterActions
-    venv: Venv
+    venv: MainVenv
 
     config: ConfigAsListDictOrNone
     config_group_customization: Annotated[bool | None, Field(default=None)]
@@ -138,7 +139,7 @@ class Host(BundleModel):
     edition: Annotated[str | None, Field(default=None)]
 
     actions: HostOrADCMActions
-    venv: Venv
+    venv: ChildVenv
 
     config: ConfigAsListDictOrNone
 
@@ -158,7 +159,7 @@ class Provider(BundleModel):
     edition: Annotated[str | None, Field(default=None)]
 
     actions: ProviderActions
-    venv: Venv
+    venv: MainVenv
 
     config: ConfigAsListDictOrNone
     config_group_customization: Annotated[bool | None, Field(default=None)]
@@ -185,7 +186,7 @@ class ADCMSchema(BundleModel):
     edition: Annotated[str | None, Field(default=None)]
 
     actions: HostOrADCMActions
-    venv: Venv
+    venv: MainVenv
 
     config: ConfigAsListDictOrNone
 

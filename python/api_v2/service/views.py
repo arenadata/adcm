@@ -260,9 +260,10 @@ class ServiceViewSet(
     @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(
         pre_call=set_service_name_from_object, on_collect=adjust_denied_on_404_result(service_does_exist)
     )
-    def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, *_, schedule_task: FromDishka[ScheduleTask], **__):
         instance = self.get_object()
-        return delete_service_from_api(service=instance)
+        return delete_service_from_api(service=instance, schedule_task=schedule_task)
 
     @(
         audit_update(name="Service updated", object_=service_from_lookup)

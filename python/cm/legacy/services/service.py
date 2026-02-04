@@ -21,12 +21,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
+from use_cases.dto import RunActionDTO
+from use_cases.transition.job.schedule import ScheduleTask
 
 from cm.errors import AdcmEx
 from cm.legacy.api import cancel_locking_tasks, delete_service
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.models import Action, ClusterBind, JobStatus, Service, TaskLog
 
 
@@ -109,7 +110,7 @@ def _get_error_on_service_deletion(
             return AdcmEx(code="SERVICE_CONFLICT", msg=error_msg)
 
 
-def delete_service_from_api(service: Service) -> Response:
+def delete_service_from_api(service: Service, schedule_task: ScheduleTask) -> Response:
     # Technical debt: in some cases service deletion comes with updating hc mapping (ansible plugin adcm_delete_service)
     #                 Here we rely only on CASCADE deletion of HostComponent entries (if not deleting by action)
 
@@ -135,11 +136,7 @@ def delete_service_from_api(service: Service) -> Response:
 
     cancel_locking_tasks(obj=service, obj_deletion=True)
     if delete_action and (related_mapping_exists or service.state != "created"):
-        run_action(
-            action=delete_action,
-            obj=service,
-            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
-        )
+        schedule_task.do(action_orm=delete_action, target=service, payload=RunActionDTO())
     else:
         delete_service(service=service)
 
