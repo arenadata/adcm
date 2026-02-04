@@ -181,11 +181,6 @@ const getIsReadonly = (
 
   const isArrayItem = parentNodeData.fieldSchema.type === 'array';
   const isMapProperty = parentNode.data.type === 'object' && parentNode.data.objectType === 'map';
-  const isParentSelectableObject = parentNode.data.type === 'selectableObject';
-
-  if (isParentSelectableObject) {
-    return fieldSchema.readOnly ?? false;
-  }
 
   if ((isArrayItem || isMapProperty) && parentNodeData.isReadonly) {
     return true;

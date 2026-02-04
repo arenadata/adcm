@@ -1,13 +1,11 @@
-import IconButton from '@uikit/IconButton/IconButton';
-import Popover from '@uikit/Popover/Popover';
-import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
-import { useRef, useState } from 'react';
-import { discriminatorFieldName } from '../../ConfigurationTree.constants';
+import { discriminatorFieldName, nullStub } from '../../ConfigurationTree.constants';
 import type { ConfigurationSelectableObject } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
-import type { JSONObject } from '@models/json';
+import { isValueSet, type JSONObject } from '@models/json';
 import s from './ObjectSchemaSelect.module.scss';
 import treeStyles from '../../ConfigurationTree.module.scss';
-import cn from 'classnames';
+import ActionMenu from '@uikit/ActionMenu/ActionMenu.tsx';
+import Icon from '@uikit/Icon/Icon.tsx';
+import { useMemo, useRef } from 'react';
 
 export interface ObjectSchemaSelectProps {
   data: ConfigurationSelectableObject;
@@ -15,60 +13,54 @@ export interface ObjectSchemaSelectProps {
 }
 
 const ObjectSchemaSelect = ({ data, onChange }: ObjectSchemaSelectProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const iconRef = useRef<HTMLButtonElement>(null);
+  const optionsMap = useRef<Map<string, string>>(new Map<string, string>());
 
-  const options = (data.fieldSchema.oneOf ?? []).map((schema) => {
-    const discriminatorField = schema?.properties?.[discriminatorFieldName];
-    const value = discriminatorField?.title ?? (discriminatorField?.const as string) ?? '';
-    const label = discriminatorField?.title ?? (value as string);
+  const options = useMemo(
+    () =>
+      (data.fieldSchema.oneOf ?? []).map((schema) => {
+        const discriminatorField = schema?.properties?.[discriminatorFieldName];
 
-    return { value, label };
-  });
+        const value = (discriminatorField?.const as string) || '';
+        const label = schema?.properties?.[value]?.title ?? value;
+        optionsMap.current.set(value, label);
 
-  const handleOptionClick = (e: React.MouseEvent<HTMLLIElement>) => {
-    const selection = e.currentTarget.dataset.selection;
+        return { value, label };
+      }),
+    [data.fieldSchema.oneOf],
+  );
+
+  const handleChange = (selection: string | null) => {
     if (selection) {
       onChange(selection);
-      setIsOpen(false);
     }
   };
 
-  const handleIconClick = () => {
-    setIsOpen((prev) => !prev);
-  };
+  const selectDisabled = data.isReadonly || !(data.fieldSchema.adcmMeta?.synchronization?.isAllowChange ?? true);
 
-  const discriminatorValue =
-    data.value === null ? null : ((data.value as JSONObject)[discriminatorFieldName] as string);
-
-  const iconClassName = cn(s.objectSchemaSelect__icon, {
-    [s.objectSchemaSelect__icon_expanded]: isOpen,
-  });
+  const discriminatorLabelEl = getNodeSelectedLabelEl(data, optionsMap.current);
 
   return (
-    <>
-      {discriminatorValue && <div className={treeStyles.nodeContent__value}>{discriminatorValue}</div>}
-      <div className={s.objectSchemaSelect}>
-        <IconButton ref={iconRef} size={12} icon="chevron" className={iconClassName} onClick={handleIconClick} />
-        <Popover isOpen={isOpen} onOpenChange={setIsOpen} triggerRef={iconRef} placement="bottom-start" offset={8}>
-          <PopoverPanelDefault className={s.objectSchemaSelect__selectPanel}>
-            <ul>
-              {options.map((option) => (
-                <li
-                  key={option.label}
-                  className={s.objectSchemaSelect__option}
-                  data-selection={option.value}
-                  onClick={handleOptionClick}
-                >
-                  {option.label}
-                </li>
-              ))}
-            </ul>
-          </PopoverPanelDefault>
-        </Popover>
-      </div>
-    </>
+    <ActionMenu placement="bottom-start" value={null} options={options} onChange={handleChange}>
+      <button className={s.objectSchemaSelect} disabled={selectDisabled}>
+        {discriminatorLabelEl}
+        <Icon name="chevron" size={12} className={s.objectSchemaSelect__icon} />
+      </button>
+    </ActionMenu>
   );
 };
 
 export default ObjectSchemaSelect;
+
+const getNodeSelectedLabelEl = (data: ConfigurationSelectableObject, optionsMap: Map<string, string>) => {
+  const discriminatorValue = !isValueSet(data.value)
+    ? null
+    : ((data.value as JSONObject)[discriminatorFieldName] as string);
+
+  const discriminatorLabel = discriminatorValue ? optionsMap.get(discriminatorValue) : nullStub;
+
+  return (
+    <span className={treeStyles.nodeContent__value} data-test={discriminatorLabel ? undefined : 'null-stub'}>
+      {discriminatorLabel}
+    </span>
+  );
+};
