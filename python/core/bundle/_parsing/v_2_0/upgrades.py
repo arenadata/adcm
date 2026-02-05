@@ -12,9 +12,10 @@
 
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, Field, model_validator
+from pydantic import AfterValidator, Field, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
+from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.validation import min_and_max_present
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
@@ -30,7 +31,7 @@ BundleSwitchOrRevertInternalScript = Annotated[
 UpgradeScript = Annotated[BundleSwitchOrRevertInternalScript | AnsibleScript, Field(discriminator="script_type")]
 
 
-class SimpleUpgrade(BaseModel):
+class SimpleUpgrade(BundleModel):
     name: str
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]

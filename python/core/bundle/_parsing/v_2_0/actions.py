@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, BeforeValidator, Field, model_validator
+from pydantic import AfterValidator, Field, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.validation import (
@@ -248,7 +248,7 @@ class ProviderAction(HostOrADCMAction):
 ClusterActions = Annotated[
     dict[Name, ClusterObjectAction] | None,
     Field(default=None),
-    BeforeValidator(forbidden_mm_actions),
+    AfterValidator(forbidden_mm_actions),
 ]
 
 HostOrADCMActions = Annotated[
