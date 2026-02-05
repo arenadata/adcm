@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.bundle import _constants as constants
 from core.bundle import _definitions as d
 from core.bundle import _operations as operations
 from core.bundle import _parsing as parsing
@@ -43,6 +44,7 @@ __all__ = [
     "ConvertConfigDefinition",
     "SignatureStatus",
     "build_parent_key_safe",
+    "constants",
     "d",
     "is_component_key",
     "operations",

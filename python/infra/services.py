@@ -15,7 +15,6 @@ import json
 
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.impl.job.repo import JobRepo
 from cm.impl.wizard.repo import WizardRepo
 from core.settings import Directories, Settings
 import core
@@ -55,13 +54,6 @@ def get_config_service():
         variant_validators=validators,
         yspec_schema=yspec_schema,
     )
-
-
-@cache
-def get_job_service():
-    repo = JobRepo()
-
-    return core.job.JobService(repo=repo)
 
 
 @cache

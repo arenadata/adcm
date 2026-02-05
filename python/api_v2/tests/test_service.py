@@ -13,7 +13,6 @@
 from typing import NamedTuple
 from unittest.mock import patch
 
-from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
@@ -471,10 +470,12 @@ class TestServiceDeleteAction(BaseAPITestCase):
             self.assertEqual(service_concerns_qs.count(), 2)
             self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
 
-    @staticmethod
-    def imitate_task_running(action: Action, object_: Cluster | Service) -> TaskLog:
-        with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
-            task = run_action(action=action, obj=object_, payload=ActionRunPayload())
+    def imitate_task_running(self, action: Action, object_: Cluster | Service) -> TaskLog:
+        with RunTaskMock() as run_task:
+            response = self.client.v2[object_, "actions", action.pk, "run"].post()
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task = run_task.target_task
 
         job = JobLog.objects.filter(task=task).first()
         job.status = "running"

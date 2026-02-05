@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from typing import Mapping
 import os
 
 
@@ -27,14 +26,5 @@ FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
 FLAG_CONFIG_PROCESSING = _Flag("feature-config-processing")
 
 
-def use_new_spec_format(headers: Mapping | None = None) -> bool:
-    return use_new_config_processing(headers=headers)
-
-
 def use_new_job_scheduler() -> bool:
     return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"
-
-
-def use_new_config_processing(headers: Mapping | None = None) -> bool:
-    _ = headers
-    return True

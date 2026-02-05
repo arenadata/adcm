@@ -68,7 +68,6 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from infra.di.django import inject
-from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -83,7 +82,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.cluster.create import create_cluster
+from use_cases.transition.cluster.create import CreateCluster
 from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
@@ -367,7 +366,8 @@ class ClusterViewSet(
                 return ClusterSerializer
 
     @audit_create(name="Cluster created", object_=cluster_from_response)
-    def create(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def create(self, request, create_cluster: FromDishka[CreateCluster], **_):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
@@ -377,12 +377,7 @@ class ClusterViewSet(
         if not prototype:
             raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-        cluster_id = create_cluster(
-            prototype=prototype,
-            name=valid["name"],
-            description=valid["description"],
-            config_service=get_config_service(),
-        )
+        cluster_id = create_cluster.do(prototype=prototype, name=valid["name"], description=valid["description"])
         cluster = Cluster.objects.get(id=cluster_id)
 
         return Response(

@@ -30,6 +30,8 @@ from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from dishka import Provider, Scope, provide
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
+from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
 import core
 import yaml
@@ -165,3 +167,9 @@ class UseCaseProvider(Provider):
     schedule_task = provide(ScheduleTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
+
+    create_cluster = provide(CreateCluster)
+
+    add_services = provide(CreateServicesFromPrototypes)
+    delete_service = provide(DeleteService)
+    delete_service_from_api = provide(DeleteServiceFromAPI)
