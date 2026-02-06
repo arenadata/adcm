@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, Field, model_validator
+from pydantic import AfterValidator, BeforeValidator, Field, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.validation import (
@@ -65,6 +65,7 @@ class StateActionResultSchema:
 class _BaseScript:
     name: str
     display_name: Annotated[str | None, Field(default=None)]
+    allow_to_terminate: Annotated[bool | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
 
 
@@ -248,7 +249,7 @@ class ProviderAction(HostOrADCMAction):
 ClusterActions = Annotated[
     dict[Name, ClusterObjectAction] | None,
     Field(default=None),
-    AfterValidator(forbidden_mm_actions),
+    BeforeValidator(forbidden_mm_actions),
 ]
 
 HostOrADCMActions = Annotated[

@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 from adcm_version import compare_prototype_versions
-from pydantic import BaseModel
 
 from core import config
 from core.bundle._constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET, NAME_REGEX
@@ -21,9 +20,6 @@ from core.templates import Template
 
 if TYPE_CHECKING:
     from core.bundle._parsing.v_1_0.schema import VersionsSchema
-
-
-ActionName: TypeAlias = str
 
 
 def is_path_correct(raw_path: str) -> bool:
@@ -131,11 +127,12 @@ def is_correct_pattern(pattern: str | None):
     return pattern
 
 
-def forbidden_mm_actions(actions: dict[ActionName, BaseModel]) -> dict:
+def forbidden_mm_actions(actions: Any) -> Any:
+    if not isinstance(actions, dict):
+        return actions
+
     for name, data in actions.items():
-        if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(
-            data.model_fields_set
-        ):
+        if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(data.keys()):
             raise ValueError(
                 "Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
