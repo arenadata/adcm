@@ -137,7 +137,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
             result_steps = []
 
             for step in stage.steps:
-                meta = action.wizard.StepExtra(display_name=step.display_name)
+                meta = action.wizard.StepExtra(display_name=step.display_name, description=step.description)
 
                 template = step.template.to_core_template(resolve_path=resolve_path)
 
@@ -148,7 +148,9 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
                         )
 
                     case OperationStep(ui_options=ui_options):
-                        meta = action.wizard.OperationStepExtra(display_name=meta.display_name, ui_options=ui_options)
+                        meta = action.wizard.OperationStepExtra(
+                            display_name=meta.display_name, description=meta.description, ui_options=ui_options
+                        )
                         step_definition = action.wizard.OperationStepDefinition(
                             name=step.name, type=action.wizard.StepType.OPERATION, template=template, extra=meta
                         )
@@ -161,7 +163,9 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
                 result_steps.append(step_definition)
 
             result_stage = action.wizard.Stage(
-                name=stage.name, extra=action.wizard.StageExtra(display_name=stage.display_name), steps=result_steps
+                name=stage.name,
+                extra=action.wizard.StageExtra(display_name=stage.display_name, description=stage.description),
+                steps=result_steps,
             )
 
             result.append(result_stage)

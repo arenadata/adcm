@@ -1714,6 +1714,7 @@ class ProcessStep(models.Model):
         choices=ProcessStepStateChoices,
         default=DEFAULT_PROCESS_STEP_STATE,
     )
+    description = models.CharField(max_length=255, blank=True, default="")
 
 
 class ProcessStepInput(models.Model):

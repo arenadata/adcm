@@ -89,7 +89,7 @@ def create_process(
     return ActionProcess.model_validate(process, from_attributes=True)
 
 
-def create_steps(process_id: ActionProcessID, stages: list[core.action.wizard.Stage]) -> list[ProcessStep]:
+def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> list[ProcessStep]:
     objects = []
     for stage in stages:
         for step in stage.steps:
@@ -99,11 +99,11 @@ def create_steps(process_id: ActionProcessID, stages: list[core.action.wizard.St
                     type=step.type.value,
                     name=step.name,
                     stage=stage.name,
+                    description=step.extra.description,
                     display_name=step.extra.display_name,
                     step_spec=None,
                 )
             )
-
     return ProcessStep.objects.bulk_create(objects)
 
 
