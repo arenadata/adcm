@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,18 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-from pathlib import Path
+import adcm.init_django  # noqa: F401, isort:skip
+
+from adcm.dependencies import prepare_container
+from use_cases import init
 
 
-@dataclass(slots=True)
-class Directories:
-    bundles: Path
-    downloads: Path
-    files: Path
-    vars: Path
+def run_pre_migration() -> None:
+    container = prepare_container()
+    pre_migration = container.get(init.RunPreMigration)
+    pre_migration.do()
 
 
-@dataclass(slots=True)
-class Settings:
-    directories: Directories
+if __name__ == "__main__":
+    run_pre_migration()

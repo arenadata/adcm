@@ -24,6 +24,7 @@ from cm.impl.job.repo import JobRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
+from core import secrets as secrets_m
 from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
@@ -31,6 +32,7 @@ from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from dishka import Provider, Scope, provide
 from use_cases.bundle import CompatibilityCheck, InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.init import RunPreMigration
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
@@ -45,7 +47,32 @@ class FSProvider(Provider):
     def directories(self) -> Directories:
         from django.conf import settings
 
-        return Directories(files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR)
+        return Directories(
+            files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR, vars=settings.VAR_DIR
+        )
+
+
+class SettingsProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def secrets_source(self) -> secrets_m.SecretsSource:
+        env_backend = os.environ.get(secrets_m.ENV_BACKEND, secrets_m.SecretsSource.FS.value)
+
+        try:
+            return secrets_m.SecretsSource(env_backend)
+        except ValueError as e:
+            raise secrets_m.SecretsError(f"Unexpected secrets backend: {secrets_m.ENV_BACKEND}={env_backend}") from e
+
+    @provide
+    def secrets(self, source: secrets_m.SecretsSource, directories: Directories) -> secrets_m.ADCMSecrets:
+        match source:
+            case secrets_m.SecretsSource.FS:
+                provider = secrets_m.FSSecretsProvider(path=directories.vars / secrets_m.FILENAME)
+            case secrets_m.SecretsSource.OPEN_BAO:
+                raise NotImplementedError()
+
+        return provider.get()
 
 
 class ConfigProvider(Provider):
@@ -175,3 +202,5 @@ class UseCaseProvider(Provider):
     add_services = provide(CreateServicesFromPrototypes)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
+
+    run_pre_migration = provide(RunPreMigration, scope=Scope.APP)

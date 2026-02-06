@@ -20,6 +20,7 @@ from infra.di.providers import (
     FSProvider,
     JobProvider,
     ScenariosProvider,
+    SettingsProvider,
     UseCaseProvider,
     UtilsProvider,
     WizardProvider,
@@ -38,6 +39,7 @@ def prepare_container() -> Container:
         FeatureFlagProvider(),
         ScenariosProvider(),
         UseCaseProvider(),
+        SettingsProvider(),
     )
 
     return make_container(*providers)
