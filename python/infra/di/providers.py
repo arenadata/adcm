@@ -24,12 +24,13 @@ from cm.impl.job.repo import JobRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
+from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from dishka import Provider, Scope, provide
-from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.bundle import CompatibilityCheck, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
@@ -111,11 +112,11 @@ class BundleProvider(Provider):
     @provide
     def parsers(self) -> list[tuple[core.bundle.parsing.VersionInfo, core.bundle.parsing.BundleParser]]:
         v_1_0 = (
-            core.bundle.parsing.VersionInfo(tag="1.0", status="supported"),
+            core.bundle.parsing.VersionInfo(tag="1.0", status=VersionSupportStatus.SUPPORTED),
             core.bundle.parsing.v_1_0.Parser(),
         )
         v_2_0 = (
-            core.bundle.parsing.VersionInfo(tag="2.0", status="supported"),
+            core.bundle.parsing.VersionInfo(tag="2.0", status=VersionSupportStatus.SUPPORTED),
             core.bundle.parsing.v_2_0.Parser(),
         )
         return [v_1_0, v_2_0]
@@ -167,6 +168,7 @@ class UseCaseProvider(Provider):
     schedule_task = provide(ScheduleTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
+    check_contract_versions = provide(CompatibilityCheck)
 
     create_cluster = provide(CreateCluster)
 

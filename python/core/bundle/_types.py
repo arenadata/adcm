@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Literal, TypeAlias
@@ -19,11 +19,19 @@ from typing_extensions import Self
 
 from core.types import BundleID
 
+BundleVersionTag: TypeAlias = str
+ContractVersion: TypeAlias = str
+
 
 class SignatureStatus(str, Enum):
     VALID = "valid"
     INVALID = "invalid"
     ABSENT = "absent"
+
+
+class VersionSupportStatus(str, Enum):
+    SUPPORTED = "supported"
+    DEPRECATED = "deprecated"
 
 
 @dataclass(slots=True)
@@ -81,3 +89,19 @@ class BundleContext:
     id: BundleID
     root: Path
     contract_version: str
+
+
+@dataclass(slots=True, frozen=True)
+class InstalledBundleVersion:
+    name: str
+    edition: str
+    version: BundleVersionTag
+    contract_version: ContractVersion
+
+
+@dataclass(slots=True)
+class BundleCompatibilityReport:
+    supported_versions: set[ContractVersion]
+    deprecated_versions: set[ContractVersion]
+    unsupported_version_bundles: set[InstalledBundleVersion] = field(default_factory=set)
+    deprecated_version_bundles: set[InstalledBundleVersion] = field(default_factory=set)

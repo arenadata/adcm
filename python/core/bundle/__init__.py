@@ -20,12 +20,17 @@ from core.bundle._repo import BundleRepoI
 from core.bundle._representation import build_parent_key_safe
 from core.bundle._service import BundleService
 from core.bundle._types import (
+    BundleCompatibilityReport,
     BundleContext,
     BundleDefinitionKey,
     BundleInfo,
     BundleUnpackingInfo,
+    BundleVersionTag,
     ComponentKey,
+    ContractVersion,
+    InstalledBundleVersion,
     SignatureStatus,
+    VersionSupportStatus,
 )
 from core.bundle._validate import ConvertConfigDefinition
 
@@ -49,4 +54,9 @@ __all__ = [
     "is_component_key",
     "operations",
     "parsing",
+    "VersionSupportStatus",
+    "BundleCompatibilityReport",
+    "InstalledBundleVersion",
+    "ContractVersion",
+    "BundleVersionTag",
 ]

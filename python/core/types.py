@@ -42,6 +42,7 @@ ClusterName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
 
+
 MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
 
 T = TypeVar("T")
