@@ -10,18 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-from pathlib import Path
+from core.secrets._backend import FSSecretsProvider, OpenBaoSecretsProvider, SecretsProvider
+from core.secrets._secrets import ENV_BACKEND, FILENAME, FILENAME_DEPRECATED, SecretsError, migrate_format, new
+from core.secrets._types import ADCMSecrets, SecretsSource
 
-
-@dataclass(slots=True)
-class Directories:
-    bundles: Path
-    downloads: Path
-    files: Path
-    vars: Path
-
-
-@dataclass(slots=True)
-class Settings:
-    directories: Directories
+__all__ = [
+    "ADCMSecrets",
+    "ENV_BACKEND",
+    "FILENAME",
+    "FILENAME_DEPRECATED",
+    "FSSecretsProvider",
+    "OpenBaoSecretsProvider",
+    "SecretsError",
+    "SecretsProvider",
+    "SecretsSource",
+    "migrate_format",
+    "new",
+]

@@ -42,6 +42,7 @@ class WithDishkaContainer:
             FSProvider,
             JobProvider,
             ScenariosProvider,
+            SettingsProvider,
             UseCaseProvider,
             UtilsProvider,
             WizardProvider,
@@ -57,6 +58,7 @@ class WithDishkaContainer:
             FeatureFlagProvider(),
             ScenariosProvider(),
             UseCaseProvider(),
+            SettingsProvider(),
         )
 
         return make_container(*providers)
