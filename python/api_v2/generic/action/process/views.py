@@ -282,7 +282,7 @@ class ProcessStepViewSet(
         target = orm_object_to_action_target_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        data = step.model_dump(include={"id", "name", "display_name", "type", "state"})
+        data = step.model_dump(include={"id", "name", "display_name", "description", "type", "state"})
 
         config_service = get_config_service()
 

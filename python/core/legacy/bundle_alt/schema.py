@@ -660,6 +660,7 @@ ActionProcessStep = OperationStep | ConfigurationStep | MappingStep
 
 
 class ActionProcessStage(_Names):
+    description: Annotated[str, Field(default="")]
     steps: list[ActionProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
 
     @model_validator(mode="after")

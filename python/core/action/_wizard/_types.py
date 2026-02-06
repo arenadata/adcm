@@ -126,6 +126,7 @@ class OperationUIOptions:
 @dataclass(slots=True)
 class StepExtra:
     display_name: str
+    description: str
 
 
 @dataclass(slots=True)
@@ -164,6 +165,7 @@ StepDefinition: TypeAlias = ConfigStepDefinition | OperationStepDefinition | Map
 
 @dataclass(slots=True)
 class StageExtra:
+    description: str
     display_name: str
 
 

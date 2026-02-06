@@ -1,6 +1,7 @@
 {
   "id": {{ step_id }},
   "name": "stage2_step2",
+  "description": "",
   "displayName": "Stage2.Step2",
   "task": null,
   "type": "operation",

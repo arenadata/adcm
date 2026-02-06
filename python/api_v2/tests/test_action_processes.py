@@ -355,6 +355,7 @@ class TestActionProcess(BaseAPITestCase):
 
                     expected_response = {
                         "name": "stage1_step1",
+                        "description": "",
                         "displayName": "Stage1.Step1",
                         "id": target_step.id,
                         "type": "configuration",

@@ -1,0 +1,15 @@
+- name: stage2
+  display_name: "Stage2"
+  steps:
+    - name: operational_step
+      display_name: "OperationalStep"
+      description: "Operational step description"
+      ui_options:
+        button_name: ButtonName
+      scripts_template:
+        file:
+          path: wizard_jinja/steps/s2_script.py
+          entrypoint: generate_scripts
+        engine:
+          type: python
+
