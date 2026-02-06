@@ -152,6 +152,10 @@ class BundleRepo(bundle.BundleRepoI):
 
         return {("component", parent_name, name) for name, parent_name in prototype_qs}
 
+    def retrieve_versions_info(self) -> set[bundle.InstalledBundleVersion]:
+        bundle_info = Bundle.objects.values_list("name", "edition", "version", "contract_version")
+        return {bundle.InstalledBundleVersion(*row) for row in bundle_info}
+
 
 def convert_config_definition_to_orm_model(
     definition: bundle.d.ConfigDefinition, prototype: Prototype | None, action: Action | None

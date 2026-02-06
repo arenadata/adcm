@@ -19,6 +19,7 @@ from cm import models
 from cm.errors import AdcmEx
 from cm.legacy.services import adcm
 from cm.legacy.services import bundle_alt as bundle
+from core.bundle import BundleCompatibilityReport
 from core.errors import localize_error
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
@@ -122,3 +123,11 @@ class InitOrUpgradeADCM:
                     self.initialize_adcm.do(bundle_id=bundle_id)
 
                     logger.info("ADCM upgrade: version %s initialized.", new_adcm_bundle_version)
+
+
+@dataclass(slots=True)
+class CompatibilityCheck:
+    bundle_service: core.bundle.BundleService
+
+    def do(self) -> BundleCompatibilityReport:
+        return self.bundle_service.find_contract_compatibility_violations()
