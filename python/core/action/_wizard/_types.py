@@ -123,10 +123,10 @@ class OperationUIOptions:
     button_name: str
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class StepExtra:
     display_name: str
-    description: str
+    description: str = ""
 
 
 @dataclass(slots=True)
@@ -165,8 +165,8 @@ StepDefinition: TypeAlias = ConfigStepDefinition | OperationStepDefinition | Map
 
 @dataclass(slots=True)
 class StageExtra:
-    description: str
     display_name: str
+    description: str = ""
 
 
 @dataclass(slots=True)
