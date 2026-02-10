@@ -10,23 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import upgrade
-from core import cluster, provider
+from typing import Protocol
 
-__all__ = [
-    "action",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-]
+from core.types import HostDesc, ProviderID
+
+
+class ProviderRepoI(Protocol):
+    def find_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostDesc, ...]:
+        ...

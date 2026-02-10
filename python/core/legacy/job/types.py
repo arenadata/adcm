@@ -24,6 +24,7 @@ from core.types import (
     ActionID,
     ADCMCoreType,
     ComponentID,
+    Descriptor,
     HostID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
@@ -34,6 +35,7 @@ from core.types import (
 
 T = TypeVar("T")
 V = TypeVar("V")
+CT = TypeVar("CT", bound=ADCMCoreType)
 
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
@@ -169,13 +171,18 @@ class RelatedObjects(NamedTuple):
     provider: NamedCoreObjectWithPrototype | None = None
 
 
-class TaskOwner(NamedTuple):
+@dataclass(slots=True)
+class TaskOwner(Generic[CT]):
     id: ObjectID
-    type: ADCMCoreType
+    type: CT
     name: str
     prototype_id: PrototypeID
 
     related_objects: RelatedObjects
+
+    @property
+    def as_descriptor(self) -> Descriptor[CT]:
+        return Descriptor(id=self.id, type=self.type)
 
 
 class HcAclRule(NamedTuple):
@@ -212,7 +219,7 @@ class Task(BaseModel):
     id: int
 
     # Owner is an object on which action is defined
-    owner: TaskOwner | None
+    owner: TaskOwner[ADCMCoreType] | None
     bundle: BundleInfo | None
 
     # Target is an object on which action should be performed

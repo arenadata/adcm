@@ -17,10 +17,11 @@ from pydantic import BeforeValidator, Field
 from core.bundle._parsing.shared.config import ConfigAsList, ConfigAsListDictOrNone
 from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.v_2_0.actions import (
+    ADCMActions,
     ClusterActions,
     DynamicActionScript,
     DynamicWizardScript,
-    HostOrADCMActions,
+    HostActions,
     ProviderActions,
 )
 from core.bundle._parsing.v_2_0.schema import (
@@ -138,7 +139,7 @@ class Host(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: HostOrADCMActions
+    actions: HostActions
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
@@ -185,7 +186,7 @@ class ADCMSchema(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: HostOrADCMActions
+    actions: ADCMActions
     venv: MainVenv
 
     config: ConfigAsListDictOrNone

@@ -10,23 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import upgrade
-from core import cluster, provider
+from typing import Final
 
-__all__ = [
-    "action",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-]
+from core.types import ADCMCoreType
+
+from cm.models import Cluster, Component, Host, Provider, Service
+
+MAIN_CORE_TYPE_TO_MODEL: Final[dict[ADCMCoreType, type[Cluster | Service | Component | Provider | Host]]] = {
+    ADCMCoreType.CLUSTER: Cluster,
+    ADCMCoreType.SERVICE: Service,
+    ADCMCoreType.COMPONENT: Component,
+    ADCMCoreType.PROVIDER: Provider,
+    ADCMCoreType.HOST: Host,
+}

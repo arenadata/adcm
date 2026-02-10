@@ -107,18 +107,24 @@ class ConfigApplyInternalScript(_BaseScript):
     params: ConfigApplyParams
 
 
-NonClusterInternalScript = Annotated[
-    BundleSwitchInternalScript | BundleRevertInternalScript, Field(discriminator="script")
+@dataclass(slots=True)
+class BeforeUpgradeCleanScript(_BaseScript):
+    script_type: Literal["internal"]
+    script: Literal["before_upgrade_clean"]
+
+
+ProviderInternalScript = Annotated[
+    BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
 ]
-ClusterStaticInternalScript = Annotated[NonClusterInternalScript | HcApplyInternalScript, Field(discriminator="script")]
+
+ClusterStaticInternalScript = Annotated[ProviderInternalScript | HcApplyInternalScript, Field(discriminator="script")]
 
 ClusterScript = Annotated[
     ClusterStaticInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
 ]
 
-NonClusterScript = Annotated[
-    NonClusterInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
-]
+ADCMScript = Annotated[AnsibleScript | PythonScript, Field(discriminator="script_type")]
+ProviderScript = Annotated[ProviderInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")]
 
 _DynamicActionInternalScript = Annotated[
     ClusterStaticInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
@@ -128,7 +134,7 @@ DynamicActionScript = Annotated[
 ]
 
 _DynamicWizardInternalScript = Annotated[
-    NonClusterInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+    ProviderInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
 ]
 DynamicWizardScript = Annotated[
     _DynamicWizardInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
@@ -234,12 +240,17 @@ class ClusterObjectAction(_ActionBase):
 
 
 @dataclass(slots=True)
-class HostOrADCMAction(_ActionBase):
-    scripts: list[NonClusterScript]
+class ADCMAction(_ActionBase):
+    scripts: list[ADCMScript]
 
 
 @dataclass(slots=True)
-class ProviderAction(HostOrADCMAction):
+class HostAction(_ActionBase):
+    scripts: list[ProviderScript]
+
+
+@dataclass(slots=True)
+class ProviderAction(HostAction):
     allow_for_action_host_group: Annotated[bool, Field(default=None)]
 
 
@@ -251,12 +262,18 @@ ClusterActions = Annotated[
     AfterValidator(forbidden_mm_actions),
 ]
 
-HostOrADCMActions = Annotated[
-    dict[Name, HostOrADCMAction] | None,
+
+HostActions = Annotated[
+    dict[Name, HostAction] | None,
     Field(default=None),
 ]
 
 ProviderActions = Annotated[
     dict[Name, ProviderAction] | None,
+    Field(default=None),
+]
+
+ADCMActions = Annotated[
+    dict[Name, ADCMAction] | None,
     Field(default=None),
 ]

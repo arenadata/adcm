@@ -18,10 +18,13 @@ import json
 from adcm.feature_flags import use_new_job_scheduler
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
+from cm.impl.cluster.repo import ClusterRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobRepo
+from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
+from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from core import secrets as secrets_m
@@ -30,9 +33,11 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
-from dishka import Provider, Scope, provide
+from dishka import Provider, Scope, provide, provide_all
 from use_cases.bundle import CompatibilityCheck, InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.init import RunPreMigration
+from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
@@ -156,6 +161,27 @@ class BundleProvider(Provider):
     service = provide(core.bundle.BundleService)
 
 
+class ClusterProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ClusterRepo, provides=core.cluster.ClusterRepoI)
+    service = provide(core.cluster.ClusterService)
+
+
+class ProviderProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ProviderRepo, provides=core.provider.ProviderRepoI)
+    service = provide(core.provider.ProviderService)
+
+
+class UpgradeProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(UpgradeRepo, provides=core.upgrade.UpgradeRepoI)
+    service = provide(core.upgrade.UpgradeService)
+
+
 class UtilsProvider(Provider):
     scope = Scope.APP
 
@@ -204,3 +230,10 @@ class UseCaseProvider(Provider):
     delete_service_from_api = provide(DeleteServiceFromAPI)
 
     run_pre_migration = provide(RunPreMigration, scope=Scope.APP)
+
+    upgrade = provide_all(
+        ResetBeforeUpgradeCluster,
+        ResetBeforeUpgradeProvider,
+        # for now can't find out why is it failing in runner
+        scope=Scope.APP,
+    )

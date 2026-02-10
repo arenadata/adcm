@@ -15,12 +15,15 @@ from functools import cache
 from dishka import Container, Scope, make_container
 from infra.di.providers import (
     BundleProvider,
+    ClusterProvider,
     ConfigProvider,
     FeatureFlagProvider,
     FSProvider,
     JobProvider,
+    ProviderProvider,
     ScenariosProvider,
     SettingsProvider,
+    UpgradeProvider,
     UseCaseProvider,
     UtilsProvider,
     WizardProvider,
@@ -30,6 +33,9 @@ from infra.di.providers import (
 @cache
 def prepare_container() -> Container:
     providers = (
+        ClusterProvider(),
+        ProviderProvider(),
+        UpgradeProvider(),
         BundleProvider(),
         ConfigProvider(),
         JobProvider(),

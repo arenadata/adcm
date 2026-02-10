@@ -37,18 +37,24 @@ class WithDishkaContainer:
     def _make_container(self) -> Container:
         from infra.di.providers import (
             BundleProvider,
+            ClusterProvider,
             ConfigProvider,
             FeatureFlagProvider,
             FSProvider,
             JobProvider,
+            ProviderProvider,
             ScenariosProvider,
             SettingsProvider,
+            UpgradeProvider,
             UseCaseProvider,
             UtilsProvider,
             WizardProvider,
         )
 
         providers = (
+            ClusterProvider(),
+            ProviderProvider(),
+            UpgradeProvider(),
             BundleProvider(),
             ConfigProvider(),
             JobProvider(),

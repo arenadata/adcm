@@ -75,6 +75,15 @@ class ExecutionTargetFactoryI(Protocol):
     def __call__(self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings) -> Iterable[ExecutionTarget]:
         ...
 
+    def register_internal_scripts(self, extra_internal_scripts: dict[str, Callable[[Task, Job], int]]):
+        # Introduced in ADCM-7700:
+        # This is a very bad solution for "owner-type-aware" internal scripts.
+        # One of correct implementations would be having different implementation
+        # for cluster/provider/ADCM owned task with introduction of "builder" layer
+        # that will pick target factory based on owner type (maybe with DI container, maybe not).
+        _ = extra_internal_scripts
+        return
+
 
 def always_true(_: "Job") -> bool:
     return True
