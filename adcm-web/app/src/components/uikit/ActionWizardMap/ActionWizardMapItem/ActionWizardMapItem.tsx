@@ -17,7 +17,7 @@ import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 interface MapItemStagesProps {
   process: AdcmActionWizardProcess;
   jobsData: AdcmWizardJobsData;
-  selectedStep?: number;
+  selectedStep: number;
   onSetBrokenStepError: (error?: string) => void;
   onSetSelectedStepId: (id: number) => void;
 }

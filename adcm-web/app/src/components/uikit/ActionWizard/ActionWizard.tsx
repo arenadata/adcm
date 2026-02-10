@@ -90,6 +90,7 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
           wizardTitle={wizardTitle}
           process={process}
           jobsData={jobsData}
+          selectedStep={stepId}
           onSetBrokenStepError={onSetBrokenStepError}
           onSetSelectedStepId={onSetSelectedStepId}
         />
