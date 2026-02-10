@@ -150,7 +150,7 @@ const startNewProcess = createAsyncThunk(
         actionId,
       );
 
-      thunkAPI.dispatch(getProcess({ clusterId, serviceId, componentId, actionId, processId: process.id }));
+      await thunkAPI.dispatch(getProcess({ clusterId, serviceId, componentId, actionId, processId: process.id }));
       thunkAPI.dispatch(setIsContinueProcessModal(false));
 
       return process;
