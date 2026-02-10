@@ -10,23 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import upgrade
-from core import cluster, provider
+from core import provider
+from core.types import ADCMCoreType, Descriptor, HostDesc, ProviderID
 
-__all__ = [
-    "action",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-]
+from cm.models import Host
+
+
+class ProviderRepo(provider.ProviderRepoI):
+    def find_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostDesc, ...]:
+        query = Host.objects.filter(provider_id=provider_id).values_list("id", flat=True)
+        return tuple(Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in query)

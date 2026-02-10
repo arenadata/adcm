@@ -10,23 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import upgrade
-from core import cluster, provider
+from core.upgrade._repo import UpgradeRepoI
+from core.upgrade._service import UpgradeService
 
 __all__ = [
-    "action",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
+    "UpgradeRepoI",
+    "UpgradeService",
 ]

@@ -155,12 +155,16 @@ class ActionTargetDescriptor(Descriptor[ADCMCoreType | ExtraActionTargetType]):
         return HostGroupDescriptor(id=self.id, type=ADCMHostGroupType.ACTION)
 
 
-ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
-ServiceDesc = Descriptor[Literal[ADCMCoreType.SERVICE]]
-ComponentDesc = Descriptor[Literal[ADCMCoreType.COMPONENT]]
-ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
-HostDesc = Descriptor[Literal[ADCMCoreType.HOST]]
-ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
+ClusterDesc: TypeAlias = Descriptor[Literal[ADCMCoreType.CLUSTER]]
+ServiceDesc: TypeAlias = Descriptor[Literal[ADCMCoreType.SERVICE]]
+ComponentDesc: TypeAlias = Descriptor[Literal[ADCMCoreType.COMPONENT]]
+ProviderDesc: TypeAlias = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+HostDesc: TypeAlias = Descriptor[Literal[ADCMCoreType.HOST]]
+ConfigHostGroupDesc: TypeAlias = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
+
+ClusterObjectDesc: TypeAlias = ClusterDesc | ServiceDesc | ComponentDesc
+ProviderObjectDesc: TypeAlias = ProviderDesc | HostDesc
+MainObjectDesc: TypeAlias = ClusterObjectDesc | ProviderObjectDesc
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
 TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]

@@ -542,6 +542,12 @@ class _InternalHcApplyScript(_BaseModel):
     params: Annotated[HcApplySchema | None, Field(default=None)]
 
 
+class _InternalBeforeUpgradeCleanScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["before_upgrade_clean"]
+    params: Annotated[None, Field(default=None)]
+
+
 class _AnsibleScript(_BaseModel):
     script_type: Literal["ansible"]
     script: Annotated[str, AfterValidator(script_is_correct_path)]
@@ -835,6 +841,12 @@ class InternalHcApplyTaskScriptSchema(InternalHcApplyScriptSchema, _WithAllowToT
     ...
 
 
+class InternalBeforeUpgradeCleanScriptSchema(
+    _BaseScriptSchema, _InternalBeforeUpgradeCleanScript, _WithAllowToTerminateField
+):
+    ...
+
+
 class AnsibleTaskScriptSchema(AnsibleScriptSchema, _WithAllowToTerminateField):
     ...
 
@@ -852,7 +864,10 @@ class _BaseTaskSchema(_BaseActionSchema):
 
 
 INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
-    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalHcApplyTaskScriptSchema,
+    InternalBundleSwitchTaskScriptSchema
+    | InternalBundleRevertTaskScriptSchema
+    | InternalHcApplyTaskScriptSchema
+    | InternalBeforeUpgradeCleanScriptSchema,
     Field(discriminator="script"),
 ]
 
@@ -860,7 +875,8 @@ INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     InternalBundleSwitchTaskScriptSchema
     | InternalBundleRevertTaskScriptSchema
     | InternalHcApplyTaskScriptSchema
-    | InternalConfigApplyTaskScriptSchema,
+    | InternalConfigApplyTaskScriptSchema
+    | InternalBeforeUpgradeCleanScriptSchema,
     Field(discriminator="script"),
 ]
 
