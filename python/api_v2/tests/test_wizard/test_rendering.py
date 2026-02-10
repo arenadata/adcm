@@ -17,12 +17,10 @@ from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Action,
-    Cluster,
 )
 from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
 from api_v2.tests.base import APIV2Mixin
@@ -55,49 +53,30 @@ class TestImplementDescription(APITestCase, ParallelReadyTestCase, APIV2Mixin):
             "action_no_desc": "",
         }
 
-    def start_process(self, obj: Cluster, action_id: int) -> int:
-        process_endpoint = self.client.v2[obj, "actions", action_id, "processes"]
-        response = process_endpoint.post(data={})
-        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
-        return response.json()["id"]
-
-    def get_process_spec(self, obj: Cluster, action_id: int, process_id: int) -> dict:
-        steps_endpoint = self.client.v2[obj, "actions", action_id, "processes", process_id]
-        response = steps_endpoint.get()
-        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
-        return response.json()
-
     def test_rendering_step_description(self):
         for action_name, description in self.step_descr_mapping.items():
             with self.subTest(f"Check the step description field for '{action_name}' case"):
                 cluster = self.create_cluster(bundle=self.cluster_bundle, name=f"test_cluster_with_{action_name}")
                 action = Action.objects.get(name=action_name, prototype=cluster.prototype)
-                process_id = self.start_process(cluster, action.pk)
-                step_data = [
-                    step
-                    for stage in self.get_process_spec(cluster, action.pk, process_id)["stages"]
-                    for step in stage["steps"]
-                ][0]
-                step_type, step_id = step_data["type"], step_data["id"]
+                process_id = self.start_process_r(cluster, action.pk).json()["id"]
+                response_data = self.get_process_r(cluster, action.pk, process_id).json()
+                first_step_data = response_data["stages"][0]["steps"][0]
+                step_type, step_id = first_step_data["type"], first_step_data["id"]
 
                 with self.subTest(f"Check the step's description field from the process '{process_id}'"):
-                    self.assertEqual(step_data["description"], description)
+                    self.assertEqual(first_step_data["description"], description)
 
                 with self.subTest(f"Check the description from spec of the '{step_type}' step"):
-                    step_endpoint = self.client.v2[
-                        cluster, "actions", action.pk, "processes", process_id, "steps", step_id
-                    ]
-                    response = step_endpoint.get()
-                    self.assertEqual(response.status_code, HTTP_200_OK, response.json())
-                    self.assertEqual(step_data["description"], description)
+                    response_data = self.get_step_r(cluster, action.pk, process_id, step_id).json()
+                    self.assertEqual(response_data["description"], description)
 
     def test_rendering_stage_description(self):
         for action_name, description in self.stage_descr_mapping.items():
             with self.subTest(f"Check the stage description field for '{action_name}' case"):
                 cluster = self.create_cluster(bundle=self.cluster_bundle, name=f"test_cluster_with_{action_name}")
                 action = Action.objects.get(name=action_name, prototype=cluster.prototype)
-                process_id = self.start_process(cluster, action.pk)
-                stage_data = self.get_process_spec(cluster, action.pk, process_id)["stages"][0]
+                process_id = self.start_process_r(cluster, action.pk).json()["id"]
+                stage_data = self.get_process_r(cluster, action.pk, process_id).json()["stages"][0]
 
                 with self.subTest(f"Check the step's description field from the process '{process_id}'"):
                     self.assertEqual(stage_data["description"], description)

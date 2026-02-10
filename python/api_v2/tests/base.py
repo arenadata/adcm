@@ -19,8 +19,9 @@ from tempfile import gettempdir
 from typing import Any, Collection, Literal, TypeAlias
 import tarfile
 
+from adcm.dependencies import prepare_container
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient
+from adcm.tests.client import ADCMTestClient, APINode
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
@@ -37,6 +38,7 @@ from cm.models import (
     JobStatus,
     MaintenanceMode,
     ObjectType,
+    Process,
     Prototype,
     Provider,
     Service,
@@ -76,6 +78,8 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
 
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
         cls.test_files_dir = Path(__file__).parent / "files"
+
+        prepare_container.cache_clear()
 
         init_roles()
         init()
@@ -388,6 +392,117 @@ class APIV2Mixin:
         assert response.status_code == expected_code, f"Unexpected run result: {response.status_code}"
 
         return run_task
+
+    # wizard
+
+    def start_process_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        *,
+        expected_status: int = HTTP_201_CREATED,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes").post(data={})
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
+
+    def submit_step_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        data: dict,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id / "operation").post(data=data)
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
+
+    def get_process_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id).get()
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
+
+    def get_step_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        step_id: int,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id / "steps" / step_id).get()
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
+
+    def start_process(self, owner: Cluster | Service | Component | Host, action: Action | int) -> Process:
+        response = self.start_process_r(owner=owner, action=action)
+        return Process.objects.get(id=response.json()["id"])
+
+    def submit_step(
+        self, owner: Cluster | Service | Component | Host, action: Action | int, process_id: int, data: dict
+    ) -> Process:
+        response = self.submit_step_r(owner=owner, action=action, process_id=process_id, data=data)
+        return Process.objects.get(id=response.json()["id"])
+
+    def _resolve_wizard_object_endpoint(self, owner: Cluster | Service | Component | Host) -> APINode:
+        if isinstance(owner, Host):
+            return self.client.v2[owner.cluster, "hosts", owner]
+
+        return self.client.v2[owner]
+
+    @staticmethod
+    def _resolve_action_id(action: Action | int) -> int:
+        if isinstance(action, Action):
+            return action.id
+
+        if isinstance(action, int):
+            return action
+
+        # keep it here until tests are somehow typechecked
+        raise TypeError(f"Unexpected action type: {type(action)}")
+
+    @staticmethod
+    def _response_error(response, expected_code: int) -> str:
+        try:
+            details = response.json()
+        except Exception:  # noqa: BLE001 - best-effort error reporting
+            details = response.content
+
+        return f"Expected response code {expected_code}, got {response.status_code}. " f"Response details: {details}"
 
 
 class TestUtilsMixin:
