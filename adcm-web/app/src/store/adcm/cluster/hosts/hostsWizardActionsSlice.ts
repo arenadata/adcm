@@ -136,7 +136,7 @@ const startNewProcess = createAsyncThunk(
     try {
       const process = await AdcmClusterHostsApi.createHostActionWizardProcess(clusterId, hostId, actionId);
 
-      thunkAPI.dispatch(getProcess({ clusterId, hostId, actionId, processId: process.id }));
+      await thunkAPI.dispatch(getProcess({ clusterId, hostId, actionId, processId: process.id }));
       thunkAPI.dispatch(setIsContinueProcessModal(false));
 
       return process;
