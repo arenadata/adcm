@@ -28,7 +28,7 @@ export const isClusterNameValid = (clusterName: string) => {
 };
 
 export const isHostNameValid = (hostName: string) => {
-  return /^[A-Za-z0-9]{2}[A-Za-z0-9.-]*$/.test(hostName);
+  return /^[a-z0-9]{1}[a-z0-9.-]*$/i.test(hostName);
 };
 
 export const isHostProviderNameValid = (hostName: string) => {
