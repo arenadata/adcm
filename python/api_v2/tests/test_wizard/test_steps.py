@@ -287,20 +287,28 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
     def test_404_on_not_exist_different_parts(self):
         action = self.get_object_action_with_process(self.cluster_1)
         process = self.start_process(self.cluster_1, action)
+        not_existing_process_id = 1_000_000
+        not_existing_step_id = 1_000_000
 
         with self.subTest("get-process-not-exist"):
-            response = self.get_process_r(self.cluster_1, action, process.pk + 1, expected_status=HTTP_404_NOT_FOUND)
+            response = self.get_process_r(
+                self.cluster_1, action, not_existing_process_id, expected_status=HTTP_404_NOT_FOUND
+            )
             self.assertEqual(response.json()["code"], "ACTION_PROCESS_NOT_FOUND")
 
         with self.subTest("get-step-not-exist-process-exist"):
             response = self.get_step_r(
-                self.cluster_1, action, process.pk, process.steps.count() + 1, expected_status=HTTP_404_NOT_FOUND
+                self.cluster_1, action, process.pk, not_existing_step_id, expected_status=HTTP_404_NOT_FOUND
             )
             self.assertEqual(response.json()["code"], "ACTION_PROCESS_STEP_NOT_FOUND")
 
         with self.subTest("get-step-not-exist-process-not-exist"):
             response = self.get_step_r(
-                self.cluster_1, action, process.id + 1, process.steps.count() + 1, expected_status=HTTP_404_NOT_FOUND
+                self.cluster_1,
+                action,
+                not_existing_process_id,
+                not_existing_step_id,
+                expected_status=HTTP_404_NOT_FOUND,
             )
             self.assertEqual(response.json()["code"], "ACTION_PROCESS_NOT_FOUND")
 
