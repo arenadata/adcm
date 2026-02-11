@@ -17,6 +17,7 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
 from typing import Any, Collection, Literal, TypeAlias
+import uuid
 import tarfile
 
 from adcm.dependencies import prepare_container
@@ -80,6 +81,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         cls.test_files_dir = Path(__file__).parent / "files"
 
         prepare_container.cache_clear()
+        get_config_service.cache_clear()  # TODO: ADCM-7513
 
         init_roles()
         init()
@@ -275,7 +277,13 @@ class APIV2Mixin:
         if not src.is_dir():
             raise ValueError(f"Not a dir: {src}")
 
-        dst = (Path(gettempdir()) / src.name).with_suffix(".tar")
+        # shouldn't be required, tempdir must be unique,
+        # yet I don't want to create new tempdir for each call
+        # => universal mechanism is required
+        random_suffix = uuid.uuid4().hex[:8]
+
+        # note that gettempdir doesn't return unique directory
+        dst = Path(gettempdir(), f"{src.name}-{random_suffix}").with_suffix(".tar")
         archive = self._prepare_bundle_file(src=src, dst=dst)
 
         with archive.open(mode="rb") as f:
