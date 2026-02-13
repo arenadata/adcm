@@ -21,7 +21,12 @@ from core.bundle._definitions import DefinitionsMap
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
-from core.bundle._types import BundleCompatibilityReport, BundleContext, BundleInfo, VersionSupportStatus
+from core.bundle._types import (
+    BundleCompatibilityReport,
+    BundleContext,
+    BundleInfo,
+    VersionSupportStatus,
+)
 from core.bundle._validate import (
     ConvertConfigDefinition,
     ValidationContext,

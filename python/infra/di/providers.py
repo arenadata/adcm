@@ -34,7 +34,7 @@ from core.dynamic_bundle.types import ContextGathererI
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
-from use_cases.bundle import CompatibilityCheck, InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.init import RunPreMigration
 from use_cases.provider.update import ResetBeforeUpgradeProvider
@@ -221,7 +221,6 @@ class UseCaseProvider(Provider):
     schedule_task = provide(ScheduleTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
-    check_contract_versions = provide(CompatibilityCheck)
 
     create_cluster = provide(CreateCluster)
 
