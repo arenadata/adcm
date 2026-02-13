@@ -40,7 +40,11 @@ sv_stop() {
     done
 }
 
+# Start pre migration check
+"${adcmroot}"/python/manage.py compatibility_check || exit $?
+
 trap "sv_stop; exit" TERM
 trap "" CHLD
+
 runsvdir -P /etc/sv &
 while (true); do wait; done;

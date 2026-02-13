@@ -43,13 +43,13 @@ class BundleUnpackingInfo:
 
 @dataclass(slots=True)
 class BundleInfo:
-    contract_version: str
+    contract_version: ContractVersion
     hash: str
     root: Path
     signature: SignatureStatus
 
     @classmethod
-    def from_unpacking_info(cls, info: BundleUnpackingInfo, contract_version: str) -> Self:
+    def from_unpacking_info(cls, info: BundleUnpackingInfo, contract_version: ContractVersion) -> Self:
         return cls(hash=info.hash, root=info.root, signature=info.signature, contract_version=contract_version)
 
 
@@ -88,7 +88,7 @@ BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | C
 class BundleContext:
     id: BundleID
     root: Path
-    contract_version: str
+    contract_version: ContractVersion
 
 
 @dataclass(slots=True, frozen=True)
