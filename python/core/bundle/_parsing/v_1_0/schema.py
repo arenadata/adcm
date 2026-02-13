@@ -584,6 +584,10 @@ class InternalHcApplyScriptSchema(_BaseScriptSchema, _InternalHcApplyScript):
     ...
 
 
+class InternalBeforeUpgradeCleanScriptSchemaNoTermination(_BaseScriptSchema, _InternalBeforeUpgradeCleanScript):
+    ...
+
+
 class AnsibleScriptSchema(_BaseScriptSchema, _AnsibleScript):
     ...
 
@@ -602,7 +606,10 @@ class InternalConfigApplyScriptSchema(_BaseScriptSchema, _InternalConfigApplyScr
 
 
 INTERNAL_UPGRADE_SCRIPTS_SCHEMA = Annotated[
-    InternalBundleSwitchScriptSchema | InternalBundleRevertScriptSchema, Field(discriminator="script")
+    InternalBundleSwitchScriptSchema
+    | InternalBundleRevertScriptSchema
+    | InternalBeforeUpgradeCleanScriptSchemaNoTermination,
+    Field(discriminator="script"),
 ]
 
 
