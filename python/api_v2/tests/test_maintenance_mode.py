@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Component, Host, MaintenanceMode, Service
-from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
+from cm.models import Component, Host, MaintenanceMode, Service, TaskLog
+from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo
+from core.types import TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -26,6 +27,11 @@ class TestMMActions(BaseAPITestCase):
 
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
+        self.task_runner.reset()
+
+        self.executor_with_failed_first_job = ExecutionTargetFactoryDummyMock(
+            failed_job=FailedJobInfo(position=0, return_code=1)
+        )
 
         bundle_mm_plugins_mm_actions = self.add_bundle(
             source_dir=self.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
@@ -38,9 +44,7 @@ class TestMMActions(BaseAPITestCase):
         provider = self.add_provider(bundle=provider_bundle, name="provider", description="provider")
         self.host = self.add_host(provider=provider, fqdn="host")
 
-    def _do_change_mm_request(
-        self, obj: Host | Service | Component, failed_job: FailedJobInfo | None = None
-    ) -> tuple[Response, RunTaskMock]:
+    def do_change_mm_request(self, obj: Host | Service | Component) -> Response:
         match obj.maintenance_mode:
             case MaintenanceMode.ON:
                 data = {"maintenanceMode": MaintenanceMode.OFF.value}
@@ -51,105 +55,91 @@ class TestMMActions(BaseAPITestCase):
 
         object_endpoint = self.client.v2[(obj.cluster, "hosts", obj) if isinstance(obj, Host) else obj]
 
-        run_task_mock_kwargs = {}
-        if failed_job:
-            run_task_mock_kwargs = {"execution_target_factory": ExecutionTargetFactoryDummyMock(failed_job=failed_job)}
+        return (object_endpoint / "maintenance-mode").post(data=data)
 
-        with RunTaskMock(**run_task_mock_kwargs) as run_task_mock:
-            response = (object_endpoint / "maintenance-mode").post(data=data)
-
-        return response, run_task_mock
+    def expect_task_launched_with_name(self, name: str) -> TaskID:
+        task_id = self.task_runner.expect_task_launched().id
+        actual_name = TaskLog.objects.values_list("name", flat=True).get()
+        self.assertEqual(actual_name, name)
+        return task_id
 
     def test_no_task_run_without_hc_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.service)
+        response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
-        self.assertIsNone(run_task_mock.target_task)
-        self.assertIsNone(run_task_mock.runner)
+        self.task_runner.expect_task_not_launched()
 
     def test_task_run_if_hc_exists_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.service)
+        response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
     def test_no_task_run_without_hc_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.component)
+        response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
-        self.assertIsNone(run_task_mock.target_task)
-        self.assertIsNone(run_task_mock.runner)
+        self.task_runner.expect_task_not_launched()
 
     def test_task_run_if_hc_exists_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.component)
+        response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_without_hc(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.host)
+        response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_host_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_hc_exists(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response, run_task_mock = self._do_change_mm_request(obj=self.host)
+        response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_host_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
     def test_mm_not_changed_on_fail_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.service.maintenance_mode
 
-        response, run_task_mock = self._do_change_mm_request(
-            obj=self.service, failed_job=FailedJobInfo(position=0, return_code=1)
-        )
+        response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        run_task_mock.runner.run(task_id=run_task_mock.target_task.pk)
+        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
 
@@ -158,18 +148,15 @@ class TestMMActions(BaseAPITestCase):
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.component.maintenance_mode
 
-        response, run_task_mock = self._do_change_mm_request(
-            obj=self.component, failed_job=FailedJobInfo(position=0, return_code=1)
-        )
+        response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        run_task_mock.runner.run(task_id=run_task_mock.target_task.pk)
+        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
 
@@ -178,17 +165,14 @@ class TestMMActions(BaseAPITestCase):
         self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.host.maintenance_mode
 
-        response, run_task_mock = self._do_change_mm_request(
-            obj=self.host, failed_job=FailedJobInfo(position=0, return_code=1)
-        )
+        response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        self.assertIsNotNone(run_task_mock.target_task)
-        self.assertEqual(run_task_mock.target_task.action.name, "adcm_host_turn_on_maintenance_mode")
-        self.assertIsNotNone(run_task_mock.runner)
+        task_id = self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
-        run_task_mock.runner.run(task_id=run_task_mock.target_task.pk)
+        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)

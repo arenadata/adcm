@@ -16,7 +16,6 @@ from operator import itemgetter
 from unittest.mock import patch
 
 from cm.converters import model_name_to_core_type
-from cm.legacy.api import delete_service
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.models import (
     ADCM,
@@ -30,12 +29,12 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from use_cases.transition.cluster.delete import DeleteService
 import pytz
 
 from api_v2.tests.base import BaseAPITestCase
@@ -244,14 +243,13 @@ class TestTask(BaseAPITestCase):
         ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
             # run action as service admin (create all permissions we interested in)
             self.client.login(**service_admin_credentials)
-            with RunTaskMock() as run_task:
-                response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
-                    data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-                )
+            response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
-            self.assertEqual(response.json()["id"], run_task.target_task.id)
-            self.assertEqual(run_task.target_task.status, "created")
+            task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+            self.assertEqual(TaskLog.objects.get(id=task_id).status, "created")
 
             service_task_pk = response.json()["id"]
             child_job_pk = response.json()["childJobs"][0]["id"]
@@ -275,8 +273,8 @@ class TestTask(BaseAPITestCase):
             service_admin_response = log_list_endpoint.get()
             self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
-            # delete service
-            delete_service(service=self.service_1)
+            # delete service skipping some checks
+            DeleteService().do(service=self.service_1)
 
             # check tasklog visibility for cluster admin
             self.client.login(**cluster_admin_credentials)

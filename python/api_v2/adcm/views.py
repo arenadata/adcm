@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_config_processing
+from typing import cast
+
 from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
-from cm.legacy.services.bundle import ADCMBundlePathResolver
-from cm.models import ADCM, ConfigLog, PrototypeConfig
+from cm.models import ADCM, ConfigLog
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from dishka import FromDishka
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -33,9 +33,9 @@ from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
 from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
-from api_v2.generic.config.utils import get_config_schema
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.utils.audit import adcm_audit_object
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -76,29 +76,23 @@ class ADCMConfigView(ConfigLogViewSet):
         responses={HTTP_200_OK: dict, HTTP_403_FORBIDDEN: ErrorSerializer},
     )
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        instance = self.get_parent_object()
-        func = self._new_schema if use_new_config_processing() else self._old_schema
-        schema = func(instance)
-        return Response(data=schema, status=HTTP_200_OK)
-
-    def _old_schema(self, instance):
-        path_resolver = ADCMBundlePathResolver()
-        return get_config_schema(
-            object_=instance,
-            prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
-            path_resolver=path_resolver,
-        )
-
-    def _new_schema(self, instance):
-        config_service = get_config_service()
+    @inject
+    def config_schema(
+        self,
+        request,  # noqa: ARG002
+        config_service: FromDishka[core.config.ConfigService],
+        **_,
+    ) -> Response:
+        instance: ADCM = cast(ADCM, self.get_parent_object(NotFound()))
 
         owner = core.config.ConfigOwner(
             descriptor=CoreObjectDescriptor(id=instance.pk, type=ADCMCoreType.ADCM),
             state=instance.state,
         )
 
-        return config_service.retrieve_jsonschema(owner=owner)
+        schema = config_service.retrieve_jsonschema(owner=owner)
+
+        return Response(data=schema, status=HTTP_200_OK)
 
     def _check_create_permissions(self, request: Request, parent_object: ADCM | None) -> None:
         if parent_object is None:

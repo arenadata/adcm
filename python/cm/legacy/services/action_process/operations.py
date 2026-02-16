@@ -14,7 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import wraps
-from typing import Literal, Protocol, TypeAlias, TypeVar
+from typing import Any, Callable, Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
@@ -72,9 +72,8 @@ from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_e
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
-from cm.legacy.services.job.run import start_task
 from cm.logger import logger
-from cm.models import ProcessStep, ProcessStepInput
+from cm.models import ProcessStep, ProcessStepInput, TaskLog
 
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -317,6 +316,7 @@ def perform_operation(
     config_service: core.config.ConfigService,
     job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
@@ -333,6 +333,7 @@ def perform_operation(
                 config_service=config_service,
                 job_service=job_service,
                 bundle_renderer=bundle_renderer,
+                start_task=start_task,
             )
 
         case ProcessOperationType.RESET:
@@ -360,6 +361,7 @@ def submit_step(
     config_service: core.config.ConfigService,
     job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
@@ -391,6 +393,7 @@ def submit_step(
                 new_process_sync_key=new_process_sync_key,
                 process_context=context.process_context,
                 job_service=job_service,
+                start_task=start_task,
             )
         case core.action.wizard.StepType.MAPPING:
             if not isinstance(payload.params, SubmitMappingStepParams):
@@ -464,6 +467,7 @@ def _operation_submit_job(
     *,
     process_context: ProcessContext,
     job_service: core.job.JobService,
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     step = repo.retrieve_step(process_id=process.id, step_id=step_id)
     if not step.step_spec:
@@ -495,7 +499,7 @@ def _operation_submit_job(
 
     # todo write pid to task (executor)
     # todo actually should use starter to avoid hardcoding
-    start_task(task=task_orm)
+    start_task(task_orm)
 
 
 def _operation_submit_config(

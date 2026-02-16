@@ -17,8 +17,7 @@ from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
 from cm.legacy.services.status.client import FullStatusMap
-from cm.models import Action, Cluster, Component, Host, HostComponent, Provider
-from cm.tests.mocks.task_runner import RunTaskMock
+from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from core.types import ADCMCoreType, HostID, HostName
 from infra.services import get_config_service
 from rest_framework.status import (
@@ -146,46 +145,44 @@ class TestHost(BaseAPITestCase):
         )
 
     def test_update_name_locking_concern_fail(self):
-        with RunTaskMock():
-            response = self.client.v2[self.host, "actions", self.host_action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
-            )
+        response = self.client.v2[self.host, "actions", self.host_action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
+        )
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.host].patch(
-                data={"name": "new-name"},
-            )
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertDictEqual(
-                response.json(),
-                {
-                    "code": "HOST_CONFLICT",
-                    "desc": "Name change is available only if no locking concern exists",
-                    "level": "error",
-                },
-            )
+        response = self.client.v2[self.host].patch(
+            data={"name": "new-name"},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "HOST_CONFLICT",
+                "desc": "Name change is available only if no locking concern exists",
+                "level": "error",
+            },
+        )
 
     def test_update_name_locking_concern_from_cluster_fail(self):
         self.add_host_to_cluster(self.cluster_1, self.host)
 
-        with RunTaskMock():
-            response = self.client.v2[self.cluster_1, "hosts", self.host, "actions", self.cluster_action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
-            )
+        response = self.client.v2[self.cluster_1, "hosts", self.host, "actions", self.cluster_action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
+        )
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.host].patch(data={"name": "new-name"})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertDictEqual(
-                response.json(),
-                {
-                    "code": "HOST_CONFLICT",
-                    "desc": "Name change is available only if no locking concern exists",
-                    "level": "error",
-                },
-            )
+        response = self.client.v2[self.host].patch(data={"name": "new-name"})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "HOST_CONFLICT",
+                "desc": "Name change is available only if no locking concern exists",
+                "level": "error",
+            },
+        )
 
     def test_update_name_state_not_create_fail(self):
         self.host.state = "running"
@@ -848,21 +845,21 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_cluster_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "hosts", self.host, "actions", self.action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
-            )
+        response = self.client.v2[self.cluster_1, "hosts", self.host, "actions", self.action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
-        self.assertEqual(run_task.target_task.task_object, self.host)
-        self.assertEqual(run_task.target_task.owner_id, self.host.pk)
-        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.HOST.value)
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task = TaskLog.objects.get(id=task_id)
+        self.assertEqual(task.status, "created")
+        self.assertEqual(task.task_object, self.host)
+        self.assertEqual(task.owner_id, self.host.pk)
+        self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        task.refresh_from_db()
+        self.assertEqual(task.status, "success")
 
     def test_host_list_success(self):
         response = self.client.v2[self.host, "actions"].get()
@@ -877,21 +874,21 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.host, "actions", self.action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
-            )
+        response = self.client.v2[self.host, "actions", self.action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
-        self.assertEqual(run_task.target_task.task_object, self.host)
-        self.assertEqual(run_task.target_task.owner_id, self.host.pk)
-        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.HOST.value)
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task = TaskLog.objects.get(id=task_id)
+        self.assertEqual(task.status, "created")
+        self.assertEqual(task.task_object, self.host)
+        self.assertEqual(task.owner_id, self.host.pk)
+        self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        task.refresh_from_db()
+        self.assertEqual(task.status, "success")
 
     def test_host_mapped_list_success(self) -> None:
         HostComponent.objects.create(

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from logging import Logger
 from typing import Any, Protocol
 import os
@@ -24,6 +25,9 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
 )
+from dishka import make_container
+from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.provider.update import ResetBeforeUpgradeProvider
 
 from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
@@ -34,6 +38,10 @@ from cm.legacy.services.concern.locks import (
     update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
+from cm.legacy.services.job.run._target_factories import (
+    internal_script_before_upgrade_clean_cluster,
+    internal_script_before_upgrade_clean_provider,
+)
 from cm.legacy.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -75,9 +83,9 @@ class JobSequenceRunner(TaskRunner):
         self._status_server = status_server
         self._logger = logger
 
-        from adcm.dependencies import prepare_container
+        from application.di.containers import get_main_providers
 
-        self._container = prepare_container()
+        self._container = make_container(*get_main_providers())
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True
@@ -147,9 +155,24 @@ class JobSequenceRunner(TaskRunner):
 
         task = self._repo.get_task(id=task_id)
 
-        if not (task.target and task.bundle):
+        if not (task.target and task.owner and task.bundle):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
+
+        match task.owner.type:
+            # this whole patch is very bad, see comment in convert interface
+            case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT:
+                use_case = self._container.get(ResetBeforeUpgradeCluster)
+                extra_scripts = {
+                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_cluster, use_case=use_case)
+                }
+                self._job_processor.convert.register_internal_scripts(extra_scripts)
+            case ADCMCoreType.PROVIDER | ADCMCoreType.HOST:
+                use_case = self._container.get(ResetBeforeUpgradeProvider)
+                extra_scripts = {
+                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_provider, use_case=use_case)
+                }
+                self._job_processor.convert.register_internal_scripts(extra_scripts)
 
         configured_jobs = tuple(
             self._job_processor.convert(

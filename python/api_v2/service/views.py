@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.feature_flags import use_new_config_processing
 from adcm.permissions import (
     ADD_SERVICE_PERM,
     CHANGE_MM_PERM,
@@ -30,15 +29,12 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.service import delete_service_from_api
 from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from infra.di.django import inject
-from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -58,7 +54,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.cluster.create import create_services_from_prototypes
+from use_cases.transition.cluster.create import CreateServicesFromPrototypes
+from use_cases.transition.cluster.delete import DeleteServiceFromAPI
 from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, responses
@@ -107,10 +104,6 @@ from api_v2.service.serializers import (
     ServiceRetrieveSerializer,
     ServiceStatusSerializer,
 )
-from api_v2.service.utils import (
-    bulk_add_services_to_cluster,
-    validate_service_prototypes,
-)
 from api_v2.utils.audit import (
     parent_cluster_from_lookup,
     parent_service_from_lookup,
@@ -120,6 +113,7 @@ from api_v2.utils.audit import (
     set_service_name_from_object,
     set_service_names_from_request,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -194,9 +188,10 @@ class ServiceViewSet(
 ):
     queryset = Service.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter
+
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [IsAuthenticated, ServicePermissions]
-    audit_model_hint = Service
+
     retrieve_status_map_actions = ("list", "statuses")
 
     def get_queryset(self, *args, **kwargs):
@@ -218,7 +213,8 @@ class ServiceViewSet(
     @audit_update(name="{service_names} service(s) added", object_=parent_cluster_from_lookup).attach_hooks(
         pre_call=set_service_names_from_request
     )
-    def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def create(self, request: Request, create_services: FromDishka[CreateServicesFromPrototypes], **kwargs):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
         )
@@ -229,8 +225,7 @@ class ServiceViewSet(
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data if multiple_services else [serializer.validated_data]
-        func = self._add_services_new if use_new_config_processing(headers=request.headers) else self._add_services_old
-        added_services = func(cluster, data)
+        added_services = create_services.do(cluster=cluster, prototype_ids=[e["prototype_id"] for e in data])
 
         context = self.get_serializer_context()
 
@@ -245,25 +240,14 @@ class ServiceViewSet(
             data=ServiceRetrieveSerializer(instance=added_services[0], context=context).data,
         )
 
-    def _add_services_old(self, cluster, data):
-        service_prototypes, error = validate_service_prototypes(cluster=cluster, data=data)
-        if error is not None:
-            raise error
-
-        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
-
-    def _add_services_new(self, cluster, data):
-        return create_services_from_prototypes(
-            cluster=cluster, prototype_ids=[e["prototype_id"] for e in data], config_service=get_config_service()
-        )
-
     @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(
         pre_call=set_service_name_from_object, on_collect=adjust_denied_on_404_result(service_does_exist)
     )
     @inject
-    def destroy(self, *_, schedule_task: FromDishka[ScheduleTask], **__):
+    def destroy(self, request: Request, delete_service: FromDishka[DeleteServiceFromAPI], **_):  # noqa: ARG002
         instance = self.get_object()
-        return delete_service_from_api(service=instance, schedule_task=schedule_task)
+        delete_service.do(service=instance)
+        return Response(status=HTTP_204_NO_CONTENT)
 
     @(
         audit_update(name="Service updated", object_=service_from_lookup)
@@ -406,7 +390,6 @@ class ServiceActionProcessViewSet(ActionProcessViewSet):
     ...
 
 
-# TODO: document, audit
 @document_action_process_step_viewset(object_type="service")
 class ServiceActionProcessStepViewSet(ProcessStepViewSet):
     ...

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from typing import Iterable
 
 from cm import errors, models
@@ -31,55 +32,63 @@ from rbac.models import re_apply_object_policy
 import core
 
 
-def create_cluster(
-    prototype: models.Prototype, name: str, description: str, config_service: core.config.ConfigService
-) -> ClusterID:
-    if prototype.type != ADCMCoreType.CLUSTER:
-        raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
+@dataclass(slots=True)
+class CreateCluster:
+    config_service: core.config.ConfigService
 
-    check_license(prototype)
+    def do(self, prototype: models.Prototype, name: str, description: str):
+        if prototype.type != ADCMCoreType.CLUSTER:
+            raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
-    with transaction.atomic():
-        cluster = _create_cluster(
-            prototype=prototype, name=name, description=description, config_service=config_service
-        )
-        _create_ansible_config(cluster_id=cluster.pk)
+        check_license(prototype)
 
-        added, removed = {}, {}
-        if recalculate_own_concerns_on_add_clusters(cluster):
+        with transaction.atomic():
+            cluster = _create_cluster(
+                prototype=prototype, name=name, description=description, config_service=self.config_service
+            )
+            _create_ansible_config(cluster_id=cluster.pk)
+
+            added, removed = {}, {}
+            if recalculate_own_concerns_on_add_clusters(cluster):
+                added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+
+        reset_hc_map()
+        notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+
+        return cluster.pk
+
+
+@dataclass(slots=True)
+class CreateServicesFromPrototypes:
+    config_service: core.config.ConfigService
+
+    def do(self, cluster: models.Cluster, prototype_ids: Iterable[PrototypeID]) -> tuple[models.Service, ...]:
+        result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
+        match result:
+            case Fail(err):
+                raise err
+
+        prototypes = result.value
+
+        with transaction.atomic():
+            services = _bulk_add_services_to_cluster(
+                cluster=cluster, prototypes=prototypes, config_service=self.config_service
+            )
+
+            recalculate_own_concerns_on_add_services(
+                cluster=cluster,
+                services=services.prefetch_related(
+                    "components"
+                ).all(),  # refresh values from db to update `config` field
+            )
             added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
-    reset_hc_map()
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+            re_apply_object_policy(apply_object=cluster)
 
-    return cluster.pk
+        reset_hc_map()
+        notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
-
-def create_services_from_prototypes(
-    cluster: models.Cluster, prototype_ids: Iterable[PrototypeID], config_service: core.config.ConfigService
-) -> tuple[models.Service, ...]:
-    result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
-    match result:
-        case Fail(err):
-            raise err
-
-    prototypes = result.value
-
-    with transaction.atomic():
-        services = _bulk_add_services_to_cluster(cluster=cluster, prototypes=prototypes, config_service=config_service)
-
-        recalculate_own_concerns_on_add_services(
-            cluster=cluster,
-            services=services.prefetch_related("components").all(),  # refresh values from db to update `config` field
-        )
-        added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
-
-        re_apply_object_policy(apply_object=cluster)
-
-    reset_hc_map()
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
-
-    return tuple(services)
+        return tuple(services)
 
 
 # COPIED FROM api_v2.service.utils WITHIN ADCM-7090 (minor changes applied)

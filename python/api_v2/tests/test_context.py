@@ -12,12 +12,12 @@
 
 import json
 
-from adcm.dependencies import prepare_container
 from cm.models import Action
 from infra.services import get_config_service, get_wizard_service
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import TEST_BUNDLES_DIR, APIV2Mixin, BaseAPITestCase
+from api_v2.utils.di import prepare_container
 
 
 class TestConfigTemplateContext(APIV2Mixin, BaseAPITestCase):

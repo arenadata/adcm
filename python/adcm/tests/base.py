@@ -66,7 +66,10 @@ from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.services.user import GroupDB, UserDB, create_new_user, perform_user_creation
 from rbac.upgrade.role import init_roles
-from use_cases.transition.cluster.create import create_cluster, create_services_from_prototypes
+from use_cases.transition.cluster.create import (
+    CreateCluster,
+    CreateServicesFromPrototypes,
+)
 from use_cases.transition.hostprovider.create import create_host, create_hostprovider
 
 APPLICATION_JSON = "application/json"
@@ -174,6 +177,14 @@ class TestCaseWithCommonSetUpTearDown(TestCase):
 
 
 class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # shouldn't be here
+        from api_v2.tests.setup.overrides import get_task_runner_manager
+
+        cls.task_runner = get_task_runner_manager()
+
     def setUp(self) -> None:
         # TODO: ADCM-7513
         get_config_service.cache_clear()
@@ -298,14 +309,14 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 class BusinessLogicMixin(BundleLogicMixin):
     @staticmethod
     def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
-        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).get()
 
         if prototype.license_path is not None:
             accept_license(prototype=prototype)
             prototype.refresh_from_db(fields=["license"])
 
-        cluster_id = create_cluster(
-            prototype=prototype, name=name, description=description, config_service=get_config_service()
+        cluster_id = CreateCluster(config_service=get_config_service()).do(
+            prototype=prototype, name=name, description=description
         )
 
         return Cluster.objects.get(id=cluster_id)
@@ -333,8 +344,8 @@ class BusinessLogicMixin(BundleLogicMixin):
         service_prototypes = Prototype.objects.filter(
             type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         ).values_list("id", flat=True)
-        services = create_services_from_prototypes(
-            cluster=cluster, prototype_ids=list(service_prototypes), config_service=get_config_service()
+        services = CreateServicesFromPrototypes(config_service=get_config_service()).do(
+            cluster=cluster, prototype_ids=list(service_prototypes)
         )
         return Service.objects.filter(id__in=[service.id for service in services])
 

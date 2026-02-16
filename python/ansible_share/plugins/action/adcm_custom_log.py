@@ -62,6 +62,8 @@ from typing import Any
 import sys
 import base64
 
+import dishka
+
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
@@ -75,7 +77,7 @@ from ansible_plugin.executors.custom_log import ADCMCustomLogPluginExecutor
 class ActionModule(ADCMAnsiblePlugin):
     executor_class = ADCMCustomLogPluginExecutor
 
-    def _get_executor(self, tmp: Any, task_vars: Any) -> ADCMCustomLogPluginExecutor:
+    def _get_executor(self, tmp: Any, task_vars: Any, container: dishka.Container) -> ADCMCustomLogPluginExecutor:
         def retrieve_from_path_impl(_, path: Path) -> str:
             slurp_return = self._execute_module(
                 module_name="slurp", module_args={"src": str(path)}, task_vars=task_vars, tmp=tmp
@@ -90,4 +92,6 @@ class ActionModule(ADCMAnsiblePlugin):
             except UnicodeDecodeError as error:
                 raise PluginRuntimeError(message="Error `UnicodeDecodeError` for slurp module") from error
 
-        return self.executor_class[retrieve_from_path_impl](arguments=self._task.args, runtime_vars=task_vars)
+        return self.executor_class[retrieve_from_path_impl](
+            arguments=self._task.args, runtime_vars=task_vars, container=container
+        )

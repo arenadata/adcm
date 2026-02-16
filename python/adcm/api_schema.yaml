@@ -3182,6 +3182,9 @@ components:
       properties:
         name:
           type: string
+        description:
+          type: string
+          default: ''
         displayName:
           type: string
         steps:
@@ -3191,6 +3194,7 @@ components:
           readOnly: true
       required:
       - name
+      - description
       - displayName
       - steps
     StepConfiguration:
@@ -3199,6 +3203,8 @@ components:
         id:
           type: integer
         name:
+          type: string
+        description:
           type: string
         displayName:
           type: string
@@ -3210,6 +3216,7 @@ components:
           $ref: '#/components/schemas/StepConfigurationInternals'
       required:
       - configuration
+      - description
       - displayName
       - id
       - name
@@ -3238,6 +3245,8 @@ components:
           type: integer
         name:
           type: string
+        description:
+          type: string
         displayName:
           type: string
         type:
@@ -3257,6 +3266,7 @@ components:
           - $ref: '#/components/schemas/MappingDelta'
           nullable: true
       required:
+      - description
       - displayName
       - id
       - name
@@ -3269,6 +3279,8 @@ components:
         id:
           type: integer
         name:
+          type: string
+        description:
           type: string
         displayName:
           type: string
@@ -3283,6 +3295,7 @@ components:
           - $ref: '#/components/schemas/StepTask'
           nullable: true
       required:
+      - description
       - displayName
       - id
       - name
@@ -5024,38 +5037,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5131,38 +5154,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5226,27 +5259,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: aa559baa-652f-4fa7-90bc-9d3e0034daf6
+                    processSyncKey: 9f620c90-7017-4d94-b47c-fc1b6dab83be
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: bf2be1c4-e96c-4dc5-92c3-082667c1b7c6
+                    processSyncKey: c92b6201-966c-4172-a738-d011282cd1f8
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 1d68ff24-f78b-4ade-8db1-432e0d911804
+                    processSyncKey: affd2f82-b3b0-450c-9c04-f5384b7df89f
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: cf6929ab-6f89-4396-ac87-8442338ccfbb
+                    processSyncKey: d9ffe829-d869-4d46-b071-cdecbcbeee46
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5274,38 +5307,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -5383,6 +5426,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -5395,6 +5439,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -5441,6 +5486,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -6143,38 +6189,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -6243,38 +6299,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -6332,27 +6398,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 92bed407-294e-42b9-b5ea-831364f9e0f6
+                    processSyncKey: 8da92bf5-0ad3-4802-b8b2-16de39bcc809
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 56ab97a7-37b5-4437-af6e-c3eb5fb4443f
+                    processSyncKey: 4dd42e69-224f-4645-8ffc-0f8b10cac1e9
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 77127d27-e855-4a7e-892b-e67a3c16e919
+                    processSyncKey: d3c1ed37-fca3-4983-b306-5240067ddaf9
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 64a586d3-81d7-427e-ad37-4adf46b0721b
+                    processSyncKey: 46b8fc2d-746f-4df6-8469-19201262a414
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6380,38 +6446,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -6482,6 +6558,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -6494,6 +6571,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -6540,6 +6618,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -8090,38 +8169,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -8196,38 +8285,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -8291,27 +8390,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 28612542-e613-4d67-8e5a-5ecbaa111fce
+                    processSyncKey: 76eb69a6-6653-4a40-9d90-7eb3132cce3b
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 52e62472-9c51-411a-8120-7c8260770084
+                    processSyncKey: a43e195a-aa91-4500-bd8c-e98e09fbc00b
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: ac72fb7e-0b7f-4ca4-ab7d-192b6861d7ef
+                    processSyncKey: 6245366b-51cd-420b-8879-6ff08aaceefb
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 4ef34906-9e71-45fb-aec1-f5b1da195a68
+                    processSyncKey: 86e1dd02-6a15-4811-a910-1974150a0e6f
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8339,38 +8438,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -8447,6 +8556,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -8459,6 +8569,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -8505,6 +8616,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -9791,38 +9903,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -9904,38 +10026,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -10005,27 +10137,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 29666e30-2a42-4881-94cc-87ebebb644e0
+                    processSyncKey: 05c9e64f-ee0d-4fcb-bf76-a7ff3161abe2
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 176e21b7-8b0d-47ec-a5e5-70be194e6e87
+                    processSyncKey: d2ceffa4-e886-436b-b972-8d82cc308240
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 0c7ac1c2-ffa4-4d91-9571-75ed568df98b
+                    processSyncKey: d8666e01-7d71-4123-99a4-206b0444e956
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 184a87da-746f-4f31-bc5a-7fa4002a0859
+                    processSyncKey: 829ac617-7cb3-4bbd-ac6c-735461bf9897
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10053,38 +10185,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -10168,6 +10310,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -10180,6 +10323,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -10226,6 +10370,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -11000,38 +11145,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11106,38 +11261,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11201,27 +11366,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: d3b07424-3835-4820-8f19-8a7cf1cde9ae
+                    processSyncKey: 0d4e0d0a-6182-4e6e-8fba-cbb13db8219a
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: da59e4ed-489d-4a05-a64f-2c0fe2de02fa
+                    processSyncKey: de91a5e0-9dd3-459e-b737-5bca206b82fc
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 84b8c5a2-fb93-4390-99a8-991f3ddbbc2e
+                    processSyncKey: fc348792-b6ea-4ecb-a9e7-fec91d1af094
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 2befb8e3-9376-4069-ae34-eac5960b2815
+                    processSyncKey: 3912c2b0-47ef-4a29-80fd-65c4e8379e5d
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11249,38 +11414,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -11357,6 +11532,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -11369,6 +11545,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -11415,6 +11592,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -11923,38 +12101,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -12042,38 +12230,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -12149,27 +12347,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 9da18a6b-e7a3-497a-8c9d-d13a7d8f9c81
+                    processSyncKey: f9c5ae84-26d3-45c2-aa95-c248330fae0a
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: fbb0c510-e079-49d4-b5e0-950809a69f8c
+                    processSyncKey: e51fb8f2-e530-4f2c-8c7a-c71367dac215
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 5c0d15c0-1622-4555-84dc-39a100a77cb1
+                    processSyncKey: c0f357cf-4656-4c99-b0c2-27f70121d078
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: af61d5bb-e3dd-46f8-afd3-abc37b68520d
+                    processSyncKey: 8207b31b-6a92-4d25-bace-2142dd9ca39a
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12197,38 +12395,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -12318,6 +12526,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -12330,6 +12539,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -12376,6 +12586,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add
@@ -13222,38 +13433,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -13334,38 +13555,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -13435,27 +13666,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 927eb6e9-505b-4e28-95d3-b0dcef975bec
+                    processSyncKey: 9f981e53-524b-498c-b91c-376928769abf
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 275294e6-dc41-4fe8-a720-35c27be4af13
+                    processSyncKey: deb55995-9327-4dfc-8fb9-978e808a0e83
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 4a58fe5a-accb-4260-bb4e-e4a99b5c51e0
+                    processSyncKey: fd3455ed-0c59-4e9e-8adc-60353fd3835d
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 9d3b5bb6-81a9-434b-b33c-61278bd29287
+                    processSyncKey: cfbfbf3b-5732-4cba-84dc-067624d5a20c
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -13483,38 +13714,48 @@ paths:
                     stages:
                     - name: first_stage
                       displayName: First stage
+                      description: ''
                       steps:
                       - id: 1
                         name: stage1_step1
+                        description: ''
                         displayName: Stage1.Step1
                         type: configuration
                     - name: second_stage
                       displayName: Second stage
+                      description: ''
                       steps:
                       - id: 2
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step1
                         type: configuration
                       - id: 3
                         name: stage2_step2
+                        description: ''
                         displayName: Stage2.Step2
                         type: operation
                     - name: third_stage
                       displayName: Third stage
+                      description: ''
                       steps:
                       - id: 4
                         name: stage3_step1
+                        description: ''
                         displayName: Stage3.Step1
                         type: operation
                     - name: fourth_stage
                       displayName: Fourth stage
+                      description: ''
                       steps:
                       - id: 5
                         name: stage4_step1
+                        description: ''
                         displayName: Stage4.Step1
                         type: operation
                       - id: 6
                         name: stage4_step2
+                        description: ''
                         displayName: Stage4.Step2
                         type: operation
                   summary: Process example
@@ -13597,6 +13838,7 @@ paths:
                     type: operation
                     name: stage2_step2
                     displayName: Stage2.Step2
+                    description: ''
                     state: created
                     task:
                       id: 8
@@ -13609,6 +13851,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     configuration:
                       adcmMeta: {}
@@ -13655,6 +13898,7 @@ paths:
                     type: configuration
                     name: stage1_step1
                     displayName: Stage1.Step1
+                    description: ''
                     state: created
                     rules:
                     - operation: add

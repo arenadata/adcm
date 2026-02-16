@@ -21,7 +21,7 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
+from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -53,10 +53,9 @@ class TestTaskAudit(BaseAPITestCase):
         self.component_action = Action.objects.get(prototype=self.component.prototype, name="action_1_comp_1")
 
     def test_run_action_success(self):
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
@@ -67,7 +66,8 @@ class TestTaskAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-        run_task.run()
+        task_id = self.task_runner.expect_task_launched().id
+        self.task_runner.run_task(task_id)
 
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action completed",
@@ -78,14 +78,11 @@ class TestTaskAudit(BaseAPITestCase):
         )
 
     def test_run_action_fail(self):
-        with RunTaskMock(
-            execution_target_factory=ExecutionTargetFactoryDummyMock(
-                failed_job=FailedJobInfo(position=0, return_code=1)
-            )
-        ) as run_task:
-            response = (self.client.v2[self.service] / "actions" / self.service_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
+        etf = ExecutionTargetFactoryDummyMock(failed_job=FailedJobInfo(position=0, return_code=1))
+
+        response = (self.client.v2[self.service] / "actions" / self.service_action / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
@@ -96,7 +93,7 @@ class TestTaskAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-        run_task.run()
+        self.task_runner.run_launched_task(execution_target_factory=etf)
 
         self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action completed",
@@ -107,13 +104,12 @@ class TestTaskAudit(BaseAPITestCase):
         )
 
     def test_run_not_exists_action_fail(self):
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
+        response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+        )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertIsNone(run_task.target_task)
+        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
@@ -124,13 +120,12 @@ class TestTaskAudit(BaseAPITestCase):
 
     def test_run_action_denied(self):
         self.client.login(**self.test_user_credentials)
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+        )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertIsNone(run_task.target_task)
+        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",

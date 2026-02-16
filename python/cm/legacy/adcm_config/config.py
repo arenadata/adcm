@@ -21,27 +21,23 @@ import json
 from ansible.errors import AnsibleError
 from core.templates import parse_template
 from django.conf import settings
-from django.db.models import QuerySet
 from infra.services import get_config_service, get_wizard_service
 
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.adcm_config.checks import check_attr, check_config_type
 from cm.legacy.adcm_config.utils import (
-    config_is_ro,
     cook_file_type_name,
-    group_is_activatable,
     is_inactive,
     key_is_required,
     proto_ref,
     sub_key_is_required,
-    to_flat_dict,
 )
 from cm.legacy.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, Environment, render_config
 from cm.legacy.services.config.jinja import get_jinja_config
-from cm.legacy.utils import deep_merge, dict_to_obj, obj_to_dict
-from cm.legacy.variant import get_variant, process_variant
+from cm.legacy.utils import deep_merge, obj_to_dict
+from cm.legacy.variant import process_variant
 from cm.models import (
     ADCM,
     Action,
@@ -158,127 +154,6 @@ def get_spec_flat_spec_config_attr_from_prototype_configs(
             config[conf.name][conf.subname] = get_default(conf, path_resolver=path_resolver)
 
     return spec, flat_spec, config, attr
-
-
-def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
-    if obj.config:
-        return
-
-    obj_conf = init_object_config(prototype, obj)
-    if obj_conf:
-        obj.config = obj_conf
-        obj.save()
-
-
-def switch_config(
-    obj: ADCMEntity,
-    new_prototype: Prototype,
-    old_prototype: Prototype,
-) -> None:
-    # process objects without config
-    if not obj.config:
-        make_object_config(obj=obj, prototype=new_prototype)
-
-        return
-
-    config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-
-    _, old_spec, _, _ = get_prototype_config(prototype=old_prototype)
-    new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
-    old_conf = to_flat_dict(config=config_log.config, spec=old_spec)
-
-    old_path_resolver = (
-        ADCMBundlePathResolver()
-        if old_prototype.type == "adcm"
-        else BundlePathResolver(bundle_hash=old_prototype.bundle.hash)
-    )
-    new_path_resolver = (
-        ADCMBundlePathResolver()
-        if old_prototype.type == "adcm"
-        else BundlePathResolver(bundle_hash=new_prototype.bundle.hash)
-    )
-
-    def is_new_default(_key):
-        if not new_spec[_key].default:
-            return False
-
-        if old_spec[_key].default:
-            if _key in old_conf:
-                return bool(get_default(conf=old_spec[_key], path_resolver=old_path_resolver) == old_conf[_key])
-            else:
-                return True
-
-        if not old_spec[_key].default and new_spec[_key].default:
-            return True
-
-        return False
-
-    # set new default config values and gather information about activatable groups
-    new_conf = {}
-    active_groups = {}
-    inactive_groups = {}
-    for key in new_spec:
-        if new_spec[key].type == "group":
-            limits = new_spec[key].limits
-            if "activatable" in limits and "active" in limits:
-                group_name = key.rstrip("/")
-                # check group activity in old configuration
-                if group_name in config_log.attr:
-                    if config_log.attr[group_name]["active"]:
-                        active_groups[group_name] = True
-                    else:
-                        inactive_groups[group_name] = True
-                elif limits["active"]:
-                    active_groups[group_name] = True
-                else:
-                    inactive_groups[group_name] = True
-
-            continue
-
-        if key in old_spec:
-            if is_new_default(key):
-                new_conf[key] = get_default(conf=new_spec[key], path_resolver=new_path_resolver)
-            else:
-                new_conf[key] = old_conf.get(key, get_default(conf=new_spec[key], path_resolver=new_path_resolver))
-        else:
-            new_conf[key] = get_default(conf=new_spec[key], path_resolver=new_path_resolver)
-
-    # go from flat config to 2-level dictionary
-    unflat_conf = {}
-    for key, value in new_conf.items():
-        key_1, key_2 = key.split("/")
-        if key_2 == "":
-            unflat_conf[key_1] = value
-        else:
-            if key_1 not in unflat_conf:
-                unflat_conf[key_1] = {}
-
-            unflat_conf[key_1][key_2] = value
-
-    # set activatable groups attributes for new config
-    attr = {}
-    for key in unflat_conf:
-        if key in active_groups:
-            attr[key] = {"active": True}
-        if key in inactive_groups:
-            attr[key] = {"active": False}
-
-    save_object_config(object_config=obj.config, config=unflat_conf, attr=attr, description="upgrade")
-    process_file_type(obj=obj, spec=new_unflat_spec, conf=unflat_conf)
-
-
-def restore_cluster_config(obj_conf, version, desc=""):
-    config_log = ConfigLog.obj.get(obj_ref=obj_conf, id=version)
-    obj_conf.previous = obj_conf.current
-    obj_conf.current = version
-    obj_conf.save()
-
-    if desc != "":
-        config_log.description = desc
-
-    config_log.save()
-
-    return config_log
 
 
 def _merge_config_field(origin_config_fields: dict, host_group_fields: dict, group_keys: dict, spec: dict) -> dict:
@@ -509,100 +384,6 @@ def process_config(
                         for map_key, map_value in conf[key][subkey].items():
                             if settings.ANSIBLE_VAULT_HEADER in map_value:
                                 conf[key][subkey][map_key] = {"__ansible_vault": map_value}
-
-    return conf
-
-
-def ui_config(obj, config_log):
-    conf = []
-    _, spec, _, _ = get_prototype_config(obj.prototype)
-    obj_conf = config_log.config
-    obj_attr = config_log.attr
-    flat_conf = to_flat_dict(obj_conf, spec)
-    group_keys = obj_attr.get("group_keys", {})
-    custom_group_keys = obj_attr.get("custom_group_keys", {})
-    slist = ("name", "subname", "type", "description", "display_name", "required")
-
-    path_resolver = (
-        ADCMBundlePathResolver() if isinstance(obj, ADCM) else BundlePathResolver(bundle_hash=obj.prototype.bundle.hash)
-    )
-
-    for key in spec:
-        item = obj_to_dict(spec[key], slist)
-        limits = spec[key].limits
-        item["limits"] = limits
-        if spec[key].ui_options:
-            item["ui_options"] = spec[key].ui_options
-        else:
-            item["ui_options"] = None
-
-        item["read_only"] = bool(config_is_ro(obj, key, spec[key].limits))
-        item["activatable"] = bool(group_is_activatable(spec[key]))
-        if item["type"] == "variant":
-            item["limits"]["source"]["value"] = get_variant(obj, obj_conf, limits)
-
-        item["default"] = get_default(spec[key], path_resolver=path_resolver)
-        if key in flat_conf:
-            item["value"] = flat_conf[key]
-        else:
-            item["value"] = get_default(spec[key], path_resolver=path_resolver)
-
-        if group_keys:
-            if spec[key].type == "group":
-                _key = key.split("/")[0]
-                item["group"] = group_keys[_key]["value"]
-                item["custom_group"] = custom_group_keys[_key]["value"]
-            else:
-                key_1, key_2 = key.split("/")
-                if key_2:
-                    item["group"] = group_keys[key_1]["fields"][key_2]
-                    item["custom_group"] = custom_group_keys[key_1]["fields"][key_2]
-                else:
-                    item["group"] = group_keys[key_1]
-                    item["custom_group"] = custom_group_keys[key_1]
-
-        conf.append(item)
-
-    return conf
-
-
-def get_action_variant(obj: ADCMEntity, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]) -> None:
-    if obj.config:
-        config_log = ConfigLog.objects.filter(obj_ref=obj.config, id=obj.config.current).first()
-        if config_log:
-            for conf in prototype_configs:
-                if conf.type != "variant":
-                    continue
-
-                conf.limits["source"]["value"] = get_variant(obj, config_log.config, conf.limits)
-
-
-def restore_read_only(obj, spec, conf, old_conf):
-    # Do not remove!
-    # This patch fix old error when sometimes group config values can be lost
-    # during bundle upgrade
-    for key in spec:
-        if "type" in spec[key]:
-            continue
-        if old_conf[key] is None:
-            old_conf[key] = {}
-            for subkey in spec[key]:
-                old_conf[subkey] = get_default(
-                    dict_to_obj(spec[key][subkey], PrototypeConfig(), ("type", "default", "limits")),
-                )
-    # end of patch
-
-    for key in spec:
-        if "type" in spec[key]:
-            if config_is_ro(obj, key, spec[key]["limits"]) and key not in conf and key in old_conf:
-                conf[key] = old_conf[key]
-        else:
-            for subkey in spec[key]:
-                if config_is_ro(obj=obj, key=f"{key}/{subkey}", limits=spec[key][subkey]["limits"]):
-                    if key in conf and subkey not in conf and key in old_conf and subkey in old_conf[key]:
-                        conf[key][subkey] = old_conf[key][subkey]
-                    elif key in old_conf and subkey in old_conf[key]:
-                        conf[key] = {subkey: old_conf[key][subkey]}
 
     return conf
 

@@ -21,8 +21,6 @@ from rest_framework.status import (
 import yaml
 
 from cm.errors import AdcmEx
-from cm.legacy.api import delete_host_provider
-from cm.legacy.bundle import delete_bundle
 from cm.models import (
     Action,
     ADCMEntity,
@@ -32,12 +30,6 @@ from cm.models import (
     PrototypeConfig,
     Service,
     SubAction,
-)
-from cm.tests.test_upgrade import (
-    cook_cluster,
-    cook_cluster_bundle,
-    cook_provider,
-    cook_provider_bundle,
 )
 
 
@@ -212,27 +204,6 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 "python/cm/tests/files/test_secret_config_v12_community.tar",
             ),
         )
-
-    def test_cluster_bundle_deletion(self):
-        bundle = cook_cluster_bundle("1.0")
-        cook_cluster(bundle, "TestCluster")
-        try:
-            delete_bundle(bundle)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "BUNDLE_CONFLICT")
-
-    def test_provider_bundle_deletion(self):
-        bundle = cook_provider_bundle("1.0")
-        provider = cook_provider(bundle, "TestProvider")
-        try:
-            delete_bundle(bundle)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "BUNDLE_CONFLICT")
-
-        try:
-            delete_host_provider(provider)
-        except AdcmEx as e:
-            self.assertEqual(e.code, "PROVIDER_CONFLICT")
 
 
 class TestBundleParsing(BaseTestCase, BundleLogicMixin):

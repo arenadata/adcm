@@ -15,7 +15,6 @@ from unittest.mock import patch
 import json
 import unittest
 
-from adcm.dependencies import prepare_container
 from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
@@ -34,7 +33,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from infra.services import get_config_service
@@ -54,6 +52,7 @@ from rest_framework.test import APITestCase
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
 from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
+from api_v2.utils.di import prepare_container
 
 CONFIGS = "configs"
 CONFIG_SCHEMA = "config-schema"
@@ -3066,10 +3065,9 @@ class TestPatternInConfig(BaseAPITestCase):
 
         for key in self._EXAMPLES["ok"]:
             with self.subTest(f"{key}-fail"):
-                with RunTaskMock():
-                    response = self.run_action(
-                        target=self.cluster, action=action, config=ok_data | {key: self._EXAMPLES["fail"][key][-1]}
-                    )
+                response = self.run_action(
+                    target=self.cluster, action=action, config=ok_data | {key: self._EXAMPLES["fail"][key][-1]}
+                )
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertIn(
@@ -3078,8 +3076,7 @@ class TestPatternInConfig(BaseAPITestCase):
                 )
 
         with self.subTest("success"):
-            with RunTaskMock():
-                response = self.run_action(target=self.cluster, action=action, config=ok_data)
+            response = self.run_action(target=self.cluster, action=action, config=ok_data)
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 

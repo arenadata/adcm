@@ -1,0 +1,10 @@
+- name: stage4
+  display_name: "Stage4"
+  steps:
+    - name: config_step_no_desc
+      display_name: "ConfigStepNoDesc"
+      config_template:
+        file:
+          path: wizard_jinja/steps/s1_config.j2
+        engine:
+          type: jinja2

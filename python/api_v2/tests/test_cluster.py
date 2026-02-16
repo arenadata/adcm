@@ -25,9 +25,10 @@ from cm.models import (
     ObjectType,
     Prototype,
     Service,
+    TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
+from core.types import TaskID
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission
 from rbac.models import User
@@ -253,23 +254,22 @@ class TestCluster(BaseAPITestCase):
 
     def test_update_locking_concern_fail(self):
         cluster_ep = self.client.v2[self.cluster_1]
-        with RunTaskMock():
-            response = (cluster_ep / "actions" / self.cluster_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
+        response = (cluster_ep / "actions" / self.cluster_action / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+        )
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = cluster_ep.patch(data={"name": "new_name"})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertDictEqual(
-                response.json(),
-                {
-                    "code": "CLUSTER_CONFLICT",
-                    "desc": "Name change is available only if no locking concern exists",
-                    "level": "error",
-                },
-            )
+        response = cluster_ep.patch(data={"name": "new_name"})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "CLUSTER_CONFLICT",
+                "desc": "Name change is available only if no locking concern exists",
+                "level": "error",
+            },
+        )
 
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"
@@ -595,19 +595,21 @@ class TestClusterActions(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+    def assert_task_status_is(self, task_id: TaskID, status: str):
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, status)
+
     def test_run_cluster_action_success(self):
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        self.assert_task_status_is(task_id, "created")
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        self.assert_task_status_is(task_id, "success")
 
     def test_run_action_with_config_success(self):
         config = {
@@ -618,21 +620,20 @@ class TestClusterActions(BaseAPITestCase):
         }
         adcm_meta = {"/activatable_group": {"isActive": True}}
 
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-                data={"configuration": {"config": config, "adcmMeta": adcm_meta}}
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+            data={"configuration": {"config": config, "adcmMeta": adcm_meta}}
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK, response.json())
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.config, config)
-        self.assertEqual(run_task.target_task.attr, {})
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task = TaskLog.objects.get(id=task_id)
+        self.assertEqual(task.config, config)
+        self.assertEqual(task.attr, {})
 
     def test_run_action_with_config_wrong_configuration_fail(self):
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-                data={"configuration": []}
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+            data={"configuration": []}
+        )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -643,33 +644,31 @@ class TestClusterActions(BaseAPITestCase):
                 "level": "error",
             },
         )
-        self.assertIsNone(run_task.target_task)
+        self.task_runner.expect_task_not_launched()
 
     def test_run_action_with_config_required_adcm_meta_fail(self):
         config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
 
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-                data={"configuration": {"config": config}},
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+            data={"configuration": {"config": config}},
+        )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.;", "level": "error"}
         )
-        self.assertIsNone(run_task.target_task)
+        self.task_runner.expect_task_not_launched()
 
     def test_run_action_with_config_required_config_fail(self):
-        with RunTaskMock() as run_task:
-            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-                data={"configuration": {"adcmMeta": {}}},
-            )
+        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+            data={"configuration": {"adcmMeta": {}}},
+        )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.;", "level": "error"}
         )
-        self.assertIsNone(run_task.target_task)
+        self.task_runner.expect_task_not_launched()
 
     def test_retrieve_action_with_hc_success(self):
         response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_hc).get()

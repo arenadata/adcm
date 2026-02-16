@@ -12,12 +12,12 @@
 
 from typing import Collection
 
-from cm.legacy.api import delete_service
 from cm.legacy.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
 from cm.models import ClusterBind, HostComponent, Prototype, Service
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
+from use_cases.transition.cluster.delete import DeleteService
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -87,7 +87,11 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
             # remove existing binds
             ClusterBind.objects.filter(source_service=service).delete()
 
+            # todo most likely everything under atomic (at least)
+            #      should be a separate use case, and DeleteService is scenario idk
+
             # perform service deletion
-            delete_service(service=service)
+            delete_service = self._container.get(DeleteService)
+            delete_service.do(service=service)
 
         return CallResult(value=None, changed=True, error=None)

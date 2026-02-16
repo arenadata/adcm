@@ -16,11 +16,12 @@ from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
-from typing import Any, Collection, Literal, TypeAlias
+from typing import Any, Collection, TypeAlias
+import uuid
 import tarfile
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient
+from adcm.tests.client import ADCMTestClient, APINode
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
@@ -37,23 +38,27 @@ from cm.models import (
     JobStatus,
     MaintenanceMode,
     ObjectType,
+    Process,
     Prototype,
     Provider,
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.legacy.cluster.types import ObjectMaintenanceModeState
 from core.types import ClusterID
 from django.conf import settings
 from django.http import HttpRequest
+from django.test import modify_settings
 from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
+
+from api_v2.tests.setup.overrides import get_task_runner_manager
+from api_v2.utils.di import prepare_container
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
@@ -70,12 +75,24 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        modify_settings(
+            MIDDLEWARE={
+                "prepend": "api_v2.tests.setup.overrides.DishkaMiddleware",
+                "remove": ["api_v2.utils.di.DishkaMiddleware"],
+            }
+        )(cls)
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.test_bundles_dir = Path(__file__).parent / "bundles"
-        cls.test_files_dir = Path(__file__).parent / "files"
+        cls.test_bundles_dir = TEST_BUNDLES_DIR
+        cls.test_files_dir = TEST_FILES_DIR
+
+        prepare_container.cache_clear()
+        get_config_service.cache_clear()  # TODO: ADCM-7513
 
         init_roles()
         init()
@@ -85,9 +102,14 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         config_log.config["auth_policy"]["max_password_length"] = 20
         config_log.save(update_fields=["config"])
 
+        # task runner "patch"
+        cls.task_runner = get_task_runner_manager()
+
     def setUp(self) -> None:
         # TODO: ADCM-7513
         get_config_service.cache_clear()
+
+        self.task_runner.reset()
 
         self.client.login(username="admin", password="admin")
 
@@ -227,29 +249,32 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         logout(request)
         self.cookies = SimpleCookie()
 
-    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-            )
+    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
+        self.client.v2[object_, "actions", action, "run"].post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
+        )
 
-        run_task.run()
-        run_task.target_task.refresh_from_db()
+        task_id = self.task_runner.expect_task_launched().id
+        self.task_runner.run_task(task_id=task_id)
 
-        return run_task.target_task, run_task.target_task.joblog_set.last()
+        task = TaskLog.objects.get(id=task_id)
 
-    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-            )
+        return task, task.joblog_set.last()
 
-        run_task.run()
-        run_task.target_task.refresh_from_db()
-        task = run_task.target_task
+    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
+        self.client.v2[object_, "actions", action, "run"].post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
+        )
+
+        task_id = self.task_runner.expect_task_launched().id
+        self.task_runner.run_task(task_id)
+
+        task = TaskLog.objects.get(id=task_id)
         job = task.joblog_set.last()
+
         task.status = JobStatus.RUNNING
         task.save(update_fields=["status"])
+
         job.status = JobStatus.RUNNING
         job.pid = 5_000_000
         job.save(update_fields=["status", "pid"])
@@ -271,7 +296,13 @@ class APIV2Mixin:
         if not src.is_dir():
             raise ValueError(f"Not a dir: {src}")
 
-        dst = (Path(gettempdir()) / src.name).with_suffix(".tar")
+        # shouldn't be required, tempdir must be unique,
+        # yet I don't want to create new tempdir for each call
+        # => universal mechanism is required
+        random_suffix = uuid.uuid4().hex[:8]
+
+        # note that gettempdir doesn't return unique directory
+        dst = Path(gettempdir(), f"{src.name}-{random_suffix}").with_suffix(".tar")
         archive = self._prepare_bundle_file(src=src, dst=dst)
 
         with archive.open(mode="rb") as f:
@@ -370,24 +401,116 @@ class APIV2Mixin:
         response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
         assert response.status_code == HTTP_200_OK, f"Setting maintenance mode failed: {response.status_code}"
 
-    def run_task(
+    # wizard
+
+    def start_process_r(
         self,
-        object_: Cluster | Service | Component | Provider | Host | ActionHostGroup,
-        action: Action,
-        mapping: Collection[tuple[Host, Component]] = (),
-        config: dict[Literal["config", "adcmMeta"], dict] | None = None,
-        expected_code: int = HTTP_200_OK,
-        **mock_kwargs,
-    ) -> RunTaskMock:
-        hc = {"hostComponentMap": [{"hostId": host.id, "componentId": component.id} for host, component in mapping]}
-        config = config or {"config": {}, "adcmMeta": {}}
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        *,
+        expected_status: int = HTTP_201_CREATED,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes").post(data={})
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
 
-        with RunTaskMock(**mock_kwargs) as run_task:
-            response = self.client.v2[object_, "actions", action, "run"].post(data={"isVerbose": False, **config, **hc})
+    def submit_step_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        data: dict,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id / "operation").post(data=data)
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
 
-        assert response.status_code == expected_code, f"Unexpected run result: {response.status_code}"
+    def get_process_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id).get()
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
 
-        return run_task
+    def get_step_r(
+        self,
+        owner: Cluster | Service | Component | Host,
+        action: Action | int,
+        process_id: int,
+        step_id: int,
+        *,
+        expected_status: int = HTTP_200_OK,
+    ):
+        action_id = self._resolve_action_id(action)
+        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        response = (object_endpoint / "actions" / action_id / "processes" / process_id / "steps" / step_id).get()
+        self.assertEqual(
+            response.status_code,
+            expected_status,
+            self._response_error(response=response, expected_code=expected_status),
+        )
+        return response
+
+    def start_process(self, owner: Cluster | Service | Component | Host, action: Action | int) -> Process:
+        response = self.start_process_r(owner=owner, action=action)
+        return Process.objects.get(id=response.json()["id"])
+
+    def submit_step(
+        self, owner: Cluster | Service | Component | Host, action: Action | int, process_id: int, data: dict
+    ) -> Process:
+        response = self.submit_step_r(owner=owner, action=action, process_id=process_id, data=data)
+        return Process.objects.get(id=response.json()["id"])
+
+    def _resolve_wizard_object_endpoint(self, owner: Cluster | Service | Component | Host) -> APINode:
+        if isinstance(owner, Host):
+            return self.client.v2[owner.cluster, "hosts", owner]
+
+        return self.client.v2[owner]
+
+    @staticmethod
+    def _resolve_action_id(action: Action | int) -> int:
+        if isinstance(action, Action):
+            return action.id
+
+        if isinstance(action, int):
+            return action
+
+        # keep it here until tests are somehow typechecked
+        raise TypeError(f"Unexpected action type: {type(action)}")
+
+    @staticmethod
+    def _response_error(response, expected_code: int) -> str:
+        try:
+            details = response.json()
+        except Exception:  # noqa: BLE001 - best-effort error reporting
+            details = response.content
+
+        return f"Expected response code {expected_code}, got {response.status_code}. " f"Response details: {details}"
 
 
 class TestUtilsMixin:

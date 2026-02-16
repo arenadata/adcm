@@ -18,9 +18,9 @@ from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseW
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 from use_cases.dto import RunActionDTO
 
-from cm.models import Action, Component
+from cm.models import Action, Component, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
+from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator
 from cm.tests.test_action_host_group import ScheduleTask
 
 
@@ -31,6 +31,15 @@ class TestEffectsOfADCMAnsiblePlugins(
     BusinessLogicMixin,
     ADCMAnsiblePluginTestMixin,
 ):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # shouldn't be here
+        from api_v2.tests.setup.overrides import get_task_runner_manager
+
+        cls.task_runner = get_task_runner_manager()
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -74,20 +83,19 @@ class TestEffectsOfADCMAnsiblePlugins(
 
             return 0
 
-        with RunTaskMock(
-            execution_target_factory=ETFMockWithEnvPreparation(
-                change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}
-            )
-        ) as run_task:
-            action = Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps")
-            with self.container() as container:
-                container.get(ScheduleTask).do(action_orm=action, target=self.cluster, payload=RunActionDTO())
+        action = Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps")
+        with self.container() as container:
+            container.get(ScheduleTask).do(action_orm=action, target=self.cluster, payload=RunActionDTO())
 
-        self.assertIsNotNone(run_task.target_task)
-        run_task.runner.run(task_id=run_task.target_task.pk)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
-        for job_id in run_task.target_task.joblog_set.values_list("id", flat=True):
+        task_id = self.task_runner.expect_task_launched().id
+
+        etf = ETFMockWithEnvPreparation(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
+        self.task_runner.run_task(task_id=task_id, execution_target_factory=etf)
+
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, "success")
+
+        for job_id in JobLog.objects.filter(task_id=task_id).values_list("id", flat=True):
             inventory = json.loads((self.directories["RUN_DIR"] / str(job_id) / "inventory.json").read_text())
             self.assertTrue(
                 all(".add" not in key and ".remove" not in key for key in map(str.lower, inventory["all"]["children"]))

@@ -15,6 +15,7 @@ from typing import Any, Literal, TypeAlias
 
 from core.types import ComponentName, HostName, ProviderName, ServiceName
 from pydantic import BaseModel
+import core
 
 BundleHash: TypeAlias = str
 ConfigurationDict: TypeAlias = dict[str, Any]
@@ -36,8 +37,7 @@ class BundleExtraInfo:
 class RestorableCondition:
     state: str
     multi_state: list[str]
-    config: ConfigurationDict | None = None
-    attr: ConfigurationDict | None = None
+    config: core.config.Configuration | None = None
 
 
 @dataclass(slots=True)
@@ -60,8 +60,14 @@ class HostInfo:
 class ConfigHostGroupInfo:
     name: str
     description: str
-    config: ConfigurationDict = field(default_factory=dict)
-    attr: ConfigurationDict = field(default_factory=dict)
+    config: core.config.Configuration = field(default_factory=core.config.Configuration)
+    hosts: list[HostName] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class ActionHostGroupInfo:
+    name: str
+    description: str
     hosts: list[HostName] = field(default_factory=list)
 
 
@@ -70,7 +76,8 @@ class ComponentInfo:
     name: ComponentName
     condition: RestorableCondition
     maintenance_mode: LiteralMM
-    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    config_host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    action_host_groups: list[ActionHostGroupInfo] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -79,7 +86,8 @@ class ServiceInfo:
     condition: RestorableCondition
     maintenance_mode: LiteralMM
     components: dict[ComponentName, ComponentInfo] = field(default_factory=dict)
-    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    config_host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    action_host_groups: list[ActionHostGroupInfo] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -97,7 +105,8 @@ class ClusterInfo:
     condition: RestorableCondition
     services: dict[ServiceName, ServiceInfo] = field(default_factory=dict)
     mapping: list[NamedMappingEntry] = field(default_factory=list)
-    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    config_host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    action_host_groups: list[ActionHostGroupInfo] = field(default_factory=list)
     ansible_config: ConfigurationDict = field(default_factory=dict)
 
 

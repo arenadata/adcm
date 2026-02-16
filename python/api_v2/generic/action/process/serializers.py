@@ -36,12 +36,14 @@ class StepFromStageSerializer(Serializer):
     id = IntegerField()
     state = CharField()
     name = CharField()
+    description = CharField(source="extra.description", default="")
     display_name = CharField(source="extra.display_name")
     type = CharField()
 
 
 class StageSerializer(Serializer):
     name = CharField()
+    description = CharField(source="extra.description", default="")
     display_name = CharField(source="extra.display_name")
     steps = SerializerMethodField()
 
@@ -75,6 +77,7 @@ class ProcessSerializer(ProcessShortSerializer):
 class StepSerializer(Serializer):
     id = IntegerField()
     display_name = CharField()
+    description = CharField()
     name = CharField()
     type = CharField()
     state = CharField()
