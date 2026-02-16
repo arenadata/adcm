@@ -39,7 +39,6 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.utils import (
     gen_bundle,
@@ -295,16 +294,17 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
 
-        with RunTaskMock() as run_task:
-            with self.container() as container:
-                container.get(ScheduleTask).do(
-                    action_orm=action,
-                    target=object_,
-                    payload=payload,
-                )
+        with self.container() as container:
+            container.get(ScheduleTask).do(
+                action_orm=action,
+                target=object_,
+                payload=payload,
+            )
+
+        task_id = self.task_runner.expect_task_launched().id
 
         inventory = prepare_ansible_inventory(
-            task=JobRepoImpl.get_task(run_task.target_task.id),
+            task=JobRepoImpl.get_task(task_id),
             topology=retrieve_cluster_topology(cluster_id),
         )
         return inventory["all"]

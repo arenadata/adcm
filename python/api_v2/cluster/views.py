@@ -67,7 +67,6 @@ from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -170,6 +169,7 @@ from api_v2.utils.audit import (
     set_removed_host_name,
     update_cluster_name,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
 
 

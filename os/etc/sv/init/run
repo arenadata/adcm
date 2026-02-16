@@ -17,7 +17,6 @@ set +x
 
 echo "Application initialisation ..."
 
-mkdir -p "${adcmlog}"
 exec 1>>"${adcmlog}/init.out"
 exec 2>>"${adcmlog}/init.err"
 mkdir -p "${adcmlog}/nginx"

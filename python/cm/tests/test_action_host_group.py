@@ -32,9 +32,8 @@ from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.job.context import get_inventory_data
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
-from cm.models import Action, ActionHostGroup, Component
+from cm.models import Action, ActionHostGroup, Component, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import RunTaskMock
 
 
 class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
@@ -92,11 +91,11 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
     def test_run_action_success(self) -> None:
         action = Action.objects.get(prototype=self.cluster.prototype, name="dummy")
 
-        with RunTaskMock() as run_task:
-            with self.container() as container:
-                container.get(ScheduleTask).do(action_orm=action, target=self.action_group, payload=RunActionDTO())
+        with self.container() as container:
+            container.get(ScheduleTask).do(action_orm=action, target=self.action_group, payload=RunActionDTO())
 
-        task = run_task.target_task
+        task_id = self.task_runner.expect_task_launched().id
+        task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.task_object, self.action_group)
         self.assertEqual(task.owner_id, self.cluster.id)
         self.assertEqual(task.owner_type, ADCMCoreType.CLUSTER.value)
@@ -133,11 +132,12 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
         action = Action.objects.get(prototype=self.service.prototype, name="dummy")
         action_group = ActionHostGroup.objects.get(id=group_id)
 
-        with RunTaskMock() as run_task:
-            with self.container() as container:
-                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
+        with self.container() as container:
+            container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
-        result_env = get_env_for_jinja_scripts(task=run_task.target_task)
+        task_id = self.task_runner.expect_task_launched().id
+        task = TaskLog.objects.get(id=task_id)
+        result_env = get_env_for_jinja_scripts(task=task)
 
         self.assertSetEqual(
             set(result_env["groups"]),
@@ -158,11 +158,11 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
         action = Action.objects.get(prototype=self.service.prototype, name="dummy")
         action_group = ActionHostGroup.objects.get(id=group_id)
 
-        with RunTaskMock() as run_task:
-            with self.container() as container:
-                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
+        with self.container() as container:
+            container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
-        task = JobRepoImpl.get_task(run_task.target_task.id)
+        task_id = self.task_runner.expect_task_launched().id
+        task = JobRepoImpl.get_task(task_id)
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
         config = prepare_ansible_job_config(

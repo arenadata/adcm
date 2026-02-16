@@ -13,6 +13,7 @@
 
 from uuid import uuid4
 
+from adcm.tests.base import BusinessLogicMixin
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
@@ -27,19 +28,20 @@ from cm.models import (
     Process,
     ProcessStep,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
 from infra.services import get_config_service
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
-from api_v2.tests.test_wizard.helpers import PATCH_PATH, WizardProcessHelpers, render_template
+from api_v2.tests.base import APIV2Mixin
+from api_v2.tests.setup.base import BaseAPITestCase
+from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
 
 
-class TestWizardActionProcessExecution(APIV2Mixin, BaseAPITestCase, WizardProcessHelpers):
+class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
     def setUp(self) -> None:
+        super().setUp()
+
         get_config_service.cache_clear()
-        self.client.login(username="admin", password="admin")
 
         suffix = uuid4().hex[:8]
         cluster_bundle = self.test_bundles_dir / "wizard_action"
@@ -253,23 +255,22 @@ class TestWizardActionProcessExecution(APIV2Mixin, BaseAPITestCase, WizardProces
         action = Action.objects.get(name="wizard_operation_as_first", prototype=self.cluster_1.prototype)
         process = self.start_process(self.cluster_1, action)
         expected_display_name = f"{action.display_name} (find me In here)"
-        with RunTaskMock(run_patch_path=PATCH_PATH) as run_task:
-            self.submit_step(
-                owner=self.cluster_1,
-                action=action,
-                process_id=process.pk,
-                data={
-                    "method": ProcessOperationType.SUBMIT,
-                    "params": {
-                        "processSyncKey": process.sync_key,
-                        "stepId": process.current_step.pk,
-                    },
+        self.submit_step(
+            owner=self.cluster_1,
+            action=action,
+            process_id=process.pk,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": process.current_step.pk,
                 },
-            )
-        task_with_step = run_task.target_task
-        self.assertIsNotNone(task_with_step)
+            },
+        )
 
-        response = self.client.v2[task_with_step].get()
+        launched_task = self.task_runner.expect_task_launched()
+
+        response = (self.client.v2 / "tasks" / launched_task.id).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["displayName"], expected_display_name)
 
@@ -278,7 +279,7 @@ class TestWizardActionProcessExecution(APIV2Mixin, BaseAPITestCase, WizardProces
         self.assertEqual(response.status_code, HTTP_200_OK)
         response = response.json()["results"]
 
-        task_with_step_response = [task for task in response if task["id"] == task_with_step.id][0]
+        task_with_step_response = [task for task in response if task["id"] == launched_task.id][0]
         self.assertEqual(task_with_step_response["displayName"], expected_display_name)
 
     def test_adcm_7551_process_on_host_action(self):
@@ -421,18 +422,18 @@ class TestWizardActionProcessExecution(APIV2Mixin, BaseAPITestCase, WizardProces
                 self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-                with RunTaskMock(run_patch_path=PATCH_PATH) as run_task:
-                    self.submit_step_r(
-                        owner=host,
-                        action=action,
-                        process_id=process.pk,
-                        data={
-                            "method": ProcessOperationType.SUBMIT,
-                            "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
-                        },
-                    )
+                self.submit_step_r(
+                    owner=host,
+                    action=action,
+                    process_id=process.pk,
+                    data={
+                        "method": ProcessOperationType.SUBMIT,
+                        "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
+                    },
+                )
 
-                run_task.runner.run(run_task.target_task.id)
+                launched_task = self.task_runner.expect_task_launched()
+                self.task_runner.run_task(launched_task.id)
 
                 step_3_operation.refresh_from_db()
                 self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
@@ -467,9 +468,10 @@ class TestWizardActionProcessExecution(APIV2Mixin, BaseAPITestCase, WizardProces
                 self.assertEqual(host_concerns.count(), 0)
 
                 # run process action
-                with RunTaskMock() as run_task:
-                    response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
-                    self.assertEqual(response.status_code, HTTP_200_OK)
+                response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                launched_task = self.task_runner.expect_task_launched(response.json()["id"])
 
                 # remove job lock
                 self.delete_concern_by_name(object_=host, name="job_lock")

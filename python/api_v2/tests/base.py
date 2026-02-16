@@ -16,11 +16,10 @@ from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from tempfile import gettempdir
-from typing import Any, Collection, Literal, TypeAlias
+from typing import Any, Collection, TypeAlias
 import uuid
 import tarfile
 
-from adcm.dependencies import prepare_container
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient, APINode
 from audit.models import AuditLog, AuditObjectType, AuditSession
@@ -45,18 +44,21 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.legacy.cluster.types import ObjectMaintenanceModeState
 from core.types import ClusterID
 from django.conf import settings
 from django.http import HttpRequest
+from django.test import modify_settings
 from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
+
+from api_v2.tests.setup.overrides import get_task_runner_manager
+from api_v2.utils.di import prepare_container
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
@@ -73,12 +75,21 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        modify_settings(
+            MIDDLEWARE={
+                "prepend": "api_v2.tests.setup.overrides.DishkaMiddleware",
+                "remove": ["api_v2.utils.di.DishkaMiddleware"],
+            }
+        )(cls)
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.test_bundles_dir = Path(__file__).parent / "bundles"
-        cls.test_files_dir = Path(__file__).parent / "files"
+        cls.test_bundles_dir = TEST_BUNDLES_DIR
+        cls.test_files_dir = TEST_FILES_DIR
 
         prepare_container.cache_clear()
         get_config_service.cache_clear()  # TODO: ADCM-7513
@@ -91,9 +102,14 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         config_log.config["auth_policy"]["max_password_length"] = 20
         config_log.save(update_fields=["config"])
 
+        # task runner "patch"
+        cls.task_runner = get_task_runner_manager()
+
     def setUp(self) -> None:
         # TODO: ADCM-7513
         get_config_service.cache_clear()
+
+        self.task_runner.reset()
 
         self.client.login(username="admin", password="admin")
 
@@ -233,29 +249,32 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         logout(request)
         self.cookies = SimpleCookie()
 
-    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-            )
+    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
+        self.client.v2[object_, "actions", action, "run"].post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
+        )
 
-        run_task.run()
-        run_task.target_task.refresh_from_db()
+        task_id = self.task_runner.expect_task_launched().id
+        self.task_runner.run_task(task_id=task_id)
 
-        return run_task.target_task, run_task.target_task.joblog_set.last()
+        task = TaskLog.objects.get(id=task_id)
 
-    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-            )
+        return task, task.joblog_set.last()
 
-        run_task.run()
-        run_task.target_task.refresh_from_db()
-        task = run_task.target_task
+    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
+        self.client.v2[object_, "actions", action, "run"].post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
+        )
+
+        task_id = self.task_runner.expect_task_launched().id
+        self.task_runner.run_task(task_id)
+
+        task = TaskLog.objects.get(id=task_id)
         job = task.joblog_set.last()
+
         task.status = JobStatus.RUNNING
         task.save(update_fields=["status"])
+
         job.status = JobStatus.RUNNING
         job.pid = 5_000_000
         job.save(update_fields=["status", "pid"])
@@ -381,25 +400,6 @@ class APIV2Mixin:
     def set_maintenance_mode(self, obj: Service | Component | Host, value: MaintenanceMode) -> None:
         response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
         assert response.status_code == HTTP_200_OK, f"Setting maintenance mode failed: {response.status_code}"
-
-    def run_task(
-        self,
-        object_: Cluster | Service | Component | Provider | Host | ActionHostGroup,
-        action: Action,
-        mapping: Collection[tuple[Host, Component]] = (),
-        config: dict[Literal["config", "adcmMeta"], dict] | None = None,
-        expected_code: int = HTTP_200_OK,
-        **mock_kwargs,
-    ) -> RunTaskMock:
-        hc = {"hostComponentMap": [{"hostId": host.id, "componentId": component.id} for host, component in mapping]}
-        config = config or {"config": {}, "adcmMeta": {}}
-
-        with RunTaskMock(**mock_kwargs) as run_task:
-            response = self.client.v2[object_, "actions", action, "run"].post(data={"isVerbose": False, **config, **hc})
-
-        assert response.status_code == expected_code, f"Unexpected run result: {response.status_code}"
-
-        return run_task
 
     # wizard
 

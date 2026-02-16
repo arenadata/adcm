@@ -14,9 +14,9 @@ from unittest.mock import patch
 
 from cm.legacy.issue import add_concern_to_object
 from cm.legacy.services.status.client import FullStatusMap
-from cm.models import Action, Component, ConcernType, MaintenanceMode
-from cm.tests.mocks.task_runner import RunTaskMock
+from cm.models import Action, Component, ConcernType, MaintenanceMode, TaskLog
 from cm.tests.utils import gen_concern_item
+from core.types import TaskID
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 
 from api_v2.tests.base import BaseAPITestCase
@@ -34,6 +34,10 @@ class TestComponentAPI(BaseAPITestCase):
             prototype__name="component_2", service=self.service_1, cluster=self.cluster_1
         )
         self.action_1 = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
+
+    def assert_task_status_is(self, task_id: TaskID, status: str):
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, status)
 
     def test_list(self):
         response = self.client.v2[self.service_1, "components"].get()
@@ -78,18 +82,16 @@ class TestComponentAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.component_1, "actions", self.action_1, "run"].post(
-                data={"hostComponent_map": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-            )
+        response = self.client.v2[self.component_1, "actions", self.action_1, "run"].post(
+            data={"hostComponent_map": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        self.assert_task_status_is(task_id, "created")
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        self.assert_task_status_is(task_id, "success")
 
     def test_filtering_success(self):
         filters = {

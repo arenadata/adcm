@@ -177,6 +177,14 @@ class TestCaseWithCommonSetUpTearDown(TestCase):
 
 
 class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # shouldn't be here
+        from api_v2.tests.setup.overrides import get_task_runner_manager
+
+        cls.task_runner = get_task_runner_manager()
+
     def setUp(self) -> None:
         # TODO: ADCM-7513
         get_config_service.cache_clear()

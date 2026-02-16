@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from adcm.dependencies import prepare_container
 from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
@@ -25,6 +24,7 @@ from rest_framework.status import (
 )
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.utils.di import prepare_container
 
 
 class TestBundleAudit(BaseAPITestCase):

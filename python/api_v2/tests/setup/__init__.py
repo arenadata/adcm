@@ -9,17 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from dishka.integrations.base import wrap_injection
-
-# todo need typing, see dishka integrations
-
-
-def container_from_request(*args):
-    # args will be tuple with two items, where first is self, second is request
-    # so we get second and extract container from it
-    return args[0][1].container
-
-
-def inject(func):
-    return wrap_injection(func=func, is_async=False, container_getter=container_from_request)

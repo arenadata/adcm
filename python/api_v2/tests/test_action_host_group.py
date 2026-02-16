@@ -18,7 +18,6 @@ from operator import itemgetter
 from cm.converters import model_to_core_type, orm_object_to_core_type
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.models import Action, ActionHostGroup, Cluster, Component, ConcernItem, Host, Service, TaskLog
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import CoreObjectDescriptor
 from rbac.models import Role
 from rbac.services.group import create
@@ -954,16 +953,16 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                 ConcernItem.objects.all().delete()
                 TaskLog.objects.all().delete()
 
-                with RunTaskMock() as run_task:
-                    response = self.client.v2[action_run_target, "actions", action, "run"].post(
-                        data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
-                    )
+                response = self.client.v2[action_run_target, "actions", action, "run"].post(
+                    data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
+                )
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
                 with self.subTest(f"[{message_name}] Run SUCCESS"):
-                    self.assertIsNotNone(run_task.target_task)
-                    self.assertEqual(run_task.target_task.task_object, action_run_target)
+                    task_id = self.task_runner.expect_task_launched().id
+                    task = TaskLog.objects.get(id=task_id)
+                    self.assertEqual(task.task_object, action_run_target)
 
                 with self.subTest(f"[{message_name}] Run Audit SUCCESS"):
                     self.check_last_audit_record(
@@ -1023,7 +1022,7 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
 
                 with self.subTest(f"[{message_name}] Finish Task Audit SUCCESS"):
-                    run_task.run()
+                    self.task_runner.run_launched_task()
 
                     self.check_last_audit_record(
                         operation_name=f"{action.display_name} action completed",
@@ -1042,16 +1041,15 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
         self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
         action = Action.objects.get(prototype=self.cluster.prototype, name="allowed_in_group_1")
 
-        with RunTaskMock() as run_task:
-            response = self.client.v2[group, "actions", action, "run"].post(
-                data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
-            )
-            self.assertEqual(response.status_code, HTTP_200_OK)
-            run_task.target_task.refresh_from_db()
+        response = self.client.v2[group, "actions", action, "run"].post(
+            data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        task_id = self.task_runner.expect_task_launched().id
 
-            response = self.client.v2[run_task.target_task, "logs", "download"].get()
+        response = (self.client.v2 / "tasks" / task_id / "logs" / "download").get()
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
 
 class TestActionHostGroupRBAC(CommonActionHostGroupTest):
@@ -1234,7 +1232,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                         response = self.user_client.v2[group, "actions", action].get()
                         self.assertEqual(response.status_code, HTTP_200_OK)
 
-                    with self.subTest(f"[{type_name}] RUN Action With Run Perms"), RunTaskMock():
+                    with self.subTest(f"[{type_name}] RUN Action With Run Perms"):
                         response = self.user_client.v2[group, "actions", action, "run"].post(
                             data={"configuration": {"config": {"val": 2}, "adcmMeta": {}}}
                         )
@@ -1316,11 +1314,10 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
             action = Action.objects.get(prototype=self.component.prototype, name="allowed_from_component")
-            with RunTaskMock():
-                response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post(
-                    data={"configuration": {"config": {"val": 3}, "adcmMeta": {}}}
-                )
-                self.assertEqual(response.status_code, HTTP_200_OK)
+            response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post(
+                data={"configuration": {"config": {"val": 3}, "adcmMeta": {}}}
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
         ConcernItem.objects.all().delete()
         TaskLog.objects.all().delete()

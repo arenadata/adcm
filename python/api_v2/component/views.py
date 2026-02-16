@@ -32,7 +32,6 @@ from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
@@ -94,6 +93,7 @@ from api_v2.utils.audit import (
     component_with_parents_specified_in_path_exists,
     parent_component_from_lookup,
 )
+from api_v2.utils.di import inject
 from api_v2.views import (
     ADCMGenericViewSet,
     ADCMReadOnlyModelViewSet,

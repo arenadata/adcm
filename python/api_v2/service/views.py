@@ -35,7 +35,6 @@ from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.mixins import (
     CreateModelMixin,
@@ -114,6 +113,7 @@ from api_v2.utils.audit import (
     set_service_name_from_object,
     set_service_names_from_request,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 

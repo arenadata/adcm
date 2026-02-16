@@ -25,7 +25,6 @@ from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog,
 from core.legacy.cluster.types import HostComponentEntry
 from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
-from infra.di.django import inject
 from infra.services import get_config_service
 from rbac.models import User
 from rest_framework.decorators import action
@@ -46,6 +45,7 @@ from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRet
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
 from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 

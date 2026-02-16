@@ -18,7 +18,6 @@ from cm.models import ADCM, ConfigLog
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from dishka import FromDishka
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -36,6 +35,7 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.utils.audit import adcm_audit_object
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 

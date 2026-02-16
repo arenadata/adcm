@@ -19,6 +19,7 @@ from ansible_plugin.base import (
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
+    get_main_providers,
 )
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
@@ -36,8 +37,6 @@ from core.types import CoreObjectDescriptor
 from django.conf import settings
 import yaml
 import dishka
-
-from adcm.dependencies import prepare_container
 
 Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
 
@@ -57,7 +56,7 @@ class ADCMAnsiblePluginTestMixin:
         `call_context` can be either a context dict (with `type` and `*_id` fields)
         or a job (`Job`, `JobLog` or job's id as `int`) based on which this function will build context.
         """
-        di_container = prepare_container()
+        di_container = dishka.make_container(*get_main_providers())
         with di_container(scope=dishka.Scope.REQUEST) as container:
             arguments = call_arguments
             if isinstance(arguments, str):

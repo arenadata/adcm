@@ -24,14 +24,16 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin
+from api_v2.tests.setup.base import BaseAPITestCase
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
 
 
 class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHelpers):
     def setUp(self) -> None:
+        super().setUp()
+
         get_config_service.cache_clear()
-        self.client.login(username="admin", password="admin")
 
         suffix = uuid4().hex[:8]
         cluster_bundle = self.test_bundles_dir / "wizard_action"

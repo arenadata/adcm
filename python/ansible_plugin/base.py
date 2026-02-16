@@ -17,7 +17,7 @@ from typing import Any, Callable, Collection, Generic, Literal, Mapping, ParamSp
 import fcntl
 import traceback
 
-from adcm.dependencies import prepare_container
+from application.di.containers import get_main_providers
 from cm.errors import AdcmEx
 import dishka
 
@@ -595,7 +595,7 @@ class ADCMAnsiblePlugin(ActionBase):
         with (settings.RUN_DIR / str(task_vars["job"]["id"]) / "config.json").open(encoding="utf-8") as file:
             fcntl.flock(file.fileno(), fcntl.LOCK_EX)
 
-            di_container = prepare_container()
+            di_container = dishka.make_container(*get_main_providers())
             with di_container(scope=dishka.Scope.REQUEST) as container:
                 executor = self._get_executor(tmp=tmp, task_vars=task_vars, container=container)
                 execution_result = executor.execute()
