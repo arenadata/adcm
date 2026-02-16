@@ -24,8 +24,7 @@ from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import adjust_denied_on_404_result
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
-from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
-from cm.services.action_host_group import (
+from cm.legacy.services.action_host_group import (
     ActionHostGroupRepo,
     ActionHostGroupService,
     CreateDTO,
@@ -33,6 +32,7 @@ from cm.services.action_host_group import (
     HostError,
     NameCollisionError,
 )
+from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
@@ -386,7 +386,7 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         if "action_host_group_pk" not in self.kwargs:
             return None
 
-        parent = super().get_parent_object()
+        parent = super().get_parent_object(ignore_groups=True)
 
         return (
             ActionHostGroup.objects.prefetch_related("object__prototype")

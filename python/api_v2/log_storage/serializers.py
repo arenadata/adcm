@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from contextlib import suppress
+from pathlib import Path
+from typing import Protocol
 import json
 
 from adcm import settings
 from ansible_plugin.utils import get_checklogs_data_by_job_id
-from cm.log import extract_log_content_from_fs
 from cm.models import LogStorage
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
@@ -71,3 +72,18 @@ class LogStorageSerializer(ModelSerializer):
                 content = json.dumps(custom_content)
 
         return content or ""
+
+
+class BasicLogInfo(Protocol):
+    job_id: int
+    name: str
+    type: str
+    format: str
+
+
+def extract_log_content_from_fs(jobs_dir: Path, log_info: BasicLogInfo) -> str | None:
+    logfile = jobs_dir / f"{log_info.job_id}" / f"{log_info.name}-{log_info.type}.{log_info.format}"
+    if logfile.exists():
+        return logfile.read_text(encoding="utf-8")
+
+    return None

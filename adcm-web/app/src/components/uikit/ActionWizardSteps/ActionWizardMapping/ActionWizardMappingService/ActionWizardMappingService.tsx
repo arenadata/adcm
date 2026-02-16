@@ -1,10 +1,5 @@
 import type { ServiceProps } from '@pages/cluster/ClusterMapping/ComponentsMapping/Service/Service';
-import type {
-  AdcmHostComponentMapRuleAction,
-  AdcmHostShortView,
-  AdcmMappingComponent,
-  AdcmMappingComponentService,
-} from '@models/adcm';
+import type { AdcmHostComponentMapRuleAction, AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
 import cn from 'classnames';
 import { useMemo } from 'react';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
@@ -16,26 +11,10 @@ import {
 } from '@commonComponents/DynamicActionDialog/DynamicActionSteps/DynamicActionHostMapping/DynamicActionHostMapping.utils';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import s from './ActionWizardMappingService.module.scss';
-import type { AdcmActionProcessMappingStepRules } from '@models/adcm/wizard';
+import type { ComponentAvailabilityErrors, ComponentMapping } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 
-const getComponentMapActions = (
-  rules: { operation: AdcmHostComponentMapRuleAction; component: string; service: string }[],
-  service: AdcmMappingComponentService,
-  component: AdcmMappingComponent,
-) => {
-  const result = new Set<AdcmHostComponentMapRuleAction>();
-
-  for (const rule of rules) {
-    if (rule.service === service.name && rule.component === component.name) {
-      result.add(rule.operation);
-    }
-  }
-
-  return result;
-};
-
-interface ActionServiceProps extends Omit<ServiceProps, 'onInstallServices'> {
-  rules: AdcmActionProcessMappingStepRules[];
+interface ActionServiceProps extends Omit<ServiceProps, 'onInstallServices' | 'componentsMapping'> {
+  componentsMapping: (ComponentMapping & { allowedActions: Set<AdcmHostComponentMapRuleAction> })[];
   initiallyMappedHosts: Record<number, Set<number>>;
   onInstallServices?: (component: AdcmMappingComponent) => void;
   isReadOnly?: boolean;
@@ -52,7 +31,6 @@ const ActionWizardMappingService = ({
   onMap,
   onUnmap,
   onInstallServices,
-  rules,
   initiallyMappedHosts,
   isReadOnly = false,
 }: ActionServiceProps) => {
@@ -75,27 +53,22 @@ const ActionWizardMappingService = ({
         <MarkerIcon type={markerType} variant="square" size="medium" />
       </Text>
       {filteredComponentsMapping.map((componentMapping) => {
-        const allowActions = getComponentMapActions(rules, service, componentMapping.component);
-        const componentMappingErrors = mappingErrors[componentMapping.component.id];
+        const component = componentMapping.component;
+        const componentMappingErrors = mappingErrors[component.id];
+        const allowActions = componentMapping.allowedActions;
 
-        const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
+        const checkWizardComponentMappingAvailability = (
+          component: AdcmMappingComponent,
+        ): ComponentAvailabilityErrors => {
           return checkComponentActionsMappingAvailability(component, allowActions);
         };
 
-        const checkHostMappingAvailability = (host: AdcmHostShortView) => {
-          return checkHostActionsMappingAvailability(
-            host,
-            allowActions,
-            initiallyMappedHosts[componentMapping.component.id],
-          );
+        const checkWizardHostMappingAvailability = (host: AdcmHostShortView): string | undefined => {
+          return checkHostActionsMappingAvailability(host, allowActions, initiallyMappedHosts[component.id]);
         };
 
-        const checkHostUnmappingAvailability = (host: AdcmHostShortView) => {
-          return checkHostActionsUnmappingAvailability(
-            host,
-            allowActions,
-            initiallyMappedHosts[componentMapping.component.id],
-          );
+        const checkWizardHostUnmappingAvailability = (host: AdcmHostShortView): string | undefined => {
+          return checkHostActionsUnmappingAvailability(host, allowActions, initiallyMappedHosts[component.id]);
         };
 
         return (
@@ -108,9 +81,9 @@ const ActionWizardMappingService = ({
             onMap={onMap}
             onUnmap={onUnmap}
             onInstallServices={onInstallServices}
-            checkComponentMappingAvailability={checkComponentMappingAvailability}
-            checkHostMappingAvailability={checkHostMappingAvailability}
-            checkHostUnmappingAvailability={checkHostUnmappingAvailability}
+            checkComponentMappingAvailability={checkWizardComponentMappingAvailability}
+            checkHostMappingAvailability={checkWizardHostMappingAvailability}
+            checkHostUnmappingAvailability={checkWizardHostUnmappingAvailability}
             isReadOnly={isReadOnly}
           />
         );

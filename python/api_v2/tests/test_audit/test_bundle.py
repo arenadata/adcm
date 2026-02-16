@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from adcm.dependencies import prepare_container
 from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
@@ -28,6 +29,8 @@ from api_v2.tests.base import BaseAPITestCase
 
 class TestBundleAudit(BaseAPITestCase):
     def setUp(self) -> None:
+        # TODO: ADCM-7513
+        prepare_container.cache_clear()
         self.client.login(username="admin", password="admin")
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)

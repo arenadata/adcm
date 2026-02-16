@@ -16,10 +16,10 @@ from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
+from cm.legacy.services.job.context import get_inventory_data
+from cm.legacy.upgrade import _update_before_upgrade, bundle_switch
 from cm.models import Action, Component, ObjectType, Prototype, Service, Upgrade
-from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.upgrade import _update_before_upgrade, bundle_switch
 
 
 class TestBeforeUpgrade(BaseInventoryTestCase):
@@ -41,8 +41,8 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.cluster_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "cluster_1_upgrade"))
         self.provider_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "provider_upgrade"))
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=None)
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=None)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=None)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=None)
         self.service_two_components = None
         self.component_1 = None
         self.component_2 = None
@@ -81,7 +81,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "before_upgrade_2_hosts.json.j2",
                 {
                     "host_1_id": self.host_1.pk,
+                    "host_1_uuid": self.host_1.uuid,
                     "host_2_id": self.host_2.pk,
+                    "host_2_uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -98,6 +100,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "before_upgrade_1_host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -113,6 +116,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "before_upgrade_1_host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -186,24 +190,29 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "before_upgrade_cluster.json.j2",
-                {"object_name": self.cluster_1.name, "id": self.cluster_1.id},
+                {"object_name": self.cluster_1.name, "id": self.cluster_1.id, "uuid": self.cluster_1.uuid},
             ),
             ("vars", "services"): (
                 self.templates_dir / "before_upgrade_service_two_components.json.j2",
                 {
                     "service_id": self.service_two_components.pk,
+                    "service_uuid": self.service_two_components.uuid,
                     "component_1_id": self.component_1.pk,
+                    "component_1_uuid": self.component_1.uuid,
                     "component_2_id": self.component_2.pk,
+                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
         }

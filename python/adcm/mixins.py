@@ -14,6 +14,7 @@ from typing import TypeAlias, overload
 
 from cm.models import (
     ADCM,
+    ActionHostGroup,
     Cluster,
     Component,
     ConfigHostGroup,
@@ -24,7 +25,7 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | Provider | Host | ADCM
+ParentObject: TypeAlias = ActionHostGroup | ConfigHostGroup | Cluster | Service | Component | Provider | Host | ADCM
 
 
 class GetParentObjectMixin:
@@ -42,16 +43,18 @@ class GetParentObjectMixin:
     def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
         ...
 
-    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
+    def get_parent_object(self, raise_: Exception | None = None, ignore_groups: bool = False) -> ParentObject | None:
         try:
-            return self._get_parent_object_unsafe()
+            return self._get_parent_object_unsafe(ignore_groups=ignore_groups)
         except ObjectDoesNotExist as e:
             if raise_:
                 raise raise_ from e
 
             return None
 
-    def _get_parent_object_unsafe(self) -> ParentObject:
+    def _get_parent_object_unsafe(self, ignore_groups: bool) -> ParentObject:
+        parent_object = None
+
         if all(lookup in self.kwargs for lookup in ("component_pk", "service_pk", "cluster_pk")):
             parent_object = Component.objects.select_related(
                 "prototype", "cluster__prototype", "service__prototype"
@@ -82,11 +85,19 @@ class GetParentObjectMixin:
         elif "provider_pk" in self.kwargs:
             parent_object = Provider.objects.select_related("prototype").get(pk=self.kwargs["provider_pk"])
 
-        if "config_host_group_pk" in self.kwargs and parent_object:
-            parent_object = ConfigHostGroup.objects.get(
-                pk=self.kwargs["config_host_group_pk"],
-                object_id=parent_object.pk,
-                object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
-            )
+        if not ignore_groups and parent_object:
+            if "config_host_group_pk" in self.kwargs:
+                parent_object = ConfigHostGroup.objects.get(
+                    pk=self.kwargs["config_host_group_pk"],
+                    object_id=parent_object.pk,
+                    object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
+                )
+
+            elif "action_host_group_pk" in self.kwargs:
+                parent_object = ActionHostGroup.objects.get(
+                    pk=self.kwargs["action_host_group_pk"],
+                    object_id=parent_object.pk,
+                    object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
+                )
 
         return parent_object

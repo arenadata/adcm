@@ -11,8 +11,10 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.adcm_config.config import get_main_info
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.config import get_main_info
+from cm.legacy.upgrade import get_upgrade
+from cm.legacy.validators import ClusterUniqueValidator, StartMidEndValidator
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -23,8 +25,6 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.upgrade import get_upgrade
-from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import DictField

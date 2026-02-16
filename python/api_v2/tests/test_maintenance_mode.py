@@ -36,7 +36,7 @@ class TestMMActions(BaseAPITestCase):
 
         provider_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider")
         provider = self.add_provider(bundle=provider_bundle, name="provider", description="provider")
-        self.host = self.add_host(bundle=provider_bundle, provider=provider, fqdn="host")
+        self.host = self.add_host(provider=provider, fqdn="host")
 
     def _do_change_mm_request(
         self, obj: Host | Service | Component, failed_job: FailedJobInfo | None = None

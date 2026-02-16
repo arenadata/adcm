@@ -46,11 +46,11 @@ class BaseClusterCHGTestCase(BaseAPITestCase):
             description="test description",
         )
         self.host_fqdn = "host"
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn=self.host_fqdn)
+        self.host = self.add_host(provider=self.provider, fqdn=self.host_fqdn)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.cluster_1_host_group.hosts.add(self.host)
         self.new_host_fqdn = "new_host"
-        self.new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn=self.new_host_fqdn)
+        self.new_host = self.add_host(provider=self.provider, fqdn=self.new_host_fqdn)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
@@ -74,13 +74,9 @@ class BaseServiceCHGTestCase(BaseClusterCHGTestCase):
             object_id=self.service_2.pk,
         )
         self.service_1_host_group.hosts.add(self.host)
-        self.host_for_service = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_service"
-        )
+        self.host_for_service = self.add_host(provider=self.provider, fqdn="host_for_service")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
-        self.host_in_cluster = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_in_cluster", cluster=self.cluster_1
-        )
+        self.host_in_cluster = self.add_host(provider=self.provider, fqdn="host_in_cluster", cluster=self.cluster_1)
 
         self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
@@ -560,9 +556,7 @@ class TestComponentCHG(BaseServiceCHGTestCase):
             object_id=self.component_2.pk,
         )
 
-        self.host_for_component = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_component"
-        )
+        self.host_for_component = self.add_host(provider=self.provider, fqdn="host_for_component")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
         self.set_hostcomponent(
             cluster=self.cluster_1, entries=[(self.host, self.component_1), (self.host_for_component, self.component_1)]
@@ -806,8 +800,8 @@ class TestComponentCHG(BaseServiceCHGTestCase):
 class TestProviderCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host")
-        self.new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="new-host")
+        self.host = self.add_host(provider=self.provider, fqdn="host")
+        self.new_host = self.add_host(provider=self.provider, fqdn="new-host")
         self.host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
             object_type=ContentType.objects.get_for_model(self.provider),

@@ -15,22 +15,28 @@ from pathlib import Path
 import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
-from core.job.types import HcAclRule, TaskMappingDelta
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
+from core.legacy.job.types import HcAclRule, TaskMappingDelta
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK
 
-from cm.api import add_service_to_cluster
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
-from cm.services.job.run._target_factories import (
+from cm.legacy.api import add_service_to_cluster
+from cm.legacy.services.job.run._target_factories import (
     internal_script_hc_apply,
     prepare_ansible_environment,
 )
-from cm.services.job.run.repo import JobRepoImpl
+from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -261,11 +267,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
-                url=settings.CONSUL_URL,
-                datacenter=settings.CONSUL_DATACENTER,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_cert_file=settings.CONSUL_CLIENT_KEY_FILE,
+                url=settings.CONSUL_URL, datacenter=settings.CONSUL_DATACENTER, cacert_file=settings.CONSUL_CACERT_FILE
             ),
         )
 

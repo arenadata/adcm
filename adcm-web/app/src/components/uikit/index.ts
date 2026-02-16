@@ -43,6 +43,7 @@ import type { SelectOption } from '@uikit/Select/Select.types';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { BaseStatus } from '@uikit/Statusable/Statusable.types';
 import Switch from './Switch/Switch';
+import ExpandableSwitch from './Switch/ExpandableSwitch';
 import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
@@ -64,6 +65,7 @@ import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
 import ActionMenu from './ActionMenu/ActionMenu';
 import EllipsedTextTableCell from './Table/TableCell/EllipsedTextTableCell';
 import WarningMessage from './WarningMessage/WarningMessage';
+import MiniMap from '@uikit/MiniMap/MiniMap';
 
 export {
   ActionMenu,
@@ -98,6 +100,7 @@ export {
   LabeledField,
   MarkerIcon,
   MarkedList,
+  MiniMap,
   type MarkerIconType,
   MultiSelectList,
   MultiSelectPanel,
@@ -119,6 +122,7 @@ export {
   Statusable,
   type BaseStatus,
   Switch,
+  ExpandableSwitch,
   Table,
   TableRow,
   EllipsedTextTableCell,

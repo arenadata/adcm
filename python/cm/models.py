@@ -21,9 +21,9 @@ import signal
 import os.path
 
 from adcm.feature_flags import use_new_config_processing
-from core.action.process.types import ProcessState, ProcessStepState
-from core.job.types import ScriptType
-from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor
+from core.legacy.action.process.types import ProcessState, ProcessStepState
+from core.legacy.job.types import ScriptType
+from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -33,9 +33,10 @@ from django.db.models import QuerySet
 from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+import core
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 
 
@@ -167,6 +168,7 @@ class Bundle(ADCMModel):
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
     signature_status = models.CharField(max_length=10, choices=SignatureStatus, default=SignatureStatus.ABSENT)
+    contract_version = models.CharField(max_length=10, default="1.0")
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
@@ -287,6 +289,7 @@ class ConfigLog(ADCMModel):
     attr = models.JSONField(default=dict)
     date = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True)
+    created_by = models.CharField(blank=True, max_length=255)
 
     __error_code__ = "CONFIG_NOT_FOUND"
 
@@ -1399,6 +1402,10 @@ class TaskLog(ADCMModel):
     executor = models.JSONField(default=dict)
     is_blocking = models.BooleanField(default=True)
     process = models.JSONField(null=True, default=None)
+
+    # default for name is made for tasks that have no action after bundle is deleted
+    name = models.CharField(max_length=1200, default="-")
+    display_name = models.CharField(max_length=1200, default="-")
     description = models.CharField(max_length=255, blank=True, default="")
 
     """
@@ -1678,18 +1685,27 @@ class HostInfo(models.Model):
         ]
 
 
+ProcessTypeChoices = tuple((st.value, st.value) for st in core.action.wizard.StepType)
 ProcessStateChoices = tuple((state.value, state.value) for state in ProcessState)
 ProcessStepStateChoices = tuple((state.value, state.value) for state in ProcessStepState)
 DEFAULT_PROCESS_STATE = ProcessState.CREATED.value
 DEFAULT_PROCESS_STEP_STATE = ProcessStepState.CREATED.value
 
 
+PROCESS_TARGET_TYPE_CHOICES = [(i.value, i.value) for i in ADCMCoreType] + [
+    (i.value, i.value) for i in ExtraActionTargetType
+]
+PROCESS_OWNER_TYPE_CHOICES = [
+    (i.value, i.value) for i in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
+]
+
+
 class Process(models.Model):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField(default=0)
-    object_type = models.CharField(
-        max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
-    )
+    target_id = models.PositiveIntegerField(default=0)
+    target_type = models.CharField(max_length=100, choices=PROCESS_TARGET_TYPE_CHOICES, null=True)
+    owner_id = models.PositiveIntegerField(default=0)
+    owner_type = models.CharField(max_length=100, choices=PROCESS_OWNER_TYPE_CHOICES, null=True)
     current_step = models.OneToOneField(
         "ProcessStep", on_delete=models.SET_NULL, null=True, related_name="current_for_process"
     )
@@ -1708,6 +1724,10 @@ class Process(models.Model):
 
 class ProcessStep(models.Model):
     process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name="steps")
+    # those defaults are dangerous if we don't invalidate processes between upgrades
+    # => process may be retrieved + for type it's anyway incorrect
+    type = models.CharField(max_length=50, choices=ProcessTypeChoices, default="")
+    stage = models.CharField(max_length=150, default="")
     name = models.CharField(max_length=150)
     display_name = models.CharField(max_length=150)
     step_spec = models.JSONField(null=True)

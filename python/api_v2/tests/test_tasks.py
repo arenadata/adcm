@@ -15,8 +15,9 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
-from cm.api import delete_service
 from cm.converters import model_name_to_core_type
+from cm.legacy.api import delete_service
+from cm.legacy.services.job.action import prepare_task_for_action
 from cm.models import (
     ADCM,
     Action,
@@ -29,13 +30,12 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.services.job.action import prepare_task_for_action
 from cm.tests.mocks.task_runner import RunTaskMock
-from core.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
-from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 import pytz
 
 from api_v2.tests.base import BaseAPITestCase
@@ -50,10 +50,10 @@ class TestTask(BaseAPITestCase):
 
         self.adcm = ADCM.objects.first()
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
+        self.component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
-        component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
+        component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=self.component_1.prototype).first()
         cluster_object = CoreObjectDescriptor(id=self.cluster_1.pk, type=ADCMCoreType.CLUSTER)
         self.cluster_task = TaskLog.objects.get(
             id=prepare_task_for_action(
@@ -74,12 +74,12 @@ class TestTask(BaseAPITestCase):
                 payload=TaskPayloadDTO(),
             ).id
         )
-        component_object = CoreObjectDescriptor(id=component_1.pk, type=ADCMCoreType.COMPONENT)
+        component_object = CoreObjectDescriptor(id=self.component_1.pk, type=ADCMCoreType.COMPONENT)
         self.component_task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=component_object,
-                orm_owner=component_1,
-                orm_target=component_1,
+                orm_owner=self.component_1,
+                orm_target=self.component_1,
                 action=component_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -110,7 +110,7 @@ class TestTask(BaseAPITestCase):
         filters = {
             "id": (task.pk, None, 0),
             "jobName": (task.action.display_name, task.action.display_name[1:-7].upper(), "wrong"),
-            "objectName": (self.cluster_1.name, self.cluster_1.name[1:-7].upper(), "wrong"),
+            "objectName": (self.component_1.name, self.component_1.name[2:].upper(), "wrong"),
             "status": (task.status, None, "broken"),
         }
         exact_items_found, partial_items_found = 1, 1
@@ -140,11 +140,11 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(tasks[2]["id"], self.cluster_task.pk)
 
     def test_task_filter_by_job_name_and_object_name(self):
-        response = (self.client.v2 / "tasks").get(query={"jobName": "action", "objectName": "cluster"})
+        response = (self.client.v2 / "tasks").get(query={"jobName": "action", "objectName": "component"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.cluster_task.pk)
+        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
 
     def test_ordering_success(self):
         empty_task = TaskLog.objects.get(action=None)
@@ -294,6 +294,22 @@ class TestTask(BaseAPITestCase):
             service_admin_response = log_list_endpoint.get()
             self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
+    def test_adcm_5999_filter_by_deleted_object_name_success(self):
+        filter_value = self.component_1.name[3:]
+
+        response = (self.client.v2 / "tasks").get(query={"objectName": filter_value})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
+
+        response = self.client.v2[self.component_1.service].delete()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        response = (self.client.v2 / "tasks").get(query={"objectName": filter_value})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
+
 
 class TestTaskObjects(BaseAPITestCase):
     def setUp(self) -> None:
@@ -304,7 +320,7 @@ class TestTaskObjects(BaseAPITestCase):
 
         self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="just-host")
+        self.host = self.add_host(provider=self.provider, fqdn="just-host")
 
         self.add_host_to_cluster(self.cluster_1, self.host)
         HostComponent.objects.create(

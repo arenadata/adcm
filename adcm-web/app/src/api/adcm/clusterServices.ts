@@ -15,6 +15,9 @@ import type {
   AdcmDynamicActionDetails,
   AdcmDynamicActionRunConfig,
 } from '@models/adcm/dynamicAction';
+import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
+import { AdcmWizardApi } from '@api';
+import type { RequestOptions } from '@api/httpClient/HttpClient';
 
 export class AdcmClusterServicesApi {
   public static async getClusterServices(
@@ -91,5 +94,48 @@ export class AdcmClusterServicesApi {
     );
 
     return response.data;
+  }
+
+  // action wizard
+  public static async createServiceActionWizardProcess(clusterId: number, serviceId: number, actionId: number) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/processes/`;
+
+    return await AdcmWizardApi.createProcess(endpoint);
+  }
+
+  public static async getServiceActionWizardProcess(
+    clusterId: number,
+    serviceId: number,
+    actionId: number,
+    processId: number,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/processes/${processId}/`;
+
+    return await AdcmWizardApi.getProcess(endpoint);
+  }
+
+  public static async getServiceActionWizardStep(
+    clusterId: number,
+    serviceId: number,
+    actionId: number,
+    processId: number,
+    stepId: number,
+    options?: RequestOptions,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
+
+    return await AdcmWizardApi.getStep(endpoint, options);
+  }
+
+  public static async createServiceActionWizardOperation(
+    clusterId: number,
+    serviceId: number,
+    actionId: number,
+    processId: number,
+    operation: AdcmWizardProcessOperationPayload,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/actions/${actionId}/processes/${processId}/operation/`;
+
+    return await AdcmWizardApi.postOperation(endpoint, operation);
   }
 }

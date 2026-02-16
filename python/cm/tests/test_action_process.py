@@ -13,29 +13,31 @@
 from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
-import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from core.types import ActionProcessID, ADCMCoreType, CoreObjectDescriptor
+from core.dynamic_bundle.render import BundleRenderer
+from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
+import core
 
-from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
-from cm.services.action_process import repo
-from cm.services.action_process.operations import (
+from cm.legacy.services.action_process import repo
+from cm.legacy.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
     initiate_process,
     submit_step,
 )
-from cm.services.action_process.schema_validation import (
+from cm.legacy.services.action_process.schema_validation import (
     Configuration,
     ProcessOperationType,
     SubmitConfigurationStepParams,
     SubmitStepPayload,
 )
-from cm.services.action_process.types import ProcessStepState
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.config._base import ConfigAttrPair
-from cm.services.job.run.repo import ActionRepoImpl
+from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.run.repo import ActionRepoImpl
+from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
+from cm.tests.dependencies import WithDishkaContainer
 
 StepName: TypeAlias = str
 
@@ -69,7 +71,13 @@ class TestActionProcessLogic(BaseTestCase):
                 }
             )
         process = Process.objects.create(
-            action=action, object_id=0, object_type=ADCMCoreType.CLUSTER, flow_spec=flow_spec, sync_key=uuid4()
+            action=action,
+            target_id=0,
+            target_type=ADCMCoreType.CLUSTER,
+            owner_id=0,
+            owner_type=ADCMCoreType.CLUSTER,
+            flow_spec=flow_spec,
+            sync_key=uuid4(),
         )
 
         steps_data = []
@@ -150,51 +158,67 @@ class TestActionProcessLogic(BaseTestCase):
             self.assertEqual(last_completed, steps_name_id_map["step_4"])
 
 
-class TestActionProcessContext(BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
-        from cm.services.job.inventory import get_action_process_context
+        from cm.legacy.services.job.context import get_action_process_context
 
         process = Process.objects.get(id=process_id)
         topology = retrieve_cluster_topology(cluster_id)
         return get_action_process_context(process=process, topology=topology).to_context()
 
-    @unittest.skip("ADCM-7359 Figure out action process package separation")
     def test_process_step_sequential_rendering(self):
         bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
         cluster = self.add_cluster(bundle=bundle, name="cc")
         object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
         action_info = ActionRepoImpl.get_action(id=action.pk)
-
-        process_id = initiate_process(object_=object_, action=action_info)
-
-        ctx = self.get_process_context(process_id, cluster.id)
-        self.assertIsNotNone(ctx["current"])
-        self.assertDictEqual(ctx["current"], {"stage": "first_stage", "step": "stage1_step1"})
-        self.assertDictEqual(
-            ctx["stages"], {f"{stage_name}_stage": {} for stage_name in ("first", "second", "third", "fourth")}
-        )
-
-        config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
-
-        process = repo.retrieve_process(process_id=process_id)
-        context = OperationContext(
-            object=object_,
+        process_context = ProcessContext(
             action=action_info,
-            config_processor=lambda _, config: ConfigAttrPair(config=config.config, attr=config.adcm_meta),
-        )
-        payload = SubmitStepPayload(
-            method=ProcessOperationType.SUBMIT,
-            params=SubmitConfigurationStepParams(
-                process_sync_key=process.sync_key,
-                step_id=process.current_step_id,
-                configuration=Configuration(config=config, adcm_meta={}),
-            ),
+            action_orm=action,
+            owner=object_,
+            owner_orm=cluster,
+            target=ActionTargetDescriptor(id=object_.id, type=object_.type),
+            target_orm=cluster,
         )
 
-        submit_step(process=process, payload=payload, context=context, new_process_sync_key=uuid4())
+        with self.container() as container:
+            bundle_renderer = container.get(BundleRenderer[ActionArgs, TaskArgs])
+            process_id = initiate_process(process_context=process_context, bundle_renderer=bundle_renderer)
+
+            ctx = self.get_process_context(process_id, cluster.id)
+            self.assertIsNotNone(ctx["current"])
+            self.assertDictEqual(ctx["current"], {"stage": "first_stage", "step": "stage1_step1"})
+            self.assertDictEqual(
+                ctx["stages"], {f"{stage_name}_stage": {} for stage_name in ("first", "second", "third", "fourth")}
+            )
+
+            config = {"integer_field": 4, "string_field": "ogo", "fl": "content", "g": {"pass": "whoami"}}
+
+            process = repo.retrieve_process(process_id=process_id)
+            context = OperationContext(
+                process_context=process_context,
+                config_processor=lambda x, _: core.config.Configuration(values=x.config),
+            )
+            payload = SubmitStepPayload(
+                method=ProcessOperationType.SUBMIT,
+                params=SubmitConfigurationStepParams(
+                    process_sync_key=process.sync_key,
+                    step_id=process.current_step_id,
+                    configuration=Configuration(config=config, adcm_meta={}),
+                ),
+            )
+
+            submit_step(
+                process=process,
+                payload=payload,
+                context=context,
+                new_process_sync_key=uuid4(),
+                config_service=container.get(core.config.ConfigService),
+                job_service=container.get(core.job.JobService),
+                bundle_renderer=bundle_renderer,
+            )
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertDictContainsSubset(

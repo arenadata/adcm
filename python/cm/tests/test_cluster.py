@@ -13,11 +13,11 @@
 import string
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from core.cluster.types import ClusterTopology, ComponentTopology, ServiceTopology
+from core.legacy.cluster.types import ClusterTopology, ComponentTopology, ServiceTopology
 from core.types import ShortObjectInfo
 
+from cm.legacy.services.cluster import retrieve_multiple_clusters_topology
 from cm.models import Bundle, Cluster, Prototype
-from cm.services.cluster import retrieve_multiple_clusters_topology
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 
 

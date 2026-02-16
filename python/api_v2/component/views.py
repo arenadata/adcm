@@ -25,12 +25,14 @@ from adcm.permissions import (
 from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Component, Host, Service
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.status.notify import update_mm_objects
+from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
@@ -43,6 +45,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import exclude_params, responses
 from api_v2.component.filters import ComponentFilter
@@ -183,7 +186,8 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
         component: Component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
         )
@@ -198,7 +202,9 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         serializer = self.get_serializer_class()(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        response: Response = get_maintenance_mode_response(obj=self.get_object(), serializer=serializer)
+        response: Response = get_maintenance_mode_response(
+            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+        )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
@@ -301,6 +307,21 @@ class ComponentActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
 
 @document_action_host_group_actions_viewset(object_type="component")
 class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
+    ...
+
+
+@document_action_process_viewset(
+    object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
+)
+@audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(
+    object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
+)
+class ComponentActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
     ...
 
 

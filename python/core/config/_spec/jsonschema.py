@@ -13,7 +13,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Collection, Generator, Literal, Mapping, Protocol, TypeAlias, TypedDict, Union
+from typing import Any, Callable, Generator, Literal, TypeAlias, TypedDict, Union
 import json
 
 from typing_extensions import NotRequired, Self
@@ -35,9 +35,7 @@ from core.config._spec.parameters import (
 )
 from core.config._spec.spec import FullSpec, HierarchyValidationRule, SpecHierarchyLevel
 from core.config._types import (
-    ConfigOwnerObjectInfo,
     Defaults,
-    ParameterFullName,
     ParameterLevelName,
 )
 
@@ -108,13 +106,6 @@ class OneOfWithDefaultNode(TypedDict):
 
 
 OptionalNode: TypeAlias = JSONSchemaNodeDict | OneOfWithDefaultNode
-
-
-class SchemaGenerationContext(Protocol):
-    is_group_config: bool
-    owner_info: ConfigOwnerObjectInfo
-    defaults: Mapping[ParameterFullName, Any]
-    variant_values: Mapping[ParameterFullName, Collection[str]]
 
 
 @dataclass(slots=True)
@@ -199,8 +190,8 @@ def _hierarchy_level_to_jsonschema(
                 if not group_spec.selection:
                     raise TypeError(f"Got group ({full_name}) without selection for rule {level.rule}")
 
-                if group_spec.selection.use_as_default is not None:
-                    schema["default"] = {"_selection": group_spec.selection.use_as_default}
+                if (default_selection := context.defaults.selection.get(full_name)) is not None:
+                    schema["default"] = {"_selection": default_selection}
                 else:
                     schema["default"] = None
 
@@ -242,7 +233,7 @@ def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -
         schema["type"] = type_
     elif isinstance(parameter, NumberParameter):
         schema["type"] = "number" if parameter.is_float else "integer"
-    schema["default"] = context.defaults.get(parameter.identifier.full)
+    schema["default"] = context.defaults.values.get(parameter.identifier.full)
 
     if context.is_group_config:
         desyncable = parameter.identifier.full in context.spec.attributes.desyncable_parameters
@@ -269,11 +260,14 @@ def _group_parameter_to_schema(group: ParameterGroup, context: _Context) -> JSON
     schema["additionalProperties"] = False
     schema["default"] = {}
 
-    if group.is_activatable:
+    if group.activation:
         schema["adcmMeta"]["activation"] = {"isAllowChange": not read_only}
         if context.is_group_config:
             is_allow_change = group.identifier.full in context.spec.attributes.desyncable_parameters
             schema["adcmMeta"]["synchronization"] = {"isAllowChange": is_allow_change}
+    elif group.selection and context.is_group_config:
+        # patch for UI to disallow change of selection group
+        schema["adcmMeta"]["synchronization"] = {"isAllowChange": False}
 
     return schema
 

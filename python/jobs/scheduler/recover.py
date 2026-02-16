@@ -12,7 +12,7 @@
 
 from functools import partial
 
-from core.job.types import ExecutionStatus
+from core.legacy.job.types import ExecutionStatus
 from core.types import ConcernID
 
 from jobs.scheduler import repo
@@ -61,8 +61,8 @@ def recover_statuses(tasks_filter: dict | None = None) -> None:
         env = task.worker.get("environment")
 
         if not env:
-            logger.warning(f"Task #{task.id} skipped, worker environment is not specified")
-            continue
+            logger.warning(f"Task #{task.id}: worker environment is not specified. Considering 'local', finalizing")
+            env = TaskRunnerEnvironment.LOCAL
 
         live_check_result: LiveCheckResult = LIVE_CHECKERS[env](task)
         if live_check_result.is_dead:

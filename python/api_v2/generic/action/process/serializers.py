@@ -12,13 +12,13 @@
 
 from typing import Any
 
-from cm.models import Process
-from cm.services.action_process.schema_validation import (
+from cm.legacy.services.action_process.schema_validation import (
     CompleteProcessPayload,
     OperationPayloadSchema,
     ResetStepPayload,
     SubmitStepPayload,
 )
+from cm.models import Process
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import (
@@ -36,32 +36,20 @@ class StepFromStageSerializer(Serializer):
     id = IntegerField()
     state = CharField()
     name = CharField()
-    display_name = CharField()
-    type = SerializerMethodField()
-
-    def get_type(self, data: dict) -> str:
-        if data.get("config_template"):
-            return "configuration"
-
-        if data.get("scripts_template"):
-            return "operation"
-
-        if data.get("hc_template"):
-            return "mapping"
-
-        raise ValueError(f"Unknown step type for {data.get('id')=} {data.get('display_name')=}")
+    display_name = CharField(source="extra.display_name")
+    type = CharField()
 
 
 class StageSerializer(Serializer):
     name = CharField()
-    display_name = CharField()
+    display_name = CharField(source="extra.display_name")
     steps = SerializerMethodField()
 
     def get_steps(self, data: dict) -> list[dict]:
         steps = data["steps"]
         for step in steps:
-            step["id"] = self.context["step_names_id_state_map"][step["name"], step["display_name"]][0]
-            step["state"] = self.context["step_names_id_state_map"][step["name"], step["display_name"]][1]
+            step["id"] = self.context["step_names_id_state_map"][step["name"], step["extra"]["display_name"]][0]
+            step["state"] = self.context["step_names_id_state_map"][step["name"], step["extra"]["display_name"]][1]
 
         return StepFromStageSerializer(sorted(steps, key=lambda x: x["id"]), many=True).data
 
@@ -135,4 +123,3 @@ class StepMappingSerializer(StepSerializer):
     rules = MappingRuleSerializer(many=True)
     delta = MappingDeltaSerializer(allow_null=True, default=None)
     cumulative_delta = MappingDeltaSerializer(allow_null=True, default=None)
-    # suggestions = MappingDeltaItemSerializer(many=True, required=False, default=list)

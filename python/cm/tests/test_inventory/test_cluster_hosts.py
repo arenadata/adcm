@@ -13,13 +13,13 @@
 
 from pathlib import Path
 
-from core.job.dto import TaskPayloadDTO
+from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
 
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.job.context import get_inventory_data
 from cm.models import Action
-from cm.services.job.action import prepare_task_for_action
-from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -46,6 +46,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -58,9 +59,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         )
 
     def test_add_1_host_on_cluster_actions(self):
-        host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
+        host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_host = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
@@ -74,12 +73,14 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -93,6 +94,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -112,12 +114,8 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_add_2_hosts_on_cluster_actions(self):
-        host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
-        host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_host_1 = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
@@ -132,18 +130,21 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("hosts", host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,
+                    "uuid": host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
         }
@@ -157,6 +158,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_1.pk,
+                    "uuid": host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -177,6 +179,7 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": host_2.pk,
+                    "uuid": host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -198,7 +201,7 @@ class TestClusterHosts(BaseInventoryTestCase):
 
     def test_adcm_5747_delete_service(self) -> None:
         service = self.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1).get()
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        host = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.components.first())])
 
         action = Action.objects.get(prototype=service.prototype, name="action_on_service")

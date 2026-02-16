@@ -1,15 +1,25 @@
 import { useMemo } from 'react';
 import { Text, MarkerIcon } from '@uikit';
 import ComponentContainer from '../ComponentContainer/ComponentContainer';
-import type { ComponentsMappingErrors, MappingFilter, ComponentMapping } from '../../ClusterMapping.types';
+import type {
+  ComponentsMappingErrors,
+  MappingFilter,
+  ComponentMapping,
+  InitiallyMappedHostsDictionary,
+} from '../../ClusterMapping.types';
 import type { AdcmHostShortView, AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
 import s from './Service.module.scss';
 import cn from 'classnames';
-import { checkComponentMappingAvailability, checkHostMappingAvailability } from '../../ClusterMapping.utils';
+import {
+  checkComponentMappingAvailability,
+  checkHostMappingAvailability,
+  checkHostUnmappingAvailability,
+} from '../../ClusterMapping.utils';
 
 export interface ServiceProps {
   service: AdcmMappingComponentService;
   componentsMapping: ComponentMapping[];
+  initiallyMappedHosts: InitiallyMappedHostsDictionary;
   hasErrors?: boolean;
   anchorId: string;
   hosts: AdcmHostShortView[];
@@ -23,6 +33,7 @@ export interface ServiceProps {
 const Service = ({
   service,
   componentsMapping,
+  initiallyMappedHosts,
   hasErrors,
   anchorId,
   hosts,
@@ -38,7 +49,7 @@ const Service = ({
 
   const markerType = !hasErrors ? 'check' : 'alert';
 
-  const filteredComponentsMapping = useMemo(() => {
+  const preparedComponentsMapping = useMemo(() => {
     return componentsMapping.filter((componentMapping) =>
       componentMapping.component.displayName.toLowerCase().includes(mappingFilter.componentDisplayName.toLowerCase()),
     );
@@ -50,7 +61,15 @@ const Service = ({
         {service.displayName}
         <MarkerIcon type={markerType} variant="square" size="medium" />
       </Text>
-      {filteredComponentsMapping.map((componentMapping) => {
+      {preparedComponentsMapping.map((componentMapping) => {
+        const checkHostAddingAvailability = (host: AdcmHostShortView) => {
+          return checkHostMappingAvailability(host, initiallyMappedHosts[componentMapping.component.id]);
+        };
+
+        const checkHostRemovingAvailability = (host: AdcmHostShortView) => {
+          return checkHostUnmappingAvailability(host, initiallyMappedHosts[componentMapping.component.id]);
+        };
+
         return (
           <ComponentContainer
             key={componentMapping.component.id}
@@ -62,8 +81,8 @@ const Service = ({
             onUnmap={onUnmap}
             onInstallServices={onInstallServices}
             checkComponentMappingAvailability={checkComponentMappingAvailability}
-            checkHostMappingAvailability={checkHostMappingAvailability}
-            checkHostUnmappingAvailability={checkHostMappingAvailability} // use same checks for unmapping as for mapping
+            checkHostMappingAvailability={checkHostAddingAvailability}
+            checkHostUnmappingAvailability={checkHostRemovingAvailability} // use same checks for unmapping as for mapping
           />
         );
       })}

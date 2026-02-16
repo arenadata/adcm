@@ -5,29 +5,29 @@ import IconButton from '@uikit/IconButton/IconButton';
 import cn from 'classnames';
 import s from './CommonSelectField.module.scss';
 
-type CommonSelectFieldProps = Omit<InputProps, 'endAdornment' | 'startAdornment' | 'readOnly' | 'onClick'> & {
+type CommonSelectFieldProps = Omit<
+  InputProps,
+  'endAdornment' | 'startAdornment' | 'readOnly' | 'onClick' | 'customContent'
+> & {
   onClick: () => void;
   isOpen: boolean;
+  customValueRender?: React.ReactNode;
 };
 
 const CommonSelectField = React.forwardRef<HTMLInputElement, CommonSelectFieldProps>(
-  ({ className, onClick, isOpen, ...props }, ref) => {
+  ({ className, onClick, isOpen, customValueRender, ...props }, ref) => {
     const classes = cn(className, s.commonSelectField, { 'is-active': isOpen });
-    const handleClick = () => {
-      onClick?.();
-    };
+
     return (
-      <>
-        <Input
-          //
-          {...props}
-          className={classes}
-          endAdornment={<IconButton icon="chevron" onClick={handleClick} size={12} />}
-          readOnly={true}
-          onClick={handleClick}
-          ref={ref}
-        />
-      </>
+      <Input
+        {...props}
+        className={classes}
+        endAdornment={<IconButton icon="chevron" onClick={onClick} size={12} />}
+        readOnly={true}
+        onClick={onClick}
+        ref={ref}
+        customContent={customValueRender}
+      />
     );
   },
 );

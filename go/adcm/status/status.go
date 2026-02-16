@@ -76,6 +76,7 @@ type statusChangePayload struct {
 	LastName        string                     `json:"lastName,omitempty"`
 	Email           string                     `json:"email,omitempty"`
 	IsSuperUser     bool                       `json:"isSuperUser,omitempty"`
+	CreatedBy       string                     `json:"createdBy,omitempty"`
 }
 
 type statusChangeReasonPayload struct {

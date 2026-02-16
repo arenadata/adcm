@@ -8,6 +8,7 @@ import ConfigurationSubHeader from '@commonComponents/configuration/Configuratio
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import { useClusterConfigGroupConfiguration } from './useClusterConfigGroupConfiguration';
 import { useClusterConfigGroupConfigurationsCompare } from './useClusterConfigGroupConfigurationsCompare';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ClusterConfigGroupConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -53,11 +54,13 @@ const ClusterConfigGroupConfiguration: React.FC = () => {
 
       <ConfigurationFormContextProvider>
         <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
-        />
+        <ConfigurationMinimap>
+          <ConfigurationMain
+            isLoading={isConfigurationLoading}
+            configuration={selectedConfiguration}
+            onChangeConfiguration={setDraftConfiguration}
+          />
+        </ConfigurationMinimap>
       </ConfigurationFormContextProvider>
     </div>
   );

@@ -3,6 +3,7 @@ import AddClusterServiceDialog from '@pages/cluster/ClusterServices/ClusterServi
 import DeleteClusterServiceDialog from './DeleteClusterServiceDialog/DeleteClusterServiceDialog';
 import ClusterServiceDynamicActionDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServiceDynamicActionDialog/ClusterServiceDynamicActionDialog';
 import ClusterServicesMaintenanceModeDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServiceActionsDialogs/ClusterServicesMaintenanceModeDialog/ClusterServicesMaintenanceModeDialog';
+import ClusterServicesActionWizardDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServicesDynamicActionWizardDialog/ClusterServicesDynamicActionWizardDialog';
 
 const ClusterServiceActionsDialogs: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ const ClusterServiceActionsDialogs: React.FC = () => {
       <DeleteClusterServiceDialog />
       <ClusterServicesMaintenanceModeDialog />
       <ClusterServiceDynamicActionDialog />
+      <ClusterServicesActionWizardDialog />
     </>
   );
 };

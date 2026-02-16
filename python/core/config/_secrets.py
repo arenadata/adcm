@@ -28,12 +28,9 @@ class AnsibleSecrets:
     def is_encrypted(self, value: str) -> bool:
         return value.startswith(self._encrypted_header)
 
-    def decrypt(self, value: str) -> str | None:
+    def decrypt(self, value: str) -> str:
         """
         Decrypt string value if it's ansible encypted, otherwise return value itself.
-
-        Avoid using this method directly, unless you know what you're doing:
-        `reveal_secrets` is prefferred.
         """
 
         if not self.is_encrypted(value):
@@ -44,8 +41,18 @@ class AnsibleSecrets:
         decrypted = self._vault.decrypt(b_vaulttext=ciphertext, secret=self._secret)
 
         if decrypted is None:
-            # for some cases Ansible decryption may return `None` as a valid value
-            return decrypted
+            # If I understood correctly, result of vault decrypt will be None only when both are true:
+            # - PYCRYPTO is used instead of CRYPTOGRAPHY
+            # - HMAC digest is not equal to expected one
+            #
+            # Since we use cryptography, it's not our case AND branch with PYCRYPTO returns UNKNOWN,
+            # which most likely is `bytes`, yet it's not typed.
+            #
+            # Based on these two points, I decided to raise exception, because masking it is potentially dangerous.
+
+            # value is expected to be decrypted, so it's safe to put it to message
+            message = f"Decryption failed due to vault.decrypt returned `None` for {value}"
+            raise RuntimeError(message)
 
         return decrypted.decode("utf-8")
 

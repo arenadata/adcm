@@ -20,12 +20,18 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
 )
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import JobLog
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
-from core.job.executors import Executor as JobExecutor
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
-from core.job.types import Job
+from core.legacy.job.executors import Executor as JobExecutor
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
+from core.legacy.job.types import Job
 from core.types import CoreObjectDescriptor
 from django.conf import settings
 import yaml
@@ -61,10 +67,8 @@ class ADCMAnsiblePluginTestMixin:
                 integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
                 consul=ConsulSettings(
                     url=settings.CONSUL_URL,
-                    client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                    client_cacert_file=settings.CONSUL_CACERT_FILE,
-                    client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
                     datacenter=settings.CONSUL_DATACENTER,
+                    cacert_file=settings.CONSUL_CACERT_FILE,
                 ),
             )
 

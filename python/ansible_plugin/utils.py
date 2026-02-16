@@ -18,7 +18,7 @@ import json
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
-from cm.adcm_config.config import get_option_value
+from cm.legacy.adcm_config.config import get_option_value
 from cm.models import (
     CheckLog,
     Cluster,

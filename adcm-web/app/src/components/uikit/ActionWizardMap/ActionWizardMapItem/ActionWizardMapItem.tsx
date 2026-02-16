@@ -10,15 +10,16 @@ import {
 import { AdcmWizardStepType } from '@models/adcm/wizard';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import cn from 'classnames';
-import { useDispatch, useStore } from '@hooks';
-import { setSelectedStepId } from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import type { AdcmJob } from '@models/adcm';
 import { isStepFailed } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
-import { setBrokenStepError } from '@store/adcm/clusters/clustersWizardSlice';
 
 interface MapItemStagesProps {
   process: AdcmActionWizardProcess;
+  jobsData: AdcmWizardJobsData;
+  selectedStep: number;
+  onSetBrokenStepError: (error?: string) => void;
+  onSetSelectedStepId: (id: number) => void;
 }
 
 const isStageActiveWithError = (
@@ -81,11 +82,13 @@ const stepClassName = (step: AdcmActionProcessStep, currentStep: number, isValid
   });
 };
 
-const MapItemStages: React.FC<MapItemStagesProps> = ({ process }: MapItemStagesProps) => {
-  const dispatch = useDispatch();
-  const selectedStep = useStore((s) => s.adcm.clustersWizardActions.selectedStepId);
-  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
-
+const MapItemStages: React.FC<MapItemStagesProps> = ({
+  process,
+  selectedStep,
+  jobsData,
+  onSetBrokenStepError,
+  onSetSelectedStepId,
+}: MapItemStagesProps) => {
   const { isValid } = useActionWizardValidationContext();
   const currentStep = selectedStep ?? process?.currentStep;
 
@@ -100,8 +103,8 @@ const MapItemStages: React.FC<MapItemStagesProps> = ({ process }: MapItemStagesP
       return null;
     }
 
-    dispatch(setBrokenStepError(undefined));
-    dispatch(setSelectedStepId(stage.steps[0]?.id));
+    onSetBrokenStepError(undefined);
+    onSetSelectedStepId(stage.steps[0]?.id);
   };
 
   return (
@@ -120,7 +123,14 @@ const MapItemStages: React.FC<MapItemStagesProps> = ({ process }: MapItemStagesP
             <div className={s.mapItem__title}>{stage.displayName}</div>
           </div>
           {stage.steps && stage.steps.length > 1 && (
-            <MapItemSteps steps={stage.steps} stageIndex={index + 1} process={process} />
+            <MapItemSteps
+              steps={stage.steps}
+              stageIndex={index + 1}
+              process={process}
+              jobsData={jobsData}
+              onSetBrokenStepError={onSetBrokenStepError}
+              onSetSelectedStepId={onSetSelectedStepId}
+            />
           )}
         </React.Fragment>
       ))}
@@ -134,18 +144,25 @@ interface ActionWizardStepListProps {
   steps: AdcmActionProcessStep[];
   stageIndex: number;
   process: AdcmActionWizardProcess;
+  jobsData: AdcmWizardJobsData;
+  onSetBrokenStepError: (error?: string) => void;
+  onSetSelectedStepId: (id: number) => void;
 }
 
-const MapItemSteps: React.FC<ActionWizardStepListProps> = ({ steps, stageIndex, process }) => {
-  const dispatch = useDispatch();
-  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
-
+const MapItemSteps: React.FC<ActionWizardStepListProps> = ({
+  steps,
+  stageIndex,
+  process,
+  jobsData,
+  onSetBrokenStepError,
+  onSetSelectedStepId,
+}) => {
   const { isValid } = useActionWizardValidationContext();
 
   const handleSwitchStep = (step: AdcmActionProcessStep) => {
     if (step.state === AdcmWizardStepStates.Broken || step.id > process?.currentStep) return null;
-    dispatch(setBrokenStepError(undefined));
-    dispatch(setSelectedStepId(step.id));
+    onSetBrokenStepError(undefined);
+    onSetSelectedStepId(step.id);
   };
 
   return (

@@ -28,7 +28,10 @@ import type {
   ComponentMappingErrors,
   ComponentDependencyMappingErrors,
   ComponentAvailabilityErrors,
+  InitiallyMappedHostsDictionary,
+  InitiallyMappedComponentsDictionary,
 } from './ClusterMapping.types';
+import type { SortParams } from '@models/table.ts';
 
 export const getComponentsMapping = (
   mapping: AdcmMapping[],
@@ -59,6 +62,7 @@ export const getHostsMapping = (
   mapping: AdcmMapping[],
   hosts: AdcmHostShortView[],
   componentsDictionary: Record<ComponentId, AdcmMappingComponent>,
+  sortParams?: SortParams,
 ): HostMapping[] => {
   const hostComponentsDictionary: Record<HostId, AdcmMappingComponent[]> = {};
 
@@ -74,10 +78,29 @@ export const getHostsMapping = (
     components: hostComponentsDictionary[host.id] ?? [],
   }));
 
+  if (sortParams?.sortBy === 'name') {
+    result.forEach(({ components }) => {
+      components.sort((a, b) => {
+        return componentsMappingSortByName(a, b);
+      });
+      if (sortParams.sortDirection === 'desc') {
+        components.reverse();
+      }
+    });
+
+    result.sort((a, b) => {
+      return a.host.name.localeCompare(b.host.name);
+    });
+  }
+
+  if (sortParams?.sortDirection === 'desc') {
+    result.reverse();
+  }
+
   return result;
 };
 
-export const getServicesMapping = (componentMapping: ComponentMapping[]): ServiceMapping[] => {
+export const getServicesMapping = (componentMapping: ComponentMapping[], sortParams?: SortParams): ServiceMapping[] => {
   const servicesDictionary: Record<ServiceId, AdcmMappingComponentService> = {};
   const serviceComponentsDictionary: Record<ServiceId, ComponentMapping[]> = {};
 
@@ -95,6 +118,25 @@ export const getServicesMapping = (componentMapping: ComponentMapping[]): Servic
       service,
       componentsMapping: serviceComponentsDictionary[service.id],
     });
+  }
+
+  if (sortParams?.sortBy === 'name') {
+    result.forEach(({ componentsMapping }) => {
+      componentsMapping.sort((a, b) => {
+        return componentsMappingSortByName(a.component, b.component);
+      });
+      if (sortParams.sortDirection === 'desc') {
+        componentsMapping.reverse();
+      }
+    });
+
+    result.sort((a, b) => {
+      return a.service.displayName.localeCompare(b.service.displayName);
+    });
+  }
+
+  if (sortParams?.sortDirection === 'desc') {
+    result.reverse();
   }
 
   return result;
@@ -379,8 +421,7 @@ const isMandatoryComponent = (componentMapping: ComponentMapping) => {
 };
 
 export const checkComponentMappingAvailability = (component: AdcmMappingComponent): ComponentAvailabilityErrors => {
-  const isAvailable =
-    component.service.state === AdcmEntitySystemState.Created && component.maintenanceMode === AdcmMaintenanceMode.Off;
+  const isAvailable = component.service.state === AdcmEntitySystemState.Created;
 
   const result: ComponentAvailabilityErrors = {
     componentNotAvailableError: !isAvailable
@@ -391,7 +432,55 @@ export const checkComponentMappingAvailability = (component: AdcmMappingComponen
   return result;
 };
 
-export const checkHostMappingAvailability = (host: AdcmHostShortView): string | undefined => {
+export const checkHostMappingAvailability = (
+  host: AdcmHostShortView,
+  initiallyMappedHosts: Set<HostId> = new Set(),
+): string | undefined => {
+  // always allow revert removable INCLUDES to initial hosts
+  if (initiallyMappedHosts.has(host.id)) return undefined;
+
   const isAvailable = host.maintenanceMode === AdcmMaintenanceMode.Off;
   return !isAvailable ? 'Maintenance mode on the host must be Off' : undefined;
+};
+
+export const checkHostUnmappingAvailability = (
+  _host: AdcmHostShortView,
+  _initiallyMappedHosts: Set<HostId> = new Set(),
+): string | undefined => {
+  // always allow revert removable INCLUDES to initial hosts
+  // if (initiallyMappedHosts.has(host.id)) return undefined;
+
+  // now we can unmap host without constraints
+  return undefined;
+};
+
+export const componentsMappingSortByName = (a: AdcmMappingComponent, b: AdcmMappingComponent) =>
+  a.displayName.localeCompare(b.displayName);
+
+export const getInitiallyMappedHostsDictionary = (mapping: AdcmMapping[]) => {
+  const result: InitiallyMappedHostsDictionary = {};
+
+  for (const m of mapping) {
+    if (result[m.componentId] === undefined) {
+      result[m.componentId] = new Set();
+    }
+
+    result[m.componentId].add(m.hostId);
+  }
+
+  return result;
+};
+
+export const getInitiallyMappedComponentsDictionary = (mapping: AdcmMapping[]) => {
+  const result: InitiallyMappedComponentsDictionary = {};
+
+  for (const m of mapping) {
+    if (result[m.hostId] === undefined) {
+      result[m.hostId] = new Set();
+    }
+
+    result[m.hostId].add(m.componentId);
+  }
+
+  return result;
 };

@@ -27,3 +27,38 @@ class TestBugs(TestCase):
         result = renderer.render({"value": ["10.12.40.30"]})
 
         self.assertEqual(result, [{"default": ["10.12.40.30"]}])
+
+
+class TestJinja2Renderer(TestCase):
+    def setUp(self):
+        self.context = {"value": "test ' test"}
+
+    def test_render_jinja2(self):
+        template = Path(__file__).parent / "files" / "jinja2" / "ADCM-7423.j2"
+        renderer = TemplateRendererJinja2(
+            args=TemplateFile(path=template), env=RendererEnv(discovery_root=template.parent)
+        )
+
+        result = renderer.render(self.context)
+
+        self.assertEqual(result, [{"name": "test ' test"}])
+
+    def test_render_html(self):
+        template = Path(__file__).parent / "files" / "html" / "ADCM-7423.html"
+        renderer = TemplateRendererJinja2(
+            args=TemplateFile(path=template), env=RendererEnv(discovery_root=template.parent)
+        )
+
+        result = renderer.render(self.context)
+
+        self.assertEqual(result, "<h1>test &#39; test</h1>")
+
+    def test_render_yaml(self):
+        template = Path(__file__).parent / "files" / "yaml" / "ADCM-7423.yaml"
+        renderer = TemplateRendererJinja2(
+            args=TemplateFile(path=template), env=RendererEnv(discovery_root=template.parent)
+        )
+
+        result = renderer.render(self.context)
+
+        self.assertEqual(result, [{"name": "test ' test"}])

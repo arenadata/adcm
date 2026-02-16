@@ -108,7 +108,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
             filename = f"{job_pk}-{log_storage.name}.{log_storage.format}"
 
         filename = re.sub(r"\s+", "_", filename)
-        mime_type = "text/plain" if log_storage.format == "txt" else "application/json"
+        mime_type = "text/plain" if log_storage.format == "txt" else "use_cases/json"
 
         if log_storage.body is None:
             file_path = Path(

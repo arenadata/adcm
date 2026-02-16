@@ -5,6 +5,7 @@ import ConfigurationSubHeader from '@commonComponents/configuration/Configuratio
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import { useServiceComponentConfigGroupConfiguration } from './useServiceComponentConfigGroupConfiguration';
 import { useServiceComponentConfigGroupConfigurationsCompare } from './useServiceComponentConfigGroupConfigurationsCompare';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ServiceComponentConfigGroupConfiguration: React.FC = () => {
   const {
@@ -33,11 +34,13 @@ const ServiceComponentConfigGroupConfiguration: React.FC = () => {
 
       <ConfigurationFormContextProvider>
         <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
-        />
+        <ConfigurationMinimap>
+          <ConfigurationMain
+            isLoading={isConfigurationLoading}
+            configuration={selectedConfiguration}
+            onChangeConfiguration={setDraftConfiguration}
+          />
+        </ConfigurationMinimap>
       </ConfigurationFormContextProvider>
     </div>
   );

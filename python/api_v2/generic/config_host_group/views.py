@@ -13,8 +13,8 @@
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_HOST_GROUP_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
+from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
-from cm.status_api import send_object_update_event
 from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -32,6 +32,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
 )
+import core
 
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config_host_group.filters import CHGFilter
@@ -88,11 +89,14 @@ class CHGViewSet(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        host_group = ConfigHostGroup.objects.create(
-            object_type=ContentType.objects.get_for_model(model=parent_object),
-            object_id=parent_object.pk,
-            **serializer.validated_data,
-        )
+        try:
+            host_group = ConfigHostGroup.objects.create(
+                object_type=ContentType.objects.get_for_model(model=parent_object),
+                object_id=parent_object.pk,
+                **serializer.validated_data,
+            )
+        except core.config.ObjectWithoutConfigError as e:
+            raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR") from e
 
         re_apply_object_policy(apply_object=parent_object)
 

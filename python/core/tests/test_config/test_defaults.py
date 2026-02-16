@@ -18,9 +18,8 @@ Initial imports made from bundle_alt, because code was placed there waiting for 
 
 from unittest import TestCase
 
-from core.bundle_alt._config import check_default_values_in_main_config
-from core.bundle_alt.types import ConfigParamPlainSpec
 from core.errors import ConfigValueError
+from core.legacy.bundle_alt._config import ConfigParamPlainSpec, check_default_values_in_main_config
 
 
 def make_spec(**kwargs) -> ConfigParamPlainSpec:

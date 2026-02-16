@@ -16,16 +16,20 @@ import json
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from application.dto import RunActionDTO
-from application.migration.job.schedule import schedule_task
-from infra.services import get_config_service, get_job_service
+from use_cases.dto import RunActionDTO
 
 from cm.models import Action, Component
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 
 
 class TestEffectsOfADCMAnsiblePlugins(
-    TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BusinessLogicMixin, ADCMAnsiblePluginTestMixin
+    WithDishkaContainer,
+    TestCaseWithCommonSetUpTearDown,
+    ParallelReadyTestCase,
+    BusinessLogicMixin,
+    ADCMAnsiblePluginTestMixin,
 ):
     def setUp(self) -> None:
         super().setUp()
@@ -38,8 +42,8 @@ class TestEffectsOfADCMAnsiblePlugins(
         self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Just Cluster")
 
         self.provider = self.add_provider(bundle=self.provider_bundle, name="Just HP")
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()
@@ -75,14 +79,9 @@ class TestEffectsOfADCMAnsiblePlugins(
                 change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}
             )
         ) as run_task:
-            schedule_task(
-                action_orm=Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps"),
-                target=self.cluster,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            action = Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps")
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=self.cluster, payload=RunActionDTO())
 
         self.assertIsNotNone(run_task.target_task)
         run_task.runner.run(task_id=run_task.target_task.pk)

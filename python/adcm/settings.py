@@ -29,7 +29,7 @@ API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
 BASE_DIR = Path(BASE_DIR) if BASE_DIR else Path(__file__).absolute().parent.parent.parent
 
-STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
+STACK_DIR = Path(os.getenv("ADCM_STACK_DIR", BASE_DIR))
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
 DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
@@ -91,6 +91,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "adcm.dependencies.DishkaMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -114,7 +115,7 @@ CSP_FRAME_ANCESTORS = ["'none'"]
 
 ROOT_URLCONF = "adcm.urls"
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
@@ -383,6 +384,7 @@ SPECTACULAR_SETTINGS = {
         "RoleTypeEnum": "rbac.models.RoleTypes",
     },
     "GENERIC_ADDITIONAL_PROPERTIES": None,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }
 
 USERNAME_MAX_LENGTH = 150
@@ -396,9 +398,8 @@ TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
 
 ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=2)
 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 CONSUL_URL = os.getenv("CONSUL_URL")
 CONSUL_DATACENTER = os.getenv("CONSUL_DATACENTER")
 CONSUL_CACERT_FILE = os.getenv("CONSUL_CACERT_FILE")
-CONSUL_CLIENT_CERT_FILE = os.getenv("CONSUL_CLIENT_CERT_FILE")
-CONSUL_CLIENT_KEY_FILE = os.getenv("CONSUL_CLIENT_KEY_FILE")

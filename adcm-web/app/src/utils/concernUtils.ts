@@ -1,6 +1,8 @@
 import type { AdcmConcerns, AdcmConcernServicePlaceholder } from '@models/adcm/concern';
 import { AdcmConcernPlaceholderType } from '@models/adcm/concern';
 import { generatePath } from 'react-router-dom';
+import qs from 'qs';
+import { searchParamActionId } from '@constants';
 
 export interface ConcernObjectPathsData {
   path?: string;
@@ -21,9 +23,10 @@ const concernPlaceholderTypeUrlDict: Record<string, string> = {
   [AdcmConcernPlaceholderType.Job]: '/jobs/:taskId/', // backend sends taskId as jobId
   [AdcmConcernPlaceholderType.Prototype]: '',
   [AdcmConcernPlaceholderType.Adcm]: '',
-  [AdcmConcernPlaceholderType.Cluster]: '/clusters/:clusterId/',
-  [AdcmConcernPlaceholderType.Service]: '/clusters/:clusterId/services/:serviceId/',
-  [AdcmConcernPlaceholderType.Component]: '/clusters/:clusterId/services/:serviceId/components/:componentId/',
+  [AdcmConcernPlaceholderType.Cluster]: '/clusters/:clusterId/overview',
+  [AdcmConcernPlaceholderType.Service]: '/clusters/:clusterId/services/:serviceId/primary-configuration',
+  [AdcmConcernPlaceholderType.Component]:
+    '/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration',
   [AdcmConcernPlaceholderType.Host]: '/hosts/:hostId/',
   [AdcmConcernPlaceholderType.Provider]: '/hostproviders/:providerId/',
 };
@@ -33,6 +36,15 @@ interface ConcernObjectData {
   isDeletable: boolean;
   concernData: ConcernObjectPathsData[];
 }
+
+const addQueryParamsToPath = (path: string, params: Record<string, string | number>): string => {
+  const [basePath, existingQuery] = path.split('?');
+  const existingParams = existingQuery ? qs.parse(existingQuery) : {};
+  const mergedParams = { ...existingParams, ...params };
+  const queryString = qs.stringify(mergedParams);
+
+  return queryString ? `${basePath}?${queryString}` : basePath;
+};
 
 export const getConcernLinkObjectPathsDataArray = (concerns?: AdcmConcerns[]): Array<ConcernObjectData> => {
   if (!concerns?.length) return [];
@@ -53,11 +65,21 @@ export const getConcernLinkObjectPathsDataArray = (concerns?: AdcmConcerns[]): A
 
     Object.entries(concern.reason.placeholder).forEach(([key, placeholderItem]) => {
       const generatedPath = generatePath(concernPlaceholderTypeUrlDict[placeholderItem.type], placeholderItem.params);
-      const clusterServiceId = (placeholderItem as AdcmConcernServicePlaceholder).params.serviceId;
-      const path =
-        placeholderItem.type === AdcmConcernPlaceholderType.ClusterImport && clusterServiceId
-          ? `${generatedPath}/services/?serviceId=${clusterServiceId}`
-          : generatedPath;
+
+      let path = generatedPath;
+
+      if (placeholderItem.type === AdcmConcernPlaceholderType.ClusterImport) {
+        const clusterServiceId = (placeholderItem as AdcmConcernServicePlaceholder).params.serviceId;
+        if (clusterServiceId !== undefined) {
+          path = addQueryParamsToPath(`${generatedPath}/services/`, { serviceId: clusterServiceId });
+        }
+      }
+
+      const actionId = placeholderItem.params.actionId;
+      if (actionId !== undefined) {
+        path = addQueryParamsToPath(path, { [searchParamActionId]: actionId });
+      }
+
       linksDataMap.set(key, {
         path,
         text: placeholderItem.name,

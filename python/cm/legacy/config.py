@@ -42,6 +42,6 @@ def init_object_config(proto: Prototype, obj: MainObject) -> ObjectConfig | None
 
         return None
 
-    from cm.adcm_config.config import init_object_config as init_object_config_old
+    from cm.legacy.adcm_config.config import init_object_config as init_object_config_old
 
     return init_object_config_old(proto, obj)

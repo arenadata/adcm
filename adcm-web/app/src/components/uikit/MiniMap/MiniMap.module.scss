@@ -1,0 +1,86 @@
+.minimapContainer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 176px;
+  gap: 32px;
+}
+
+.minimapContentWrapper {
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0; // important style. Without this style we catch horizontal scrollbar on configurations (with long text fields)
+}
+
+.minimap {
+  position: sticky;
+  top: 0;
+  right: 0;
+  width: 176px;
+  height: fit-content;
+  text-align: right;
+
+  &_wrapper {
+    width: 100%;
+    padding: 16px;
+    top: 0;
+    right: 0;
+    overflow: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    border-radius: 12px;
+    border: 1px solid var(--borders-br-main);
+    box-sizing: border-box;
+    height: 100%;
+    overflow-x: hidden;
+    position: relative;
+    backdrop-filter: blur(10px);
+    min-height: 42px;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &_contentWrapper {
+    overflow: hidden;
+  }
+
+  &_content {
+    transform: scale(0.23);
+    transform-origin: 0 0;
+    min-width: max-content;
+    user-select: none;
+  }
+
+  &_cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    user-select: none;
+  }
+
+  &_caret {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid var(--main-colors-color-hight-contrast);
+    height: 10px;
+    width: calc(100% - 32px);
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  &_button {
+    margin-bottom: 8px;
+    height: 32px;
+    width: 32px;
+
+    svg {
+      height: 16px;
+      width: 16px;
+    }
+  }
+}

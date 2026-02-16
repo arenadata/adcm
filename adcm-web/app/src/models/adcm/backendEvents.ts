@@ -18,6 +18,9 @@ export type CreateConfigEvent = {
     | 'create_host_config';
   object: {
     id: number;
+    changes: {
+      createdBy: string;
+    };
   };
 };
 

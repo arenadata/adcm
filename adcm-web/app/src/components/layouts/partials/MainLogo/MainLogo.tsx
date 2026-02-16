@@ -14,7 +14,7 @@ interface MainLogoProps extends Omit<HTMLAttributes<HTMLAnchorElement>, 'childre
 const MainLogo: React.FC<MainLogoProps> = ({ className, isSmall = false, ...otherProps }) => {
   const Logo = isSmall ? MiniLogo : FullLogo;
   return (
-    <Link to="/" className={cn(s.mainLogo, className)} {...otherProps}>
+    <Link to="/" className={cn(s.mainLogo, { [s.mainLogo_small]: isSmall }, className)} {...otherProps}>
       <Logo />
     </Link>
   );

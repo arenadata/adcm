@@ -13,10 +13,13 @@
 from functools import cache
 import json
 
-from cm.config.repo import ConfigRepo
-from cm.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.job.repo import JobRepo
+from cm.impl.config.repo import ConfigRepo
+from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
+from cm.impl.job.repo import JobRepo
+from cm.impl.wizard.repo import WizardRepo
+from core.settings import Directories, Settings
 import core
+import yaml
 
 
 @cache
@@ -41,10 +44,16 @@ def get_config_service():
 
     validators = core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
     # shouldn't work like that, but no other way for now
-    settings_ = core.config.Settings(directories=core.config.Directories(files=settings.FILE_DIR))
+    settings_ = _get_settings()
+
+    yspec_schema = yaml.safe_load((settings.CODE_DIR / "cm" / "yspec_schema.yaml").read_text())
 
     return core.config.ConfigService(
-        repo=repo, secrets=secrets_service, settings=settings_, variant_validators=validators
+        repo=repo,
+        secrets=secrets_service,
+        directories=settings_.directories,
+        variant_validators=validators,
+        yspec_schema=yspec_schema,
     )
 
 
@@ -53,3 +62,20 @@ def get_job_service():
     repo = JobRepo()
 
     return core.job.JobService(repo=repo)
+
+
+@cache
+def get_wizard_service():
+    settings_ = _get_settings()
+
+    repo = WizardRepo()
+
+    return core.action.wizard.WizardService(repo=repo, directories=settings_.directories)
+
+
+def _get_settings() -> Settings:
+    from django.conf import settings
+
+    return Settings(
+        directories=Directories(files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR)
+    )

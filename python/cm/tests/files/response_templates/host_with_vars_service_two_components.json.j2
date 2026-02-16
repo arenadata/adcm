@@ -8,6 +8,7 @@
     "value3"
   ],
   "adcm_hostid": {{ adcm_hostid }},
+  "uuid": "{{ uuid }}",
   "state": "created",
   "multi_state": [],
   "cluster": {
@@ -23,6 +24,7 @@
     },
     "name": "cluster",
     "id": {{ cluster_id }},
+    "uuid": "{{ cluster_uuid }}",
     "version": "1.0",
     "edition": "community",
     "state": "created",
@@ -34,6 +36,7 @@
   "services": {
     "service_two_components": {
       "id": {{ service_id }},
+      "uuid": "{{ service_uuid }}",
       "version": "1.0",
       "state": "created",
       "multi_state": [],
@@ -54,6 +57,7 @@
       },
       "component_1": {
         "component_id": {{ component_1_id }},
+        "uuid": "{{ component_1_uuid }}",
         "config": {
           "integer": {{ component_1_config_integer | default(10) }},
           "password": "password",
@@ -74,6 +78,7 @@
       },
       "component_2": {
         "component_id": {{ component_2_id }},
+        "uuid": "{{ component_2_uuid }}",
         "config": {
           "integer": {{ component_2_config_integer | default(10) }},
           "password": "password",

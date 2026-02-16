@@ -71,7 +71,9 @@
     }
 
     &:autofill {
+      -webkit-text-fill-color: var(--field-color-primary);
       background: transparent;
+      caret-color: var(--field-color-primary);
     }
   }
 

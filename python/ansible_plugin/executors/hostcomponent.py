@@ -13,10 +13,10 @@
 from collections import defaultdict
 from typing import Any, Collection, Literal
 
-from cm.api import get_hc
+from cm.legacy.api import get_hc
+from cm.legacy.services.mapping import change_host_component_mapping
 from cm.models import Cluster, Component, Host, JobLog
-from cm.services.mapping import change_host_component_mapping
-from core.job.types import TaskMappingDelta
+from core.legacy.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
 

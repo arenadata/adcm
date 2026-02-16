@@ -11,20 +11,21 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm
-from cm.adcm_config.config import init_object_config
-from cm.api import check_license
+from cm.legacy.adcm_config.config import init_object_config
+from cm.legacy.api import check_license
+from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
+from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.status.notify import reset_hc_map
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
-from cm.services.concern.cases import recalculate_own_concerns_on_add_hosts
-from cm.services.concern.distribution import distribute_concern_from_provider_to_host
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.status.notify import reset_hc_map
-from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core.types import ADCMCoreType, BundleID, ProviderID
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
@@ -68,7 +69,7 @@ def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster
     return host
 
 
-def maintenance_mode(request: Request, host: Host) -> Response:
+def maintenance_mode(request: Request, host: Host, schedule_task: ScheduleTask) -> Response:
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
 
     serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)
@@ -83,7 +84,7 @@ def maintenance_mode(request: Request, host: Host) -> Response:
             status=HTTP_409_CONFLICT,
         )
 
-    response = get_maintenance_mode_response(obj=host, serializer=serializer)
+    response = get_maintenance_mode_response(obj=host, serializer=serializer, schedule_task=schedule_task)
     if response.status_code == HTTP_200_OK:
         response.data = serializer.data
 

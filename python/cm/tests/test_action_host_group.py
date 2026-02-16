@@ -13,25 +13,31 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from application.dto import RunActionDTO
-from application.migration.job.schedule import schedule_task
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
-from infra.services import get_config_service, get_job_service
+from use_cases.dto import RunActionDTO
+from use_cases.transition.job.schedule import ScheduleTask
 
 from cm.errors import AdcmEx
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
+from cm.legacy.services.job.context import get_inventory_data
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Action, ActionHostGroup, Component
-from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.jinja_env import get_env_for_jinja_scripts
-from cm.services.job.inventory import get_inventory_data
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
 
 
-class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
+class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -40,8 +46,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
@@ -69,11 +75,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
-                url=settings.CONSUL_URL,
-                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
-                datacenter=settings.CONSUL_DATACENTER,
+                url=settings.CONSUL_URL, datacenter=settings.CONSUL_DATACENTER, cacert_file=settings.CONSUL_CACERT_FILE
             ),
         )
 
@@ -91,14 +93,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action = Action.objects.get(prototype=self.cluster.prototype, name="dummy")
 
         with RunTaskMock() as run_task:
-            schedule_task(
-                action_orm=action,
-                target=self.action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=self.action_group, payload=RunActionDTO())
 
         task = run_task.target_task
         self.assertEqual(task.task_object, self.action_group)
@@ -138,14 +134,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with RunTaskMock() as run_task:
-            schedule_task(
-                action_orm=action,
-                target=action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
         result_env = get_env_for_jinja_scripts(task=run_task.target_task)
 
@@ -169,14 +159,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with RunTaskMock() as run_task:
-            schedule_task(
-                action_orm=action,
-                target=action_group,
-                payload=RunActionDTO(),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
 
         task = JobRepoImpl.get_task(run_task.target_task.id)
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
@@ -190,10 +174,8 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                 integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
                 consul=ConsulSettings(
                     url=settings.CONSUL_URL,
-                    client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                    client_cacert_file=settings.CONSUL_CACERT_FILE,
-                    client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
                     datacenter=settings.CONSUL_DATACENTER,
+                    cacert_file=settings.CONSUL_CACERT_FILE,
                 ),
             ),
             topology=retrieve_cluster_topology(self.cluster.pk),

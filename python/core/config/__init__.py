@@ -15,6 +15,7 @@ from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
 from core.config import _pattern as pattern
+from core.config._errors import DefaultFileMissingError, ConfigOperationError
 from core.config._config import (
     flat_to_nested,
     get_by_full_name,
@@ -31,20 +32,20 @@ from core.config._types import (
     ConfigFlatValues,
     ConfigOwner,
     HostGroupConfigOwner,
-    ConfigOwnerObjectInfo,
     ConfigValues,
     Configuration,
-    ConfigurationWithID,
+    ConfigurationWithInfo,
     Defaults,
     FlatConfiguration,
     ParameterFullName,
     ParameterLevelName,
     EncryptFunc,
     DecryptFunc,
+    ConfigurationExtraInfo,
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
-from core.config._service import ConfigService, Settings, Directories, VariantValidators, OperationError
+from core.config._service import ConfigService, VariantValidators
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError, ObjectDiscoveryError
 
 __all__ = [
@@ -53,15 +54,14 @@ __all__ = [
     "ConfigAttrs",
     "ConfigFlatValues",
     "ConfigOwner",
-    "ConfigOwnerObjectInfo",
     "ConfigRepoI",
     "ConfigService",
     "ConfigValues",
     "Configuration",
-    "ConfigurationWithID",
+    "ConfigurationWithInfo",
     "DecryptFunc",
+    "DefaultFileMissingError",
     "Defaults",
-    "Directories",
     "EncryptFunc",
     "FlatConfiguration",
     "HostGroupConfigOwner",
@@ -69,11 +69,10 @@ __all__ = [
     "NoConfigError",
     "ObjectDiscoveryError",
     "ObjectWithoutConfigError",
-    "OperationError",
+    "ConfigOperationError",
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",
-    "Settings",
     "Validators",
     "VariantValidator",
     "VariantValidators",
@@ -91,4 +90,5 @@ __all__ = [
     "secrets",
     "set_by_full_name",
     "spec",
+    "ConfigurationExtraInfo",
 ]

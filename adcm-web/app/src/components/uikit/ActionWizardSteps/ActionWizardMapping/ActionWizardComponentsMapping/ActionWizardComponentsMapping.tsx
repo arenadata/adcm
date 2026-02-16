@@ -6,6 +6,8 @@ import ActionWizardMappingService from '@uikit/ActionWizardSteps/ActionWizardMap
 import AnchorBar from '@uikit/AnchorBar/AnchorBar';
 import s from './ActionWizardComponentsMapping.module.scss';
 import type { AdcmActionProcessMappingStepRules } from '@models/adcm/wizard';
+import type { SortDirection } from '@models/table.ts';
+import { sortExtendedActionWizardServicesMapping } from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMapping.utils.ts';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
@@ -13,7 +15,9 @@ export interface ActionComponentsMappingProps extends Omit<ComponentsMappingProp
   rules: AdcmActionProcessMappingStepRules[];
   initiallyMappedHosts: Record<number, Set<number>>;
   clusterId: number | null;
+  onClose: () => void;
   isReadOnly?: boolean;
+  sortDirection: SortDirection;
 }
 
 const ActionWizardComponentsMapping = ({
@@ -21,38 +25,43 @@ const ActionWizardComponentsMapping = ({
   servicesMapping,
   rules,
   initiallyMappedHosts,
+  onClose,
   isReadOnly = false,
+  sortDirection,
   ...restProps
 }: ActionComponentsMappingProps) => {
+  const sortingServiceMapping = useMemo(() => {
+    return sortExtendedActionWizardServicesMapping(servicesMapping, rules, sortDirection);
+  }, [servicesMapping, rules, sortDirection]);
+
   const anchorItems: AnchorBarItem[] = useMemo(
     () =>
-      servicesMapping.map((m) => ({
+      sortingServiceMapping.map((m) => ({
         label: m.service.displayName,
         id: buildServiceAnchorId(m.service.id),
       })),
-    [servicesMapping],
+    [sortingServiceMapping],
   );
 
   return (
     <div className={s.componentsMapping}>
       <div data-test="mapping-container">
-        {servicesMapping.map(({ service, componentsMapping, hasErrors }) => (
+        {sortingServiceMapping.map(({ service, componentsMapping, hasErrors }) => (
           <ActionWizardMappingService
             key={service.id}
             service={service}
             componentsMapping={componentsMapping}
             hasErrors={hasErrors}
             anchorId={buildServiceAnchorId(service.id)}
-            rules={rules}
             initiallyMappedHosts={initiallyMappedHosts}
             isReadOnly={isReadOnly}
             {...restProps}
           />
         ))}
-        {servicesMapping.length === 0 && (
+        {sortingServiceMapping.length === 0 && (
           <div>
             Add services on the{' '}
-            <Link className="text-link" to={`/clusters/${clusterId}/services`}>
+            <Link className="text-link" to={`/clusters/${clusterId}/services`} onClick={onClose}>
               services page
             </Link>
           </div>

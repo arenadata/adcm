@@ -8,6 +8,8 @@ import {
   mapHostsToComponent,
   mapComponentsToHost,
   validate,
+  getInitiallyMappedHostsDictionary,
+  getInitiallyMappedComponentsDictionary,
 } from './ClusterMapping.utils';
 import type {
   MappingFilter,
@@ -52,20 +54,18 @@ export const useClusterMapping = (
   );
 
   const hostsMapping: HostMapping[] = useMemo(() => {
-    const result = isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : [];
-    result.sort((a, b) => a.host.name.localeCompare(b.host.name));
-    if (mappingSortDirection === 'desc') {
-      result.reverse();
-    }
-    return result;
+    if (!isLoaded) return [];
+
+    return getHostsMapping(localMapping, hosts, componentsDictionary, {
+      sortBy: 'name',
+      sortDirection: mappingSortDirection,
+    });
   }, [hosts, componentsDictionary, isLoaded, localMapping, mappingSortDirection]);
 
   const servicesMapping: ServiceMapping[] = useMemo(() => {
-    const result = isLoaded ? getServicesMapping(componentsMapping) : [];
-    if (mappingSortDirection === 'desc') {
-      result.reverse();
-    }
-    return result;
+    if (!isLoaded) return [];
+
+    return getServicesMapping(componentsMapping, { sortBy: 'name', sortDirection: mappingSortDirection });
   }, [isLoaded, componentsMapping, mappingSortDirection]);
 
   const servicesMappingDictionary = useMemo(
@@ -84,6 +84,9 @@ export const useClusterMapping = (
     }
     return errors;
   }, [componentsMapping, servicesMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
+
+  const initiallyMappedHosts = useMemo(() => getInitiallyMappedHostsDictionary(mapping), [mapping]);
+  const initiallyMappedComponents = useMemo(() => getInitiallyMappedComponentsDictionary(mapping), [mapping]);
 
   const handleMapHostsToComponent = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {
@@ -140,5 +143,7 @@ export const useClusterMapping = (
     handleMapComponentsToHost,
     handleUnmap,
     handleReset,
+    initiallyMappedHosts,
+    initiallyMappedComponents,
   };
 };

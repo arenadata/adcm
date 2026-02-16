@@ -23,7 +23,7 @@ def id_(*levels: str) -> Identifier:
 
 def build() -> tuple[FullSpec, Defaults]:
     spec = FullSpec.from_parameters(
-        ParameterGroup(identifier=id_("sg"), selection=Selection(is_required=False, use_as_default=None)),
+        ParameterGroup(identifier=id_("sg"), selection=Selection(is_required=False)),
         ParameterGroup(identifier=id_("sg", "g1")),
         StringParameter(identifier=id_("sg", "g1", "with_default"), is_required=False),
         StringParameter(identifier=id_("sg", "g1", "without_default"), is_required=False),
@@ -32,11 +32,14 @@ def build() -> tuple[FullSpec, Defaults]:
         StringParameter(identifier=id_("sg", "g2", "with_default"), is_required=False),
     )
 
-    defaults = {
-        "/sg/g1/with_default": "3",
-        "/sg/g1/without_default": None,
-        "/sg/g2/with_default": "8",
-        "/sg/g2/without_default": None,
-    }
+    defaults = Defaults(
+        values={
+            "/sg/g1/with_default": "3",
+            "/sg/g1/without_default": None,
+            "/sg/g2/with_default": "8",
+            "/sg/g2/without_default": None,
+        },
+        selection={"/sg": None},
+    )
 
     return spec, defaults

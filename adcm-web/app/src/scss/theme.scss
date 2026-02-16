@@ -1,0 +1,30 @@
+body.theme-dark {
+  // borders
+  --borders-br-main: var(--color-xdark);
+
+  // texts
+  --text-txt-default: #98A1B2;
+  --text-txt-h-contrast: #F2F4FF;
+  --main-colors-color-hight-contrast: var(--color-xwhite-off);
+
+  //surfaces
+  --surfaces-sf-one: #1A1B1C;
+  --surfaces-sf-one-b: #222325;
+
+  //primitives
+  --primitives-pmt-selected: #00D2A0;
+  --primitives-pmt-selected-20: #00D2A033;
+}
+
+body.theme-light {
+  // borders
+  --borders-br-main: var(--color-stroke-light);;
+
+  // texts
+  --text-txt-default: #70758C;
+  --main-colors-color-hight-contrast: var(--color-xblack);
+
+  //surfaces
+  --surfaces-sf-one: #EEF3FA;
+  --surfaces-sf-one-b: #E6EEFA;
+}

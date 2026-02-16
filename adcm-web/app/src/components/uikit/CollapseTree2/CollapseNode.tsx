@@ -14,6 +14,7 @@ interface CollapseNodeProps<T> {
   node: Node<T>;
   treeRef?: RefObject<HTMLDivElement>;
   isInitiallyExpanded?: boolean;
+  areExpandedAll?: boolean;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
@@ -22,16 +23,18 @@ const CollapseNode = <T,>({
   node,
   treeRef,
   isInitiallyExpanded = false,
+  areExpandedAll,
   getNodeClassName,
   renderNodeContent,
 }: CollapseNodeProps<T>) => {
-  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
+  const isIgnoreExpandAll = node.key === rootNodeKey;
+  const initialExpanded = areExpandedAll !== undefined && !isIgnoreExpandAll ? areExpandedAll : isInitiallyExpanded;
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
   const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
   const isNodeCanBeExpanded = fieldAttributes?.isActive !== false;
   const isNodeExpanded = isNodeCanBeExpanded && isExpanded;
-  const isIgnoreExpandAll = node.key === rootNodeKey;
 
   const handleToggleAllNodes = useCallback(
     (e: CustomEvent<boolean>) => {
@@ -70,6 +73,7 @@ const CollapseNode = <T,>({
                 node={childNode}
                 treeRef={treeRef}
                 key={childNode.key}
+                areExpandedAll={areExpandedAll}
                 getNodeClassName={getNodeClassName}
                 renderNodeContent={renderNodeContent}
               />

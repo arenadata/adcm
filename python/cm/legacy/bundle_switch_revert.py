@@ -16,7 +16,8 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Generic, TypeVar
 
-from core.cluster.types import HostComponentEntry
+from core.config.constants import SYSTEM_CONFIG_CREATOR
+from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -24,12 +25,33 @@ from django.db import transaction
 from rbac.models import Policy
 import core
 
-from cm.adcm_config.utils import proto_ref
-from cm.api import check_license
-from cm.config.repo import convert_attr_to_adcm_meta
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.impl.config.repo import convert_attr_to_adcm_meta
+from cm.legacy.adcm_config.utils import proto_ref
+from cm.legacy.api import check_license
+from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
+from cm.legacy.services.concern import create_issue, retrieve_issue
+from cm.legacy.services.concern.cases import (
+    recalculate_concerns_on_cluster_upgrade,
+)
+from cm.legacy.services.concern.checks import object_configuration_has_issue
+from cm.legacy.services.concern.distribution import (
+    AffectedObjectConcernMap,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
+from cm.legacy.services.mapping import check_nothing, set_host_component_mapping
+from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.legacy.upgrade.before_upgrade_schemas import (
+    ClusterBeforeUpgrade,
+    DeletedObjectBeforeUpgrade,
+    DeletedServiceBeforeUpgrade,
+    ProviderBeforeUpgrade,
+)
+from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -49,26 +71,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from cm.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
-from cm.services.concern import create_issue, retrieve_issue
-from cm.services.concern.cases import (
-    recalculate_concerns_on_cluster_upgrade,
-)
-from cm.services.concern.checks import object_configuration_has_issue
-from cm.services.concern.distribution import (
-    AffectedObjectConcernMap,
-    distribute_concern_on_related_objects,
-    redistribute_issues_and_flags,
-)
-from cm.services.mapping import check_nothing, set_host_component_mapping
-from cm.status_api import notify_about_redistributed_concerns_from_maps
-from cm.upgrade.before_upgrade_schemas import (
-    ClusterBeforeUpgrade,
-    DeletedObjectBeforeUpgrade,
-    DeletedServiceBeforeUpgrade,
-    ProviderBeforeUpgrade,
-)
-from cm.utils import obj_ref
 
 OT = TypeVar("OT", Cluster, Provider)
 MT = TypeVar("MT")
@@ -515,8 +517,9 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
         try:
             previous_spec = specs[previous_prototype_id]
         except KeyError:
-            previous_spec = (core.config.spec.FullSpec(), {})
+            previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
+        _restore_config_host_groups(obj=obj)
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service
         )
@@ -578,6 +581,30 @@ def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Con
     return core.config.Configuration(values=raw_values, attributes=attributes)
 
 
+def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -> None:
+    """Creates absent CHGs, listed in `before_upgrade`"""
+    chgs_before_upgrade: set[str] = set(obj.before_upgrade.get("config_host_groups", ()))
+    if not chgs_before_upgrade:
+        return
+
+    obj_ct = ContentType.objects.get_for_model(obj)
+    existing_chgs: set[str] = set(
+        ConfigHostGroup.objects.filter(object_id=obj.id, object_type=obj_ct).values_list("name", flat=True)
+    )
+    to_create = chgs_before_upgrade.difference(existing_chgs)
+
+    for chg_name in to_create:
+        config_host_group = ConfigHostGroup.objects.create(
+            name=chg_name,
+            description="revert_upgrade",
+            object_id=obj.pk,
+            object_type=obj_ct,
+        )
+        config_host_group.hosts.set(
+            Host.objects.filter(fqdn__in=obj.before_upgrade["config_host_groups"][chg_name].get("hosts", ()))
+        )
+
+
 def _restore_config_of_main_object_and_update_host_groups(
     owner: CoreObjectDescriptor,
     config: core.config.Configuration,
@@ -588,7 +615,13 @@ def _restore_config_of_main_object_and_update_host_groups(
     description = "revert_upgrade"
 
     # create main config based on input
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     # update all existing configurations of host groups
     old_spec, old_defaults = old
@@ -609,7 +642,7 @@ def _restore_config_of_main_object_and_update_host_groups(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
     updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
@@ -617,7 +650,11 @@ def _restore_config_of_main_object_and_update_host_groups(
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration, description=description, owner=owner_group
+            configuration=updated_configuration,
+            configuration_extra_info=core.config.ConfigurationExtraInfo(
+                description=description, created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=owner_group,
         )
     prepare_files = partial(
         config_service.prepare_file_parameter_values_on_fs,
@@ -641,7 +678,13 @@ def _restore_config_of_main_object(
     description = "revert_upgrade"
 
     # create main config based on input
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     specification = config_service.retrieve_specification(owner=owner)
 
@@ -669,7 +712,11 @@ def _restore_config_of_host_group(
     )[0]
 
     config_service.create_new_configuration_by_descriptor(
-        configuration=updated_configuration, description=description, owner=owner
+        configuration=updated_configuration,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
     )
 
     config_service.prepare_file_parameter_values_on_fs(
@@ -680,7 +727,7 @@ def _restore_config_of_host_group(
 
 
 def switch_config(
-    obj: Cluster | Service | Component | Provider | Host,
+    obj: Cluster | Service | Component | Provider | Host | ADCM,
     new_prototype: Prototype,
     old_prototype: Prototype,
     config_service: core.config.ConfigService,
@@ -691,6 +738,7 @@ def switch_config(
 
     old = specs_and_defaults[old_prototype.pk]
     new = specs_and_defaults[new_prototype.pk]
+    _remove_chgs_on_empty_spec(obj=obj, full_spec=new[0])
 
     owner = orm_object_to_core_descriptor(obj)
 
@@ -704,6 +752,19 @@ def switch_config(
         if new_defaults:
             # assume it's non-empty config
             config_service.create_initial_configuration(owner=owner, specification=new_spec, defaults=new_defaults)
+
+
+def _remove_chgs_on_empty_spec(
+    obj: Cluster | Service | Component | Provider | Host | ADCM, full_spec: core.config.spec.FullSpec
+) -> None:
+    if not full_spec.is_empty:
+        return
+
+    chg_qs = ConfigHostGroup.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj))
+    if chg_qs.exists():
+        repr_ = ", ".join(f"<ConfigHostGroup #{chg.id} {chg.name}>" for chg in chg_qs)
+        logger.warning(f"Removing configuration host groups: {repr_} of <{obj}> without configuration")
+        chg_qs.delete()
 
 
 def _switch_configuration_version(
@@ -729,11 +790,17 @@ def _switch_configuration_version(
 
     update_result = update_for_new_spec(configuration=configuration, include_synchronization=False)
     if isinstance(update_result, Fail):
-        raise core.config.OperationError(f"Failed to adapt config: {str(update_result.value)}")
+        raise core.config.ConfigOperationError(f"Failed to adapt config: {str(update_result.value)}")
 
     config = update_result.value
 
-    config_service.create_new_configuration_by_descriptor(configuration=config, description=description, owner=owner)
+    config_service.create_new_configuration_by_descriptor(
+        configuration=config,
+        configuration_extra_info=core.config.ConfigurationExtraInfo(
+            description=description, created_by=SYSTEM_CONFIG_CREATOR
+        ),
+        owner=owner,
+    )
 
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
     adaptation_results = {
@@ -743,7 +810,7 @@ def _switch_configuration_version(
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
         if isinstance(result, Fail):
-            raise core.config.OperationError(f"Failed to adapt config of host group: {str(result.value)}")
+            raise core.config.ConfigOperationError(f"Failed to adapt config of host group: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
 
@@ -752,7 +819,11 @@ def _switch_configuration_version(
     )
     for owner_group, updated_configuration in updated_host_group_configs.items():
         config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration, description="upgrade", owner=owner_group
+            configuration=updated_configuration,
+            configuration_extra_info=core.config.ConfigurationExtraInfo(
+                description="upgrade", created_by=SYSTEM_CONFIG_CREATOR
+            ),
+            owner=owner_group,
         )
 
     prepare_files = partial(config_service.prepare_file_parameter_values_on_fs, specification=new_spec)

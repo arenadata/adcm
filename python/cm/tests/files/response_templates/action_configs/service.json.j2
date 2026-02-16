@@ -39,9 +39,7 @@
     "status_api_token": "{{ token }}",
     "consul_url": null,
     "consul_datacenter": null,
-    "consul_client_cert_file": null,
-    "consul_client_key_file": null,
-    "consul_client_cacert_file": null
+    "consul_cacert_file": null
   },
   "job": {
     "id": {{ job_id }},
@@ -71,7 +69,8 @@
           "k": "v",
           "key": "val"
         },
-        "simple": "ingroup"
+        "simple": "ingroup",
+        "listofstuff": []
       },
       "integer": 4102,
       "float": 23.43,
@@ -96,7 +95,9 @@
           "two"
         ]
       },
-      "source_list": ["ok", "fail"]
+      "source_list": ["ok", "fail"],
+      "text": null,
+      "variant_config": null
     }
   },
   "process": null

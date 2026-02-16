@@ -27,6 +27,7 @@ from cm.converters import (
     model_name_to_audit_object_type,
     model_name_to_core_type,
 )
+from cm.legacy.utils import get_obj_type
 from cm.models import (
     ADCM,
     ActionHostGroup,
@@ -40,7 +41,6 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.utils import get_obj_type
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, Prefetch
 from django.http.request import RawPostDataException

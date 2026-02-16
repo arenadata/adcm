@@ -22,7 +22,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from application.migration.cluster.create import create_services_from_prototypes
 from audit.alt.api import audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
@@ -30,13 +29,15 @@ from audit.alt.hooks import (
     extract_previous_from_object,
 )
 from cm.errors import AdcmEx
+from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
+from cm.legacy.services.service import delete_service_from_api
+from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
-from cm.services.maintenance_mode import get_maintenance_mode_response
-from cm.services.service import delete_service_from_api
-from cm.services.status.notify import update_mm_objects
+from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.mixins import (
@@ -57,6 +58,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.transition.cluster.create import create_services_from_prototypes
+from use_cases.transition.job.schedule import ScheduleTask
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -257,9 +260,10 @@ class ServiceViewSet(
     @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(
         pre_call=set_service_name_from_object, on_collect=adjust_denied_on_404_result(service_does_exist)
     )
-    def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, *_, schedule_task: FromDishka[ScheduleTask], **__):
         instance = self.get_object()
-        return delete_service_from_api(service=instance)
+        return delete_service_from_api(service=instance, schedule_task=schedule_task)
 
     @(
         audit_update(name="Service updated", object_=service_from_lookup)
@@ -276,7 +280,8 @@ class ServiceViewSet(
         url_path="maintenance-mode",
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
         service: Service = get_object_for_user(
             user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
@@ -291,7 +296,9 @@ class ServiceViewSet(
         serializer = self.get_serializer_class()(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        response: Response = get_maintenance_mode_response(obj=self.get_object(), serializer=serializer)
+        response: Response = get_maintenance_mode_response(
+            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+        )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
@@ -371,6 +378,19 @@ class ServiceActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
 
 @document_action_host_group_actions_viewset(object_type="service")
 class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
+    ...
+
+
+@document_action_process_viewset(object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup")
+@audit_action_process_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
+    ...
+
+
+@document_action_process_step_viewset(
+    object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup"
+)
+class ServiceActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
     ...
 
 

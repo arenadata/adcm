@@ -8,6 +8,9 @@ import type {
 import type { SortParams, PaginationParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
+import { AdcmWizardApi } from '@api/adcm/wizard';
+import type { RequestOptions } from '@api/httpClient/HttpClient';
+import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
 
 export class AdcmClusterServiceComponentsApi {
   public static async getServiceComponents(
@@ -80,5 +83,56 @@ export class AdcmClusterServiceComponentsApi {
     );
 
     return response.data;
+  }
+
+  // action wizard
+  public static async createClusterServiceComponentActionWizardProcess(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/processes/`;
+
+    return await AdcmWizardApi.createProcess(endpoint);
+  }
+
+  public static async getClusterServiceComponentActionWizardProcess(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+    processId: number,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/processes/${processId}/`;
+
+    return await AdcmWizardApi.getProcess(endpoint);
+  }
+
+  public static async getClusterServiceComponentActionWizardStep(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+    processId: number,
+    stepId: number,
+    options?: RequestOptions,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
+
+    return await AdcmWizardApi.getStep(endpoint, options);
+  }
+
+  public static async createClusterServiceComponentActionWizardOperation(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    actionId: number,
+    processId: number,
+    operation: AdcmWizardProcessOperationPayload,
+  ) {
+    const endpoint = `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/${actionId}/processes/${processId}/operation/`;
+
+    return await AdcmWizardApi.postOperation(endpoint, operation);
   }
 }

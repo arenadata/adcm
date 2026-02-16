@@ -1,0 +1,13 @@
+- name: first_stage
+  display_name: "First stage"
+  steps:
+    - name: awesome
+      display_name: "find me In here"
+      ui_options:
+        button_name: ButtonName
+      scripts_template:
+        file:
+          path: wizard_jinja/steps/s3_script.py
+          entrypoint: generate_scripts
+        engine:
+          type: python

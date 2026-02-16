@@ -24,9 +24,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
 
         self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
     def test_1_component_1_host(self):
         service: Service = self.add_services_to_cluster(
@@ -53,19 +51,23 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
                 {
                     "service_id": service.pk,
+                    "service_uuid": service.uuid,
                     "component_id": component.pk,
+                    "component_uuid": component.uuid,
                 },
             ),
         }
@@ -79,6 +81,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -100,9 +103,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
@@ -144,6 +145,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
@@ -151,21 +153,26 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "adcm_hostid": self.host_2.pk,
                     "multi_state": '["bac", "osscc"]',
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": service.pk,
+                    "service_uuid": service.uuid,
                     "component_1_id": component_1.pk,
+                    "component_1_uuid": component_1.uuid,
                     "component_2_id": component_2.pk,
                     "component_2_multi_state": '["kat"]',
+                    "component_2_uuid": component_2.uuid,
                 },
             ),
         }
@@ -178,6 +185,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -198,6 +206,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "adcm_hostid": self.host_2.pk,
                     "multi_state": '["bac", "osscc"]',
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -221,9 +230,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
@@ -253,26 +260,32 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": service.pk,
+                    "service_uuid": service.uuid,
                     "component_1_id": component_1.pk,
+                    "component_1_uuid": component_1.uuid,
                     "component_2_id": component_2.pk,
+                    "component_2_uuid": component_2.uuid,
                 },
             ),
         }
@@ -286,6 +299,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -306,6 +320,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -378,23 +393,31 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "two_services_two_components_each.json.j2",
                 {
                     "service_1_id": service.pk,
+                    "service_1_uuid": service.uuid,
                     "component_1_s1_id": component_1_s1.pk,
+                    "component_1_s1_uuid": component_1_s1.uuid,
                     "component_2_s1_id": component_2_s1.pk,
+                    "component_2_s1_uuid": component_2_s1.uuid,
                     "service_2_id": another_service.pk,
+                    "service_2_uuid": another_service.uuid,
                     "component_1_s2_id": component_1_s2.pk,
+                    "component_1_s2_uuid": component_1_s2.uuid,
                     "component_2_s2_id": component_2_s2.pk,
+                    "component_2_s2_uuid": component_2_s2.uuid,
                 },
             ),
         }
@@ -408,6 +431,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -433,9 +457,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
-        )
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
         service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
@@ -484,29 +506,38 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
+                    "uuid": self.cluster_1.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "two_services_two_components_each.json.j2",
                 {
                     "service_1_id": service.pk,
+                    "service_1_uuid": service.uuid,
                     "component_1_s1_id": component_1_s1.pk,
+                    "component_1_s1_uuid": component_1_s1.uuid,
                     "component_2_s1_id": component_2_s1.pk,
+                    "component_2_s1_uuid": component_2_s1.uuid,
                     "service_2_id": another_service.pk,
+                    "service_2_uuid": another_service.uuid,
                     "component_1_s2_id": component_1_s2.pk,
+                    "component_1_s2_uuid": component_1_s2.uuid,
                     "component_2_s2_id": component_2_s2.pk,
+                    "component_2_s2_uuid": component_2_s2.uuid,
                 },
             ),
         }
@@ -520,6 +551,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "provider"): (
@@ -540,6 +572,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "provider"): (

@@ -12,11 +12,16 @@
 
 from functools import partial
 from operator import itemgetter
+from pathlib import Path
 from typing import TypeAlias
 from unittest.mock import patch
 import json
 import unittest
 
+from adcm.dependencies import prepare_container
+from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.client import ADCMTestClient
+from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
     Action,
     Cluster,
@@ -30,12 +35,14 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.jinja_env import _get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
+from infra.services import get_config_service
+from init_db import init
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
+from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -43,8 +50,9 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from rest_framework.test import APITestCase
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
 
 ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
@@ -578,14 +586,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_retrieve_jinja_config_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_retrieve_jinja_config()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_retrieve_jinja_config_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_retrieve_jinja_config()
 
         patched.assert_called()
@@ -612,14 +620,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_adcm_6013_jinja_config_with_min_max()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_6013_jinja_config_with_min_max()
 
         patched.assert_called()
@@ -655,14 +663,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
     def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
         # ADCM-6746
-        # with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
+        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
         self._test_adcm_4703_action_retrieve_returns_500()
 
         # patched.assert_called()
 
     @unittest.skip("ADCM-6747")
     def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
-        with patch("cm.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
+        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
             self._test_adcm_4703_action_retrieve_returns_500()
 
         patched.assert_called()
@@ -762,3 +770,114 @@ class TestAction(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIn("Internal script 'config_apply' can't be used for jinja action", response.json()["desc"])
+
+
+class TestActionHCMapping(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMixin):
+    client: ADCMTestClient
+    client_class = ADCMTestClient
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        prepare_container.cache_clear()
+        get_config_service.cache_clear()  # TODO: ADCM-7513
+        cls.test_bundles_dir = Path(__file__).parent / "bundles"
+        init_roles()
+        init()
+
+    def setUp(self):
+        self.client.login(username="admin", password="admin")
+
+        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "cluster_one")
+        self.cluster_1 = self.create_cluster(bundle=cluster_bundle, name="Test cluster for hc_acl action")
+        self.service_1 = self.create_services(names=["service_1"], cluster=self.cluster_1)[0]
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service_1)
+
+        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
+        provider = self.create_provider(bundle=provider_bundle, name="provider")
+        self.host_1 = self.create_host(provider=provider, name="host-1", cluster=self.cluster_1)
+        self.host_2 = self.create_host(provider=provider, name="host-2", cluster=self.cluster_1)
+
+        self.action = Action.objects.get(name="with_hc", prototype_id=self.cluster_1.prototype_id)
+
+    def test_adcm_7530_simple_add_remove_success(self):
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
+        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        mock = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        self.assertDictEqual(
+            mock.target_task.hostcomponentmap,
+            {
+                "add": {str(self.component_1.id): [self.host_2.id]},
+                "remove": {str(self.component_2.id): [self.host_1.id]},
+            },
+        )
+
+    def test_adcm_7530_add_host_in_mm_fail(self):
+        self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        mock = self.run_task(
+            object_=self.cluster_1,
+            action=self.action,
+            mapping=((self.host_1, self.component_1),),
+            expected_code=HTTP_409_CONFLICT,
+        )
+        self.assertIsNone(mock.target_task)
+
+    def test_adcm_7530_remove_host_in_mm_success(self):
+        self.create_mapping(
+            cluster=self.cluster_1, entries=((self.host_1, self.component_2), (self.host_2, self.component_2))
+        )
+        self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        mock = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_1, self.component_2),))
+        self.assertDictEqual(
+            mock.target_task.hostcomponentmap, {"add": {}, "remove": {str(self.component_2.id): [self.host_2.id]}}
+        )
+
+    def test_adcm_7530_component_mm_does_not_affects_remove_mapping_success(self):
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
+        self.set_maintenance_mode(obj=self.component_2, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.component_2, cluster_id=self.cluster_1.id)
+        mock = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        self.assertDictEqual(
+            mock.target_task.hostcomponentmap,
+            {
+                "add": {str(self.component_1.id): [self.host_2.id]},
+                "remove": {str(self.component_2.id): [self.host_1.id]},
+            },
+        )
+
+    def test_adcm_7530_component_mm_does_not_affects_add_mapping_success(self):
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
+        self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
+
+        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster_1.id)
+        mock = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        self.assertDictEqual(
+            mock.target_task.hostcomponentmap,
+            {
+                "add": {str(self.component_1.id): [self.host_2.id]},
+                "remove": {str(self.component_2.id): [self.host_1.id]},
+            },
+        )
+
+    def test_adcm_7530_service_state_does_not_affects_success(self):
+        self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
+
+        self.service_1.state = "not created"
+        self.service_1.save(update_fields=["state"])
+
+        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        mock = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        self.assertDictEqual(
+            mock.target_task.hostcomponentmap,
+            {
+                "add": {str(self.component_1.id): [self.host_2.id]},
+                "remove": {str(self.component_2.id): [self.host_1.id]},
+            },
+        )

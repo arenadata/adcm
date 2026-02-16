@@ -6,6 +6,7 @@ import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain
 import { useSettingsConfigurationsCompare } from './useSettingsConfigurationsCompare';
 import { useSettingsConfiguration } from './useSettingsConfiguration';
 import s from './SettingsConfiguration.module.scss';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const SettingsConfiguration: React.FC = () => {
   const {
@@ -33,11 +34,13 @@ const SettingsConfiguration: React.FC = () => {
       />
       <ConfigurationFormContextProvider>
         <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
-        />
+        <ConfigurationMinimap>
+          <ConfigurationMain
+            isLoading={isConfigurationLoading}
+            configuration={selectedConfiguration}
+            onChangeConfiguration={setDraftConfiguration}
+          />
+        </ConfigurationMinimap>
       </ConfigurationFormContextProvider>
     </div>
   );

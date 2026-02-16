@@ -85,6 +85,16 @@ class TestUpgrade(BaseAPITestCase):
         self.unauthorized_client = self.client_class()
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
+    def accept_license_of_first_service(self):
+        accept_license(
+            prototype=Prototype.objects.filter(
+                bundle=self.upgrade_cluster_via_action_simple.bundle,
+                type=ObjectType.SERVICE,
+                name="service_1",
+                version=self.upgrade_cluster_via_action_simple.bundle.version,
+            ).get()
+        )
+
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -175,14 +185,7 @@ class TestUpgrade(BaseAPITestCase):
         )
 
     def test_cluster_upgrade_run_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
+        self.accept_license_of_first_service()
 
         with RunTaskMock() as run_task:
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
@@ -211,7 +214,7 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
         component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
@@ -266,8 +269,8 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        host_1 = self.add_host(provider=self.provider, fqdn="first_host")
+        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -319,7 +322,7 @@ class TestUpgrade(BaseAPITestCase):
 
     @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
     def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         with RunTaskMock() as run_task:
@@ -385,7 +388,7 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -439,10 +442,10 @@ class TestUpgrade(BaseAPITestCase):
             ).first()
         )
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        host_1 = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
 
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
 
         component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
@@ -630,12 +633,8 @@ class TestUpgrade(BaseAPITestCase):
         cluster = self.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
         self.assertIsNone(cluster.config)
 
-        self.add_host_to_cluster(
-            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
-        )
-        self.add_host_to_cluster(
-            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
-        )
+        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="first_host"))
+        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="second_host"))
 
         response = self.client.v2[cluster, "upgrades", upgrade].get()
 
@@ -767,6 +766,20 @@ class TestUpgrade(BaseAPITestCase):
         config = ConfigLog.objects.get(id=cluster.config.current)
         self.assertTrue(config.config["new"].startswith(ANSIBLE_VAULT_HEADER))
         self.assertTrue(config.config["exists"].startswith(ANSIBLE_VAULT_HEADER))
+
+    def test_adcm_7676_create_config_host_group_without_config_correct_error(self):
+        self.accept_license_of_first_service()
+
+        service = self.add_services_to_cluster(["service_with_bound_to"], cluster=self.cluster_1).get()
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        component = Component.objects.get(service=service, prototype__name="will_miss_config")
+
+        # have to give name, because absence of config will be known after serialization
+        response = self.client.v2[component, "config-groups"].post(data={"name": "yoo"})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "GROUP_CONFIG_NO_CONFIG_ERROR")
 
 
 class TestAdcmUpgrade(APITestCase):

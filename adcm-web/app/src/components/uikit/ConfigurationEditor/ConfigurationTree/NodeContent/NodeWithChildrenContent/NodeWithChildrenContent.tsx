@@ -199,7 +199,8 @@ const NodeWithChildrenContent = ({
             onToggle={handleIsSynchronizedChange}
           />
         )}
-        {!isValueSet(fieldNodeData.value) && (
+        {/* for selected group nullSub should be trigger el, and append in selectionControl */}
+        {!selectionControl && !isValueSet(fieldNodeData.value) && (
           <span className={s.nodeContent__value} data-test="null-stub">
             {nullStub}
           </span>

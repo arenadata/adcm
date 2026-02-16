@@ -1,0 +1,9 @@
+- type: provider
+  name: simple
+  version: 4
+  contract_version: "2.0"
+  venv: "2.16"
+
+- type: host
+  name: simple
+  version: 2

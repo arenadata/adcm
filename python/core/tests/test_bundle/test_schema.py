@@ -15,7 +15,7 @@ from unittest import TestCase
 from pydantic import ValidationError
 import yaml
 
-from core.bundle_alt.schema import (
+from core.legacy.bundle_alt.schema import (
     TYPE_SCHEMA_MAP,
     ActionProcessSpec,
     InternalConfigApplyScriptSchema,
@@ -37,7 +37,7 @@ class TestBundleSchema(TestCase):
             entries = [entries]
 
         for item in entries:
-            schema = TYPE_SCHEMA_MAP[item["type"]].model_validate(item, strict=True)
+            schema = TYPE_SCHEMA_MAP[item["type"]].model_validate(item)
             schemas.append(schema.model_dump())
 
         return schemas

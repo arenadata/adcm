@@ -44,6 +44,7 @@ export interface AdcmConcernCommonPlaceholder {
 export interface AdcmConcernClusterPlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     clusterId: number;
+    actionId?: number;
   };
 }
 
@@ -51,6 +52,7 @@ export interface AdcmConcernServicePlaceholder extends AdcmConcernCommonPlacehol
   params: {
     clusterId: number;
     serviceId: number;
+    actionId?: number;
   };
 }
 
@@ -59,36 +61,42 @@ export interface AdcmConcernComponentPlaceholder extends AdcmConcernCommonPlaceh
     clusterId: number;
     serviceId: number;
     componentId: number;
+    actionId?: number;
   };
 }
 
 export interface AdcmConcernHostPlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     hostId: number;
+    actionId?: number;
   };
 }
 
 export interface AdcmConcernHostProviderPlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     providerId: number;
+    actionId?: number;
   };
 }
 
 export interface AdcmConcernJobPlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     jobId: number;
+    actionId?: number;
   };
 }
 
 export interface AdcmConcernPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     prototypeId: number;
+    actionId?: number;
   };
 }
 
 export interface AdcmPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
   params: {
     adcmId: number;
+    actionId?: number;
   };
 }
 
@@ -113,6 +121,7 @@ interface AdcmConcernOwner {
 }
 
 export type AdcmConcernType = 'lock' | 'issue' | 'flag';
+
 export interface AdcmConcerns {
   id: number;
   type: AdcmConcernType;

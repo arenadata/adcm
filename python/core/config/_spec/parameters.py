@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Literal, TypeAlias
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from core.config._names import ensure_full_name
 from core.config._types import ParameterFullName, ParameterLevelName
@@ -73,16 +73,11 @@ class AnsibleOptions:
 @dataclass(slots=True)
 class Activation:
     is_desyncable: bool = False
-    is_active_by_default: bool = False
 
 
 @dataclass(slots=True)
 class Selection:
     is_required: bool = True
-    # thou defaults aren't stored within spec,
-    # this one is controlling defaults generation process,
-    # yet isn't value itself
-    use_as_default: str | None = None
 
 
 class ParameterGroup(BaseModel):
@@ -91,9 +86,17 @@ class ParameterGroup(BaseModel):
     activation: Activation | None = None
     selection: Selection | None = None
 
-    @property
-    def is_activatable(self) -> bool:
-        return self.activation is not None
+    @model_validator(mode="after")
+    def no_group_conflict(self):
+        # It may be nice to separate groups into three types: regular, activatable and selection,
+        # but for now we'll eliminate incorrect variants by such validation,
+        # because type-based solutions isn't valueable enough.
+
+        if self.activation and self.selection:
+            message = f"Group can't be activatable and selectable at the same time: {self.identifier.full}"
+            raise ValueError(message)
+
+        return self
 
 
 class _SimpleParameterBase(BaseModel):
@@ -110,6 +113,23 @@ class StringParameter(_SimpleParameterBase):
     is_secret: bool = False
     ansible: AnsibleOptions = Field(default_factory=(AnsibleOptions))
     type: Literal[ParameterType.STRING] = ParameterType.STRING
+
+    @model_validator(mode="after")
+    def no_values_conflict(self):
+        # It may be nice to restructure fields in this parameter or split it to multiple variations,
+        # but for now it's unclear if there's any profit to it,
+        # so here comes invariant validation
+
+        if self.as_file:
+            if not self.supports_multiline:
+                message = f"Files must support multiline: {self.identifier.full}"
+                raise ValueError(message)
+
+            if self.ansible.unsafe:
+                message = f"Unsafe mode is not supported for files: {self.identifier.full}"
+                raise ValueError(message)
+
+        return self
 
 
 class NumberParameter(_SimpleParameterBase):

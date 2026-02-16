@@ -1,13 +1,21 @@
-import { createClusterDynamicActionProcess } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import {
+  cleanupClusterActionDetails,
+  createClusterDynamicActionProcess,
+} from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import { cleanupClustersWizard, getProcessOnActionClick } from '@store/adcm/clusters/clustersWizardSlice';
-import { closeClusterWizardDialog, openClusterWizardDialog } from '@store/adcm/clusters/clustersWizardActionsSlice';
+import {
+  closeClusterWizardDialog,
+  openClusterWizardDialog,
+  setIsContinueProcessModal,
+} from '@store/adcm/clusters/clustersWizardActionsSlice';
 import { useDispatch, useStore } from '@hooks';
-import { useEffect, useState } from 'react';
-
-let wizardTitle = 'Manage install';
+import { useRemoveActionIdFromUrl } from '@hooks/useRemoveActionIdFromUrl/useRemoveActionIdFromUrl';
+import { useEffect, useMemo, useState } from 'react';
+import { defaultWizardTitle } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useClusterDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
+  const removeActionIdFromUrl = useRemoveActionIdFromUrl();
   const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
   const cluster = useStore((s) => s.adcm.clustersDynamicActions.dialog.cluster);
   const processWithStages = useStore((s) => s.adcm.clustersWizard.process);
@@ -16,6 +24,10 @@ export const useClusterDynamicActionWizardDialog = () => {
     clusterId: number | null;
     actionId: number | null;
   }>({ clusterId: null, actionId: null });
+
+  const wizardTitle = useMemo(() => {
+    return actionDetails?.displayName || defaultWizardTitle;
+  }, [actionDetails]);
 
   useEffect(() => {
     if (actionDetails && cluster) {
@@ -28,7 +40,6 @@ export const useClusterDynamicActionWizardDialog = () => {
 
   useEffect(() => {
     if (!actionDetails || actionDetails.processes === null || !cluster) return;
-    wizardTitle = actionDetails.displayName;
 
     if (actionDetails.processes.length === 0) {
       dispatch(createClusterDynamicActionProcess({ clusterId: cluster.id, actionId: actionDetails.id }));
@@ -57,12 +68,15 @@ export const useClusterDynamicActionWizardDialog = () => {
           actionId: savedActionData.actionId,
         }),
       );
+      removeActionIdFromUrl();
     }
-  }, [dispatch, actionDetails?.processes, savedActionData]);
+  }, [dispatch, actionDetails?.processes, savedActionData, removeActionIdFromUrl]);
 
   const handleClose = () => {
     dispatch(closeClusterWizardDialog());
     dispatch(cleanupClustersWizard());
+    dispatch(cleanupClusterActionDetails());
+    dispatch(setIsContinueProcessModal(false));
   };
 
   return {

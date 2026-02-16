@@ -20,9 +20,9 @@ from rest_framework.status import (
 )
 import yaml
 
-from cm.api import delete_host_provider
-from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
+from cm.legacy.api import delete_host_provider
+from cm.legacy.bundle import delete_bundle
 from cm.models import (
     Action,
     ADCMEntity,
@@ -82,14 +82,14 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
         bundle = self.add_bundle(source_dir=directory / "provider_false_host_true")
         provider = self.add_provider(bundle=bundle, name="Provider False")
-        host = self.add_host(bundle=bundle, provider=provider, fqdn="host-true")
+        host = self.add_host(provider=provider, fqdn="host-true")
 
         self.enable_outdated_config_is(provider, False)
         self.enable_outdated_config_is(host, True)
 
         bundle = self.add_bundle(source_dir=directory / "provider_true_host_undefined")
         provider = self.add_provider(bundle=bundle, name="Provider True")
-        host = self.add_host(bundle=bundle, provider=provider, fqdn="host-undef")
+        host = self.add_host(provider=provider, fqdn="host-undef")
 
         self.enable_outdated_config_is(provider, True)
         self.enable_outdated_config_is(host, True)

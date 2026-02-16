@@ -7,8 +7,10 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
+import ConfigurationEmptyState from '@commonComponents/configuration/ConfigurationEmptyState/ConfigurationEmptyState';
 import { useComponentPrimaryConfigurationsCompare } from './useComponentPrimaryConfigurationCompare';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const ComponentPrimaryConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -54,28 +56,36 @@ const ComponentPrimaryConfiguration: React.FC = () => {
     }
   }, [component, dispatch]);
 
+  const hasNoConfiguration = configVersions.length === 0;
+
   return (
-    <>
-      <PermissionsChecker requestState={accessCheckStatus}>
-        <ConfigurationHeader
-          configVersions={configVersions}
-          selectedConfigId={selectedConfigId}
-          setSelectedConfigId={setSelectedConfigId}
-          draftConfiguration={draftConfiguration}
-          compareOptions={compareOptions}
-        />
-        <PermissionsChecker requestState={accessConfigCheckStatus}>
-          <ConfigurationFormContextProvider>
-            <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-            <ConfigurationMain
-              isLoading={isConfigurationLoading}
-              configuration={selectedConfiguration}
-              onChangeConfiguration={setDraftConfiguration}
-            />
-          </ConfigurationFormContextProvider>
-        </PermissionsChecker>
-      </PermissionsChecker>
-    </>
+    <PermissionsChecker requestState={accessCheckStatus}>
+      {hasNoConfiguration ? (
+        <ConfigurationEmptyState />
+      ) : (
+        <>
+          <ConfigurationHeader
+            configVersions={configVersions}
+            selectedConfigId={selectedConfigId}
+            setSelectedConfigId={setSelectedConfigId}
+            draftConfiguration={draftConfiguration}
+            compareOptions={compareOptions}
+          />
+          <PermissionsChecker requestState={accessConfigCheckStatus}>
+            <ConfigurationFormContextProvider>
+              <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+              <ConfigurationMinimap>
+                <ConfigurationMain
+                  isLoading={isConfigurationLoading}
+                  configuration={selectedConfiguration}
+                  onChangeConfiguration={setDraftConfiguration}
+                />
+              </ConfigurationMinimap>
+            </ConfigurationFormContextProvider>
+          </PermissionsChecker>
+        </>
+      )}
+    </PermissionsChecker>
   );
 };
 

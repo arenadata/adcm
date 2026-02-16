@@ -18,7 +18,6 @@ const Concern: React.FC<ConcernProps> = ({ concerns, className, size = 32 }) => 
   if (concerns.length === 0) {
     return null;
   }
-
   const hasError = concerns.some(({ isBlocking }) => isBlocking);
   const classes = cn(className, {
     [s.concern_error]: hasError,
@@ -28,11 +27,9 @@ const Concern: React.FC<ConcernProps> = ({ concerns, className, size = 32 }) => 
   const concernsDataArray = getConcernLinkObjectPathsDataArray(concerns);
 
   return (
-    <>
-      <Tooltip label={<ConcernMessages concernsData={concernsDataArray} />} placement={'bottom-start'} closeDelay={100}>
-        <Icon name="g1-info" size={size} className={classes} />
-      </Tooltip>
-    </>
+    <Tooltip label={<ConcernMessages concernsData={concernsDataArray} />} placement={'bottom-start'} closeDelay={100}>
+      <Icon name="g1-info" size={size} className={classes} />
+    </Tooltip>
   );
 };
 

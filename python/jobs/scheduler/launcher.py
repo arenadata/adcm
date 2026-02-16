@@ -17,14 +17,14 @@ import time
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.errors import AdcmEx
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
+from cm.legacy.services.job.run import distribute_concerns
+from cm.legacy.services.job.run.repo import JobRepoImpl, JobRepoInterface, TaskTargetCoreObject
 from cm.models import Cluster
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
-from cm.services.job.run import distribute_concerns
-from cm.services.job.run.repo import JobRepoImpl, JobRepoInterface, TaskTargetCoreObject
-from core.cluster.operations import construct_mapping_from_delta
-from core.job.dto import TaskUpdateDTO
-from core.job.types import ExecutionStatus, Task
+from core.legacy.cluster.operations import construct_mapping_from_delta
+from core.legacy.job.dto import TaskUpdateDTO
+from core.legacy.job.types import ExecutionStatus, Task
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
 

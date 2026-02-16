@@ -149,3 +149,6 @@
       bound_to:
         service: service_1
         component: component_1
+
+    will_miss_config:
+      description: This component will not have config after upgrade

@@ -13,9 +13,9 @@
 from adcm.tests.base import BaseTestCase
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from cm.issue import add_concern_to_object, unlink_concern_from_object
+from cm.legacy.issue import add_concern_to_object, unlink_concern_from_object
+from cm.legacy.services.concern import create_issue
 from cm.models import ConcernCause, ConcernItem, ConcernType
-from cm.services.concern import create_issue
 from cm.tests.utils import gen_concern_item, generate_hierarchy
 
 

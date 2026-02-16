@@ -144,6 +144,11 @@ ERRORS = {
         HTTP_409_CONFLICT,
         ERR,
     ),
+    "INVALID_HC_SERVICE_NOT_IN_CREATED_STATE": (
+        "You can't save hc with services in states other than 'created'",
+        HTTP_409_CONFLICT,
+        ERR,
+    ),
     "NO_CERT_FILE": (
         "missing cert file for `ldaps://` connection",
         HTTP_400_BAD_REQUEST,
@@ -222,6 +227,7 @@ ERRORS = {
     "ACTION_PROCESS_NOT_FOUND": ("Process not found", HTTP_404_NOT_FOUND, ERR),
     "ACTION_PROCESS_STEP_NOT_FOUND": ("Step not found", HTTP_404_NOT_FOUND, ERR),
     "UPGRADE_OPERATION_ERROR": ("Can't perform operation with upgrade", HTTP_409_CONFLICT, ERR),
+    "NO_CONFIG_ERROR": ("Object has no config", HTTP_409_CONFLICT, ERR),
 }
 
 

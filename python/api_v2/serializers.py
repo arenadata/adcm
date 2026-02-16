@@ -12,6 +12,13 @@
 
 from typing import Callable, Literal, TypedDict, TypeVar
 
+from cm.legacy.services.status.client import FullStatusMap
+from cm.legacy.services.status.convert import (
+    convert_to_component_status,
+    convert_to_entity_status,
+    convert_to_host_component_status,
+    convert_to_service_status,
+)
 from cm.models import (
     ADCMEntityStatus,
     ADCMModel,
@@ -20,13 +27,6 @@ from cm.models import (
     Host,
     HostComponent,
     Service,
-)
-from cm.services.status.client import FullStatusMap
-from cm.services.status.convert import (
-    convert_to_component_status,
-    convert_to_entity_status,
-    convert_to_host_component_status,
-    convert_to_service_status,
 )
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer

@@ -26,12 +26,8 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
 
         self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster
-        )
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
 
         self.service: Service = bulk_add_services_to_cluster(
             cluster=self.cluster,
@@ -73,25 +69,30 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("hosts", self.host_1.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster.pk,
+                    "uuid": self.cluster.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
                 {
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "component_id": self.component.pk,
+                    "component_uuid": self.component.uuid,
                 },
             ),
         }
@@ -107,6 +108,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
         }
@@ -142,18 +144,21 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster.pk,
+                    "uuid": self.cluster.uuid,
                 },
             ),
             ("vars", "services"): (
@@ -161,8 +166,10 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 {
                     "service_id": self.service.pk,
                     "service_maintenance_mode": "true",
+                    "service_uuid": self.service.uuid,
                     "component_id": self.component.pk,
                     "component_maintenance_mode": "true",
+                    "component_uuid": self.component.uuid,
                 },
             ),
         }
@@ -178,6 +185,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
         }
@@ -213,18 +221,21 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                 },
             ),
             ("hosts", self.host_2.fqdn): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster.pk,
+                    "uuid": self.cluster.uuid,
                 },
             ),
             ("vars", "services"): (
@@ -232,8 +243,10 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 {
                     "service_id": self.service.pk,
                     "service_maintenance_mode": "true",
+                    "service_uuid": self.service.uuid,
                     "component_id": self.component.pk,
                     "component_maintenance_mode": "true",
+                    "component_uuid": self.component.uuid,
                 },
             ),
         }
@@ -249,6 +262,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
         }

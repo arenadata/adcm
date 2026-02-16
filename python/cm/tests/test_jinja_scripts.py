@@ -16,9 +16,14 @@ from uuid import uuid4
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
+from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.transition.job.schedule import ScheduleTask
+import core
 
-from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.errors import AdcmEx
+from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
+from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
@@ -31,10 +36,8 @@ from cm.models import (
     ProcessStepInput,
     TaskLog,
 )
-from cm.services.jinja_env import get_env_for_jinja_scripts
-from cm.services.job.action import ActionRunPayload, run_action
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.utils import decrypt_secrets
 
 
 class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
@@ -70,6 +73,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
                 "edition": self.cluster.edition,
                 "config": common_config,
                 "id": self.cluster.pk,
+                "uuid": self.cluster.uuid,
                 "multi_state": self.cluster.multi_state,
                 "name": self.cluster.name,
                 "state": self.cluster.state,
@@ -81,6 +85,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
                     "before_upgrade": {"state": None, "config": None},
                     "config": common_config,
                     "id": service.pk,
+                    "uuid": service.uuid,
                     "multi_state": service.multi_state,
                     "state": service.state,
                     "display_name": service.display_name,
@@ -89,6 +94,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
                     component.prototype.name: {
                         "before_upgrade": {"state": None, "config": None},
                         "component_id": component.pk,
+                        "uuid": component.uuid,
                         "config": common_config,
                         "display_name": component.display_name,
                         "maintenance_mode": component.maintenance_mode.value == MaintenanceMode.ON,
@@ -149,8 +155,10 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         action = Action.objects.get(prototype=self.cluster.prototype, display_name="action_on_cluster")
         process = Process.objects.create(
             action=action,
-            object_id=1,
-            object_type="test_type",
+            target_id=1,
+            target_type="test_type",
+            owner_id=1,
+            owner_type="test_type",
             flow_spec=[
                 {
                     "name": "manage_ssl_stage",
@@ -234,7 +242,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
 
-class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestJinjaScriptsJobs(WithDishkaContainer, BusinessLogicMixin, TaskTestMixin, BaseTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"
         cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
@@ -329,11 +337,20 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         for active, expected_jobs in ((False, ["default", "inactive"]), (True, ["default", "active"])):
             with RunTaskMock():
-                task = run_action(
-                    action=action,
-                    obj=self.cluster,
-                    payload=ActionRunPayload(conf={"group": {"x": 2}}, attr={"group": {"active": active}}),
+                configuration = ConfigurationDTO(
+                    convert=lambda x, _: x,
+                    input_config=core.config.Configuration(
+                        values={"group": {"x": 2}},
+                        attributes={"/group": core.config.Attributes(is_active=active)},
+                    ),
                 )
+
+                with self.container() as container:
+                    task = container.get(ScheduleTask).do(
+                        action_orm=action,
+                        target=self.cluster,
+                        payload=RunActionDTO(configuration=configuration),
+                    )
 
             self.assertListEqual(list(JobLog.objects.filter(task=task).values_list("name", flat=True)), expected_jobs)
 

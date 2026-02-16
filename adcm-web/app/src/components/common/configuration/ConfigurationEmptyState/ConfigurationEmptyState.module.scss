@@ -1,0 +1,22 @@
+:global {
+  body.theme-dark {
+    --configuration-empty-state-background-color: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --configuration-empty-state-background-color: var(--color-xgray-alt-30);
+  }
+}
+
+.configurationEmptyState {
+  padding: 15px 20px;
+  border-radius: 15px;
+  background: var(--configuration-empty-state-background-color);
+  text-align: start;
+
+  & > span {
+    font-size: 15px;
+    color: var(--color-xgray-light);
+  }
+}
+

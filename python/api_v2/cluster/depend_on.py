@@ -16,7 +16,7 @@ from operator import or_
 from typing import Iterable, TypeAlias
 
 from cm.models import ObjectType, Prototype
-from core.bundle.operations import RequiresDependencies
+from core.legacy.bundle.operations import RequiresDependencies
 from core.types import ComponentName, ComponentNameKey, ObjectID, ServiceName, ServiceNameKey
 from django.db.models import Q
 

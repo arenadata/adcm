@@ -16,6 +16,8 @@ import itertools
 from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 from api_v2.cluster.views import (
+    ClusterActionHostGroupActionsProcessStepViewSet,
+    ClusterActionHostGroupActionsProcessViewSet,
     ClusterActionHostGroupActionsViewSet,
     ClusterActionHostGroupHostsViewSet,
     ClusterActionHostGroupViewSet,
@@ -25,6 +27,8 @@ from api_v2.cluster.views import (
     ClusterCHGViewSet,
     ClusterConfigCHGViewSet,
     ClusterConfigViewSet,
+    ClusterHostActionProcessStepViewSet,
+    ClusterHostActionProcessViewSet,
     ClusterHostActionViewSet,
     ClusterHostCHGViewSet,
     ClusterImportViewSet,
@@ -33,6 +37,8 @@ from api_v2.cluster.views import (
     HostClusterViewSet,
 )
 from api_v2.component.views import (
+    ComponentActionHostGroupActionsProcessStepViewSet,
+    ComponentActionHostGroupActionsProcessViewSet,
     ComponentActionHostGroupActionsViewSet,
     ComponentActionHostGroupHostsViewSet,
     ComponentActionHostGroupViewSet,
@@ -49,6 +55,8 @@ from api_v2.component.views import (
 from api_v2.generic.action_host_group.urls_helpers import add_action_host_groups_routers
 from api_v2.generic.config_host_group.urls_helpers import add_config_host_group_routers
 from api_v2.service.views import (
+    ServiceActionHostGroupActionsProcessStepViewSet,
+    ServiceActionHostGroupActionsProcessViewSet,
     ServiceActionHostGroupActionsViewSet,
     ServiceActionHostGroupHostsViewSet,
     ServiceActionHostGroupViewSet,
@@ -118,6 +126,8 @@ cluster_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ClusterActionHostGroupViewSet,
     ahg_hosts_viewset=ClusterActionHostGroupHostsViewSet,
     ahg_actions_viewset=ClusterActionHostGroupActionsViewSet,
+    ahg_process_viewset=ClusterActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ClusterActionHostGroupActionsProcessStepViewSet,
     parent_router=cluster_router,
     parent_prefix=CLUSTER_PREFIX,
     lookup="cluster",
@@ -148,6 +158,8 @@ service_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ServiceActionHostGroupViewSet,
     ahg_hosts_viewset=ServiceActionHostGroupHostsViewSet,
     ahg_actions_viewset=ServiceActionHostGroupActionsViewSet,
+    ahg_process_viewset=ServiceActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ServiceActionHostGroupActionsProcessStepViewSet,
     parent_router=service_router,
     parent_prefix=SERVICE_PREFIX,
     lookup="service",
@@ -192,6 +204,8 @@ component_action_host_groups_routers = add_action_host_groups_routers(
     ahg_viewset=ComponentActionHostGroupViewSet,
     ahg_hosts_viewset=ComponentActionHostGroupHostsViewSet,
     ahg_actions_viewset=ComponentActionHostGroupActionsViewSet,
+    ahg_process_viewset=ComponentActionHostGroupActionsProcessViewSet,
+    ahg_process_step_viewset=ComponentActionHostGroupActionsProcessStepViewSet,
     parent_router=component_router,
     parent_prefix=COMPONENT_PREFIX,
     lookup="component",
@@ -216,6 +230,20 @@ host_router.register(prefix=HOST_PREFIX, viewset=HostClusterViewSet, basename="h
 
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_PREFIX, viewset=ClusterHostActionViewSet, basename="host-cluster-action")
+
+host_action_process_router = NestedSimpleRouter(
+    parent_router=host_action_router, parent_prefix=ACTION_PREFIX, lookup="action"
+)
+host_action_process_router.register(
+    prefix=PROCESS_PREFIX, viewset=ClusterHostActionProcessViewSet, basename="host-cluster-action-process"
+)
+
+host_action_process_step_router = NestedSimpleRouter(
+    parent_router=host_action_process_router, parent_prefix=PROCESS_PREFIX, lookup="process"
+)
+host_action_process_step_router.register(
+    prefix=STEP_PREFIX, viewset=ClusterHostActionProcessStepViewSet, basename="host-cluster-action-process-step"
+)
 
 host_component_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_component_router.register(prefix=COMPONENT_PREFIX, viewset=HostComponentViewSet, basename="host-cluster-component")
@@ -255,6 +283,8 @@ urlpatterns = [
     # host
     *host_router.urls,
     *host_action_router.urls,
+    *host_action_process_router.urls,
+    *host_action_process_step_router.urls,
     *host_component_router.urls,
     # other
     *upgrade_router.urls,

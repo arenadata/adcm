@@ -13,9 +13,9 @@
 from operator import itemgetter
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ActionHostGroup, Component, HostComponent
-from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
-from cm.services.job.run.repo import JobRepoImpl
 from core.types import CoreObjectDescriptor
 
 from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginRuntimeError

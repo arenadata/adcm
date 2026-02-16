@@ -8,6 +8,7 @@ import {
 } from '@store/adcm/hostProviders/hostProvidersDynamicActionsSlice';
 import { useEffect } from 'react';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useOpenActionDialogFromUrl, hostProviderActionDialogConfig } from '@hooks/useOpenActionDialogFromUrl';
 
 export const useRequestHostProviderPage = () => {
   const dispatch = useDispatch();
@@ -41,6 +42,8 @@ export const useRequestHostProviderPage = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetData, debounceRefreshData, 0, []);
+
+  useOpenActionDialogFromUrl(hostProviderActionDialogConfig);
 
   return {
     accessCheckStatus,

@@ -12,36 +12,46 @@
 
 from copy import deepcopy
 from uuid import UUID
-import unittest
 
-from application.dto import ConfigurationDTO, RunActionDTO
-from application.migration.job.schedule import schedule_task
-from core.job.dto import TaskPayloadDTO
-from core.job.runners import ADCMSettings, AnsibleSettings, ConsulSettings, ExternalSettings, IntegrationsSettings
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.legacy.job.dto import LaunchOptions, TaskPayloadDTO
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+)
+from core.types import CoreObjectDescriptor
 from django.conf import settings
-from infra.services import get_config_service, get_job_service
+from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
-from cm.models import Action, Component
-from cm.services.cluster import retrieve_cluster_topology
-from cm.services.job.action import prepare_task_for_action
-from cm.services.job.run._target_factories import prepare_ansible_job_config
-from cm.services.job.run.repo import JobRepoImpl
+from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.legacy.services.cluster import retrieve_cluster_topology
+from cm.legacy.services.job.action import prepare_task_for_action
+from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.utils import decrypt_secrets
+from cm.models import Action, Component, ConcernItem
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import RunTaskMock
+from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.utils import decrypt_secrets
 
 
-class TestConfigAndImportsInInventory(BaseInventoryTestCase):
+class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase):
     CONFIG_WITH_NONES = {
         "boolean": True,
         "secrettext": "awe\nsopme\n\ttext\n",
         "list": ["1", "5", "baset"],
         "variant_inline": "f",
-        "plain_group": {"file": "contente\t\n\n\n\tbest\n\t   ", "map": {"k": "v", "key": "val"}, "simple": None},
+        "plain_group": {
+            "file": "contente\t\n\n\n\tbest\n\t   ",
+            "map": {"k": "v", "key": "val"},
+            "simple": None,
+            "listofstuff": None,
+        },
         "integer": None,
         "float": None,
         "string": None,
@@ -54,6 +64,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         "variant_builtin": None,
         "activatable_group": {"simple": "inactive", "list": ["one", "two"]},
         "source_list": ["ok", "fail"],
+        "text": None,
+        "variant_config": None,
     }
 
     FULL_CONFIG = {
@@ -77,8 +89,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
         self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
 
         self.cluster = self.add_cluster(
@@ -118,15 +130,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
-                url=settings.CONSUL_URL,
-                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
-                datacenter=settings.CONSUL_DATACENTER,
+                url=settings.CONSUL_URL, datacenter=settings.CONSUL_DATACENTER, cacert_file=settings.CONSUL_CACERT_FILE
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_action_config(self) -> None:
         for object_, config, type_name in (
             (self.cluster, None, "cluster"),
@@ -135,24 +142,33 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.provider, self.FULL_CONFIG, "provider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
+            ConcernItem.objects.all().delete()
+
             # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
             action_name = "with_config" if type_name != "cluster" else "dummy"
             active = type_name in ("service", "provider")
             config_diff = {} if type_name != "provider" else {"variant_builtin": "host-3"}
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
-            obj_ = CoreObjectDescriptor(
-                id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
-            )
-            task = prepare_task_for_action(
-                target=obj_,
-                orm_owner=object_,
-                orm_target=object_,
-                action=action.pk,
-                payload=TaskPayloadDTO(
-                    conf=(deepcopy(config) or {}) | config_diff, attr={"activatable_group": {"active": active}}
-                ),
-            )
+
+            with RunTaskMock() as run_task:
+                configuration = None
+                if config is not None:
+                    configuration = ConfigurationDTO(
+                        convert=lambda x, _: x,
+                        input_config=core.config.Configuration(
+                            values=(deepcopy(config) or {}) | config_diff,
+                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                        ),
+                    )
+                with self.container() as container:
+                    container.get(ScheduleTask).do(
+                        action_orm=action,
+                        target=object_,
+                        payload=RunActionDTO(configuration=configuration),
+                    )
+
+            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
@@ -180,22 +196,31 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.service, self.CONFIG_WITH_NONES, "service"),
             (self.component, None, "component"),
         ):
+            ConcernItem.objects.all().delete()
             # prepare_task_for_action is now checking sanity of config, so we have to pass the correct one
             action_name = "with_config_on_host" if type_name != "component" else "without_config_on_host"
             active = type_name == "cluster"
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
-            target = CoreObjectDescriptor(id=self.host_1.pk, type=ADCMCoreType.HOST)
 
-            task = prepare_task_for_action(
-                target=target,
-                orm_owner=object_,
-                orm_target=self.host_1,
-                action=action.pk,
-                payload=TaskPayloadDTO(
-                    verbose=True, conf=deepcopy(config), attr={"activatable_group": {"active": active}}
-                ),
-            )
+            with RunTaskMock() as run_task:
+                configuration = None
+                if config is not None:
+                    configuration = ConfigurationDTO(
+                        convert=lambda x, _: x,
+                        input_config=core.config.Configuration(
+                            values=(deepcopy(config) or {}) | config_diff,
+                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                        ),
+                    )
+                with self.container() as container:
+                    container.get(ScheduleTask).do(
+                        action_orm=action,
+                        target=self.host_1,
+                        payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
+                    )
+
+            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
@@ -227,14 +252,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -258,14 +281,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
             )
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
 
@@ -295,14 +316,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 convert=lambda x, _: x,
                 input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
             )
-            schedule_task(
-                action_orm=action,
-                target=self.service,
-                payload=RunActionDTO(configuration=configuration),
-                job_service=get_job_service(),
-                config_service=get_config_service(),
-                start_task_after_schedule=True,
-            )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.service,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
         task = run_task.target_task
 
@@ -352,14 +371,11 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
             consul=ConsulSettings(
                 url=settings.CONSUL_URL,
-                client_cert_file=settings.CONSUL_CLIENT_CERT_FILE,
-                client_cacert_file=settings.CONSUL_CACERT_FILE,
-                client_key_file=settings.CONSUL_CLIENT_KEY_FILE,
                 datacenter=settings.CONSUL_DATACENTER,
+                cacert_file=settings.CONSUL_CACERT_FILE,
             ),
         )
 
-    @unittest.skip("ADCM-7359 filedir differs, need to sync")
     def test_scripts_in_action_config(self) -> None:
         for action_name in ("job_proto_relative", "job_bundle_relative", "task_mixed"):
             for object_, type_name in ((self.cluster, "cluster"), (self.service_1, "service")):

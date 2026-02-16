@@ -5,6 +5,7 @@ import { useRequestService } from './useRequestService';
 import ClusterServiceNavigation from '@layouts/ClusterServiceLayout/ClusterServiceNavigation/ClusterServiceNavigation';
 import ClusterServiceDynamicActionDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServiceDynamicActionDialog/ClusterServiceDynamicActionDialog';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import ClusterServicesActionWizardDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServicesDynamicActionWizardDialog/ClusterServicesDynamicActionWizardDialog';
 
 const ClusterServiceLayout: React.FC = () => {
   const { accessCheckStatus } = useRequestService();
@@ -16,6 +17,7 @@ const ClusterServiceLayout: React.FC = () => {
         <ClusterServiceNavigation />
         <Outlet />
         <ClusterServiceDynamicActionDialog />
+        <ClusterServicesActionWizardDialog />
       </PermissionsChecker>
     </div>
   );

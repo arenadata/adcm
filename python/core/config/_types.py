@@ -15,6 +15,7 @@ from typing import Any, Callable, Literal, TypeAlias
 
 from typing_extensions import Self
 
+from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
 
 EncryptFunc: TypeAlias = Callable[[str], str]
@@ -43,20 +44,15 @@ PARAMETER_FILE_NAME_SEPARATOR = "."
 
 
 @dataclass(slots=True)
-class ConfigOwnerObjectInfo:
-    state: str
-
-
-@dataclass(slots=True)
 class ConfigOwner:
     descriptor: CoreObjectDescriptor
-    info: ConfigOwnerObjectInfo
+    state: str
 
 
 @dataclass(slots=True)
 class HostGroupConfigOwner:
     descriptor: CoreObjectDescriptor
-    info: ConfigOwnerObjectInfo
+    state: str
     group: ConfigHostGroupDesc
 
 
@@ -86,16 +82,45 @@ class Attributes:
             raise ValueError(message)
 
 
-ConfigValues: TypeAlias = dict[ParameterLevelName, Any]
+ConfigParameterValue = Any
+
+ConfigValues: TypeAlias = dict[ParameterLevelName, ConfigParameterValue]
 """
 Config values in "nested" format,
 e.g. `{"a": {"b": {"c": 4}}}` instead of `{"/a/b/c": 4}` (flat format)
 """
 
-ConfigFlatValues: TypeAlias = dict[ParameterFullName, Any]
+ConfigFlatValues: TypeAlias = dict[ParameterFullName, ConfigParameterValue]
 ConfigAttrs: TypeAlias = dict[ParameterFullName, Attributes]
 
-Defaults: TypeAlias = dict[ParameterFullName, Any]
+
+@dataclass(slots=True)
+class Defaults:
+    """
+    Various defaults for object's configuration / specification if "flat" format:
+    - `values` are parameters-only default values, may include `None`
+    - `activation` has "active" status default for activatable groups
+    - `selection` has default "branch" for selection, may be `None`
+
+    Expectations and restrictions:
+    - No specific order in keys
+    - Presense of all parameters isn't guaranteed
+    - Defaults are correct types:
+      it is expected that constructor function will provide correct defaults (e.g. `True` for `bool`, not `"True"`);
+      which means consumer shouldn't "guess" or parse present values any further.
+    - Consider this type as "known defaults", not "ready to use" default configuration:
+      keys are presented for all possible known defaults, which doesn't mean they may be correct config by itself.
+    """
+
+    values: dict[ParameterFullName, ConfigParameterValue] = field(default_factory=dict)
+    activation: dict[ParameterFullName, bool] = field(default_factory=dict)
+    selection: dict[ParameterFullName, str | None] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ConfigurationExtraInfo:
+    description: str
+    created_by: str
 
 
 @dataclass(slots=True)
@@ -105,11 +130,11 @@ class Configuration:
 
 
 @dataclass(slots=True)
-class ConfigurationWithID(Configuration):
+class ConfigurationWithInfo(Configuration):
     # keep that way while it's direct dataclass descendant of `Configuration`
     # for inheritance simplicity
     id: ConfigID = 0
-    description: str = ""
+    extra_info: ConfigurationExtraInfo = ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
 
 
 @dataclass(slots=True)

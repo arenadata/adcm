@@ -17,6 +17,8 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 from cm.models import (
     ADCM,
     Cluster,
@@ -28,8 +30,6 @@ from cm.models import (
     Provider,
     Service,
 )
-from cm.services.concern import create_issue
-from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 
 
 class TestFlag(BaseTestCase, BusinessLogicMixin):
@@ -52,7 +52,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
         for provider in providers:
             for i in range(4):
-                self.add_host(bundle=provider.prototype.bundle, provider=provider, fqdn=f"{provider.name}-host-{i}")
+                self.add_host(provider=provider, fqdn=f"{provider.name}-host-{i}")
 
     def test_raise_lower_flag_on_one_object_success(self) -> None:
         expected_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name

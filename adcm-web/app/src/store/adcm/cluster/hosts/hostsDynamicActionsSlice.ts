@@ -70,17 +70,53 @@ const loadClusterHostsDynamicActions = createAsyncThunk(
   },
 );
 
+interface AdcmCreateProcessPayload {
+  clusterId: number;
+  hostId: number;
+  actionId: number;
+}
+
+const createClusterHostDynamicActionProcess = createAsyncThunk(
+  'adcm/cluster/hosts/hostsDynamicActions/createClusterHostDynamicActionProcess',
+  async ({ clusterId, hostId, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    const {
+      adcm: {
+        clusterHostsDynamicActions: {
+          dialog: { clusterHost, cluster },
+        },
+      },
+    } = thunkAPI.getState();
+
+    try {
+      const process = await AdcmClusterHostsApi.createHostActionWizardProcess(clusterId, hostId, actionId);
+
+      if (cluster && clusterHost) {
+        await thunkAPI.dispatch(openClusterHostDynamicActionDialog({ cluster, clusterHost, actionId }));
+      }
+
+      return process;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 interface OpenClusterHostDynamicActionPayload {
   cluster: AdcmCluster;
-  host: AdcmClusterHost;
+  clusterHost: AdcmClusterHost;
   actionId: number;
 }
 
 const openClusterHostDynamicActionDialog = createAsyncThunk(
   'adcm/cluster/hosts/hostsDynamicActions/openClusterHostDynamicActionDialog',
-  async ({ cluster, host, actionId }: OpenClusterHostDynamicActionPayload, thunkAPI) => {
+  async ({ cluster, clusterHost, actionId }: OpenClusterHostDynamicActionPayload, thunkAPI) => {
     try {
-      const actionDetails = await AdcmClusterHostsApi.getClusterHostActionsDetails(cluster.id, host.id, actionId);
+      const actionDetails = await AdcmClusterHostsApi.getClusterHostActionsDetails(
+        cluster.id,
+        clusterHost.id,
+        actionId,
+      );
 
       return actionDetails;
     } catch (error) {
@@ -90,19 +126,19 @@ const openClusterHostDynamicActionDialog = createAsyncThunk(
   },
 );
 
-interface RunClusterHostActionPayload {
-  cluster: AdcmCluster;
-  clusterHost: AdcmClusterHost;
+export interface RunClusterHostDynamicActionPayload {
+  clusterId: number;
+  hostId: number;
   actionId: number;
   actionRunConfig: AdcmDynamicActionRunConfig;
 }
 
 const runClusterHostDynamicAction = createAsyncThunk(
   'adcm/cluster/hosts/hostsDynamicActions/runClusterHostDynamicAction',
-  async ({ cluster, clusterHost, actionId, actionRunConfig }: RunClusterHostActionPayload, thunkAPI) => {
+  async ({ clusterId, hostId, actionId, actionRunConfig }: RunClusterHostDynamicActionPayload, thunkAPI) => {
     try {
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
-      await AdcmClusterHostsApi.runClusterHostAction(cluster.id, clusterHost.id, actionId, actionRunConfig);
+      await AdcmClusterHostsApi.runClusterHostAction(clusterId, hostId, actionId, actionRunConfig);
 
       thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
@@ -139,6 +175,10 @@ const clusterHostsDynamicActionsSlice = createSlice({
     cleanupClusterHostDynamicActions() {
       return createInitialState();
     },
+    cleanupClusterHostActionDetails(state) {
+      // @ts-ignore
+      state.dialog.actionDetails = createInitialState().dialog.actionDetails;
+    },
     closeClusterHostDynamicActionDialog(state) {
       state.dialog = createInitialState().dialog;
     },
@@ -152,7 +192,7 @@ const clusterHostsDynamicActionsSlice = createSlice({
     });
     builder.addCase(openClusterHostDynamicActionDialog.fulfilled, (state, action) => {
       state.dialog.actionDetails = action.payload;
-      state.dialog.clusterHost = action.meta.arg.host;
+      state.dialog.clusterHost = action.meta.arg.clusterHost;
       state.dialog.cluster = action.meta.arg.cluster;
     });
     builder.addCase(openClusterHostDynamicActionDialog.rejected, (state) => {
@@ -164,8 +204,16 @@ const clusterHostsDynamicActionsSlice = createSlice({
   },
 });
 
-export const { cleanupClusterHostDynamicActions, closeClusterHostDynamicActionDialog } =
-  clusterHostsDynamicActionsSlice.actions;
-export { loadClusterHostsDynamicActions, openClusterHostDynamicActionDialog, runClusterHostDynamicAction };
+export const {
+  cleanupClusterHostDynamicActions,
+  cleanupClusterHostActionDetails,
+  closeClusterHostDynamicActionDialog,
+} = clusterHostsDynamicActionsSlice.actions;
+export {
+  loadClusterHostsDynamicActions,
+  openClusterHostDynamicActionDialog,
+  runClusterHostDynamicAction,
+  createClusterHostDynamicActionProcess,
+};
 
 export default clusterHostsDynamicActionsSlice.reducer;

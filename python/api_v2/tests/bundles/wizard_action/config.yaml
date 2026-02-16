@@ -3,8 +3,10 @@
   name: cluster_with_wizard
   version: &version '1.0'
   edition: community
-  actions: &actions
-    wizard_jinja:
+  allow_maintenance_mode: true
+
+  actions:
+    wizard_jinja: &wizard_action
       type: job
       script: ./sleep.yaml
       script_type: ansible
@@ -15,7 +17,47 @@
           type: jinja2
       states:
         available: any
-    
+
+    wizard_operation_as_first:
+      <<: *wizard_action
+      wizard_template:
+        file:
+          path: wizard_jinja/stages_operation_first.j2
+        engine:
+          type: jinja2
+
+    wizard_with_mapping_only:
+      type: job
+      script: ./sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/mapping/stages.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    wizard_host_action_from_cluster: &host_action
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      host_action: true
+      ui_options:
+        disclaimer: "Test message!"
+      wizard_template:
+        file:
+          path: wizard_jinja/host_action/stages.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+    wizard_cluster_action: &action
+      <<: *host_action
+      host_action: false
+      allow_for_action_host_group: true
+
   config: &config
     - name: float
       type: float
@@ -27,12 +69,24 @@
   version: "0.1"
 
   actions:
-    <<: *actions
+    wizard_jinja:
+      <<: *wizard_action
+    wizard_host_action_from_service:
+      <<: *host_action
+    wizard_service_action:
+      <<: *action
 
   config: *config
 
   components:
-    component_1:
+    component_1: &component
       actions:
-        <<: *actions
+        wizard_jinja:
+          <<: *wizard_action
+        wizard_host_action_from_component:
+          <<: *host_action
+        wizard_component_action:
+          <<: *action
       config: *config
+    component_2:
+      <<: *component

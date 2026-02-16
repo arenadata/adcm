@@ -18,6 +18,7 @@ import {
   runClusterDynamicAction,
   type RunClusterDynamicActionPayload,
 } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { wizardProcessConflictErrorCode } from '@constants';
 
 interface AdcmCreateProcessPayload {
   clusterId: number;
@@ -78,7 +79,7 @@ const postOperation = createAsyncThunk(
 
       return process;
     } catch (error) {
-      if (isErrorConflict(error as RequestError)) {
+      if (isErrorConflict(error as RequestError, wizardProcessConflictErrorCode)) {
         thunkAPI.dispatch(setHasConflictError(true));
       } else {
         thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -130,7 +131,7 @@ const startNewProcess = createAsyncThunk(
     try {
       const process = await AdcmClustersApi.createClusterActionWizardProcess(clusterId, actionId);
 
-      thunkAPI.dispatch(getProcess({ clusterId, actionId, processId: process.id }));
+      await thunkAPI.dispatch(getProcess({ clusterId, actionId, processId: process.id }));
       thunkAPI.dispatch(setIsContinueProcessModal(false));
 
       return process;

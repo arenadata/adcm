@@ -26,12 +26,8 @@ class TestHostAction(BaseInventoryTestCase):
 
         self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster
-        )
-        self.host_2 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster
-        )
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
 
         self.service: Service = bulk_add_services_to_cluster(
             cluster=self.cluster,
@@ -85,11 +81,15 @@ class TestHostAction(BaseInventoryTestCase):
                 self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "uuid": self.host_1.uuid,
                     "cluster_config_integer": 101,
                     "cluster_id": self.cluster.pk,
+                    "cluster_uuid": self.cluster.uuid,
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "service_config_integer": 102,
                     "component_id": self.component.pk,
+                    "component_uuid": self.component.uuid,
                     "component_config_integer": 103,
                 },
             ),
@@ -97,19 +97,23 @@ class TestHostAction(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
                 },
             ),
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster.pk,
+                    "uuid": self.cluster.uuid,
                 },
             ),
             ("vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
                 {
                     "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
                     "component_id": self.component.pk,
+                    "component_uuid": self.component.uuid,
                 },
             ),
         }

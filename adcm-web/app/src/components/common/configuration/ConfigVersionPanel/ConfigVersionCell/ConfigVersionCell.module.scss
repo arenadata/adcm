@@ -2,15 +2,21 @@
   body.theme-dark {
     --config-version-cell-border: var(--color-xdark);
     --config-version-cell-border-selected: var(--color-xgreen-saturated);
+    --config-version-cell-border-updated: var(--color-xblue);
+    --config-version-cell-title-updated: var(--color-xblue);
     --config-version-cell-background-selected: var(--color-xdark-new-full);
     --config-version-cell-background-hover: var(--color-xdark-new-50);
+    --config-version-cell-created-by-color: var(--color-xgray-lighter);
   }
 
   body.theme-light {
     --config-version-cell-border: var(--color-stroke-light);
     --config-version-cell-border-selected: var(--color-xgreen-saturated);
+    --config-version-cell-border-updated: var(--color-xblue);
+    --config-version-cell-title-updated: var(--color-xblue);
     --config-version-cell-background-selected: var(--color-xgray-alt);
     --config-version-cell-background-hover: #EEF2F5;
+    --config-version-cell-created-by-color: var(--color-xgray-new-darker);
   }
 }
 
@@ -44,19 +50,44 @@
     line-height: 18px;
     color: var(--text-green-color);
     transition: color 250ms;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Selected card (or updated+selected): title uses accent color when not hovered
+  &_selected:not(:hover) &__title,
+  &.configVersionCell_updated.configVersionCell_selected:not(:hover) &__title {
+    color: var(--text-accent-color);
+  }
+
+  &__warningIcon {
+    color: var(--config-version-cell-title-updated);
+    flex-shrink: 0;
   }
 
   &_selected {
     background-color: var(--config-version-cell-background-selected);
     border-color: var(--config-version-cell-border-selected);
+  }
 
-    &:not(:hover) .configVersionCell__title {
-      color: var(--text-accent-color);
-    }
+  // parallel card, not selected
+  &.configVersionCell_updated:not(.configVersionCell_selected) &__title {
+    color: var(--config-version-cell-title-updated);
+  }
+
+  // parallel card selected
+  &.configVersionCell_updated.configVersionCell_selected {
+    border-color: var(--config-version-cell-border-updated);
   }
 
   &:hover {
     background-color: var(--config-version-cell-background-hover);
+  }
+
+  &__createdBy {
+    word-wrap: break-word;
+    color: var(--config-version-cell-created-by-color);
   }
 
   &__description {

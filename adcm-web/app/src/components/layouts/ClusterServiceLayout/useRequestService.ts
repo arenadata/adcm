@@ -8,6 +8,7 @@ import {
   loadClusterServicesDynamicActions,
 } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useOpenActionDialogFromUrl, serviceActionDialogConfig } from '@hooks/useOpenActionDialogFromUrl';
 
 export const useRequestService = () => {
   const dispatch = useDispatch();
@@ -39,6 +40,8 @@ export const useRequestService = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId, serviceId]);
+
+  useOpenActionDialogFromUrl(serviceActionDialogConfig);
 
   return {
     accessCheckStatus,

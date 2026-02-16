@@ -28,6 +28,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.test import TestCase
 from django.utils import timezone
+from infra.services import get_config_service
 from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
@@ -38,10 +39,9 @@ from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionE
 from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
+from cm.legacy.services.job.context import get_objects_configurations
 from cm.models import ADCM, Bundle, Component, HostInfo
-from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
-from cm.utils import strip_uuid
 
 
 class MockResponse:
@@ -53,6 +53,7 @@ class TestSender(TestCase, ParallelReadyTestCase):
     maxDiff = None
 
     def setUp(self):
+        get_config_service.cache_clear()
         self.settings = SenderSettings(
             url="https://www.test.url",
             adcm_uuid="TEST",
@@ -285,7 +286,8 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         h4_enterprise = self.add_host(provider=provider, fqdn="H4 enterprise", cluster=cluster_enterprise)
 
         configs = get_objects_configurations(
-            objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}}
+            objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}},
+            config_service=get_config_service(),
         )
 
         # test
@@ -296,6 +298,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                         "hosts": {
                             h1_free.fqdn: {
                                 "adcm_hostid": h1_free.id,
+                                "uuid": str(h1_free.uuid),
                                 "state": h1_free.state,
                                 "multi_state": h1_free.multi_state,
                                 **configs[ADCMCoreType.HOST, h1_free.id],
@@ -306,6 +309,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                         "hosts": {
                             h2_community.fqdn: {
                                 "adcm_hostid": h2_community.id,
+                                "uuid": str(h2_community.uuid),
                                 "state": h2_community.state,
                                 "multi_state": h2_community.multi_state,
                                 **configs[ADCMCoreType.HOST, h2_community.id],
@@ -316,12 +320,14 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                         "hosts": {
                             h3_enterprise.fqdn: {
                                 "adcm_hostid": h3_enterprise.id,
+                                "uuid": str(h3_enterprise.uuid),
                                 "state": h3_enterprise.state,
                                 "multi_state": h3_enterprise.multi_state,
                                 **configs[ADCMCoreType.HOST, h3_enterprise.id],
                             },
                             h4_enterprise.fqdn: {
                                 "adcm_hostid": h4_enterprise.id,
+                                "uuid": str(h4_enterprise.uuid),
                                 "state": h4_enterprise.state,
                                 "multi_state": h4_enterprise.multi_state,
                                 **configs[ADCMCoreType.HOST, h4_enterprise.id],
@@ -333,7 +339,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         }
         actual_inventory = get_inventory()
 
-        self.assertDictEqual(strip_uuid(actual_inventory), expected_inventory)
+        self.assertDictEqual(actual_inventory, expected_inventory)
 
     def test_host_info_dump_mapping(self):
         bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")
@@ -451,12 +457,12 @@ class TestStorage(BaseAPITestCase):
         adcm_user_role = Role.objects.get(name="ADCM User")
         Policy.objects.create(name="test policy", role=adcm_user_role, built_in=False)
 
-        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_1")
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
-        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
-        host_unmapped = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_unmapped")
+        host_1 = self.add_host(provider=self.provider, fqdn="test_host_1")
+        host_2 = self.add_host(provider=self.provider, fqdn="test_host_2")
+        host_3 = self.add_host(provider=self.provider, fqdn="test_host_3")
+        host_unmapped = self.add_host(provider=self.provider, fqdn="test_host_unmapped")
 
-        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_not_in_cluster")
+        self.add_host(provider=self.provider, fqdn="test_host_not_in_cluster")
 
         for host in (host_1, host_2, host_3, host_unmapped):
             self.add_host_to_cluster(cluster=self.cluster_1, host=host)

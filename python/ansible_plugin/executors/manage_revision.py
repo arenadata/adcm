@@ -16,9 +16,9 @@ from enum import Enum
 from typing import Any, Collection, Literal, TypeAlias
 
 from cm.converters import core_type_to_model
+from cm.legacy.services.config import ConfigAttrPair, retrieve_config_attr_pairs, retrieve_configs_with_revision
+from cm.legacy.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.models import ConfigRevision, JobLog
-from cm.services.config import ConfigAttrPair, retrieve_config_attr_pairs, retrieve_configs_with_revision
-from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from core.config.types import RelatedConfigs
 from core.types import (
     ADCMCoreType,

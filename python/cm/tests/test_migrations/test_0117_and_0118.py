@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.job.types import ScriptType
+from core.legacy.job.types import ScriptType
 from django_test_migrations.contrib.unittest_case import MigratorTestCase
 
 

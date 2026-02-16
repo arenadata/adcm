@@ -1,0 +1,19 @@
+---
+- type: cluster
+  name: wrong_scripts_template
+  version: 1
+  edition: community
+
+  config:
+    - name: bool_field
+      display_name: "Boolean field"
+      type: boolean
+      default: false
+
+  actions:
+    dummy:
+      display_name: "Dummy action"
+      type: task
+      scripts_template: scripts.j2
+      states:
+        available: any

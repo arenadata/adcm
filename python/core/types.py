@@ -136,25 +136,34 @@ class HostGroupDescriptor(Descriptor[ADCMHostGroupType]):
 
 
 @dataclass(slots=True, frozen=True)
-class ActionTargetDescriptor(Descriptor[ADCMCoreType | ExtraActionTargetType]):
-    def __str__(self) -> str:
-        return f"{self.type.value} #{self.id}"
-
-
-# inheritance from `ActionTargetDescriptor` is for convenience purposes,
-# because `CoreObjectDescriptor` is just a bit stricter than `ActionTargetDescriptor`
-@dataclass(slots=True, frozen=True)
 class CoreObjectDescriptor(Descriptor[ADCMCoreType]):
     def __str__(self) -> str:
         return f"{self.type.value} #{self.id}"
 
 
+@dataclass(slots=True, frozen=True)
+class ActionTargetDescriptor(Descriptor[ADCMCoreType | ExtraActionTargetType]):
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
+
+    @property
+    def as_core_or_group_descriptor(self) -> CoreObjectDescriptor | HostGroupDescriptor:
+        if isinstance(self.type, ADCMCoreType):
+            return CoreObjectDescriptor(id=self.id, type=self.type)
+
+        return HostGroupDescriptor(id=self.id, type=ADCMHostGroupType.ACTION)
+
+
 ClusterDesc = Descriptor[Literal[ADCMCoreType.CLUSTER]]
+ServiceDesc = Descriptor[Literal[ADCMCoreType.SERVICE]]
+ComponentDesc = Descriptor[Literal[ADCMCoreType.COMPONENT]]
 ProviderDesc = Descriptor[Literal[ADCMCoreType.PROVIDER]]
+HostDesc = Descriptor[Literal[ADCMCoreType.HOST]]
 ConfigHostGroupDesc = Descriptor[Literal[ADCMHostGroupType.CONFIG]]
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
 TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]
+ActionDescriptor: TypeAlias = Descriptor[Literal["action"]]
 
 
 @dataclass(slots=True, frozen=True)

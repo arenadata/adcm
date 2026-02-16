@@ -10,17 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import suppress
 from http.cookies import SimpleCookie
 from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
-from typing import Any, TypeAlias
-from unittest.mock import patch
-import unittest
+from tempfile import gettempdir
+from typing import Any, Collection, Literal, TypeAlias
+import tarfile
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from audit.models import AuditLog, AuditObjectType, AuditSession
+from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
     ADCM,
     Action,
@@ -28,25 +30,40 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
     Host,
     JobLog,
     JobStatus,
+    MaintenanceMode,
+    ObjectType,
+    Prototype,
     Provider,
     Service,
     TaskLog,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
+from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.legacy.cluster.types import ObjectMaintenanceModeState
+from core.types import ClusterID
 from django.conf import settings
 from django.http import HttpRequest
+from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
 )
+
+TEST_BUNDLES_DIR = Path(__file__).parent / "bundles"
+TEST_FILES_DIR = Path(__file__).parent / "files"
+
+# allow asserts
+# ruff: noqa: S101
 
 
 class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
@@ -69,6 +86,9 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         config_log.save(update_fields=["config"])
 
     def setUp(self) -> None:
+        # TODO: ADCM-7513
+        get_config_service.cache_clear()
+
         self.client.login(username="admin", password="admin")
 
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
@@ -237,10 +257,157 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         return task, job
 
 
-# Reasonably fast and dirty approach to "duplicate" test for another use case with a bit less overhead
-def subtests_on_feature_flag(tc: unittest.TestCase, flag_func, override_in: str):
-    name = flag_func.__name__
-    # todo REMOVE IN ADCM-7319
-    for flag_value in (False,):
-        with patch(f"{override_in}.{name}", return_value=flag_value):
-            yield tc.subTest(f"{name}-{flag_value}")
+class APIV2Mixin:
+    client: ADCMTestClient
+
+    def _prepare_bundle_file(self, src: Path, dst: Path) -> Path:
+        with tarfile.open(dst, "w") as tar:
+            for file in src.iterdir():
+                tar.add(name=file, arcname=file.name)
+
+        return dst
+
+    def create_bundle(self, src: Path) -> Bundle:
+        if not src.is_dir():
+            raise ValueError(f"Not a dir: {src}")
+
+        dst = (Path(gettempdir()) / src.name).with_suffix(".tar")
+        archive = self._prepare_bundle_file(src=src, dst=dst)
+
+        with archive.open(mode="rb") as f:
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
+
+        if response.status_code != HTTP_201_CREATED:
+            reason = "unknown"
+            with suppress(Exception):
+                reason = response.json()
+
+            message = f"Bundle `{archive}` upload failed ({response.status_code=}) with reason: {reason}"
+            raise RuntimeError(message)
+
+        return Bundle.objects.get(id=response.json()["id"])
+
+    def create_cluster(self, bundle: Bundle, name: str, description: str = "", accept_license: bool = True) -> Cluster:
+        prototype = Prototype.objects.only("id", "license").get(bundle=bundle, type=ObjectType.CLUSTER)
+        if prototype.license == "unaccepted" and accept_license:
+            response = self.client.v2[prototype, "license", "accept"].post()
+            assert response.status_code == HTTP_200_OK, f"Accept license failed: {response.status_code}"
+
+        response = (self.client.v2 / "clusters").post(
+            data={"prototypeId": prototype.id, "name": name, "description": description}
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Cluster creation failed: {response.status_code}"
+
+        return Cluster.objects.get(id=response.json()["id"])
+
+    def create_services(self, names: Collection[str], cluster: Cluster) -> list[Service]:
+        bundle_id = cluster.prototype.bundle_id
+        prototype_ids = Prototype.objects.values_list("id", flat=True).filter(
+            name__in=names, type=ObjectType.SERVICE, bundle_id=bundle_id
+        )
+        response = self.client.v2[cluster, "services"].post(data=[{"prototype_id": id_} for id_ in prototype_ids])
+        assert response.status_code == HTTP_201_CREATED, f"Service creation failed: {response.status_code}"
+
+        return list(Service.objects.filter(id__in=[r["id"] for r in response.json()]))
+
+    def create_mapping(self, cluster: Cluster, entries: Collection[tuple[Host, Component]]) -> None:
+        response = self.client.v2[cluster, "mapping"].post(
+            data=[{"hostId": host.id, "componentId": component.id} for host, component in entries]
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Mapping creation failed: {response.status_code}"
+
+    def create_provider(self, bundle: Bundle, name: str, description: str = "") -> Provider:
+        prototype_id = Prototype.objects.values_list("id", flat=True).get(bundle=bundle, type=ObjectType.PROVIDER)
+        response = (self.client.v2 / "hostproviders").post(
+            data={"prototypeId": prototype_id, "name": name, "description": description},
+        )
+        assert response.status_code == HTTP_201_CREATED, f"Provider creation failed: {response.status_code}"
+
+        return Provider.objects.get(id=response.json()["id"])
+
+    def create_host(self, provider: Provider, name: str, cluster: Cluster | None = None) -> Host:
+        data = {"hostproviderId": provider.id, "name": name}
+        if cluster:
+            data["clusterId"] = cluster.id
+        response = (self.client.v2 / "hosts").post(data=data)
+        assert response.status_code == HTTP_201_CREATED, f"Host creation failed: {response.status_code}"
+
+        return Host.objects.get(id=response.json()["id"])
+
+    def create_action_host_group(
+        self, owner: Cluster | Service | Component, name: str, hosts: Collection[Host] = (), description: str = ""
+    ) -> ActionHostGroup:
+        response = self.client.v2[owner, "action-host-groups"].post(data={"name": name, "description": description})
+        assert response.status_code == HTTP_201_CREATED, f"ActionHostGroup creation failed: {response.status_code}"
+
+        ahg = ActionHostGroup.objects.get(id=response.json()["id"])
+
+        for host in hosts:
+            response = self.client.v2[ahg, "hosts"].post(data={"hostId": host.id})
+            assert response.status_code == HTTP_201_CREATED, f"Add host to {ahg} failed: {response.status_code}"
+
+        return ahg
+
+    def create_config_host_group(
+        self,
+        owner: Cluster | Service | Component | Provider | Host,
+        name: str,
+        hosts: Collection[Host] = (),
+        description: str = "",
+    ) -> ConfigHostGroup:
+        response = self.client.v2[owner, "config-groups"].post(data={"name": name, "description": description})
+        assert response.status_code == HTTP_201_CREATED, f"ConfigHostGroup creation failed: {response.status_code}"
+
+        chg = ConfigHostGroup.objects.get(id=response.json()["id"])
+
+        for host in hosts:
+            response = self.client.v2[chg, "hosts"].post(data={"hostId": host.id})
+            assert response.status_code == HTTP_201_CREATED, f"Add host to {chg} failed: {response.status_code}"
+
+        return chg
+
+    def set_maintenance_mode(self, obj: Service | Component | Host, value: MaintenanceMode) -> None:
+        response = self.client.v2[obj, "maintenance-mode"].post(data={"maintenance_mode": value})
+        assert response.status_code == HTTP_200_OK, f"Setting maintenance mode failed: {response.status_code}"
+
+    def run_task(
+        self,
+        object_: Cluster | Service | Component | Provider | Host | ActionHostGroup,
+        action: Action,
+        mapping: Collection[tuple[Host, Component]] = (),
+        config: dict[Literal["config", "adcmMeta"], dict] | None = None,
+        expected_code: int = HTTP_200_OK,
+        **mock_kwargs,
+    ) -> RunTaskMock:
+        hc = {"hostComponentMap": [{"hostId": host.id, "componentId": component.id} for host, component in mapping]}
+        config = config or {"config": {}, "adcmMeta": {}}
+
+        with RunTaskMock(**mock_kwargs) as run_task:
+            response = self.client.v2[object_, "actions", action, "run"].post(data={"isVerbose": False, **config, **hc})
+
+        assert response.status_code == expected_code, f"Unexpected run result: {response.status_code}"
+
+        return run_task
+
+
+class TestUtilsMixin:
+    def check_mm_is_on_only_for(self, obj: Component | Host | None, cluster_id: ClusterID):
+        objects_mm = calculate_maintenance_mode_for_cluster_objects(
+            topology=retrieve_cluster_topology(cluster_id=cluster_id),
+            own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster_id,)),
+        )
+        components_mm = objects_mm.components
+        hosts_mm = objects_mm.hosts
+
+        if isinstance(obj, Component):
+            self.assertEqual(components_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+        elif isinstance(obj, Host):
+            self.assertEqual(hosts_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+        elif obj is None:
+            pass
+        else:
+            raise ValueError(f"Unexpected object type: {type(obj)}")
+
+        self.assertSetEqual(set(objects_mm.services.values()), {ObjectMaintenanceModeState.OFF})
+        self.assertSetEqual(set(components_mm.values()), {ObjectMaintenanceModeState.OFF})
+        self.assertSetEqual(set(hosts_mm.values()), {ObjectMaintenanceModeState.OFF})

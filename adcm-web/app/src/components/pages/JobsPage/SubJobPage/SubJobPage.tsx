@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch } from '@hooks';
-import ExpandableSwitch from '@uikit/Switch/ExpandableSwitch';
+import AutoScrollSwitch from './AutoScrollSwitch/AutoScrollSwitch';
 import JobPageHeader from '../JobPage/JobPageHeader/JobPageHeader';
 import StopSubJobDialog from '../JobPage/Dialogs/StopSubJobDialog';
 import SubJobOverviewTable from './SubJobOverviewTable/SubJobOverviewTable';
@@ -8,7 +8,7 @@ import SubJobLogs from './SubJobLogs/SubJobLogs';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { openStopDialog } from '@store/adcm/jobs/subJobsActionsSlice';
 import { useRequestSubJob } from './useRequestSubJob';
-import { useAutoScrollLog } from './useAutoScrollLog';
+import SubJobLogsAutoScrollProvider from './SubJobLogsAutoScroll/SubJobLogsAutoScrollProvider';
 import s from './SubJobPage.module.scss';
 
 const SubJobPage = () => {
@@ -16,8 +16,6 @@ const SubJobPage = () => {
   useRequestSubJob();
 
   const subJob = useStore(({ adcm }) => adcm.subJob.subJob);
-
-  const { isAutoScroll, setIsAutoScroll } = useAutoScrollLog(subJob);
 
   useEffect(() => {
     if (subJob) {
@@ -37,24 +35,20 @@ const SubJobPage = () => {
     }
   };
 
-  const handleAutoScrollChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsAutoScroll(e.target.checked);
-  };
-
   return (
-    <>
+    <SubJobLogsAutoScrollProvider isInitialAutoScroll={true}>
       <JobPageHeader job={subJob} />
       <div className={s.subJobInfo}>
         <SubJobOverviewTable onStop={handleStop} />
         <div className={s.logsWrapper}>
-          <SubJobLogs isAutoScroll={isAutoScroll} setIsAutoScroll={setIsAutoScroll} />
+          <SubJobLogs />
         </div>
       </div>
       <StopSubJobDialog />
       <div className={s.subJobLogAutoScroll}>
-        <ExpandableSwitch onChange={handleAutoScrollChange} label="Auto-scroll" isToggled={isAutoScroll} />
+        <AutoScrollSwitch />
       </div>
-    </>
+    </SubJobLogsAutoScrollProvider>
   );
 };
 
