@@ -14,6 +14,7 @@ from functools import cache
 
 from dishka import Container, Scope, make_container
 from infra.di.providers import (
+    ActionHostGroupProvider,
     BundleProvider,
     ClusterProvider,
     ConfigProvider,
@@ -33,6 +34,7 @@ from infra.di.providers import (
 @cache
 def prepare_container() -> Container:
     providers = (
+        ActionHostGroupProvider(),
         ClusterProvider(),
         ProviderProvider(),
         UpgradeProvider(),
