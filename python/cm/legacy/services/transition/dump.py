@@ -12,6 +12,8 @@
 
 from typing import TypeAlias
 
+from adcm.dependencies import prepare_container
+from core.config._secrets import decrypt_if_possible
 from core.types import (
     BundleID,
     ClusterID,
@@ -28,9 +30,10 @@ from core.types import (
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
+import core
 
-from cm.legacy.services.config.secrets import AnsibleSecrets
 from cm.legacy.services.transition.types import (
+    ActionHostGroupInfo,
     BundleExtraInfo,
     BundleHash,
     ClusterInfo,
@@ -44,12 +47,12 @@ from cm.legacy.services.transition.types import (
     TransitionPayload,
 )
 from cm.models import (
+    ActionHostGroup,
     AnsibleConfig,
     Bundle,
     Cluster,
     Component,
     ConfigHostGroup,
-    ConfigLog,
     Host,
     HostComponent,
     MaintenanceMode,
@@ -72,7 +75,10 @@ def dump(cluster_id: ClusterID) -> TransitionPayload:
     bundles.add(cluster_bundle_id)
     bundles_info = retrieve_bundles_info(ids=bundles)
 
-    fill_configurations(config_acc=configs_to_set)
+    # this whole function is actually a Use Case, yet for a time being I directly use container building
+    di_container = prepare_container()
+    with di_container() as container:
+        fill_configurations(config_acc=configs_to_set, config_service=container.get(core.config.ConfigService))
 
     return TransitionPayload(
         adcm_version=settings.ADCM_VERSION,
@@ -221,14 +227,16 @@ def retrieve_cluster(
     service_ct = ContentType.objects.get_for_model(Service)
     component_ct = ContentType.objects.get_for_model(Component)
 
+    object_filter = (
+        Q(object_type=cluster_ct, object_id=cluster_id)
+        | Q(object_type=service_ct, object_id__in=service_id_name_map)
+        | Q(object_type=component_ct, object_id__in=component_id_name_map)
+    )
+
     host_groups: dict[ObjectID, ConfigHostGroupInfo] = {}
 
     for group in (
-        ConfigHostGroup.objects.filter(
-            Q(object_type=cluster_ct, object_id=cluster_id)
-            | Q(object_type=service_ct, object_id__in=service_id_name_map)
-            | Q(object_type=component_ct, object_id__in=component_id_name_map)
-        )
+        ConfigHostGroup.objects.filter(object_filter)
         .annotate(current_config_id=F("config__current"))
         .select_related("object_type")
     ):
@@ -238,17 +246,37 @@ def retrieve_cluster(
         config_acc[group.current_config_id] = group_info
 
         if group.object_type == cluster_ct:
-            cluster_info.host_groups.append(group_info)
+            cluster_info.config_host_groups.append(group_info)
         elif group.object_type == service_ct:
-            cluster_info.services[service_id_name_map[group.object_id].service].host_groups.append(group_info)
+            cluster_info.services[service_id_name_map[group.object_id].service].config_host_groups.append(group_info)
         else:
             key = component_id_name_map[group.object_id]
-            cluster_info.services[key.service].components[key.component].host_groups.append(group_info)
+            cluster_info.services[key.service].components[key.component].config_host_groups.append(group_info)
 
     for group_id, host_id in ConfigHostGroup.hosts.through.objects.filter(
         confighostgroup_id__in=host_groups
     ).values_list("confighostgroup_id", "host_id"):
         host_groups[group_id].hosts.append(hosts[host_id])
+
+    action_host_groups: dict[ObjectID, ActionHostGroupInfo] = {}
+
+    for group in ActionHostGroup.objects.filter(object_filter).select_related("object_type"):
+        group_info = ActionHostGroupInfo(name=group.name, description=group.description)
+
+        action_host_groups[group.pk] = group_info
+
+        if group.object_type == cluster_ct:
+            cluster_info.action_host_groups.append(group_info)
+        elif group.object_type == service_ct:
+            cluster_info.services[service_id_name_map[group.object_id].service].action_host_groups.append(group_info)
+        else:
+            key = component_id_name_map[group.object_id]
+            cluster_info.services[key.service].components[key.component].action_host_groups.append(group_info)
+
+    for group_id, host_id in ActionHostGroup.hosts.through.objects.filter(
+        actionhostgroup_id__in=action_host_groups
+    ).values_list("actionhostgroup_id", "host_id"):
+        action_host_groups[group_id].hosts.append(hosts[host_id])
 
     return cluster_info, cluster.bundle_id_value
 
@@ -262,10 +290,10 @@ def retrieve_bundles_info(ids: set[BundleID]) -> dict[BundleHash, BundleExtraInf
     }
 
 
-def fill_configurations(config_acc: ConfigUpdateAcc) -> None:
-    secrets = AnsibleSecrets()
-
-    for config_id, config, attr in ConfigLog.objects.filter(id__in=config_acc).values_list("id", "config", "attr"):
+def fill_configurations(config_acc: ConfigUpdateAcc, config_service: core.config.ConfigService) -> None:
+    configurations = config_service.retrieve_configurations_by_id(config_acc)
+    for config_id, config in configurations.items():
+        # literal decryption for simplicity purposes, better rework
+        config.values = decrypt_if_possible(value=config.values, decryptor=config_service.secrets.decrypt)
         target = config_acc[config_id]
-        target.config = secrets.reveal_secrets(config)
-        target.attr = attr
+        target.config = config

@@ -26,6 +26,7 @@ from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from core import secrets as secrets_m
 from core.bundle import VersionSupportStatus
@@ -180,6 +181,13 @@ class UpgradeProvider(Provider):
 
     repo = provide(UpgradeRepo, provides=core.upgrade.UpgradeRepoI)
     service = provide(core.upgrade.UpgradeService)
+
+
+class ActionHostGroupProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ActionHostGroupRepo)
+    service = provide(ActionHostGroupService)
 
 
 class UtilsProvider(Provider):
