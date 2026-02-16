@@ -11,8 +11,6 @@
 # limitations under the License.
 
 
-from adcm.dependencies import prepare_container
-from adcm.tests.base import ParallelReadyTestCase
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.models import (
@@ -24,18 +22,14 @@ from cm.models import (
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
+from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
+from api_v2.tests.setup.base import BaseAPITestCase
 
 
-class TestWizardMapping(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMixin):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        prepare_container.cache_clear()
-
+class TestWizardMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
     def setUp(self):
-        self.client.login(username="admin", password="admin")
+        super().setUp()
+
         cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_action")
         provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
 

@@ -12,8 +12,6 @@
 
 from pathlib import Path
 
-from adcm.dependencies import prepare_container
-from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Action,
@@ -21,12 +19,13 @@ from cm.models import (
 from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
-from rest_framework.test import APITestCase
 
 from api_v2.tests.base import APIV2Mixin
+from api_v2.tests.setup.base import BaseAPITestCase
+from api_v2.utils.di import prepare_container
 
 
-class TestImplementDescription(APITestCase, ParallelReadyTestCase, APIV2Mixin):
+class TestImplementDescription(BaseAPITestCase, APIV2Mixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -40,7 +39,8 @@ class TestImplementDescription(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         init()
 
     def setUp(self):
-        self.client.login(username="admin", password="admin")
+        super().setUp()
+
         self.cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_rendering_description")
         self.step_descr_mapping = {
             "action_step_config": "Config step description",

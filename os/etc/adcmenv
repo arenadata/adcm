@@ -44,6 +44,7 @@ cleanupwaitstatus() {
 ensure_directory_structure() {
   echo "Ensuring required directories exist"
 
+  mkdir -p "${adcmlog}"
   mkdir -p "${adcmrun}"
   mkdir -p "${adcmbundle}"
   mkdir -p "${adcmdownload}"

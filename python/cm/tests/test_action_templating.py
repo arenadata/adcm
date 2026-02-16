@@ -20,9 +20,8 @@ from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
-from cm.models import Action, JobLog
+from cm.models import Action, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_action_host_group import ScheduleTask
 
 
@@ -42,21 +41,21 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_templates")
         input_config = {"config": {"field": "something"}, "attr": {}}
 
-        with RunTaskMock() as task_mock:
-            configuration = ConfigurationDTO(
-                convert=lambda x, _: x,
-                input_config=core.config.Configuration(values=input_config["config"], attributes=input_config["attr"]),
+        configuration = ConfigurationDTO(
+            convert=lambda x, _: x,
+            input_config=core.config.Configuration(values=input_config["config"], attributes=input_config["attr"]),
+        )
+        with self.container() as container:
+            container.get(ScheduleTask).do(
+                action_orm=action, target=self.cluster, payload=RunActionDTO(configuration=configuration)
             )
-            with self.container() as container:
-                container.get(ScheduleTask).do(
-                    action_orm=action, target=self.cluster, payload=RunActionDTO(configuration=configuration)
-                )
 
-        self.assertIsNotNone(task_mock.target_task)
-        jobs = JobLog.objects.filter(task_id=task_mock.target_task.pk)
+        task_id = self.task_runner.expect_task_launched().id
+
+        jobs = JobLog.objects.filter(task_id=task_id)
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].name, "first")
-        config = task_mock.target_task.config
+        config = TaskLog.objects.values_list("config", flat=True).get(id=task_id)
         self.assertEqual(config, input_config["config"])
 
 

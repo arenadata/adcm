@@ -13,9 +13,10 @@
 from datetime import timedelta
 import logging
 
-from adcm.dependencies import prepare_container
+from application.di.containers import get_main_providers
 from audit.alt.background import audit_background_operation
 from audit.models import AuditLogOperationType
+from dishka import make_container
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from use_cases.dto import RunActionDTO
@@ -62,7 +63,7 @@ class Command(BaseCommand):
 
             logger.debug("Ldap sync launched in %s", timezone.now())
 
-        container = prepare_container()
+        container = make_container(*get_main_providers())
         with container() as container, audit_background_operation(
             name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE
         ):

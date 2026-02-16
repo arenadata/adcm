@@ -37,7 +37,6 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import RunTaskMock
 
 
 class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
@@ -336,21 +335,20 @@ class TestJinjaScriptsJobs(WithDishkaContainer, BusinessLogicMixin, TaskTestMixi
         action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_activatable_group_jinja")
 
         for active, expected_jobs in ((False, ["default", "inactive"]), (True, ["default", "active"])):
-            with RunTaskMock():
-                configuration = ConfigurationDTO(
-                    convert=lambda x, _: x,
-                    input_config=core.config.Configuration(
-                        values={"group": {"x": 2}},
-                        attributes={"/group": core.config.Attributes(is_active=active)},
-                    ),
-                )
+            configuration = ConfigurationDTO(
+                convert=lambda x, _: x,
+                input_config=core.config.Configuration(
+                    values={"group": {"x": 2}},
+                    attributes={"/group": core.config.Attributes(is_active=active)},
+                ),
+            )
 
-                with self.container() as container:
-                    task = container.get(ScheduleTask).do(
-                        action_orm=action,
-                        target=self.cluster,
-                        payload=RunActionDTO(configuration=configuration),
-                    )
+            with self.container() as container:
+                task = container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.cluster,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
             self.assertListEqual(list(JobLog.objects.filter(task=task).values_list("name", flat=True)), expected_jobs)
 

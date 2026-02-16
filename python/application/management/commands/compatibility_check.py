@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.dependencies import prepare_container
+from dishka import make_container
 from django.core.management import BaseCommand, CommandError
 
 from application.check import check_adcm_start_is_allowed
+from application.di.containers import get_main_providers
 
 
 class Command(BaseCommand):
@@ -23,7 +24,7 @@ class Command(BaseCommand):
     """
 
     def handle(self, *_, **_kw):
-        container = prepare_container()
+        container = make_container(*get_main_providers())
         check_adcm_start_is_allowed(
             container=container,
             failure_exc=CommandError,

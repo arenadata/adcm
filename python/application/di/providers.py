@@ -28,6 +28,7 @@ from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
+from cm.legacy.services.job.run import start_task
 from core import secrets as secrets_m
 from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
@@ -41,7 +42,7 @@ from use_cases.init import RunPreMigration
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
-from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, UseNewScheduler
+from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, TaskStarter
 import core
 import yaml
 
@@ -197,12 +198,15 @@ class UtilsProvider(Provider):
     bundle_renderer = provide(BundleRenderer[ActionArgs, TaskArgs], provides=BundleRenderer[ActionArgs, TaskArgs])
 
 
-class FeatureFlagProvider(Provider):
+class TaskStarterProvider(Provider):
     scope = Scope.APP
 
     @provide
-    def new_scheduler(self) -> UseNewScheduler:
-        return UseNewScheduler(use_new_job_scheduler())
+    def task_starter(self) -> TaskStarter:
+        if use_new_job_scheduler():
+            return lambda _: None
+
+        return start_task
 
 
 class ScenariosProvider(Provider):

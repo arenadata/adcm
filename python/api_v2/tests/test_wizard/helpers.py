@@ -38,8 +38,6 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 import yaml
 
-PATCH_PATH = "cm.legacy.services.action_process.operations.start_task"
-
 
 def render_template(file: Path, context: dict) -> Any:
     data = Template(source=file.read_text(encoding="utf-8")).render(**context)

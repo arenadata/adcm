@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 
-from adcm.dependencies import prepare_container
 from adcm.tests.base import ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient, APINode
+from adcm.tests.client import APINode
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
 from cm.models import (
@@ -28,33 +26,17 @@ from cm.models import (
     ProcessStep,
     Service,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
-from init_db import init
-from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework.test import APITestCase
 
 from api_v2.tests.base import APIV2Mixin
+from api_v2.tests.setup.base import BaseAPITestCase
 
 
-class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-        cls.test_bundles_dir = Path(__file__).parent.parent / "bundles"
-        init_roles()
-        init()
-
+class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
     def setUp(self):
-        self.client.login(username="admin", password="admin")
+        super().setUp()
+
         cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_action")
         provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
 
@@ -200,16 +182,16 @@ class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         self.assertListEqual(step_3_operation.step_spec, self.expected_step_spec[step_3_operation.name])
         self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-        with RunTaskMock(run_patch_path="cm.legacy.services.action_process.operations.start_task") as run_task:
-            response = operation_endpoint.post(
-                data={
-                    "method": ProcessOperationType.SUBMIT,
-                    "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
-                }
-            )
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        response = operation_endpoint.post(
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
+            }
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-        run_task.runner.run(run_task.target_task.id)
+        launched_task = self.task_runner.expect_task_launched()
+        self.task_runner.run_task(launched_task.id)
 
         step_3_operation.refresh_from_db()
         self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
@@ -239,10 +221,11 @@ class TestWizardOnAHG(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         self.assertEqual(process.state, ProcessState.COMPLETED.value)
 
     def check_run_wizard_final_action(self, process: Process, action_endpoint: APINode) -> None:
-        with RunTaskMock():
-            response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
+        response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.task_runner.expect_task_launched()
 
     def _test_adcm_7584_wizard_happy_path_on_ahg(self, object_: Cluster | Service | Component, action: Action):
         host = self.create_host(provider=self.provider, name="test-host-cluster", cluster=self.cluster)

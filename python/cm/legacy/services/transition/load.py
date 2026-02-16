@@ -13,8 +13,8 @@
 from collections import deque
 from typing import Callable, Iterable, Literal, TypeAlias
 
-from adcm.dependencies import prepare_container
 from api_v2.host.utils import create_host
+from application.di.containers import get_main_providers
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import (
     ADCMHostGroupType,
@@ -33,6 +33,7 @@ from django.db.models import F
 from rbac.roles import apply_policy_for_new_config
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 import core
+import dishka
 
 from cm import converters
 from cm.legacy.api import add_host_provider
@@ -96,7 +97,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
         raise RuntimeError(message)
 
     # this whole function is actually a Use Case, yet for a time being I directly use container building
-    di_container = prepare_container()
+    di_container = dishka.make_container(*get_main_providers())
     with di_container() as container:
         config_service = container.get(core.config.ConfigService)
 

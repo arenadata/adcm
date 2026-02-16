@@ -29,7 +29,6 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -244,14 +243,13 @@ class TestTask(BaseAPITestCase):
         ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
             # run action as service admin (create all permissions we interested in)
             self.client.login(**service_admin_credentials)
-            with RunTaskMock() as run_task:
-                response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
-                    data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-                )
+            response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
-            self.assertEqual(response.json()["id"], run_task.target_task.id)
-            self.assertEqual(run_task.target_task.status, "created")
+            task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+            self.assertEqual(TaskLog.objects.get(id=task_id).status, "created")
 
             service_task_pk = response.json()["id"]
             child_job_pk = response.json()["childJobs"][0]["id"]

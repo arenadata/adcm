@@ -92,7 +92,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "adcm.dependencies.DishkaMiddleware",
+    "api_v2.utils.di.DishkaMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

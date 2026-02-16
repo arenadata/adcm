@@ -34,7 +34,6 @@ from core.types import ADCMHostGroupType, Descriptor
 from dishka import FromDishka
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
@@ -43,6 +42,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 import core
 
 from api_v2.api_schema import DefaultParams, responses
+from api_v2.utils.di import inject
 
 ParentObject: TypeAlias = Union[Cluster, Service, Component, Provider, Host, ConfigHostGroup]
 

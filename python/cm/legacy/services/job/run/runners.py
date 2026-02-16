@@ -25,6 +25,7 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
 )
+from dishka import make_container
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 
@@ -82,9 +83,9 @@ class JobSequenceRunner(TaskRunner):
         self._status_server = status_server
         self._logger = logger
 
-        from adcm.dependencies import prepare_container
+        from application.di.containers import get_main_providers
 
-        self._container = prepare_container()
+        self._container = make_container(*get_main_providers())
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True

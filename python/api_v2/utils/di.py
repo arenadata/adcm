@@ -12,45 +12,14 @@
 
 from functools import cache
 
-from dishka import Container, Scope, make_container
-from infra.di.providers import (
-    ActionHostGroupProvider,
-    BundleProvider,
-    ClusterProvider,
-    ConfigProvider,
-    FeatureFlagProvider,
-    FSProvider,
-    JobProvider,
-    ProviderProvider,
-    ScenariosProvider,
-    SettingsProvider,
-    UpgradeProvider,
-    UseCaseProvider,
-    UtilsProvider,
-    WizardProvider,
-)
+from application.di.containers import get_main_providers
+from dishka import Scope, make_container
+from dishka.integrations.base import wrap_injection
 
 
 @cache
-def prepare_container() -> Container:
-    providers = (
-        ActionHostGroupProvider(),
-        ClusterProvider(),
-        ProviderProvider(),
-        UpgradeProvider(),
-        BundleProvider(),
-        ConfigProvider(),
-        JobProvider(),
-        WizardProvider(),
-        FSProvider(),
-        UtilsProvider(),
-        FeatureFlagProvider(),
-        ScenariosProvider(),
-        UseCaseProvider(),
-        SettingsProvider(),
-    )
-
-    return make_container(*providers)
+def prepare_container():
+    return make_container(*get_main_providers())
 
 
 class DishkaMiddleware:
@@ -62,3 +31,16 @@ class DishkaMiddleware:
         with self.container(scope=Scope.REQUEST) as request_container:
             request.container = request_container
             return self.get_response(request)
+
+
+# todo need typing, see dishka integrations
+
+
+def container_from_request(*args):
+    # args will be tuple with two items, where first is self, second is request
+    # so we get second and extract container from it
+    return args[0][1].container
+
+
+def inject(func):
+    return wrap_injection(func=func, is_async=False, container_getter=container_from_request)
