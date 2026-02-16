@@ -40,6 +40,8 @@ sv_stop() {
     done
 }
 
+ensure_directory_structure
+
 # Start pre migration check
 "${adcmroot}"/python/manage.py compatibility_check || exit $?
 
