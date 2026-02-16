@@ -963,7 +963,7 @@ class TaskSchema(_BaseTaskSchema):
 CLUSTER_ACTIONS_TYPE: TypeAlias = Annotated[
     dict[NAME, Annotated[JOB_SCHEMA | TaskSchema, Field(discriminator="type")]] | None,
     Field(default=None),
-    AfterValidator(forbidden_mm_actions),
+    BeforeValidator(forbidden_mm_actions),
 ]
 
 PROVIDER_ACTIONS_TYPE: TypeAlias = Annotated[

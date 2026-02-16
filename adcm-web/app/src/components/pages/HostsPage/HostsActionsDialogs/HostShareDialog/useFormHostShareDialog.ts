@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { createHostDuplicate, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
-import { isHostNameValid, required } from '@utils/validationsUtils';
+import { validateSubHostName } from './HostShareDialog.utils';
 
 interface CreateHostsFormData {
   name: string;
@@ -28,9 +28,7 @@ export const useFormHostShareDialog = () => {
 
   useEffect(() => {
     setErrors({
-      name:
-        (required(formData.name) ? undefined : 'The subhost name field is required') ||
-        (isHostNameValid(formData.name) ? undefined : 'The subhost name field is incorrect'),
+      name: validateSubHostName(formData.name),
     });
   }, [formData, setErrors]);
 
