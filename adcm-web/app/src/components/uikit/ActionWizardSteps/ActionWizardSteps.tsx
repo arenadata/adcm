@@ -148,8 +148,11 @@ const ActionWizardSteps = ({
                   {stageNumber}.{stepIndex + 1}
                   {getStepIcon(step, hasConflict, jobsData[step.id]?.job)}
                 </div>
-                <div className={s.actionWizardSteps__stepLabel} onClick={() => handleChangeStepStatus(step.id)}>
-                  {step.displayName}
+                <div className={s.actionWizardSteps__labels}>
+                  <div className={s.stepLabel} onClick={() => handleChangeStepStatus(step.id)}>
+                    {step.displayName}
+                  </div>
+                  <div className={s.description}>{step.description}</div>
                 </div>
               </div>
               <ButtonGroup className={s.actionWizardSteps__buttons}>

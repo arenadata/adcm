@@ -18,7 +18,6 @@ import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
 import ActionWizardLastStageContextProvider from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContextProvider';
 import ActionWizardBrokenStage from '@uikit/ActionWizardSteps/ActionWizardBrokenStage/ActionWizardBrokenStage';
 import FlexGroup from '@uikit/FlexGroup/FlexGroup';
-import { getStepTip } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 
 const getTitleIcon = (stage: AdcmWizardStage, isValid: boolean) => {
   if (stage.steps.some((step) => step.state === AdcmWizardStepStates.Running)) {
@@ -106,9 +105,7 @@ const ActionWizard: React.FC<ActionWizardProps> = ({
                   </span>
                   {getTitleIcon(stages[stageIndex], isValid)}
                 </FlexGroup>
-                <span className={s.actionWizardLayout__tip}>
-                  {getStepTip(stages[stageIndex], selectedStep ?? currentStep)}
-                </span>
+                <span className={s.actionWizardLayout__description}>{stages[stageIndex].description}</span>
               </div>
               <Button className={s.actionWizardLayout__exitButton} variant="secondary" onClick={onClose}>
                 Exit
