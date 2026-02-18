@@ -9,18 +9,14 @@ export const required = (value: any) => {
 };
 
 export const isEmailValid = (email: string) => {
-  if (!/^[a-z0-9-_@.]+$/i.test(email)) {
+  const baseEmailRegex = /^[\w.-]+@[a-z0-9-.]+\.[a-z]{2,}$/i;
+  const denyConsecutiveSpecialSymbolsRegex = /^[\W_]|[\W_]{2,}|[\W_]$/;
+
+  if (denyConsecutiveSpecialSymbolsRegex.test(email)) {
     return false;
   }
 
-  const [username, domain, something] = email.split('@');
-  // username@domain@something or username or username@
-  if (something || !domain || !username) {
-    return false;
-  }
-
-  // username@subDomain.domain
-  return domain.split('.').filter((d) => d).length > 1;
+  return baseEmailRegex.test(email);
 };
 
 export const isClusterNameValid = (clusterName: string) => {
