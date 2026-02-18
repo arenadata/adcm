@@ -38,7 +38,7 @@ const ClustersTableFilters = () => {
   };
 
   const handleProductChange = (value: string | null) => {
-    dispatch(setFilter({ displayName: value ?? undefined }));
+    dispatch(setFilter({ prototypeDisplayName: value ?? undefined }));
   };
 
   return (
@@ -63,7 +63,7 @@ const ClustersTableFilters = () => {
           isSearchable={true}
           maxHeight={200}
           placeholder="All"
-          value={filter.displayName ?? null}
+          value={filter.prototypeDisplayName ?? null}
           onChange={handleProductChange}
           options={productsOptions}
           noneLabel="All"

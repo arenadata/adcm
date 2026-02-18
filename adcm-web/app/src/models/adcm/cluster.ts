@@ -30,7 +30,7 @@ export interface AdcmCluster {
 export interface AdcmClustersFilter {
   name?: string;
   status?: AdcmClusterStatus;
-  displayName?: string;
+  prototypeDisplayName?: string;
 }
 
 export interface CreateAdcmClusterPayload {
