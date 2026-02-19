@@ -12,7 +12,6 @@
 
 from typing import TypeAlias
 
-from adcm.dependencies import prepare_container
 from core.config._secrets import decrypt_if_possible
 from core.types import (
     BundleID,
@@ -31,6 +30,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
 import core
+import dishka
 
 from cm.legacy.services.transition.types import (
     ActionHostGroupInfo,
@@ -65,6 +65,8 @@ ConfigUpdateAcc: TypeAlias = dict[ConfigID, RestorableCondition | ConfigHostGrou
 
 
 def dump(cluster_id: ClusterID) -> TransitionPayload:
+    from application.di.containers import get_main_providers
+
     configs_to_set: ConfigUpdateAcc = {}
 
     hosts, provider_ids = retrieve_hosts(cluster_id=cluster_id, config_acc=configs_to_set)
@@ -76,7 +78,7 @@ def dump(cluster_id: ClusterID) -> TransitionPayload:
     bundles_info = retrieve_bundles_info(ids=bundles)
 
     # this whole function is actually a Use Case, yet for a time being I directly use container building
-    di_container = prepare_container()
+    di_container = dishka.make_container(*get_main_providers())
     with di_container() as container:
         fill_configurations(config_acc=configs_to_set, config_service=container.get(core.config.ConfigService))
 
