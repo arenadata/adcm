@@ -297,7 +297,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
         task = JobRepoImpl.get_task(id=response.json()["id"])
         job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
 
-        job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+        job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)
         prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
 

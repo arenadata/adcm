@@ -13,7 +13,9 @@
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generic, Literal, NamedTuple, TypeAlias, TypeVar
+from typing import Generic, Literal, NamedTuple, NewType, TypeAlias, TypeVar
+
+CurrentADCMVersion = NewType("CurrentADCMVersion", str)
 
 ObjectID: TypeAlias = int
 ClusterID: TypeAlias = ObjectID

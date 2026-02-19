@@ -17,7 +17,7 @@ import json
 from pydantic import ValidationError
 
 from core.secrets._secrets import SecretsError
-from core.secrets._types import ADCMSecrets
+from core.secrets._types import ADCMSecrets, SecretsFileModel
 
 
 class SecretsProvider(Protocol):
@@ -30,15 +30,17 @@ class FSSecretsProvider(SecretsProvider):
         self._path = path
 
     def get(self) -> ADCMSecrets:
-        if not self._path.is_file():
-            raise SecretsError(f"Secrets file not found: {self._path}")
-
         try:
-            with self._path.open(mode="r") as f:
-                data = json.load(f)
-            return ADCMSecrets(**data)
+            content = self._path.read_text(encoding="utf-8")
+            return SecretsFileModel.model_validate_json(content).adcm
+
+        except FileNotFoundError as e:
+            message = f"Secrets file not found: {self._path}"
+            raise SecretsError(message) from e
+
         except (ValidationError, json.JSONDecodeError) as e:
-            raise SecretsError(f"File {self._path} can't be parsed as {ADCMSecrets.__class__.__name__}") from e
+            message = f"File {self._path} can't be parsed as {ADCMSecrets.__class__.__name__}"
+            raise SecretsError(message) from e
 
 
 class OpenBaoSecretsProvider(SecretsProvider):

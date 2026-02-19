@@ -17,7 +17,6 @@ from cm.legacy.services.action_process.schema_validation import (
     ProcessOperationType,
 )
 from cm.models import Component, ProcessStep, ProcessStepInput, TaskLog
-from infra.services import get_config_service
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -32,8 +31,6 @@ from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_templa
 class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHelpers):
     def setUp(self) -> None:
         super().setUp()
-
-        get_config_service.cache_clear()
 
         suffix = uuid4().hex[:8]
         cluster_bundle = self.test_bundles_dir / "wizard_action"

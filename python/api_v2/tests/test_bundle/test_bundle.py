@@ -316,7 +316,7 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertEqual(Bundle.objects.filter(pk=self.bundle_1.pk).exists(), False)
-        self.assertIsNone(_get_file_hashes(path=self.directories["DOWNLOAD_DIR"]).get(bundle_hash))
+        self.assertIsNone(_get_file_hashes(path=self.directories.downloads).get(bundle_hash))
 
     def test_delete_not_found_fail(self):
         response = (self.client.v2 / "bundles" / self.get_non_existent_pk(model=Bundle)).delete()

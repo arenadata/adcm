@@ -11,19 +11,20 @@
 # limitations under the License.
 
 from core.secrets._backend import FSSecretsProvider, OpenBaoSecretsProvider, SecretsProvider
-from core.secrets._secrets import ENV_BACKEND, FILENAME, FILENAME_DEPRECATED, SecretsError, migrate_format, new
-from core.secrets._types import ADCMSecrets, SecretsSource
+from core.secrets._constants import SECRETS_FILENAME, SECRETS_FILENAME_DEPRECATED
+from core.secrets._secrets import SecretsError, migrate_format
+from core.secrets._types import ADCMSecrets, AnsibleVault, SecretsFileModel, SecretsSource
 
 __all__ = [
     "ADCMSecrets",
-    "ENV_BACKEND",
-    "FILENAME",
-    "FILENAME_DEPRECATED",
+    "AnsibleVault",
     "FSSecretsProvider",
     "OpenBaoSecretsProvider",
+    "SECRETS_FILENAME",
+    "SECRETS_FILENAME_DEPRECATED",
     "SecretsError",
+    "SecretsFileModel",
     "SecretsProvider",
     "SecretsSource",
     "migrate_format",
-    "new",
 ]

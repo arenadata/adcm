@@ -10,25 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm import settings
+from pathlib import Path
+
 from rest_framework.status import HTTP_200_OK
 import yaml
 
 from api_v2.tests.base import BaseAPITestCase
 
+SCHEMA_PATH = Path(__file__).parent.parent.parent / "adcm" / "api_schema.yaml"
+
 
 class TestAPISchema(BaseAPITestCase):
-    api_schema_url = "http://127.0.0.1:8000/api/v2/schema/"
-    documented_schema_path = settings.BASE_DIR / "python" / "adcm" / "api_schema.yaml"
-
     def test_endpoints(self):
         response = self.client.v2["schema"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         api_schema = response.data
 
-        with self.documented_schema_path.open(encoding="utf-8") as f:
-            documented_schema = yaml.safe_load(f)
+        content = SCHEMA_PATH.read_text(encoding="utf-8")
+        documented_schema = yaml.safe_load(content)
 
         documented_schema, api_schema = self.clean_schema(documented_schema, api_schema)
 

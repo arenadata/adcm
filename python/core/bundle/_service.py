@@ -35,12 +35,12 @@ from core.bundle._validate import (
     check_definitions_are_valid,
     check_has_valid_definitions_set,
 )
-from core.types import BundleID
+from core.types import BundleID, CurrentADCMVersion
 
 
 @dataclass(slots=True)
 class BundleService:
-    adcm_version: str
+    adcm_version: CurrentADCMVersion
     parsers: list[tuple[parsing.VersionInfo, parsing.BundleParser]]
     definition_to_spec_converter: ConvertConfigDefinition
 

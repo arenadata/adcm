@@ -57,7 +57,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        get_config_service.cache_clear()
 
         self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
@@ -91,7 +90,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "host_1": self.host_1,
             "host_2": self.host_2,
             "hostprovider": self.provider,
-            "filedir": self.directories["FILE_DIR"],
+            "filedir": self.directories.files,
             "export_cluster_1": self.export_cluster_1,
             "export_cluster_2": self.export_cluster_2,
             "export_service_1": self.export_service_1,
@@ -309,7 +308,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -341,7 +340,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -404,7 +403,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],

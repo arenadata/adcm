@@ -13,7 +13,6 @@
 import json
 
 from cm.models import Action
-from infra.services import get_config_service, get_wizard_service
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import TEST_BUNDLES_DIR, APIV2Mixin, BaseAPITestCase
@@ -25,8 +24,6 @@ class TestConfigTemplateContext(APIV2Mixin, BaseAPITestCase):
         super().setUp()
 
         prepare_container.cache_clear()
-        get_config_service.cache_clear()
-        get_wizard_service.cache_clear()
 
         self.cluster_bundle = self.create_bundle(TEST_BUNDLES_DIR / "config_template_context")
         self.cluster = self.create_cluster(bundle=self.cluster_bundle, name="aaa")

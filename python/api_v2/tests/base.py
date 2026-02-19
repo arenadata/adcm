@@ -20,19 +20,17 @@ from typing import Any, Collection, TypeAlias
 import uuid
 import tarfile
 
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
+from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient, APINode
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
-    ADCM,
     Action,
     ActionHostGroup,
     Bundle,
     Cluster,
     Component,
     ConfigHostGroup,
-    ConfigLog,
     Host,
     JobLog,
     JobStatus,
@@ -49,11 +47,7 @@ from core.legacy.cluster.types import ObjectMaintenanceModeState
 from core.types import ClusterID
 from django.conf import settings
 from django.http import HttpRequest
-from django.test import modify_settings
-from infra.services import get_config_service
-from init_db import init
 from rbac.models import Group, Policy, Role, User
-from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
@@ -71,18 +65,9 @@ TEST_FILES_DIR = Path(__file__).parent / "files"
 # ruff: noqa: S101
 
 
-class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
+class BaseAPITestCase(APITestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
-
-    def __init_subclass__(cls, **kwargs) -> None:
-        super().__init_subclass__(**kwargs)
-        modify_settings(
-            MIDDLEWARE={
-                "prepend": "api_v2.tests.setup.overrides.DishkaMiddleware",
-                "remove": ["api_v2.utils.di.DishkaMiddleware"],
-            }
-        )(cls)
 
     @classmethod
     def setUpClass(cls):
@@ -92,22 +77,13 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         cls.test_files_dir = TEST_FILES_DIR
 
         prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-
-        init_roles()
-        init()
-
-        adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(id=adcm.config.current)
-        config_log.config["auth_policy"]["max_password_length"] = 20
-        config_log.save(update_fields=["config"])
 
         # task runner "patch"
         cls.task_runner = get_task_runner_manager()
 
     def setUp(self) -> None:
         # TODO: ADCM-7513
-        get_config_service.cache_clear()
+        prepare_container.cache_clear()
 
         self.task_runner.reset()
 
@@ -132,7 +108,6 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             *Path(settings.FILE_DIR).iterdir(),
             *Path(settings.LOG_DIR).iterdir(),
             *Path(settings.RUN_DIR).iterdir(),
-            *Path(settings.VAR_DIR).iterdir(),
         )
 
         for item in dirs_to_clear:

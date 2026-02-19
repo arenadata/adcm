@@ -11,10 +11,10 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+from itertools import chain
 from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
-from tempfile import mkdtemp
 from typing import Callable, Iterable
 import uuid
 import random
@@ -23,6 +23,7 @@ import string
 import tarfile
 
 from api_v2.prototype.utils import accept_license
+from api_v2.tests.setup.overrides import make_default_dishka_container_for_tests
 from cm.converters import orm_object_to_core_type
 from cm.legacy.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.legacy.services.bundle_alt.load import Directories, parse_bundle_archive
@@ -57,7 +58,6 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
 from django.db.transaction import atomic
-from django.test import Client, TestCase, override_settings
 from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, RoleTypes, User
@@ -71,6 +71,7 @@ from use_cases.transition.cluster.create import (
     CreateServicesFromPrototypes,
 )
 from use_cases.transition.hostprovider.create import create_host, create_hostprovider
+import django.test
 
 APPLICATION_JSON = "application/json"
 
@@ -86,33 +87,84 @@ class TestUserCreateDTO(UserCreateDTO):
 
 
 class ParallelReadyTestCase:
+    """
+    Prepares directories for parallel tests run.
+
+    On `__init_subclass__`:
+    1. Cached `Directories` are ASSIGNED for current process
+    2. Django settings overriden for each child class with same directories values (compatibility reasons)
+
+    Important:
+    - assigned directories aren't actually created (`_create_directories_on_fs` is used for that)
+    - method used is bound to DI of test run (that's why it's cached)
+    - caching means that `__init_subclass__` must be called in each process again
+      (=> `fork` process creation method is no good)
+    - code is required to be in `__init_subclass__` as lesser evil to metaclass / test hierarchy changes
+      due to `override_settings` being used
+    - once legacy using `settings.*_DIR` directly is gone, this approach can be revisited
+    """
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        cls.directories = cls._prepare_temporal_directories_for_adcm()
-        override_settings(**cls.directories, ANSIBLE_SECRET="verysecretstuff")(cls)
+        # copied from api_v2.tests.setup.base
+        # must be united in the nearest future
+        from api_v2.tests.setup.overrides import prepare_process_bound_directories
 
-    @staticmethod
-    def _prepare_temporal_directories_for_adcm() -> dict[str, Path]:
-        stack = Path(mkdtemp())
-        data = Path(mkdtemp()) / "data"
-
-        temporary_directories = {
-            "STACK_DIR": stack,
-            "BUNDLE_DIR": stack / "data" / "bundle",
-            "DOWNLOAD_DIR": Path(stack, "data", "download"),
-            "DATA_DIR": data,
-            "RUN_DIR": data / "run",
-            "FILE_DIR": stack / "data" / "file",
-            "LOG_DIR": data / "log",
-            "VAR_DIR": data / "var",
-            "TMP_DIR": data / "tmp",
+        cls.directories = prepare_process_bound_directories()
+        cls.temporary_directories = {
+            "STACK_DIR": cls.directories.stack,
+            "DATA_DIR": cls.directories.data,
+            "BUNDLE_DIR": cls.directories.bundles,
+            "DOWNLOAD_DIR": cls.directories.downloads,
+            "RUN_DIR": cls.directories.run,
+            "FILE_DIR": cls.directories.files,
+            "LOG_DIR": cls.directories.logs,
+            "VAR_DIR": cls.directories.secrets,
+            "TMP_DIR": cls.directories.temp,
         }
+        django.test.override_settings(**cls.temporary_directories)(cls)
 
-        for directory in temporary_directories.values():
+    @classmethod
+    def _create_directories_on_fs(cls):
+        # actually init temp directories
+        for directory in cls.temporary_directories.values():
             directory.mkdir(exist_ok=True, parents=True)
 
-        return temporary_directories
+
+class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, ParallelReadyTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls._create_directories_on_fs()
+
+        cls.base_dir = Path(__file__).parent.parent.parent.parent
+
+        init_roles()
+        init(container=make_default_dishka_container_for_tests())
+
+        adcm = ADCM.objects.first()
+        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log.config["auth_policy"]["max_password_length"] = 20
+        config_log.save(update_fields=["config"])
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        directories_to_clean = (
+            self.directories.bundles,
+            self.directories.downloads,
+            self.directories.files,
+            self.directories.logs,
+            self.directories.run,
+        )
+
+        for item in chain.from_iterable(path.iterdir() for path in directories_to_clean):
+            if item.is_dir():
+                rmtree(item)
+            elif item.name != ".gitkeep":
+                item.unlink()
 
 
 class BundleLogicMixin:
@@ -145,38 +197,7 @@ class BundleLogicMixin:
         )
 
 
-class TestCaseWithCommonSetUpTearDown(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.base_dir = Path(__file__).parent.parent.parent.parent
-
-        init_roles()
-        init()
-
-        adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
-        config_log.config["auth_policy"]["max_password_length"] = 20
-        config_log.save(update_fields=["config"])
-
-    def tearDown(self) -> None:
-        dirs_to_clear = (
-            *Path(settings.BUNDLE_DIR).iterdir(),
-            *Path(settings.DOWNLOAD_DIR).iterdir(),
-            *Path(settings.FILE_DIR).iterdir(),
-            *Path(settings.LOG_DIR).iterdir(),
-            *Path(settings.RUN_DIR).iterdir(),
-        )
-        for item in dirs_to_clear:
-            if item.is_dir():
-                rmtree(item)
-            else:
-                if item.name != ".gitkeep":
-                    item.unlink()
-
-
-class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
+class BaseTestCase(django.test.TestCase, WithPreparedFSAndInitADCM, BundleLogicMixin):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -186,8 +207,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         cls.task_runner = get_task_runner_manager()
 
     def setUp(self) -> None:
-        # TODO: ADCM-7513
-        get_config_service.cache_clear()
+        super().setUp()
 
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
@@ -209,7 +229,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         self.no_rights_user_group = Group.objects.create(name="no_right_group")
         self.no_rights_user_group.user_set.add(self.no_rights_user)
 
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
+        self.client = django.test.Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
 
     def login(self):

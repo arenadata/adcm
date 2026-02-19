@@ -27,6 +27,7 @@ from core.legacy.job.runners import (
 from core.legacy.job.types import ExecutionStatus
 from django.conf import settings
 from django.utils import timezone
+import dishka
 
 from cm.legacy import status_api
 from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
@@ -48,15 +49,19 @@ class SubprocessRunnerEnvironment:
         return timezone.now()
 
 
-def get_default_runner() -> TaskRunner:
-    return _get_runner()
+def get_default_runner(container: dishka.Container | None = None) -> TaskRunner:
+    return _get_runner(container=container)
 
 
-def get_restart_runner() -> TaskRunner:
-    return _get_runner(filter_predicate=lambda job: job.status != ExecutionStatus.SUCCESS)
+def get_restart_runner(container: dishka.Container | None = None) -> TaskRunner:
+    return _get_runner(filter_predicate=lambda job: job.status != ExecutionStatus.SUCCESS, container=container)
 
 
-def _get_runner(filter_predicate: Callable = id) -> TaskRunner:
+def _get_runner(filter_predicate: Callable = id, container: dishka.Container | None = None) -> TaskRunner:
+    # shouldn't be hardcoded
+    from application.di.containers import get_main_providers
+
+    container = container or dishka.make_container(*get_main_providers())
     return JobSequenceRunner(
         job_processor=JobProcessor(convert=_factory, filter_predicate=filter_predicate),
         settings=_prepare_settings(),
@@ -65,6 +70,7 @@ def _get_runner(filter_predicate: Callable = id) -> TaskRunner:
         environment=SubprocessRunnerEnvironment(),
         notifier=status_api,
         status_server=notify,
+        container=container,
         logger=logger,
     )
 

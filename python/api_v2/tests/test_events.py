@@ -13,21 +13,19 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
+from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
 from cm.models import ConfigHostGroup
 from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
-from django.test import TransactionTestCase
 from djangorestframework_camel_case.util import camelize
-from init_db import init
 from rbac.models import Group, Role, User
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.upgrade.role import init_roles
+import django.test
 
 
-class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicMixin):
+class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -37,9 +35,6 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
 
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
         cls.test_files_dir = Path(__file__).parent / "files"
-
-        init_roles()
-        init()
 
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
