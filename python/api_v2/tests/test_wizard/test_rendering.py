@@ -16,12 +16,12 @@ from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Action,
 )
-from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 
 from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.setup.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import make_default_dishka_container_for_tests
 from api_v2.utils.di import prepare_container
 
 
@@ -33,10 +33,9 @@ class TestImplementDescription(BaseAPITestCase, APIV2Mixin):
     def setUpClass(cls):
         super().setUpClass()
         prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
         cls.test_bundles_dir = Path(__file__).parent.parent / "bundles"
         init_roles()
-        init()
+        init(container=make_default_dishka_container_for_tests())
 
     def setUp(self):
         super().setUp()

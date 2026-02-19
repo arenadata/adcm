@@ -20,6 +20,7 @@ from cm.errors import AdcmEx
 from cm.legacy.services import adcm
 from cm.legacy.services import bundle_alt as bundle
 from core.errors import localize_error
+from core.files import directories
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from core.types import BundleID
@@ -74,16 +75,22 @@ class ParseBundleFromRequest:
 
 @dataclass(slots=True)
 class InitOrUpgradeADCM:
+    adcm_bundle_dir: directories.ADCMBundleDir
+
     bundle_service: core.bundle.BundleService
 
     initialize_adcm: InitializeADCM
     upgrade_adcm: UpgradeADCM
 
     @bundle.errors.convert_bundle_errors_to_adcm_ex
-    def do(self, adcm_config_file: Path) -> None:
+    def do(
+        self,
+        # required for test for a while, should be changed with DI thou
+        alternative_adcm_dir: Path | None = None,
+    ) -> None:
         adcm_object = models.ADCM.objects.first()
         current_adcm_bundle_version = adcm_object.prototype.version if adcm_object is not None else "0"
-        bundle_root = adcm_config_file.parent
+        bundle_root = alternative_adcm_dir or self.adcm_bundle_dir
 
         root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=bundle_root)
         parsing_meta, definitions = self.bundle_service.parse_to_definitions(

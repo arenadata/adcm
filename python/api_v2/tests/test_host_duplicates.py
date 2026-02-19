@@ -32,7 +32,6 @@ class TestDuplicateHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        get_config_service.cache_clear()
         self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
 
     def get_ids(self, collection: list[dict]) -> set[int]:
@@ -355,7 +354,7 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertEqual(duplicate_2.fqdn, duplicate_1.fqdn)
 
     def test_adcm_7443_files_in_nested_groups_success(self):
-        files_dir = self.directories["FILE_DIR"]
+        files_dir = self.directories.files
 
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider_host_nested_groups_with_files")
         provider = self.add_provider(bundle=bundle, name="provider-with-files-in-nested-groups")

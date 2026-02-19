@@ -11,9 +11,6 @@
 # limitations under the License.
 
 from pathlib import Path
-from secrets import choice, token_hex
-import json
-import string
 
 from core.secrets._types import (
     ADCMSecrets,
@@ -21,45 +18,34 @@ from core.secrets._types import (
     AnsibleSecrets,
     BackendSecrets,
     DjangoSecrets,
+    StatusCheckerSecrets,
     StatusServiceSecrets,
 )
-
-ENV_BACKEND = "SECRET_BACKEND"
-FILENAME = "secrets_v2.json"
-FILENAME_DEPRECATED = "secrets.json"
 
 
 class SecretsError(Exception):
     pass
 
 
-def migrate_format(old_path: Path, new_path: Path, django_secret_key: str) -> None:
-    with old_path.open(mode="r") as f:
-        old_data = ADCMSecretsDeprecated(**json.load(f))
+def migrate_format(
+    old_path: Path,
+    new_path: Path,
+    *,
+    django_secret_key: str,
+    status_service_token: str,
+) -> None:
+    old_secrets_content = old_path.read_text(encoding="utf-8")
+    old_data = ADCMSecretsDeprecated.model_validate_json(old_secrets_content)
 
     new_data = ADCMSecrets(
         ansible=AnsibleSecrets(ansible_vault=old_data.adcmuser.password),
         django=DjangoSecrets(secret_key=django_secret_key),
-        backend=BackendSecrets(status_service_token=old_data.adcm_internal_token),
-        status_service=StatusServiceSecrets(adcm_token=old_data.token),
+        backend=BackendSecrets(status_service_token=status_service_token),
+        status_service=StatusServiceSecrets(
+            adcm_token=old_data.adcm_internal_token,
+        ),
+        status_checker=StatusCheckerSecrets(status_service_token=old_data.token),
     )
 
-    with new_path.open(mode="w") as f:
-        json.dump(new_data.model_dump(mode="json"), f)
-
-
-def new(django_secret: str | None = None, token_length: int = 20) -> dict:
-    django_secret = django_secret or _get_random_django_secret_key(length=50)
-    return {
-        "ansible": {"ansible_vault": token_hex(token_length)},
-        "django": {"secret_key": django_secret},
-        "backend": {"status_service_token": token_hex(token_length)},
-        "status_service": {"adcm_token": token_hex(token_length)},
-    }
-
-
-# copied from django.core.management.utils.get_random_secret_key
-def _get_random_django_secret_key(length: int) -> str:
-    chars = f"{string.ascii_lowercase}{string.digits}!@#$%^&*(-_=+)"
-
-    return "".join(choice(chars) for _ in range(length))
+    new_secrets_content = new_data.model_dump_json()
+    new_path.write_text(new_secrets_content, encoding="utf-8")

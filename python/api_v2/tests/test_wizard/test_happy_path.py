@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import APINode
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
@@ -33,7 +32,7 @@ from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.setup.base import BaseAPITestCase
 
 
-class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
+class TestWizardOnAHG(BaseAPITestCase, APIV2Mixin):
     def setUp(self):
         super().setUp()
 

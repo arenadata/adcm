@@ -25,9 +25,9 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
 )
-from dishka import make_container
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
+import dishka
 
 from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
@@ -75,7 +75,13 @@ class JobSequenceRunner(TaskRunner):
     _status_server = StatusServerInteractor
 
     def __init__(
-        self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: Logger, **kwargs: Any
+        self,
+        *,
+        notifier: EventNotifier,
+        status_server: StatusServerInteractor,
+        logger: Logger,
+        container: dishka.Container,
+        **kwargs: Any,
     ):
         super().__init__(**kwargs)
 
@@ -83,9 +89,7 @@ class JobSequenceRunner(TaskRunner):
         self._status_server = status_server
         self._logger = logger
 
-        from application.di.containers import get_main_providers
-
-        self._container = make_container(*get_main_providers())
+        self._container = container
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True

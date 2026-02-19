@@ -15,9 +15,9 @@ from pathlib import Path
 from typing import Protocol
 import json
 
-from adcm import settings
 from ansible_plugin.utils import get_checklogs_data_by_job_id
 from cm.models import LogStorage
+from django.conf import settings
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 

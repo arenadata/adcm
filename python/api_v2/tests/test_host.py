@@ -333,7 +333,6 @@ class TestHost(BaseAPITestCase):
 class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
-        get_config_service.cache_clear()
 
         self.host = self.add_host(provider=self.provider, fqdn="test-host")
         self.host_2 = self.add_host(provider=self.provider, fqdn="second-host")

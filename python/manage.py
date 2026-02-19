@@ -13,9 +13,10 @@
 
 import os
 import sys
+import multiprocessing
 
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings.main")
     try:
         from django.core.management import execute_from_command_line
     except ImportError:
@@ -31,4 +32,13 @@ if __name__ == "__main__":
                 "forget to activate a virtual environment?",
             ) from None  # noqa: TRY003
         raise
+
+    try:
+        command = sys.argv[1]
+    except IndexError:
+        command = "help"
+
+    if command == "test":
+        multiprocessing.set_start_method("spawn")
+
     execute_from_command_line(sys.argv)

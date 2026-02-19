@@ -160,7 +160,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                     self.component_another_not_simple,
                 )
             },
-            "filedir": self.directories["FILE_DIR"],
+            "filedir": self.directories.files,
             "cluster": self.cluster,
             "cluster_group": self.cluster_group,
             "service_thesame_group": self.service_thesame_group,

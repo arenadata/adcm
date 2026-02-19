@@ -12,7 +12,11 @@
 
 from dataclasses import dataclass, field
 from functools import cache, partial
+from pathlib import Path
+from tempfile import gettempdir
 from unittest.mock import patch
+from uuid import uuid4
+import os
 
 from application.di.containers import get_main_providers
 from cm.models import TaskLog
@@ -21,10 +25,16 @@ from cm.tests.mocks.task_runner import (
     JobImplRunnerMock,
     SubprocessRunnerMockEnvironment,
 )
+from core import secrets
+from core.files.directories import ADCMBundleDir
 from core.legacy.job.runners import ExecutionTargetFactoryI
-from core.types import PID, TaskID
+from core.settings import Directories
+from core.types import PID, CurrentADCMVersion, TaskID
+from dishka.provider import provide
 from use_cases.transition.job.schedule import TaskStarter
 import dishka
+
+_PYTHON_DIR = python_dir = Path(__file__).parent.parent.parent.parent
 
 _DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
 
@@ -87,7 +97,7 @@ class TaskRunnerTestManager:
         with patch("cm.legacy.services.job.run._impl._factory", new=execution_target_factory), patch(
             "cm.legacy.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
         ), patch("cm.legacy.services.job.run._impl.JobRepoImpl", new=JobImplRunnerMock):
-            runner = get_default_runner()
+            runner = get_default_runner(container=make_default_dishka_container_for_tests())
 
         runner.run(task_id)
 
@@ -95,6 +105,24 @@ class TaskRunnerTestManager:
 @cache
 def get_task_runner_manager() -> TaskRunnerTestManager:
     return TaskRunnerTestManager()
+
+
+@cache
+def prepare_process_bound_directories() -> Directories:
+    root = Path(gettempdir(), uuid4().hex)
+    return Directories(
+        base=root,
+        stack=root,
+        bundles=root / "bundle",
+        downloads=root / "download",
+        files=root / "file",
+        secrets=root / "secret",
+        code=_PYTHON_DIR,
+        data=root,
+        run=root / "run",
+        logs=root / "log",
+        temp=root / "tmp",
+    )
 
 
 def _reset_runner_manager_and_start(task: TaskLog, runner_manager: TaskRunnerTestManager):
@@ -110,16 +138,45 @@ class TaskStarterOverride(dishka.Provider):
         return partial(_reset_runner_manager_and_start, runner_manager=task_runner_manager)
 
 
+class EnvironmentOverride(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    @provide
+    def directories(self) -> Directories:
+        return prepare_process_bound_directories()
+
+    @provide
+    def ansible_vault(self) -> secrets.AnsibleVault:
+        return secrets.AnsibleVault("ansible-secret-test")
+
+    @provide
+    def adcm_version(self) -> CurrentADCMVersion:
+        return CurrentADCMVersion(os.getenv("ADCM_VERSION", "2.0.0"))
+
+    @provide
+    def adcm_bundle_dir(self) -> ADCMBundleDir:
+        return ADCMBundleDir(_PYTHON_DIR.parent / "conf" / "adcm")
+
+
+def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
+    return (
+        *get_main_providers(),
+        TaskStarterOverride(),
+        EnvironmentOverride(),
+    )
+
+
+def make_default_dishka_container_for_tests() -> dishka.Container:
+    providers = get_default_overridden_providers()
+
+    return dishka.make_container(*providers)
+
+
 class DishkaMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-        providers = (
-            *get_main_providers(),
-            TaskStarterOverride(),
-        )
-
-        self.container = dishka.make_container(*providers)
+        self.container = make_default_dishka_container_for_tests()
 
     def __call__(self, request):
         with self.container(scope=dishka.Scope.REQUEST) as request_container:

@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 import unittest
 
 from cm.models import (
-    ADCM,
     Component,
     ConfigLog,
     HostComponent,
@@ -24,8 +22,6 @@ from cm.models import (
     Upgrade,
 )
 from core.types import TaskID
-from init_db import init
-from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -33,7 +29,6 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from rest_framework.test import APITestCase
 
 from api_v2.prototype.utils import accept_license
 from api_v2.tests.base import BaseAPITestCase
@@ -644,33 +639,3 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "GROUP_CONFIG_NO_CONFIG_ERROR")
-
-
-class TestAdcmUpgrade(APITestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        init_roles()
-        init(adcm_conf_file=Path(__file__).parent / "bundles" / "adcm_configs" / "config.yaml")
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.original_adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(pk=self.original_adcm.config.current)
-        config_log.config["job_log"]["log_rotation_on_fs"] = 120
-        config_log.config["job_log"]["log_rotation_in_db"] = 50
-        config_log.config["config_rotation"]["config_rotation_in_db"] = 10
-        config_log.save(update_fields=["config"])
-
-    def test_adcm_2_6_upgrade_success(self):
-        init()
-        new_adcm = ADCM.objects.first()
-        old_adcm_version = float(self.original_adcm.prototype.version)
-        new_adcm_version = float(new_adcm.prototype.version)
-        config_log = ConfigLog.objects.get(obj_ref=new_adcm.config, id=new_adcm.config.current)
-        self.assertNotIn("job_log", config_log.config)
-        self.assertNotIn("config_rotation", config_log.config)
-        self.assertEqual(config_log.config["audit_data_retention"]["log_rotation_in_db"], 50)
-        self.assertEqual(config_log.config["audit_data_retention"]["log_rotation_on_fs"], 120)
-        self.assertEqual(config_log.config["audit_data_retention"]["config_rotation_in_db"], 10)
-        self.assertGreater(new_adcm_version, old_adcm_version)

@@ -15,7 +15,8 @@ from core.errors import OperationError
 
 
 class DefaultFileMissingError(FileNotFoundError):
-    def __init__(self, message: str, parameter: str):
+    # todo set parameter to "unknown" for debug purposes
+    def __init__(self, message: str, parameter: str = "unknown"):
         super().__init__(message)
         self.message = message
         self.parameter = parameter

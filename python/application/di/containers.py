@@ -13,16 +13,16 @@
 
 from dishka import Provider
 
-from application.di.providers import (
+from application.di.providers.environment import EnvironmentProvider
+from application.di.providers.main import (
     ActionHostGroupProvider,
     BundleProvider,
     ClusterProvider,
     ConfigProvider,
-    FSProvider,
     JobProvider,
+    PathResolverProvider,
     ProviderProvider,
     ScenariosProvider,
-    SettingsProvider,
     TaskStarterProvider,
     UpgradeProvider,
     UseCaseProvider,
@@ -33,18 +33,18 @@ from application.di.providers import (
 
 def get_main_providers() -> tuple[Provider, ...]:
     return (
-        ClusterProvider(),
-        ProviderProvider(),
-        UpgradeProvider(),
-        BundleProvider(),
-        ConfigProvider(),
-        JobProvider(),
-        WizardProvider(),
-        FSProvider(),
-        UtilsProvider(),
         ActionHostGroupProvider(),
+        BundleProvider(),
+        ClusterProvider(),
+        ConfigProvider(),
+        EnvironmentProvider(),
+        JobProvider(),
+        PathResolverProvider(),
+        ProviderProvider(),
         ScenariosProvider(),
-        UseCaseProvider(),
-        SettingsProvider(),
         TaskStarterProvider(),
+        UpgradeProvider(),
+        UseCaseProvider(),
+        UtilsProvider(),
+        WizardProvider(),
     )

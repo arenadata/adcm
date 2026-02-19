@@ -13,6 +13,7 @@
 from dataclasses import asdict
 from typing import Iterable, Literal
 
+from adcm.tests.base import make_default_dishka_container_for_tests
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
@@ -139,9 +140,8 @@ class TestActionProcessAudit(BaseAPITestCase):
                 action = self.get_object_action_with_process(obj)
 
                 # don't copy this implementation, it's a hack, may not work in most cases
-                from api_v2.utils.di import prepare_container
 
-                container = prepare_container()
+                container = make_default_dishka_container_for_tests()
 
                 # render step
                 fill_step_spec(
