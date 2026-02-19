@@ -14,30 +14,19 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import Field
 
-from core.bundle._parsing.v_2_0.targets import (
-    ADCMSchema as ADCMSchemaV2,
-)
-from core.bundle._parsing.v_2_0.targets import (
-    Cluster as ClusterV2,
-)
-from core.bundle._parsing.v_2_0.targets import (
-    Component as ComponentV2,
-)
-from core.bundle._parsing.v_2_0.targets import (
-    Host as HostV2,
-)
-from core.bundle._parsing.v_2_0.targets import (
-    Provider as ProviderV2,
-)
-from core.bundle._parsing.v_2_0.targets import (
-    Service as ServiceV2,
-)
+from core.bundle._parsing.v_2_0.targets import ADCMSchema as ADCMSchemaV2
+from core.bundle._parsing.v_2_0.targets import Cluster as ClusterV2
+from core.bundle._parsing.v_2_0.targets import Component as ComponentV2
+from core.bundle._parsing.v_2_0.targets import Host as HostV2
+from core.bundle._parsing.v_2_0.targets import Provider as ProviderV2
+from core.bundle._parsing.v_2_0.targets import Service as ServiceV2
 
 MainVenv: TypeAlias = Literal["2.16"]
 ChildVenv: TypeAlias = Annotated[MainVenv | None, Field(default=None)]
 
 
 class Cluster(ClusterV2):
+    contract_version: Literal["2.1"]  # pyright: ignore[reportIncompatibleVariableOverride]
     venv: MainVenv  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
@@ -50,6 +39,7 @@ class Component(ComponentV2):
 
 
 class Provider(ProviderV2):
+    contract_version: Literal["2.1"]  # pyright: ignore[reportIncompatibleVariableOverride]
     venv: MainVenv  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
@@ -58,6 +48,7 @@ class Host(HostV2):
 
 
 class ADCMSchema(ADCMSchemaV2):
+    contract_version: Literal["2.1"]  # pyright: ignore[reportIncompatibleVariableOverride]
     venv: MainVenv  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
