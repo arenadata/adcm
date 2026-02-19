@@ -153,7 +153,11 @@ class BundleProvider(Provider):
             core.bundle.parsing.VersionInfo(tag="2.0", status=VersionSupportStatus.SUPPORTED),
             core.bundle.parsing.v_2_0.Parser(),
         )
-        return [v_1_0, v_2_0]
+        v_2_1 = (
+            core.bundle.parsing.VersionInfo(tag="2.1", status=VersionSupportStatus.SUPPORTED),
+            core.bundle.parsing.v_2_1.Parser(),
+        )
+        return [v_1_0, v_2_0, v_2_1]
 
     @provide
     def convert(self, secrets: core.config.secrets.AnsibleSecrets) -> core.bundle.ConvertConfigDefinition:
