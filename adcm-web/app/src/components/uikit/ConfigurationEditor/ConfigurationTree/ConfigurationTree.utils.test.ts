@@ -1,43 +1,41 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import {
-  clusterConfigurationSchema,
   clusterConfiguration,
-  // structure schemas
-  structureSchema,
-  nullableStructureSchema,
-  structureSchemaWithTitle,
-  // map schemas
-  mapSchema,
-  nullableMapSchema,
-  mapSchemaWithPredefinedData,
-  readonlyMapSchema,
-  // array schemas
-  listSchema,
-  nullableListSchema,
-  listSchemaWithTitle,
-  readonlyListSchema,
-  // field schemas
-  fieldSchema,
-  nullableFieldSchema,
-  fieldSchemaWithTitle,
-  readonlyFieldSchema,
-  // validate schemas
-  validateInactiveGroupSchema,
-  emptyFilter,
+  clusterConfigurationSchema,
   defaultProps,
-  validateNestedErrorsSchema,
-  selectableObjectSchema,
+  emptyFilter,
+  fieldSchema,
+  fieldSchemaWithTitle,
+  listSchema,
+  listSchemaWithTitle,
+  mapSchema,
+  mapSchemaWithPredefinedData,
+  nullableFieldSchema,
+  nullableListSchema,
+  nullableMapSchema,
+  nullableStructureSchema,
+  readonlyFieldSchema,
+  readonlyListSchema,
+  readonlyMapSchema,
   selectableObjectConfig,
+  selectableObjectSchema,
+  structureSchema,
+  structureSchemaWithTitle,
+  validateInactiveGroupSchema,
+  validateNestedErrorsSchema,
 } from './ConfigurationTree.utils.test.constants';
+import { configurationValidationSchema } from './__fixtures__/configurationValidationSchema';
+import configurationValidationData from './__fixtures__/configurationValidationData.json';
 import {
   buildConfigurationNodes,
   buildConfigurationTree,
-  validate,
   fillParentPathParts,
   getDefaultValue,
+  validate,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
+import type { JSONObject } from '@models/json';
 import {
   discriminatorFieldName,
   nestedPropsErrorKeyword,
@@ -452,6 +450,72 @@ describe('validate', () => {
     const fieldErrors = configurationErrors['/list'];
     expect((fieldErrors as FieldErrors).messages[nestedPropsErrorKeyword]).toBe(nestedPropsErrorMessage);
   });
+
+  test('validate configuration schema: errors on expected paths with correct structure', () => {
+    const attributes: Record<string, { isActive: boolean }> = {};
+    const configuration = configurationValidationData as JSONObject;
+
+    const { isValid, configurationErrors } = validate(
+      configurationValidationSchema as SchemaDefinition,
+      configuration,
+      attributes,
+    );
+
+    expect(isValid).toBe(false);
+    expect(Object.keys(configurationErrors).length).toBeGreaterThan(0);
+
+    expect(configurationErrors['/']).toBe(true);
+    expect(
+      configurationErrors['/my_group_with_required_not_default_parameters'] === true ||
+        (typeof configurationErrors['/my_group_with_required_not_default_parameters'] === 'object' &&
+          configurationErrors['/my_group_with_required_not_default_parameters'] !== null),
+    ).toBe(true);
+    expect(
+      configurationErrors['/my_activatable_group'] === true ||
+        (typeof configurationErrors['/my_activatable_group'] === 'object' &&
+          configurationErrors['/my_activatable_group'] !== null),
+    ).toBe(true);
+
+    const expectFieldError = (path: string, expectedKeyword: string) => {
+      const err = configurationErrors[path];
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(true);
+      const fieldErr = err as FieldErrors;
+      expect(fieldErr.schema).toBeDefined();
+      expect(fieldErr.messages).toBeDefined();
+      expect(Object.keys(fieldErr.messages)).toContain(expectedKeyword);
+    };
+
+    expectFieldError('/my_password', 'type');
+    expectFieldError('/my_list_variant', 'enum');
+
+    const groupPath = '/my_group_with_required_not_default_parameters';
+    const requiredFields = [
+      'my_boolean',
+      'my_float',
+      'my_integer',
+      'my_list',
+      'my_map',
+      'my_string',
+      'my_text',
+      'my_json',
+      'my_file',
+      'my_password',
+      'secrettext',
+      'my_list_variant',
+      'my_inline_variant_not_strict',
+      'my_inline_variant_strict',
+    ];
+    const enumOnlyFields = new Set(['my_list_variant', 'my_inline_variant_strict']);
+    for (const field of requiredFields) {
+      const path = `${groupPath}/${field}`;
+      const keyword = enumOnlyFields.has(field) ? 'enum' : 'type';
+      expectFieldError(path, keyword);
+    }
+
+    // my_activatable_group: my_password null → type
+    expectFieldError('/my_activatable_group/my_password', 'type');
+  });
 });
 
 describe('filter', () => {
@@ -540,9 +604,7 @@ describe('fillFieldAttributes', () => {
 
     const tree = buildConfigurationNodes(clusterConfigurationSchema, clusterConfiguration, attributes);
 
-    const rootNode = tree;
-
-    const clusterConfigNode = rootNode.children?.[0]!;
+    const clusterConfigNode = tree.children?.[0]!;
     expect(clusterConfigNode.data.fieldAttributes).toStrictEqual(clusterConfigAttributes);
 
     const clusterNode = clusterConfigNode.children?.[0]!;
@@ -556,9 +618,7 @@ describe('fillFieldAttributes', () => {
 describe('selection groups', () => {
   test('build discriminator field', () => {
     const tree = buildConfigurationNodes(selectableObjectSchema, selectableObjectConfig, {});
-    const rootNode = tree;
-
-    const clusterConfigNode = rootNode.children?.[0]!;
+    const clusterConfigNode = tree.children?.[0]!;
     expect(clusterConfigNode.data.type).toStrictEqual('selectableObject');
     expect(clusterConfigNode.children?.[0].key.endsWith(discriminatorFieldName)).toBeTruthy();
     expect(clusterConfigNode.children?.[0].data.type).toStrictEqual('field');

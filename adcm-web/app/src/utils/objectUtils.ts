@@ -1,3 +1,10 @@
+export const deepClone = <T>(value: T): T => {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value) as T;
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+};
+
 export const getValueByPath = (object: unknown, path: string) => {
   return path.split('.').reduce((acc, c) => acc?.[c as keyof typeof object], object);
 };
