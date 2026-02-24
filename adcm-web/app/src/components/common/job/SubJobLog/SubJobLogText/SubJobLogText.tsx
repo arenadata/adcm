@@ -1,8 +1,7 @@
-import { useEffect, useRef, type RefObject } from 'react';
-import CodeHighlighter from '@uikit/CodeHighlighter/CodeHighlighter';
 import type { AdcmSubJobLogItemCustom, AdcmSubJobLogItemStd } from '@models/adcm';
 import { useSubJobsLogsAutoScrollContext } from '@pages/JobsPage/SubJobPage/SubJobLogsAutoScroll/SubJobLogsAutoScroll.context';
 import s from './SubJobLogText.module.scss';
+import MonacoCodeViewer from '@uikit/MonacoCodeEditor/MonacoCodeViewer/MonacoCodeViewer.tsx';
 
 interface SubJobLogTextProps {
   log: AdcmSubJobLogItemStd | AdcmSubJobLogItemCustom;
@@ -11,20 +10,16 @@ interface SubJobLogTextProps {
 const SubJobLogText = ({ log }: SubJobLogTextProps) => {
   const content = log.content?.trim() || '';
   const language = log.format === 'json' ? 'json' : 'bash';
-  const highlighterRef: RefObject<HTMLDivElement> = useRef(null);
+  const autoScrollContext = useSubJobsLogsAutoScrollContext();
 
-  const autoScrollContextValue = useSubJobsLogsAutoScrollContext();
-
-  useEffect(() => {
-    autoScrollContextValue?.scrollToBottom();
-  }, [log.content]);
-
-  useEffect(() => {
-    if (highlighterRef.current) {
-      autoScrollContextValue?.setContainer(highlighterRef.current);
-    }
-  }, [highlighterRef.current]);
-
-  return <CodeHighlighter contentRef={highlighterRef} className={s.subJobLogText} code={content} language={language} />;
+  return (
+    <MonacoCodeViewer
+      className={s.subJobLogText}
+      code={content}
+      language={language}
+      scrollToEnd={autoScrollContext?.isAutoScroll}
+    />
+  );
 };
+
 export default SubJobLogText;

@@ -78,11 +78,8 @@ export class MonacoCodeEditorModel implements CodeEditorModel, IDisposable {
 
   public updateOptions(options: MonacoCodeEditorOptions): void {
     this.editorRef.updateOptions({
-      glyphMargin: options?.glyphMargin,
       automaticLayout: true,
-      theme: options?.theme,
-      minimap: { enabled: options?.showMinimap },
-      readOnly: options?.isReadOnly,
+      ...options,
     });
   }
 

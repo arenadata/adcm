@@ -1,0 +1,12 @@
+.toolbar {
+  .toolbar__expandBtn {
+    background: var(--body-background);
+    width: 32px;
+    height: 32px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
