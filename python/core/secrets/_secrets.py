@@ -10,42 +10,113 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
+from dataclasses import dataclass
+from enum import Enum, auto
+from secrets import token_hex
+from typing import Annotated, Final, NewType, Protocol
 
-from core.secrets._types import (
-    ADCMSecrets,
-    ADCMSecretsDeprecated,
-    AnsibleSecrets,
-    BackendSecrets,
-    DjangoSecrets,
-    StatusCheckerSecrets,
-    StatusServiceSecrets,
-)
+from pydantic import BaseModel, ConfigDict, StringConstraints
+
+# Those are mostly for application, keeping here for reuse simplicity
+
+SECRETS_FILENAME: Final = "secrets_v2.json"
+SECRETS_FILENAME_DEPRECATED: Final = "secrets.json"
+
+
+class SecretsSource(Enum):
+    FILE_SYSTEM = auto()
+    VAULT = auto()
+
+
+# Errors
 
 
 class SecretsError(Exception):
     pass
 
 
-def migrate_format(
-    old_path: Path,
-    new_path: Path,
-    *,
-    django_secret_key: str,
-    status_service_token: str,
-) -> None:
-    old_secrets_content = old_path.read_text(encoding="utf-8")
-    old_data = ADCMSecretsDeprecated.model_validate_json(old_secrets_content)
+# "Business" secrets types
 
-    new_data = ADCMSecrets(
-        ansible=AnsibleSecrets(ansible_vault=old_data.adcmuser.password),
-        django=DjangoSecrets(secret_key=django_secret_key),
-        backend=BackendSecrets(status_service_token=status_service_token),
-        status_service=StatusServiceSecrets(
-            adcm_token=old_data.adcm_internal_token,
-        ),
-        status_checker=StatusCheckerSecrets(status_service_token=old_data.token),
-    )
+AnsibleVault = NewType("AnsibleVault", str)
 
-    new_secrets_content = new_data.model_dump_json()
-    new_path.write_text(new_secrets_content, encoding="utf-8")
+# Secrets "structure"
+
+NonEmptyStr = Annotated[str, StringConstraints(min_length=1)]
+
+
+@dataclass(slots=True, frozen=True)
+class AnsibleSecrets:
+    ansible_vault: NonEmptyStr
+
+
+@dataclass(slots=True, frozen=True)
+class DjangoSecrets:
+    secret_key: NonEmptyStr
+
+
+@dataclass(slots=True, frozen=True)
+class BackendSecrets:
+    status_service_token: NonEmptyStr
+    """
+    Token to authorize ADCM operations in Status Server
+    """
+
+
+@dataclass(slots=True, frozen=True)
+class StatusServiceSecrets:
+    adcm_token: NonEmptyStr
+    """
+    Token to authorized Status Server operations in ADCM
+    """
+
+
+@dataclass(slots=True, frozen=True)
+class StatusCheckerSecrets:
+    status_service_token: NonEmptyStr
+    """
+    Token to authorize Status Checker operations in Status Server
+    """
+
+
+class ADCMSecrets(BaseModel):
+    """
+    Represents all major secret groups used in ADCM one way or another.
+
+    Follows FS storing structure, be careful if changing for flexibility.
+    """
+
+    ansible: AnsibleSecrets
+    django: DjangoSecrets
+    backend: BackendSecrets
+    status_service: StatusServiceSecrets
+    status_checker: StatusCheckerSecrets
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @classmethod
+    def generate_new_random(cls, django_secret: str, secret_length: int):
+        return cls(
+            ansible=AnsibleSecrets(ansible_vault=token_hex(secret_length)),
+            django=DjangoSecrets(secret_key=django_secret),
+            backend=BackendSecrets(status_service_token=token_hex(secret_length)),
+            status_service=StatusServiceSecrets(adcm_token=token_hex(secret_length)),
+            status_checker=StatusCheckerSecrets(status_service_token=token_hex(secret_length)),
+        )
+
+
+class SecretsFileModel(BaseModel):
+    """
+    Represents structure of secrets file on FS (with extra nesting level)
+    """
+
+    adcm: ADCMSecrets
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+# Public interfaces
+
+
+class SecretsProvider(Protocol):
+    def get(self) -> ADCMSecrets:
+        ...

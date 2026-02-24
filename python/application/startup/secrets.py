@@ -16,6 +16,7 @@ from secrets import token_hex
 import os
 
 from core import secrets
+from core.secrets.impl.migrate_fs import migrate_format
 from django.core.management.utils import get_random_secret_key
 
 SECRET_TOKEN_LENGTH = 20
@@ -42,7 +43,7 @@ def prepare_secrets_file(secrets_directory: Path, logger: Logger) -> Path:
 
     if deprecated_secrets.is_file():
         # migration required
-        secrets.migrate_format(
+        migrate_format(
             old_path=deprecated_secrets,
             new_path=secrets_file,
             django_secret_key=django_secret_key,
