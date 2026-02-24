@@ -10,39 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
 import json
 
 from pydantic import ValidationError
 
-from core.secrets._secrets import SecretsError
-from core.secrets._types import ADCMSecrets, SecretsFileModel
+from core.secrets._secrets import ADCMSecrets, SecretsError, SecretsFileModel, SecretsProvider
 
 
-class SecretsProvider(Protocol):
-    def get(self) -> ADCMSecrets:
-        ...
-
-
+@dataclass(slots=True)
 class FSSecretsProvider(SecretsProvider):
-    def __init__(self, path: Path) -> None:
-        self._path = path
+    path: Path
 
     def get(self) -> ADCMSecrets:
         try:
-            content = self._path.read_text(encoding="utf-8")
+            content = self.path.read_text(encoding="utf-8")
             return SecretsFileModel.model_validate_json(content).adcm
 
         except FileNotFoundError as e:
-            message = f"Secrets file not found: {self._path}"
+            message = f"Secrets file not found: {self.path}"
             raise SecretsError(message) from e
 
         except (ValidationError, json.JSONDecodeError) as e:
-            message = f"File {self._path} can't be parsed as {ADCMSecrets.__class__.__name__}"
+            message = f"File {self.path} can't be parsed as {ADCMSecrets.__class__.__name__}"
             raise SecretsError(message) from e
-
-
-class OpenBaoSecretsProvider(SecretsProvider):
-    def get(self):
-        raise NotImplementedError()
