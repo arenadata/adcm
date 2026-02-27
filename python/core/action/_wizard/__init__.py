@@ -11,7 +11,17 @@
 # limitations under the License.
 
 from core.action._wizard import _steps as steps
-from core.action._wizard._repo import WizardRepoI
+from core.action._wizard import operations
+from core.action._wizard._errors import (
+    ActionProcessDBError,
+    ActionProcessError,
+    ActionProcessNotFoundError,
+    ActionProcessOperationError,
+    ActionProcessPayloadError,
+    ActionProcessStepNotFoundError,
+    SyncKeyMismatchError,
+)
+from core.action._wizard._repo import TaskORM, WizardRepoI
 from core.action._wizard._service import WizardService
 from core.action._wizard._types import (
     ConfigStep,
@@ -42,16 +52,44 @@ from core.action._wizard._types import (
     StepType,
     StepWithData,
 )
+from core.action._wizard._types_purgatory import (
+    ActionProcess as ActionProcessModel,
+)
+from core.action._wizard._types_purgatory import (
+    HCMappingRule,
+    HostComponentMapDelta,
+    MappingInputDTO,
+    MappingStepInput,
+    ProcessStepState,
+    ProcessUpdateDTO,
+    StepInputDTO,
+    StepUpdateDTO,
+)
+from core.action._wizard._types_purgatory import (
+    Step as ActionProcessStepModel,
+)
 
 __all__ = [
+    "ActionProcessModel",
+    "ActionProcessDBError",
+    "ActionProcessError",
+    "ActionProcessNotFoundError",
+    "ActionProcessOperationError",
+    "ActionProcessPayloadError",
+    "ActionProcessStepModel",
+    "ActionProcessStepNotFoundError",
     "ConfigStep",
     "ConfigStepData",
     "ConfigStepDefinition",
     "ConfigStepSpec",
     "Delta",
+    "HCMappingRule",
+    "HostComponentMapDelta",
+    "MappingInputDTO",
     "MappingStep",
     "MappingStepData",
     "MappingStepDefinition",
+    "MappingStepInput",
     "MappingStepSpec",
     "OperationStep",
     "OperationStepData",
@@ -62,17 +100,23 @@ __all__ = [
     "ProcessID",
     "ProcessOperationType",
     "ProcessState",
+    "ProcessStepState",
+    "ProcessUpdateDTO",
     "Stage",
     "StageExtra",
-    "Step",
     "Step",
     "StepDefinition",
     "StepExtra",
     "StepID",
+    "StepInputDTO",
     "StepState",
     "StepType",
+    "StepUpdateDTO",
     "StepWithData",
+    "TaskORM",
+    "SyncKeyMismatchError",
     "WizardRepoI",
     "WizardService",
     "steps",
+    "operations",
 ]

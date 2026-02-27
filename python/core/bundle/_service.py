@@ -35,7 +35,7 @@ from core.bundle._validate import (
     check_definitions_are_valid,
     check_has_valid_definitions_set,
 )
-from core.types import BundleID, CurrentADCMVersion
+from core.types import BundleID, CurrentADCMVersion, PrototypeID
 
 
 @dataclass(slots=True)
@@ -151,3 +151,6 @@ class BundleService:
                 report.deprecated_version_bundles.add(item)
 
         return report
+
+    def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
+        return self.repo.retrieve_bundle_context_from_prototype(prototype_id=prototype_id)

@@ -15,16 +15,14 @@ from typing import TypeAlias
 from uuid import uuid4
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
+from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
     OperationContext,
     find_current_and_last_completed_steps,
-    initiate_process,
-    submit_step,
 )
 from cm.legacy.services.action_process.schema_validation import (
     Configuration,
@@ -33,7 +31,6 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitStepPayload,
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
@@ -184,8 +181,9 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         )
 
         with self.container() as container:
-            bundle_renderer = container.get(BundleRenderer[ActionArgs, TaskArgs])
-            process_id = initiate_process(process_context=process_context, bundle_renderer=bundle_renderer)
+            initiate_process = container.get(InitiateWizardProcess)
+
+            process_id = initiate_process.do(process_context=process_context)
 
             ctx = self.get_process_context(process_id, cluster.id)
             self.assertIsNotNone(ctx["current"])
@@ -210,18 +208,9 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
                 ),
             )
 
-            from use_cases.transition.job.schedule import TaskStarter
+            perform_operation = container.get(PerformWizardProcessOperation)
 
-            submit_step(
-                process=process,
-                payload=payload,
-                context=context,
-                new_process_sync_key=uuid4(),
-                config_service=container.get(core.config.ConfigService),
-                job_service=container.get(core.job.JobService),
-                bundle_renderer=bundle_renderer,
-                start_task=container.get(TaskStarter),
-            )
+            perform_operation.do(process_id=process_id, payload=payload, context=context)
 
         ctx = self.get_process_context(process_id, cluster.id)
         self.assertDictContainsSubset(

@@ -23,6 +23,7 @@ from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariant
 from cm.impl.job.repo import JobRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
+from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
@@ -34,6 +35,7 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
@@ -42,6 +44,7 @@ from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, TaskStarter
+from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
 
@@ -170,6 +173,10 @@ class ScenariosProvider(Provider):
 
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
+    fill_wizard_step_spec = provide(
+        FillWizardStepSpecLegacy,
+        provides=FillWizardStepSpec[ActionArgs, TaskArgs],
+    )
 
 
 class UseCaseProvider(Provider):
@@ -187,6 +194,12 @@ class UseCaseProvider(Provider):
     add_services = provide(CreateServicesFromPrototypes)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
+
+    complete_wizard_operation_step = provide(CompleteWizardOperationStep, scope=Scope.APP)
+    wizard = provide_all(
+        InitiateWizardProcess,
+        PerformWizardProcessOperation,
+    )
 
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,

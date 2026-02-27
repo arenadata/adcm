@@ -10,34 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.errors import OperationError
+from core.scenarios.wizard import FillWizardStepSpec
+
+from cm.errors import AdcmEx
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 
 
-class ActionProcessError(OperationError):
-    def __init__(self, msg: str = ""):
-        self.msg = msg
-        super().__init__(msg)
+class FillWizardStepSpecLegacy(FillWizardStepSpec[ActionArgs, TaskArgs]):
+    def convert_action_args_to_task_args(self, args: ActionArgs) -> TaskArgs:
+        task_args = TaskArgs.from_action_args(args)
+        task_args.config = {}
+        return task_args
 
-
-class ActionProcessOperationError(ActionProcessError):
-    ...
-
-
-class SyncKeyMismatchError(ActionProcessError):
-    ...
-
-
-class ActionProcessDBError(ActionProcessError):
-    ...
-
-
-class ActionProcessNotFoundError(ActionProcessError):
-    ...
-
-
-class ActionProcessStepNotFoundError(ActionProcessError):
-    ...
-
-
-class ActionProcessPayloadError(ActionProcessError):
-    ...
+    def retrieve_extra_errors(self) -> tuple[type[Exception], ...]:
+        return (AdcmEx,)

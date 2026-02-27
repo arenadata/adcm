@@ -84,6 +84,7 @@ class _Step(Generic[ST, SpecT]):
     full_name: StepFullName
     state: StepState
 
+    extra: "StepExtra"
     type: ST
     spec: SpecT | None
 
