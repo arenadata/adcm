@@ -16,7 +16,6 @@ from typing import Any, Protocol
 import os
 import signal
 
-from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.legacy.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
@@ -30,7 +29,6 @@ from use_cases.provider.update import ResetBeforeUpgradeProvider
 import dishka
 
 from cm.converters import action_target_type_to_model, core_type_to_model
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -382,7 +380,8 @@ class JobSequenceRunner(TaskRunner):
         task: Task,
         task_owner: TaskOwner | None,
     ) -> None:
-        from cm.legacy.services.action_process.operations import complete_operation_step
+        from use_cases.wizard import CompleteWizardOperationStep
+
         from cm.legacy.services.action_process.types import ProcessContext
         from cm.models import Action
 
@@ -400,11 +399,10 @@ class JobSequenceRunner(TaskRunner):
             target_orm=action_target_type_to_model(target.type).objects.get(id=target.id),
         )
 
-        complete_operation_step(
+        self._container.get(CompleteWizardOperationStep).do(
             process_id=process.id,
             process_sync_key=process.sync_key,
             step_id=process.step_id,
             process_context=process_context,
             is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
-            bundle_renderer=self._container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )

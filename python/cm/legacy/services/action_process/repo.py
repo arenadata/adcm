@@ -36,12 +36,10 @@ from cm.converters import core_type_to_model
 from cm.legacy.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
 from cm.legacy.services.action_process.types import (
     ActionProcess,
-    DBPrototypeConfig,
     MappingStepInput,
     ProcessState,
     ProcessStepState,
     ProcessUpdateDTO,
-    SerializedPrototypeConfigs,
     Step,
     StepInputDTO,
     StepUpdateDTO,
@@ -54,7 +52,6 @@ from cm.models import (
     ProcessStep,
     ProcessStepInput,
     Prototype,
-    PrototypeConfig,
     TaskLog,
 )
 
@@ -244,10 +241,6 @@ def retrieve_next_step_ids(process_id: ActionProcessID, step_id: ActionProcessSt
     return tuple(
         ProcessStep.objects.filter(process_id=process_id, id__gt=step_id).values_list("id", flat=True).order_by("id")
     )
-
-
-def serialize_prototype_configs(data: list[PrototypeConfig]) -> list[DBPrototypeConfig]:
-    return SerializedPrototypeConfigs.model_validate({"configs": data}, from_attributes=True).model_dump()["configs"]
 
 
 def convert_stages_to_db_format(stages: list[ActionProcessStage]) -> list[dict[str, Any]]:

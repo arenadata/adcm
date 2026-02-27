@@ -13,8 +13,8 @@
 from typing import Protocol
 
 from core.bundle._definitions import DefinitionsMap
-from core.bundle._types import BundleInfo, ComponentKey, InstalledBundleVersion
-from core.types import BundleID
+from core.bundle._types import BundleContext, BundleInfo, ComponentKey, InstalledBundleVersion
+from core.types import BundleID, PrototypeID
 
 
 class BundleRepoI(Protocol):
@@ -31,4 +31,7 @@ class BundleRepoI(Protocol):
         ...
 
     def retrieve_versions_info(self) -> set[InstalledBundleVersion]:
+        ...
+
+    def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
         ...

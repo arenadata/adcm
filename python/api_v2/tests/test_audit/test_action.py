@@ -158,6 +158,7 @@ class TestActionProcessAudit(BaseAPITestCase):
                         ),
                     ),
                     bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
+                    wizard_repo=container.get(core.action.wizard.WizardRepoI),
                 )
 
                 response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(

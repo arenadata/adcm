@@ -32,12 +32,17 @@ class RenderStepContext:
 
 
 def fill_step_spec(
-    step_id: ActionProcessStepID, context: RenderStepContext, bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
+    step_id: ActionProcessStepID,
+    context: RenderStepContext,
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+    wizard_repo: core.action.wizard.WizardRepoI,
 ) -> None:
     try:
-        process = repo.retrieve_process(process_id=context.process_id)
-        step = repo.retrieve_step(process_id=context.process_id, step_id=step_id)
-        template = repo.find_step_spec_declaration(step=step, process_flow_spec=process.flow_spec).template
+        process = wizard_repo.retrieve_process(process_id=context.process_id)
+        step = wizard_repo.retrieve_step(process_id=context.process_id, step_id=step_id)
+        template = core.action.wizard.operations.find_step_spec_declaration(
+            step=step, process_flow_spec=process.flow_spec
+        ).template
         bundle_context = repo.get_bundle_context_from_prototype(
             prototype_id=context.process_context.action.owner_prototype.id
         )
@@ -51,11 +56,11 @@ def fill_step_spec(
             bundle_renderer=bundle_renderer,
         )
 
-        repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
+        wizard_repo.update_step(step_id=step_id, data=StepUpdateDTO(step_spec=spec))
 
     except (RenderError, AdcmEx, core.bundle.BundleValidationError, core.bundle.BundleParsingError):
         logger.exception(f"Failed to render step {step_id}")
-        repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.BROKEN))
+        wizard_repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.BROKEN))
 
 
 def _render_step(
