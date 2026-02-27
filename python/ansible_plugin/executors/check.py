@@ -10,15 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, TypedDict
+from typing import Annotated, Collection, TypedDict
 
 from cm.errors import AdcmEx
-from cm.logger import logger
-from cm.models import CheckLog, GroupCheckLog, JobLog, LogStorage
+from core.logs import CheckLogArguments, GroupCheckLogArguments, Severity
 from core.types import CoreObjectDescriptor
-from django.db.transaction import atomic
-from pydantic import model_validator
+from pydantic import AfterValidator, model_validator
 from typing_extensions import Self
+from use_cases.logs.check import AddCheckLogRecordForJob
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -32,18 +31,30 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import (
     PluginRuntimeError,
 )
-from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
+
+
+def _clean(s: str | None) -> str | None:
+    if s is None:
+        return s
+
+    return s.replace("\x00", "")
+
+
+clean_symbols = AfterValidator(_clean)
+CleanOptionalString = Annotated[str | None, clean_symbols]
+CleanString = Annotated[str, clean_symbols]
 
 
 class CheckArguments(BaseStrictModel):
-    title: str
+    title: CleanString
     result: bool
-    msg: str | None = None
-    fail_msg: str | None = None
-    success_msg: str | None = None
-    group_title: str | None = None
-    group_success_msg: str = ""
-    group_fail_msg: str = ""
+    msg: CleanOptionalString = None
+    fail_msg: CleanOptionalString = None
+    success_msg: CleanOptionalString = None
+    group_title: CleanOptionalString = None
+    group_success_msg: CleanString = ""
+    group_fail_msg: CleanString = ""
+    severity: Severity = Severity.ERROR
 
     @model_validator(mode="after")
     def check_msg_is_specified_if_no_fail_success_msg(self) -> Self:
@@ -79,62 +90,29 @@ class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, None]):
     ) -> CallResult[None]:
         _ = targets, runtime
 
-        if arguments.success_msg and arguments.result:
-            msg = arguments.success_msg
-        elif not arguments.success_msg and arguments.result:
-            msg = arguments.msg
-        elif arguments.fail_msg:
-            msg = arguments.fail_msg
-        else:
-            msg = arguments.msg
+        group = None
 
-        group_data = {
-            "title": arguments.group_title,
-            "success_msg": arguments.group_success_msg,
-            "fail_msg": arguments.group_fail_msg,
-        }
+        if arguments.group_title:
+            group = GroupCheckLogArguments(
+                title=arguments.group_title,
+                success_msg=arguments.group_success_msg,
+                fail_msg=arguments.group_fail_msg,
+            )
 
-        check_data = {
-            "title": arguments.title.replace("\x00", ""),
-            "result": arguments.result,
-            "message": msg.replace("\x00", ""),
-        }
-
-        logger.debug(
-            "ansible adcm_check: %s, %s",
-            ", ".join([f"{k}: {v}" for k, v in group_data.items() if v]),
-            ", ".join([f"{k}: {v}" for k, v in check_data.items() if v]),
+        dto = CheckLogArguments(
+            title=arguments.title,
+            result=arguments.result,
+            success_msg=arguments.success_msg if arguments.success_msg else arguments.msg,
+            fail_msg=arguments.fail_msg if arguments.fail_msg else arguments.msg,
+            severity=arguments.severity,
+            group=group,
         )
 
         try:
-            with atomic():
-                job = JobLog.objects.get(id=runtime.vars.job.id)
-                group_title = group_data.pop("title")
-
-                if group_title:
-                    group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
-                else:
-                    group = None
-
-                check_data.update({"job": job, "group": group})
-                CheckLog.objects.create(**check_data)
-
-                if group is not None:
-                    group_data.update({"group": group})
-                    logs = CheckLog.objects.filter(group=group).values("result")
-                    result = all(log["result"] for log in logs)
-
-                    msg = group_data["success_msg"] if result else group_data["fail_msg"]
-
-                    group.message = msg
-                    group.result = result
-                    group.save(update_fields=["message", "result"])
-
-                log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
-
-                assign_view_logstorage_permissions_by_job(log_storage)
+            add_check_log_record = self._container.get(AddCheckLogRecordForJob)
+            add_check_log_record.do(job_id=runtime.vars.job.id, check_log_arguments=dto)
         except AdcmEx as e:
-            error_message = f"Failed to create checklog: {check_data}, group: {group_data}, error: {e}"
+            error_message = f"Failed to create checklog: {dto}, error: {e}"
             return CallResult(value="", changed=False, error=PluginRuntimeError(message=error_message))
 
         return CallResult(value="", changed=True, error=None)

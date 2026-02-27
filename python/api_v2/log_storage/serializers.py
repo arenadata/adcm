@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Protocol
 import json
 
-from ansible_plugin.utils import get_checklogs_data_by_job_id
 from cm.models import LogStorage
 from django.conf import settings
 from rest_framework.fields import SerializerMethodField
@@ -45,7 +44,7 @@ class LogStorageSerializer(ModelSerializer):
                 content = extract_log_content_from_fs(jobs_dir=settings.RUN_DIR, log_info=obj)
 
             if log_type == "check":
-                content = get_checklogs_data_by_job_id(obj.job_id)
+                content = self.context["retrieve_check_logs_content_for_job"](job_id=obj.job_id)
 
         # postprocessing
         if (

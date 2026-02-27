@@ -21,6 +21,7 @@ from cm.impl.cluster.repo import ClusterRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobRepo
+from cm.impl.logs.repo import LogsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
@@ -40,6 +41,7 @@ from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
@@ -179,6 +181,13 @@ class ScenariosProvider(Provider):
     )
 
 
+class LogsServiceProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(LogsRepo, provides=core.logs.LogsRepoI)
+    service = provide(core.logs.LogsService)
+
+
 class UseCaseProvider(Provider):
     scope = Scope.REQUEST
 
@@ -207,3 +216,5 @@ class UseCaseProvider(Provider):
         # for now can't find out why is it failing in runner
         scope=Scope.APP,
     )
+
+    add_check_log_record = provide(AddCheckLogRecordForJob)

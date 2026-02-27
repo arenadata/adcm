@@ -13,6 +13,7 @@
 from collections import UserDict
 from dataclasses import dataclass, field
 
+from django.conf import settings  # TODO: maybe we should pass the version as a dependency?
 from django.db.models import Model
 from typing_extensions import Protocol, Self, TypeVar
 
@@ -205,7 +206,7 @@ class OperationAuditContext:
             address=self.meta.address,
             agent=self.meta.agent,
         )
-        write_cef_log(audit_instance=record, signature_id=self._signature.id)
+        write_cef_log(audit_instance=record, signature_id=self._signature.id, adcm_version=settings.ADCM_VERSION)
 
 
 @dataclass(slots=True)

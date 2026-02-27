@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
 from tempfile import gettempdir
+from typing import Iterable
 from unittest.mock import patch
 from uuid import uuid4
 import os
@@ -21,13 +22,29 @@ import os
 from application.di.containers import get_main_providers
 from cm.models import TaskLog
 from cm.tests.mocks.task_runner import (
+    ETFMockWithEnvPreparation,
     ExecutionTargetFactoryDummyMock,
+    FailedJobInfo,
+    JobImitator,
     JobImplRunnerMock,
     SubprocessRunnerMockEnvironment,
 )
 from core import secrets
 from core.files.directories import ADCMBundleDir
-from core.legacy.job.runners import ExecutionTargetFactoryI
+from core.legacy.job.repo import JobRepoInterface
+from core.legacy.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ConsulSettings,
+    ExecutionTargetFactoryI,
+    ExternalSettings,
+    IntegrationsSettings,
+    JobFilterPredicate,
+    JobProcessor,
+    RunnerEnvironment,
+    TaskRunner,
+    always_true,
+)
 from core.settings import Directories
 from core.types import PID, CurrentADCMVersion, TaskID
 from dishka.provider import provide
@@ -35,8 +52,6 @@ from use_cases.transition.job.schedule import TaskStarter
 import dishka
 
 _PYTHON_DIR = python_dir = Path(__file__).parent.parent.parent.parent
-
-_DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
 
 
 @dataclass(slots=True)
@@ -81,25 +96,16 @@ class TaskRunnerTestManager:
     def expect_task_not_launched(self) -> None:
         assert self._latest_launched is None  # noqa: S101
 
-    def run_launched_task(
-        self, task_id: TaskID | None = None, execution_target_factory: ExecutionTargetFactoryI = _DEFAULT_ETF_MOCK
-    ) -> None:
+    def run_launched_task(self, task_id: TaskID | None = None, overrides: Iterable[dishka.Provider] = ()) -> None:
         task_id_ = self.expect_task_launched(task_id).id
-        self.run_task(task_id=task_id_, execution_target_factory=execution_target_factory)
+        self.run_task(task_id=task_id_, overrides=overrides)
 
-    def run_task(
-        self,
-        task_id: TaskID,
-        execution_target_factory: ExecutionTargetFactoryI = _DEFAULT_ETF_MOCK,
-    ) -> None:
-        from cm.legacy.services.job.run import get_default_runner
+    def run_task(self, task_id: TaskID, overrides: Iterable[dishka.Provider] = ()) -> None:
+        container = dishka.make_container(*get_default_overridden_providers(), *overrides)
 
-        with patch("cm.legacy.services.job.run._impl._factory", new=execution_target_factory), patch(
-            "cm.legacy.services.job.run._impl.SubprocessRunnerEnvironment", new=SubprocessRunnerMockEnvironment
-        ), patch("cm.legacy.services.job.run._impl.JobRepoImpl", new=JobImplRunnerMock):
-            runner = get_default_runner(container=make_default_dishka_container_for_tests())
-
-        runner.run(task_id)
+        with container(context={JobFilterPredicate: always_true}):
+            runner = container.get(TaskRunner)
+            runner.run(task_id=task_id)
 
 
 @cache
@@ -158,11 +164,56 @@ class EnvironmentOverride(dishka.Provider):
         return ADCMBundleDir(_PYTHON_DIR.parent / "conf" / "adcm")
 
 
+class TaskRunnerOverride(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    def __init__(self, *args, failed_job: FailedJobInfo | None | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._failed_job = failed_job
+
+    @provide
+    def failed_job(self) -> FailedJobInfo | None:
+        return self._failed_job
+
+    @provide
+    def runner_settings(self, directories: Directories, consul: ConsulSettings) -> ExternalSettings:
+        return ExternalSettings(
+            adcm=ADCMSettings(code_root_dir=directories.code, run_dir=directories.run, log_dir=directories.logs),
+            ansible=AnsibleSettings(ansible_secret_script=directories.code / "ansible_secret.py"),
+            integrations=IntegrationsSettings(status_server_token="wow"),
+            consul=consul,
+        )
+
+    job_repo = provide(JobImplRunnerMock, provides=JobRepoInterface)
+    job_factory = provide(ExecutionTargetFactoryDummyMock, provides=ExecutionTargetFactoryI)
+
+    @provide
+    def job_processor(self, factory: ExecutionTargetFactoryI) -> JobProcessor:
+        return JobProcessor(convert=factory)
+
+    environment = provide(SubprocessRunnerMockEnvironment, provides=RunnerEnvironment)
+
+
+class MockWithEnvProvider(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    def __init__(self, *args, change_jobs: dict[int, JobImitator] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._change_jobs = change_jobs
+
+    @provide
+    def change_jobs(self) -> dict[int, JobImitator] | None:
+        return self._change_jobs
+
+    job_factory = provide(ETFMockWithEnvPreparation, provides=ExecutionTargetFactoryI)
+
+
 def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
     return (
         *get_main_providers(),
-        TaskStarterOverride(),
         EnvironmentOverride(),
+        TaskStarterOverride(),
+        TaskRunnerOverride(),
     )
 
 

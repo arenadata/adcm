@@ -20,6 +20,7 @@ from application.di.providers.main import (
     ClusterProvider,
     ConfigProvider,
     JobProvider,
+    LogsServiceProvider,
     PathResolverProvider,
     ProviderProvider,
     ScenariosProvider,
@@ -29,12 +30,14 @@ from application.di.providers.main import (
     UtilsProvider,
     WizardProvider,
 )
+from application.di.providers.task_runner import TaskRunnerProvider
 
 
 def get_main_providers() -> tuple[Provider, ...]:
     return (
         ActionHostGroupProvider(),
         BundleProvider(),
+        LogsServiceProvider(),
         ClusterProvider(),
         ConfigProvider(),
         EnvironmentProvider(),
@@ -42,6 +45,7 @@ def get_main_providers() -> tuple[Provider, ...]:
         PathResolverProvider(),
         ProviderProvider(),
         ScenariosProvider(),
+        TaskRunnerProvider(),
         TaskStarterProvider(),
         UpgradeProvider(),
         UseCaseProvider(),
