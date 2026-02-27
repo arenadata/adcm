@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from logging import Logger
 from typing import Any, Protocol
 import os
@@ -18,15 +17,21 @@ import signal
 
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
-from core.legacy.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
+from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
+from core.legacy.job.runners import (
+    ExecutionTarget,
+    ExternalSettings,
+    JobProcessor,
+    RunnerEnvironment,
+    RunnerRuntime,
+    TaskRunner,
+)
 from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
-from use_cases.cluster.update import ResetBeforeUpgradeCluster
-from use_cases.provider.update import ResetBeforeUpgradeProvider
 import dishka
 
 from cm.converters import action_target_type_to_model, core_type_to_model
@@ -38,10 +43,6 @@ from cm.legacy.services.concern.locks import (
     update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
-from cm.legacy.services.job.run._target_factories import (
-    internal_script_before_upgrade_clean_cluster,
-    internal_script_before_upgrade_clean_provider,
-)
 from cm.legacy.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -81,9 +82,15 @@ class JobSequenceRunner(TaskRunner):
         status_server: StatusServerInteractor,
         logger: Logger,
         container: dishka.Container,
-        **kwargs: Any,
+        job_processor: JobProcessor,
+        settings: ExternalSettings,
+        repo: JobRepoInterface,
+        action_repo: ActionRepoInterface,
+        environment: RunnerEnvironment,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            job_processor=job_processor, settings=settings, repo=repo, action_repo=action_repo, environment=environment
+        )
 
         self._notifier = notifier
         self._status_server = status_server
@@ -162,21 +169,6 @@ class JobSequenceRunner(TaskRunner):
         if not (task.target and task.owner and task.bundle):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
-
-        match task.owner.type:
-            # this whole patch is very bad, see comment in convert interface
-            case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT:
-                use_case = self._container.get(ResetBeforeUpgradeCluster)
-                extra_scripts = {
-                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_cluster, use_case=use_case)
-                }
-                self._job_processor.convert.register_internal_scripts(extra_scripts)
-            case ADCMCoreType.PROVIDER | ADCMCoreType.HOST:
-                use_case = self._container.get(ResetBeforeUpgradeProvider)
-                extra_scripts = {
-                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_provider, use_case=use_case)
-                }
-                self._job_processor.convert.register_internal_scripts(extra_scripts)
 
         configured_jobs = tuple(
             self._job_processor.convert(

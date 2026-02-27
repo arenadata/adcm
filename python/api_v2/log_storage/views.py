@@ -15,6 +15,7 @@ import re
 
 from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 from cm.models import JobLog, LogStorage
+from core.logs import LogsService
 from django.conf import settings
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -84,6 +85,14 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
         return queryset.filter(job_id=self.kwargs["job_pk"])
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        log_service = self.request.container.get(LogsService)
+        context["retrieve_check_logs_content_for_job"] = log_service.retrieve_check_logs_content_for_job
+
+        return context
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         if not JobLog.objects.filter(id=self.kwargs["job_pk"]).exists():

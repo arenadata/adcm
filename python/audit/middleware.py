@@ -14,6 +14,7 @@ from json.decoder import JSONDecodeError
 import json
 
 from cm.models import ADCM, ConfigLog
+from core.types import CurrentADCMVersion
 from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.auth.models import AnonymousUser, User
@@ -33,6 +34,7 @@ class LoginMiddleware:
 
     @staticmethod
     def _audit(
+        adcm_version: CurrentADCMVersion,
         request_path: str,
         request_host: str | None,
         request_agent: str | None,
@@ -62,7 +64,7 @@ class LoginMiddleware:
         audit_session = AuditSession.objects.create(
             user=audit_user, login_result=result, login_details=details, address=request_host, agent=request_agent
         )
-        cef_logger(audit_instance=audit_session, signature_id=resolve(request_path).route)
+        cef_logger(audit_instance=audit_session, signature_id=resolve(request_path).route, adcm_version=adcm_version)
 
         return user, result
 
@@ -169,6 +171,7 @@ class LoginMiddleware:
             request_agent=get_client_agent(request=request),
             user=request.user,
             username=username,
+            adcm_version=request.container.get(CurrentADCMVersion),
         )
 
         if user:

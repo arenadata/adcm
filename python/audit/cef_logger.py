@@ -14,8 +14,6 @@
 from collections import OrderedDict
 import logging
 
-from django.conf import settings
-
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
 
@@ -26,7 +24,6 @@ class CEFLogConstants:
     cef_version: str = "CEF: 0"
     device_vendor: str = "Arenadata Software"
     device_product: str = "Arenadata Cluster Manager"
-    adcm_version: str = settings.ADCM_VERSION
     operation_name_session: str = "User logged"
     extension_keys: tuple[str, ...] = (
         "actor",
@@ -41,10 +38,12 @@ class CEFLogConstants:
 
 
 def cef_logger(
+    *,
     audit_instance: AuditLog | AuditSession,
     signature_id: str,
     severity: int = 1,
     empty_resource: bool = False,
+    adcm_version: str,
 ) -> None:
     extension = OrderedDict.fromkeys(CEFLogConstants.extension_keys, None)
 
@@ -82,7 +81,7 @@ def cef_logger(
 
     msg = (
         f"{CEFLogConstants.cef_version}|{CEFLogConstants.device_vendor}|"
-        f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
+        f"{CEFLogConstants.device_product}|{adcm_version}|"
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
 

@@ -21,7 +21,7 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo
+from cm.tests.mocks.task_runner import FailedJobInfo
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -31,6 +31,7 @@ from rest_framework.status import (
 )
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import TaskRunnerOverride
 
 
 class TestTaskAudit(BaseAPITestCase):
@@ -78,8 +79,6 @@ class TestTaskAudit(BaseAPITestCase):
         )
 
     def test_run_action_fail(self):
-        etf = ExecutionTargetFactoryDummyMock(failed_job=FailedJobInfo(position=0, return_code=1))
-
         response = (self.client.v2[self.service] / "actions" / self.service_action / "run").post(
             data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
         )
@@ -93,7 +92,8 @@ class TestTaskAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-        self.task_runner.run_launched_task(execution_target_factory=etf)
+        overrides = (TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),)
+        self.task_runner.run_launched_task(overrides=overrides)
 
         self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action completed",

@@ -10,25 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import upgrade
-from core import cluster, provider
-from core import logs
 
-__all__ = [
-    "action",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-    "logs",
-]
+from core.logs._types import Severity
+
+SEVERITY_PRIORITY = {Severity.ERROR.value: 1, Severity.WARNING.value: 2, Severity.INFO.value: 3}

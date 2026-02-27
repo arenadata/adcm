@@ -16,12 +16,13 @@ import json
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
+from api_v2.tests.setup.overrides import MockWithEnvProvider
 from use_cases.dto import RunActionDTO
 import django.test
 
 from cm.models import Action, Component, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator
+from cm.tests.mocks.task_runner import JobImitator
 from cm.tests.test_action_host_group import ScheduleTask
 
 
@@ -90,8 +91,10 @@ class TestEffectsOfADCMAnsiblePlugins(
 
         task_id = self.task_runner.expect_task_launched().id
 
-        etf = ETFMockWithEnvPreparation(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=etf)
+        self.task_runner.run_task(
+            task_id=task_id,
+            overrides=(MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}),),
+        )
 
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, "success")

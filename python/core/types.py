@@ -38,6 +38,11 @@ ObjectConfigID: TypeAlias = int
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int
 
+LogStorageID: TypeAlias = int
+IsCreated: TypeAlias = bool
+GroupCheckLogID: TypeAlias = int
+CheckLogID: TypeAlias = int
+
 ProviderName: TypeAlias = str
 HostName: TypeAlias = str
 ClusterName: TypeAlias = str

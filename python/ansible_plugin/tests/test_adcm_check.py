@@ -362,3 +362,53 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertEqual(GroupCheckLog.objects.all().count(), 0)
         self.assertEqual(CheckLog.objects.all().count(), 0)
         self.assertEqual(LogStorage.objects.all().count(), 2)
+
+    def test_adcm_check_with_severity_success(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: yes
+                msg: 'success'
+                severity: 'error'
+        """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertEqual(result.value, "")
+        self.assertTrue(result.changed)
+
+        self.assertEqual(GroupCheckLog.objects.count(), 0)
+        self.assertEqual(CheckLog.objects.count(), 1)
+        self.assertEqual(LogStorage.objects.count(), 3)
+
+    def test_adcm_check_group_with_severity_success(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: no
+                success_msg: 'success'
+                fail_msg: 'fail'
+                severity: 'error'
+                group_title: 'group'
+                group_success_msg: 'success'
+                group_fail_msg: 'fail'
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertEqual(result.value, "")
+        self.assertTrue(result.changed)
+
+        self.assertEqual(GroupCheckLog.objects.count(), 1)
+        self.assertEqual(CheckLog.objects.count(), 1)
+        self.assertEqual(LogStorage.objects.count(), 3)
