@@ -16,7 +16,7 @@ import ActionWizardLastStage from '@uikit/ActionWizardSteps/ActionWizardLastStag
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import type { AdcmJob } from '@models/adcm';
+import type { AdcmDynamicActionDetails, AdcmJob } from '@models/adcm';
 import {
   isFirstButtonDisabled,
   isFirstButtonVisible,
@@ -40,6 +40,7 @@ interface ActionWizardStepProps {
   }>;
   onClose: () => void;
   selectedStep?: number;
+  lastStepActionDetails: AdcmDynamicActionDetails | null;
 }
 
 const getStepIcon = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
@@ -74,6 +75,7 @@ const ActionWizardSteps = ({
   onStepReset,
   entityDynamicActionWizardOperation,
   onClose,
+  lastStepActionDetails,
 }: ActionWizardStepProps) => {
   const { isValid, isDraft, setIsValid, setIsDraft } = useActionWizardValidationContext();
   const WizardOperation = entityDynamicActionWizardOperation;
@@ -188,7 +190,9 @@ const ActionWizardSteps = ({
                   step={step}
                 />
               )}
-              {step.type === AdcmWizardStepType.LastStep && <ActionWizardLastStage />}
+              {step.type === AdcmWizardStepType.LastStep && (
+                <ActionWizardLastStage actionDetails={lastStepActionDetails} />
+              )}
             </div>
           </div>
         );
