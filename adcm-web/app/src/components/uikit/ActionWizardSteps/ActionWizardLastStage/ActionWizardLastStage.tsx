@@ -2,12 +2,15 @@ import type React from 'react';
 import { useMemo } from 'react';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import { MultilineInput, Switch, WarningMessage } from '@uikit';
-import { useStore } from '@hooks';
 import s from './ActionWizardLastStage.module.scss';
 import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
+import type { AdcmDynamicActionDetails } from '@models/adcm';
 
-const ActionWizardLastStage: React.FC = () => {
-  const actionDetails = useStore((s) => s.adcm.clustersDynamicActions.dialog.actionDetails);
+interface ActionWizardLastStageProps {
+  actionDetails: AdcmDynamicActionDetails | null;
+}
+
+const ActionWizardLastStage: React.FC<ActionWizardLastStageProps> = ({ actionDetails }) => {
   const { formData, onChange } = useActionWizardLastStageContext();
   const isRaiseNonBlockingConcerns = !formData.shouldBlockObject;
 
