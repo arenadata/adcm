@@ -27,6 +27,7 @@ class GroupFilter(
 ):
     display_name = CharFilter(lookup_expr="icontains")
     type = ChoiceFilter(choices=OriginType.choices)
+    user_name = CharFilter(field_name="user__username", label="Filter by user name", distinct=True)
     ordering = OrderingFilter(
         fields={"display_name": "displayName"},
         field_labels={"display_name": "Display name"},

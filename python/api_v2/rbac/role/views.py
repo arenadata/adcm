@@ -73,6 +73,10 @@ from api_v2.views import ADCMGenericViewSet
                 description="Filter by a comma-separated list of categories in the role.",
             ),
             OpenApiParameter(
+                name="permission_name",
+                description="Filter by a permission name.",
+            ),
+            OpenApiParameter(
                 name="type",
                 description="Filter by type.",
                 enum=("business", "role"),

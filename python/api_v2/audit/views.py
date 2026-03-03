@@ -73,6 +73,11 @@ class AuditRoot(APIRootView):
                 type=date,
             ),
             OpenApiParameter(
+                name="login_time",
+                description="Filter by login time.",
+                type=date,
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -122,6 +127,10 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
                 name="object_type",
                 description="Filter by object type.",
                 enum=AuditObjectType.values,
+            ),
+            OpenApiParameter(
+                name="operation_name",
+                description="Filter by operation name.",
             ),
             OpenApiParameter(
                 name="operation_result",

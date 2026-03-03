@@ -32,14 +32,20 @@ class ClusterFilter(
     prototype_name = CharFilter(label="Filter by prototype name.", field_name="prototype__name")
     prototype_display_name = CharFilter(label="Filter by prototype display name.", field_name="prototype__display_name")
     name = CharFilter(label="Case insensitive and partial filter by cluster name.", lookup_expr="icontains")
+    state = CharFilter(label="Filter by state.", field_name="state", lookup_expr="exact")
+    version = CharFilter(label="Filter by version.", field_name="prototype__version")
     ordering = OrderingFilter(
         fields={
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
+            "prototype__version": "version",
+            "state": "state",
         },
         field_labels={
             "name": "Cluster name",
             "prototype__display_name": "Product",
+            "prototype__version": "Version",
+            "state": "State",
         },
         label="ordering",
     )

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters.rest_framework import CharFilter
+from django_filters.rest_framework import CharFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet
 
@@ -20,5 +20,12 @@ class ActionHostGroupFilter(
     char_fields=("name",),
     number_fields=("id",),
 ):
-    name = CharFilter(field_name="name", label="Name", lookup_expr="icontains")
-    has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains", distinct=True)
+    name = CharFilter(
+        field_name="name", label="Case insensitive and partial filter by object display name.", lookup_expr="icontains"
+    )
+    has_host = CharFilter(field_name="hosts__fqdn", label="Group Has Host", lookup_expr="icontains", distinct=True)
+    ordering = OrderingFilter(
+        fields={"name": "actionGroupName"},
+        field_labels={"name": "Action group name"},
+        label="ordering",
+    )

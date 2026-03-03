@@ -26,11 +26,35 @@ class BundleFilter(
 ):
     display_name = CharFilter(label="Display name", field_name="prototype__display_name", method="filter_display_name")
     product = CharFilter(label="Product name", field_name="prototype__name", method="filter_product")
+    version = CharFilter(label="Filter by version", field_name="version")
+    edition = CharFilter(label="Filter by edition", field_name="edition")
+    signature_status = CharFilter(
+        label="Case insensitive and partial filter by bundle signature status",
+        field_name="signature_status",
+        lookup_expr="icontains",
+    )
+    license_status = CharFilter(
+        label="Case insensitive and partial filter by bundle license status",
+        field_name="prototype__license",
+        lookup_expr="icontains",
+        distinct=True,
+    )
     ordering = OrderingFilter(
-        fields={"prototype__display_name": "displayName", "date": "uploadTime"},
+        fields={
+            "prototype__display_name": "displayName",
+            "date": "uploadTime",
+            "version": "version",
+            "edition": "edition",
+            "signature_status": "signatureStatus",
+            "prototype__license": "licenseStatus",
+        },
         field_labels={
             "prototype__display_name": "Display name",
             "date": "Upload time",
+            "version": "Version",
+            "edition": "Edition",
+            "signature_status": "Signature status",
+            "prototype__license": "License status",
         },
         label="ordering",
     )

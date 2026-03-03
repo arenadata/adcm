@@ -72,12 +72,21 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
             OpenApiParameter(
+                name="state",
+                description="Filter by state.",
+            ),
+            OpenApiParameter(
+                name="version",
+                description="Filter by version.",
+            ),
+            OpenApiParameter(
+                name="prototype_display_name",
+                description="Filter by prototype display name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=(
-                    "name",
-                    "-name",
-                ),
+                enum=("name", "-name", "prototypeDisplayName", "-prototypeDisplayName", "version", "-version"),
                 default="name",
             ),
         ],
