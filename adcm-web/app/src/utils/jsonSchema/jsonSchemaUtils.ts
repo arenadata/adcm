@@ -1,5 +1,5 @@
 import { type OutputUnit, type Schema, Validator } from '@cfworker/json-schema';
-import { deepClone } from '@utils/objectUtils';
+import { deepClone, getValueByPath } from '@utils/objectUtils';
 
 export type SchemaLike = Schema | object | boolean;
 
@@ -88,10 +88,10 @@ function normalizeInstancePathFromKeywordLocation(instancePath: string, keywordL
   return instancePath;
 }
 
-function mapLibraryErrorsToValidationErrors<T>(
+function mapLibraryErrorsToValidationErrors(
   errors: OutputUnit[],
   schema: SchemaLike,
-  validatedData: T,
+  validatedData: unknown,
 ): ValidationError[] {
   const rootSchema: Schema | undefined = isSchema(schema) ? schema : undefined;
 
@@ -99,11 +99,12 @@ function mapLibraryErrorsToValidationErrors<T>(
     const instancePath = err.instanceLocation?.replace(HASH_PREFIX, '') || '';
     const normalizedPath = normalizeInstancePathFromKeywordLocation(instancePath, err.keywordLocation);
     const parentSchema = getSchemaAtPath(schema, normalizedPath) ?? rootSchema;
+    const data = getValueByPath(validatedData, normalizedPath, '/');
 
     return {
       instancePath: normalizedPath,
       parentSchema,
-      data: validatedData,
+      data,
       keyword: err.keyword ?? '',
       message: err.error ?? '',
       params: {},
@@ -158,7 +159,7 @@ function expandRequiredErrors(errors: ValidationError[]): ValidationError[] {
   return result;
 }
 
-export const validate = <T>(schema: SchemaLike, data: T): ValidationError[] | null => {
+export const validate = (schema: SchemaLike, data: unknown): ValidationError[] | null => {
   if (schema === true) return null;
 
   if (schema === false) {

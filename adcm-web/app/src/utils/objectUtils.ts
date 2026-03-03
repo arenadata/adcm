@@ -5,8 +5,10 @@ export const deepClone = <T>(value: T): T => {
   return JSON.parse(JSON.stringify(value)) as T;
 };
 
-export const getValueByPath = (object: unknown, path: string) => {
-  return path.split('.').reduce((acc, c) => acc?.[c as keyof typeof object], object);
+export const getValueByPath = (object: unknown, path: string, delimiter = '.') => {
+  const preparedPath = path.startsWith(delimiter) ? path.slice(delimiter.length) : path;
+
+  return preparedPath.split(delimiter).reduce((acc, c) => acc?.[c as keyof typeof object], object);
 };
 
 export const isObject = (obj: unknown) => Object.prototype.toString.call(obj) === '[object Object]';
