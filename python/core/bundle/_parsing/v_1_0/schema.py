@@ -19,6 +19,9 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
     conlist,
     field_validator,
     model_validator,
@@ -59,7 +62,7 @@ class HasUpgrade(Protocol):
 
 @runtime_checkable
 class HasConfigGroupCustomization(Protocol):
-    config_group_customization: bool | None
+    config_group_customization: StrictBool | None
 
 
 @runtime_checkable
@@ -67,7 +70,7 @@ class HasName(Protocol):
     name: str
 
 
-VERSION: TypeAlias = int | float | str
+VERSION: TypeAlias = StrictInt | StrictFloat | str
 VENV: TypeAlias = Annotated[
     Literal["default", "2.8", "2.9", "2.16"] | None,
     Field(default=None),
@@ -105,11 +108,11 @@ class _BaseConfigItemSchema(_BaseModel):
     name: NAME
     read_only: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
     writable: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
-    required: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
-    group_customization: Annotated[bool | None, Field(default=None)]
+    group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     @model_validator(mode="after")
     def exclusive_editable_options(self):
@@ -126,21 +129,21 @@ class _BaseConfigItemSchema(_BaseModel):
 
 class ConfigItemBooleanSchema(_BaseConfigItemSchema):
     type: Literal["boolean"]
-    default: Annotated[bool | None, Field(default=None)]
+    default: Annotated[StrictBool | None, Field(default=None)]
 
 
 class ConfigItemIntegerSchema(_BaseConfigItemSchema):
     type: Literal["integer"]
-    min: Annotated[int | None, Field(default=None)]
-    max: Annotated[int | None, Field(default=None)]
-    default: Annotated[int | None, Field(default=None)]
+    min: Annotated[StrictInt | None, Field(default=None)]
+    max: Annotated[StrictInt | None, Field(default=None)]
+    default: Annotated[StrictInt | None, Field(default=None)]
 
 
 class ConfigItemFloatSchema(_BaseConfigItemSchema):
     type: Literal["float"]
-    min: Annotated[float | int | None, Field(default=None)]
-    max: Annotated[float | int | None, Field(default=None)]
-    default: Annotated[float | int | None, Field(default=None)]
+    min: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
+    max: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
+    default: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
 
 
 class ConfigItemFileSchema(_BaseConfigItemSchema):
@@ -149,7 +152,7 @@ class ConfigItemFileSchema(_BaseConfigItemSchema):
 
 
 class AnsibleOptionsSchema(TypedDict):
-    unsafe: bool
+    unsafe: StrictBool
 
 
 class _WithAnsibleOptions:
@@ -203,13 +206,13 @@ class ConfigItemJsonSchema(_BaseConfigItemSchema):
 
 class ConfigItemOptionSchema(_BaseConfigItemSchema):
     type: Literal["option"]
-    option: dict[Any, str | int | float]
-    default: Annotated[str | int | float | None, Field(default=None)]
+    option: dict[Any, StrictInt | StrictFloat | str]
+    default: Annotated[StrictInt | StrictFloat | str | None, Field(default=None)]
 
 
 class _BaseVariantSourceSchema(_BaseModel):
     type: str
-    strict: Annotated[bool | None, Field(default=None)]
+    strict: Annotated[StrictBool | None, Field(default=None)]
 
 
 class VariantInlineSchema(_BaseVariantSourceSchema):
@@ -309,8 +312,8 @@ CONFIG_ITEMS: TypeAlias = (
 class ConfigItemGroupSchema(_BaseConfigItemSchema):
     type: Literal["group"]
     subs: list[Annotated[Union[CONFIG_ITEMS, Self, "ConfigItemSelectionGroupSchema"], Field(discriminator="type")]]
-    activatable: Annotated[bool | None, Field(default=None)]
-    active: Annotated[bool | None, Field(default=None)]
+    activatable: Annotated[StrictBool | None, Field(default=None)]
+    active: Annotated[StrictBool | None, Field(default=None)]
 
     @field_validator("name", mode="after")
     @classmethod
@@ -521,7 +524,7 @@ class ConfigApplySchema(_BaseModel):
 
 
 class _WithAllowToTerminateField(_BaseModel):
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
 
 
 class _InternalBundleSwitchScript(_BaseModel):
@@ -697,10 +700,10 @@ class _BaseActionSchema(_BaseModel):
     description: Annotated[str | None, Field(default=None)]
     params: Annotated[dict | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
-    partial_execution: Annotated[bool | None, Field(default=None, deprecated=True)]
-    host_action: Annotated[bool, Field(default=None)]
-    allow_for_action_host_group: Annotated[bool, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
+    partial_execution: Annotated[StrictBool | None, Field(default=None, deprecated=True)]
+    host_action: Annotated[StrictBool, Field(default=None)]
+    allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
     log_files: Annotated[list[str] | None, Field(default=None, deprecated=True)]
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
     masking: MASKING_SCHEMA
@@ -708,7 +711,7 @@ class _BaseActionSchema(_BaseModel):
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
     venv: VENV
-    allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
+    allow_in_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
     config: ACTION_CONFIG_TYPE
     config_jinja: Annotated[str | None, Field(default=None)]
     wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
@@ -984,7 +987,7 @@ def init_not_defined_components(components: dict[str, Any] | Any) -> dict[str, d
 
 
 class FlagAutogenerationSchema(TypedDict):
-    enable_outdated_config: bool
+    enable_outdated_config: StrictBool
 
 
 class ServiceRequiresSchema(TypedDict):
@@ -1004,8 +1007,8 @@ class BoundSchema(TypedDict):
 
 class ImportSchema(_BaseModel):
     versions: Annotated[VersionsSchema | None, Field(default=None), AfterValidator(min_less_than_max)]
-    required: Annotated[bool | None, Field(default=None)]
-    multibind: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
+    multibind: Annotated[StrictBool | None, Field(default=None)]
     default: Annotated[list[str] | None, Field(default=None)]
 
     @model_validator(mode="after")
@@ -1056,8 +1059,8 @@ class ClusterSchema(_BaseObjectSchema):
     upgrade: Annotated[list[ClusterUpgradeSchema] | None, Field(default=None)]
     imports: Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]
     export: Annotated[str | list[str] | None, Field(default=None)]
-    config_group_customization: Annotated[bool | None, Field(default=None)]
-    allow_maintenance_mode: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
+    allow_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
     actions: CLUSTER_ACTIONS_TYPE
 
 
@@ -1065,13 +1068,13 @@ class ComponentSchema(BundleModel):
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
     monitoring: MONITORING
-    constraint: Annotated[list[int | Literal["+", "odd"]] | None, Field(default=None, min_length=1, max_length=2)]
+    constraint: Annotated[list[StrictInt | Literal["+", "odd"]] | None, Field(default=None, min_length=1, max_length=2)]
     bound_to: Annotated[BoundSchema | None, Field(default=None)]
     params: Annotated[Any, Field(default=None, deprecated=True)]
     requires: Annotated[list[ComponentRequiresSchema] | None, Field(default=None)]
     config: CONFIG_TYPE
     actions: CLUSTER_ACTIONS_TYPE
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
     venv: VENV
 
@@ -1091,14 +1094,14 @@ class ServiceSchema(_BaseObjectSchema):
     type: Literal["service"]
     imports: Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]
     export: Annotated[str | list[str] | None, Field(default=None)]
-    shared: Annotated[bool | None, Field(default=None, deprecated=True)]
+    shared: Annotated[StrictBool | None, Field(default=None, deprecated=True)]
     components: Annotated[
         dict[NAME, ComponentSchema] | None, Field(default=None), BeforeValidator(init_not_defined_components)
     ]
-    required: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
     requires: Annotated[list[ServiceRequiresSchema] | None, Field(default=None)]
     monitoring: MONITORING
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
     actions: CLUSTER_ACTIONS_TYPE
 
 
@@ -1111,7 +1114,7 @@ class ProviderSchema(_BaseObjectSchema):
     type: Literal["provider"]
     contract_version: Annotated[Literal["1.0"], Field(default="1.0")]
     upgrade: Annotated[list[ProviderUpgradeSchema] | None, Field(default=None)]
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
     actions: PROVIDER_ACTIONS_TYPE
 
 

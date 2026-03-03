@@ -18,6 +18,9 @@ from pydantic import (
     AfterValidator,
     BeforeValidator,
     Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
     model_validator,
 )
 
@@ -29,7 +32,7 @@ from core.bundle._parsing.shared.validation import (
     validate_name,
 )
 
-Version: TypeAlias = int | float | str
+Version: TypeAlias = StrictInt | StrictFloat | str
 MainVenv: TypeAlias = Literal["2.9", "2.16"]
 ChildVenv: TypeAlias = Annotated[MainVenv | None, Field(default=None)]
 Monitoring: TypeAlias = Annotated[Literal["active", "passive"] | None, Field(default=None)]
@@ -97,7 +100,7 @@ class VersionsSchema:
 
 @dataclass(slots=True)
 class FlagAutogenerationSchema:
-    enable_outdated_config: bool
+    enable_outdated_config: StrictBool
 
 
 @dataclass(slots=True)
@@ -121,8 +124,8 @@ class BoundSchema:
 @dataclass(slots=True)
 class ImportSchema:
     versions: Annotated[VersionsSchema | None, Field(default=None), AfterValidator(min_less_than_max)]
-    required: Annotated[bool | None, Field(default=None)]
-    multibind: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
+    multibind: Annotated[StrictBool | None, Field(default=None)]
     default: Annotated[list[str] | None, Field(default=None)]
 
     @model_validator(mode="after")
