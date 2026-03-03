@@ -103,7 +103,7 @@ export const filterConfigurationErrors = (errors: ConfigurationErrors, attribute
         fieldErrors.messages.pattern || fieldErrors.messages.minLength || fieldErrors.messages.maxLength;
 
       // ignore hashed secrets from backend
-      if (isIgnoredKeyword && fieldValue.startsWith(secretFieldValuePrefixToIgnore)) {
+      if (isIgnoredKeyword && fieldValue?.startsWith(secretFieldValuePrefixToIgnore)) {
         delete errors[errorPath];
       }
     }
