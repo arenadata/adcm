@@ -87,6 +87,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
         summary="GET hosts",
         parameters=[
             OpenApiParameter(
+                name="state",
+                description="Filter by state",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(

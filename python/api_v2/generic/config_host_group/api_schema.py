@@ -35,8 +35,22 @@ def document_config_host_group_viewset(object_type: str):
             summary=f"GET {object_type}'s config groups",
             description=f"Get information about {object_type}'s config-groups.",
             parameters=[
+                OpenApiParameter(
+                    name="name",
+                    description="Case insensitive and partial filter by object display name.",
+                ),
+                OpenApiParameter(
+                    name="has_host",
+                    description="Case insensitive and partial filter by host.",
+                ),
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-"',
+                    enum=("configGroupName", "-configGroupName"),
+                    default="configGroupName",
+                ),
             ],
             responses=responses(success=(HTTP_200_OK, CHGSerializer(many=True)), errors=HTTP_404_NOT_FOUND),
         ),

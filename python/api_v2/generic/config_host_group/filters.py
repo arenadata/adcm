@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django_filters.rest_framework import CharFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet
 
@@ -19,4 +20,16 @@ class CHGFilter(
     char_fields=("name",),
     number_fields=("id",),
 ):
-    ...
+    name = CharFilter(
+        field_name="name", label="Case insensitive and partial filter by object display name.", lookup_expr="icontains"
+    )
+    has_host = CharFilter(
+        field_name="hosts__fqdn",
+        label="Case insensitive and partial filter by object display name.",
+        lookup_expr="icontains",
+    )
+    ordering = OrderingFilter(
+        fields={"name": "configGroupName"},
+        field_labels={"name": "Config group name"},
+        label="ordering",
+    )

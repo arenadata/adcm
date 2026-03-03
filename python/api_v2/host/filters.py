@@ -30,11 +30,20 @@ class HostFilter(
     name = CharFilter(
         label="Case insensitive and partial filter by host name.", field_name="fqdn", lookup_expr="icontains"
     )
-    hostprovider_name = CharFilter(
-        label="Filter by hostprovider name.", field_name="provider__name", lookup_expr="exact"
-    )
     cluster_name = CharFilter(label="Filter by cluster name.", field_name="cluster__name", lookup_expr="exact")
     is_in_cluster = BooleanFilter(label="Filter by is host in cluster.", method="filter_is_in_cluster")
+    hostprovider_name = CharFilter(
+        label="Case insensitive and partial filter by the hostprovider display name.",
+        field_name="provider__name",
+        lookup_expr="icontains",
+    )
+    component_name = CharFilter(
+        label="Case insensitive and partial filter by the component display name.",
+        field_name="hostcomponent__component__prototype__display_name",
+        lookup_expr="icontains",
+        distinct=True,
+    )
+    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
     ordering = OrderingFilter(
         fields={
             "fqdn": "name",

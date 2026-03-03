@@ -91,9 +91,22 @@ from api_v2.views import ADCMGenericViewSet
             OpenApiParameter(name="status", description="User status.", enum=("active", "blocked")),
             OpenApiParameter(name="type", description="User type.", enum=("local", "ldap")),
             OpenApiParameter(
+                name="group_name", description="Case insensitive and partial filter by group display name"
+            ),
+            OpenApiParameter(name="email", description="Filter by email"),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("username", "-username"),
+                enum=(
+                    "username",
+                    "-username",
+                    "status",
+                    "-status",
+                    "email",
+                    "-email",
+                    "type",
+                    "-type",
+                ),
                 default="username",
             ),
         ],
