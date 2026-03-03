@@ -12,7 +12,7 @@
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, StrictBool, StrictInt
 
 from core.bundle._parsing.shared.config import ConfigAsList, ConfigAsListDictOrNone
 from core.bundle._parsing.shared.model import BundleModel
@@ -58,12 +58,12 @@ class Component(BundleModel):
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     flag_autogeneration: FlagAutogeneration
 
     monitoring: Monitoring
-    constraint: Annotated[list[int | Literal["+", "odd"]] | None, Field(default=None, min_length=1, max_length=2)]
+    constraint: Annotated[list[StrictInt | Literal["+", "odd"]] | None, Field(default=None, min_length=1, max_length=2)]
     requires: Annotated[list[ComponentRequiresSchema] | None, Field(default=None)]
 
 
@@ -82,7 +82,7 @@ class Service(BundleModel):
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
@@ -90,7 +90,7 @@ class Service(BundleModel):
     imports: Imports
     export: Export
     monitoring: Monitoring
-    required: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
     requires: Annotated[list[ServiceRequiresSchema] | None, Field(default=None)]
 
     components: Annotated[
@@ -114,7 +114,7 @@ class Cluster(BundleModel):
     venv: MainVenv
 
     config: ConfigAsListDictOrNone
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
@@ -122,7 +122,7 @@ class Cluster(BundleModel):
     imports: Imports
     export: Export
     upgrade: Upgrades
-    allow_maintenance_mode: Annotated[bool | None, Field(default=None)]
+    allow_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
 
 
 # Provider Objects
@@ -163,7 +163,7 @@ class Provider(BundleModel):
     venv: MainVenv
 
     config: ConfigAsListDictOrNone
-    config_group_customization: Annotated[bool | None, Field(default=None)]
+    config_group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
