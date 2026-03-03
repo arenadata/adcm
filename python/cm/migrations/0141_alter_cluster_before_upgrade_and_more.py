@@ -67,7 +67,10 @@ def add_field_to_json(apps, schema_editor):
 
             if "groups" in obj.before_upgrade:
                 config_host_groups = {
-                    group_name: {"config_id": data["group_config_id"], "hosts": data["hosts"]}
+                    group_name: {
+                        "config_id": data["group_config_id"],
+                        "hosts": data.get("hosts", []),
+                    }
                     for group_name, data in obj.before_upgrade["groups"].items()
                 }
 
