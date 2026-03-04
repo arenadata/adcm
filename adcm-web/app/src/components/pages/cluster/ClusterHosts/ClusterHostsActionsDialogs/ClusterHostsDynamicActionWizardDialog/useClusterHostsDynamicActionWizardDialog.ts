@@ -16,9 +16,9 @@ import { defaultWizardTitle } from '@uikit/ActionWizard/ActionWizard.constants';
 export const useClusterHostsDynamicActionWizardDialog = () => {
   const dispatch = useDispatch();
   const removeActionIdFromUrl = useRemoveActionIdFromUrl();
-  const actionDetails = useStore((s) => s.adcm.hostsDynamicActions.dialog.actionDetails);
+  const actionDetails = useStore((s) => s.adcm.clusterHostsDynamicActions.dialog.actionDetails);
   const cluster = useStore((s) => s.adcm.cluster.cluster);
-  const host = useStore((s) => s.adcm.hostsDynamicActions.dialog.host);
+  const host = useStore((s) => s.adcm.clusterHostsDynamicActions.dialog.clusterHost);
   const processWithStages = useStore((s) => s.adcm.clusterHostsWizard.process);
 
   const [savedActionData, setSavedActionData] = useState<{
