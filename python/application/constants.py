@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Basic implementation for secrets (FileSystem case).
-Kept in here for usage simplicity, allowed access to private "secrets._*" for the same reason.
-"""
+from typing import Final
+
+SECRETS_FILENAME: Final = "secrets_v2.json"
+SECRETS_FILENAME_DEPRECATED: Final = "secrets.json"

@@ -10,25 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-from pathlib import Path
+from enum import Enum, auto
 
 
-# for now it's separated from `core.files.directories`
-# until actual usages and dependencies are cleared
-@dataclass(slots=True)
-class Directories:
-    # main ones
-    base: Path
-    stack: Path
+class MigrationMode(Enum):
+    ENABLED = auto()
+    DISABLED = auto()
 
-    # subdirs
-    bundles: Path
-    downloads: Path
-    files: Path
-    secrets: Path
-    code: Path
-    data: Path
-    run: Path
-    logs: Path
-    temp: Path
+
+class SecretsSource(Enum):
+    FILE_SYSTEM = auto()
+    VAULT = auto()
