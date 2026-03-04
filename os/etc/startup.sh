@@ -27,7 +27,12 @@ cleanupwaitstatus
 ensure_mandatory_db_settings_provided
 ensure_directory_structure
 
-"${scripts}"/migrate_secrets.py || exit $?
+"${scripts}"/manage_secrets.py migrate || exit $?
+
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    "${scripts}"/manage_secrets.py init || exit $?
+fi
+
 "${django_command}" compatibility_check || exit $?
 
 # initialize services

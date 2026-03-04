@@ -10,25 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from core.secrets._secrets import (
-    SECRETS_FILENAME,
-    SECRETS_FILENAME_DEPRECATED,
-    ADCMSecrets,
-    AnsibleVault,
-    SecretsError,
-    SecretsFileModel,
-    SecretsProvider,
-    SecretsSource,
-)
-
-__all__ = [
-    "ADCMSecrets",
-    "AnsibleVault",
-    "SECRETS_FILENAME",
-    "SECRETS_FILENAME_DEPRECATED",
-    "SecretsError",
-    "SecretsFileModel",
-    "SecretsProvider",
-    "SecretsSource",
-]
+"""
+Not true core package, just various utils for stdlib and 3-rd party libraries processing.
+Do not put here anything business-related.
+"""

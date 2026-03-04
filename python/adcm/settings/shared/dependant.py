@@ -14,7 +14,7 @@ import os
 import logging
 
 from application.di.providers.environment import EnvironmentProvider
-from core.secrets import ADCMSecrets
+from core.secrets import AnsibleVault, DjangoSecretKey, StatusCheckerStatusServiceToken, StatusServiceADCMToken
 from core.settings import Directories
 from core.types import CurrentADCMVersion
 import dishka
@@ -23,20 +23,12 @@ import dishka
 Environment-dependant settings
 """
 
-DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
-DEFAULT_FILE_HANDLER_CLASS = "logging.handlers.WatchedFileHandler"
-
 container = dishka.make_container(EnvironmentProvider())
 
-adcm_secrets = container.get(ADCMSecrets)
+# Directories & Logs
 
-ADCM_TOKEN = adcm_secrets.status_service.adcm_token
-STATUS_SECRET_KEY = adcm_secrets.status_checker.status_service_token
-ANSIBLE_SECRET = adcm_secrets.ansible.ansible_vault
-
-SECRET_KEY = adcm_secrets.django.secret_key
-
-ADCM_VERSION = container.get(CurrentADCMVersion)
+DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
+DEFAULT_FILE_HANDLER_CLASS = "logging.handlers.WatchedFileHandler"
 
 directories = container.get(Directories)
 
@@ -153,3 +145,13 @@ LOGGING = {
 }
 
 STATIC_ROOT = directories.base / "wwwroot/static/"
+
+# Secrets
+
+ADCM_TOKEN = container.get(StatusServiceADCMToken)
+STATUS_SECRET_KEY = container.get(StatusCheckerStatusServiceToken)
+ANSIBLE_SECRET = container.get(AnsibleVault)
+
+SECRET_KEY = container.get(DjangoSecretKey)
+
+ADCM_VERSION = container.get(CurrentADCMVersion)

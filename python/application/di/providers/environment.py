@@ -18,14 +18,18 @@ from pathlib import Path
 import os
 
 from core import secrets
+from core.ext_utils.pydantic import represent_missing_and_others_errors_without_description
 from core.files.directories import ADCMBundleDir, BundlesDir
-from core.secrets.impl.provider_fs import FSSecretsProvider
+from core.files.secrets_provider import FSSecretsBackend
 from core.settings import Directories
 from core.types import CurrentADCMVersion
 from dishka import Provider, Scope, provide
 from integrations import vault
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import pydantic
+
+from application.constants import SECRETS_FILENAME
+from application.types import MigrationMode, SecretsSource
 
 
 # don't know where to put it yet, so keeping close to usage point
@@ -35,8 +39,24 @@ class VaultSettings(BaseSettings):
     vault: vault.ClientSettings
 
 
+class VaultSecretsInitError(Exception):
+    ...
+
+
 class EnvironmentProvider(Provider):
     scope = Scope.APP
+
+    @provide
+    def migration_mode(self) -> MigrationMode:
+        env_var_value = os.environ.get("MIGRATION_MODE", "0")
+        match env_var_value:
+            case "0":
+                return MigrationMode.DISABLED
+            case "1":
+                return MigrationMode.ENABLED
+            case _:
+                message = f'Unknown value of migration mode: "{env_var_value}"'
+                raise RuntimeError(message)
 
     @provide
     def directories(self) -> Directories:
@@ -63,57 +83,51 @@ class EnvironmentProvider(Provider):
         )
 
     @provide
-    def secrets_source(self) -> secrets.SecretsSource:
+    def secrets_source(self) -> SecretsSource:
         env_var_name = "SECRET_BACKEND"
 
         secret_backend_env_value = os.environ.get(env_var_name)
 
         match secret_backend_env_value:
             case "FileSystemBackend" | None:
-                return secrets.SecretsSource.FILE_SYSTEM
+                return SecretsSource.FILE_SYSTEM
 
             case "VaultBackend":
-                return secrets.SecretsSource.VAULT
+                return SecretsSource.VAULT
 
             case _:
                 message = f"Unexpected secrets backend: {env_var_name}={secret_backend_env_value}"
-                raise secrets.SecretsError(message)
+                raise secrets.SecretBaseError(message)
 
     @provide
-    def adcm_secrets(self, source: secrets.SecretsSource, directories: Directories) -> secrets.ADCMSecrets:
+    def secrets_backend(self, source: SecretsSource, directories: Directories) -> secrets.SecretsBackend:
         match source:
-            case secrets.SecretsSource.FILE_SYSTEM:
-                provider = FSSecretsProvider(path=directories.secrets / secrets.SECRETS_FILENAME)
-                return provider.get()
+            case SecretsSource.FILE_SYSTEM:
+                return FSSecretsBackend(path=directories.secrets / SECRETS_FILENAME)
 
-            case secrets.SecretsSource.VAULT:
-                try:
-                    # ignored, because pyright doesn't know about pydantic settings logic
-                    vault_settings = VaultSettings()  # pyright: ignore[reportCallIssue]
-                except pydantic.ValidationError as e:
-                    message = (
-                        "Failed to retrieve vault settings from environment, "
-                        "most likely one or more required values are missing. "
-                        "See error traceback for more info."
-                    )
-                    raise RuntimeError(message) from e
-
-                provider = vault.VaultSecretsProvider.from_settings(vault_settings.vault)
-
-                try:
-                    return provider.get()
-                except secrets.SecretsError as e:
-                    message = (
-                        "Failed to retrieve all required secrets from vault. "
-                        "For details see error traceback. "
-                        "If settings are correct, but secrets are absent, "
-                        "you need to either add them to your vault storage or migrate from filesystem."
-                    )
-                    raise RuntimeError(message) from e
+            case SecretsSource.VAULT:
+                vault_settings = parse_vault_settings_from_env()
+                return vault.VaultSecretsBackend.from_settings(vault_settings.vault)
 
     @provide
-    def ansible_vault(self, retrieved_secrets: secrets.ADCMSecrets) -> secrets.AnsibleVault:
-        return secrets.AnsibleVault(retrieved_secrets.ansible.ansible_vault)
+    def ansible_vault(self, backend: secrets.SecretsBackend) -> secrets.AnsibleVault:
+        secret_value = backend.read(secrets.Secret.ANSIBLE_VAULT)
+        return secrets.AnsibleVault(secret_value)
+
+    @provide
+    def status_checker_sst(self, backend: secrets.SecretsBackend) -> secrets.StatusCheckerStatusServiceToken:
+        secret_value = backend.read(secrets.Secret.STATUS_CHECKER_STATUS_SERVICE_TOKEN)
+        return secrets.StatusCheckerStatusServiceToken(secret_value)
+
+    @provide
+    def status_service_adcm_token(self, backend: secrets.SecretsBackend) -> secrets.StatusServiceADCMToken:
+        secret_value = backend.read(secrets.Secret.STATUS_SERVICE_ADCM_TOKEN)
+        return secrets.StatusServiceADCMToken(secret_value)
+
+    @provide
+    def django_secret_key(self, backend: secrets.SecretsBackend) -> secrets.DjangoSecretKey:
+        secret_value = backend.read(secrets.Secret.DJANGO_SECRET)
+        return secrets.DjangoSecretKey(secret_value)
 
     @provide
     def adcm_version(self) -> CurrentADCMVersion:
@@ -126,3 +140,15 @@ class EnvironmentProvider(Provider):
     @provide
     def bundles_root_dir(self, directories: Directories) -> BundlesDir:
         return BundlesDir(directories.bundles)
+
+
+def parse_vault_settings_from_env():
+    try:
+        # ignored, because pyright doesn't know about pydantic settings logic
+        return VaultSettings()  # pyright: ignore[reportCallIssue]
+    except pydantic.ValidationError as e:
+        message = represent_missing_and_others_errors_without_description(
+            errors=e.errors(),
+            prefix="Failed to retrieve vault settings from environment.\nSummary:\n",
+        )
+        raise VaultSecretsInitError(message) from None
