@@ -122,7 +122,7 @@ export class AdcmClusterHostsApi {
 
   // action wizard
   public static async createHostActionWizardProcess(clusterId: number, hostId: number, actionId: number) {
-    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/`;
+    const endpoint = `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/`;
 
     return await AdcmWizardApi.createProcess(endpoint);
   }
@@ -133,7 +133,7 @@ export class AdcmClusterHostsApi {
     actionId: number,
     processId: number,
   ) {
-    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/`;
+    const endpoint = `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/`;
 
     return await AdcmWizardApi.getProcess(endpoint);
   }
@@ -146,7 +146,7 @@ export class AdcmClusterHostsApi {
     stepId: number,
     options?: RequestOptions,
   ) {
-    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
+    const endpoint = `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/steps/${stepId}/`;
 
     return await AdcmWizardApi.getStep(endpoint, options);
   }
@@ -158,7 +158,7 @@ export class AdcmClusterHostsApi {
     processId: number,
     operation: AdcmWizardProcessOperationPayload,
   ) {
-    const endpoint = `/api/v2clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/operation/`;
+    const endpoint = `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/${actionId}/processes/${processId}/operation/`;
 
     return await AdcmWizardApi.postOperation(endpoint, operation);
   }
