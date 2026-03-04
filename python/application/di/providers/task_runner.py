@@ -32,7 +32,7 @@ from core.legacy.job.runners import (
     RunnerEnvironment,
     TaskRunner,
 )
-from core.secrets import ADCMSecrets
+from core.secrets import Secret, SecretsBackend
 from core.settings import Directories
 from dishka import Provider, Scope, from_context, provide
 from django.utils import timezone
@@ -66,12 +66,14 @@ class TaskRunnerProvider(Provider):
 
     @provide
     def runner_settings(
-        self, directories: Directories, secrets: ADCMSecrets, consul: ConsulSettings
+        self, directories: Directories, secrets_backend: SecretsBackend, consul: ConsulSettings
     ) -> ExternalSettings:
+        status_service_token = secrets_backend.read(Secret.STATUS_CHECKER_STATUS_SERVICE_TOKEN)
+
         return ExternalSettings(
             adcm=ADCMSettings(code_root_dir=directories.code, run_dir=directories.run, log_dir=directories.logs),
             ansible=AnsibleSettings(ansible_secret_script=directories.code / "ansible_secret.py"),
-            integrations=IntegrationsSettings(status_server_token=secrets.status_checker.status_service_token),
+            integrations=IntegrationsSettings(status_server_token=status_service_token),
             consul=consul,
         )
 
