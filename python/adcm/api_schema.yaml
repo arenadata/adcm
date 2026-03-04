@@ -369,12 +369,14 @@ components:
       - success
       - wrong password
       - account disabled
+      - log in to a blocked account
       - user not found
       type: string
       description: |-
         * `success` - success
         * `wrong password` - wrong password
         * `account disabled` - account disabled
+        * `log in to a blocked account` - log in to a blocked account
         * `user not found` - user not found
     AuditUserShort:
       type: object
@@ -4257,6 +4259,7 @@ paths:
           type: string
           enum:
           - account disabled
+          - log in to a blocked account
           - success
           - user not found
           - wrong password

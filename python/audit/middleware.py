@@ -10,176 +10,94 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from json.decoder import JSONDecodeError
-import json
+from typing import Final
 
-from cm.models import ADCM, ConfigLog
 from core.types import CurrentADCMVersion
-from django.conf import settings
 from django.contrib.auth import logout
-from django.contrib.auth.models import AnonymousUser, User
-from django.http.response import HttpResponseForbidden
-from django.urls import resolve
-from django.utils import timezone
-from rbac.models import User as RBACUser
+from django.http import HttpRequest, HttpResponse
+from typing_extensions import Self
 
-from audit.cef_logger import cef_logger
-from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
-from audit.utils import get_client_agent, get_client_ip
+from audit.models import AuditSessionLoginResult
+from audit.utils import (
+    BlockStatus,
+    LogInResult,
+    UserNotFoundError,
+    build_forbidden_response,
+    create_audit_records,
+    detect_audit_result,
+    detect_login_result,
+    detect_response,
+    retrieve_login_settings,
+    retrieve_request_username,
+    update_login_attempts_get_block_status,
+)
 
 
 class LoginMiddleware:
-    def __init__(self, get_response):
+    target_url_paths: Final = {
+        "/auth/login/",
+        "/api/v2/login/",
+        "/api/v2/token/",
+    }
+
+    def __init__(self: Self, get_response):
         self.get_response = get_response
 
-    @staticmethod
-    def _audit(
-        adcm_version: CurrentADCMVersion,
-        request_path: str,
-        request_host: str | None,
-        request_agent: str | None,
-        user: User | AnonymousUser | None = None,
-        username: str = None,
-    ) -> tuple[User | None, AuditSessionLoginResult]:
-        if user is not None and user.is_authenticated:
-            result = AuditSessionLoginResult.SUCCESS
-            details = {"username": user.username}
-        else:
-            details = {"username": username[: settings.USERNAME_MAX_LENGTH]}
-            try:
-                user = User.objects.get(username=username)
-                if not user.is_active:
-                    result = AuditSessionLoginResult.ACCOUNT_DISABLED
-                else:
-                    result = AuditSessionLoginResult.WRONG_PASSWORD
-
-            except User.DoesNotExist:
-                result = AuditSessionLoginResult.USER_NOT_FOUND
-                user = None
-
-        audit_user = None
-        if user is not None:
-            audit_user = AuditUser.objects.filter(username=user.username).order_by("-pk").first()
-
-        audit_session = AuditSession.objects.create(
-            user=audit_user, login_result=result, login_details=details, address=request_host, agent=request_agent
-        )
-        cef_logger(audit_instance=audit_session, signature_id=resolve(request_path).route, adcm_version=adcm_version)
-
-        return user, result
-
-    def _process_login_attempts(
-        self,
-        user: RBACUser | User,
-        result: AuditSessionLoginResult,
-    ) -> HttpResponseForbidden | None:
-        user = user if isinstance(user, RBACUser) else user.user
-        config_log = None
-        login_attempt_limit = None
-        block_time_minutes = None
-
-        adcm = ADCM.objects.first()
-        if adcm:
-            config_log = ConfigLog.objects.filter(obj_ref=adcm.config).last()
-
-        if config_log and isinstance(config_log.config, dict) and config_log.config.get("auth_policy"):
-            login_attempt_limit = config_log.config["auth_policy"]["login_attempt_limit"]
-            block_time_minutes = config_log.config["auth_policy"]["block_time"]
-
-        if not all((login_attempt_limit, block_time_minutes)):
-            return None
-
-        if result == AuditSessionLoginResult.SUCCESS:
-            if user.blocked_at:
-                user_blocked_till = user.blocked_at + timezone.timedelta(minutes=block_time_minutes)
-                user_block_period_past = user_blocked_till < timezone.now()
-                if not user_block_period_past:
-                    return self._build_forbidden_response()
-
-            user.failed_login_attempts = 0
-            user.blocked_at = None
-            user.save(update_fields=["failed_login_attempts", "blocked_at"])
-
-            return None
-        else:
-            if user.blocked_at:
-                user_blocked_till = user.blocked_at + timezone.timedelta(minutes=block_time_minutes)
-                user_block_period_past = user_blocked_till < timezone.now()
-                if not user_block_period_past:
-                    return self._build_forbidden_response()
-                else:
-                    user.failed_login_attempts = 1
-                    user.blocked_at = None
-            else:
-                if (
-                    user.last_failed_login_at
-                    and (user.last_failed_login_at + timezone.timedelta(minutes=block_time_minutes)) < timezone.now()
-                    and user.failed_login_attempts == 0
-                ):
-                    user.failed_login_attempts = 1
-                else:
-                    user.failed_login_attempts += 1
-
-                user.last_failed_login_at = timezone.now()
-
-            if user.failed_login_attempts >= login_attempt_limit:
-                user.blocked_at = timezone.now()
-                user.save(update_fields=["failed_login_attempts", "blocked_at", "last_failed_login_at"])
-
-                return self._build_forbidden_response()
-            else:
-                user.save(update_fields=["failed_login_attempts", "blocked_at", "last_failed_login_at"])
-
-                return None
-
-    def _build_forbidden_response(self):
-        return HttpResponseForbidden(
-            content=json.dumps(
-                {
-                    "code": "USER_BLOCK_ERROR",
-                    "level": "error",
-                    "desc": "Account locked: Please try again later or contact to ADCM Administrator",
-                },
-            ).encode(encoding=settings.ENCODING_UTF_8),
-        )
-
-    def __call__(self, request):
-        if not (
-            request.method == "POST"
-            and request.path
-            in {
-                "/api/v1/rbac/token/",
-                "/api/v1/token/",
-                "/auth/login/",
-                "/api/v2/login/",
-                "/api/v2/token/",
-            }
-        ):
+    def __call__(self: Self, request: HttpRequest) -> HttpResponse:
+        if not self.is_login_request(request=request):
             return self.get_response(request)
 
-        try:
-            username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")
-        except JSONDecodeError:
-            username = ""
+        username = retrieve_request_username(request=request)
+        adcm_version = request.container.get(CurrentADCMVersion)
 
         response = self.get_response(request)
 
-        username = request.POST.get("username") or username or request.user.username
-        user, result = self._audit(
-            request_path=request.path,
-            request_host=get_client_ip(request=request),
-            request_agent=get_client_agent(request=request),
-            user=request.user,
-            username=username,
-            adcm_version=request.container.get(CurrentADCMVersion),
+        return audit_request_return_response(
+            username=username, adcm_version=adcm_version, request=request, response=response
         )
 
-        if user:
-            if not user.is_active:
-                return self._build_forbidden_response()
+    def is_login_request(self: Self, request: HttpRequest) -> bool:
+        return request.method == "POST" and request.path in self.target_url_paths
 
-            if login_attempts_response := self._process_login_attempts(user=user, result=result):
-                logout(request=request)
-                return login_attempts_response
 
+def audit_request_return_response(
+    username: str,
+    adcm_version: CurrentADCMVersion,
+    request: HttpRequest,
+    response: HttpResponse,
+) -> HttpResponse:
+    try:
+        user, login_result = detect_login_result(request=request, username=username)
+    except UserNotFoundError:
+        create_audit_records(
+            username=username,
+            result=AuditSessionLoginResult.USER_NOT_FOUND,
+            adcm_version=adcm_version,
+            request=request,
+        )
         return response
+
+    block_status = BlockStatus.ACTIVE
+    if not user.is_active:
+        audit_result = AuditSessionLoginResult.ACCOUNT_DISABLED
+        response = build_forbidden_response()
+    else:
+        if login_settings := retrieve_login_settings():
+            block_status = update_login_attempts_get_block_status(
+                user=user, login_result=login_result, login_settings=login_settings
+            )
+        else:
+            block_status = BlockStatus.ACTIVE
+        audit_result = detect_audit_result(login_result=login_result, block_status=block_status)
+
+    create_audit_records(
+        username=user.username,
+        result=audit_result,
+        adcm_version=adcm_version,
+        request=request,
+    )
+
+    if login_result == LogInResult.SUCCESS and audit_result != AuditSessionLoginResult.SUCCESS:
+        logout(request=request)
+
+    return detect_response(login_result=login_result, block_status=block_status, response=response)

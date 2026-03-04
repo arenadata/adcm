@@ -10,9 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+
 from audit.models import AuditSession, AuditSessionLoginResult
+from cm.models import ADCM, ConfigLog
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+import pytz
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -87,3 +91,57 @@ class TestLoginAudit(BaseAPITestCase):
                     login_result=AuditSessionLoginResult.USER_NOT_FOUND.value,
                     login_details={"username": new_username},
                 ).delete()
+
+    def test_adcm_7527_login_to_a_blocked_account(self):
+        # set login_attempt_limit
+        attempts = 2
+        adcm_config = ConfigLog.objects.get(obj_ref=ADCM.objects.first().config)
+        adcm_config.config["auth_policy"]["login_attempt_limit"] = attempts
+        adcm_config.save()
+
+        # log in <attempts> times with wrong credentials
+        for _ in range(attempts):
+            response = (self.client.v2 / "login").post(data={**self.test_user_credentials, "password": "wrong"})
+            self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
+            self.check_last_audit_record(
+                model=AuditSession,
+                user__username=self.test_user_credentials["username"],
+                login_result=AuditSessionLoginResult.WRONG_PASSWORD,
+                login_details={"username": self.test_user_credentials["username"]},
+            ).delete()
+
+        self.test_user.refresh_from_db()
+        self.assertIsNotNone(self.test_user.blocked_at)
+
+        # try to log in with correct creds, check that account is blocked on <attempts + 1> log in
+        response = (self.client.v2 / "login").post(data=self.test_user_credentials)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_record(
+            model=AuditSession,
+            user__username=self.test_user_credentials["username"],
+            login_result=AuditSessionLoginResult.LOG_IN_TO_A_BLOCKED_ACCOUNT,
+            login_details={"username": self.test_user_credentials["username"]},
+        ).delete()
+
+        # wrong creds again, while blocked
+        response = (self.client.v2 / "login").post(data={**self.test_user_credentials, "password": "wrong"})
+        self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
+        self.check_last_audit_record(
+            model=AuditSession,
+            user__username=self.test_user_credentials["username"],
+            login_result=AuditSessionLoginResult.WRONG_PASSWORD,
+            login_details={"username": self.test_user_credentials["username"]},
+        ).delete()
+
+        # edit blocked_at, check now user can log in
+        self.test_user.blocked_at = datetime.datetime(year=2000, month=1, day=1, tzinfo=pytz.UTC)
+        self.test_user.save(update_fields=["blocked_at"])
+
+        response = (self.client.v2 / "login").post(data=self.test_user_credentials)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_record(
+            model=AuditSession,
+            user__username=self.test_user_credentials["username"],
+            login_result=AuditSessionLoginResult.SUCCESS,
+            login_details={"username": self.test_user_credentials["username"]},
+        ).delete()
