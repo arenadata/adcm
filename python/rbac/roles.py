@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.converters import core_type_to_model
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
@@ -25,6 +26,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.types import ADCMCoreType
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
@@ -224,9 +226,9 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
             assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log)
 
 
-def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
-    obj_type_map = get_objects_for_policy(obj=action_object)
-    object_model = action_object.__class__.__name__.lower()
+def re_apply_policy_for_jobs(task: TaskLog) -> None:
+    owner = core_type_to_model(core_type=ADCMCoreType(task.owner_type)).objects.get(id=task.owner_id)
+    obj_type_map = get_objects_for_policy(obj=owner)
 
     target = task.task_object
     if isinstance(target, ActionHostGroup):
@@ -256,8 +258,8 @@ def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
                     )
                     model_view_gop = GroupObjectPermission.objects.get(
                         group=group,
-                        permission__codename=f"view_{object_model}",
-                        object_pk=action_object.pk,
+                        permission__codename=f"view_{task.owner_type}",
+                        object_pk=task.owner_id,
                     )
                 except GroupObjectPermission.DoesNotExist:
                     continue
