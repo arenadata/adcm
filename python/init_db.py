@@ -32,10 +32,11 @@ from cm.models import (
     GroupCheckLog,
     Provider,
 )
+from core.secrets import Secret, SecretsBackend
 from core.settings import Directories
-from django.conf import settings
 from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
+from rest_framework.authtoken.models import Token
 from use_cases import bundle
 
 TOKEN_LENGTH = 20
@@ -52,8 +53,8 @@ def _create_admin_user() -> None:
         User.objects.create_superuser(username=username, email=email, password=username, built_in=False)
 
 
-def _create_status_user() -> tuple[str, str | None]:
-    username = settings.ADCM_STATUS_USERNAME
+def _create_status_user() -> int:
+    username = "status"
     email = f"{username}@example.com"
 
     status_user = User.objects.filter(username=username).only("email").first()
@@ -62,12 +63,12 @@ def _create_status_user() -> tuple[str, str | None]:
             status_user.email = email
             status_user.save(update_fields=["email"])
 
-        return username, None
+        return status_user.pk
 
-    password = token_hex(TOKEN_LENGTH)
-    User.objects.create_superuser(username=username, email=email, password=password, built_in=True)
-
-    return username, password
+    user = User.objects.create_superuser(
+        username=username, email=email, password=token_hex(TOKEN_LENGTH), built_in=True
+    )
+    return user.pk
 
 
 def _create_system_user() -> None:
@@ -80,6 +81,10 @@ def _create_system_user() -> None:
     elif system_user.email != email:
         system_user.email = email
         system_user.save(update_fields=["email"])
+
+
+def _ensure_status_user_token_set(user_id: int, token: str) -> None:
+    Token.objects.get_or_create(user_id=user_id, key=token)
 
 
 def clear_temp_tables():
@@ -107,8 +112,11 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     logger.info("Start initializing ADCM DB...")
 
     _create_admin_user()
-    _create_status_user()
     _create_system_user()
+    user_id = _create_status_user()
+    secrets_backend = container.get(SecretsBackend)
+    status_user_token = secrets_backend.read(Secret.STATUS_SERVICE_ADCM_TOKEN)
+    _ensure_status_user_token_set(user_id=user_id, token=status_user_token)
 
     recover_statuses()
     clear_temp_tables()
