@@ -45,6 +45,7 @@ from core.legacy.job.runners import (
     TaskRunner,
     always_true,
 )
+from core.result import Success
 from core.settings import Directories
 from core.types import PID, CurrentADCMVersion, TaskID
 from dishka.provider import provide
@@ -144,6 +145,22 @@ class TaskStarterOverride(dishka.Provider):
         return partial(_reset_runner_manager_and_start, runner_manager=task_runner_manager)
 
 
+class DummySecretBackend(secrets.SecretsBackend):
+    def write_all(self, secrets: secrets.ADCMSecrets) -> None:
+        _ = secrets
+
+    def read_all(
+        self,
+    ) -> Success[secrets.ADCMSecrets]:
+        raise NotImplementedError("If you see it, please implement for tests")
+
+    def read(self, secret: secrets.Secret) -> str:
+        if secret == secrets.Secret.ANSIBLE_VAULT:
+            return "ansible-secret-test"
+
+        return secret.name
+
+
 class EnvironmentOverride(dishka.Provider):
     scope = dishka.Scope.APP
 
@@ -152,8 +169,8 @@ class EnvironmentOverride(dishka.Provider):
         return prepare_process_bound_directories()
 
     @provide
-    def ansible_vault(self) -> secrets.AnsibleVault:
-        return secrets.AnsibleVault("ansible-secret-test")
+    def secrets_backend(self) -> secrets.SecretsBackend:
+        return DummySecretBackend()
 
     @provide
     def adcm_version(self) -> CurrentADCMVersion:

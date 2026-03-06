@@ -14,7 +14,10 @@ import os
 import logging
 
 from application.di.providers.environment import EnvironmentProvider
-from core.secrets import AnsibleVault, DjangoSecretKey, StatusCheckerStatusServiceToken, StatusServiceADCMToken
+from core.secrets import (
+    Secret,
+    SecretsBackend,
+)
 from core.settings import Directories
 from core.types import CurrentADCMVersion
 import dishka
@@ -148,10 +151,12 @@ STATIC_ROOT = directories.base / "wwwroot/static/"
 
 # Secrets
 
-ADCM_TOKEN = container.get(StatusServiceADCMToken)
-STATUS_SECRET_KEY = container.get(StatusCheckerStatusServiceToken)
-ANSIBLE_SECRET = container.get(AnsibleVault)
+secrets_backend = container.get(SecretsBackend)
 
-SECRET_KEY = container.get(DjangoSecretKey)
+ADCM_TOKEN = secrets_backend.read(Secret.BACKEND_STATUS_SERVICE_TOKEN)
+STATUS_SECRET_KEY = secrets_backend.read(Secret.STATUS_CHECKER_STATUS_SERVICE_TOKEN)
+ANSIBLE_SECRET = secrets_backend.read(Secret.ANSIBLE_VAULT)
+
+SECRET_KEY = secrets_backend.read(Secret.DJANGO_SECRET)
 
 ADCM_VERSION = container.get(CurrentADCMVersion)
