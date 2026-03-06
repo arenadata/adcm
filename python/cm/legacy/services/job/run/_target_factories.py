@@ -162,7 +162,7 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
 
     _switch_hc_if_required(task=task)
 
-    re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
+    re_apply_policy_for_jobs(task=task_)
 
     return 0
 
@@ -195,7 +195,7 @@ def internal_script_bundle_revert(task: Task, job: Job) -> int:
 
     _switch_hc_if_required(task=task)
 
-    re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
+    re_apply_policy_for_jobs(task=task_)
 
     return 0
 

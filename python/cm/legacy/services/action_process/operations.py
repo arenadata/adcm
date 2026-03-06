@@ -33,6 +33,7 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.db.utils import DatabaseError
 from django.utils import timezone
+from rbac.roles import re_apply_policy_for_jobs
 from typing_extensions import Self
 import core
 
@@ -489,9 +490,7 @@ def _operation_submit_job(
     task_id = job_service.create_task(payload=payload)
     job_service.create_jobs(task_id=task_id, scripts=tuple(JobSpec(**job) for job in step.step_spec))
 
-    task_orm = repo.retrieve_task_orm(task_id=task_id)
-
-    step_input_data = StepInputDTO(job_id=task_orm.pk, created_at=timezone.now())
+    step_input_data = StepInputDTO(job_id=task_id, created_at=timezone.now())
     repo.upsert_step_input(step_id=step_id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step_id)
@@ -499,6 +498,8 @@ def _operation_submit_job(
 
     # todo write pid to task (executor)
     # todo actually should use starter to avoid hardcoding
+    task_orm = repo.retrieve_task_orm(task_id=task_id)
+    re_apply_policy_for_jobs(task=task_orm)
     start_task(task_orm)
 
 
