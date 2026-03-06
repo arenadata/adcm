@@ -35,8 +35,8 @@ DEPRECATION_WARNING_TEMPLATE = (
 OUTDATED_VERSION_ERROR = (
     "UPGRADE BLOCKED - COMPATIBILITY ISSUES:\n"
     "✗ Requires contract_version functionality.\n"
-    "Minimum required version to upgrade from is ADCM 2.10.\n"
-    "Please upgrade to ADCM 2.10 first before upgrading to the current version."
+    "Minimum required version to upgrade from is ADCM 2.10.1\n"
+    "Please upgrade to ADCM 2.10.1 first before upgrading to the current version."
 )
 SUCCESS_TEMPLATE = "✓ All installed bundles have supported contract_version.\n"
 
