@@ -226,7 +226,7 @@ def update_configuration_from_job(
             old_config_id=configuration.id,
             new_config_id=config_id,
         )
-
+        delete_issue(owner=owner, cause=ConcernCause.CONFIG)
     send_config_creation_event(
         object_id=owner.id, object_type=owner.type, changes={"createdBy": config_log_orm.created_by}
     )
