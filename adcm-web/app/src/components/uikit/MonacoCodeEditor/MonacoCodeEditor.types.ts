@@ -16,6 +16,8 @@ export type IDisposable = monaco.IDisposable;
 export type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
 export type IIdentifiedSingleEditOperation = monaco.editor.IIdentifiedSingleEditOperation;
 export type IGlyphMarginWidget = monaco.editor.IGlyphMarginWidget;
+export type IEditorOptions = monaco.editor.IEditorOptions;
+export type IGlobalEditorOptions = monaco.editor.IGlobalEditorOptions;
 export type IEditorDecorationsCollection = monaco.editor.IEditorDecorationsCollection;
 export type IModelDecorationOptions = monaco.editor.IModelDecorationOptions;
 export type IModelDeltaDecoration = monaco.editor.IModelDeltaDecoration;
@@ -78,12 +80,7 @@ export type ChangeEvent = {
   event?: IModelContentChangedEvent;
 };
 
-export interface MonacoCodeEditorOptions {
-  glyphMargin?: boolean;
-  theme?: string;
-  showMinimap?: boolean;
-  isReadOnly?: boolean;
-}
+export interface MonacoCodeEditorOptions extends IEditorOptions, IGlobalEditorOptions {}
 
 export type GetSuggestionsCallback = (model: ITextModel, position: IPosition) => languages.CompletionItem[];
 

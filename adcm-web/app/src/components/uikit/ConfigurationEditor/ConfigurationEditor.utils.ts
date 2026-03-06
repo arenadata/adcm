@@ -2,12 +2,12 @@ import type { ConfigurationData, SchemaDefinition } from '@models/adcm';
 import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { ConfigurationNodePath } from './ConfigurationEditor.types';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
-import { isObject } from '@utils/objectUtils';
+import { deepClone, isObject } from '@utils/objectUtils';
 import { isValueUnset } from '@utils/checkUtils';
 
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
-    const newConfiguration = cloneConfiguration(configuration);
+    const newConfiguration = deepClone<ConfigurationData>(configuration);
 
     const fieldName = path.pop()!;
 
@@ -23,7 +23,7 @@ export const editField = (configuration: ConfigurationData, path: ConfigurationN
 };
 
 export const addField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
-  const newConfiguration = cloneConfiguration(configuration);
+  const newConfiguration = deepClone<ConfigurationData>(configuration);
 
   const fieldName = path.pop()!;
 
@@ -42,7 +42,7 @@ export const addField = (configuration: ConfigurationData, path: ConfigurationNo
 };
 
 export const deleteField = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
-  const newConfiguration = cloneConfiguration(configuration);
+  const newConfiguration = deepClone<ConfigurationData>(configuration);
 
   const fieldName = path.pop()!;
 
@@ -61,7 +61,7 @@ export const addArrayItem = (
   path: ConfigurationNodePath,
   schema: SchemaDefinition,
 ) => {
-  const newConfiguration = cloneConfiguration(configuration);
+  const newConfiguration = deepClone<ConfigurationData>(configuration);
 
   let node = newConfiguration;
   for (const part of path) {
@@ -83,7 +83,7 @@ export const addArrayItem = (
 };
 
 export const deleteArrayItem = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
-  const newConfiguration = cloneConfiguration(configuration);
+  const newConfiguration = deepClone<ConfigurationData>(configuration);
 
   const fieldName = path.pop()!;
 
@@ -105,7 +105,7 @@ export const moveArrayItem = (
   currentPath: ConfigurationNodePath,
   newPath: ConfigurationNodePath,
 ) => {
-  const newConfiguration = cloneConfiguration(configuration);
+  const newConfiguration = deepClone<ConfigurationData>(configuration);
 
   const currentIndex = Number(currentPath.pop()!);
   const newIndex = Number(newPath.pop()!);
@@ -155,8 +155,4 @@ export const removeEmpty = (value: unknown): unknown => {
   }
 
   return value;
-};
-
-const cloneConfiguration = (configuration: ConfigurationData) => {
-  return structuredClone(configuration);
 };

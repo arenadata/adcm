@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Iterable, NamedTuple, NewType, TypeAlias
+from typing import Any, Iterable, NamedTuple, Protocol, TypeAlias
 
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -29,7 +29,6 @@ from cm.legacy.services.config.jinja import get_jinja_config
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template_new
-from cm.legacy.services.job.run import start_task
 from cm.legacy.services.job.types import ActionHCRule
 from cm.legacy.status_api import send_task_status_update_event
 from cm.models import (
@@ -76,8 +75,6 @@ from use_cases.dto import ConfigurationDTO, RunActionDTO
 ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
-UseNewScheduler = NewType("UseNewScheduler", bool)
-
 
 class SpecPair(NamedTuple):
     spec: core.config.spec.FullSpec
@@ -89,13 +86,18 @@ class JobConfig(NamedTuple):
     specification: core.config.spec.FullSpec
 
 
+class TaskStarter(Protocol):
+    def __call__(self, task_orm: TaskLog, /) -> Any:
+        ...
+
+
 @dataclass(slots=True)
 class ScheduleTask:
     job_service: core.job.JobService
     config_service: core.config.ConfigService
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
-    use_new_scheduler: UseNewScheduler
+    start_task: TaskStarter
 
     def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
         action_objects = _ActionLaunchObjects(target=target, action=action_orm)
@@ -258,12 +260,11 @@ class ScheduleTask:
                 self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
-            re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
+            re_apply_policy_for_jobs(task=orm_task)
 
         send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
 
-        if not self.use_new_scheduler:
-            start_task(orm_task)
+        self.start_task(orm_task)
 
         return orm_task
 

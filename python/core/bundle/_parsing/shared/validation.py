@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
 from adcm_version import compare_prototype_versions
 
@@ -20,6 +20,10 @@ from core.templates import Template
 
 if TYPE_CHECKING:
     from core.bundle._parsing.v_1_0.schema import VersionsSchema
+
+
+ActionName: TypeAlias = str
+T = TypeVar("T")
 
 
 def is_path_correct(raw_path: str) -> bool:
@@ -154,5 +158,16 @@ def patch_masking(value: dict | None) -> dict:
 def template_script_is_correct_path(value: Template, field_name: str) -> Template:
     if not is_path_correct(str(value.file.path)):
         raise ValueError(f'"{field_name}" has unsupported path format')
+
+    return value
+
+
+def field_not_set_mode_before(value: T, field_name: str) -> T:
+    if not isinstance(value, dict):
+        return value
+
+    if field_name in value:
+        message = f"Field {field_name} is not allowed in here"
+        raise ValueError(message)
 
     return value

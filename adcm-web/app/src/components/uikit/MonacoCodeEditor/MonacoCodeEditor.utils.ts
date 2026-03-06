@@ -7,6 +7,7 @@ import type {
   IMarker,
   YamlParseError,
   ParseYamlResult,
+  IStandaloneCodeEditor,
 } from './MonacoCodeEditor.types';
 import yaml from 'yaml';
 import type { JSONObject } from '@models/json';
@@ -15,6 +16,22 @@ import { ILanguageFeaturesService } from 'monaco-editor/esm/vs/editor/common/ser
 import type { TreeElement } from 'monaco-editor/esm/vs/editor/contrib/documentSymbols/browser/outlineModel.js';
 import { OutlineModel } from 'monaco-editor/esm/vs/editor/contrib/documentSymbols/browser/outlineModel.js';
 import { StandaloneServices } from 'monaco-editor/esm/vs/editor/standalone/browser/standaloneServices.js';
+
+const SCROLL_TO_END_DELAY_MS = 200;
+
+export const scrollEditorToEnd = (editor: IStandaloneCodeEditor): (() => void) | undefined => {
+  const model = editor.getModel();
+  if (model) {
+    const lastLineNumber = model.getLineCount();
+    const timeoutId = window.setTimeout(() => {
+      editor.revealPosition(
+        { lineNumber: lastLineNumber, column: Number.POSITIVE_INFINITY },
+        monaco.editor.ScrollType.Smooth,
+      );
+    }, SCROLL_TO_END_DELAY_MS);
+    return () => clearTimeout(timeoutId);
+  }
+};
 
 export const createOrUpdateModel = (file: EditorFile) => {
   const uri = monaco.Uri.parse(file.uri);

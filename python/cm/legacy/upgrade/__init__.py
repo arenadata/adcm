@@ -10,22 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base import (
-    _switch_components,
-    _update_before_upgrade,
-    bundle_revert,
-    bundle_switch,
-    check_upgrade,
-    do_upgrade,
-    get_upgrade,
-)
+from .base import check_upgrade, get_upgrade, update_before_upgrade
 
-__all__ = [
-    "_switch_components",
-    "_update_before_upgrade",
-    "bundle_revert",
-    "bundle_switch",
-    "check_upgrade",
-    "do_upgrade",
-    "get_upgrade",
-]
+__all__ = ["check_upgrade", "get_upgrade", "update_before_upgrade"]

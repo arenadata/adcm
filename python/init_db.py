@@ -16,10 +16,12 @@ from secrets import token_hex
 import json
 import logging
 
+from dishka import make_container
+
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.dependencies import prepare_container
 from adcm.feature_flags import use_new_job_scheduler
+from application.di.containers import get_main_providers
 from cm.legacy.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
@@ -128,7 +130,7 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     recover_statuses()
     clear_temp_tables()
 
-    container = prepare_container()
+    container = make_container(*get_main_providers())
 
     process_adcm_bundle = container.get(bundle.InitOrUpgradeADCM)
     process_adcm_bundle.do(adcm_conf_file)

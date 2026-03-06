@@ -120,6 +120,7 @@ class Step(BaseModel):
     stage: str
     display_name: str
     step_spec: list[dict] | None = None
+    description: str = ""
     type: core.action.wizard.StepType
     state: ProcessStepState
 

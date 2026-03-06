@@ -51,13 +51,13 @@ from core.types import ActionProcessID, ActionTargetDescriptor, ExtraActionTarge
 from dishka import FromDishka
 from django.db.transaction import atomic
 from django.http.response import Http404
-from infra.di.django import inject
 from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from use_cases.transition.job.schedule import TaskStarter
 import core
 
 from api_v2.generic.action.process.serializers import (
@@ -75,6 +75,7 @@ from api_v2.utils.config import (
     convert_json_fields_to_strings,
     convert_main_config,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -213,6 +214,7 @@ class ActionProcessViewSet(
         job_service: FromDishka[JobService],
         config_service: FromDishka[core.config.ConfigService],
         bundle_renderer: FromDishka[BundleRenderer[ActionArgs, TaskArgs]],
+        start_task: FromDishka[TaskStarter],
         **_,
     ):  # noqa: ARG002
         process_id = int(pk)
@@ -236,6 +238,7 @@ class ActionProcessViewSet(
             config_service=config_service,
             job_service=job_service,
             bundle_renderer=bundle_renderer,
+            start_task=start_task,
         )
 
         return Response(
@@ -282,7 +285,7 @@ class ProcessStepViewSet(
         target = orm_object_to_action_target_descriptor(parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        data = step.model_dump(include={"id", "name", "display_name", "type", "state"})
+        data = step.model_dump(include={"id", "name", "display_name", "description", "type", "state"})
 
         config_service = get_config_service()
 

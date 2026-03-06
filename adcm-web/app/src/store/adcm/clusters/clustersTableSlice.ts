@@ -15,7 +15,7 @@ const createInitialState = (): AdcmClustersTableState => ({
   filter: {
     name: undefined,
     status: undefined,
-    displayName: undefined,
+    prototypeDisplayName: undefined,
   },
   paginationParams: {
     perPage: 10,

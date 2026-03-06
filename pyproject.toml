@@ -238,7 +238,8 @@ layers = [
     "core.scenarios",
     "core.bundle",
     "core.action",
-    "core.config | core.mapping",
+    # core.upgrade may be moved later if required
+    "core.config | core.mapping | core.cluster | core.provider | core.upgrade",
     "core.templates",
     "core.errors | core.settings",
     "core.types",

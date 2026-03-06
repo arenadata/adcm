@@ -6,13 +6,6 @@ import {
 } from '@models/adcm/wizard';
 import { type AdcmJob, AdcmJobStatus } from '@models/adcm';
 
-const tips = {
-  [AdcmWizardStepStates.Created]: 'Fill inputs',
-  [AdcmWizardStepStates.Completed]: 'Proceed to next step',
-  [AdcmWizardStepStates.Running]: 'Running',
-  [AdcmWizardStepStates.Broken]: 'Broken',
-};
-
 const wizardStepStates = new Set([AdcmWizardStepStates.Running, AdcmWizardStepStates.Completed]);
 
 const wizardStepType = new Set([
@@ -31,18 +24,6 @@ export const lastStepId = (stages: AdcmWizardStage[]) => {
 
 export const checkForBrokenStep = (stages: AdcmWizardStage[]) => {
   return stages.flatMap((stage) => stage.steps).find((step) => step.state === 'broken')?.id ?? undefined;
-};
-
-export const getStepTip = (stage: AdcmWizardStage, currentStep: number) => {
-  const step = stage.steps.find((step) => step.id === currentStep);
-
-  if (step) {
-    if (step.type === AdcmWizardStepType.Operation || step.type === AdcmWizardStepType.LastStep) {
-      return tips[AdcmWizardStepStates.Completed];
-    }
-
-    return tips[step.state as AdcmWizardStepStates];
-  }
 };
 
 export const getCurrentStageNotDisabledStepIds = (

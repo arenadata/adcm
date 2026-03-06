@@ -1,0 +1,84 @@
+{
+  "id": {{ process_id }},
+  "createdAt": "{{ created_at }}",
+  "state": "created",
+  "currentStep": {{ stage1_step1_id }},
+  "stages": [
+    {
+      "displayName": "First stage",
+      "description": "",
+      "name": "first_stage",
+      "steps": [
+        {
+          "id": {{ stage1_step1_id }},
+          "state": "created",
+          "description": "",
+          "name": "stage1_step1",
+          "displayName": "Stage1.Step1",
+          "type": "configuration"
+        }
+      ]
+    },
+    {
+      "name": "second_stage",
+      "displayName": "Second stage",
+      "description": "",
+      "steps": [
+        {
+          "id": {{ stage2_step1_id }},
+          "state": "created",
+          "name": "stage2_step1",
+          "description": "",
+          "displayName": "Stage2.Step1",
+          "type": "configuration"
+        },
+        {
+          "id": {{ stage2_step2_id }},
+          "state": "created",
+          "name": "stage2_step2",
+          "description": "",
+          "displayName": "Stage2.Step2",
+          "type": "operation"
+        }
+      ]
+    },
+    {
+      "name": "third_stage",
+      "displayName": "Third stage",
+      "description": "",
+      "steps": [
+        {
+          "id": {{ stage3_step1_id }},
+          "state": "created",
+          "name": "stage3_step1",
+          "description": "",
+          "displayName": "Stage3.Step1",
+          "type": "operation"
+        },
+      ]
+    },
+    {
+      "name": "fourth_stage",
+      "displayName": "Fourth stage",
+      "description": "",
+      "steps": [
+        {
+          "id": {{ stage4_step1_id }},
+          "state": "created",
+          "name": "stage4_step1",
+          "description": "",
+          "displayName": "Stage4.Step1",
+          "type": "operation"
+        },
+        {
+          "id": {{ stage4_step2_id }},
+          "state": "created",
+          "name": "stage4_step2",
+          "description": "",
+          "displayName": "Stage4.Step2",
+          "type": "operation"
+        }
+      ]
+    }
+  ]
+}

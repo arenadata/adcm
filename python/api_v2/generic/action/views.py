@@ -31,7 +31,6 @@ from core.types import ADCMCoreType, ExtraActionTargetType
 from dishka import FromDishka
 from django.conf import settings
 from django.db.models import Q
-from infra.di.django import inject
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -64,6 +63,7 @@ from api_v2.generic.action.utils import (
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.checks import check_hostcomponents_objects_exist
 from api_v2.utils.config import add_selection_for_selectable_groups, convert_json_fields_to_strings, convert_main_config
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 

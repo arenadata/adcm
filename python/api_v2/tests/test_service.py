@@ -13,7 +13,6 @@
 from typing import NamedTuple
 from unittest.mock import patch
 
-from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
@@ -33,7 +32,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
+from core.types import TaskID
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
@@ -57,6 +56,10 @@ class TestServiceAPI(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
+
+    def assert_task_status_is(self, task_id: TaskID, status: str):
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, status)
 
     def test_list_success(self):
         response = self.client.v2[self.cluster_1, "services"].get()
@@ -413,18 +416,16 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.service_2, "actions", self.action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-            )
+        response = self.client.v2[self.service_2, "actions", self.action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        self.assert_task_status_is(task_id, "created")
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        self.assert_task_status_is(task_id, "success")
 
 
 class TestServiceDeleteAction(BaseAPITestCase):
@@ -471,12 +472,14 @@ class TestServiceDeleteAction(BaseAPITestCase):
             self.assertEqual(service_concerns_qs.count(), 2)
             self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
 
-    @staticmethod
-    def imitate_task_running(action: Action, object_: Cluster | Service) -> TaskLog:
-        with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
-            task = run_action(action=action, obj=object_, payload=ActionRunPayload())
+    def imitate_task_running(self, action: Action, object_: Cluster | Service) -> TaskLog:
+        response = self.client.v2[object_, "actions", action.pk, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-        job = JobLog.objects.filter(task=task).first()
+        task_id = self.task_runner.expect_task_launched().id
+        task = TaskLog.objects.get(id=task_id)
+
+        job = JobLog.objects.filter(task_id=task_id).first()
         job.status = "running"
         job.save(update_fields=["status"])
 

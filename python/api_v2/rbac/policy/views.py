@@ -38,7 +38,12 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.rbac.policy.filters import PolicyFilter
 from api_v2.rbac.policy.permissions import PolicyPermissions
-from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer, PolicyUpdateSerializer
+from api_v2.rbac.policy.serializers import (
+    PolicyCreateSerializer,
+    PolicySerializer,
+    PolicyUpdateSerializer,
+    SchemaPolicySerializer,
+)
 from api_v2.utils.audit import (
     policy_from_lookup,
     policy_from_response,
@@ -64,14 +69,14 @@ from api_v2.views import ADCMGenericViewSet
                 default="name",
             ),
         ],
-        responses=responses(success=PolicySerializer(many=True)),
+        responses=responses(success=SchemaPolicySerializer(many=True)),
     ),
     create=extend_schema(
         operation_id="postPolicies",
         description="Create a new ADCM policy.",
         summary="POST policies",
         responses=responses(
-            success=(HTTP_201_CREATED, PolicySerializer),
+            success=(HTTP_201_CREATED, SchemaPolicySerializer),
             errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
         ),
     ),
@@ -79,14 +84,14 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getPolicy",
         description="Get information about a specific ADCM policy.",
         summary="GET policy",
-        responses=responses(success=PolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        responses=responses(success=SchemaPolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     partial_update=extend_schema(
         operation_id="patchPolicy",
         description="Change information on a specific ADCM policy.",
         summary="PATCH policy",
         responses=responses(
-            success=PolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            success=SchemaPolicySerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
         ),
     ),
     destroy=extend_schema(
@@ -99,7 +104,11 @@ from api_v2.views import ADCMGenericViewSet
     ),
 )
 class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin, ADCMGenericViewSet):
-    queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
+    queryset = (
+        Policy.objects.select_related("role")
+        .prefetch_related("group", "object", "object__object", "object__object__prototype")
+        .order_by("name")
+    )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
     permission_classes = (IsAuthenticated, PolicyPermissions)

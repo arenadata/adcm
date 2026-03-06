@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import CoreObjectDescriptor
 
 from cm.converters import model_name_to_core_type
@@ -19,8 +18,6 @@ from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
-    ObjectType,
-    Prototype,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -40,9 +37,8 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
         self.host_3 = self.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
 
-        self.service_not_simple, self.service_thesame = bulk_add_services_to_cluster(
-            cluster=self.cluster,
-            prototypes=Prototype.objects.filter(type=ObjectType.SERVICE, name__in=["not_simple", "thesame"]),
+        self.service_not_simple, self.service_thesame = self.add_services_to_cluster(
+            cluster=self.cluster, service_names=["not_simple", "thesame"]
         ).order_by("prototype__name")
         self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"

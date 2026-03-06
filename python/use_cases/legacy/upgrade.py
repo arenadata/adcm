@@ -28,10 +28,10 @@ def build_switch_revert_callbacks(config_service: core.config.ConfigService):
 def _add_service_to_cluster(
     cluster: Cluster, prototype: Prototype, config_service: core.config.ConfigService
 ) -> Service:
-    from use_cases.transition.cluster.create import create_services_from_prototypes
+    from use_cases.transition.cluster.create import CreateServicesFromPrototypes
 
-    service, *_ = create_services_from_prototypes(
-        cluster=cluster, prototype_ids=(prototype.pk,), config_service=config_service
+    service, *_ = CreateServicesFromPrototypes(config_service=config_service).do(
+        cluster=cluster, prototype_ids=(prototype.pk,)
     )
 
     return service

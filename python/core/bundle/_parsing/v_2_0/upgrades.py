@@ -10,25 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
 from typing import Annotated
 
-from pydantic import AfterValidator, Field, model_validator
+from pydantic import AfterValidator, BeforeValidator, Field, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.model import BundleModel
-from core.bundle._parsing.shared.validation import min_and_max_present
+from core.bundle._parsing.shared.validation import field_not_set_mode_before, min_and_max_present
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
+    BeforeUpgradeCleanScript,
     BundleRevertInternalScript,
     BundleSwitchInternalScript,
     StateActionResultSchema,
 )
 from core.bundle._parsing.v_2_0.schema import Masking, StatesSchema, VersionsSchema
 
-BundleSwitchOrRevertInternalScript = Annotated[
-    BundleSwitchInternalScript | BundleRevertInternalScript, Field(discriminator="script")
+UpgradeCommonInternalScript = Annotated[
+    BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
 ]
-UpgradeScript = Annotated[BundleSwitchOrRevertInternalScript | AnsibleScript, Field(discriminator="script_type")]
+# extra validator is added to not duplicate scripts structure, yet it's not allowed in upgrade
+UpgradeScript = Annotated[
+    UpgradeCommonInternalScript | AnsibleScript,
+    Field(discriminator="script_type"),
+    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
+]
 
 
 class SimpleUpgrade(BundleModel):

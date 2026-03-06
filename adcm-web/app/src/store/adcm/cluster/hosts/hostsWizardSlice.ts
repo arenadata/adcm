@@ -59,6 +59,7 @@ const addLastStage = (state: AdcmClusterHostsWizardState) => {
         {
           id: newStepId,
           displayName: 'Step 1. Confirmation',
+          description: '',
           type: AdcmWizardStepType.LastStep,
           state:
             state.process.state === AdcmWizardStepStates.Completed
@@ -66,6 +67,7 @@ const addLastStage = (state: AdcmClusterHostsWizardState) => {
               : AdcmWizardStepStates.Created,
         },
       ],
+      description: '',
     });
   }
 };

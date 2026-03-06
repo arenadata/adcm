@@ -1,5 +1,6 @@
-import type { Schema } from 'ajv/dist/2020';
-import { validate, generateFromSchema, swapTitleAsPropertyName } from './jsonSchemaUtils';
+import type { Schema } from '@cfworker/json-schema';
+
+import { validate, generateFromSchema, type SchemaLike } from './jsonSchemaUtils';
 
 describe('validate', () => {
   const schema: Schema = {
@@ -256,9 +257,9 @@ describe('validate', () => {
     expect(errors).not.toBe(null);
     expect(errors?.length).toBe(2);
     expect(errors![0].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/internal_replica');
-    expect(errors![0].message).toBe('must be >= 12');
+    expect(errors![0].message).toBe('11 is less than 12.');
     expect(errors![1].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/weight');
-    expect(errors![1].message).toBe('must be <= 10');
+    expect(errors![1].message).toBe('11 is greater than 10.');
   });
 
   test('validate multiple types', () => {
@@ -410,8 +411,71 @@ describe('generateFromSchema', () => {
     expect(result).toStrictEqual(undefined);
   });
 
+  test('validate user scenario with required + nullable branches', () => {
+    const schema = {
+      title: 'Configuration',
+      type: 'object',
+      properties: {
+        float: {
+          oneOf: [
+            {
+              title: 'float',
+              default: 0.1,
+              adcmMeta: { isAdvanced: false, isInvisible: false, isSecret: false },
+              type: 'number',
+            },
+            { type: 'null' },
+          ],
+          default: 0.1,
+        },
+        string: {
+          oneOf: [
+            {
+              title: 'string',
+              default: 'test',
+              adcmMeta: { isAdvanced: false, isInvisible: false, isSecret: false },
+              type: 'string',
+            },
+            { type: 'null' },
+          ],
+          default: 'test',
+        },
+        password: {
+          oneOf: [
+            {
+              title: 'password',
+              default: null,
+              adcmMeta: { isAdvanced: true, isInvisible: false, isSecret: true },
+              type: 'string',
+              minLength: 1,
+            },
+            { type: 'null' },
+          ],
+          default: null,
+        },
+      },
+      required: ['float', 'string', 'password'],
+      additionalProperties: false,
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+    } as SchemaLike;
+
+    const data = {
+      my_float: 0.1,
+      my_string: 'string',
+      my_password: null,
+    };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBeNull();
+    expect(errors?.length).toBeGreaterThan(0);
+    const paths = errors!.map((e) => e.instancePath);
+    expect(paths).toContain('/float');
+    expect(paths).toContain('/string');
+    expect(paths).toContain('/password');
+  });
+
   test('generate object with discriminator', () => {
-    const schema: Schema = {
+    const schema = {
       type: 'object',
       properties: {
         'catalog.manager': {
@@ -657,173 +721,5 @@ describe('generateFromSchema', () => {
 
     const errors3 = validate(schema, object);
     expect(errors3).not.toBe(null);
-  });
-});
-
-describe('swap title as property name', () => {
-  const simpleSchema: Schema = {
-    $schema: 'https://json-schema.org/draft/2020-12/schema',
-    type: 'object',
-    required: ['clusterConfiguration'],
-    readOnly: false,
-    properties: {
-      clusterConfiguration: {
-        title: 'Cluster Configuration',
-        description: '',
-        type: 'object',
-        required: ['cluster_config'],
-        properties: {
-          cluster_config: {
-            type: 'object',
-            required: ['cluster'],
-            properties: {
-              cluster: {
-                title: 'cluster',
-                type: 'object',
-                required: ['cluster_name'],
-                additionalProperties: false,
-                properties: {
-                  cluster_name: {
-                    title: 'cluster name',
-                    type: 'string',
-                  },
-                  shard: {
-                    type: 'array',
-                    description: 'List of shards',
-                    items: {
-                      description: 'shard',
-                      type: 'object',
-                      required: ['internal_replica', 'weight'],
-                      properties: {
-                        internal_replica: {
-                          type: 'integer',
-                          minimum: 12,
-                        },
-                        weight: {
-                          type: 'integer',
-                          title: 'shard weight',
-                          maximum: 10,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-
-  const schemaWithAnyOf: Schema = {
-    $schema: 'https://json-schema.org/draft/2020-12/schema',
-    type: 'object',
-    required: ['cluster_config'],
-    properties: {
-      cluster_config: {
-        title: 'CLUSTER CONFIG',
-        anyOf: [
-          { type: 'null' },
-          {
-            type: 'object',
-            required: ['cluster_name'],
-            properties: {
-              cluster_name: {
-                title: 'CLUSTER NAME',
-                type: 'string',
-                readOnly: false,
-              },
-            },
-          },
-        ],
-      },
-    },
-  };
-
-  test('swap simple schema', () => {
-    const newSchema = swapTitleAsPropertyName(simpleSchema);
-    expect(newSchema).toStrictEqual({
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['Cluster Configuration'],
-      readOnly: false,
-      properties: {
-        'Cluster Configuration': {
-          title: 'clusterConfiguration',
-          description: '',
-          type: 'object',
-          required: ['cluster_config'],
-          properties: {
-            cluster_config: {
-              type: 'object',
-              required: ['cluster'],
-              properties: {
-                cluster: {
-                  title: 'cluster',
-                  type: 'object',
-                  required: ['cluster name'],
-                  additionalProperties: false,
-                  properties: {
-                    'cluster name': {
-                      title: 'cluster_name',
-                      type: 'string',
-                    },
-                    shard: {
-                      type: 'array',
-                      description: 'List of shards',
-                      items: {
-                        description: 'shard',
-                        type: 'object',
-                        required: ['internal_replica', 'shard weight'],
-                        properties: {
-                          internal_replica: {
-                            type: 'integer',
-                            minimum: 12,
-                          },
-                          'shard weight': {
-                            type: 'integer',
-                            title: 'weight',
-                            maximum: 10,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-  });
-
-  test('swap anyof schema', () => {
-    const newSchema = swapTitleAsPropertyName(schemaWithAnyOf);
-    expect(newSchema).toStrictEqual({
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['CLUSTER CONFIG'],
-      properties: {
-        'CLUSTER CONFIG': {
-          title: 'cluster_config',
-          anyOf: [
-            { type: 'null' },
-            {
-              type: 'object',
-              required: ['CLUSTER NAME'],
-              properties: {
-                'CLUSTER NAME': {
-                  title: 'cluster_name',
-                  type: 'string',
-                  readOnly: false,
-                },
-              },
-            },
-          ],
-        },
-      },
-    });
   });
 });

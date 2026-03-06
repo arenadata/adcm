@@ -15,10 +15,9 @@ from collections import OrderedDict
 from typing import Any, TypeAlias, Union
 import json
 
-from adcm.feature_flags import use_new_spec_format
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.adcm_config.config import get_default
-from cm.legacy.services.bundle import BundlePathResolver, PathResolver
+from cm.legacy.services.bundle import PathResolver
 from cm.legacy.variant import get_variant
 from cm.models import (
     ADCMEntity,
@@ -32,9 +31,9 @@ from cm.models import (
     Service,
 )
 from core.types import ADCMHostGroupType, Descriptor
+from dishka import FromDishka
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
-from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
@@ -43,6 +42,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 import core
 
 from api_v2.api_schema import DefaultParams, responses
+from api_v2.utils.di import inject
 
 ParentObject: TypeAlias = Union[Cluster, Service, Component, Provider, Host, ConfigHostGroup]
 
@@ -699,7 +699,8 @@ def extend_config_schema(type_: str):
 
 class ConfigSchemaMixin:
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    @inject
+    def config_schema(self, request, config_service: FromDishka[core.config.ConfigService], **_) -> Response:
         instance = self.get_object()
         self._check_parent_permissions_in_config_schema(request=request, parent_object=instance)
         instance_config_view_perm = "cm.view_objectconfig"
@@ -709,22 +710,6 @@ class ConfigSchemaMixin:
             or request.user.has_perm(instance_config_view_perm)
         ):
             raise PermissionDenied
-
-        func = self._new_schema if use_new_spec_format() else self._old_schema
-        schema = func(instance)
-
-        return Response(data=schema, status=HTTP_200_OK)
-
-    def _old_schema(self, instance):
-        path_resolver = BundlePathResolver(bundle_hash=instance.prototype.bundle.hash)
-        return get_config_schema(
-            object_=instance,
-            prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
-            path_resolver=path_resolver,
-        )
-
-    def _new_schema(self, instance):
-        config_service = get_config_service()
 
         if isinstance(instance, ConfigHostGroup):
             owner_obj = instance.object
@@ -744,9 +729,11 @@ class ConfigSchemaMixin:
                 state=instance.state,
             )
 
-        return config_service.retrieve_jsonschema(owner=owner)
+        schema = config_service.retrieve_jsonschema(owner=owner)
 
-    def _check_parent_permissions_in_config_schema(self, request: Request, parent_object: ParentObject):
+        return Response(data=schema, status=HTTP_200_OK)
+
+    def _check_parent_permissions_in_config_schema(self, request: Request, parent_object: ParentObject | None):
         parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
 
         if parent_object is None:

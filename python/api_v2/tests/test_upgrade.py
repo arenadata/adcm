@@ -20,9 +20,10 @@ from cm.models import (
     HostComponent,
     ObjectType,
     Prototype,
+    TaskLog,
     Upgrade,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
+from core.types import TaskID
 from init_db import init
 from rbac.upgrade.role import init_roles
 from rest_framework.status import (
@@ -94,6 +95,10 @@ class TestUpgrade(BaseAPITestCase):
                 version=self.upgrade_cluster_via_action_simple.bundle.version,
             ).get()
         )
+
+    def assert_task_status_is(self, task_id: TaskID, status: str):
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, status)
 
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
@@ -187,17 +192,16 @@ class TestUpgrade(BaseAPITestCase):
     def test_cluster_upgrade_run_success(self):
         self.accept_license_of_first_service()
 
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], run_task.target_task.id)
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        launched_task = self.task_runner.expect_task_launched(task_id=data["id"])
+
+        self.task_runner.run_task(launched_task.id)
+        self.assert_task_status_is(task_id=launched_task.id, status="success")
         self.cluster_1.refresh_from_db()
         self.assertEqual(
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
@@ -220,39 +224,38 @@ class TestUpgrade(BaseAPITestCase):
         component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
 
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+            data={
+                "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
+                "configuration": {
+                    "config": {
+                        "simple": "val",
+                        "file": "content",
+                        "grouped": {
+                            "simple": 5,
+                            "second": 4.3,
+                            "structure": {
+                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                "quantity": 122,
                             },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "value3",
                         },
-                        "adcmMeta": {},
+                        "after": ["x", "y"],
+                        "variant_config_type_strict": "value3",
                     },
-                    "isVerbose": True,
+                    "adcmMeta": {},
                 },
-            )
+                "isVerbose": True,
+            },
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], run_task.target_task.id)
+        launched_task = self.task_runner.expect_task_launched(data["id"])
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(launched_task.id)
+        self.assert_task_status_is(launched_task.id, "success")
+
         self.cluster_1.refresh_from_db()
         self.assertEqual(
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
@@ -279,42 +282,42 @@ class TestUpgrade(BaseAPITestCase):
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_1)
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_2)
 
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [
-                        {"hostId": host_1.pk, "componentId": component_1.pk},
-                        {"hostId": host_2.pk, "componentId": component_1.pk},
-                    ],
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+            data={
+                "hostComponentMap": [
+                    {"hostId": host_1.pk, "componentId": component_1.pk},
+                    {"hostId": host_2.pk, "componentId": component_1.pk},
+                ],
+                "configuration": {
+                    "config": {
+                        "simple": "val",
+                        "file": "content",
+                        "grouped": {
+                            "simple": 5,
+                            "second": 4.3,
+                            "structure": {
+                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                "quantity": 122,
                             },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "value3",
                         },
-                        "adcmMeta": {},
+                        "after": ["x", "y"],
+                        "variant_config_type_strict": "value3",
                     },
-                    "isVerbose": True,
+                    "adcmMeta": {},
                 },
-            )
+                "isVerbose": True,
+            },
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], run_task.target_task.id)
+        launched_task = self.task_runner.expect_task_launched(data["id"])
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(launched_task.id)
+
+        self.assert_task_status_is(launched_task.id, "success")
+
         self.cluster_1.refresh_from_db()
         self.assertEqual(
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
@@ -325,168 +328,33 @@ class TestUpgrade(BaseAPITestCase):
         host = self.add_host(provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+            data={
+                "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
+                "configuration": {
+                    "config": {
+                        "simple": "val",
+                        "file": "content",
+                        "grouped": {
+                            "simple": 5,
+                            "second": 4.3,
+                            "structure": {
+                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                "quantity": 122,
                             },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "value3",
                         },
-                        "adcmMeta": {},
+                        "after": ["x", "y"],
+                        "variant_config_type_strict": "value3",
                     },
-                    "isVerbose": True,
+                    "adcmMeta": {},
                 },
-            )
+                "isVerbose": True,
+            },
+        )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
-        self.assertIsNone(run_task.target_task)
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_4856_cluster_upgrade_run_complex_no_host_fail(self):
-        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [{"hostId": 1000, "componentId": component_1.pk}],
-                    "configuration": {
-                        "config": {},
-                        "adcmMeta": {},
-                    },
-                    "isVerbose": True,
-                },
-            )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
-        self.assertIsNone(run_task.target_task)
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_4856_cluster_upgrade_run_complex_duplicated_hc_success(self):
-        # The test captures the behavior in which duplicates are ignored.
-        # Passing duplicates to the `hostComponentMap` does not break the behavior,
-        # as duplicates are deleted in the `unique_hc_entries()` function.
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
-
-        host = self.add_host(provider=self.provider, fqdn="one_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host)
-
-        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [
-                        {"hostId": host.pk, "componentId": component_1.pk},
-                        {"hostId": host.pk, "componentId": component_1.pk},
-                    ],
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
-                            },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "value3",
-                        },
-                        "adcmMeta": {},
-                    },
-                    "isVerbose": True,
-                },
-            )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
-        self.cluster_1.refresh_from_db()
-        self.assertEqual(
-            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
-        )
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_4856_cluster_upgrade_run_complex_several_entries_hc_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
-
-        host_1 = self.add_host(provider=self.provider, fqdn="one_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
-
-        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
-
-        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "hostComponentMap": [
-                        {"hostId": host_1.pk, "componentId": component_1.pk},
-                        {"hostId": host_2.pk, "componentId": component_1.pk},
-                    ],
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
-                            },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "value3",
-                        },
-                        "adcmMeta": {},
-                    },
-                    "isVerbose": True,
-                },
-            )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
-        self.cluster_1.refresh_from_db()
-        self.assertEqual(
-            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
-        )
+        self.task_runner.expect_task_not_launched()
 
     def test_provider_list_upgrades_success(self):
         response = self.client.v2[self.provider, "upgrades"].get()
@@ -530,17 +398,15 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
 
     def test_provider_upgrade_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.provider, "upgrades", self.upgrade_host_via_action_simple, "run"].post()
+        response = self.client.v2[self.provider, "upgrades", self.upgrade_host_via_action_simple, "run"].post()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], run_task.target_task.id)
+        launched_task = self.task_runner.expect_task_launched(data["id"])
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(launched_task.id)
+        self.assert_task_status_is(launched_task.id, "success")
         self.provider.refresh_from_db()
         self.assertEqual(self.provider.prototype.version, self.upgrade_host_via_action_simple.action.prototype.version)
 
@@ -676,19 +542,17 @@ class TestUpgrade(BaseAPITestCase):
         )
         self.client.login(username="test_user_username", password="test_user_password")
         with self.grant_permissions(to=self.user, on=self.cluster_1, role_name="Cluster Administrator"):
-            with RunTaskMock() as run_task:
-                response = self.client.v2[
-                    self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"
-                ].post()
-                self.assertEqual(response.status_code, HTTP_200_OK)
+            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
-                run_task.runner.run(run_task.target_task.id)
-                run_task.target_task.refresh_from_db()
-                self.assertEqual(run_task.target_task.status, "success")
+            task_id = self.task_runner.expect_task_launched().id
+            self.task_runner.run_task(task_id)
+            self.assert_task_status_is(task_id, "success")
 
             response = (self.client.v2 / "jobs").get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(len(response.json()), 4)
+
         response = (self.client.v2 / "jobs").get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
@@ -724,30 +588,30 @@ class TestUpgrade(BaseAPITestCase):
             self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
 
     def test_cluster_upgrade_retrieve_complex_invalid_config_variant_value_fail(self):
-        with RunTaskMock():
-            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-                data={
-                    "configuration": {
-                        "config": {
-                            "simple": "val",
-                            "file": "content",
-                            "grouped": {
-                                "simple": 5,
-                                "second": 4.3,
-                                "structure": {
-                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                    "quantity": 122,
-                                },
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+            data={
+                "configuration": {
+                    "config": {
+                        "simple": "val",
+                        "file": "content",
+                        "grouped": {
+                            "simple": 5,
+                            "second": 4.3,
+                            "structure": {
+                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                "quantity": 122,
                             },
-                            "after": ["x", "y"],
-                            "variant_config_type_strict": "incorrect value",
                         },
-                        "adcmMeta": {},
+                        "after": ["x", "y"],
+                        "variant_config_type_strict": "incorrect value",
                     },
+                    "adcmMeta": {},
                 },
-            )
+            },
+        )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.task_runner.expect_task_not_launched()
         data = response.json()
         self.assertEqual(data["code"], "UPGRADE_OPERATION_ERROR")
         self.assertIn("/variant_config_type_strict", data["desc"])

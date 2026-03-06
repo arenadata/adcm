@@ -14,7 +14,6 @@ from collections import deque
 from operator import attrgetter
 from typing import Iterable, Literal, NamedTuple, TypeAlias
 
-from adcm.feature_flags import use_new_config_processing
 from core.converters import named_mapping_from_topology
 from core.legacy.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.legacy.cluster.types import ClusterTopology
@@ -32,7 +31,7 @@ from cm.errors import AdcmEx
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.config import retrieve_config_attr_pairs
-from cm.legacy.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
+from cm.legacy.services.config.spec import FlatSpec
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -55,21 +54,14 @@ class MissingRequirement(NamedTuple):
 
 
 def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
-    if use_new_config_processing():
-        from infra.services import get_config_service
+    from infra.services import get_config_service
 
-        service = get_config_service()
-        descriptor = orm_object_to_core_descriptor(target)
-        try:
-            return service.inspect_has_invalid_configuration(owner=descriptor)
-        except core.config.ObjectWithoutConfigError:
-            return False
-
-    config_spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(target.prototype_id,)).values()), None)
-    if not config_spec:
+    service = get_config_service()
+    descriptor = orm_object_to_core_descriptor(target)
+    try:
+        return service.inspect_has_invalid_configuration(owner=descriptor)
+    except core.config.ObjectWithoutConfigError:
         return False
-
-    return target.id in filter_objects_with_configuration_issues(config_spec, target)
 
 
 def object_imports_has_issue(target: Cluster | Service) -> HasIssue:

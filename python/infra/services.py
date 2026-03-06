@@ -15,7 +15,6 @@ import json
 
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.impl.job.repo import JobRepo
 from cm.impl.wizard.repo import WizardRepo
 from core.settings import Directories, Settings
 import core
@@ -39,14 +38,11 @@ def get_config_service():
             message = "Ansible secret is undefined, work with secrets is impossible"
             raise ValueError(message)
 
-    secrets_service = core.config.secrets.AnsibleSecrets(secret=secret)
     repo = ConfigRepo()
-
+    secrets_service = core.config.secrets.AnsibleSecrets(secret=secret)
     validators = core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
-    # shouldn't work like that, but no other way for now
-    settings_ = _get_settings()
-
     yspec_schema = yaml.safe_load((settings.CODE_DIR / "cm" / "yspec_schema.yaml").read_text())
+    settings_ = _get_settings()
 
     return core.config.ConfigService(
         repo=repo,
@@ -55,13 +51,6 @@ def get_config_service():
         variant_validators=validators,
         yspec_schema=yspec_schema,
     )
-
-
-@cache
-def get_job_service():
-    repo = JobRepo()
-
-    return core.job.JobService(repo=repo)
 
 
 @cache
@@ -77,5 +66,7 @@ def _get_settings() -> Settings:
     from django.conf import settings
 
     return Settings(
-        directories=Directories(files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR)
+        directories=Directories(
+            files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR, vars=settings.VAR_DIR
+        )
     )

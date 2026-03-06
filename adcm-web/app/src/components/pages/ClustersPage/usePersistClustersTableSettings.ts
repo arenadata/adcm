@@ -19,7 +19,9 @@ const mergeFilters = (
     ...filterFromStorage,
     name: filterFromStorage.name || undefined,
     status: filterFromStorage.status || undefined,
-    displayName: findBy(prototypes, 'name', filterFromStorage.displayName) ? filterFromStorage.displayName : undefined,
+    prototypeDisplayName:
+      findBy(prototypes, 'displayName', filterFromStorage.prototypeDisplayName) &&
+      filterFromStorage.prototypeDisplayName,
   };
 
   return result;

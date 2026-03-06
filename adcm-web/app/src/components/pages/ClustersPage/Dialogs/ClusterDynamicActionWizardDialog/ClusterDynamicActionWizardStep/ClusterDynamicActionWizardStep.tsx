@@ -43,6 +43,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   const stepsWithData = useStore(({ adcm }) => adcm.clustersWizard.steps);
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
   const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardMapping.hostComponentMapDelta);
+  const actionDetails = useStore(({ adcm }) => adcm.clustersDynamicActions.dialog.actionDetails);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
   const { formData } = useActionWizardLastStageContext();
@@ -291,6 +292,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
       onStepReset={handleResetStep}
       onClose={onClose}
       entityDynamicActionWizardOperation={ClusterDynamicActionWizardOperation}
+      lastStepActionDetails={actionDetails}
     />
   );
 };

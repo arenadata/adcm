@@ -19,7 +19,6 @@ from dishka import FromDishka
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from infra.di.django import inject
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -43,6 +42,7 @@ from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
 from api_v2.utils.audit import bundle_from_lookup
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 

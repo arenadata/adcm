@@ -21,7 +21,12 @@ from core.bundle._definitions import DefinitionsMap
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
-from core.bundle._types import BundleContext, BundleInfo
+from core.bundle._types import (
+    BundleCompatibilityReport,
+    BundleContext,
+    BundleInfo,
+    VersionSupportStatus,
+)
 from core.bundle._validate import (
     ConvertConfigDefinition,
     ValidationContext,
@@ -126,3 +131,23 @@ class BundleService:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         component_keys = self.repo.retrieve_component_keys(bundle_id=bundle_context.id)
         return parser.parse_mapping_rules(rules=data, component_keys=component_keys)
+
+    def find_contract_compatibility_violations(self) -> BundleCompatibilityReport:
+        versions_info = self.repo.retrieve_versions_info()
+
+        supported_versions = {item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.SUPPORTED}
+        deprecated_versions = {
+            item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.DEPRECATED
+        }
+        report = BundleCompatibilityReport(
+            supported_versions=supported_versions, deprecated_versions=deprecated_versions
+        )
+
+        for item in versions_info:
+            if item.contract_version not in supported_versions:
+                report.unsupported_version_bundles.add(item)
+
+            if item.contract_version in deprecated_versions:
+                report.deprecated_version_bundles.add(item)
+
+        return report

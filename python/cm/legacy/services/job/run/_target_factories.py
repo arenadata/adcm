@@ -15,7 +15,7 @@ from configparser import ConfigParser
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Generator, Iterable, Literal
+from typing import Any, Callable, Generator, Iterable, Literal
 import json
 import traceback
 
@@ -23,7 +23,7 @@ from ansible_plugin.utils import finish_check
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.dto import TaskUpdateDTO
 from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
-from core.legacy.job.runners import ExecutionTarget, ExternalSettings
+from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.legacy.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
@@ -32,6 +32,8 @@ from django.db.models import Q
 from django.db.transaction import atomic
 from infra.services import get_config_service
 from rbac.roles import re_apply_policy_for_jobs
+from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.provider.update import ResetBeforeUpgradeProvider
 import core
 
 from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
@@ -75,7 +77,7 @@ from cm.models import (
 logger = getLogger("adcm")
 
 
-class ExecutionTargetFactory:
+class ExecutionTargetFactory(ExecutionTargetFactoryI):
     def __init__(self):
         self._default_ansible_finalizers = (finish_check_logs,)
         self._supported_internal_scripts = {
@@ -84,6 +86,9 @@ class ExecutionTargetFactory:
             "hc_apply": internal_script_hc_apply,
             "config_apply": internal_script_config_apply,
         }
+
+    def register_internal_scripts(self, extra_internal_scripts: dict[str, Callable[[Task, Job], int]]):
+        self._supported_internal_scripts |= extra_internal_scripts
 
     def __call__(
         self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
@@ -157,7 +162,7 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
 
     _switch_hc_if_required(task=task)
 
-    re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
+    re_apply_policy_for_jobs(task=task_)
 
     return 0
 
@@ -190,7 +195,7 @@ def internal_script_bundle_revert(task: Task, job: Job) -> int:
 
     _switch_hc_if_required(task=task)
 
-    re_apply_policy_for_jobs(action_object=task_.task_object, task=task_)
+    re_apply_policy_for_jobs(task=task_)
 
     return 0
 
@@ -248,6 +253,43 @@ def internal_script_config_apply(task: Task, job: Job) -> int:
         _apply_config_changes(
             job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
         )
+    return 0
+
+
+def internal_script_before_upgrade_clean_cluster(task: Task, job: Job, use_case: ResetBeforeUpgradeCluster) -> int:
+    _ = job
+
+    if not (
+        task.owner
+        and task.owner.type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
+        and task.owner.related_objects
+    ):
+        raise RuntimeError("misconfigured task runner")
+
+    descriptor = task.owner.as_descriptor
+
+    if descriptor.type == ADCMCoreType.CLUSTER:
+        cluster_id = descriptor.id
+    else:
+        if not task.owner.related_objects.cluster:
+            raise RuntimeError("cluster is missing")
+
+        cluster_id = task.owner.related_objects.cluster.id
+
+    use_case.do(target=descriptor, cluster_id=cluster_id)
+
+    return 0
+
+
+def internal_script_before_upgrade_clean_provider(task: Task, job: Job, use_case: ResetBeforeUpgradeProvider) -> int:
+    _ = job
+
+    if not (task.owner and task.owner.type in (ADCMCoreType.PROVIDER, ADCMCoreType.HOST)):
+        raise RuntimeError("misconfigured task runner")
+
+    descriptor = task.owner.as_descriptor
+    use_case.do(target=descriptor)
+
     return 0
 
 

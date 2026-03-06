@@ -40,3 +40,19 @@ cleanupwaitstatus() {
   rm -f "${initreadyfile}"
   rm -f "${wsgisocketfile}"
 }
+
+ensure_directory_structure() {
+  echo "Ensuring required directories exist"
+
+  mkdir -p "${adcmlog}"
+  mkdir -p "${adcmrun}"
+  mkdir -p "${adcmbundle}"
+  mkdir -p "${adcmdownload}"
+  mkdir -p "${adcmfile}"
+  chmod 700 "${adcmfile}"
+  mkdir -p "${adcmvar}"
+  mkdir -p "${adcmtmp}"
+  chmod 777 "${adcmtmp}"
+  chmod a+t "${adcmtmp}"
+  mkdir -p "${adcmuserconf}"
+}

@@ -1,0 +1,63 @@
+---
+- type: cluster
+  name: test_cluster
+  display_name: TestCluster
+  version: &version '4'
+  edition: community
+  config_group_customization: true
+  actions:
+    action_step_config:
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/stage_config_step.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+    action_step_operation:
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/stage_operational_step.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+    action_step_mapping:
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/stage_mapping_step.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+    action_no_desc:
+      type: job
+      script: wizard_jinja/scripts/sleep.yaml
+      script_type: ansible
+      wizard_template:
+        file:
+          path: wizard_jinja/stage_config_step_no_desc.j2
+        engine:
+          type: jinja2
+      states:
+        available: any
+
+- name: main_service
+  display_name: MainService
+  type: service
+  version: "1"
+  config_group_customization: true
+  components:
+    first_component:
+      display_name: FirstComponent
+      constraint: [ 1,+ ]
+      config_group_customization: true

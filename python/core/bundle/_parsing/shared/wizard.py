@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Annotated
+
 from pydantic import Field, model_validator
 
 from core import action
@@ -22,7 +24,11 @@ class _Names(BundleModel):
     display_name: str
 
 
-class OperationStep(_Names):
+class _BaseStep(_Names):
+    description: Annotated[str, Field(default="")]
+
+
+class OperationStep(_BaseStep):
     scripts_template: ScriptsTemplate
     ui_options: action.wizard.OperationUIOptions
 
@@ -35,7 +41,7 @@ class OperationStep(_Names):
         return self.scripts_template
 
 
-class ConfigurationStep(_Names):
+class ConfigurationStep(_BaseStep):
     config_template: ConfigTemplate
 
     @property
@@ -47,7 +53,7 @@ class ConfigurationStep(_Names):
         return self.config_template
 
 
-class MappingStep(_Names):
+class MappingStep(_BaseStep):
     hc_template: HCTemplate
 
     @property
@@ -63,6 +69,7 @@ WizardProcessStep = OperationStep | ConfigurationStep | MappingStep
 
 
 class WizardProcessStage(_Names):
+    description: Annotated[str, Field(default="")]
     steps: list[WizardProcessStep] = Field(..., min_length=1, description="At least one step is required in a stage")
 
     @model_validator(mode="after")

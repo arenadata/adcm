@@ -19,6 +19,7 @@ class Directories:
     bundles: Path
     downloads: Path
     files: Path
+    vars: Path
 
 
 @dataclass(slots=True)

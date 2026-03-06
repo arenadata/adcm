@@ -33,9 +33,8 @@ from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.utils import decrypt_secrets
-from cm.models import Action, Component, ConcernItem
+from cm.models import Action, Component, ConcernItem, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -151,24 +150,25 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
 
-            with RunTaskMock() as run_task:
-                configuration = None
-                if config is not None:
-                    configuration = ConfigurationDTO(
-                        convert=lambda x, _: x,
-                        input_config=core.config.Configuration(
-                            values=(deepcopy(config) or {}) | config_diff,
-                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
-                        ),
-                    )
-                with self.container() as container:
-                    container.get(ScheduleTask).do(
-                        action_orm=action,
-                        target=object_,
-                        payload=RunActionDTO(configuration=configuration),
-                    )
+            configuration = None
+            if config is not None:
+                configuration = ConfigurationDTO(
+                    convert=lambda x, _: x,
+                    input_config=core.config.Configuration(
+                        values=(deepcopy(config) or {}) | config_diff,
+                        attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                    ),
+                )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=object_,
+                    payload=RunActionDTO(configuration=configuration),
+                )
 
-            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
+            task_id = self.task_runner.expect_task_launched().id
+
+            task = JobRepoImpl.get_task(id=task_id)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
@@ -203,24 +203,25 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
 
             action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
 
-            with RunTaskMock() as run_task:
-                configuration = None
-                if config is not None:
-                    configuration = ConfigurationDTO(
-                        convert=lambda x, _: x,
-                        input_config=core.config.Configuration(
-                            values=(deepcopy(config) or {}) | config_diff,
-                            attributes={"/activatable_group": core.config.Attributes(is_active=active)},
-                        ),
-                    )
-                with self.container() as container:
-                    container.get(ScheduleTask).do(
-                        action_orm=action,
-                        target=self.host_1,
-                        payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
-                    )
+            configuration = None
+            if config is not None:
+                configuration = ConfigurationDTO(
+                    convert=lambda x, _: x,
+                    input_config=core.config.Configuration(
+                        values=(deepcopy(config) or {}) | config_diff,
+                        attributes={"/activatable_group": core.config.Attributes(is_active=active)},
+                    ),
+                )
+            with self.container() as container:
+                container.get(ScheduleTask).do(
+                    action_orm=action,
+                    target=self.host_1,
+                    payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
+                )
 
-            task = JobRepoImpl.get_task(id=run_task.target_task.pk)
+            task_id = self.task_runner.expect_task_launched().id
+
+            task = JobRepoImpl.get_task(id=task_id)
             job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
@@ -247,19 +248,20 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         """
         raw_value = "12345ddd"
         action = Action.objects.get(prototype=self.service.prototype, name="name_and_pass")
-        with RunTaskMock() as run_task:
-            configuration = ConfigurationDTO(
-                convert=lambda x, _: x,
-                input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
+        configuration = ConfigurationDTO(
+            convert=lambda x, _: x,
+            input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
+        )
+        with self.container() as container:
+            container.get(ScheduleTask).do(
+                action_orm=action,
+                target=self.service,
+                payload=RunActionDTO(configuration=configuration),
             )
-            with self.container() as container:
-                container.get(ScheduleTask).do(
-                    action_orm=action,
-                    target=self.service,
-                    payload=RunActionDTO(configuration=configuration),
-                )
 
-        task = run_task.target_task
+        task_id = self.task_runner.expect_task_launched().id
+
+        task = TaskLog.objects.get(id=task_id)
         self.assertIn("__ansible_vault", task.config["rolepass"])
         self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
 
@@ -276,19 +278,19 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         """
         raw_value = "12345ddd"
         action = Action.objects.get(prototype=self.service.prototype, name="with_jinja")
-        with RunTaskMock() as run_task:
-            configuration = ConfigurationDTO(
-                convert=lambda x, _: x,
-                input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
+        configuration = ConfigurationDTO(
+            convert=lambda x, _: x,
+            input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
+        )
+        with self.container() as container:
+            container.get(ScheduleTask).do(
+                action_orm=action,
+                target=self.service,
+                payload=RunActionDTO(configuration=configuration),
             )
-            with self.container() as container:
-                container.get(ScheduleTask).do(
-                    action_orm=action,
-                    target=self.service,
-                    payload=RunActionDTO(configuration=configuration),
-                )
 
-        task = run_task.target_task
+        task_id = self.task_runner.expect_task_launched().id
+        task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["rolepass"])
         self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
@@ -311,19 +313,19 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         self.change_configuration(target=self.cluster, config_diff={"boolean": True})
         raw_value = {"key": "val", "another": "one"}
         action = Action.objects.get(prototype=self.service.prototype, name="with_jinja")
-        with RunTaskMock() as run_task:
-            configuration = ConfigurationDTO(
-                convert=lambda x, _: x,
-                input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
+        configuration = ConfigurationDTO(
+            convert=lambda x, _: x,
+            input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
+        )
+        with self.container() as container:
+            container.get(ScheduleTask).do(
+                action_orm=action,
+                target=self.service,
+                payload=RunActionDTO(configuration=configuration),
             )
-            with self.container() as container:
-                container.get(ScheduleTask).do(
-                    action_orm=action,
-                    target=self.service,
-                    payload=RunActionDTO(configuration=configuration),
-                )
 
-        task = run_task.target_task
+        task_id = self.task_runner.expect_task_launched().id
+        task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["reqsec"]["key"])
         self.assertIn("__ansible_vault", task.config["reqsec"]["another"])

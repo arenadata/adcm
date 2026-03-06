@@ -139,7 +139,7 @@ class TestActionProcessAudit(BaseAPITestCase):
                 action = self.get_object_action_with_process(obj)
 
                 # don't copy this implementation, it's a hack, may not work in most cases
-                from adcm.dependencies import prepare_container
+                from api_v2.utils.di import prepare_container
 
                 container = prepare_container()
 
