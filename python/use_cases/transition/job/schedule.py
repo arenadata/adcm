@@ -260,7 +260,7 @@ class ScheduleTask:
                 self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
-            re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
+            re_apply_policy_for_jobs(task=orm_task)
 
         send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
 

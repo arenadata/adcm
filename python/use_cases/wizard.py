@@ -57,6 +57,7 @@ from core.types import (
 )
 from django.db.transaction import atomic
 from django.utils import timezone
+from rbac.roles import re_apply_policy_for_jobs
 import core
 
 from use_cases.dto import InputConfigConverter
@@ -344,6 +345,9 @@ class PerformWizardProcessOperation:
                 # todo write pid to task (executor)
                 # todo actually should use starter to avoid hardcoding
                 task_orm = TaskLog.objects.get(id=task_id)
+
+                re_apply_policy_for_jobs(task=task_orm)
+
                 self.start_task(task_orm)
                 return None
 
