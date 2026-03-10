@@ -84,7 +84,12 @@ def _create_system_user() -> None:
 
 
 def _ensure_status_user_token_set(user_id: int, token: str) -> None:
-    Token.objects.get_or_create(user_id=user_id, key=token)
+    token_record = Token.objects.filter(user_id=user_id).first()
+    if not token_record:
+        Token.objects.create(user_id=user_id, key=token)
+    elif token_record.key != token:
+        token_record.key = token
+        token_record.save(update_fields=["key"])
 
 
 def clear_temp_tables():
