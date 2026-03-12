@@ -15,10 +15,12 @@ from pathlib import Path
 from typing import cast
 from unittest import TestCase
 
+import yaml
+
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._errors import BundleParsingError
-from core.bundle._parsing import v_1_0, v_2_0
-from core.bundle._parsing.types import BundleParser, RootEntry
+from core.bundle._parsing import v_1_0, v_2_0, v_2_1
+from core.bundle._parsing.types import BundleParser, RootEntry, VersionTag
 from core.templates._types import Template
 
 BUNDLE_ROOT = Path(__file__).parent
@@ -32,6 +34,11 @@ CASES_FROM_FILE_IN_NESTED = (
     ("relative-nested", f"./{TEMPLATE_PATH}", Path(NESTED_DIR_NAME, TEMPLATE_PATH)),
     ("full-nested", TEMPLATE_PATH, Path(TEMPLATE_PATH)),
 )
+
+
+def get_parsers() -> list[tuple[VersionTag, BundleParser]]:
+    return [("1.0", v_1_0.Parser()), ("2.0", v_2_0.Parser()), ("2.1", v_2_1.Parser())]
+
 
 # Common Implementations For various versions
 
@@ -326,3 +333,80 @@ class TestIncorrectFieldsV2(V2Implementation, _TestTemplate.ParserExtraFields):
 
         self.assertIn("woo", err.exception.error)
         self.assertIn("unexpected_keyword_argument", err.exception.error)
+
+
+class TestApplyConfig(TestCase):
+    def test_error_on_object_duplicate(self):
+        as_yaml = """
+        - name: apply duplicated object
+          script: config_apply
+          script_type: internal
+          params:
+            changes:
+              - object: &service
+                  type: service
+                  service_name: "sa"
+                parameters:
+                  - key: "c"
+                    value: "e"
+              - object: *service
+                parameters:
+                  - key: "p"
+                    value: "2"
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in get_parsers():
+            for mode in ("action", "wizard"):
+                with self.subTest(version):
+                    with self.assertRaises(BundleParsingError):
+                        parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode=mode)
+
+    def test_no_error_on_key_duplicate(self):
+        as_yaml = """
+        - name: apply correct
+          script: config_apply
+          script_type: internal
+          params:
+            changes:
+              - object:
+                  type: cluster
+                parameters:
+                  - key: "p"
+                    value: "o"
+              - object:
+                  type: service
+                  service_name: "sa"
+                parameters:
+                  - key: "p"
+                    value: "1"
+                  - key: "c"
+                    value: "e"
+              - object:
+                  type: component
+                  service_name: "sa"
+                  component_name: "ca"
+                parameters:
+                  - key: "p"
+                    value: "2"
+                  - key: "c"
+                    value: "e"
+        """
+
+        scripts = yaml.safe_load(as_yaml)
+
+        results = []
+
+        for version, parser in get_parsers():
+            for mode in ("action", "wizard"):
+                with self.subTest(version):
+                    parsed = parser.parse_scripts(
+                        scripts, template_path=Path(), action_allow_to_terminate=False, mode=mode
+                    )
+                    results.append((version, mode, parsed))
+
+        for previous_idx, (cur_ver, cur_mode, cur_result) in enumerate(results[1:]):
+            prev_ver, prev_mode, prev_result = results[previous_idx]
+            name = f"{cur_ver}-{cur_mode}-same-as-{prev_ver}-{prev_mode}"
+            with self.subTest(name):
+                self.assertEqual(cur_result, prev_result)

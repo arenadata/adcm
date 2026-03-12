@@ -171,3 +171,18 @@ def field_not_set_mode_before(value: T, field_name: str) -> T:
         raise ValueError(message)
 
     return value
+
+
+# bad typehint due to universality requirement
+def ensure_unique_object(changes: list) -> list:
+    seen = set()
+
+    for change in changes:
+        object_ = change.object
+        if object_ in seen:
+            message = f"Object duplicate in changes detected: {object_}"
+            raise ValueError(message)
+
+        seen.add(object_)
+
+    return changes
