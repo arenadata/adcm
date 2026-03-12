@@ -22,7 +22,6 @@ from pydantic import (
     StrictBool,
     StrictFloat,
     StrictInt,
-    conlist,
     field_validator,
     model_validator,
 )
@@ -32,6 +31,7 @@ from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.templates import Template
 from core.bundle._parsing.shared.validation import (
     convert_config,
+    ensure_unique_object,
     forbidden_mm_actions,
     is_correct_pattern,
     is_path_correct,
@@ -459,27 +459,36 @@ class HcApplySchema(_BaseModel):
 
 
 class AdcmConfigApplyRule(_BaseModel):
+    # required for uniquness check here and below.
+    # yes, it's a dirty fix.
+    # improve if you have time.
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["adcm"]
 
 
 class HostConfigApplyRule(_BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["host"]
 
 
 class ProviderConfigApplyRule(_BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["provider"]
 
 
 class ClusterConfigApplyRule(_BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["cluster"]
 
 
 class ServiceConfigApplyRule(_BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["service"]
     service_name: str
 
 
 class ComponentConfigApplyRule(ServiceConfigApplyRule):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     type: Literal["component"]
     component_name: str
 
@@ -501,21 +510,9 @@ class ConfigApplyObject(_BaseModel):
     ]
     parameters: list[ConfigApplyParameterItem]
 
-    def __hash__(self):
-        return hash(self.model_dump_json())
-
 
 class ConfigApplySchema(_BaseModel):
-    changes: conlist(ConfigApplyObject, min_length=1)
-
-    @model_validator(mode="after")
-    def ensure_unique_changes(self):
-        seen = set()
-        for change in self.changes:
-            if change in seen:
-                raise ValueError("Duplicate change detected in 'changes'")
-            seen.add(change)
-        return self
+    changes: Annotated[list[ConfigApplyObject], Field(min_length=1), AfterValidator(ensure_unique_object)]
 
 
 #######
