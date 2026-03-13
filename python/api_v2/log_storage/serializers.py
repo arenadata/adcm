@@ -11,30 +11,92 @@
 # limitations under the License.
 
 from contextlib import suppress
+from enum import Enum
 from pathlib import Path
 from typing import Protocol
 import json
 
+from adcm.serializers import EmptySerializer
 from cm.models import LogStorage
+from core.logs import LogFormat, Severity
 from django.conf import settings
+from drf_spectacular.utils import PolymorphicProxySerializer
 from rest_framework.fields import SerializerMethodField
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import BooleanField, CharField, ChoiceField, IntegerField, ModelSerializer
+
+
+class CheckLogContentType(str, Enum):
+    CHECK = "check"
+    GROUP = "group"
+
+
+class StreamLogContentType(str, Enum):
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    CUSTOM = "custom"
+
+
+class BaseCheckLogContent(EmptySerializer):
+    title = CharField()
+    message = CharField()
+    result = BooleanField()
+    severity = ChoiceField(choices=[e.value for e in Severity])
+
+
+class CheckLogContentSerializer(BaseCheckLogContent):
+    type = ChoiceField(
+        choices=[
+            CheckLogContentType.CHECK.value,
+        ]
+    )
+
+
+class GroupCheckLogContentSerializer(BaseCheckLogContent):
+    type = ChoiceField(
+        choices=[
+            CheckLogContentType.GROUP.value,
+        ]
+    )
+    content = CheckLogContentSerializer(many=True)
+
+
+class CheckLogStorageSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    type = ChoiceField(
+        choices=[
+            CheckLogContentType.CHECK.value,
+        ]
+    )
+    format = ChoiceField(choices=[LogFormat.JSON.value])
+    content = PolymorphicProxySerializer(
+        component_name="StorageCheckLogContent",
+        serializers=[GroupCheckLogContentSerializer, CheckLogContentSerializer],
+        resource_type_field_name=None,
+        many=True,
+    )
+
+
+class StreamLogStorageSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    type = ChoiceField(choices=[e.value for e in StreamLogContentType])
+    format = ChoiceField(choices=[e.value for e in LogFormat])
+    content = CharField()
+
+
+proxy_serializer = PolymorphicProxySerializer(
+    component_name="StorageLogContent",
+    serializers=[CheckLogStorageSerializer, StreamLogStorageSerializer],
+    resource_type_field_name=None,
+    many=True,
+)
 
 
 class LogStorageSerializer(ModelSerializer):
     content = SerializerMethodField()
 
-    class Meta:
-        model = LogStorage
-        fields = (
-            "id",
-            "name",
-            "type",
-            "format",
-            "content",
-        )
-
-    def get_content(self, obj: LogStorage) -> str:
+    def get_content(self, obj: LogStorage) -> str | list[dict]:
         content = obj.body
         log_type = obj.type
 
@@ -69,8 +131,17 @@ class LogStorageSerializer(ModelSerializer):
             with suppress(json.JSONDecodeError):
                 custom_content = json.loads(content)
                 content = json.dumps(custom_content)
-
         return content or ""
+
+    class Meta:
+        model = LogStorage
+        fields = (
+            "id",
+            "name",
+            "type",
+            "format",
+            "content",
+        )
 
 
 class BasicLogInfo(Protocol):

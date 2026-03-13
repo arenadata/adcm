@@ -472,6 +472,56 @@ components:
         * `service` - service
         * `requirement` - requirement
         * `configuring_process` - configuring_process
+    CheckLogContent:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        result:
+          type: boolean
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        type:
+          $ref: '#/components/schemas/CheckLogStorageTypeEnum'
+      required:
+      - message
+      - result
+      - severity
+      - title
+      - type
+    CheckLogStorage:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CheckLogStorageTypeEnum'
+        format:
+          $ref: '#/components/schemas/CheckLogStorageFormatEnum'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageCheckLogContent'
+      required:
+      - content
+      - format
+      - id
+      - name
+      - type
+    CheckLogStorageFormatEnum:
+      enum:
+      - json
+      type: string
+      description: '* `json` - json'
+    CheckLogStorageTypeEnum:
+      enum:
+      - check
+      type: string
+      description: '* `check` - check'
     Cluster:
       type: object
       properties:
@@ -914,14 +964,6 @@ components:
       - code
       - level
       - desc
-    FormatEnum:
-      enum:
-      - txt
-      - json
-      type: string
-      description: |-
-        * `txt` - txt
-        * `json` - json
     Group:
       type: object
       properties:
@@ -951,6 +993,35 @@ components:
       - description
       - users
       - type
+    GroupCheckLogContent:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        result:
+          type: boolean
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        type:
+          $ref: '#/components/schemas/GroupCheckLogContentTypeEnum'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckLogContent'
+      required:
+      - content
+      - message
+      - result
+      - severity
+      - title
+      - type
+    GroupCheckLogContentTypeEnum:
+      enum:
+      - group
+      type: string
+      description: '* `group` - group'
     GroupCreate:
       type: object
       properties:
@@ -1374,39 +1445,6 @@ components:
         * `absent` - absent
         * `accepted` - accepted
         * `unaccepted` - unaccepted
-    LogStorage:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-        type:
-          $ref: '#/components/schemas/LogStorageTypeEnum'
-        format:
-          $ref: '#/components/schemas/FormatEnum'
-        content:
-          type: string
-          readOnly: true
-      required:
-      - id
-      - name
-      - type
-      - format
-      - content
-    LogStorageTypeEnum:
-      enum:
-      - stdout
-      - stderr
-      - check
-      - custom
-      type: string
-      description: |-
-        * `stdout` - stdout
-        * `stderr` - stderr
-        * `check` - check
-        * `custom` - custom
     Login:
       type: object
       properties:
@@ -3149,6 +3187,16 @@ components:
       required:
       - componentId
       - hostId
+    SeverityEnum:
+      enum:
+      - error
+      - warning
+      - info
+      type: string
+      description: |-
+        * `error` - error
+        * `warning` - warning
+        * `info` - info
     ShortHost:
       type: object
       properties:
@@ -3312,6 +3360,51 @@ components:
           type: integer
       required:
       - id
+    StorageCheckLogContent:
+      oneOf:
+      - $ref: '#/components/schemas/GroupCheckLogContent'
+      - $ref: '#/components/schemas/CheckLogContent'
+    StorageLogContent:
+      oneOf:
+      - $ref: '#/components/schemas/CheckLogStorage'
+      - $ref: '#/components/schemas/StreamLogStorage'
+    StreamLogStorage:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/StreamLogStorageTypeEnum'
+        format:
+          $ref: '#/components/schemas/StreamLogStorageFormatEnum'
+        content:
+          type: string
+      required:
+      - content
+      - format
+      - id
+      - name
+      - type
+    StreamLogStorageFormatEnum:
+      enum:
+      - txt
+      - json
+      type: string
+      description: |-
+        * `txt` - txt
+        * `json` - json
+    StreamLogStorageTypeEnum:
+      enum:
+      - stdout
+      - stderr
+      - custom
+      type: string
+      description: |-
+        * `stdout` - stdout
+        * `stderr` - stderr
+        * `custom` - custom
     SubmitStepConfiguration:
       type: object
       properties:
@@ -5325,27 +5418,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: ccf6040f-1a07-4ccd-9536-ee8de005b6bf
+                    processSyncKey: 133cd27a-b070-40e5-8760-1ddb92ebce14
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: ef34f659-eeb5-4b1c-8cb6-4db6324fba52
+                    processSyncKey: 3c0288d8-47b0-4406-a2a9-ddb47da8720e
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 214e59f2-fb8f-4fbf-bd89-c02229578cb9
+                    processSyncKey: 17f802f2-a329-4286-af34-a956d6aad79b
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 6dcb21eb-0aaa-4f79-9f58-b615b55abd33
+                    processSyncKey: 065b3847-8d1e-4b4b-81fc-c484462f479e
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6464,27 +6557,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: f2e60c5f-659d-489a-a5cc-62828289255d
+                    processSyncKey: e81c2b88-83a7-42c0-a0e6-36f2bf88c3b8
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 00fd6bf6-eaa3-4688-9a59-bcf1b51731eb
+                    processSyncKey: 0b367447-697a-454c-b068-294545b11cd2
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: e12abbfd-1ddf-4905-a13b-12a77c028b3c
+                    processSyncKey: 4768dfc3-10dd-41bf-9b3d-33edb8ad62a2
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: d1a55356-ac53-41d0-a45a-05787548c216
+                    processSyncKey: 94741091-8389-49d4-a82c-6c1680e5d53d
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8488,27 +8581,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 28e5c87d-c4b0-4cc9-9f91-2cd5a2edf684
+                    processSyncKey: 6855d310-d6f3-4722-8cef-2eaa35f3fe61
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 294fb282-014c-4183-a5cf-9cd086aa0203
+                    processSyncKey: ac66964b-6cae-4139-8378-c7d1bf20d21b
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: c8ad5097-118d-471d-afd8-f5e446eb349e
+                    processSyncKey: a398313e-cd29-4255-8ba6-614148aca910
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 8f8e4b50-d5ca-45ba-8e3d-2f52cc3925c4
+                    processSyncKey: 3a37bb14-0f25-4b3d-96ce-b88fc7ef4688
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10259,27 +10352,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 09071b07-899f-4381-a815-5c80bc2cbad6
+                    processSyncKey: 9a1bf42e-ab20-42e9-88cc-6a68a055fd77
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: bedb5e64-8b48-40f2-9783-e0d157f5e0f1
+                    processSyncKey: 8d2255dc-4787-46eb-a6f7-27a8dac5abdd
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 7590b3f5-7863-4752-bcc4-9f176babb14c
+                    processSyncKey: 497e762e-82ef-4b65-a7e7-8338249e20b8
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: aeb45dc6-8cf1-4699-8d81-6db6087f3d39
+                    processSyncKey: 7ae0df72-9dfa-4592-ba26-daae7c2a908e
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11488,27 +11581,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: eb34fbf5-12f2-4e22-8b51-eb86db14eef2
+                    processSyncKey: 0a71c2d3-b9a0-41d9-b462-4767c3cdf4c8
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 89a5fcb4-a6a7-4c5e-be5a-3509901064b2
+                    processSyncKey: a03a5837-1929-4524-8b9e-70d1e48c7dc1
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 6757d8b6-489c-4410-8074-d575ba553a62
+                    processSyncKey: cda3e907-09ab-47b1-aad0-fa766ee6dd08
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 4a130a81-20a3-40eb-9913-fbdd44a6751b
+                    processSyncKey: 9ec19d4d-d112-4464-bb35-77138d9c7ad3
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12479,27 +12572,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 30320e56-9f66-45dd-9586-1045cf922880
+                    processSyncKey: 02a5be53-37d1-4a71-a04b-47741f301da7
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: eb7777d2-24e6-4b05-ac32-16ff1908c9f8
+                    processSyncKey: f22b8738-05e2-4af8-9165-dbb7ab523373
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: e5f6d1dd-a6f0-4a5e-87c3-00e8b948a7e3
+                    processSyncKey: 39a26d44-b611-47dc-84a8-d78918a011bf
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 1a6e135c-38f5-49e1-b415-31933b7edc8b
+                    processSyncKey: 517177c7-2985-4b00-817c-2bc5eb5b97c6
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -13798,27 +13891,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: f5983018-0f65-47b7-8790-dc91e8b98d9c
+                    processSyncKey: f809a922-43bf-4b61-aff4-65cb204e6aca
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 5e742195-bc17-4ff0-ac65-9ab6d4f79ca9
+                    processSyncKey: 1a13ba27-7af1-4d30-abd0-4392294f6a60
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 59b9c5b4-4896-4266-9181-8c1a0bbf793f
+                    processSyncKey: 01238ea6-2127-4c00-bca6-b96f3d835c57
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 7a5d3e36-bbc5-492e-96ff-4f395ba72876
+                    processSyncKey: f7ee1f7f-557c-42e3-b9de-2584978b284c
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -20606,7 +20699,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/LogStorage'
+                  $ref: '#/components/schemas/StorageLogContent'
           description: ''
         '404':
           content:
@@ -20648,7 +20741,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogStorage'
+                type: array
+                items:
+                  $ref: '#/components/schemas/StorageLogContent'
           description: ''
         '404':
           content:

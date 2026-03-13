@@ -22,6 +22,11 @@ class Severity(str, Enum):
     INFO = "info"
 
 
+class LogFormat(str, Enum):
+    TXT = "txt"
+    JSON = "json"
+
+
 @dataclass(slots=True)
 class CheckLogResult:
     result: bool

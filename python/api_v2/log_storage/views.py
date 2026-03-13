@@ -30,7 +30,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_
 from api_v2.api_schema import ErrorSerializer, responses
 from api_v2.log_storage.filters import LogFilter
 from api_v2.log_storage.permissions import LogStoragePermissions
-from api_v2.log_storage.serializers import LogStorageSerializer
+from api_v2.log_storage.serializers import LogStorageSerializer, proxy_serializer
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -39,15 +39,13 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getLogstorage",
         description="Contains job's logs storage.",
         summary="GET logs storage",
-        responses=responses(success=(HTTP_200_OK, LogStorageSerializer(many=True)), errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=(HTTP_200_OK, proxy_serializer), errors=HTTP_404_NOT_FOUND),
     ),
     retrieve=extend_schema(
         operation_id="getJobslog",
         description="Contains logs by job.",
         summary="GET job's log",
-        responses=responses(
-            success=(HTTP_200_OK, LogStorageSerializer), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
-        ),
+        responses=responses(success=(HTTP_200_OK, proxy_serializer), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)),
     ),
     download=extend_schema(
         operation_id="getJobLogDownload",
