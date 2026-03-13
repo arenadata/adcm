@@ -405,13 +405,13 @@ class APIV2Mixin:
 
     def start_process_r(
         self,
-        owner: Cluster | Service | Component | Host,
+        target: Cluster | Service | Component | Host,
         action: Action | int,
         *,
         expected_status: int = HTTP_201_CREATED,
     ):
         action_id = self._resolve_action_id(action)
-        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        object_endpoint = self._resolve_wizard_object_endpoint(target)
         response = (object_endpoint / "actions" / action_id / "processes").post(data={})
         self.assertEqual(
             response.status_code,
@@ -422,7 +422,7 @@ class APIV2Mixin:
 
     def submit_step_r(
         self,
-        owner: Cluster | Service | Component | Host,
+        target: Cluster | Service | Component | Host,
         action: Action | int,
         process_id: int,
         data: dict,
@@ -430,7 +430,7 @@ class APIV2Mixin:
         expected_status: int = HTTP_200_OK,
     ):
         action_id = self._resolve_action_id(action)
-        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        object_endpoint = self._resolve_wizard_object_endpoint(target=target)
         response = (object_endpoint / "actions" / action_id / "processes" / process_id / "operation").post(data=data)
         self.assertEqual(
             response.status_code,
@@ -441,14 +441,14 @@ class APIV2Mixin:
 
     def get_process_r(
         self,
-        owner: Cluster | Service | Component | Host,
+        target: Cluster | Service | Component | Host,
         action: Action | int,
         process_id: int,
         *,
         expected_status: int = HTTP_200_OK,
     ):
         action_id = self._resolve_action_id(action)
-        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        object_endpoint = self._resolve_wizard_object_endpoint(target)
         response = (object_endpoint / "actions" / action_id / "processes" / process_id).get()
         self.assertEqual(
             response.status_code,
@@ -459,7 +459,7 @@ class APIV2Mixin:
 
     def get_step_r(
         self,
-        owner: Cluster | Service | Component | Host,
+        target: Cluster | Service | Component | Host,
         action: Action | int,
         process_id: int,
         step_id: int,
@@ -467,7 +467,7 @@ class APIV2Mixin:
         expected_status: int = HTTP_200_OK,
     ):
         action_id = self._resolve_action_id(action)
-        object_endpoint = self._resolve_wizard_object_endpoint(owner)
+        object_endpoint = self._resolve_wizard_object_endpoint(target=target)
         response = (object_endpoint / "actions" / action_id / "processes" / process_id / "steps" / step_id).get()
         self.assertEqual(
             response.status_code,
@@ -477,20 +477,20 @@ class APIV2Mixin:
         return response
 
     def start_process(self, owner: Cluster | Service | Component | Host, action: Action | int) -> Process:
-        response = self.start_process_r(owner=owner, action=action)
+        response = self.start_process_r(target=owner, action=action)
         return Process.objects.get(id=response.json()["id"])
 
     def submit_step(
         self, owner: Cluster | Service | Component | Host, action: Action | int, process_id: int, data: dict
     ) -> Process:
-        response = self.submit_step_r(owner=owner, action=action, process_id=process_id, data=data)
+        response = self.submit_step_r(target=owner, action=action, process_id=process_id, data=data)
         return Process.objects.get(id=response.json()["id"])
 
-    def _resolve_wizard_object_endpoint(self, owner: Cluster | Service | Component | Host) -> APINode:
-        if isinstance(owner, Host):
-            return self.client.v2[owner.cluster, "hosts", owner]
+    def _resolve_wizard_object_endpoint(self, target: Cluster | Service | Component | Host) -> APINode:
+        if isinstance(target, Host):
+            return self.client.v2[target.cluster, "hosts", target]
 
-        return self.client.v2[owner]
+        return self.client.v2[target]
 
     @staticmethod
     def _resolve_action_id(action: Action | int) -> int:

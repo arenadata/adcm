@@ -36,6 +36,7 @@ from api_v2.tests.setup.base import BaseAPITestCase
 class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
     def setUp(self):
         super().setUp()
+        self.maxDiff = None
 
         cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_action")
         provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
@@ -51,7 +52,11 @@ class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
             "step_1_config": [
                 {
                     "groups": {},
-                    "hierarchy": {"child_groups": {}, "fields": ["float"], "rule": "all"},
+                    "hierarchy": {
+                        "child_groups": {},
+                        "fields": ["float", "step_variant_from_config"],
+                        "rule": "all",
+                    },
                     "parameters": {
                         "/float": {
                             "extra": {
@@ -67,10 +72,32 @@ class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
                             "max": None,
                             "min": None,
                             "type": "number",
-                        }
+                        },
+                        "/step_variant_from_config": {
+                            "extra": {
+                                "description": "",
+                                "display_name": "step_variant_from_config",
+                                "edit_rule": {"writable": "any"},
+                                "ui_options": {},
+                            },
+                            "identifier": {"full": "/step_variant_from_config", "name": "step_variant_from_config"},
+                            "is_desyncable": False,
+                            "is_required": False,
+                            "is_strict": True,
+                            "payload": {"args": None, "name": "group1/list_field", "strict": True, "type": "config"},
+                            "source": "config",
+                            "type": "variant",
+                        },
                     },
                 },
-                {"activation": {}, "selection": {}, "values": {"/float": 0.1}},
+                {
+                    "activation": {},
+                    "selection": {},
+                    "values": {
+                        "/float": 0.1,
+                        "/step_variant_from_config": None,
+                    },
+                },
             ],
             "step_2_mapping": [
                 {"service": self.component.service.name, "component": self.component.name, "operation": "remove"}
@@ -144,7 +171,10 @@ class TestWizardOnAHG(BaseAPITestCase, ParallelReadyTestCase, APIV2Mixin):
                 "params": {
                     "processSyncKey": process.sync_key,
                     "stepId": step_1_config.id,
-                    "configuration": {"config": {"float": 0.4}, "adcmMeta": {}},
+                    "configuration": {
+                        "config": {"float": 0.4, "step_variant_from_config": "entry1"},
+                        "adcmMeta": {},
+                    },
                 },
             }
         )

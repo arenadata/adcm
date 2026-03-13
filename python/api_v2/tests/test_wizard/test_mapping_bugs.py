@@ -62,7 +62,7 @@ class TestWizardMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
             },
         }
         return self.submit_step_r(
-            owner=self.cluster,
+            target=self.cluster,
             action=self.action,
             process_id=self.process.pk,
             data=data,

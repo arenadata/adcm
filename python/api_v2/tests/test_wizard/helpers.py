@@ -47,7 +47,7 @@ def render_template(file: Path, context: dict) -> Any:
 class WizardProcessHelpers:
     def submit_config_step(
         self,
-        owner: Cluster,
+        target: Cluster,
         action: Action | int,
         process: Process,
         step_id: int,
@@ -69,7 +69,7 @@ class WizardProcessHelpers:
         }
 
         return self.submit_step_r(
-            owner=owner, action=action, process_id=process.id, data=data, expected_status=expected_status
+            target=target, action=action, process_id=process.id, data=data, expected_status=expected_status
         )
 
     def make_step_current(self, step: ProcessStep) -> None:
@@ -105,14 +105,14 @@ class WizardProcessHelpers:
     def advance_two_config_steps(self, process: Process, owner: Cluster, action: Action | int):
         config_payload = {"config": {"integer_field": 10, "string_field": "string"}, "adcmMeta": {}}
         self.submit_config_step(
-            owner=owner, action=action, process=process, step_id=process.current_step_id, config_payload=config_payload
+            target=owner, action=action, process=process, step_id=process.current_step_id, config_payload=config_payload
         )
 
         process.refresh_from_db()
 
         config_payload = {"config": {"int": 10}, "adcmMeta": {}}
         self.submit_config_step(
-            owner=owner, action=action, process=process, step_id=process.current_step_id, config_payload=config_payload
+            target=owner, action=action, process=process, step_id=process.current_step_id, config_payload=config_payload
         )
 
     def clear_hostcomponent_mapping(self, cluster_id: int) -> None:

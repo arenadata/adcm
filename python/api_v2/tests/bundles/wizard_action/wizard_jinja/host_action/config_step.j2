@@ -2,3 +2,9 @@
   type: float
   required: false
   default: 0.1
+- name: step_variant_from_config
+  type: variant
+  required: false
+  source:
+    name: group1/list_field
+    type: config

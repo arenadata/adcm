@@ -424,7 +424,7 @@ def _operation_submit_mapping(
     _check_hc_mapping_delta(
         step=step,
         hc_mapping_delta=hc_mapping_delta,
-        object_=context.process_context.cluster_relative_object(as_descriptor=True),
+        object_in_cluster=context.process_context.cluster_relative_object(as_descriptor=True),
     )
 
     perform_mapping(process_id=process.id, step_id=step.id, step_input_data=step_input_data)
@@ -520,19 +520,18 @@ def _operation_submit_config(
     if not isinstance(specification, core.config.spec.FullSpec):
         raise TypeError(f"Config step spec is unexpectedly not full spec: {type(specification)=} {step=}")
 
-    config_object = context.process_context.cluster_relative_object(as_descriptor=True)
-
+    config_object = context.process_context.owner
     try:
-        target_config = config_service.retrieve_current_configuration(owner=config_object)
+        owner_config = config_service.retrieve_current_configuration(owner=config_object)
     except core.config.ObjectWithoutConfigError:
-        target_config = None
+        owner_config = None
 
     configuration = context.config_processor(input_config, specification)
     step_configuration = config_service.prepare_action_configuration(
         configuration=configuration,
         specification=specification,
         owner=config_object,
-        owner_configuration=target_config,
+        owner_configuration=owner_config,
     )
     prefix = core.config.files.build_action_process_step_prefix(process_id=process.id, step_id=step.id)
     config_service.prepare_file_parameter_values_on_fs(
@@ -573,8 +572,10 @@ def _check_all_steps_completed(process: ActionProcess) -> None:
             raise ActionProcessOperationError("All steps must be completed")
 
 
-def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta, object_: CoreObjectDescriptor) -> None:
-    cluster_id, bundle_id = repo.retrieve_related_cluster_id_and_cluster_bundle_id(object_=object_)
+def _check_hc_mapping_delta(
+    step: Step, hc_mapping_delta: HostComponentMapDelta, object_in_cluster: CoreObjectDescriptor
+) -> None:
+    cluster_id, bundle_id = repo.retrieve_related_cluster_id_and_cluster_bundle_id(object_=object_in_cluster)
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
 
     if existence_violations := _find_mapping_delta_objects_existence_violations(
