@@ -156,6 +156,7 @@ SPECTACULAR_SETTINGS = {
         "ClusterServiceEnum": ("cluster", "service"),
         "OriginType": "rbac.models.OriginType",
         "RoleTypeEnum": "rbac.models.RoleTypes",
+        "CheckLogStorageTypeEnum": ("check",),
     },
     "GENERIC_ADDITIONAL_PROPERTIES": None,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],

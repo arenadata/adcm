@@ -18,6 +18,7 @@ from core.logs._types import (
     CheckLogResult,
     GroupCheckLogArguments,
     GroupCheckLogContent,
+    LogFormat,
     Severity,
 )
 
@@ -30,4 +31,5 @@ __all__ = [
     "CheckLogResult",
     "CheckLogContent",
     "GroupCheckLogContent",
+    "LogFormat",
 ]
