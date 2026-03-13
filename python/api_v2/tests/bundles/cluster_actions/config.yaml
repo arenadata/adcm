@@ -2,6 +2,14 @@
   name: cluster_with_actions
   version: "1.0"
 
+  config:
+    - name: list_field
+      required: false
+      default:
+        - cluster_entry1
+        - cluster_entry2
+      type: list
+
   actions: &actions
 
     # maintenance mode
@@ -154,6 +162,21 @@
         multi_state:
           available:
             - flag
+
+    # config
+
+    with_variant_in_config:
+      <<: *simple_action
+      states:
+        available:
+          - ready_for_variant
+      config:
+        - name: variant_from_config
+          type: variant
+          required: false
+          source:
+            name: list_field
+            type: config
 
 - type: service
   name: service_1

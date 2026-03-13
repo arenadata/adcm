@@ -770,6 +770,24 @@ class TestAction(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIn("Internal script 'config_apply' can't be used for jinja action", response.json()["desc"])
 
+    def test_adcm_7841_variant_in_config(self) -> None:
+        """
+        `{type: variant, source: {type: config, name: <field_name>}}` fields should consider
+        only owner's config as variant values source.
+        Absence of <field_name> in action's config should not lead to error.
+        """
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_actions")
+        cluster = self.add_cluster(bundle=bundle, name="cluster_with_actions")
+        action = Action.objects.get(name="with_variant_in_config", prototype=cluster.prototype)
+
+        cluster.state = "ready_for_variant"
+        cluster.save(update_fields=["state"])
+
+        payload = {"configuration": {"config": {"variant_from_config": "cluster_entry1"}, "adcmMeta": {}}}
+        response = self.client.v2[cluster, "actions", action, "run"].post(data=payload)
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
 
 class TestActionHCMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
     client: ADCMTestClient

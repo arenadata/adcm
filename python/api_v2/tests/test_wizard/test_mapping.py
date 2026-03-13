@@ -197,7 +197,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
 
         payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
         self.submit_config_step(
-            owner=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
+            target=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
         )
 
         process.refresh_from_db()
@@ -215,7 +215,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
 
         hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s1.pk}]}
         self.submit_step_r(
-            owner=self.cluster_3,
+            target=self.cluster_3,
             action=action,
             process_id=process.id,
             data={
@@ -254,7 +254,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
 
         payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
         self.submit_config_step(
-            owner=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
+            target=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
         )
 
         current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
@@ -284,7 +284,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 wrong_payload["params"][f"{param}New"] = wrong_payload["params"].pop(param)
 
                 self.submit_step_r(
-                    owner=self.cluster_3,
+                    target=self.cluster_3,
                     action=action,
                     process_id=process.id,
                     data=wrong_payload,
@@ -296,7 +296,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 del wrong_payload["params"][param]
 
                 self.submit_step_r(
-                    owner=self.cluster_3,
+                    target=self.cluster_3,
                     action=action,
                     process_id=process.id,
                     data=wrong_payload,
@@ -325,7 +325,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
 
         payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
         self.submit_config_step(
-            owner=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
+            target=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
         )
 
         current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
@@ -363,7 +363,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 },
             }
             return self.submit_step_r(
-                owner=self.cluster_3,
+                target=self.cluster_3,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -434,7 +434,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 },
             }
             response = self.submit_step_r(
-                owner=self.cluster_3,
+                target=self.cluster_3,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -457,7 +457,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
         action_second_step_fail = Action.objects.get(prototype=cluster.prototype, name="wizard_second_step_broken")
 
         # first step
-        response = self.start_process_r(owner=cluster, action=action_first_step_fail).json()
+        response = self.start_process_r(target=cluster, action=action_first_step_fail).json()
         process_id, current_step_id = response["id"], response["currentStep"]
         target_step = ProcessStep.objects.get(process_id=process_id, name="first_broken_mapping_step")
 
@@ -465,7 +465,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
         self.assertEqual(target_step.state, ProcessStepState.BROKEN)
 
         # second step after submitting first
-        response = self.start_process_r(owner=cluster, action=action_second_step_fail).json()
+        response = self.start_process_r(target=cluster, action=action_second_step_fail).json()
         process_id, current_step_id = response["id"], response["currentStep"]
         config_step = ProcessStep.objects.get(id=current_step_id, process_id=process_id, name="first_config_step")
         target_step = ProcessStep.objects.get(process_id=process_id, name="second_broken_mapping_step")
@@ -890,7 +890,7 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
         cfg_step = ProcessStep.objects.get(process_id=process.id, name="stage1_step1", display_name="Stage1.Step1")
         payload = {"config": {"integer_field": 200, "string_field": "str"}, "adcmMeta": {}}
         response = self.submit_config_step(
-            owner=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
+            target=self.cluster_3, action=action, process=process, step_id=cfg_step.id, config_payload=payload
         )
 
         current_step_id, last_completed_step_id = find_current_and_last_completed_steps(
@@ -913,14 +913,14 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 "hostComponentMapDelta": first_mapping_step_hc_delta,
             },
         }
-        response = self.submit_step_r(owner=self.cluster_3, action=action, process_id=process.id, data=payload)
+        response = self.submit_step_r(target=self.cluster_3, action=action, process_id=process.id, data=payload)
 
         # retrieve second mapping step
         second_mapping_step = ProcessStep.objects.get(
             process_id=process.id, name="stage1_mapping_again", display_name="change mapping again"
         )
         response = self.get_step_r(
-            owner=self.cluster_3, action=action, process_id=process.id, step_id=second_mapping_step.id
+            target=self.cluster_3, action=action, process_id=process.id, step_id=second_mapping_step.id
         )
         response = response.json()
         self.assertIsNone(response["delta"])
@@ -941,11 +941,11 @@ class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessH
                 "hostComponentMapDelta": second_mapping_step_hc_delta,
             },
         }
-        self.submit_step_r(owner=self.cluster_3, action=action, process_id=process.id, data=payload)
+        self.submit_step_r(target=self.cluster_3, action=action, process_id=process.id, data=payload)
 
         # retrieve second mapping step again
         response = self.get_step_r(
-            owner=self.cluster_3, action=action, process_id=process.id, step_id=second_mapping_step.id
+            target=self.cluster_3, action=action, process_id=process.id, step_id=second_mapping_step.id
         )
 
         response = response.json()

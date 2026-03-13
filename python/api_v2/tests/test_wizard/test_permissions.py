@@ -49,7 +49,7 @@ class TestWizardActionProcessPermissions(BaseAPITestCase, APIV2Mixin, WizardProc
     def case_expect_not_found_on_get_step(self) -> None:
         with self.subTest("get-step-404"):
             self.get_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=self.action,
                 process_id=self.process.pk,
                 step_id=self.step_id,
@@ -63,7 +63,7 @@ class TestWizardActionProcessPermissions(BaseAPITestCase, APIV2Mixin, WizardProc
         }
         with self.subTest("submit-step-404"):
             self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=self.action,
                 process_id=self.process.pk,
                 data=data,
@@ -73,7 +73,10 @@ class TestWizardActionProcessPermissions(BaseAPITestCase, APIV2Mixin, WizardProc
     def case_expect_not_found_on_get_process(self) -> None:
         with self.subTest("get-process-404"):
             self.get_process_r(
-                owner=self.cluster_1, action=self.action, process_id=self.process.pk, expected_status=HTTP_404_NOT_FOUND
+                target=self.cluster_1,
+                action=self.action,
+                process_id=self.process.pk,
+                expected_status=HTTP_404_NOT_FOUND,
             )
 
     def case_expect_not_found_on_start_process(self) -> None:

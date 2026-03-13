@@ -58,11 +58,27 @@
       host_action: false
       allow_for_action_host_group: true
 
+    regular_action:
+      type: job
+      script: ./sleep.yaml
+      script_type: ansible
+      states:
+        available: any
+
   config: &config
     - name: float
       type: float
       required: false
       default: 0.1
+    - name: group1
+      type: group
+      subs:
+        - name: list_field
+          required: false
+          default:
+            - entry1
+            - entry2
+          type: list
 
 - type: service
   name: service_1

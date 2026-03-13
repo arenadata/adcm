@@ -20,7 +20,7 @@ from cm.legacy.services.action_process.schema_validation import ProcessOperation
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.job.run.repo import ActionRepoImpl
-from cm.models import ADCM, Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from cm.models import Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
 from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionTargetDescriptor
 from rest_framework.status import (
@@ -208,7 +208,7 @@ class TestActionProcessAudit(BaseAPITestCase):
 
         with self.subTest(f"create process for {self.cluster_1} (failed)"):
             self.client.login(username="admin", password="admin")
-            action = Action.objects.filter(prototype=ADCM.objects.first().prototype).first()
+            action = Action.objects.get(name="regular_action", prototype=self.cluster_1.prototype)
             response = self.client.v2[self.cluster_1, "actions", action.pk, "processes"].post(data={})
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)

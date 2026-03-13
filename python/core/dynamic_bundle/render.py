@@ -16,6 +16,7 @@ from typing import Any, Generic, Protocol, TypeVar
 
 from core import action, bundle, config, mapping, templates
 from core.dynamic_bundle.types import ContextGathererI
+from core.types import CoreObjectDescriptor
 
 
 class SecretsDecryptor(Protocol):
@@ -36,7 +37,11 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
     bundle_service: bundle.BundleService
 
     def render_config(
-        self, template: templates.Template, args: CtxAT, bundle_context: bundle.BundleContext
+        self,
+        template: templates.Template,
+        args: CtxAT,
+        bundle_context: bundle.BundleContext,
+        owner: CoreObjectDescriptor,
     ) -> tuple[config.spec.FullSpec, config.Defaults]:
         render_context = self.context.prepare_context_for_action(args)
 
@@ -45,9 +50,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         )
 
         return self.bundle_service.parse_to_spec_with_defaults(
-            data=data,
-            bundle_context=bundle_context,
-            template_path=template.file.path,
+            data=data, bundle_context=bundle_context, template_path=template.file.path, owner=owner
         )
 
     def render_scripts_for_action(
