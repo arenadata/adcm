@@ -11,7 +11,7 @@ import {
 
 export const useRequestServiceComponentsDynamicActionWizardDialog = (step: AdcmActionProcessOperationStep) => {
   const dispatch = useDispatch();
-  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
+  const jobsData = useStore((s) => s.adcm.clusterServiceComponentsWizard.jobsData);
 
   const clusterId = useStore((s) => s.adcm.clusterServiceComponentsWizardActions.wizardDialog.clusterId);
   const serviceId = useStore((s) => s.adcm.clusterServiceComponentsWizardActions.wizardDialog.serviceId);
