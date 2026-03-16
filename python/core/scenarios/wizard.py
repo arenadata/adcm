@@ -18,6 +18,7 @@ import logging
 from core import bundle, templates
 from core.action import wizard
 from core.dynamic_bundle.render import BundleRenderer
+from core.types import CoreObjectDescriptor
 
 ActionArgsT = TypeVar("ActionArgsT")
 TaskArgsT = TypeVar("TaskArgsT")
@@ -44,6 +45,7 @@ class FillWizardStepSpec(Generic[ActionArgsT, TaskArgsT]):
         step_type: wizard.StepType,
         template: templates.Template,
         bundle_context: bundle.BundleContext,
+        owner: CoreObjectDescriptor,
         action_args: ActionArgsT,
         action_allow_to_terminate: bool,
     ) -> None:
@@ -58,7 +60,7 @@ class FillWizardStepSpec(Generic[ActionArgsT, TaskArgsT]):
             match step_type:
                 case wizard.StepType.CONFIGURATION:
                     spec = self.bundle_renderer.render_config(
-                        template=template, args=action_args, bundle_context=bundle_context
+                        template=template, args=action_args, bundle_context=bundle_context, owner=owner
                     )
 
                 case wizard.StepType.OPERATION:
