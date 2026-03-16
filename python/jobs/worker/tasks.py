@@ -25,7 +25,7 @@ def run_task(*, task_id: TaskID) -> None:
     container = dishka.make_container(*get_main_providers())
     container_context = {JobFilterPredicate: always_true}
 
-    container = dishka.make_container(*get_main_providers())
-    with container(context=container_context):
+    container = dishka.make_container(*get_main_providers(), context=container_context)
+    with container():
         runner = container.get(TaskRunner)
         runner.run(task_id=task_id)
