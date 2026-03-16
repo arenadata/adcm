@@ -126,6 +126,7 @@ class InitiateWizardProcess:
             step_type=first_step.type,
             template=first_step.template,
             bundle_context=bundle_context,
+            owner=process_context.owner,
             action_args=process_context.build_action_args(process_id=process_id),
             action_allow_to_terminate=process_context.action_orm.allow_to_terminate,
         )
@@ -218,6 +219,7 @@ class PerformWizardProcessOperation:
                         step_type=step.type,
                         template=template,
                         bundle_context=bundle_context,
+                        owner=context.process_context.owner,
                         action_args=context.process_context.build_action_args(process_id=process.id),
                         action_allow_to_terminate=context.process_context.action_orm.allow_to_terminate,
                     )
@@ -234,6 +236,7 @@ class PerformWizardProcessOperation:
                     step_type=step.type,
                     template=template,
                     bundle_context=bundle_context,
+                    owner=context.process_context.owner,
                     action_args=context.process_context.build_action_args(process_id=process.id),
                     action_allow_to_terminate=context.process_context.action_orm.allow_to_terminate,
                 )
@@ -524,6 +527,7 @@ class CompleteWizardOperationStep:
                 step_type=step.type,
                 template=template,
                 bundle_context=bundle_context,
+                owner=process_context.owner,
                 action_args=process_context.build_action_args(process_id=process_id),
                 action_allow_to_terminate=process_context.action_orm.allow_to_terminate,
             )
