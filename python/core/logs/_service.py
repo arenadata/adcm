@@ -42,17 +42,26 @@ class LogsService:
         return data
 
     def add_check_log_for_job(self, job_id: JobID, check_log_arguments: CheckLogArguments) -> None:
-        group_id = None
+        check_log_id = self.repo.create_check_log(
+            job_id=job_id,
+            title=check_log_arguments.title,
+            message=check_log_arguments.success_msg if check_log_arguments.result else check_log_arguments.fail_msg,
+            result=check_log_arguments.result,
+            severity=check_log_arguments.severity,
+        )
 
         if check_log_arguments.group:
-            group = check_log_arguments.group
             group_id, group_is_created = self.repo.prepare_group_check_log(
                 job_id=job_id,
                 title=check_log_arguments.group.title,
-                message=group.success_msg if check_log_arguments.result else group.fail_msg,
+                message=check_log_arguments.group.success_msg
+                if check_log_arguments.result
+                else check_log_arguments.group.fail_msg,
                 result=check_log_arguments.result,
                 severity=check_log_arguments.severity,
             )
+
+            self.repo.add_check_log_to_group(check_log_id=check_log_id, group_id=group_id)
 
             if not group_is_created:
                 group_check_log_result = aggregate_check_logs_results_for_group(
@@ -61,19 +70,12 @@ class LogsService:
 
                 self.repo.update_group_check_log(
                     group_id=group_id,
-                    message=group.success_msg if group_check_log_result.result else group.fail_msg,
+                    message=check_log_arguments.group.success_msg
+                    if group_check_log_result.result
+                    else check_log_arguments.group.fail_msg,
                     result=group_check_log_result.result,
                     severity=group_check_log_result.severity,
                 )
-
-        self.repo.create_check_log(
-            job_id=job_id,
-            group_id=group_id,
-            title=check_log_arguments.title,
-            message=check_log_arguments.success_msg if check_log_arguments.result else check_log_arguments.fail_msg,
-            result=check_log_arguments.result,
-            severity=check_log_arguments.severity,
-        )
 
     def add_log_storage_for_check_log(self, job_id: JobID) -> tuple[LogStorageID, IsCreated]:
         return self.repo.prepare_log_storage_for_check(job_id=job_id)

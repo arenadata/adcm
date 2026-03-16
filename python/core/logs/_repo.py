@@ -40,12 +40,14 @@ class LogsRepoI(Protocol):
     def create_check_log(
         self,
         job_id: JobID,
-        group_id: GroupCheckLogID | None,
         title: str,
         message: str,
         result: bool,
         severity: Severity,
     ) -> CheckLogID:
+        ...
+
+    def add_check_log_to_group(self, check_log_id: CheckLogID, group_id: GroupCheckLogID) -> None:
         ...
 
     def update_group_check_log(self, group_id: GroupCheckLogID, message: str, result: bool, severity: Severity) -> None:

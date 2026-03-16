@@ -67,7 +67,7 @@ class LogsRepo(logs.LogsRepoI):
         self, job_id: JobID, title: str, message: str, result: bool, severity: logs.Severity
     ) -> tuple[GroupCheckLogID, IsCreated]:
         group, is_created = GroupCheckLog.objects.get_or_create(
-            job_id=job_id, title=title, message=message, result=result, severity=severity
+            job_id=job_id, title=title, defaults={"message": message, "result": result, "severity": severity}
         )
 
         return group.pk, is_created
@@ -75,16 +75,18 @@ class LogsRepo(logs.LogsRepoI):
     def create_check_log(
         self,
         job_id: JobID,
-        group_id: GroupCheckLogID | None,
         title: str,
         message: str,
         result: bool,
         severity: logs.Severity,
     ) -> CheckLogID:
         check_log = CheckLog.objects.create(
-            job_id=job_id, group_id=group_id, title=title, message=message, result=result, severity=severity
+            job_id=job_id, title=title, message=message, result=result, severity=severity
         )
         return check_log.pk
+
+    def add_check_log_to_group(self, check_log_id: CheckLogID, group_id: GroupCheckLogID) -> None:
+        CheckLog.objects.filter(id=check_log_id).update(group_id=group_id)
 
     def update_group_check_log(
         self, group_id: GroupCheckLogID, message: str, result: bool, severity: logs.Severity
