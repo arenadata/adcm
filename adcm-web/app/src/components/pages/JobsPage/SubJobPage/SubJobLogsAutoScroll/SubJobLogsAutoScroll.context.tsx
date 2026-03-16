@@ -4,8 +4,6 @@ import { createContextHelper } from '@hooks/useContextHelper';
 export interface SubJobsLogsAutoScrollOptions {
   isAutoScroll: boolean;
   toggleAutoScroll: (isAutoScroll: boolean) => void;
-  setContainer: (element: HTMLElement) => void;
-  scrollToBottom: () => void;
 }
 
 export const SubJobsLogsAutoScrollContext =

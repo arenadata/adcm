@@ -121,7 +121,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
         with self.subTest("Incorrect method"):
             payload = {"method": "notexist", "params": {"process_sync_key": process.sync_key}}
             response = self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -136,7 +136,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
         with self.subTest("Incorrect payload for complete"):
             payload = {"method": "complete", "params": {}}
             response = self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -149,7 +149,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
         with self.subTest("Incorrect payload for submit: missing stepId"):
             payload = {"method": "submit_step", "params": {"processSyncKey": process.sync_key}}
             response = self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -165,7 +165,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             wrong_sync_key = uuid4()
             payload = {"method": "complete", "params": {"processSyncKey": wrong_sync_key}}
             response = self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -177,7 +177,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
         with self.subTest("Incorrect payload for complete: wrong sync key type"):
             payload = {"method": "complete", "params": {"processSyncKey": "abs"}}
             response = self.submit_step_r(
-                owner=self.cluster_1,
+                target=self.cluster_1,
                 action=action,
                 process_id=process.id,
                 data=payload,
@@ -205,7 +205,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
 
         with self.subTest("Correct config"):
             self.submit_config_step(
-                owner=self.config_cluster,
+                target=self.config_cluster,
                 action=action,
                 process=process,
                 step_id=step.id,
@@ -233,7 +233,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             del payload["adcmMeta"]
 
             self.submit_config_step(
-                owner=self.config_cluster,
+                target=self.config_cluster,
                 action=action,
                 process=process,
                 step_id=step.id,
@@ -247,7 +247,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             payload["adcmMeta"] = {}
 
             self.submit_config_step(
-                owner=self.config_cluster,
+                target=self.config_cluster,
                 action=action,
                 process=process,
                 step_id=step.id,
@@ -261,7 +261,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             payload["adcmMeta"]["/agroup"] = {}
 
             self.submit_config_step(
-                owner=self.config_cluster,
+                target=self.config_cluster,
                 action=action,
                 process=process,
                 step_id=step.id,
@@ -275,7 +275,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             del payload["config"]["integer_field"]
 
             self.submit_config_step(
-                owner=self.config_cluster,
+                target=self.config_cluster,
                 action=action,
                 process=process,
                 step_id=step.id,
@@ -334,7 +334,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
         }
 
         response = self.submit_step_r(
-            owner=self.cluster_1,
+            target=self.cluster_1,
             action=action,
             process_id=process.id,
             data=payload,
@@ -364,13 +364,13 @@ class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHel
             },
         }
 
-        response = self.submit_step_r(owner=self.cluster_1, action=action, process_id=process.id, data=payload)
+        response = self.submit_step_r(target=self.cluster_1, action=action, process_id=process.id, data=payload)
 
         process.refresh_from_db()
         payload["params"]["processSyncKey"] = process.sync_key
 
         response = self.submit_step_r(
-            owner=self.cluster_1,
+            target=self.cluster_1,
             action=action,
             process_id=process.id,
             data=payload,

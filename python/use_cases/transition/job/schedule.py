@@ -184,6 +184,7 @@ class ScheduleTask:
                     spec_pair = _resolve_spec(
                         action=action_orm,
                         action_args=action_args,
+                        owner=orm_object_to_core_descriptor(action_objects.owner),
                         bundle_context=bundle_context,
                         config_service=self.config_service,
                         bundle_renderer=self.bundle_renderer,
@@ -310,6 +311,7 @@ class RetrieveConfigurationForAction:
                 spec_pair = _resolve_spec(
                     action=action_orm,
                     action_args=action_args,
+                    owner=descriptor,
                     bundle_context=bundle_context,
                     config_service=self.config_service,
                     bundle_renderer=self.bundle_renderer,
@@ -342,6 +344,7 @@ def _retrieve_static_spec(action_id: ActionID, config_service: core.config.Confi
 def _resolve_spec(
     action: Action,
     action_args: ActionArgs,
+    owner: CoreObjectDescriptor,
     bundle_context: core.bundle.BundleContext,
     config_service: core.config.ConfigService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
@@ -365,7 +368,9 @@ def _resolve_spec(
 
     template = parse_template(action.config_template)
 
-    spec, defaults = bundle_renderer.render_config(template=template, args=action_args, bundle_context=bundle_context)
+    spec, defaults = bundle_renderer.render_config(
+        template=template, args=action_args, bundle_context=bundle_context, owner=owner
+    )
 
     return SpecPair(spec=spec, defaults=defaults)
 

@@ -13,13 +13,8 @@
 from dataclasses import asdict
 from typing import Any
 
-from adcm.mixins import GetParentObjectMixin
-from cm.converters import (
-    action_target_type_to_model,
-    core_type_to_model,
-    orm_object_to_action_target_descriptor,
-    orm_object_to_core_descriptor,
-)
+from adcm.mixins import GetParentObjectMixin, ParentObject
+from cm.converters import core_type_to_model, orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.errors import (
@@ -36,16 +31,19 @@ from cm.legacy.services.action_process.types import ProcessContext, Step
 from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import (
     Action,
+    ActionHostGroup,
+    Host,
+    HostComponent,
     Process,
     ProcessStep,
     ProcessStepInput,
     TaskLog,
 )
 from core.legacy.job import JobService
-from core.types import ActionProcessID, ActionTargetDescriptor, ExtraActionTargetType
+from core.types import ActionProcessID, CoreObjectDescriptor
 from dishka import FromDishka
+from django.conf import settings
 from django.http.response import Http404
-from infra.services import get_config_service
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
@@ -87,8 +85,52 @@ class ProcessStepHandleExceptionMixin:
         return super().handle_exception(exc)
 
 
+class ProcessActionRetrieveMixin:
+    def retrieve_action(self, target: ParentObject) -> Action:
+        action_id = self.kwargs["action_pk"]
+
+        try:
+            action_candidate = Action.objects.exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET).get(
+                id=action_id, upgrade__isnull=True
+            )
+        except Action.DoesNotExist as e:
+            raise NotFound(f"Can't retrieve action #{action_id}") from e
+
+        if action_candidate.host_action and not isinstance(target, Host):
+            raise NotFound(f"Wrong target {target} for a host action {action_candidate}")
+
+        if isinstance(target, ActionHostGroup):
+            target = target.object
+            allowed_prototypes = {target.prototype_id}
+        elif isinstance(target, Host):
+            if action_candidate.host_action:
+                service_component_prototypes = set()
+                for item in HostComponent.objects.filter(host=target).values(
+                    "service__prototype", "component__prototype"
+                ):
+                    service_component_prototypes.update({item["service__prototype"], item["component__prototype"]})
+
+                allowed_prototypes = {target.cluster.prototype_id, *service_component_prototypes}
+            else:
+                raise NotFound(f"{action_candidate} is not a host_action")  # valid until wizard on host is allowed
+        else:
+            allowed_prototypes = {target.prototype_id}
+
+        if action_candidate.prototype_id not in allowed_prototypes:
+            raise NotFound(f"Prototypes mismatch for {action_candidate} and {target}")
+
+        if not action_candidate.allowed(target):
+            raise NotFound(f"{action_candidate} is not allowed for {target}")
+
+        return action_candidate
+
+
 class ActionProcessViewSet(
-    ProcessStepHandleExceptionMixin, GetParentObjectMixin, ADCMGenericViewSet, ActionPermissionsMixin
+    ProcessStepHandleExceptionMixin,
+    GetParentObjectMixin,
+    ADCMGenericViewSet,
+    ActionPermissionsMixin,
+    ProcessActionRetrieveMixin,
 ):
     queryset = Process.objects.all()
     exc_conversion_map = {
@@ -111,12 +153,8 @@ class ActionProcessViewSet(
 
     def get_process_context(self, job_service: JobService) -> ProcessContext:
         target_orm = self.get_parent_object(raise_=NotFound("Parent object not found"))
-
-        try:
-            action = ActionRepoImpl.get_action(id=self.kwargs["action_pk"])
-            action_orm = Action.objects.get(id=self.kwargs["action_pk"])
-        except Action.DoesNotExist:
-            raise NotFound("Action not found") from None
+        action_orm = self.retrieve_action(target=target_orm)
+        action = ActionRepoImpl.get_action(id=action_orm.id)
 
         if not action.wizard_template:
             raise AdcmEx(
@@ -125,6 +163,7 @@ class ActionProcessViewSet(
             )
 
         target = orm_object_to_action_target_descriptor(target_orm)
+
         owner = job_service.repo.find_action_owner(action_id=action.id, target=target)
         owner_orm = core_type_to_model(owner.type).objects.get(id=owner.id)
 
@@ -239,6 +278,7 @@ class ProcessStepViewSet(
     RetrieveModelMixin,
     ADCMGenericViewSet,
     ActionPermissionsMixin,
+    ProcessActionRetrieveMixin,
 ):
     queryset = ProcessStep.objects.all()
     serializer_class = StepSerializer
@@ -247,31 +287,35 @@ class ProcessStepViewSet(
         ActionProcessStepNotFoundError: "ACTION_PROCESS_STEP_NOT_FOUND",
     }
 
-    def retrieve(self, request, *args, **kwargs):
+    @inject
+    def retrieve(
+        self,
+        request,
+        *args,
+        job_service: FromDishka[JobService],
+        config_service: FromDishka[core.config.ConfigService],
+        **kwargs,
+    ):
         _ = request, args
 
-        process_id, step_id, action_id = kwargs["process_pk"], kwargs["pk"], kwargs["action_pk"]
-
+        process_id, step_id = kwargs["process_pk"], kwargs["pk"]
         parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
+        action_orm = self.retrieve_action(target=parent_object)
 
-        self.check_permissions_for_run(
-            request=request, action=Action.objects.get(pk=action_id), parent_object=parent_object
-        )
-
-        target = orm_object_to_action_target_descriptor(parent_object)
+        self.check_permissions_for_run(request=request, action=action_orm, parent_object=parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
         data = step.model_dump(include={"id", "name", "display_name", "description", "type", "state"})
 
-        config_service = get_config_service()
-
-        serialized_data = serialize_step(step=step, object_=target, base_data=data, config_service=config_service)
+        target = orm_object_to_action_target_descriptor(parent_object)
+        owner = job_service.repo.find_action_owner(action_id=action_orm.id, target=target)
+        serialized_data = serialize_step(step=step, owner=owner, base_data=data, config_service=config_service)
 
         return Response(data=serialized_data, status=HTTP_200_OK)
 
 
 def serialize_step(
-    step: Step, object_: ActionTargetDescriptor, base_data: dict, config_service: core.config.ConfigService
+    step: Step, owner: CoreObjectDescriptor, base_data: dict, config_service: core.config.ConfigService
 ) -> dict:
     if step.is_render_required:
         raise AdcmEx("ACTION_PROCESS_STEP_NOT_RENDERED", msg=f"Step #{step.id} {step.display_name} is not rendered yet")
@@ -281,7 +325,7 @@ def serialize_step(
     match step.type:
         case core.action.wizard.StepType.CONFIGURATION:
             return _serialize_config_step(
-                step=step, object_=object_, step_input=step_input, base_data=base_data, config_service=config_service
+                step=step, owner=owner, step_input=step_input, base_data=base_data, config_service=config_service
             )
         case core.action.wizard.StepType.OPERATION:
             return _serialize_operation_step(step=step, step_input=step_input, base_data=base_data)
@@ -291,7 +335,7 @@ def serialize_step(
 
 def _serialize_config_step(
     step: Step,
-    object_: ActionTargetDescriptor,
+    owner: CoreObjectDescriptor,
     step_input: ProcessStepInput | None,
     base_data: dict,
     config_service: core.config.ConfigService,
@@ -300,20 +344,16 @@ def _serialize_config_step(
         message = f"Incorrect spec for config step: {step=}"
         raise ValueError(message)
 
-    object_orm = action_target_type_to_model(object_.type).objects.get(pk=object_.id)
-    if object_.type == ExtraActionTargetType.ACTION_HOST_GROUP:
-        object_orm = object_orm.object
-    owner = orm_object_to_core_descriptor(object_orm)
-
     spec, defaults = step.spec
     if not (isinstance(spec, core.config.spec.FullSpec) and isinstance(defaults, core.config.Defaults)):
         message = f"Incorrect spec for config step: {spec=} {defaults=}"
         raise TypeError(message)
 
+    owner_state = core_type_to_model(owner.type).objects.get(pk=owner.id).state
     schema = config_service.retrieve_jsonschema_for_action(
         action_specification=spec,
         action_config_defaults=defaults,
-        action_owner=core.config.ConfigOwner(descriptor=owner, state=object_orm.state),
+        action_owner=core.config.ConfigOwner(descriptor=owner, state=owner_state),
     )
 
     if step_input:

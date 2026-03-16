@@ -4,6 +4,7 @@
     --panel-title-color: var(--color-xdark-metal);
     --panel-title-hover-color: var(--color-xwhite-off);
     --panel-stage-number-color: var(--color-xdark);
+    --panel-description: var(--text-txt-default);
 
 
     // success
@@ -30,6 +31,7 @@
     --panel-title-color: #A2AEB4;
     --panel-title-hover-color: var(--color-xblack);
     --panel-stage-number-color: var(--color-stroke-light);
+    --panel-description: var(--text-txt-default);
 
     // success
     --panel-title-color-completed: var(--color-xgreen-saturated);
@@ -159,7 +161,7 @@
   &__stageInfo {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 16px;
     align-items: center;
 
     div {
@@ -208,6 +210,7 @@
     justify-content: center;
     background-color: var(--panel-stage-number-color);
     z-index: 1;
+    align-self: flex-start;
 
     span {
       position: absolute;
@@ -216,13 +219,20 @@
     }
   }
 
-  &__stepLabel {
-    font-size: 20px;
-    font-weight: 600;
-    cursor: pointer;
+  &__labels {
+    .stepLabel {
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 5px;
 
-    &:hover {
-      color: var(--panel-title-hover-color);
+      &:hover {
+        color: var(--panel-title-hover-color);
+      }
+    }
+
+    .description {
+      color: var(--panel-description);
     }
   }
 

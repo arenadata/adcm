@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from copy import deepcopy
 from uuid import uuid4
 
 from adcm.tests.base import BusinessLogicMixin
@@ -153,7 +154,7 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
         self.add_issue_and_concern_to_object(object_=self.cluster_1, cause=ConcernCause.CONFIG)
 
         action = self.get_object_action_with_process(self.cluster_1)
-        response = self.start_process_r(owner=self.cluster_1, action=action, expected_status=HTTP_409_CONFLICT)
+        response = self.start_process_r(target=self.cluster_1, action=action, expected_status=HTTP_409_CONFLICT)
 
         self.assertIn(f"object {self.cluster_1} has issues", response.json()["desc"])
 
@@ -165,7 +166,7 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
         self.assertEqual(process.state, ProcessState.CREATED)
 
         payload = {"method": "complete", "params": {"processSyncKey": process.sync_key}}
-        self.submit_step_r(owner=self.cluster_1, action=action, process_id=process.id, data=payload)
+        self.submit_step_r(target=self.cluster_1, action=action, process_id=process.id, data=payload)
         process.refresh_from_db()
         self.assertEqual(process.state, ProcessState.COMPLETED)
 
@@ -279,12 +280,88 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
         task_with_step_response = [task for task in response if task["id"] == launched_task.id][0]
         self.assertEqual(task_with_step_response["displayName"], expected_display_name)
 
-    def test_adcm_7551_process_on_host_action(self):
+    def test_adcm_process_action_errors(self):
+        # action does not exist
+        action_id = 9999999
+        expected_response = {"code": "API_ERROR", "desc": f"Can't retrieve action #{action_id}", "level": "ERROR"}
+
+        response = (self.client.v2[self.cluster_1] / "actions" / action_id / "processes").post(data={})
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), expected_response)
+
+        # wrong prototype
+        service_action = Action.objects.get(name="wizard_service_action", prototype=self.service_1.prototype)
+        expected_response = {
+            "code": "API_ERROR",
+            "desc": f"Prototypes mismatch for {service_action} and {self.cluster_1}",
+            "level": "ERROR",
+        }
+
+        response = self.start_process_r(
+            target=self.cluster_1, action=service_action, expected_status=HTTP_404_NOT_FOUND
+        )
+
+        self.assertDictEqual(response.json(), expected_response)
+
+        # regular action on host
+        host = self.create_host(provider=self.provider, name="test-host", cluster=self.cluster_1)
+        expected_response = {
+            "code": "API_ERROR",
+            "desc": f"{service_action} is not a host_action",
+            "level": "ERROR",
+        }
+
+        response = self.start_process_r(target=host, action=service_action, expected_status=HTTP_404_NOT_FOUND)
+
+        self.assertDictEqual(response.json(), expected_response)
+
+        # host_action on not mapped host
+        service_host_action = Action.objects.get(
+            name="wizard_host_action_from_service", prototype=self.service_1.prototype
+        )
+        expected_response = {
+            "code": "API_ERROR",
+            "desc": f"Prototypes mismatch for {service_host_action} and {host}",
+            "level": "ERROR",
+        }
+
+        response = self.start_process_r(target=host, action=service_host_action, expected_status=HTTP_404_NOT_FOUND)
+
+        self.assertDictEqual(response.json(), expected_response)
+
+        # map it, try again
+        component = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        self.set_hostcomponent(self.cluster_1, entries=((host, component),))
+
+        self.start_process_r(target=host, action=service_host_action)
+
+        # action is disallowed
+        cluster_action = Action.objects.get(name="wizard_cluster_action", prototype=self.cluster_1.prototype)
+        cluster_action.state_unavailable = "any"
+        cluster_action.save(update_fields=["state_unavailable"])
+        expected_response = {
+            "code": "API_ERROR",
+            "desc": f"{cluster_action} is not allowed for {self.cluster_1}",
+            "level": "ERROR",
+        }
+
+        response = self.start_process_r(
+            target=self.cluster_1, action=cluster_action, expected_status=HTTP_404_NOT_FOUND
+        )
+
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_adcm_7551_7841_process_on_host_action(self):
         expected_step_spec = {
             "step_1_config": [
                 {
                     "groups": {},
-                    "hierarchy": {"child_groups": {}, "fields": ["float"], "rule": "all"},
+                    "hierarchy": {
+                        "child_groups": {},
+                        "fields": ["float", "step_variant_from_config"],
+                        "rule": "all",
+                    },
                     "parameters": {
                         "/float": {
                             "extra": {
@@ -300,10 +377,32 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
                             "max": None,
                             "min": None,
                             "type": "number",
-                        }
+                        },
+                        "/step_variant_from_config": {
+                            "extra": {
+                                "description": "",
+                                "display_name": "step_variant_from_config",
+                                "edit_rule": {"writable": "any"},
+                                "ui_options": {},
+                            },
+                            "identifier": {"full": "/step_variant_from_config", "name": "step_variant_from_config"},
+                            "is_desyncable": False,
+                            "is_required": False,
+                            "is_strict": True,
+                            "payload": {"args": None, "name": "group1/list_field", "strict": True, "type": "config"},
+                            "source": "config",
+                            "type": "variant",
+                        },
                     },
                 },
-                {"values": {"/float": 0.1}, "selection": {}, "activation": {}},
+                {
+                    "activation": {},
+                    "selection": {},
+                    "values": {
+                        "/float": 0.1,
+                        "/step_variant_from_config": None,
+                    },
+                },
             ],
             "step_2_mapping": [
                 {"service": self.service_1.name, "component": self.component_1.name, "operation": "remove"}
@@ -337,9 +436,13 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
             name="wizard_host_action_from_component", prototype=component.prototype
         )
 
-        host_actions = (host_action_from_cluster, host_action_from_service, host_action_from_component)
+        host_actions = (
+            (host_action_from_cluster, cluster),
+            (host_action_from_service, service),
+            (host_action_from_component, component),
+        )
 
-        for action in host_actions:
+        for action, owner in host_actions:
             with self.subTest(f"Retrieve {action=}"):
                 response = self.client.v2[cluster, "hosts", host, "actions", action].get()
                 self.assertEqual(response.status_code, HTTP_200_OK)
@@ -373,19 +476,67 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
                 self.assertEqual(step_1_config.state, ProcessStepState.CREATED.value)
                 self.assertListEqual(step_1_config.step_spec, expected_step_spec[step_1_config.name])
 
-                self.submit_step_r(
-                    owner=host,
+                # retrieve step from host_action via owner, not target (host)
+                expected_response = {
+                    "code": "API_ERROR",
+                    "desc": f"Wrong target {owner} for a host action {action}",
+                    "level": "ERROR",
+                }
+                response = self.client.v2[
+                    owner, "actions", action.id, "processes", process.id, "steps", step_1_config.id
+                ].get()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.assertEqual(response.json(), expected_response)
+
+                # correct retrieve step
+                self.get_step_r(
+                    target=host,
                     action=action,
-                    process_id=process.pk,
-                    data={
-                        "method": ProcessOperationType.SUBMIT,
-                        "params": {
-                            "processSyncKey": process.sync_key,
-                            "stepId": step_1_config.pk,
-                            "configuration": {"config": {"float": 0.4}, "adcmMeta": {}},
+                    process_id=process.id,
+                    step_id=step_1_config.id,
+                    expected_status=HTTP_200_OK,
+                )
+
+                submit_payload = {
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "processSyncKey": process.sync_key,
+                        "stepId": step_1_config.pk,
+                        "configuration": {
+                            "config": {
+                                "float": 0.4,
+                                "step_variant_from_config": "entry1",
+                            },
+                            "adcmMeta": {},
                         },
                     },
+                }
+
+                # submit step from host_action via owner, not target (host)
+                expected_response = {
+                    "code": "API_ERROR",
+                    "desc": f"Wrong target {owner} for a host action {action}",
+                    "level": "ERROR",
+                }
+                response = self.client.v2[owner, "actions", action.id, "processes", process.id, "operation"].post(
+                    data=submit_payload
                 )
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.assertEqual(response.json(), expected_response)
+
+                # submit with wrong variant choice (not in owner's config)
+                wrong_variant_payload = deepcopy(submit_payload)
+                wrong_variant_payload["params"]["configuration"]["config"]["step_variant_from_config"] = "abc"
+                self.submit_step_r(
+                    target=host,
+                    action=action,
+                    process_id=process.pk,
+                    data=wrong_variant_payload,
+                    expected_status=HTTP_409_CONFLICT,
+                )
+
+                # correct submit
+                self.submit_step_r(target=host, action=action, process_id=process.pk, data=submit_payload)
 
                 step_1_config.refresh_from_db()
                 self.assertEqual(step_1_config.state, ProcessStepState.COMPLETED)
@@ -397,7 +548,7 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
                 self.assertEqual(step_2_mapping.state, ProcessStepState.CREATED.value)
 
                 self.submit_step_r(
-                    owner=host,
+                    target=host,
                     action=action,
                     process_id=process.pk,
                     data={
@@ -420,7 +571,7 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
                 self.submit_step_r(
-                    owner=host,
+                    target=host,
                     action=action,
                     process_id=process.pk,
                     data={
@@ -445,7 +596,7 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
 
                 process.refresh_from_db()
                 self.submit_step_r(
-                    owner=host,
+                    target=host,
                     action=action,
                     process_id=process.pk,
                     data={

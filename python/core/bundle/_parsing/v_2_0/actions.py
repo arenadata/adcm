@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, Field, model_validator
+from pydantic import AfterValidator, BeforeValidator, Field, StrictBool, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.validation import (
@@ -65,6 +65,7 @@ class StateActionResultSchema:
 class _BaseScript:
     name: str
     display_name: Annotated[str | None, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
 
 
@@ -149,7 +150,7 @@ class _ActionBase:
     description: Annotated[str | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
 
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
 
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
     masking: Masking
@@ -190,9 +191,9 @@ class ClusterObjectAction(_ActionBase):
 
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
 
-    allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
-    allow_for_action_host_group: Annotated[bool, Field(default=None)]
-    host_action: Annotated[bool, Field(default=None)]
+    allow_in_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
+    allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
+    host_action: Annotated[StrictBool, Field(default=None)]
 
     @model_validator(mode="after")
     def validate_exactly_one_set_for_scripts(self):
@@ -251,7 +252,7 @@ class HostAction(_ActionBase):
 
 @dataclass(slots=True)
 class ProviderAction(HostAction):
-    allow_for_action_host_group: Annotated[bool, Field(default=None)]
+    allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
 
 
 # United
@@ -259,7 +260,7 @@ class ProviderAction(HostAction):
 ClusterActions = Annotated[
     dict[Name, ClusterObjectAction] | None,
     Field(default=None),
-    AfterValidator(forbidden_mm_actions),
+    BeforeValidator(forbidden_mm_actions),
 ]
 
 

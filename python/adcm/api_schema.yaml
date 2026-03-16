@@ -1911,26 +1911,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobList'
-    PaginatedPolicyList:
-      type: object
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?offset=400&limit=100
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?offset=200&limit=100
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/Policy'
     PaginatedPrototypeList:
       type: object
       properties:
@@ -2031,6 +2011,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Role'
+    PaginatedSchemaPolicyList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaPolicy'
     PaginatedServiceRetrieveList:
       type: object
       properties:
@@ -2210,37 +2210,6 @@ components:
           format: email
         isSuperUser:
           type: boolean
-    Policy:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-          maxLength: 1000
-        description:
-          type: string
-        isBuiltIn:
-          type: boolean
-          readOnly: true
-        objects: {}
-        groups:
-          type: array
-          items:
-            $ref: '#/components/schemas/GroupRelated'
-        role:
-          allOf:
-          - $ref: '#/components/schemas/RoleRelated'
-          readOnly: true
-      required:
-      - id
-      - name
-      - description
-      - isBuiltIn
-      - objects
-      - groups
-      - role
     PolicyCreate:
       type: object
       properties:
@@ -2938,6 +2907,60 @@ components:
         * `business` - business
         * `role` - role
         * `hidden` - hidden
+    SchemaPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 1000
+        description:
+          type: string
+        isBuiltIn:
+          type: boolean
+          readOnly: true
+        objects:
+          $ref: '#/components/schemas/SchemaPolicyObjectsField'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupRelated'
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleRelated'
+          readOnly: true
+      required:
+      - id
+      - name
+      - description
+      - isBuiltIn
+      - objects
+      - groups
+      - role
+    SchemaPolicyObjectsField:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        parentId:
+          type: integer
+          minimum: 1
+          nullable: true
+        type:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+      required:
+      - id
+      - parentId
+      - type
+      - name
+      - displayName
     ServiceCreate:
       type: object
       properties:
@@ -5418,27 +5441,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 133cd27a-b070-40e5-8760-1ddb92ebce14
+                    processSyncKey: 0dbda257-b4a1-47b2-affb-61998f9c99bd
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 3c0288d8-47b0-4406-a2a9-ddb47da8720e
+                    processSyncKey: ebf5dcc3-0f9f-40de-9453-14326bf33e18
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 17f802f2-a329-4286-af34-a956d6aad79b
+                    processSyncKey: bcc0a99a-ff9e-4f85-8453-9d790710de77
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 065b3847-8d1e-4b4b-81fc-c484462f479e
+                    processSyncKey: a72a5a18-980f-46b5-aefc-365176acfbda
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6557,27 +6580,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: e81c2b88-83a7-42c0-a0e6-36f2bf88c3b8
+                    processSyncKey: 8b8a7ac6-b498-4882-8978-82ab7201ec9e
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 0b367447-697a-454c-b068-294545b11cd2
+                    processSyncKey: 50d49994-20e5-4d09-84d4-f770a8a6356f
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 4768dfc3-10dd-41bf-9b3d-33edb8ad62a2
+                    processSyncKey: 7efbb956-1fa0-4444-b882-873c1b80aea7
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 94741091-8389-49d4-a82c-6c1680e5d53d
+                    processSyncKey: bbc1b583-43f1-4947-b4d3-d72d1889475e
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8581,27 +8604,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 6855d310-d6f3-4722-8cef-2eaa35f3fe61
+                    processSyncKey: 4e103d96-ab0b-453d-8501-c423c13c233d
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: ac66964b-6cae-4139-8378-c7d1bf20d21b
+                    processSyncKey: e5b1dd30-bc7b-44be-9503-94fc4677f49f
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: a398313e-cd29-4255-8ba6-614148aca910
+                    processSyncKey: bd9d17a9-f2ba-42a0-9549-464e3827ae6d
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 3a37bb14-0f25-4b3d-96ce-b88fc7ef4688
+                    processSyncKey: b8ce21f5-a366-41fb-9c4c-bb9870cfbee0
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10352,27 +10375,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 9a1bf42e-ab20-42e9-88cc-6a68a055fd77
+                    processSyncKey: 836defe7-0835-42e3-8f62-3a6369abe813
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 8d2255dc-4787-46eb-a6f7-27a8dac5abdd
+                    processSyncKey: 0d4fbc44-b75a-435e-b5d6-dc1e4a341676
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 497e762e-82ef-4b65-a7e7-8338249e20b8
+                    processSyncKey: f8c30b4e-0fcc-4feb-bca3-5c5dc6250637
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 7ae0df72-9dfa-4592-ba26-daae7c2a908e
+                    processSyncKey: 29b4a645-cb26-41c7-bd1e-a61795f698fb
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11581,27 +11604,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 0a71c2d3-b9a0-41d9-b462-4767c3cdf4c8
+                    processSyncKey: 17c49527-144e-4315-bb1a-d34f2fd36e85
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: a03a5837-1929-4524-8b9e-70d1e48c7dc1
+                    processSyncKey: 54003282-cdd5-45d9-b82f-f2a506c8f141
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: cda3e907-09ab-47b1-aad0-fa766ee6dd08
+                    processSyncKey: 4b327e14-1b56-47f9-a6ea-4c2779cdece1
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 9ec19d4d-d112-4464-bb35-77138d9c7ad3
+                    processSyncKey: 021481e1-fd3a-491e-93fc-ace079e655aa
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12572,27 +12595,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 02a5be53-37d1-4a71-a04b-47741f301da7
+                    processSyncKey: 78fee5d8-4c81-4efb-81f4-4e6fce5c3550
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: f22b8738-05e2-4af8-9165-dbb7ab523373
+                    processSyncKey: 993c6b37-ddcc-42f2-9590-86d7f13ecbb5
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 39a26d44-b611-47dc-84a8-d78918a011bf
+                    processSyncKey: 9691e129-c6fd-48ff-bc9b-0b294d7e373f
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 517177c7-2985-4b00-817c-2bc5eb5b97c6
+                    processSyncKey: 2b41ae4a-4b42-49d7-b09d-045784e30609
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -13891,27 +13914,27 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: f809a922-43bf-4b61-aff4-65cb204e6aca
+                    processSyncKey: 38d5977c-8bf1-4789-8f6e-0a1d3c2b70f8
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 1a13ba27-7af1-4d30-abd0-4392294f6a60
+                    processSyncKey: 9b4a0609-b1b1-455b-b521-f82b028ceaea
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 01238ea6-2127-4c00-bca6-b96f3d835c57
+                    processSyncKey: f6207c98-2833-4e54-bbd6-ffb9753d9b0b
                 summary: Reset operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: f7ee1f7f-557c-42e3-b9de-2584978b284c
+                    processSyncKey: 7433c71c-8321-4f47-b241-298ff0d545ec
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -21543,7 +21566,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPolicyList'
+                $ref: '#/components/schemas/PaginatedSchemaPolicyList'
           description: ''
         '401':
           content:
@@ -21577,7 +21600,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                $ref: '#/components/schemas/SchemaPolicy'
           description: ''
         '403':
           content:
@@ -21625,7 +21648,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                $ref: '#/components/schemas/SchemaPolicy'
           description: ''
         '403':
           content:
@@ -21677,7 +21700,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Policy'
+                $ref: '#/components/schemas/SchemaPolicy'
           description: ''
         '403':
           content:

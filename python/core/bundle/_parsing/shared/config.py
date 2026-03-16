@@ -12,7 +12,17 @@
 
 from typing import Annotated, Any, Literal, Sequence, TypeAlias, Union
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import Self, TypedDict
 
 from core.bundle._parsing.shared.model import BundleModel
@@ -25,11 +35,11 @@ class _BaseConfigItemSchema(BundleModel):
     name: Name
     read_only: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
     writable: Annotated[Literal["any"] | list[str] | None, Field(default=None)]
-    required: Annotated[bool | None, Field(default=None)]
+    required: Annotated[StrictBool | None, Field(default=None)]
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
-    group_customization: Annotated[bool | None, Field(default=None)]
+    group_customization: Annotated[StrictBool | None, Field(default=None)]
 
     @model_validator(mode="after")
     def exclusive_editable_options(self):
@@ -46,21 +56,21 @@ class _BaseConfigItemSchema(BundleModel):
 
 class ConfigItemBooleanSchema(_BaseConfigItemSchema):
     type: Literal["boolean"]
-    default: Annotated[bool | None, Field(default=None)]
+    default: Annotated[StrictBool | None, Field(default=None)]
 
 
 class ConfigItemIntegerSchema(_BaseConfigItemSchema):
     type: Literal["integer"]
-    min: Annotated[int | None, Field(default=None)]
-    max: Annotated[int | None, Field(default=None)]
-    default: Annotated[int | None, Field(default=None)]
+    min: Annotated[StrictInt | None, Field(default=None)]
+    max: Annotated[StrictInt | None, Field(default=None)]
+    default: Annotated[StrictInt | None, Field(default=None)]
 
 
 class ConfigItemFloatSchema(_BaseConfigItemSchema):
     type: Literal["float"]
-    min: Annotated[float | int | None, Field(default=None)]
-    max: Annotated[float | int | None, Field(default=None)]
-    default: Annotated[float | int | None, Field(default=None)]
+    min: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
+    max: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
+    default: Annotated[StrictInt | StrictFloat | None, Field(default=None)]
 
 
 class ConfigItemFileSchema(_BaseConfigItemSchema):
@@ -69,7 +79,7 @@ class ConfigItemFileSchema(_BaseConfigItemSchema):
 
 
 class AnsibleOptionsSchema(TypedDict):
-    unsafe: bool
+    unsafe: StrictBool
 
 
 class _WithAnsibleOptions:
@@ -123,12 +133,12 @@ class ConfigItemJsonSchema(_BaseConfigItemSchema):
 
 class ConfigItemOptionSchema(_BaseConfigItemSchema):
     type: Literal["option"]
-    option: dict[Any, str | int | float]
-    default: Annotated[str | int | float | None, Field(default=None)]
+    option: dict[Any, StrictInt | StrictFloat | str]
+    default: Annotated[StrictInt | StrictFloat | str | None, Field(default=None)]
 
 
 class _BaseVariantSourceSchema(BaseModel):
-    strict: Annotated[bool | None, Field(default=None)]
+    strict: Annotated[StrictBool | None, Field(default=None)]
 
 
 class VariantInlineSchema(_BaseVariantSourceSchema):
@@ -228,8 +238,8 @@ CONFIG_ITEMS: TypeAlias = (
 class ConfigItemGroupSchema(_BaseConfigItemSchema):
     type: Literal["group"]
     subs: list[Annotated[Union[CONFIG_ITEMS, Self, "ConfigItemSelectionGroupSchema"], Field(discriminator="type")]]
-    activatable: Annotated[bool | None, Field(default=None)]
-    active: Annotated[bool | None, Field(default=None)]
+    activatable: Annotated[StrictBool | None, Field(default=None)]
+    active: Annotated[StrictBool | None, Field(default=None)]
 
     @field_validator("name", mode="after")
     @classmethod

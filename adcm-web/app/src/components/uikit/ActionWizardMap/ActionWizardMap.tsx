@@ -7,6 +7,7 @@ interface ActionWizardMapProps {
   process: AdcmActionWizardProcess;
   wizardTitle: string;
   jobsData: AdcmWizardJobsData;
+  selectedStep: number;
   onSetBrokenStepError: (error?: string) => void;
   onSetSelectedStepId: (id: number) => void;
 }
@@ -15,6 +16,7 @@ const ActionWizardMap: React.FC<ActionWizardMapProps> = ({
   process,
   wizardTitle,
   jobsData,
+  selectedStep,
   onSetBrokenStepError,
   onSetSelectedStepId,
 }: ActionWizardMapProps) => {
@@ -25,6 +27,7 @@ const ActionWizardMap: React.FC<ActionWizardMapProps> = ({
         <MapItemStages
           process={process}
           jobsData={jobsData}
+          selectedStep={selectedStep}
           onSetBrokenStepError={onSetBrokenStepError}
           onSetSelectedStepId={onSetSelectedStepId}
         />
