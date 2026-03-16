@@ -13,10 +13,10 @@
 
 from pathlib import Path
 from secrets import token_hex
-import json
 import logging
 
 from dishka import make_container
+import dishka
 
 import adcm.init_django  # noqa: F401, isort:skip
 
@@ -32,32 +32,17 @@ from cm.models import (
     GroupCheckLog,
     Provider,
 )
-from django.conf import settings
+from core.secrets import Secret, SecretsBackend
+from core.settings import Directories
 from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
+from rest_framework.authtoken.models import Token
 from use_cases import bundle
 
 TOKEN_LENGTH = 20
 
 
 logger = logging.getLogger("stream_std")
-
-
-def prepare_secrets_json(status_user_username: str, status_user_password: str | None) -> None:
-    # we need to know status user's password to write it to secrets.json [old implementation]
-    if not settings.SECRETS_FILE.is_file() and status_user_username is not None:
-        with Path(settings.SECRETS_FILE).open(mode="w", encoding=settings.ENCODING_UTF_8) as f:
-            json.dump(
-                {
-                    "adcmuser": {"user": status_user_username, "password": status_user_password},
-                    "token": token_hex(TOKEN_LENGTH),
-                    "adcm_internal_token": settings.ADCM_TOKEN,
-                },
-                f,
-            )
-        logger.info("Update secret file %s OK", settings.SECRETS_FILE)
-    else:
-        logger.info("Secret file %s is not updated", settings.SECRETS_FILE)
 
 
 def _create_admin_user() -> None:
@@ -68,8 +53,8 @@ def _create_admin_user() -> None:
         User.objects.create_superuser(username=username, email=email, password=username, built_in=False)
 
 
-def _create_status_user() -> tuple[str, str | None]:
-    username = settings.ADCM_STATUS_USERNAME
+def _create_status_user() -> int:
+    username = "status"
     email = f"{username}@example.com"
 
     status_user = User.objects.filter(username=username).only("email").first()
@@ -78,12 +63,12 @@ def _create_status_user() -> tuple[str, str | None]:
             status_user.email = email
             status_user.save(update_fields=["email"])
 
-        return username, None
+        return status_user.pk
 
-    password = token_hex(TOKEN_LENGTH)
-    User.objects.create_superuser(username=username, email=email, password=password, built_in=True)
-
-    return username, password
+    user = User.objects.create_superuser(
+        username=username, email=email, password=token_hex(TOKEN_LENGTH), built_in=True
+    )
+    return user.pk
 
 
 def _create_system_user() -> None:
@@ -96,6 +81,11 @@ def _create_system_user() -> None:
     elif system_user.email != email:
         system_user.email = email
         system_user.save(update_fields=["email"])
+
+
+def _ensure_status_user_token_set(user_id: int, token: str) -> None:
+    Token.objects.filter(user_id=user_id).delete()
+    Token.objects.create(user_id=user_id, key=token)
 
 
 def clear_temp_tables():
@@ -119,27 +109,32 @@ def recheck_issues():
             update_hierarchy_issues(obj)
 
 
-def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
+def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     logger.info("Start initializing ADCM DB...")
 
     _create_admin_user()
-    status_user_username, status_user_password = _create_status_user()
-    prepare_secrets_json(status_user_username, status_user_password)
     _create_system_user()
+    user_id = _create_status_user()
+    secrets_backend = container.get(SecretsBackend)
+    status_user_token = secrets_backend.read(Secret.STATUS_SERVICE_ADCM_TOKEN)
+    _ensure_status_user_token_set(user_id=user_id, token=status_user_token)
 
     recover_statuses()
     clear_temp_tables()
 
-    container = make_container(*get_main_providers())
+    # maybe should be encapsulated in DI too
+    adcm_conf_file = adcm_conf_file or container.get(Directories).code.parent / "conf" / "adcm" / "config.yaml"
 
-    process_adcm_bundle = container.get(bundle.InitOrUpgradeADCM)
-    process_adcm_bundle.do(adcm_conf_file)
+    container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file.parent)
 
     if not use_new_job_scheduler():
         drop_locks()
     recheck_issues()
+
     logger.info("ADCM DB is initialized")
 
 
 if __name__ == "__main__":
-    init()
+    container = make_container(*get_main_providers())
+
+    init(container=container)

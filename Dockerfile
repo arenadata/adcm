@@ -75,7 +75,9 @@ RUN python -m pip uninstall -y pip && \
 
 RUN mkdir -p /adcm/data/log
 
-RUN python /adcm/python/manage.py collectstatic --noinput
+RUN DJANGO_SETTINGS_MODULE=adcm.settings.build python /adcm/python/manage.py collectstatic --noinput
+
+ENV PYTHONPATH=/adcm/python
 
 ARG ADCM_VERSION
 ENV ADCM_VERSION=$ADCM_VERSION

@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Literal
 from uuid import UUID
 
+from core.action import wizard
 from core.types import ActionProcessStepID
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -39,16 +40,6 @@ class _StepIDParam(BaseModel):
     step_id: ActionProcessStepID
 
 
-class HCMappingRule(BaseModel):
-    host_id: int
-    component_id: int
-
-
-class HostComponentMapDelta(BaseModel):
-    add: list[HCMappingRule] = Field(default_factory=list)
-    remove: list[HCMappingRule] = Field(default_factory=list)
-
-
 # Submit
 
 
@@ -61,7 +52,7 @@ class SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam):
 
 
 class SubmitMappingStepParams(_SyncKeyParam, _StepIDParam):
-    host_component_map_delta: HostComponentMapDelta
+    host_component_map_delta: wizard.HostComponentMapDelta
 
 
 class SubmitStepPayload(BaseModel):

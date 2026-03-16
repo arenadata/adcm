@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from cm.models import Component, Host, MaintenanceMode, Service, TaskLog
-from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo
+from cm.tests.mocks.task_runner import FailedJobInfo
 from core.types import TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import TaskRunnerOverride
 
 
 class TestMMActions(BaseAPITestCase):
@@ -29,8 +30,8 @@ class TestMMActions(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
         self.task_runner.reset()
 
-        self.executor_with_failed_first_job = ExecutionTargetFactoryDummyMock(
-            failed_job=FailedJobInfo(position=0, return_code=1)
+        self.executor_with_failed_first_job_overrides = (
+            TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),
         )
 
         bundle_mm_plugins_mm_actions = self.add_bundle(
@@ -138,7 +139,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
@@ -155,7 +156,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
@@ -172,7 +173,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)

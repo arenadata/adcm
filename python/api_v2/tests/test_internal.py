@@ -10,18 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from secrets import token_hex
 from unittest.mock import patch
 
-from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.base import WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
-from django.conf import settings
-from django.test import TestCase
 from rbac.models import User
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+import django.test
 
 
-class TestStatusServerSync(TestCase, ParallelReadyTestCase):
+class TestStatusServerSync(django.test.TestCase, WithPreparedFSAndInitADCM):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -29,11 +27,9 @@ class TestStatusServerSync(TestCase, ParallelReadyTestCase):
         return self.client.v2 / "internal" / "unstable" / "status-server" / "sync"
 
     def test_authorized_user_call_sync(self):
-        username = settings.ADCM_STATUS_USERNAME
-        password = token_hex(16)
-        User.objects.create_superuser(username=username, password=password)
+        status_user = User.objects.get(username="status")
 
-        self.client.login(username=username, password=password)
+        self.client.force_authenticate(status_user)
 
         endpoint = self.get_sync_endpoint()
         with patch("api_v2.internal.views.notify.update_all") as mock:
@@ -51,11 +47,9 @@ class TestStatusServerSync(TestCase, ParallelReadyTestCase):
         mock.assert_not_called()
 
     def test_unauthorized_user_call_sync(self):
-        username = "admin"
-        password = token_hex(16)
-        User.objects.create_superuser(username=username, password=password)
+        admin_user = User.objects.get(username="admin")
 
-        self.client.login(username=username, password=password)
+        self.client.force_authenticate(admin_user)
 
         endpoint = self.get_sync_endpoint()
         with patch("api_v2.internal.views.notify.update_all") as mock:

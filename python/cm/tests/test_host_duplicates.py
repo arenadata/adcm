@@ -23,7 +23,6 @@ from cm.legacy.services.job.context import get_inventory_data
 class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        get_config_service.cache_clear()
 
         bundle_root = Path(__file__).parent / "bundles"
 

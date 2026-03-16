@@ -13,21 +13,26 @@
 from copy import deepcopy
 from pathlib import Path
 
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
+from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from django.test import TestCase
 from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 import core
+import django.test
+
+from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestPrepareNewConfiguration(BusinessLogicMixin, ParallelReadyTestCase, TestCase):
+class TestPrepareNewConfiguration(
+    django.test.TestCase, WithDishkaContainer, BusinessLogicMixin, WithPreparedFSAndInitADCM
+):
     def setUp(self):
         super().setUp()
 
         init_roles()
-        init()
+        with self.container() as container:
+            init(container=container)
 
         self.config_service = get_config_service()
 

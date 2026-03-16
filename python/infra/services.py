@@ -11,62 +11,30 @@
 # limitations under the License.
 
 from functools import cache
-import json
+import importlib
 
-from cm.impl.config.repo import ConfigRepo
-from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.impl.wizard.repo import WizardRepo
-from core.settings import Directories, Settings
 import core
-import yaml
+import dishka
+
+# this stuff is deprecated, don't  use it in new code
 
 
 @cache
+def prepare_container():
+    # dynamic for testing purposes, very tricky, NEVER reuse
+    from django.conf import settings
+
+    module_name, func_name = settings.DEFAULT_DISHKA_PROVIDERS.rsplit(".", maxsplit=1)
+    module = importlib.import_module(module_name)
+    func = getattr(module, func_name)
+    providers = func()
+
+    return dishka.make_container(*providers)
+
+
 def get_config_service():
-    from django.conf import settings
-
-    secret = settings.ANSIBLE_SECRET
-    if not secret:
-        if settings.SECRETS_FILE.is_file():
-            # todo: temporal fallback to read secret from file,
-            #       shouldn't be that way
-            raw = settings.SECRETS_FILE.read_text()
-            content = json.loads(raw)
-            secret = content["adcmuser"]["password"]
-
-        if not secret:
-            message = "Ansible secret is undefined, work with secrets is impossible"
-            raise ValueError(message)
-
-    repo = ConfigRepo()
-    secrets_service = core.config.secrets.AnsibleSecrets(secret=secret)
-    validators = core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
-    yspec_schema = yaml.safe_load((settings.CODE_DIR / "cm" / "yspec_schema.yaml").read_text())
-    settings_ = _get_settings()
-
-    return core.config.ConfigService(
-        repo=repo,
-        secrets=secrets_service,
-        directories=settings_.directories,
-        variant_validators=validators,
-        yspec_schema=yspec_schema,
-    )
+    return prepare_container().get(core.config.ConfigService)
 
 
-@cache
 def get_wizard_service():
-    settings_ = _get_settings()
-
-    repo = WizardRepo()
-
-    return core.action.wizard.WizardService(repo=repo, directories=settings_.directories)
-
-
-def _get_settings() -> Settings:
-    from django.conf import settings
-
-    return Settings(
-        directories=Directories(
-            files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR, vars=settings.VAR_DIR
-        )
-    )
+    return prepare_container().get(core.action.wizard.WizardService)

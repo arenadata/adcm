@@ -53,6 +53,12 @@ def document_action_host_group_viewset(object_type: str):
                 ),
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-"',
+                    enum=("actionGroupName", "-actionGroupName"),
+                    default="actionGroupName",
+                ),
             ],
             responses=responses(success=ActionHostGroupSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),

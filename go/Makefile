@@ -5,9 +5,8 @@ all: build
 run:
 	cd $(ADCM); go run runstatus.go
 
-fmt:
-	gofmt -w -s $(ADCM)/*.go
-	gofmt -w -s $(ADCM)/status/*.go
+pretty:
+	gofmt -w -l -s $(ADCM)
 
 lint:
 	cd $(ADCM); golangci-lint run

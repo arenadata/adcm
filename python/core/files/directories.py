@@ -10,20 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.secrets._backend import FSSecretsProvider, OpenBaoSecretsProvider, SecretsProvider
-from core.secrets._secrets import ENV_BACKEND, FILENAME, FILENAME_DEPRECATED, SecretsError, migrate_format, new
-from core.secrets._types import ADCMSecrets, SecretsSource
+from pathlib import Path
+from typing import NewType
 
-__all__ = [
-    "ADCMSecrets",
-    "ENV_BACKEND",
-    "FILENAME",
-    "FILENAME_DEPRECATED",
-    "FSSecretsProvider",
-    "OpenBaoSecretsProvider",
-    "SecretsError",
-    "SecretsProvider",
-    "SecretsSource",
-    "migrate_format",
-    "new",
-]
+BundlesDir = NewType("BundlesDir", Path)
+ADCMBundleDir = NewType("ADCMBundleDir", Path)

@@ -13,7 +13,6 @@
 from functools import partial
 from pathlib import Path
 import os
-import json
 
 from adcm.feature_flags import use_new_job_scheduler
 from cm.impl.bundle.definition import definition_to_full_spec
@@ -22,93 +21,53 @@ from cm.impl.cluster.repo import ClusterRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobRepo
+from cm.impl.logs.repo import LogsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
+from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from cm.legacy.services.job.run import start_task
-from core import secrets as secrets_m
+from core import secrets
 from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
+from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
-from use_cases.init import RunPreMigration
+from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
 from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, TaskStarter
+from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
 
 
-class FSProvider(Provider):
+class PathResolverProvider(Provider):
     scope = Scope.APP
 
-    @provide
-    def directories(self) -> Directories:
-        from django.conf import settings
-
-        return Directories(
-            files=settings.FILE_DIR, bundles=settings.BUNDLE_DIR, downloads=settings.DOWNLOAD_DIR, vars=settings.VAR_DIR
-        )
-
-
-class SettingsProvider(Provider):
-    scope = Scope.APP
-
-    @provide
-    def secrets_source(self) -> secrets_m.SecretsSource:
-        env_backend = os.environ.get(secrets_m.ENV_BACKEND, secrets_m.SecretsSource.FS.value)
-
-        try:
-            return secrets_m.SecretsSource(env_backend)
-        except ValueError as e:
-            raise secrets_m.SecretsError(f"Unexpected secrets backend: {secrets_m.ENV_BACKEND}={env_backend}") from e
-
-    @provide
-    def secrets(self, source: secrets_m.SecretsSource, directories: Directories) -> secrets_m.ADCMSecrets:
-        match source:
-            case secrets_m.SecretsSource.FS:
-                provider = secrets_m.FSSecretsProvider(path=directories.vars / secrets_m.FILENAME)
-            case secrets_m.SecretsSource.OPEN_BAO:
-                raise NotImplementedError()
-
-        return provider.get()
+    path_resolver = provide(LocalPathResolver)
 
 
 class ConfigProvider(Provider):
     scope = Scope.APP
 
     @provide
-    def secrets(self) -> core.config.secrets.AnsibleSecrets:
-        from django.conf import settings
-
-        secret = settings.ANSIBLE_SECRET
-        if not secret:
-            if settings.SECRETS_FILE.is_file():
-                # todo: temporal fallback to read secret from file,
-                #       shouldn't be that way
-                raw = settings.SECRETS_FILE.read_text()
-                content = json.loads(raw)
-                secret = content["adcmuser"]["password"]
-
-            if not secret:
-                message = "Ansible secret is undefined, work with secrets is impossible"
-                raise ValueError(message)
-
-        return core.config.secrets.AnsibleSecrets(secret=secret)
+    def ansible_secrets(self, ansible_vault: secrets.AnsibleVault) -> core.config.secrets.AnsibleSecrets:
+        return core.config.secrets.AnsibleSecrets(secret=ansible_vault)
 
     @provide
-    def yspec_schema(self) -> dict:
-        from django.conf import settings
-
-        schema_file: Path = settings.CODE_DIR / "cm" / "yspec_schema.yaml"
+    def yspec_schema(self, directories: Directories) -> dict:
+        # should be better typed and no so bound to code structure?
+        schema_file: Path = directories.code / "cm" / "yspec_schema.yaml"
         schema_data = schema_file.read_text(encoding="utf-8")
         return yaml.safe_load(schema_data)
 
@@ -136,12 +95,6 @@ class WizardProvider(Provider):
 
 class BundleProvider(Provider):
     scope = Scope.APP
-
-    @provide
-    def adcm_version(self) -> str:
-        from django.conf import settings
-
-        return settings.ADCM_VERSION
 
     @provide
     def parsers(self) -> list[tuple[core.bundle.parsing.VersionInfo, core.bundle.parsing.BundleParser]]:
@@ -226,6 +179,17 @@ class ScenariosProvider(Provider):
 
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
+    fill_wizard_step_spec = provide(
+        FillWizardStepSpecLegacy,
+        provides=FillWizardStepSpec[ActionArgs, TaskArgs],
+    )
+
+
+class LogsServiceProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(LogsRepo, provides=core.logs.LogsRepoI)
+    service = provide(core.logs.LogsService)
 
 
 class UseCaseProvider(Provider):
@@ -244,7 +208,11 @@ class UseCaseProvider(Provider):
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
 
-    run_pre_migration = provide(RunPreMigration, scope=Scope.APP)
+    complete_wizard_operation_step = provide(CompleteWizardOperationStep, scope=Scope.APP)
+    wizard = provide_all(
+        InitiateWizardProcess,
+        PerformWizardProcessOperation,
+    )
 
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,
@@ -252,3 +220,5 @@ class UseCaseProvider(Provider):
         # for now can't find out why is it failing in runner
         scope=Scope.APP,
     )
+
+    add_check_log_record = provide(AddCheckLogRecordForJob)

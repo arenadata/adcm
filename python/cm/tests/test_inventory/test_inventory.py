@@ -16,7 +16,6 @@ from pathlib import Path
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from init_db import init as init_adcm
 from use_cases.dto import RunActionDTO
 import core
 
@@ -173,7 +172,6 @@ class TestInventory(BaseTestCase):
 class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
-        init_adcm()
 
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 

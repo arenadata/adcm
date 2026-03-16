@@ -13,37 +13,20 @@
 package status
 
 import (
-	"encoding/json"
-	"log"
-	"os"
+	"adcm/config"
 	"time"
 )
 
 type SecretConfig struct {
-	ADCMUser struct {
-		User     string `json:"user"`
-		Password string `json:"password"`
-	} `json:"adcmuser"`
-	Token             string `json:"token"`
-	ADCMInternalToken string `json:"adcm_internal_token"`
-	adcmTokens        map[string]time.Time
-	tokenTimeOut      time.Duration
+	AccessTokens config.AccessTokens
+	adcmTokens   map[string]time.Time
+	tokenTimeOut time.Duration
 }
 
-func ReadSecret(filename *string) *SecretConfig {
-	var config SecretConfig
-
-	file, err := os.Open(*filename)
-	if err != nil {
-		panic(err)
+func NewSecretConfig(accessTokens config.AccessTokens) *SecretConfig {
+	return &SecretConfig{
+		AccessTokens: accessTokens,
+		adcmTokens:   map[string]time.Time{},
+		tokenTimeOut: 60 * time.Minute,
 	}
-	defer file.Close()
-
-	jsonParser := json.NewDecoder(file)
-	if err := jsonParser.Decode(&config); err != nil {
-		log.Fatalf("Can't decode json file %s: %v", *filename, err)
-	}
-	config.adcmTokens = map[string]time.Time{}
-	config.tokenTimeOut = 60 * time.Minute
-	return &config
 }

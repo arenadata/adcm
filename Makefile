@@ -14,6 +14,7 @@ build:
 unittests:
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
 	poetry install --no-root --with unittests
+	DJANGO_SETTINGS_MODULE=adcm.settings.test \
 	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
 	poetry run python/manage.py test python -v 2 --parallel
 	docker stop postgres

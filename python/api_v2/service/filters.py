@@ -23,7 +23,10 @@ from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 class ServiceFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    char_fields=(
+        ("name", "prototype__name"),
+        ("display_name", "prototype__display_name"),
+    ),
     number_fields=("id",),
     with_object_status=True,
 ):
@@ -37,11 +40,20 @@ class ServiceFilter(
         field_name="prototype__display_name",
         lookup_expr="icontains",
     )
-    status = ChoiceFilter(label="Filter by service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    status = ChoiceFilter(label="Filter by status.", choices=ADCMEntityStatus.choices, method="filter_status")
+    version = CharFilter(label="Filter by version.", field_name="prototype__version")
+    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
+
     ordering = OrderingFilter(
-        fields={"prototype__display_name": "displayName"},
+        fields={
+            "prototype__display_name": "displayName",
+            "prototype__version": "version",
+            "state": "state",
+        },
         field_labels={
             "prototype__display_name": "Display name",
+            "prototype__version": "Version",
+            "state": "State",
         },
     )
 

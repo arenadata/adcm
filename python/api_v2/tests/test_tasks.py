@@ -98,6 +98,8 @@ class TestTask(BaseAPITestCase):
 
     def test_filtering_success(self):
         task = self.cluster_task
+        task.name = "test_task"
+        task.display_name = "Test Task"
         task.status = "running"
         task.start_date = timezone.now() - timedelta(days=3)
         task.finish_date = timezone.now()
@@ -108,6 +110,8 @@ class TestTask(BaseAPITestCase):
 
         filters = {
             "id": (task.pk, None, 0),
+            "name": (task.name, task.name[:1], 0),
+            "display_name": (task.display_name, task.name[:1], 0),
             "jobName": (task.action.display_name, task.action.display_name[1:-7].upper(), "wrong"),
             "objectName": (self.component_1.name, self.component_1.name[2:].upper(), "wrong"),
             "status": (task.status, None, "broken"),
@@ -149,6 +153,8 @@ class TestTask(BaseAPITestCase):
         empty_task = TaskLog.objects.get(action=None)
         empty_task.delete()
         for i, task in enumerate(TaskLog.objects.all()):
+            task.name = f"{i}_test_task"
+            task.display_name = f"{i}_Test Task"
             task.start_date = timezone.now() - timedelta(days=3 + i)
             task.finish_date = timezone.now() - timedelta(days=i)
             task.save()
@@ -163,7 +169,8 @@ class TestTask(BaseAPITestCase):
 
         ordering_fields = {
             "id": "id",
-            "action__name": "name",
+            "name": "name",
+            "display_name": "displayName",
             "start_date": "startTime",
             "finish_date": "endTime",
         }
@@ -175,8 +182,6 @@ class TestTask(BaseAPITestCase):
                     datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
                     for item in response.json()["results"]
                 ]
-            if ordering_field == "name":
-                return [item["action"]["name"] for item in response.json()["results"]]
             return [item[ordering_field] for item in response.json()["results"]]
 
         for model_field, ordering_field in ordering_fields.items():

@@ -13,38 +13,42 @@
 
 from dishka import Provider
 
-from application.di.providers import (
+from application.di.providers.environment import EnvironmentProvider
+from application.di.providers.main import (
     ActionHostGroupProvider,
     BundleProvider,
     ClusterProvider,
     ConfigProvider,
-    FSProvider,
     JobProvider,
+    LogsServiceProvider,
+    PathResolverProvider,
     ProviderProvider,
     ScenariosProvider,
-    SettingsProvider,
     TaskStarterProvider,
     UpgradeProvider,
     UseCaseProvider,
     UtilsProvider,
     WizardProvider,
 )
+from application.di.providers.task_runner import TaskRunnerProvider
 
 
 def get_main_providers() -> tuple[Provider, ...]:
     return (
-        ClusterProvider(),
-        ProviderProvider(),
-        UpgradeProvider(),
-        BundleProvider(),
-        ConfigProvider(),
-        JobProvider(),
-        WizardProvider(),
-        FSProvider(),
-        UtilsProvider(),
         ActionHostGroupProvider(),
+        BundleProvider(),
+        LogsServiceProvider(),
+        ClusterProvider(),
+        ConfigProvider(),
+        EnvironmentProvider(),
+        JobProvider(),
+        PathResolverProvider(),
+        ProviderProvider(),
         ScenariosProvider(),
-        UseCaseProvider(),
-        SettingsProvider(),
+        TaskRunnerProvider(),
         TaskStarterProvider(),
+        UpgradeProvider(),
+        UseCaseProvider(),
+        UtilsProvider(),
+        WizardProvider(),
     )

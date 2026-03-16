@@ -28,6 +28,7 @@ class RoleFilter(
         lookup_expr="icontains",
     )
     categories = CharFilter(label="Categories", method="filter_category")
+    permission_name = CharFilter(label="Permission name", field_name="permissions__name", distinct=True)
     type = ChoiceFilter(choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN])
     ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
 

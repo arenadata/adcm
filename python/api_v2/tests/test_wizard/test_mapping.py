@@ -21,7 +21,6 @@ from cm.legacy.services.action_process.operations import find_current_and_last_c
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.models import Action, Component, Host, Process, ProcessStep, ProcessStepInput
-from infra.services import get_config_service
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
 from api_v2.tests.base import APIV2Mixin
@@ -32,8 +31,6 @@ from api_v2.tests.test_wizard.helpers import WizardProcessHelpers
 class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
-
-        get_config_service.cache_clear()
 
         suffix = uuid4().hex[:8]
         mapping_bundle = self.test_bundles_dir / "wizard_mapping"

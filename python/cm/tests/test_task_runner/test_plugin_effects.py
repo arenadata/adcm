@@ -14,20 +14,22 @@ from pathlib import Path
 import json
 
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
+from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
+from api_v2.tests.setup.overrides import MockWithEnvProvider
 from use_cases.dto import RunActionDTO
+import django.test
 
 from cm.models import Action, Component, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator
+from cm.tests.mocks.task_runner import JobImitator
 from cm.tests.test_action_host_group import ScheduleTask
 
 
 class TestEffectsOfADCMAnsiblePlugins(
+    django.test.TestCase,
     WithDishkaContainer,
-    TestCaseWithCommonSetUpTearDown,
-    ParallelReadyTestCase,
+    WithPreparedFSAndInitADCM,
     BusinessLogicMixin,
     ADCMAnsiblePluginTestMixin,
 ):
@@ -89,14 +91,16 @@ class TestEffectsOfADCMAnsiblePlugins(
 
         task_id = self.task_runner.expect_task_launched().id
 
-        etf = ETFMockWithEnvPreparation(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=etf)
+        self.task_runner.run_task(
+            task_id=task_id,
+            overrides=(MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}),),
+        )
 
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, "success")
 
         for job_id in JobLog.objects.filter(task_id=task_id).values_list("id", flat=True):
-            inventory = json.loads((self.directories["RUN_DIR"] / str(job_id) / "inventory.json").read_text())
+            inventory = json.loads((self.directories.run / str(job_id) / "inventory.json").read_text())
             self.assertTrue(
                 all(".add" not in key and ".remove" not in key for key in map(str.lower, inventory["all"]["children"]))
             )

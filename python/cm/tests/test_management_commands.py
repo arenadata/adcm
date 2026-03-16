@@ -20,13 +20,13 @@ import os
 import json
 import tarfile
 import datetime
+import unittest
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
+from api_v2.tests.base import BaseAPITestCase
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
-from django.test import TestCase
 from django.utils import timezone
 from infra.services import get_config_service
 from rbac.models import Policy, Role, User
@@ -49,11 +49,10 @@ class MockResponse:
         self.status_code = status_code
 
 
-class TestSender(TestCase, ParallelReadyTestCase):
+class TestSender(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
-        get_config_service.cache_clear()
         self.settings = SenderSettings(
             url="https://www.test.url",
             adcm_uuid="TEST",
@@ -688,7 +687,7 @@ class TestStorage(BaseAPITestCase):
         self.assertFalse(os.path.exists(json_file.filename))
 
 
-class TestEncoder(TestCase, ParallelReadyTestCase):
+class TestEncoder(unittest.TestCase):
     def test_uncorrected_suffix(self):
         with self.assertRaises(ValueError) as error:
             TarFileEncoder(suffix="enc")

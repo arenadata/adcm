@@ -12,7 +12,7 @@
 
 from pathlib import Path
 
-from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.base import WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Action,
@@ -30,9 +30,6 @@ from cm.models import (
     Upgrade,
 )
 from django.db.models import F
-from infra.services import get_config_service
-from init_db import init
-from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -1346,7 +1343,7 @@ class ConfigHostGroupRelatedTests(BaseAPITestCase):
         self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})
 
 
-class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMixin):
+class TestMappingNew(APITestCase, WithPreparedFSAndInitADCM, APIV2Mixin, TestUtilsMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -1355,10 +1352,7 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
         super().setUpClass()
 
         prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
-        init_roles()
-        init()
 
     def setUp(self):
         self.client.login(username="admin", password="admin")

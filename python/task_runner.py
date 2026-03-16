@@ -17,17 +17,25 @@ import signal
 import logging
 import argparse
 
+import adcm.init_django  # noqa: F401, isort:skip
+
+from application.di.containers import get_main_providers
+from core.legacy.job.runners import JobFilterPredicate, TaskRunner, always_true, non_success
+import dishka
+
 
 def main():
-    import adcm.init_django  # noqa: F401, isort:skip
-    from cm.legacy.services.job.run import get_default_runner, get_restart_runner
-
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["start", "restart"])
     parser.add_argument("task_id", type=int)
     args = parser.parse_args()
 
-    runner = get_restart_runner() if args.command == "restart" else get_default_runner()
+    container_context = {JobFilterPredicate: non_success if args.command == "restart" else always_true}
+
+    container = dishka.make_container(*get_main_providers(), context=container_context)
+
+    with container():
+        runner = container.get(TaskRunner)
 
     logger = logging.getLogger("task_runner_err")
 

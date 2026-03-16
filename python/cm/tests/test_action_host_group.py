@@ -63,8 +63,8 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
         self.context = {
             "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
-            "datadir": self.directories["DATA_DIR"],
-            "stackdir": self.directories["STACK_DIR"],
+            "datadir": self.directories.data,
+            "stackdir": self.directories.stack,
             "token": settings.STATUS_SECRET_KEY,
             "component_type_id": self.component.prototype_id,
         }

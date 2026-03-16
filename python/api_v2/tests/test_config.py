@@ -15,7 +15,7 @@ from unittest.mock import patch
 import json
 import unittest
 
-from adcm.tests.base import ParallelReadyTestCase
+from adcm.tests.base import WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.bundle_switch_revert import bundle_revert
@@ -52,6 +52,7 @@ from rest_framework.test import APITestCase
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
 from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
+from api_v2.tests.setup.overrides import make_default_dishka_container_for_tests
 from api_v2.utils.di import prepare_container
 
 CONFIGS = "configs"
@@ -3081,7 +3082,7 @@ class TestPatternInConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
+class TestNoConfig(APITestCase, WithPreparedFSAndInitADCM, APIV2Mixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -3111,11 +3112,10 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
         super().setUpClass()
 
         prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
 
         cls.bundles_dir = Path(__file__).parent / "bundles"
         init_roles()
-        init()
+        init(container=make_default_dishka_container_for_tests())
 
     def setUp(self):
         super().setUp()

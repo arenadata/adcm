@@ -69,6 +69,10 @@ from api_v2.views import ADCMGenericViewSet
             ),
             OpenApiParameter(name="type", description="Group type.", enum=("local", "ldap")),
             OpenApiParameter(
+                name="user_name",
+                description="Filter by user name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=("displayName", "-displayName"),
