@@ -14,7 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import wraps
-from typing import Literal, Protocol, TypeAlias, TypeVar
+from typing import Any, Callable, Literal, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 import uuid
 
@@ -33,6 +33,7 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic
 from django.db.utils import DatabaseError
 from django.utils import timezone
+from rbac.roles import re_apply_policy_for_jobs
 from typing_extensions import Self
 import core
 
@@ -72,9 +73,8 @@ from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_e
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
-from cm.legacy.services.job.run import start_task
 from cm.logger import logger
-from cm.models import ProcessStep, ProcessStepInput
+from cm.models import ProcessStep, ProcessStepInput, TaskLog
 
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
@@ -317,6 +317,7 @@ def perform_operation(
     config_service: core.config.ConfigService,
     job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     process = repo.retrieve_process(process_id=process_id)
     _check_sync_key(sync_key=payload.params.process_sync_key, process=process)
@@ -333,6 +334,7 @@ def perform_operation(
                 config_service=config_service,
                 job_service=job_service,
                 bundle_renderer=bundle_renderer,
+                start_task=start_task,
             )
 
         case ProcessOperationType.RESET:
@@ -360,6 +362,7 @@ def submit_step(
     config_service: core.config.ConfigService,
     job_service: core.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     _check_step_is_current(process=process, payload=payload)
     _check_no_running_steps(process=process)
@@ -391,6 +394,7 @@ def submit_step(
                 new_process_sync_key=new_process_sync_key,
                 process_context=context.process_context,
                 job_service=job_service,
+                start_task=start_task,
             )
         case core.action.wizard.StepType.MAPPING:
             if not isinstance(payload.params, SubmitMappingStepParams):
@@ -420,7 +424,7 @@ def _operation_submit_mapping(
     _check_hc_mapping_delta(
         step=step,
         hc_mapping_delta=hc_mapping_delta,
-        object_=context.process_context.cluster_relative_object(as_descriptor=True),
+        object_in_cluster=context.process_context.cluster_relative_object(as_descriptor=True),
     )
 
     perform_mapping(process_id=process.id, step_id=step.id, step_input_data=step_input_data)
@@ -464,6 +468,7 @@ def _operation_submit_job(
     *,
     process_context: ProcessContext,
     job_service: core.job.JobService,
+    start_task: Callable[[TaskLog], Any],
 ) -> None:
     step = repo.retrieve_step(process_id=process.id, step_id=step_id)
     if not step.step_spec:
@@ -485,9 +490,7 @@ def _operation_submit_job(
     task_id = job_service.create_task(payload=payload)
     job_service.create_jobs(task_id=task_id, scripts=tuple(JobSpec(**job) for job in step.step_spec))
 
-    task_orm = repo.retrieve_task_orm(task_id=task_id)
-
-    step_input_data = StepInputDTO(job_id=task_orm.pk, created_at=timezone.now())
+    step_input_data = StepInputDTO(job_id=task_id, created_at=timezone.now())
     repo.upsert_step_input(step_id=step_id, data=step_input_data)
 
     revoke_next_steps(process_id=process.id, step_id=step_id)
@@ -495,7 +498,9 @@ def _operation_submit_job(
 
     # todo write pid to task (executor)
     # todo actually should use starter to avoid hardcoding
-    start_task(task=task_orm)
+    task_orm = repo.retrieve_task_orm(task_id=task_id)
+    re_apply_policy_for_jobs(task=task_orm)
+    start_task(task_orm)
 
 
 def _operation_submit_config(
@@ -515,19 +520,18 @@ def _operation_submit_config(
     if not isinstance(specification, core.config.spec.FullSpec):
         raise TypeError(f"Config step spec is unexpectedly not full spec: {type(specification)=} {step=}")
 
-    config_object = context.process_context.cluster_relative_object(as_descriptor=True)
-
+    config_object = context.process_context.owner
     try:
-        target_config = config_service.retrieve_current_configuration(owner=config_object)
+        owner_config = config_service.retrieve_current_configuration(owner=config_object)
     except core.config.ObjectWithoutConfigError:
-        target_config = None
+        owner_config = None
 
     configuration = context.config_processor(input_config, specification)
     step_configuration = config_service.prepare_action_configuration(
         configuration=configuration,
         specification=specification,
         owner=config_object,
-        owner_configuration=target_config,
+        owner_configuration=owner_config,
     )
     prefix = core.config.files.build_action_process_step_prefix(process_id=process.id, step_id=step.id)
     config_service.prepare_file_parameter_values_on_fs(
@@ -568,8 +572,10 @@ def _check_all_steps_completed(process: ActionProcess) -> None:
             raise ActionProcessOperationError("All steps must be completed")
 
 
-def _check_hc_mapping_delta(step: Step, hc_mapping_delta: HostComponentMapDelta, object_: CoreObjectDescriptor) -> None:
-    cluster_id, bundle_id = repo.retrieve_related_cluster_id_and_cluster_bundle_id(object_=object_)
+def _check_hc_mapping_delta(
+    step: Step, hc_mapping_delta: HostComponentMapDelta, object_in_cluster: CoreObjectDescriptor
+) -> None:
+    cluster_id, bundle_id = repo.retrieve_related_cluster_id_and_cluster_bundle_id(object_=object_in_cluster)
     topology = retrieve_cluster_topology(cluster_id=cluster_id)
 
     if existence_violations := _find_mapping_delta_objects_existence_violations(

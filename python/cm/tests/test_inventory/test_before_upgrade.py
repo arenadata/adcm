@@ -12,17 +12,19 @@
 
 from pathlib import Path
 
-from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
+import core
 
+from cm.legacy.bundle_switch_revert import bundle_switch
 from cm.legacy.services.job.context import get_inventory_data
-from cm.legacy.upgrade import _update_before_upgrade, bundle_switch
-from cm.models import Action, Component, ObjectType, Prototype, Service, Upgrade
+from cm.legacy.upgrade import update_before_upgrade
+from cm.models import Action, Component, Service, Upgrade
+from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestBeforeUpgrade(BaseInventoryTestCase):
+class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -54,11 +56,19 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             bundle=self.cluster_upgrade_bundle, name="upgrade_via_action_simple"
         )
 
+    def bundle_switch(self, obj, upgrade):
+        from use_cases.legacy.upgrade import build_switch_revert_callbacks
+
+        with self.container() as container:
+            config_service = container.get(core.config.ConfigService)
+            callbacks = build_switch_revert_callbacks(config_service=config_service)
+            bundle_switch(obj=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
+
     def test_provider_two_hosts(self):
         self.provider.before_upgrade["bundle_id"] = self.provider.prototype.bundle.pk
-        _update_before_upgrade(obj=self.provider)
+        update_before_upgrade(obj=self.provider)
 
-        bundle_switch(obj=self.provider, upgrade=self.upgrade_for_provider)
+        self.bundle_switch(obj=self.provider, upgrade=self.upgrade_for_provider)
 
         self.provider.state = "success"
         self.provider.save()
@@ -146,12 +156,10 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
-        ).first()
+        self.service_two_components: Service = self.add_services_to_cluster(
+            ["service_two_components"], cluster=self.cluster_1
+        ).get()
+
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
@@ -166,9 +174,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        _update_before_upgrade(obj=self.cluster_1)
+        update_before_upgrade(obj=self.cluster_1)
 
-        bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
+        self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
         self.cluster_1.state = "success"
         self.cluster_1.save()
@@ -237,12 +245,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
-        ).first()
+        self.service_two_components: Service = self.add_services_to_cluster(
+            cluster=self.cluster_1, service_names=["service_two_components"]
+        ).get()
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
@@ -279,9 +284,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        _update_before_upgrade(obj=self.cluster_1)
+        update_before_upgrade(obj=self.cluster_1)
 
-        bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
+        self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
         self.cluster_1.refresh_from_db()
         self.service_two_components.refresh_from_db()
@@ -443,9 +448,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        _update_before_upgrade(obj=self.cluster_1)
+        update_before_upgrade(obj=self.cluster_1)
 
-        bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
+        self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
         problem_component.refresh_from_db()
         action = Action.objects.get(name="action_on_component_1", prototype=problem_component.prototype)

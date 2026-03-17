@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm
-from cm.legacy.adcm_config.config import init_object_config
 from cm.legacy.api import check_license
+from cm.legacy.config import init_object_config
 from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response

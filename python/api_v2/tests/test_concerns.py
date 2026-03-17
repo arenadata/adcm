@@ -33,7 +33,6 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from cm.tests.mocks.task_runner import RunTaskMock
 from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -436,30 +435,29 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_job_concern(self):
         action = Action.objects.filter(prototype=self.cluster_1.prototype).first()
 
-        with RunTaskMock():
-            response = self.client.v2[self.cluster_1, "actions", action, "run"].post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
-            )
+        response = self.client.v2[self.cluster_1, "actions", action, "run"].post(
+            data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
+        )
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-            expected_concern_reason = {
-                "message": ConcernMessage.LOCKED_BY_JOB.template.message,
-                "placeholder": {
-                    "job": {
-                        "type": "job",
-                        "name": "action",
-                        "params": {"taskId": TaskLog.objects.get(action__name=action.name).pk},
-                    },
-                    "target": {"type": "cluster", "name": "cluster_1", "params": {"clusterId": self.cluster_1.pk}},
+        expected_concern_reason = {
+            "message": ConcernMessage.LOCKED_BY_JOB.template.message,
+            "placeholder": {
+                "job": {
+                    "type": "job",
+                    "name": "action",
+                    "params": {"taskId": TaskLog.objects.get(action__name=action.name).pk},
                 },
-            }
+                "target": {"type": "cluster", "name": "cluster_1", "params": {"clusterId": self.cluster_1.pk}},
+            },
+        }
 
-            response = self.client.v2[self.cluster_1].get()
+        response = self.client.v2[self.cluster_1].get()
 
-            self.assertEqual(response.status_code, HTTP_200_OK)
-            self.assertEqual(len(response.json()["concerns"]), 1)
-            self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
     def test_permissions_to_delete_concern_item(self):
         cluster = self.cluster_1

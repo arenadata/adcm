@@ -10,38 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
 from hashlib import sha256
 from itertools import compress
 from typing import Iterable, Iterator, List, Literal
-import json
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
 from cm.errors import AdcmEx
-from cm.legacy.adcm_config.config import get_default
 from cm.legacy.services.action_process.types import ProcessState
-from cm.legacy.services.bundle import ADCMBundlePathResolver, BundlePathResolver
-from cm.legacy.services.config import convert_attr_to_adcm_meta
-from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import (
-    ADCM,
     Action,
     ADCMEntity,
-    Cluster,
     Component,
-    Host,
     Process,
-    PrototypeConfig,
-    Provider,
-    Service,
 )
 from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType
 from django.conf import settings
 from django.utils import timezone
 from rbac.models import User
 from rest_framework.exceptions import NotFound
-
-from api_v2.generic.config.utils import get_config_schema
 
 
 def get_str_hash(value: str) -> str:
@@ -85,25 +71,6 @@ def insert_service_ids(
     return hc_create_data
 
 
-def get_action_configuration(
-    action_: Action, object_: Cluster | Service | Component | Provider | Host | ADCM
-) -> tuple[dict | None, dict | None, dict | None]:
-    if action_.config_jinja:
-        prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)
-    else:
-        prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by("id")
-
-    if not prototype_configs:
-        return None, None, None
-
-    if action_.prototype.type == "adcm":
-        path_resolver = ADCMBundlePathResolver()
-    else:
-        path_resolver = BundlePathResolver(bundle_hash=action_.prototype.bundle.hash)
-
-    return get_schema_config_meta(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
-
-
 def get_action_processes(action: Action, object_: ActionTargetDescriptor) -> list[Process]:
     # While we are returning one object, the last one is incomplete.
     if (
@@ -120,40 +87,6 @@ def get_action_processes(action: Action, object_: ActionTargetDescriptor) -> lis
         return [process]
 
     return []
-
-
-def get_schema_config_meta(
-    object_: Cluster | Service | Component | Provider | Host,
-    prototype_configs: list[PrototypeConfig],
-    path_resolver: ADCMBundlePathResolver | BundlePathResolver,
-) -> tuple[dict | None, dict | None, dict | None]:
-    config = defaultdict(dict)
-    attr = {}
-
-    for prototype_config in prototype_configs:
-        name = prototype_config.name
-        sub_name = prototype_config.subname
-
-        if prototype_config.type == "group":
-            if "activatable" in prototype_config.limits:
-                attr[name] = {"active": prototype_config.limits["active"]}
-
-            continue
-
-        value = get_default(conf=prototype_config, path_resolver=path_resolver)
-
-        if prototype_config.type == "json":
-            value = json.dumps(value) if value is not None else None
-
-        if sub_name:
-            config[name][sub_name] = value
-        else:
-            config[name] = value
-
-    config_schema = get_config_schema(object_=object_, prototype_configs=prototype_configs, path_resolver=path_resolver)
-    adcm_meta = convert_attr_to_adcm_meta(attr=attr)
-
-    return config_schema, config, adcm_meta
 
 
 def check_process_object(process_id: int, action_id: ActionID, action_target: ActionTargetDescriptor) -> None:

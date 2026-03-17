@@ -13,12 +13,15 @@
 from datetime import timedelta
 import logging
 
+from application.di.containers import get_main_providers
 from audit.alt.background import audit_background_operation
 from audit.models import AuditLogOperationType
+from dishka import make_container
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from use_cases.dto import RunActionDTO
+from use_cases.transition.job.schedule import ScheduleTask
 
-from cm.legacy.services.job.action import ActionRunPayload, run_action
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
 
 logger = logging.getLogger("background_tasks")
@@ -36,7 +39,7 @@ class Command(BaseCommand):
     help = "Run synchronization with ldap if sync_interval is specified in ADCM settings"
 
     def handle(self, *args, **options):  # noqa: ARG002
-        adcm_object = ADCM.objects.first()
+        adcm_object = ADCM.objects.get()
         action = Action.objects.get(name="run_ldap_sync", prototype=adcm_object.prototype)
         period = get_settings(adcm_object)
         if period <= 0:
@@ -60,5 +63,9 @@ class Command(BaseCommand):
 
             logger.debug("Ldap sync launched in %s", timezone.now())
 
-        with audit_background_operation(name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE):
-            run_action(action=action, obj=adcm_object, payload=ActionRunPayload())
+        container = make_container(*get_main_providers())
+        with container() as container, audit_background_operation(
+            name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE
+        ):
+            schedule_task = container.get(ScheduleTask)
+            schedule_task.do(action_orm=action, target=adcm_object, payload=RunActionDTO())

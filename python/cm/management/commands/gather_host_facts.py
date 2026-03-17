@@ -27,7 +27,7 @@ class Command(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._inventory_dir = settings.DATA_DIR / "tmp" / "gather_host_facts"
+        self._inventory_dir = settings.TMP_DIR / "gather_host_facts"
         self._workdir = settings.CODE_DIR / "cm" / "collect_statistics" / "ansible"
 
     def handle(self, *_, **__) -> None:

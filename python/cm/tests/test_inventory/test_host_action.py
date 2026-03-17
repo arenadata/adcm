@@ -11,9 +11,7 @@
 # limitations under the License.
 
 
-from api_v2.service.utils import bulk_add_services_to_cluster
-
-from cm.models import Action, Component, ObjectType, Prototype, Service
+from cm.models import Action, Component, Service
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -29,12 +27,9 @@ class TestHostAction(BaseInventoryTestCase):
         self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
         self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
 
-        self.service: Service = bulk_add_services_to_cluster(
-            cluster=self.cluster,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster.prototype.bundle
-            ),
-        ).first()
+        self.service: Service = self.add_services_to_cluster(
+            cluster=self.cluster, service_names=["service_one_component"]
+        ).get()
 
         self.component = Component.objects.get(service=self.service, prototype__name="component_1")
 

@@ -19,7 +19,7 @@ from cm.legacy.bundle_switch_revert import bundle_switch
 from cm.legacy.status_api import send_prototype_and_state_update_event
 
 # todo waiting for refactoring, don't want to copy it anywhere for now
-from cm.legacy.upgrade import _update_before_upgrade, check_upgrade
+from cm.legacy.upgrade import check_upgrade, update_before_upgrade
 from core.types import TaskID
 from django.db.transaction import atomic
 import core
@@ -51,7 +51,7 @@ def upgrade_object(
             raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
 
         obj.before_upgrade["bundle_id"] = obj.prototype.bundle.pk
-        _update_before_upgrade(obj=obj)
+        update_before_upgrade(obj=obj)
 
         if not upgrade.action:
             callbacks = build_switch_revert_callbacks(config_service=config_service)

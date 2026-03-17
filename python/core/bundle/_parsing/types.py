@@ -16,22 +16,21 @@ from typing import Any, Collection, Iterable, Literal, Protocol, TypeAlias
 
 from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
-from core.bundle._types import ComponentKey
+from core.bundle._types import ComponentKey, ContractVersion, VersionSupportStatus
 
 VersionTag: TypeAlias = str
-VersionSupportStatus: TypeAlias = Literal["supported", "deprecated"]
 
 
 @dataclass(slots=True)
 class VersionInfo:
-    tag: VersionTag
+    tag: ContractVersion
     status: VersionSupportStatus
 
 
 @dataclass(slots=True)
 class ParsingMeta:
     adcm_min_version: str | None = None
-    contract_version: VersionTag = "1.0"
+    contract_version: ContractVersion = "1.0"
 
 
 @dataclass(slots=True)

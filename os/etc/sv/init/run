@@ -17,19 +17,8 @@ set +x
 
 echo "Application initialisation ..."
 
-mkdir -p "${adcmlog}"
 exec 1>>"${adcmlog}/init.out"
 exec 2>>"${adcmlog}/init.err"
-mkdir -p "${adcmrun}"
-mkdir -p "${adcmbundle}"
-mkdir -p "${adcmdownload}"
-mkdir -p "${adcmfile}"
-chmod 700 "${adcmfile}"
-mkdir -p "${adcmvar}"
-mkdir -p "${adcmtmp}"
-chmod 777 "${adcmtmp}"
-chmod a+t "${adcmtmp}"
-mkdir -p "${adcmuserconf}"
 mkdir -p "${adcmlog}/nginx"
 rm -r /var/log/nginx
 [ ! -L  "/var/log/nginx" ] && ln -s "${adcmlog}/nginx" /var/log/

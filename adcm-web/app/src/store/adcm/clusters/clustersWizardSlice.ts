@@ -58,10 +58,12 @@ const addLastStage = (state: AdcmClustersWizardState) => {
 
     state.process.stages.push({
       displayName: 'Preparing for running',
+      description: '',
       steps: [
         {
           id: newStepId,
           displayName: 'Step 1. Confirmation',
+          description: '',
           type: AdcmWizardStepType.LastStep,
           state:
             state.process.state === AdcmWizardStepStates.Completed

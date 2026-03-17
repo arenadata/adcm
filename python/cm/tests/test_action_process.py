@@ -210,6 +210,8 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
                 ),
             )
 
+            from use_cases.transition.job.schedule import TaskStarter
+
             submit_step(
                 process=process,
                 payload=payload,
@@ -218,6 +220,7 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
                 config_service=container.get(core.config.ConfigService),
                 job_service=container.get(core.job.JobService),
                 bundle_renderer=bundle_renderer,
+                start_task=container.get(TaskStarter),
             )
 
         ctx = self.get_process_context(process_id, cluster.id)

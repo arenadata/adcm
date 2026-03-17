@@ -12,6 +12,7 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Callable, Collection, Final, Iterable, TypeAlias, cast
 
@@ -161,7 +162,39 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> None:
+def _is_parameter_present_in_definition(name: str, definition: ConfigDefinition) -> bool:
+    return config.names.full_name_to_level_names(name) in definition.parameters
+
+
+def check_config_definition(definition: ConfigDefinition, bundle_root: Path):
+    _check_config_definition(
+        definition=definition,
+        bundle_root=bundle_root,
+        is_parameter_present_in_config=partial(_is_parameter_present_in_definition, definition=definition),
+    )
+
+
+def _is_parameter_present_in_fullspec(name: str, spec: config.spec.FullSpec) -> bool:
+    return name in spec.parameters
+
+
+def check_dynamic_config_definition(
+    definition: ConfigDefinition,
+    bundle_root: Path,
+    spec: config.spec.FullSpec,
+):
+    _check_config_definition(
+        definition=definition,
+        bundle_root=bundle_root,
+        is_parameter_present_in_config=partial(_is_parameter_present_in_fullspec, spec=spec),
+    )
+
+
+def _check_config_definition(
+    definition: ConfigDefinition,
+    bundle_root: Path,
+    is_parameter_present_in_config: Callable[[str], bool],
+) -> None:
     # For now performing these checks in here,
     # because later they will be "invalidated" by conversion to spec and defaults.
     # Maybe later these can be moved to parsing level,
@@ -181,8 +214,7 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path) -> 
                 source = parameter.limits["source"]
                 if source["type"] == "config":
                     dependency_name = config.names.ensure_full_name(source["name"])
-                    name = config.names.full_name_to_level_names(dependency_name)
-                    if name not in definition.parameters:
+                    if not is_parameter_present_in_config(dependency_name):
                         message = (
                             f"variant parameter is dependant on {dependency_name}, "
                             "but it is missing in configuration"

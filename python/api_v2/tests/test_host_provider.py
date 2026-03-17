@@ -11,8 +11,8 @@
 # limitations under the License.
 
 
-from cm.models import Action, ConfigHostGroup, Provider
-from cm.tests.mocks.task_runner import RunTaskMock
+from cm.models import Action, ConfigHostGroup, Provider, TaskLog
+from core.types import TaskID
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -158,6 +158,10 @@ class TestProviderActions(BaseAPITestCase):
 
         self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
 
+    def assert_task_status_is(self, task_id: TaskID, status: str):
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+        self.assertEqual(task_status, status)
+
     def test_action_list_success(self):
         response = self.client.v2[self.provider, "actions"].get()
 
@@ -171,15 +175,13 @@ class TestProviderActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with RunTaskMock() as run_task:
-            response = self.client.v2[self.provider, "actions", self.action, "run"].post(
-                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-            )
+        response = self.client.v2[self.provider, "actions", self.action, "run"].post(
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+        )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["id"], run_task.target_task.id)
-        self.assertEqual(run_task.target_task.status, "created")
+        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        self.assert_task_status_is(task_id, "created")
 
-        run_task.runner.run(run_task.target_task.id)
-        run_task.target_task.refresh_from_db()
-        self.assertEqual(run_task.target_task.status, "success")
+        self.task_runner.run_task(task_id)
+        self.assert_task_status_is(task_id, "success")

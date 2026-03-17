@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.bundle._parsing import v_1_0, v_2_0
+from core.bundle._parsing import v_1_0, v_2_0, v_2_1
 from core.bundle._parsing.restrictions import check_adcm_min_version, extract_parsing_meta, pick_suitable_parser
 from core.bundle._parsing.types import (
     BundleParser,
@@ -33,4 +33,5 @@ __all__ = [
     "pick_suitable_parser",
     "v_1_0",
     "v_2_0",
+    "v_2_1",
 ]

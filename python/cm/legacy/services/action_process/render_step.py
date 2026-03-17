@@ -75,7 +75,10 @@ def _render_step(
     match step_type:
         case core.action.wizard.StepType.CONFIGURATION:
             step_spec = bundle_renderer.render_config(
-                template=template, args=action_args, bundle_context=bundle_context
+                template=template,
+                args=action_args,
+                bundle_context=bundle_context,
+                owner=render_context.process_context.owner,
             )
 
         case core.action.wizard.StepType.OPERATION:

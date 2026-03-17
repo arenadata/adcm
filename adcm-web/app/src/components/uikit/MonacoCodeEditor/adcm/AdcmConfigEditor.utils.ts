@@ -10,7 +10,6 @@ import {
   buildConfigurationNodes,
   iterateConfigurationNodes,
 } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
-import { swapTitleAsPropertyName as swapSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import type { ConfigurationNode, NodesDictionary } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 import {
   MarkerSeverity,
@@ -70,13 +69,12 @@ export const getAdcmErrorMarkers = (
  * @deprecated
  */
 export const swapAll = (schema: SchemaDefinition, config: JSONObject, attributes: ConfigurationAttributes) => {
-  const swappedSchema = swapSchema(schema) as SchemaDefinition;
   const swappedConfig = swapModel(schema, config, attributes);
 
   return {
-    schema: swappedSchema,
+    schema,
     config: swappedConfig,
-    attributes: attributes,
+    attributes,
   };
 };
 

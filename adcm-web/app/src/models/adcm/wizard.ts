@@ -49,6 +49,7 @@ export interface AdcmActionWizardProcess {
 export interface AdcmWizardStage {
   displayName: string;
   steps: AdcmActionProcessStep[];
+  description: string;
 }
 
 export interface AdcmActionProcessOperationStep {
@@ -61,6 +62,7 @@ export interface AdcmActionProcessOperationStep {
   };
   state: AdcmWizardStepStates;
   task: { id: number };
+  description: string;
 }
 
 export interface AdcmWizardConfigSchema {
@@ -86,12 +88,14 @@ export interface AdcmActionProcessConfigurationStep {
   type: AdcmWizardStepType.Configuration;
   state: AdcmWizardStepStates;
   configuration: AdcmWizardConfiguration;
+  description: string;
 }
 
 export interface AdcmActionProcessMappingStepRules {
   operation: AdcmHostComponentMapRuleAction;
   component: string;
   service: string;
+  description: string;
 }
 
 interface DeltaMapping {
@@ -113,6 +117,7 @@ export interface AdcmActionProcessMappingStep {
   rules: AdcmActionProcessMappingStepRules[];
   delta: Delta | null;
   cumulativeDelta: Delta | null;
+  description: string;
 }
 
 export interface AdcmActionProcessLastStep {
@@ -120,6 +125,7 @@ export interface AdcmActionProcessLastStep {
   id: number;
   type: AdcmWizardStepType.LastStep;
   state: AdcmWizardStepStates;
+  description: string;
 }
 
 export type AdcmActionProcessStep =

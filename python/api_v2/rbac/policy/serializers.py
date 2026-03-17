@@ -14,7 +14,7 @@ from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Component, Host, Provider, Service
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField, CharField, JSONField
+from rest_framework.fields import BooleanField, CharField, IntegerField, JSONField
 from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 import jsonschema
@@ -48,6 +48,7 @@ class ObjectField(JSONField):
                     "name": {
                         "type": "string",
                     },
+                    "parentId": {"type": "number"},
                 },
                 "additionalProperties": True,
                 "required": ["id", "type"],
@@ -95,12 +96,14 @@ class PolicyObjectField(ObjectField):
     def to_representation(self, value):
         data = []
         for obj in value.all():
+            parent_id = obj.object.cluster_id if isinstance(obj.object, Service) else None
             data.append(
                 {
                     "id": obj.object_id,
                     "type": obj.object.prototype.type,
                     "name": obj.object.name,
                     "display_name": obj.object.display_name,
+                    "parent_id": parent_id,
                 },
             )
 
@@ -124,6 +127,18 @@ class PolicySerializer(ModelSerializer):
             "groups",
             "role",
         ]
+
+
+class SchemaPolicyObjectsField(EmptySerializer):
+    id = IntegerField(min_value=1)
+    parent_id = IntegerField(min_value=1, required=False, allow_null=True)
+    type = CharField(allow_null=False, allow_blank=False)
+    name = CharField(allow_null=False, allow_blank=False)
+    display_name = CharField(allow_null=False, allow_blank=False)
+
+
+class SchemaPolicySerializer(PolicySerializer):
+    objects = SchemaPolicyObjectsField()
 
 
 class PolicyRoleCreateSerializer(BaseRelatedSerializer):

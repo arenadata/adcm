@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, BeforeValidator, Field, model_validator
+from pydantic import AfterValidator, BeforeValidator, Field, StrictBool, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.validation import (
@@ -65,7 +65,7 @@ class StateActionResultSchema:
 class _BaseScript:
     name: str
     display_name: Annotated[str | None, Field(default=None)]
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
     on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
 
 
@@ -108,18 +108,24 @@ class ConfigApplyInternalScript(_BaseScript):
     params: ConfigApplyParams
 
 
-NonClusterInternalScript = Annotated[
-    BundleSwitchInternalScript | BundleRevertInternalScript, Field(discriminator="script")
+@dataclass(slots=True)
+class BeforeUpgradeCleanScript(_BaseScript):
+    script_type: Literal["internal"]
+    script: Literal["before_upgrade_clean"]
+
+
+ProviderInternalScript = Annotated[
+    BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
 ]
-ClusterStaticInternalScript = Annotated[NonClusterInternalScript | HcApplyInternalScript, Field(discriminator="script")]
+
+ClusterStaticInternalScript = Annotated[ProviderInternalScript | HcApplyInternalScript, Field(discriminator="script")]
 
 ClusterScript = Annotated[
     ClusterStaticInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
 ]
 
-NonClusterScript = Annotated[
-    NonClusterInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
-]
+ADCMScript = Annotated[AnsibleScript | PythonScript, Field(discriminator="script_type")]
+ProviderScript = Annotated[ProviderInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")]
 
 _DynamicActionInternalScript = Annotated[
     ClusterStaticInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
@@ -129,7 +135,7 @@ DynamicActionScript = Annotated[
 ]
 
 _DynamicWizardInternalScript = Annotated[
-    NonClusterInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+    ProviderInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
 ]
 DynamicWizardScript = Annotated[
     _DynamicWizardInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
@@ -144,7 +150,7 @@ class _ActionBase:
     description: Annotated[str | None, Field(default=None)]
     ui_options: Annotated[dict | None, Field(default=None)]
 
-    allow_to_terminate: Annotated[bool | None, Field(default=None)]
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
 
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
     masking: Masking
@@ -185,9 +191,9 @@ class ClusterObjectAction(_ActionBase):
 
     hc_acl: Annotated[list[HcAclSchema] | None, Field(default=None)]
 
-    allow_in_maintenance_mode: Annotated[bool | None, Field(default=None)]
-    allow_for_action_host_group: Annotated[bool, Field(default=None)]
-    host_action: Annotated[bool, Field(default=None)]
+    allow_in_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
+    allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
+    host_action: Annotated[StrictBool, Field(default=None)]
 
     @model_validator(mode="after")
     def validate_exactly_one_set_for_scripts(self):
@@ -235,13 +241,18 @@ class ClusterObjectAction(_ActionBase):
 
 
 @dataclass(slots=True)
-class HostOrADCMAction(_ActionBase):
-    scripts: list[NonClusterScript]
+class ADCMAction(_ActionBase):
+    scripts: list[ADCMScript]
 
 
 @dataclass(slots=True)
-class ProviderAction(HostOrADCMAction):
-    allow_for_action_host_group: Annotated[bool, Field(default=None)]
+class HostAction(_ActionBase):
+    scripts: list[ProviderScript]
+
+
+@dataclass(slots=True)
+class ProviderAction(HostAction):
+    allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
 
 
 # United
@@ -252,12 +263,18 @@ ClusterActions = Annotated[
     BeforeValidator(forbidden_mm_actions),
 ]
 
-HostOrADCMActions = Annotated[
-    dict[Name, HostOrADCMAction] | None,
+
+HostActions = Annotated[
+    dict[Name, HostAction] | None,
     Field(default=None),
 ]
 
 ProviderActions = Annotated[
     dict[Name, ProviderAction] | None,
+    Field(default=None),
+]
+
+ADCMActions = Annotated[
+    dict[Name, ADCMAction] | None,
     Field(default=None),
 ]

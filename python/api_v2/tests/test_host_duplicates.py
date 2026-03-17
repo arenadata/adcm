@@ -25,7 +25,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.host.duplicate import create_duplicate
 
-from api_v2.tests.base import BaseAPITestCase, RunTaskMock
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestDuplicateHost(BaseAPITestCase):
@@ -265,8 +265,7 @@ class TestDuplicateHost(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         with self.subTest("action from cluster objects can be launched"):
-            with RunTaskMock():
-                response = self.client.v2[duplicate, "actions", action_from_component, "run"].post()
+            response = self.client.v2[duplicate, "actions", action_from_component, "run"].post()
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 

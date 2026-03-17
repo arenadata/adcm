@@ -114,6 +114,7 @@ class TestPolicy(BaseAPITestCase):
                     "type": "provider",
                     "name": self.provider.name,
                     "displayName": self.provider.display_name,
+                    "parentId": None,
                 }
             ],
         )
@@ -180,6 +181,91 @@ class TestPolicy(BaseAPITestCase):
         policies = [p["name"] for p in response.json()["results"]]
         self.assertEqual(len(policies), 6)
         self.assertEqual(policies, ["Awesome Policy", "Best", "Class", "Create User Policy", "Good", "Test"])
+
+    def test_adcm_7787_policy_objects_response(self):
+        service_2, service_3, service_6 = (
+            self.add_services_to_cluster(
+                service_names=["service_2", "service_3_manual_add", "service_6_delete_with_action"],
+                cluster=self.cluster_1,
+            )
+            .order_by("prototype__name")
+            .all()
+        )
+        service_admin_role = Role.objects.get(name="Service Administrator", built_in=True, type="role")
+        cluster_admin_role = Role.objects.get(name="Cluster Administrator", built_in=True, type="role")
+        name = "Service admin policy"
+        one_service_admin_policy = policy_create(
+            name=name,
+            role=service_admin_role,
+            group=[self.group_1],
+            object=[service_2],
+        )
+        three_services_admin_policy = policy_create(
+            name=f"{name} 2",
+            role=service_admin_role,
+            group=[self.group_1],
+            object=[service_2, service_3, service_6],
+        )
+        cluster_admin_policy = policy_create(
+            name="Cluster admin policy",
+            role=cluster_admin_role,
+            group=[self.group_1],
+            object=[self.cluster_1],
+        )
+        expected_objects_one_service = [
+            {
+                "id": service_2.id,
+                "displayName": service_2.display_name,
+                "name": service_2.name,
+                "parentId": service_2.cluster_id,
+                "type": "service",
+            },
+        ]
+        expected_objects_three_services = [
+            *expected_objects_one_service,
+            {
+                "id": service_3.id,
+                "displayName": service_3.display_name,
+                "name": service_3.name,
+                "parentId": service_3.cluster_id,
+                "type": "service",
+            },
+            {
+                "id": service_6.id,
+                "displayName": service_6.display_name,
+                "name": service_6.name,
+                "parentId": service_6.cluster_id,
+                "type": "service",
+            },
+        ]
+        expected_objects_cluster = [
+            {
+                "id": self.cluster_1.id,
+                "displayName": self.cluster_1.display_name,
+                "name": self.cluster_1.name,
+                "parentId": None,
+                "type": "cluster",
+            }
+        ]
+        expected_queries_number = 7
+
+        # cache django_content_type / auth_permission queries
+        (self.client.v2 / "rbac" / "policies").get()
+
+        with self.assertNumQueries(expected_queries_number):
+            response = (self.client.v2 / "rbac" / "policies" / str(one_service_admin_policy.id)).get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(response.json()["objects"], expected_objects_one_service)
+
+        with self.assertNumQueries(expected_queries_number):
+            response = (self.client.v2 / "rbac" / "policies" / str(three_services_admin_policy.id)).get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(response.json()["objects"], expected_objects_three_services)
+
+        with self.assertNumQueries(expected_queries_number):
+            response = (self.client.v2 / "rbac" / "policies" / str(cluster_admin_policy.id)).get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(response.json()["objects"], expected_objects_cluster)
 
     def test_ordering_success(self):
         ordering_fields = {

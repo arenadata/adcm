@@ -12,10 +12,10 @@
 
 from pathlib import Path
 
-from adcm.dependencies import prepare_container
 from adcm.tests.base import ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     Component,
@@ -44,6 +44,7 @@ from rest_framework.status import (
 from rest_framework.test import APITestCase
 
 from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
+from api_v2.utils.di import prepare_container
 
 
 class TestMapping(BaseAPITestCase):
@@ -1444,3 +1445,47 @@ class TestMappingNew(APITestCase, ParallelReadyTestCase, APIV2Mixin, TestUtilsMi
             cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
         )
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
+
+
+class TestHC(BaseAPITestCase):
+    # moved from cm.tests.test_hc
+    def test_adcm_4929_run_same_hc_success(self) -> None:
+        # Since it was moved from CM, need to pass it,
+        # moving it is risky, copying not solving any problems.
+        # Sorry if you've got here after deleting it :3
+        bundles_dir = Path(__file__).parent.parent.parent / "cm" / "tests" / "bundles"
+        bundle = self.add_bundle(bundles_dir / "cluster_1")
+        cluster = self.add_cluster(bundle=bundle, name="Cool")
+        service_1 = self.add_services_to_cluster(["service_one_component"], cluster=cluster).get()
+        service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster).get()
+        service_with_action = self.add_services_to_cluster(["with_hc_acl_actions"], cluster=cluster).get()
+
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+
+        self.add_host_to_cluster(cluster, host_1)
+        self.add_host_to_cluster(cluster, host_2)
+
+        component_1_1 = Component.objects.get(service=service_1, prototype__name="component_1")
+        component_2_1 = Component.objects.get(service=service_2, prototype__name="component_1")
+        component_2_2 = Component.objects.get(service=service_2, prototype__name="component_2")
+        hc = self.set_hostcomponent(
+            cluster=cluster,
+            entries=(
+                (host_1, component_1_1),
+                (host_1, component_2_1),
+                (host_1, component_2_2),
+                (host_2, component_2_1),
+                (host_2, component_2_2),
+            ),
+        )
+        action = Action.objects.get(prototype=service_with_action.prototype, name="with_hc")
+
+        response = self.client.v2[service_with_action, "actions", action.pk, "run"].post(
+            data={
+                "hostComponentMap": [{"hostId": entry.host_id, "componentId": entry.component_id} for entry in hc],
+            },
+        )
+
+        # expectations changed due to existing behavior in bundles
+        self.assertEqual(response.status_code, HTTP_200_OK)

@@ -1,0 +1,14 @@
+// CSP-safe styles for SVG sprite (no inline styles in HTML)
+// Sprite container — injected by vite-plugin-svg-spriter
+.svg-sprite-container {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+// Spinner icons (g1-load, g2-load, g2-running-10x10) — transform-origin for animation
+.icon-spinner-transform-origin {
+  transform-origin: center;
+}

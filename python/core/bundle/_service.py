@@ -21,16 +21,21 @@ from core.bundle._definitions import DefinitionsMap
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
-from core.bundle._types import BundleContext, BundleInfo
+from core.bundle._types import (
+    BundleCompatibilityReport,
+    BundleContext,
+    BundleInfo,
+    VersionSupportStatus,
+)
 from core.bundle._validate import (
     ConvertConfigDefinition,
     ValidationContext,
     check_config_defaults,
-    check_config_definition,
     check_definitions_are_valid,
+    check_dynamic_config_definition,
     check_has_valid_definitions_set,
 )
-from core.types import BundleID
+from core.types import BundleID, CoreObjectDescriptor
 
 
 @dataclass(slots=True)
@@ -71,10 +76,14 @@ class BundleService:
         data: list[dict],
         bundle_context: BundleContext,
         template_path: Path,
+        owner: CoreObjectDescriptor,
     ) -> tuple[config.spec.FullSpec, config.Defaults]:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         definition = parser.parse_config(config=data, bundle_root=bundle_context.root, template_path=template_path)
-        check_config_definition(definition=definition, bundle_root=bundle_context.root)
+        owner_spec = self.config_service.retrieve_partial_specification(
+            owner=owner, only_for_types=[config.spec.p.VariantParameter]
+        )
+        check_dynamic_config_definition(definition=definition, bundle_root=bundle_context.root, spec=owner_spec)
         specification, defaults = self.definition_to_spec_converter(definition, bundle_context.root)
         check_config_defaults(specification=specification, defaults=defaults, config_service=self.config_service)
         return specification, defaults
@@ -126,3 +135,23 @@ class BundleService:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         component_keys = self.repo.retrieve_component_keys(bundle_id=bundle_context.id)
         return parser.parse_mapping_rules(rules=data, component_keys=component_keys)
+
+    def find_contract_compatibility_violations(self) -> BundleCompatibilityReport:
+        versions_info = self.repo.retrieve_versions_info()
+
+        supported_versions = {item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.SUPPORTED}
+        deprecated_versions = {
+            item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.DEPRECATED
+        }
+        report = BundleCompatibilityReport(
+            supported_versions=supported_versions, deprecated_versions=deprecated_versions
+        )
+
+        for item in versions_info:
+            if item.contract_version not in supported_versions:
+                report.unsupported_version_bundles.add(item)
+
+            if item.contract_version in deprecated_versions:
+                report.deprecated_version_bundles.add(item)
+
+        return report

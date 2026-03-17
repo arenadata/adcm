@@ -11,7 +11,7 @@ import { terminalStatuses } from '@uikit/ActionWizard/ActionWizard.constants';
 
 export const useRequestClusterHostsDynamicActionWizardDialog = (step: AdcmActionProcessOperationStep) => {
   const dispatch = useDispatch();
-  const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
+  const jobsData = useStore((s) => s.adcm.clusterHostsWizard.jobsData);
 
   const clusterId = useStore((s) => s.adcm.clusterHostsWizardActions.wizardDialog.clusterId);
   const hostId = useStore((s) => s.adcm.clusterHostsWizardActions.wizardDialog.hostId);

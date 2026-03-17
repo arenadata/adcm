@@ -1,10 +1,24 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import MonacoCodeEditor from './MonacoCodeEditor';
 import type { Meta, StoryObj } from '@storybook/react';
 import { schema, jsonText, yamlText, mappingSchema, mappingText } from './MonacoCodeEditor.stories.constants';
 import yaml from 'yaml';
 import { type IPosition, type IRange, type ITextModel, monaco } from './MonacoCodeEditor.types';
 import { exposeAdditionalInfo, setCustomMarkers, resetCustomMarkers } from './MonacoCodeEditor.utils';
+
+const buildLargeJson = (count: number) => {
+  const original = {
+    name: 'Adeel Solangi',
+    language: 'Sindhi',
+    id: 'V59OF92YF627HFY0',
+    bio: 'Donec lobortis eleifend condimentum. Cras dictum dolor lacinia lectus vehicula rutrum.',
+    version: 6.1,
+  };
+  const items = Array(count)
+    .fill(null)
+    .map((_, i) => JSON.stringify({ ...original, id: `${original.id}-${i}` }));
+  return `[\n${items.join(',\n')}\n]`;
+};
 
 type Story = StoryObj<typeof MonacoCodeEditor>;
 
@@ -281,5 +295,73 @@ export const MonacoCodeEditorMappingStory: Story = {
         <MonacoCodeEditorMappingExample />
       </div>
     );
+  },
+};
+
+const MonacoCodeEditorLogWithAutoScrollExample = () => {
+  const initialCount = 10000;
+  const [text, setText] = useState(() => buildLargeJson(initialCount));
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const moreCount = 5000;
+      const moreItems = Array(moreCount)
+        .fill(null)
+        .map((_, i) =>
+          JSON.stringify({
+            name: 'New Item',
+            language: 'en',
+            id: `NEW-${i}`,
+            bio: 'Appended after 5s (simulated backend).',
+            version: 1,
+          }),
+        );
+      setText((prev) => {
+        const trimmed = prev.trimEnd();
+        const withoutBracket = trimmed.slice(0, -1);
+        return `${withoutBracket},\n${moreItems.join(',\n')}\n]`;
+      });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      style={
+        {
+          height: 'calc(100vh - 490px)',
+          display: 'flex',
+          flexDirection: 'column',
+          '--fullscreen-offset': '150px',
+        } as React.CSSProperties
+      }
+    >
+      <MonacoCodeEditor
+        uri="story-log-1"
+        language="json"
+        text={text}
+        scrollToEnd
+        showCopyButton
+        showFullscreenButton
+        options={{
+          readOnly: true,
+          minimap: { enabled: false },
+          glyphMargin: false,
+          scrollBeyondLastLine: false,
+        }}
+      />
+    </div>
+  );
+};
+
+export const MonacoCodeEditorLogWithAutoScrollStory: Story = {
+  render: () => <MonacoCodeEditorLogWithAutoScrollExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Read-only log view with auto-scroll (like SubJobLogText). Large JSON initially; after 5 seconds more content is appended (simulated backend). Check that scroll stays at bottom when new content arrives.',
+      },
+    },
   },
 };
