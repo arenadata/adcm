@@ -55,6 +55,7 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
+    ClusterBind,
     Component,
     ConcernCause,
     ConcernItem,
@@ -67,6 +68,7 @@ from cm.models import (
     MaintenanceMode,
     ObjectType,
     Prototype,
+    PrototypeImport,
     Provider,
     Service,
     Upgrade,
@@ -342,6 +344,8 @@ class _ClusterBundleSwitch(_BundleSwitch[Cluster, Cluster | Service | Component]
 
         #        if not Component.objects.filter(cluster=self._target, service=service).exists():
         #            add_components_to_service(cluster=self._target, service=service)
+
+        _clean_imports_bind(target=self._target, upgrade=self._upgrade)
 
     def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
         recalculate_concerns_on_cluster_upgrade(cluster=self._target)
@@ -833,3 +837,25 @@ def _switch_configuration_version(
     for owner_group, updated_configuration in updated_host_group_configs.items():
         group_file_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=owner_group.id)
         prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)
+
+
+def _clean_imports_bind(target: Cluster, upgrade: Upgrade) -> None:
+    # TODO: this copy from '_check_upgrade_import' function without checks. Need refactor
+    #  Fix for ADCM-7888 in release 2.11.0
+    for cbind in ClusterBind.objects.filter(cluster=target):
+        export_obj = cbind.source_service if cbind.source_service else cbind.source_cluster
+        import_obj = cbind.service if cbind.service else cbind.cluster
+
+        try:
+            prototype = Prototype.objects.get(
+                bundle=upgrade.bundle,
+                name=import_obj.prototype.name,
+                type=import_obj.prototype.type,
+            )
+        except Prototype.DoesNotExist:
+            continue
+
+        try:
+            PrototypeImport.objects.get(prototype=prototype, name=export_obj.prototype.name)
+        except PrototypeImport.DoesNotExist:
+            cbind.delete()
