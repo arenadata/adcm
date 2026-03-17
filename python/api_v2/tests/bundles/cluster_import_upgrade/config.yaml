@@ -1,0 +1,36 @@
+- type: cluster
+  name: cluster_import
+  version: 2.0
+  upgrade:
+    - name: upgrade
+      versions:
+        min: '1.0'
+        max: '1.0'
+      states:
+        available: any
+  config:
+    - name: boolean
+      type: boolean
+      default: true
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          default: string
+
+- type: service
+  name: service_import
+  version: 2.0
+  config:
+    - name: string
+      type: string
+      default: string
+
+- type: service
+  name: service_import_2
+  version: 2.0
+  config:
+    - name: string
+      type: string
+      default: string
