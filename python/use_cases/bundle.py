@@ -24,7 +24,6 @@ from core.files import directories
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from core.types import BundleID
-from django.core.files import File
 from django.db.transaction import atomic
 from rbac.upgrade.role import prepare_action_roles
 import core
@@ -39,13 +38,9 @@ class ParseBundleFromRequest:
     bundle_service: core.bundle.BundleService
 
     @bundle.errors.convert_bundle_errors_to_adcm_ex
-    def do(self, file_from_request: File) -> BundleID:
+    def do(self, archive: Path) -> BundleID:
         adcm_configuration = adcm.get_adcm_configuration()
         verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
-
-        archive = bundle.load.save_bundle_file_from_request_to_downloads(
-            file_from_request=file_from_request, downloads_dir=self.directories.downloads
-        )
 
         with bundle.load.cleanup(on_exit=[archive]):
             unpacking_info = bundle.load.unpack_bundle(

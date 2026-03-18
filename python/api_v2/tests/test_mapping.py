@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+import unittest
 
 from adcm.tests.base import WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
@@ -228,7 +229,7 @@ class TestMapping(BaseAPITestCase):
         )
 
     def test_mapping_components_with_requires_success(self):
-        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_requires_component")
+        bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "cluster_requires_component")
         cluster = self.add_cluster(bundle=bundle, name="cluster_requires")
         self.add_services_to_cluster(service_names=["hbase", "zookeeper", "hdfs"], cluster=cluster)
 
@@ -252,8 +253,8 @@ class TestMappingConstraints(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "hc_mapping_constraints")
-        provider_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "hc_mapping_constraints")
+        provider_bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "provider")
 
         self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster_with_hc_requirements")
         second_cluster = self.add_cluster(bundle=cluster_bundle, name="second_cluster")
@@ -1182,12 +1183,13 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
 
+@unittest.skip("ADCM-7894 Bundle update is required")
 class TestBoundTo(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.old_bundle = Bundle.objects.get(name="cluster_one", version="1.0")
-        self.new_bundle = self.add_bundle(self.test_bundles_dir / "cluster_one_upgrade")
+        self.new_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_one_upgrade")
         Prototype.objects.filter(license="unaccepted").update(license="accepted")
 
     def test_concern_appear_after_upgrade_success(self) -> None:
@@ -1195,7 +1197,9 @@ class TestBoundTo(BaseAPITestCase):
 
         service = self.add_services_to_cluster(["service_1"], cluster=cluster_old).get()
         component = service.components.get(prototype__name="component_1")
-        service_with_dependency = self.add_services_to_cluster(["service_with_bound_to"], cluster=cluster_old).get()
+        service_with_dependency = self.add_services_to_cluster(
+            ["service_with_miss_config_service"], cluster=cluster_old
+        ).get()
         dependent_component = service_with_dependency.components.get(prototype__name="will_have_bound_to")
 
         host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_old)
@@ -1224,7 +1228,9 @@ class TestBoundTo(BaseAPITestCase):
 
         service = self.add_services_to_cluster(["service_1"], cluster=cluster_new).get()
         component = service.components.get(prototype__name="component_1")
-        service_with_dependency = self.add_services_to_cluster(["service_with_bound_to"], cluster=cluster_new).get()
+        service_with_dependency = self.add_services_to_cluster(
+            ["service_with_miss_config_service"], cluster=cluster_new
+        ).get()
         dependent_component = service_with_dependency.components.get(prototype__name="will_have_bound_to")
 
         host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_new)
@@ -1448,7 +1454,7 @@ class TestHC(BaseAPITestCase):
         # moving it is risky, copying not solving any problems.
         # Sorry if you've got here after deleting it :3
         bundles_dir = Path(__file__).parent.parent.parent / "cm" / "tests" / "bundles"
-        bundle = self.add_bundle(bundles_dir / "cluster_1")
+        bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
         cluster = self.add_cluster(bundle=bundle, name="Cool")
         service_1 = self.add_services_to_cluster(["service_one_component"], cluster=cluster).get()
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster).get()

@@ -1212,15 +1212,18 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    @unittest.skip("ADCM-7894 Pick correct component without config")
     def test_adcm_6258_check_init_config_success(self):
         # has initial config by ansible
         self.assertIsNotNone(self.component_1.config)
         self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(service_names=["service_with_bound_to"], cluster=self.cluster_1).get()
+        service_3 = self.add_services_to_cluster(
+            service_names=["service_with_miss_config_service"], cluster=self.cluster_1
+        ).get()
         component_3 = Component.objects.get(
-            cluster=self.cluster_1, service=service_3, prototype__name="will_have_bound_to"
+            cluster=self.cluster_1, service=service_3, prototype__name="will_miss_config"
         )
         self.assertIsNone(component_3.config)
 

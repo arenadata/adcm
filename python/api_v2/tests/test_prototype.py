@@ -30,8 +30,8 @@ class TestPrototype(BaseAPITestCase):
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
         cluster_bundle_2_path = self.test_bundles_dir / "cluster_one_upgrade"
 
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
-        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
+        self.bundle_1 = self.uc.upload_bundle(src=cluster_bundle_1_path)
+        self.bundle_2 = self.uc.upload_bundle(src=cluster_bundle_2_path)
 
         self.cluster_1_prototype: Prototype = self.bundle_1.prototype_set.filter(type=ObjectType.CLUSTER).first()
 

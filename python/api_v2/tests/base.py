@@ -71,8 +71,6 @@ class BaseAPITestCase(APITestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin
 
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
-
         cls.test_bundles_dir = TEST_BUNDLES_DIR
         cls.test_files_dir = TEST_FILES_DIR
 
@@ -80,6 +78,8 @@ class BaseAPITestCase(APITestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin
 
         # task runner "patch"
         cls.task_runner = get_task_runner_manager()
+
+        super().setUpClass()
 
     def setUp(self) -> None:
         # TODO: ADCM-7513

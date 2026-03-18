@@ -16,9 +16,7 @@ from adcm.tests.client import ADCMTestClient
 import django.test
 
 from api_v2.tests.base import TEST_BUNDLES_DIR, TEST_FILES_DIR
-from api_v2.tests.setup.overrides import (
-    get_task_runner_manager,
-)
+from api_v2.tests.setup.overrides import get_task_runner_manager
 
 
 class BaseAPITestCase(django.test.TestCase, WithPreparedFSAndInitADCM):

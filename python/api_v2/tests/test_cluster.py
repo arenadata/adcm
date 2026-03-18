@@ -319,6 +319,7 @@ class TestCluster(BaseAPITestCase):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7807",
                 "service_1",
                 "service_1_clone",
                 "service_2",
@@ -326,7 +327,7 @@ class TestCluster(BaseAPITestCase):
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
-                "service_with_bound_to",
+                "service_with_miss_config_service",
             ],
         )
 
@@ -340,13 +341,14 @@ class TestCluster(BaseAPITestCase):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7807",
                 "service_1",
                 "service_1_clone",
                 "service_2",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
-                "service_with_bound_to",
+                "service_with_miss_config_service",
             ],
         )
 
