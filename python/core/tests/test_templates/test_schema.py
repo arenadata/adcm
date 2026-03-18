@@ -17,7 +17,7 @@ from pydantic import BaseModel, ValidationError
 from core.templates import Jinja2Template, PythonTemplate, Template
 
 
-class TestModel(BaseModel):
+class ModelForTest(BaseModel):
     value: Template
 
 
@@ -25,22 +25,22 @@ class TestTemplateSchema(TestCase):
     def test_adcm_7395_template_schema(self):
         with self.subTest("not dict (plain string) - fail"):
             with self.assertRaises(ValidationError):
-                TestModel.model_validate({"value": "somefile.j2"})
+                ModelForTest.model_validate({"value": "somefile.j2"})
 
         with self.subTest("PythonTemplate | Jinja2Template - success"):
-            TestModel.model_validate(
+            ModelForTest.model_validate(
                 {
                     "value": PythonTemplate(
                         engine={"type": "python"}, file={"path": "some/path.py", "entrypoint": "main"}
                     )
                 }
             )
-            TestModel.model_validate(
+            ModelForTest.model_validate(
                 {"value": Jinja2Template(engine={"type": "jinja2"}, file={"path": "some/path.j2"})}
             )
 
         with self.subTest("correct dict - success"):
-            TestModel.model_validate(
+            ModelForTest.model_validate(
                 {"value": {"engine": {"type": "python"}, "file": {"path": "some/path.py", "entrypoint": "main"}}}
             )
-            TestModel.model_validate({"value": {"engine": {"type": "jinja2"}, "file": {"path": "some/path.j2"}}})
+            ModelForTest.model_validate({"value": {"engine": {"type": "jinja2"}, "file": {"path": "some/path.j2"}}})

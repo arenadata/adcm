@@ -73,6 +73,8 @@ from use_cases.transition.cluster.create import (
 from use_cases.transition.hostprovider.create import create_host, create_hostprovider
 import django.test
 
+from adcm.tests.use_cases import UseCases
+
 APPLICATION_JSON = "application/json"
 
 
@@ -86,7 +88,7 @@ class TestUserCreateDTO(UserCreateDTO):
     password: str = ""
 
 
-class ParallelReadyTestCase:
+class _WithIndependentDirectories:
     """
     Prepares directories for parallel tests run.
 
@@ -131,8 +133,24 @@ class ParallelReadyTestCase:
         for directory in cls.temporary_directories.values():
             directory.mkdir(exist_ok=True, parents=True)
 
+    @classmethod
+    def _clean_directories(cls):
+        directories_to_clean = (
+            cls.directories.bundles,
+            cls.directories.downloads,
+            cls.directories.files,
+            cls.directories.logs,
+            cls.directories.run,
+        )
 
-class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, ParallelReadyTestCase):
+        for item in chain.from_iterable(path.iterdir() for path in directories_to_clean):
+            if item.is_dir():
+                rmtree(item)
+            elif item.name != ".gitkeep":
+                item.unlink()
+
+
+class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, _WithIndependentDirectories):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -141,30 +159,22 @@ class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, ParallelReadyTestCas
 
         cls.base_dir = Path(__file__).parent.parent.parent.parent
 
+        container = make_default_dishka_container_for_tests()
+
         init_roles()
-        init(container=make_default_dishka_container_for_tests())
+        init(container=container)
 
         adcm = ADCM.objects.first()
         config_log = ConfigLog.objects.get(obj_ref=adcm.config)
         config_log.config["auth_policy"]["max_password_length"] = 20
         config_log.save(update_fields=["config"])
 
+        cls.uc = UseCases(container=container)
+
     def tearDown(self) -> None:
         super().tearDown()
 
-        directories_to_clean = (
-            self.directories.bundles,
-            self.directories.downloads,
-            self.directories.files,
-            self.directories.logs,
-            self.directories.run,
-        )
-
-        for item in chain.from_iterable(path.iterdir() for path in directories_to_clean):
-            if item.is_dir():
-                rmtree(item)
-            elif item.name != ".gitkeep":
-                item.unlink()
+        self._clean_directories()
 
 
 class BundleLogicMixin:

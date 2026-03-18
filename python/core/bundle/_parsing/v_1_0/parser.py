@@ -57,12 +57,17 @@ class Parser(PydanticParser[_ParsedRootDefinition, _ParsedDefinition]):
     def _get_config_model(self) -> type[ConfigJinjaSchema]:
         return ConfigJinjaSchema
 
-    def _get_scripts_model(self, mode: Literal["action", "wizard"]) -> type[DynamicScriptsSchema | WizardScriptsSchema]:
+    def _get_scripts_model(
+        self, mode: Literal["action", "upgrade", "wizard"]
+    ) -> type[DynamicScriptsSchema | WizardScriptsSchema]:
         match mode:
             case "action":
                 return DynamicScriptsSchema
             case "wizard":
                 return WizardScriptsSchema
+            case "upgrade":
+                message = "Upgrade scripts templating aren't supported by 1.0 version"
+                raise NotImplementedError(message)
 
     def _flatten_definitions(
         self, definition: _ParsedRootDefinition

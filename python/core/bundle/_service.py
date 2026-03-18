@@ -103,6 +103,21 @@ class BundleService:
             mode="action",
         )
 
+    def parse_to_upgrade_scripts(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+        action_allow_to_terminate: bool,
+    ) -> list[action.JobSpec]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        return parser.parse_scripts(
+            scripts=data,
+            template_path=template_path,
+            action_allow_to_terminate=action_allow_to_terminate,
+            mode="upgrade",
+        )
+
     def parse_to_wizard_scripts(
         self,
         data: list[dict],

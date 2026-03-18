@@ -38,7 +38,7 @@ from core.bundle._parsing.v_2_0.schema import (
     ServiceRequiresSchema,
     Version,
 )
-from core.bundle._parsing.v_2_0.upgrades import Upgrades
+from core.bundle._parsing.v_2_0.upgrades import ClusterUpgrades, ProviderUpgrades, UpgradeDynamicInternalScript
 
 # Cluster Objects
 
@@ -121,7 +121,7 @@ class Cluster(BundleModel):
     license: License
     imports: Imports
     export: Export
-    upgrade: Upgrades
+    upgrade: ClusterUpgrades
     allow_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
 
 
@@ -168,7 +168,7 @@ class Provider(BundleModel):
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
     license: License
-    upgrade: Upgrades
+    upgrade: ProviderUpgrades
 
 
 # ADCM
@@ -193,7 +193,7 @@ class ADCMSchema(BundleModel):
 
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
-    upgrade: Upgrades
+    upgrade: ProviderUpgrades
 
 
 # Dynamic Blocks
@@ -201,6 +201,10 @@ class ADCMSchema(BundleModel):
 
 class DynamicActionScripts(BundleModel):
     scripts: Annotated[list[DynamicActionScript], Field(min_length=1)]
+
+
+class DynamicUpgradeScripts(BundleModel):
+    scripts: Annotated[list[UpgradeDynamicInternalScript], Field(min_length=1)]
 
 
 class DynamicWizardScripts(BundleModel):

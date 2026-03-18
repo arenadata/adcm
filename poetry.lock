@@ -898,6 +898,24 @@ typing-extensions = {version = ">=4.6.0", markers = "python_version < \"3.13\""}
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "faker"
+version = "40.11.0"
+description = "Faker is a Python package that generates fake data for you."
+optional = false
+python-versions = ">=3.10"
+groups = ["unittests"]
+files = [
+    {file = "faker-40.11.0-py3-none-any.whl", hash = "sha256:0e9816c950528d2a37d74863f3ef389ea9a3a936cbcde0b11b8499942e25bf90"},
+    {file = "faker-40.11.0.tar.gz", hash = "sha256:7c419299103b13126bd02ec14bd2b47b946edb5a5eedf305e66a193b25f9a734"},
+]
+
+[package.dependencies]
+tzdata = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+tzdata = ["tzdata"]
+
+[[package]]
 name = "filelock"
 version = "3.19.1"
 description = "A platform independent file lock."
@@ -2749,12 +2767,12 @@ version = "2025.2"
 description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
-groups = ["main", "celery", "lint", "profiling"]
+groups = ["main", "celery", "lint", "profiling", "unittests"]
 files = [
     {file = "tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8"},
     {file = "tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9"},
 ]
-markers = {main = "sys_platform == \"win32\"", lint = "sys_platform == \"win32\"", profiling = "sys_platform == \"win32\""}
+markers = {main = "sys_platform == \"win32\"", lint = "sys_platform == \"win32\"", profiling = "sys_platform == \"win32\"", unittests = "platform_system == \"Windows\""}
 
 [[package]]
 name = "uritemplate"
@@ -2858,4 +2876,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.10"
-content-hash = "36b78ce21e51ef731afaf91c6fe2d908dee1668f76d98f7fd6b23f05b33e344f"
+content-hash = "099d38ec02df32e3664cefe7851a4cdf7ecf5c75f6528c6fcb328c71866d2b6a"

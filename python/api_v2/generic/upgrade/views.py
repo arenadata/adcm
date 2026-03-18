@@ -25,7 +25,6 @@ from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog,
 from core.legacy.cluster.types import HostComponentEntry
 from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
-from infra.services import get_config_service
 from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -194,7 +193,14 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
 
     @action(methods=["post"], detail=True)
     @inject
-    def run(self, request: Request, *_, schedule_task: FromDishka[ScheduleTask], **__) -> Response:
+    def run(
+        self,
+        request: Request,
+        *_,
+        config_service: FromDishka[core.config.ConfigService],
+        schedule_task: FromDishka[ScheduleTask],
+        **__,
+    ) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -229,8 +235,6 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             mapping=mapping,
             launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
-
-        config_service = get_config_service()
 
         result = upgrade_object(
             obj=parent,

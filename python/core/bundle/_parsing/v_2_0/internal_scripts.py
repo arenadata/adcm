@@ -54,7 +54,7 @@ class ComponentConfigApplyRule:
     component_name: str
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ConfigApplyParameterItem:
     key: str
     value: Any

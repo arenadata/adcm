@@ -38,6 +38,13 @@ from api_v2.tests.base import BaseAPITestCase
 
 
 class TestClusterAudit(BaseAPITestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.required_import_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_with_required_import")
+        cls.upgrade_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one_upgrade")
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -58,8 +65,7 @@ class TestClusterAudit(BaseAPITestCase):
             cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"
         )
 
-        required_import_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_with_required_import")
-        self.import_cluster = self.add_cluster(bundle=required_import_bundle, name="required_import_cluster")
+        self.import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
         self.cluster_1_config_post_data = {
             "config": {
@@ -84,7 +90,6 @@ class TestClusterAudit(BaseAPITestCase):
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
         self.host_action = Action.objects.get(name="cluster_on_host", prototype=self.cluster_1.prototype)
 
-        self.upgrade_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one_upgrade")
         self.cluster_upgrade = Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):

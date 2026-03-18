@@ -245,6 +245,7 @@ class ScheduleTask:
                         action=action_orm,
                         bundle_context=bundle_context,
                         task_args=task_args,
+                        is_upgrade_action=is_upgrade_action,
                         job_service=self.job_service,
                         context_gatherer=self.context_gatherer,
                         bundle_renderer=self.bundle_renderer,
@@ -413,6 +414,7 @@ def _resolve_scripts(
     action: Action,
     bundle_context: core.bundle.BundleContext,
     task_args: TaskArgs,
+    is_upgrade_action: bool,
     job_service: core.job.JobService,
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
@@ -437,7 +439,12 @@ def _resolve_scripts(
         return scripts
 
     template = parse_template(action.scripts_template)
-    scripts = bundle_renderer.render_scripts_for_action(
+
+    # joggling that may be avoided (not sure about complexity of alternative solution)
+    render_func = (
+        bundle_renderer.render_scripts_for_upgrade if is_upgrade_action else bundle_renderer.render_scripts_for_action
+    )
+    scripts = render_func(
         template=template,
         args=task_args,
         bundle_context=bundle_context,
