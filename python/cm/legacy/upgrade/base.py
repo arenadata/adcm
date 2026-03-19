@@ -229,7 +229,7 @@ def _check_upgrade_import(obj: Cluster, upgrade: Upgrade) -> tuple[bool, str]:
                     f"does not match export version: {export.prototype.version} ({obj_ref(obj=export)})",
                 )
         except PrototypeImport.DoesNotExist:
-            cbind.delete()
+            pass
 
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = cbind.source_service if cbind.source_service else cbind.source_cluster
