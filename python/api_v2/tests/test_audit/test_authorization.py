@@ -20,6 +20,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_N
 import pytz
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import SkipStatusScenarios
 
 
 class TestAuthorizationAudit(BaseAPITestCase):
@@ -68,6 +69,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
             ),
             new_password="newtestpassword",
             new_user_groups=None,
+            status_scenarios=SkipStatusScenarios(),
         )
 
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"

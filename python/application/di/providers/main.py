@@ -30,6 +30,7 @@ from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from cm.legacy.services.job.run import start_task
+from cm.transition.status import StatusScenarios
 from core import secrets
 from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
@@ -39,6 +40,7 @@ from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
+from rbac.scenarios import RBACScenarios
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.logs.check import AddCheckLogRecordForJob
@@ -179,6 +181,8 @@ class ScenariosProvider(Provider):
 
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
+    status_scenarios = provide(StatusScenarios)
+    rbac_scenarios = provide(RBACScenarios)
     fill_wizard_step_spec = provide(
         FillWizardStepSpecLegacy,
         provides=FillWizardStepSpec[ActionArgs, TaskArgs],

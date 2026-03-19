@@ -61,6 +61,7 @@ from django.db.transaction import atomic
 from infra.services import get_config_service
 from init_db import init
 from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.scenarios import RBACScenarios
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -361,22 +362,29 @@ class BusinessLogicMixin(BundleLogicMixin):
         return Provider.objects.get(id=provider_id)
 
     def add_host(self, provider: Provider, fqdn: str, cluster: Cluster | None = None) -> Host:
-        host_id = create_host(hostprovider=provider, name=fqdn, cluster=cluster, config_service=get_config_service())
+        host_id = create_host(
+            hostprovider=provider,
+            name=fqdn,
+            cluster=cluster,
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
+        )
 
         return Host.objects.get(id=host_id)
 
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
-        return add_host_to_cluster(cluster=cluster, host=host)
+        return add_host_to_cluster(cluster=cluster, host=host, rbac_scenarios=RBACScenarios())
 
     @staticmethod
     def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[Service]:
         service_prototypes = Prototype.objects.filter(
             type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         ).values_list("id", flat=True)
-        services = CreateServicesFromPrototypes(config_service=get_config_service()).do(
-            cluster=cluster, prototype_ids=list(service_prototypes)
-        )
+        services = CreateServicesFromPrototypes(
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
+        ).do(cluster=cluster, prototype_ids=list(service_prototypes))
         return Service.objects.filter(id__in=[service.id for service in services])
 
     @staticmethod

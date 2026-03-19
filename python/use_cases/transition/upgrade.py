@@ -22,6 +22,7 @@ from cm.legacy.status_api import send_prototype_and_state_update_event
 from cm.legacy.upgrade import check_upgrade, update_before_upgrade
 from core.types import TaskID
 from django.db.transaction import atomic
+from rbac.scenarios import RBACScenarios
 import core
 
 from use_cases.dto import UpgradeActionDTO
@@ -36,6 +37,7 @@ def upgrade_object(
     payload: UpgradeActionDTO,
     schedule_task: ScheduleTask,
     config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
     with atomic():
         check_license(prototype=obj.prototype)
@@ -54,7 +56,7 @@ def upgrade_object(
         update_before_upgrade(obj=obj)
 
         if not upgrade.action:
-            callbacks = build_switch_revert_callbacks(config_service=config_service)
+            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
             bundle_switch(obj=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
 
             if upgrade.state_on_success:

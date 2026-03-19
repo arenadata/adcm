@@ -16,12 +16,11 @@ from cm.legacy.config import init_object_config
 from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.status.notify import reset_hc_map
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
+from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, BundleID, ProviderID
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
@@ -30,7 +29,15 @@ from use_cases.transition.job.schedule import ScheduleTask
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
-def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster: Cluster | None) -> Host:
+def create_host(
+    bundle_id: BundleID,
+    provider_id: ProviderID,
+    fqdn: str,
+    cluster: Cluster | None,
+    rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios | None = None,
+) -> Host:
+    status_scenarios = status_scenarios or StatusScenarios()
     host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle_id=bundle_id)
     check_license(prototype=host_prototype)
 
@@ -53,13 +60,13 @@ def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster
     if attached_concern_map:
         concern_map[ADCMCoreType.HOST][host.id] |= attached_concern_map[ADCMCoreType.HOST][host.id]
 
-    re_apply_object_policy(apply_object=host.provider)
+    rbac_scenarios.re_apply_object_policy(apply_object=host.provider)
 
     if cluster := host.cluster:
-        re_apply_object_policy(apply_object=cluster)
+        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
-    reset_hc_map()
-    notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
+    status_scenarios.reset_hc_map()
+    status_scenarios.notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
 
     if cluster:
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)

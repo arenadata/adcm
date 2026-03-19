@@ -15,6 +15,7 @@ from unittest.mock import patch
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
+from rbac.scenarios import RBACScenarios
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError, PluginValidationError
 from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor
@@ -67,6 +68,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                 prototype=self.host_prototype,
                 fqdn="special",
                 description="this is the best host ever",
+                rbac_scenarios=RBACScenarios(),
             )
 
         with self.subTest("Only fqdn"):
@@ -83,6 +85,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                 prototype=self.host_prototype,
                 fqdn="cool",
                 description="",
+                rbac_scenarios=RBACScenarios(),
             )
 
         with self.subTest("Check return value"):

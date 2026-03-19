@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
 from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
@@ -34,12 +33,7 @@ from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, Co
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    Cluster,
-    Component,
     ConcernItem,
-    Host,
-    HostComponent,
-    Service,
 )
 
 
@@ -188,145 +182,6 @@ def get_raw_status(url: str) -> int:
     if "status" in json_data:
         return json_data["status"]
     return settings.EMPTY_STATUS_STATUS_CODE
-
-
-def get_status(obj: ADCMEntity, url: str) -> int:
-    if obj.prototype.monitoring == "passive":
-        return 0
-
-    return get_raw_status(url=url)
-
-
-def get_cluster_status(cluster: Cluster) -> int:
-    return get_raw_status(url=f"cluster/{cluster.id}/")
-
-
-def get_service_status(service: Service) -> int:
-    return get_status(obj=service, url=f"cluster/{service.cluster.id}/service/{service.id}/")
-
-
-def get_host_status(host: Host) -> int:
-    return get_status(obj=host, url=f"host/{host.id}/")
-
-
-def get_hc_status(hostcomponent: HostComponent) -> int:
-    return get_status(
-        obj=hostcomponent.component,
-        url=f"host/{hostcomponent.host_id}/component/{hostcomponent.component_id}/",
-    )
-
-
-def get_host_comp_status(host: Host, component: Component) -> int:
-    return get_status(obj=component, url=f"host/{host.id}/component/{component.id}/")
-
-
-def get_component_status(component: Component) -> int:
-    return get_status(obj=component, url=f"component/{component.id}/")
-
-
-def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:
-    if url_type == "service":
-        response = api_request(method="get", url=f"cluster/{obj.cluster.id}/service/{obj.id}/?view=interface")
-    else:
-        response = api_request(method="get", url=f"{url_type}/{obj.id}/?view=interface")
-
-    if response is None:
-        return None
-
-    return response.json()
-
-
-def make_ui_single_host_status(host: Host) -> dict:
-    return {
-        "id": host.id,
-        "name": host.fqdn,
-        "status": get_host_status(host=host),
-    }
-
-
-def make_ui_component_status(component: Component, host_components: Iterable[HostComponent]) -> dict:
-    host_list = []
-    for hostcomponent in host_components:
-        host_list.append(
-            {
-                "id": hostcomponent.host.id,
-                "name": hostcomponent.host.fqdn,
-                "status": get_host_comp_status(host=hostcomponent.host, component=hostcomponent.component),
-            },
-        )
-
-    return {
-        "id": component.id,
-        "name": component.display_name,
-        "status": get_component_status(component=component),
-        "hosts": host_list,
-    }
-
-
-def make_ui_service_status(service: Service, host_components: Iterable[HostComponent]) -> dict:
-    component_hc_map = defaultdict(list)
-    for hostcomponent in host_components:
-        component_hc_map[hostcomponent.component].append(hostcomponent)
-
-    comp_list = []
-    for component, hc_list in component_hc_map.items():
-        comp_list.append(make_ui_component_status(component=component, host_components=hc_list))
-
-    service_map = get_object_map(obj=service, url_type="service")
-    return {
-        "id": service.id,
-        "name": service.display_name,
-        "status": 32 if service_map is None else service_map.get("status", 0),
-        "hc": comp_list,
-    }
-
-
-def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostComponent]) -> dict:
-    service_hc_map = defaultdict(list)
-    for hostcomponent in host_components:
-        service_hc_map[hostcomponent.service].append(hostcomponent)
-
-    service_list = []
-    for service, hc_list in service_hc_map.items():
-        service_list.append(make_ui_service_status(service=service, host_components=hc_list))
-
-    host_list = []
-    for host in Host.obj.filter(cluster=cluster):
-        host_list.append(make_ui_single_host_status(host=host))
-
-    cluster_map = get_object_map(obj=cluster, url_type="cluster")
-
-    return {
-        "name": cluster.name,
-        "status": 32 if cluster_map is None else cluster_map.get("status", 0),
-        "chilren": {  # backward compatibility typo
-            "hosts": host_list,
-            "services": service_list,
-        },
-    }
-
-
-def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
-    comp_list = []
-
-    for hostcomponent in host_components:
-        comp_list.append(
-            {
-                "id": hostcomponent.component.id,
-                "name": hostcomponent.component.display_name,
-                "status": get_component_status(component=hostcomponent.component),
-                "service_id": hostcomponent.service.id,
-            },
-        )
-
-    host_map = get_object_map(obj=host, url_type="host")
-
-    return {
-        "id": host.id,
-        "name": host.fqdn,
-        "status": 32 if host_map is None else host_map.get("status", 0),
-        "hc": comp_list,
-    }
 
 
 def notify_about_redistributed_concerns(

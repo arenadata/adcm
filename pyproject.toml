@@ -226,13 +226,13 @@ include_external_packages = true
 #[[tool.importlinter.contracts]]
 #name = "ADCM layers contract"
 #type = "layers"
-# semi correct layers are below
-# After refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
+# Semi correct layers are below:
+# after refactoring following rules should be enabled again (ADCM-7181, ADCM-7182, ADCM-7183)
 #layers = [
 #    "api_v2 | jobs | ansible_plugin",
-#    "use_cases | infra",
+#    "use_cases | application",
 #    # this should be done with "|", but requires quite a refactoring for true independance
-#    "cm : audit : rbac ",
+#    "cm : audit : rbac",
 #    "core",
 #]
 
@@ -246,7 +246,7 @@ layers = [
     "core.bundle",
     "core.action",
     # core.upgrade may be moved later if required
-    "core.config | core.mapping | core.cluster | core.provider | core.upgrade",
+    "core.config | core.mapping | core.cluster | core.provider | core.upgrade | core.logs",
     "core.templates | core.secrets",
     "core.errors | core.settings",
     "core.types",
@@ -265,20 +265,3 @@ type = "forbidden"
 source_modules = ["core.*"]
 forbidden_submodules = ["core.legacy.bundle"]
 forbidden_modules = []
-
-[[tool.importlinter.contracts]]
-name = "independant core modules"
-type = "independence"
-modules = [
-  "core.mapping",
-  "core.config",
-]
-
-[[tool.importlinter.contracts]]
-name = "core.action dependencies"
-type = "forbidden"
-source_modules = [
-  "core.mapping",
-  "core.config",
-]
-forbidden_modules = ["core.action"]

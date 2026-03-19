@@ -57,7 +57,7 @@ from core.types import (
 )
 from django.db.transaction import atomic
 from django.utils import timezone
-from rbac.roles import re_apply_policy_for_jobs
+from rbac.scenarios import RBACScenarios
 import core
 
 from use_cases.dto import InputConfigConverter
@@ -158,6 +158,7 @@ class PerformWizardProcessOperation:
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     fill_wizard_step_spec: FillWizardStepSpec[ActionArgs, TaskArgs]
     start_task: TaskStarter
+    rbac_scenarios: RBACScenarios
 
     @convert_db_errors
     @convert_bundle_errors_to_adcm_ex
@@ -349,7 +350,7 @@ class PerformWizardProcessOperation:
                 # todo actually should use starter to avoid hardcoding
                 task_orm = TaskLog.objects.get(id=task_id)
 
-                re_apply_policy_for_jobs(task=task_orm)
+                self.rbac_scenarios.re_apply_policy_for_jobs(task=task_orm)
 
                 self.start_task(task_orm)
                 return None

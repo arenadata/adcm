@@ -15,9 +15,8 @@ from typing import Callable, Collection
 
 from cm.converters import core_type_to_model, host_group_type_to_model
 from cm.errors import AdcmEx
-from cm.legacy.services.status.client import retrieve_status_map
-from cm.legacy.status_api import get_raw_status
 from cm.models import Cluster, Component, Host, Service
+from cm.transition.status import StatusScenarios
 from core.legacy.cluster.errors import (
     ClusterAddHostError,
     HostAlreadyBoundError,
@@ -25,6 +24,7 @@ from core.legacy.cluster.errors import (
     HostDoesNotExistError,
 )
 from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
 from djangorestframework_camel_case.parser import (
@@ -44,6 +44,8 @@ from rest_framework.mixins import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import GenericViewSet
+
+from api_v2.utils.di import inject
 
 
 class APIRoot(APIRootView):
@@ -90,10 +92,10 @@ class ObjectWithStatusViewMixin:
     retrieve_single_status_actions: Collection[str] = ("retrieve", "update", "partial_update")
 
     def get_serializer_context(self) -> dict:
-        context = super().get_serializer_context()
+        context = {**super().get_serializer_context(), "status_scenarios": self._get_status_scenarios(self.request)}
 
         if self.action in self.retrieve_status_map_actions:
-            return {**context, "status_map": retrieve_status_map()}
+            return {**context, "status_map": self._retrieve_status_map(self.request)}
 
         if self.action in {"create", "create_duplicate"}:
             return {**context, "status": 0}
@@ -129,7 +131,19 @@ class ObjectWithStatusViewMixin:
             message = f"Failed to detect Status Server URL for {view_model} from {self.kwargs=}"
             raise RuntimeError(message)
 
-        return {**context, "status": get_raw_status(url=url)}
+        return {**context, "status": self._retrieve_raw_status(self.request, url=url)}
+
+    @inject
+    def _retrieve_status_map(self, request, status_scenarios: FromDishka[StatusScenarios]):  # noqa: ARG002
+        return status_scenarios.retrieve_status_map()
+
+    @inject
+    def _retrieve_raw_status(self, request, url: str, status_scenarios: FromDishka[StatusScenarios]):  # noqa: ARG002
+        return status_scenarios.get_raw_status(url=url)
+
+    @inject
+    def _get_status_scenarios(self, request, status_scenarios: FromDishka[StatusScenarios]):  # noqa: ARG002
+        return status_scenarios
 
 
 # Parent extractor helpers

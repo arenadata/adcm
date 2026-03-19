@@ -12,7 +12,6 @@
 
 from cm.errors import raise_adcm_ex
 from cm.legacy.api import is_version_suitable
-from cm.legacy.services.status.client import retrieve_status_map
 from cm.legacy.services.status.convert import convert_to_entity_status
 from cm.models import (
     Cluster,
@@ -23,6 +22,7 @@ from cm.models import (
     PrototypeImport,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from django.db.models import QuerySet
 
 from api_v2.generic.imports.types import (
@@ -173,7 +173,7 @@ def _get_import_candidates(prototype: Prototype) -> list[ClusterImportCandidate]
     return list(cluster_candidates.values())
 
 
-def get_imports(obj: Cluster | Service) -> list[UIObjectImport]:
+def get_imports(obj: Cluster | Service, status_scenarios: StatusScenarios) -> list[UIObjectImport]:
     if isinstance(obj, Service):
         cluster = obj.cluster
         service = obj
@@ -191,7 +191,7 @@ def get_imports(obj: Cluster | Service) -> list[UIObjectImport]:
         .order_by("pk")
     )
 
-    status_map = retrieve_status_map()
+    status_map = status_scenarios.retrieve_status_map()
 
     for import_candidate in sorted(import_candidates, key=lambda candidate: candidate["obj"].name):
         cluster_candidate = import_candidate["obj"]

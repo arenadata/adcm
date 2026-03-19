@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch
-
 from adcm.tests.base import WithPreparedFSAndInitADCM
 from adcm.tests.client import ADCMTestClient
 from rbac.models import User
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 import django.test
+
+from api_v2.tests.setup.overrides import get_status_scenarios_manager
 
 
 class TestStatusServerSync(django.test.TestCase, WithPreparedFSAndInitADCM):
@@ -26,25 +26,26 @@ class TestStatusServerSync(django.test.TestCase, WithPreparedFSAndInitADCM):
     def get_sync_endpoint(self):
         return self.client.v2 / "internal" / "unstable" / "status-server" / "sync"
 
+    def setUp(self) -> None:
+        get_status_scenarios_manager().reset()
+
     def test_authorized_user_call_sync(self):
         status_user = User.objects.get(username="status")
 
         self.client.force_authenticate(status_user)
 
         endpoint = self.get_sync_endpoint()
-        with patch("api_v2.internal.views.notify.update_all") as mock:
-            response = endpoint.post()
+        response = endpoint.post()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        mock.assert_called_once()
+        get_status_scenarios_manager().expect_called_once("update_all")
 
     def test_no_user_call_sync(self):
         endpoint = self.get_sync_endpoint()
-        with patch("api_v2.internal.views.notify.update_all") as mock:
-            response = endpoint.post()
+        response = endpoint.post()
 
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
-        mock.assert_not_called()
+        get_status_scenarios_manager().expect_not_called("update_all")
 
     def test_unauthorized_user_call_sync(self):
         admin_user = User.objects.get(username="admin")
@@ -52,8 +53,7 @@ class TestStatusServerSync(django.test.TestCase, WithPreparedFSAndInitADCM):
         self.client.force_authenticate(admin_user)
 
         endpoint = self.get_sync_endpoint()
-        with patch("api_v2.internal.views.notify.update_all") as mock:
-            response = endpoint.post()
+        response = endpoint.post()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        mock.assert_not_called()
+        get_status_scenarios_manager().expect_not_called("update_all")

@@ -22,7 +22,7 @@ from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog
 from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
-from rbac.roles import apply_policy_for_new_config
+from rbac.scenarios import RBACScenarios
 import core
 
 T = TypeVar("T", contravariant=True)
@@ -50,6 +50,7 @@ def update_configuration_of_object(
     convert: InputConfigConverter[T],
     config_extra_info: core.config.ConfigurationExtraInfo,
     config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> ConfigID:
     from cm.legacy.api import raise_outdated_config_flag_if_required
 
@@ -91,7 +92,9 @@ def update_configuration_of_object(
         # flag on ADCM can't be raised
         if not isinstance(owner, ADCM) and result.has_changed:
             concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
-        apply_policy_for_new_config(config_object=owner, config_log=_get_config_log(id_=main_config_log_id))
+        rbac_scenarios.apply_policy_for_new_config(
+            config_object=owner, config_log=_get_config_log(id_=main_config_log_id)
+        )
 
         prepare_files = partial(
             config_service.prepare_file_parameter_values_on_fs,
@@ -125,6 +128,7 @@ def update_configuration_of_host_group(
     config_extra_info: core.config.ConfigurationExtraInfo,
     group: ConfigHostGroup,
     config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> ConfigID:
     from cm.legacy.api import raise_outdated_config_flag_if_required
 
@@ -161,7 +165,7 @@ def update_configuration_of_host_group(
         # flag on ADCM can't be raised
         if not isinstance(owner, ADCM) and result.has_changed:
             concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
-        apply_policy_for_new_config(config_object=owner, config_log=_get_config_log(config_id))
+        rbac_scenarios.apply_policy_for_new_config(config_object=owner, config_log=_get_config_log(config_id))
 
         # see why it's in here in main config save
         config_service.prepare_file_parameter_values_on_fs(
@@ -187,6 +191,7 @@ def update_configuration_from_job(
     description: str,
     job_id: JobID,
     config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
     # possible BS arguments, need to rethink them
     owner_orm: ADCMEntity,
 ) -> tuple[list[core.config.ChangeRequest], HasChanged]:
@@ -217,7 +222,7 @@ def update_configuration_from_job(
         )
 
         config_log_orm = ConfigLog.objects.get(id=config_id)
-        apply_policy_for_new_config(config_object=owner_orm, config_log=config_log_orm)
+        rbac_scenarios.apply_policy_for_new_config(config_object=owner_orm, config_log=config_log_orm)
 
         update_related_configs(
             job_id=job_id,

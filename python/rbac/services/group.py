@@ -14,7 +14,7 @@
 import functools
 
 from cm.errors import raise_adcm_ex
-from cm.legacy.status_api import send_object_update_event
+from cm.transition.status import StatusScenarios
 from core.types import RBACCoreType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -69,6 +69,7 @@ def create(
 def update(
     group: models.Group,
     *,
+    status_scenarios: StatusScenarios,
     partial: bool = False,
     name_to_display: str = Empty,
     description: str = Empty,
@@ -87,7 +88,7 @@ def update(
 
     on_commit(
         func=functools.partial(
-            send_object_update_event,
+            status_scenarios.send_object_update_event,
             obj_id=group.id,
             obj_type=RBACCoreType.GROUP.value,
             changes={

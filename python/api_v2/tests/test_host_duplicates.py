@@ -15,6 +15,7 @@ from operator import itemgetter
 from cm.models import Action, Cluster, Component, Host, MaintenanceMode
 from core.types import HostID
 from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -42,7 +43,11 @@ class TestDuplicateHost(BaseAPITestCase):
 
     def create_duplicate(self, origin: Host, name: str = "duplicate", cluster: Cluster | None = None) -> Host:
         duplicate_id = create_duplicate(
-            host_id=origin.pk, name=name, cluster_id=getattr(cluster, "id", None), config_service=get_config_service()
+            host_id=origin.pk,
+            name=name,
+            cluster_id=getattr(cluster, "id", None),
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
         )
         return Host.objects.get(id=duplicate_id)
 
@@ -83,9 +88,14 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertDictContainsSubset(expected_data, response.json())
 
     def test_add_duplicate_to_cluster_after_creation(self):
-        duplicate_1_id = create_duplicate(host_id=self.host_1.id, name="awesome", config_service=get_config_service())
+        duplicate_1_id = create_duplicate(
+            host_id=self.host_1.id, name="awesome", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+        )
         duplicate_2_id = create_duplicate(
-            host_id=self.host_1.id, name="another-host", config_service=get_config_service()
+            host_id=self.host_1.id,
+            name="another-host",
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
         )
 
         expected_duplicates = [
@@ -134,8 +144,15 @@ class TestDuplicateHost(BaseAPITestCase):
         self.assertDictContainsSubset(expected_data, response.json())
 
     def test_adcm_6943_new_host_with_name_of_duplicate_pass(self):
-        create_duplicate(host_id=self.host_1.id, name="awesome", config_service=get_config_service())
-        create_duplicate(host_id=self.host_1.id, name="awesome-2", config_service=get_config_service())
+        create_duplicate(
+            host_id=self.host_1.id, name="awesome", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+        )
+        create_duplicate(
+            host_id=self.host_1.id,
+            name="awesome-2",
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
+        )
         with self.subTest("New host"):
             response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
 
@@ -154,9 +171,13 @@ class TestDuplicateHost(BaseAPITestCase):
             name="duplicate-1",
             cluster_id=self.cluster_1.id,
             config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
         )
         duplicate_2_id = create_duplicate(
-            host_id=self.host_1.id, name="duplicate-2", config_service=get_config_service()
+            host_id=self.host_1.id,
+            name="duplicate-2",
+            config_service=get_config_service(),
+            rbac_scenarios=RBACScenarios(),
         )
 
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).first()
@@ -285,7 +306,9 @@ class TestDuplicateHost(BaseAPITestCase):
         # ("django_content_type"."id" = "auth_permission"."content_type_id") WHERE
         # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_host') LIMIT 21
         # yet amount of queries won't increase when more instances/duplicates arrive
-        create_duplicate(host_id=self.host_1.pk, name="jjjj", config_service=get_config_service())
+        create_duplicate(
+            host_id=self.host_1.pk, name="jjjj", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+        )
 
         with self.assertNumQueries(expected_queries_amount):
             response = (self.client.v2 / "hosts").get()
@@ -294,7 +317,9 @@ class TestDuplicateHost(BaseAPITestCase):
 
         self.add_host(provider=self.provider, fqdn="something")
         another_host = self.add_host(provider=self.provider, fqdn="something-else")
-        create_duplicate(host_id=another_host.pk, name="wow", config_service=get_config_service())
+        create_duplicate(
+            host_id=another_host.pk, name="wow", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+        )
 
         with self.assertNumQueries(expected_queries_amount):
             response = (self.client.v2 / "hosts").get()

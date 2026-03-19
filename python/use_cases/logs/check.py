@@ -15,13 +15,14 @@ from dataclasses import dataclass
 from core.logs import CheckLogArguments
 from core.types import JobID
 from django.db.transaction import atomic
-from rbac.roles import assign_view_logstorage_permissions_by_job
+from rbac.scenarios import RBACScenarios
 import core
 
 
 @dataclass(slots=True)
 class AddCheckLogRecordForJob:
     logs_service: core.logs.LogsService
+    rbac_scenarios: RBACScenarios
 
     @atomic
     def do(self, job_id: JobID, check_log_arguments: CheckLogArguments):
@@ -29,4 +30,4 @@ class AddCheckLogRecordForJob:
         log_storage_id, is_created = self.logs_service.add_log_storage_for_check_log(job_id=job_id)
 
         if is_created:
-            assign_view_logstorage_permissions_by_job(log_storage_id=log_storage_id)
+            self.rbac_scenarios.assign_view_logstorage_permissions_by_job(log_storage_id=log_storage_id)

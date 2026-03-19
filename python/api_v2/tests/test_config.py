@@ -37,6 +37,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from infra.services import get_config_service
 from init_db import init
+from rbac.scenarios import RBACScenarios
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -52,7 +53,7 @@ from rest_framework.test import APITestCase
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
 
 from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
-from api_v2.tests.setup.overrides import make_default_dishka_container_for_tests
+from api_v2.tests.test_actions import make_default_dishka_container_for_tests
 from api_v2.utils.di import prepare_container
 
 CONFIGS = "configs"
@@ -3223,7 +3224,7 @@ class TestNoConfig(APITestCase, WithPreparedFSAndInitADCM, APIV2Mixin):
 
         # revert upgrade
         config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service)
+        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
         bundle_revert(obj=self.cluster, callbacks=callbacks, config_service=config_service)
 
         # CHGs must be restored

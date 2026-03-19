@@ -13,14 +13,15 @@
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_HOST_GROUP_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
-from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
+from cm.transition.status import StatusScenarios
 from core.types import ADCMHostGroupType
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -40,6 +41,7 @@ from api_v2.generic.config_host_group.permissions import CHGHostsPermissions, CH
 from api_v2.generic.config_host_group.serializers import CHGSerializer, HostCHGSerializer
 from api_v2.host.filters import HostGroupHostFilter
 from api_v2.host.serializers import HostAddSerializer, HostShortSerializer
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -72,7 +74,8 @@ class CHGViewSet(
             .filter(object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object))
         )
 
-    def create(self, request: Request, *_, **__):
+    @inject
+    def create(self, request: Request, *_, rbac_scenarios: FromDishka[RBACScenarios], **__):
         parent_object = self.get_parent_object(raise_=NotFound())
 
         self._check_parent_permissions(parent_object=parent_object)
@@ -98,7 +101,7 @@ class CHGViewSet(
         except core.config.ObjectWithoutConfigError as e:
             raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR") from e
 
-        re_apply_object_policy(apply_object=parent_object)
+        rbac_scenarios.re_apply_object_policy(apply_object=parent_object)
 
         return Response(data=self.get_serializer(host_group).data, status=HTTP_201_CREATED)
 
@@ -181,7 +184,8 @@ class CHGViewSet(
         instance.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
-    def partial_update(self, request: Request, *_, **__):
+    @inject
+    def partial_update(self, request: Request, *_, status_scenarios: FromDishka[StatusScenarios], **__):
         parent_object = self.get_parent_object()
         instance = get_object_or_404(
             self.filter_queryset(self.get_queryset()), **{self.lookup_field: self.kwargs[self.lookup_field]}
@@ -197,7 +201,7 @@ class CHGViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        send_object_update_event(
+        status_scenarios.send_object_update_event(
             obj_id=instance.id,
             obj_type=ADCMHostGroupType.CONFIG.value,
             changes={"name": instance.name, "description": instance.description},

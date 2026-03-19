@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
+from rbac.scenarios import RBACScenarios
 
 from cm.errors import AdcmEx
 from cm.legacy.api import add_host, add_host_provider, add_host_to_cluster
@@ -77,12 +78,12 @@ class TestVariantBuiltIn(BaseTestCase):
     def test_host_in_cluster(self):
         cluster = cook_cluster()
         provider, host_prototype = cook_provider()
-        host_1 = add_host(host_prototype, provider, "h10")
+        host_1 = add_host(host_prototype, provider, "h10", rbac_scenarios=RBACScenarios())
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
 
         self.assertEqual(get_variant(cluster, None, limits), [])
 
-        add_host_to_cluster(cluster, host_1)
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
 
         self.assertEqual(get_variant(cluster, None, limits), ["h10"])
 
@@ -91,14 +92,14 @@ class TestVariantBuiltIn(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
 
         self.assertEqual(get_variant(cluster, None, limits), [])
 
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
 
         self.assertEqual(get_variant(cluster, None, limits), ["h10", "h11"])
 
@@ -120,13 +121,13 @@ class TestVariantBuiltIn(BaseTestCase):
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        host_3 = add_host(host_provider, provider, "h12")
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        host_3 = add_host(host_provider, provider, "h12", rbac_scenarios=RBACScenarios())
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
-        add_host_to_cluster(cluster, host_3)
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_3, rbac_scenarios=RBACScenarios())
 
         self.assertEqual(get_variant(cluster, None, limits), ["h10", "h11", "h12"])
 
@@ -249,8 +250,8 @@ class TestVariantHost(BaseTestCase):
     def test_host_in_cluster(self):
         cluster = cook_cluster()
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        add_host_to_cluster(cluster, host_1)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
         hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": []})
 
         self.assertEqual(hosts, ["h10"])
@@ -260,8 +261,8 @@ class TestVariantHost(BaseTestCase):
         service = cook_service(cluster)
         component = cook_component(cluster, service, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        add_host_to_cluster(cluster, host_1)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
 
         self.add_hc(cluster=cluster, service=service, component=component, host=host_1)
 
@@ -284,13 +285,13 @@ class TestVariantHost(BaseTestCase):
         service_2 = cook_service(cluster, "Gett")
         component_2 = cook_component(cluster, service_2, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        host_3 = add_host(host_provider, provider, "h12")
-        add_host(host_provider, provider, "h13")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
-        add_host_to_cluster(cluster, host_3)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        host_3 = add_host(host_provider, provider, "h12", rbac_scenarios=RBACScenarios())
+        add_host(host_provider, provider, "h13", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_3, rbac_scenarios=RBACScenarios())
         self.add_hc(cluster=cluster, service=service, component=component, host=host_1)
         self.add_hc(cluster=cluster, service=service_2, component=component_2, host=host_3)
 
@@ -319,10 +320,10 @@ class TestVariantHost(BaseTestCase):
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
         self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
         self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
 
@@ -359,15 +360,15 @@ class TestVariantHost(BaseTestCase):
         service_2 = cook_service(cluster, "Gett")
         component_3 = cook_component(cluster, service_2, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        host_3 = add_host(host_provider, provider, "h12")
-        host_4 = add_host(host_provider, provider, "h13")
-        add_host(host_provider, provider, "h14")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
-        add_host_to_cluster(cluster, host_3)
-        add_host_to_cluster(cluster, host_4)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        host_3 = add_host(host_provider, provider, "h12", rbac_scenarios=RBACScenarios())
+        host_4 = add_host(host_provider, provider, "h13", rbac_scenarios=RBACScenarios())
+        add_host(host_provider, provider, "h14", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_3, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_4, rbac_scenarios=RBACScenarios())
         self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
         self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
         self.add_hc(cluster=cluster, service=service_2, component=component_3, host=host_3)
@@ -405,12 +406,12 @@ class TestVariantHost(BaseTestCase):
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        host_3 = add_host(host_provider, provider, "h12")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
-        add_host_to_cluster(cluster, host_3)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        host_3 = add_host(host_provider, provider, "h12", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_3, rbac_scenarios=RBACScenarios())
         self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
         self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
         self.add_hc(cluster=cluster, service=service, component=component_2, host=host_3)
@@ -451,12 +452,12 @@ class TestVariantHost(BaseTestCase):
         component_2 = cook_component(cluster, service, "Node")
         component_3 = cook_component(cluster, service, "Secondary")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        host_3 = add_host(host_provider, provider, "h12")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
-        add_host_to_cluster(cluster, host_3)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        host_3 = add_host(host_provider, provider, "h12", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_3, rbac_scenarios=RBACScenarios())
         self.add_hc(cluster=cluster, service=service, component=component_1, host=host_1)
         self.add_hc(cluster=cluster, service=service, component=component_2, host=host_2)
         self.add_hc(cluster=cluster, service=service, component=component_3, host=host_3)
@@ -520,10 +521,10 @@ class TestVariantHost(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
 
         self.assertEqual(variant_host(obj=cluster, args={"predicate": "in_hc", "args": None}), [])
 
@@ -539,10 +540,10 @@ class TestVariantHost(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         provider, host_provider = cook_provider()
-        host_1 = add_host(host_provider, provider, "h10")
-        host_2 = add_host(host_provider, provider, "h11")
-        add_host_to_cluster(cluster, host_1)
-        add_host_to_cluster(cluster, host_2)
+        host_1 = add_host(host_provider, provider, "h10", rbac_scenarios=RBACScenarios())
+        host_2 = add_host(host_provider, provider, "h11", rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_1, rbac_scenarios=RBACScenarios())
+        add_host_to_cluster(cluster, host_2, rbac_scenarios=RBACScenarios())
         hosts = variant_host(obj=cluster, args={"predicate": "not_in_hc", "args": None})
 
         self.assertEqual(hosts, ["h10", "h11"])

@@ -13,11 +13,13 @@
 from itertools import chain
 from typing import Collection, Generator
 
-from cm.legacy.services.status.client import retrieve_status_map
+from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ADCMEntityStatus, Cluster, Component, Host, Service
+from cm.transition.status import StatusScenarios
 from django.db.models import Q, QuerySet
 from django_filters import BaseInFilter, CharFilter, NumberFilter
 from django_filters.filterset import BaseFilterSet, FilterSetMetaclass
+from rest_framework.request import Request
 
 
 def _filter_status(queryset: QuerySet, value: str, query: Q) -> QuerySet:
@@ -27,8 +29,12 @@ def _filter_status(queryset: QuerySet, value: str, query: Q) -> QuerySet:
     return queryset.exclude(query)
 
 
-def filter_cluster_status(queryset: QuerySet, value: Collection[str] | str) -> QuerySet:
-    status_map = retrieve_status_map()
+def retrieve_status_map(request: Request) -> FullStatusMap:
+    return request.container.get(StatusScenarios).retrieve_status_map()
+
+
+def filter_cluster_status(queryset: QuerySet, value: Collection[str] | str, request: Request) -> QuerySet:
+    status_map = retrieve_status_map(request=request)
     clusters_up = {cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status == 0}
 
     cluster_up_condition = Q(pk__in=clusters_up)
@@ -36,8 +42,8 @@ def filter_cluster_status(queryset: QuerySet, value: Collection[str] | str) -> Q
     return _filter_status(queryset=queryset, value=value, query=cluster_up_condition)
 
 
-def filter_service_status(queryset: QuerySet, value: str) -> QuerySet:
-    status_map = retrieve_status_map()
+def filter_service_status(queryset: QuerySet, value: str, request: Request) -> QuerySet:
+    status_map = retrieve_status_map(request=request)
     services_up = {
         service_id
         for service_id, service_info in chain.from_iterable(
@@ -50,8 +56,8 @@ def filter_service_status(queryset: QuerySet, value: str) -> QuerySet:
     return _filter_status(queryset=queryset, value=value, query=service_up_condition)
 
 
-def filter_component_status(queryset: QuerySet, value: Collection[str] | str) -> QuerySet:
-    status_map = retrieve_status_map()
+def filter_component_status(queryset: QuerySet, value: Collection[str] | str, request: Request) -> QuerySet:
+    status_map = retrieve_status_map(request=request)
 
     components_up = set()
 
@@ -66,8 +72,8 @@ def filter_component_status(queryset: QuerySet, value: Collection[str] | str) ->
     return _filter_status(queryset=queryset, value=value, query=component_up_condition)
 
 
-def filter_host_status(queryset: QuerySet, value: Collection[str] | str) -> QuerySet:
-    status_map = retrieve_status_map()
+def filter_host_status(queryset: QuerySet, value: Collection[str] | str, request: Request) -> QuerySet:
+    status_map = retrieve_status_map(request=request)
 
     hosts_up = {host_id for host_id, status_info in status_map.hosts.items() if status_info.status == 0}
     host_up_condition = Q(pk__in=hosts_up)
@@ -236,7 +242,7 @@ class AdvancedFilterSet(BaseFilterSet, metaclass=AdvancedFilterSetMetaclass):
         match len(valid_values):
             case 1:
                 func = FILTER_MAP[queryset.model]
-                return func(queryset=queryset, value=valid_values.pop())
+                return func(queryset=queryset, value=valid_values.pop(), request=self.request)
             case 0:
                 return queryset.none()
             case 2:
@@ -251,7 +257,7 @@ class AdvancedFilterSet(BaseFilterSet, metaclass=AdvancedFilterSetMetaclass):
         match len(valid_values):
             case 1:
                 func = FILTER_MAP[queryset.model]
-                return func(queryset=queryset, value=valid_values.pop())
+                return func(queryset=queryset, value=valid_values.pop(), request=self.request)
             case 0:
                 return queryset.none()
             case 2:
@@ -266,7 +272,7 @@ class AdvancedFilterSet(BaseFilterSet, metaclass=AdvancedFilterSetMetaclass):
         match len(valid_values):
             case 1:
                 func = FILTER_MAP[queryset.model]
-                return func(queryset=queryset, value=_reverse_status(valid_values.pop()))
+                return func(queryset=queryset, value=_reverse_status(valid_values.pop()), request=self.request)
             case 0:
                 return queryset
             case 2:
@@ -281,7 +287,7 @@ class AdvancedFilterSet(BaseFilterSet, metaclass=AdvancedFilterSetMetaclass):
         match len(valid_values):
             case 1:
                 func = FILTER_MAP[queryset.model]
-                return func(queryset=queryset, value=_reverse_status(valid_values.pop()))
+                return func(queryset=queryset, value=_reverse_status(valid_values.pop()), request=self.request)
             case 0:
                 return queryset
             case 2:

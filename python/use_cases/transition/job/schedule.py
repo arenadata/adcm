@@ -66,7 +66,7 @@ from core.types import (
 )
 from django.conf import settings
 from django.db.transaction import atomic
-from rbac.roles import re_apply_policy_for_jobs
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_409_CONFLICT
 import core
 
@@ -98,6 +98,7 @@ class ScheduleTask:
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     start_task: TaskStarter
+    rbac_scenarios: RBACScenarios
 
     def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
         action_objects = _ActionLaunchObjects(target=target, action=action_orm)
@@ -262,7 +263,7 @@ class ScheduleTask:
                 self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
-            re_apply_policy_for_jobs(task=orm_task)
+            self.rbac_scenarios.re_apply_policy_for_jobs(task=orm_task)
 
         send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
 

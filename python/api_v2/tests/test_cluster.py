@@ -43,6 +43,7 @@ from rest_framework.status import (
 )
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import get_status_scenarios_manager
 
 
 class TestCluster(BaseAPITestCase):
@@ -55,13 +56,14 @@ class TestCluster(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        with patch("cm.legacy.services.status.client.api_request") as patched_request:
-            response = (self.client.v2 / "clusters").get()
+        manager = get_status_scenarios_manager()
+        manager.reset()
+        response = (self.client.v2 / "clusters").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
-
-        patched_request.assert_called_once()
+        manager.expect_not_called("get_raw_status")
+        manager.expect_called("retrieve_status_map")
 
     def test_adcm_4539_ordering_success(self):
         self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
@@ -80,16 +82,14 @@ class TestCluster(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        with patch("api_v2.views.retrieve_status_map") as patched_retrieve, patch(
-            "api_v2.views.get_raw_status"
-        ) as patched_raw:
-            response = (self.client.v2 / "clusters" / self.cluster_1.id).get()
+        manager = get_status_scenarios_manager()
+        response = (self.client.v2 / "clusters" / self.cluster_1.id).get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1.pk)
 
-        patched_raw.assert_called_once()
-        patched_retrieve.assert_not_called()
+        manager.expect_called_once("get_raw_status")
+        manager.expect_not_called("retrieve_status_map")
 
     def test_filter_simple_types_success(self):
         filters = {
@@ -922,10 +922,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         return {(entry["name"], entry["status"]) for entry in entries}
 
     def test_services_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "statuses" / "services").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         services = response.json()["results"]
@@ -946,10 +947,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hosts_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["results"]
@@ -957,10 +959,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         self.assertSetEqual(self.get_name_status_pairs(entries), {(self.host_1.name, "up"), (self.host_2.name, "down")})
 
     def test_components_of_service_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.service_11] / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.service_11] / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["components"]
@@ -971,10 +974,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hc_statuses_of_component_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.component_112] / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.component_112] / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["hostComponents"]
@@ -985,10 +989,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hc_statuses_of_host_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1 / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1 / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["hostComponents"]
