@@ -25,7 +25,7 @@ from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from core.types import BundleID
 from django.db.transaction import atomic
-from rbac.upgrade.role import prepare_action_roles
+from rbac.scenarios import RBACScenarios
 import core
 
 logger = logging.getLogger("adcm")
@@ -36,6 +36,7 @@ class ParseBundleFromRequest:
     directories: Directories
 
     bundle_service: core.bundle.BundleService
+    rbac_scenarios: RBACScenarios
 
     @bundle.errors.convert_bundle_errors_to_adcm_ex
     def do(self, archive: Path) -> BundleID:
@@ -63,7 +64,7 @@ class ParseBundleFromRequest:
                         definitions=definitions, bundle_info=bundle_info
                     )
                     bundle_object = models.Bundle.objects.get(id=bundle_id)
-                    prepare_action_roles(bundle=bundle_object)
+                    self.rbac_scenarios.prepare_action_roles(bundle=bundle_object)
 
         return bundle_id
 

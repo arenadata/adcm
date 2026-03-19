@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
@@ -20,7 +22,9 @@ from uuid import uuid4
 import os
 
 from application.di.containers import get_main_providers
-from cm.models import TaskLog
+from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
+from cm.legacy.services.status.client import FullStatusMap
+from cm.models import ADCMEntity, Bundle, ConfigLog, TaskLog
 from cm.tests.mocks.task_runner import (
     ETFMockWithEnvPreparation,
     ExecutionTargetFactoryDummyMock,
@@ -29,6 +33,7 @@ from cm.tests.mocks.task_runner import (
     JobImplRunnerMock,
     SubprocessRunnerMockEnvironment,
 )
+from cm.transition.status import StatusScenarios
 from core import secrets
 from core.files.directories import ADCMBundleDir
 from core.legacy.job.repo import JobRepoInterface
@@ -47,8 +52,10 @@ from core.legacy.job.runners import (
 )
 from core.result import Success
 from core.settings import Directories
-from core.types import PID, CurrentADCMVersion, TaskID
+from core.types import PID, ConcernID, CurrentADCMVersion, HostID, TaskID
 from dishka.provider import provide
+from django.db.models import Model
+from rbac.scenarios import RBACScenarios
 from use_cases.transition.job.schedule import TaskStarter
 import dishka
 
@@ -65,7 +72,14 @@ class LaunchedTaskInTest:
     id: TaskID
 
 
-@dataclass()
+@dataclass(slots=True)
+class StatusEventCall:
+    obj_id: int
+    obj_type: str
+    changes: dict
+
+
+@dataclass(slots=True)
 class TaskRunnerTestManager:
     _latest_launched: LaunchedTaskInTest | None = field(default=None)
 
@@ -112,6 +126,87 @@ class TaskRunnerTestManager:
 @cache
 def get_task_runner_manager() -> TaskRunnerTestManager:
     return TaskRunnerTestManager()
+
+
+@dataclass(slots=True)
+class StatusScenariosTestManager:
+    status_map: FullStatusMap = field(default_factory=FullStatusMap)
+    method_calls: dict[str, int] = field(default_factory=dict)
+    send_object_update_event_calls: list[StatusEventCall] = field(default_factory=list)
+
+    def reset(self) -> None:
+        self.status_map = FullStatusMap()
+        self.method_calls.clear()
+        self.send_object_update_event_calls.clear()
+
+    def set_status_map(self, status_map: FullStatusMap) -> None:
+        self.status_map = status_map
+
+    def inc_call(self, method_name: str) -> None:
+        self.method_calls[method_name] = self.method_calls.get(method_name, 0) + 1
+
+    def get_calls(self, method_name: str) -> int:
+        return self.method_calls.get(method_name, 0)
+
+    def expect_called_once(self, method_name: str) -> None:
+        assert self.get_calls(method_name) == 1  # noqa: S101
+
+    def expect_called(self, method_name: str) -> None:
+        assert self.get_calls(method_name) > 0  # noqa: S101
+
+    def expect_not_called(self, method_name: str) -> None:
+        assert self.get_calls(method_name) == 0  # noqa: S101
+
+    def get_raw_status(self, url: str) -> int:
+        try:
+            parts = [part for part in url.split("/") if part]
+            match parts:
+                case ["cluster", cluster_id]:
+                    return self.status_map.get_for_cluster(cluster_id=int(cluster_id)) or 16
+                case ["host", host_id]:
+                    return self.status_map.get_for_host(host_id=int(host_id)) or 16
+                case ["cluster", cluster_id, "service", service_id]:
+                    return self.status_map.get_for_service(cluster_id=int(cluster_id), service_id=int(service_id)) or 16
+                case ["cluster", cluster_id, "service", service_id, "component", component_id]:
+                    return (
+                        self.status_map.get_for_component(
+                            cluster_id=int(cluster_id), service_id=int(service_id), component_id=int(component_id)
+                        )
+                        or 16
+                    )
+                case _:
+                    return 16
+        except ValueError:
+            return 16
+
+
+@cache
+def get_status_scenarios_manager() -> StatusScenariosTestManager:
+    return StatusScenariosTestManager()
+
+
+@dataclass(slots=True)
+class RBACScenariosTestManager:
+    enabled_flag: bool = False
+
+    @contextmanager
+    def enabled(self):
+        """
+        Temporal solution: tests can toggle RBAC on for a block.
+        Correct approach is to use per-test provider overrides in DI.
+        """
+
+        previous_state = self.enabled_flag
+        self.enabled_flag = True
+        try:
+            yield
+        finally:
+            self.enabled_flag = previous_state
+
+
+@cache
+def get_rbac_scenarios_manager() -> RBACScenariosTestManager:
+    return RBACScenariosTestManager()
 
 
 @cache
@@ -181,6 +276,118 @@ class EnvironmentOverride(dishka.Provider):
         return ADCMBundleDir(_PYTHON_DIR.parent / "conf" / "adcm")
 
 
+@dataclass(slots=True)
+class SkipStatusScenarios(StatusScenarios):
+    def retrieve_status_map(self) -> FullStatusMap:
+        manager = get_status_scenarios_manager()
+        manager.inc_call("retrieve_status_map")
+        return manager.status_map
+
+    def get_raw_status(self, url: str) -> int:  # noqa: ARG002
+        manager = get_status_scenarios_manager()
+        manager.inc_call("get_raw_status")
+        return manager.get_raw_status(url=url)
+
+    def send_object_update_event(self, obj_id: int, obj_type: str, changes: dict) -> None:  # noqa: ARG002
+        manager = get_status_scenarios_manager()
+        manager.inc_call("send_object_update_event")
+        manager.send_object_update_event_calls.append(
+            StatusEventCall(obj_id=obj_id, obj_type=obj_type, changes=changes)
+        )
+        return
+
+    def notify_about_redistributed_concerns_from_maps(
+        self,
+        added: AffectedObjectConcernMap,  # noqa: ARG002
+        removed: AffectedObjectConcernMap,  # noqa: ARG002
+    ) -> None:
+        get_status_scenarios_manager().inc_call("notify_about_redistributed_concerns_from_maps")
+        return
+
+    def notify_about_new_concern(
+        self,
+        concern_id: ConcernID,  # noqa: ARG002
+        related_objects: ConcernRelatedObjects,  # noqa: ARG002
+    ) -> None:
+        get_status_scenarios_manager().inc_call("notify_about_new_concern")
+        return
+
+    def update_all(self) -> None:
+        get_status_scenarios_manager().inc_call("update_all")
+        return
+
+    def reset_hc_map(self) -> None:
+        get_status_scenarios_manager().inc_call("reset_hc_map")
+        return
+
+    def update_mm_objects(self):
+        get_status_scenarios_manager().inc_call("update_mm_objects")
+        return
+
+    def reset_objects_in_mm(self):
+        get_status_scenarios_manager().inc_call("reset_objects_in_mm")
+        return
+
+    def register_all_duplicates(self) -> None:
+        get_status_scenarios_manager().inc_call("register_all_duplicates")
+        return
+
+    def register_host_duplicates(
+        self,
+        original: HostID,  # noqa: ARG002
+        duplicates: Iterable[HostID],  # noqa: ARG002
+    ) -> None:
+        get_status_scenarios_manager().inc_call("register_host_duplicates")
+        return
+
+
+class StatusScenariosOverride(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    @provide
+    def status_scenarios(self) -> StatusScenarios:
+        return SkipStatusScenarios()
+
+
+class RBACScenariosDummy(RBACScenarios):
+    def re_apply_object_policy(
+        self,
+        apply_object: ADCMEntity,  # noqa: ARG002
+        keep_objects: Mapping[type[Model], Iterable[int]] | None = None,  # noqa: ARG002
+    ) -> None:
+        if not get_rbac_scenarios_manager().enabled_flag:
+            return
+        super().re_apply_object_policy(apply_object=apply_object, keep_objects=keep_objects)
+
+    def apply_policy_for_new_config(self, config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: ARG002
+        if not get_rbac_scenarios_manager().enabled_flag:
+            return
+        super().apply_policy_for_new_config(config_object=config_object, config_log=config_log)
+
+    def re_apply_policy_for_jobs(self, task: TaskLog) -> None:  # noqa: ARG002
+        if not get_rbac_scenarios_manager().enabled_flag:
+            return
+        super().re_apply_policy_for_jobs(task=task)
+
+    def assign_view_logstorage_permissions_by_job(self, log_storage_id: int) -> None:  # noqa: ARG002
+        if not get_rbac_scenarios_manager().enabled_flag:
+            return
+        super().assign_view_logstorage_permissions_by_job(log_storage_id=log_storage_id)
+
+    def prepare_action_roles(self, bundle: Bundle) -> None:  # noqa: ARG002
+        if not get_rbac_scenarios_manager().enabled_flag:
+            return
+        super().prepare_action_roles(bundle=bundle)
+
+
+class RBACScenariosOverride(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    @provide
+    def rbac_scenarios(self) -> RBACScenarios:
+        return RBACScenariosDummy()
+
+
 class TaskRunnerOverride(dishka.Provider):
     scope = dishka.Scope.APP
 
@@ -229,6 +436,8 @@ def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
     return (
         *get_main_providers(),
         EnvironmentOverride(),
+        StatusScenariosOverride(),
+        RBACScenariosOverride(),
         TaskStarterOverride(),
         TaskRunnerOverride(),
     )

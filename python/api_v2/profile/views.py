@@ -16,9 +16,10 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.legacy.services.adcm import retrieve_password_requirements
-from cm.legacy.status_api import send_object_update_event
+from cm.transition.status import StatusScenarios
 from core.legacy.rbac.operations import update_user_password
 from core.types import RBACCoreType
+from dishka import FromDishka
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rbac.models import User
@@ -29,6 +30,7 @@ from rest_framework.response import Response
 from api_v2.api_schema import responses
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 from api_v2.utils.audit import profile_of_current_user, retrieve_user_password_groups
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -64,7 +66,8 @@ class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
             after=(extract_for_current_user(func=retrieve_user_password_groups, section="current"),),
         )
     )
-    def partial_update(self, request, *_, **__):
+    @inject
+    def partial_update(self, request, *_, status_scenarios: FromDishka[StatusScenarios], **__):
         user = self.get_object()
 
         serializer = self.get_serializer(data=request.data, partial=True)
@@ -83,7 +86,7 @@ class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
             password_requirements=retrieve_password_requirements(),
         )
 
-        send_object_update_event(
+        status_scenarios.send_object_update_event(
             obj_id=user.pk, obj_type=RBACCoreType.USER.value, changes={"newPassword": current_password}
         )
 

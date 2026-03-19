@@ -18,8 +18,8 @@ from adcm_version import compare_prototype_versions
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic, on_commit
-from rbac.models import re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
+from rbac.scenarios import RBACScenarios
 
 from cm.converters import (
     CoreObject,
@@ -157,7 +157,13 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
     return cluster
 
 
-def add_host(prototype: Prototype, provider: Provider, fqdn: str, description: str = ""):
+def add_host(
+    prototype: Prototype,
+    provider: Provider,
+    fqdn: str,
+    rbac_scenarios: RBACScenarios,
+    description: str = "",
+):
     if prototype.type != "host":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {prototype.type}")
 
@@ -188,7 +194,7 @@ def add_host(prototype: Prototype, provider: Provider, fqdn: str, description: s
         ):
             host.concerns.add(concern)
 
-        re_apply_object_policy(provider)
+        rbac_scenarios.re_apply_object_policy(apply_object=provider)
 
     reset_hc_map()
 
@@ -302,7 +308,7 @@ def delete_cluster(cluster: Cluster) -> None:
         task.cancel(obj_deletion=True)
 
 
-def remove_host_from_cluster(host: Host) -> Host:
+def remove_host_from_cluster(host: Host, rbac_scenarios: RBACScenarios) -> Host:
     cluster = host.cluster
 
     if HostComponent.objects.filter(cluster=cluster, host=host).exists():
@@ -329,7 +335,7 @@ def remove_host_from_cluster(host: Host) -> Host:
                 owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
             )
 
-        re_apply_object_policy(apply_object=cluster)
+        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
     reset_objects_in_mm()
@@ -337,7 +343,7 @@ def remove_host_from_cluster(host: Host) -> Host:
     return host
 
 
-def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> Service:
+def add_service_to_cluster(cluster: Cluster, proto: Prototype, rbac_scenarios: RBACScenarios) -> Service:
     if proto.type != "service":
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
@@ -359,7 +365,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> Service:
         recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
         added, removed = redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
 
-        re_apply_object_policy(apply_object=cluster)
+        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
@@ -743,7 +749,7 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
                 raise_adcm_ex("BIND_ERROR", f"can not multi bind {proto_ref(source_proto)} to {obj_ref(cluster)}")
 
 
-def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
+def add_host_to_cluster(cluster: Cluster, host: Host, rbac_scenarios: RBACScenarios) -> Host:
     if host.cluster:
         if host.cluster.pk == cluster.pk:
             raise AdcmEx(code="HOST_CONFLICT", msg="The host is already associated with this cluster.")
@@ -756,7 +762,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
 
         update_hierarchy_issues(host)
         update_hierarchy_issues(cluster)
-        re_apply_object_policy(cluster)
+        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)

@@ -26,12 +26,15 @@ from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
 from cm.transition.concern import create_and_distribute_hostcomponent_concern_on_add_host_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 import core
 
 
 def create_hostprovider(
-    prototype: Prototype, name: str, description: str, config_service: core.config.ConfigService
+    prototype: Prototype,
+    name: str,
+    description: str,
+    config_service: core.config.ConfigService,
 ) -> ProviderID:
     if prototype.type != ADCMCoreType.PROVIDER.value:
         raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
@@ -58,7 +61,11 @@ def create_hostprovider(
 
 
 def create_host(
-    hostprovider: Provider, name: str, cluster: Cluster | None, config_service: core.config.ConfigService
+    hostprovider: Provider,
+    name: str,
+    cluster: Cluster | None,
+    config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> HostID:
     with atomic():
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=hostprovider.prototype_id)  # pyright: ignore [reportAttributeAccessIssue]
@@ -96,10 +103,10 @@ def create_host(
             )
 
         # Re apply policies
-        re_apply_object_policy(apply_object=host.provider)
+        rbac_scenarios.re_apply_object_policy(apply_object=host.provider)
 
         if cluster:
-            re_apply_object_policy(apply_object=cluster)
+            rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     # Update hc map in Status Server
     reset_hc_map()

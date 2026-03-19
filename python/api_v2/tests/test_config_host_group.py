@@ -28,6 +28,7 @@ from rest_framework.status import (
 )
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import get_rbac_scenarios_manager
 
 CONFIG_GROUPS = "config-groups"
 HOST_CANDIDATES = "host-candidates"
@@ -375,7 +376,9 @@ class TestServiceCHG(BaseServiceCHGTestCase):
 
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
-        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+        with get_rbac_scenarios_manager().enabled(), self.grant_permissions(
+            to=self.test_user, on=self.service_1, role_name="Service Administrator"
+        ):
             response = self.client.v2[self.service_1, CONFIG_GROUPS].post(
                 data={"name": "service-group-config-new", "description": "service-group-config-new"},
             )
@@ -616,7 +619,9 @@ class TestComponentCHG(BaseServiceCHGTestCase):
 
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
-        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+        with get_rbac_scenarios_manager().enabled(), self.grant_permissions(
+            to=self.test_user, on=self.service_1, role_name="Service Administrator"
+        ):
             response = self.client.v2[self.component_1, CONFIG_GROUPS].post(
                 data={"name": "component-group-config-new", "description": "component-group-config-new"},
             )

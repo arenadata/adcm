@@ -29,8 +29,8 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
+from cm.transition.status import StatusScenarios
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -262,7 +262,6 @@ class ServiceViewSet(
             after=extract_current_from_response("maintenance_mode"),
         )
     )
-    @update_mm_objects
     @action(
         methods=["post"],
         detail=True,
@@ -270,7 +269,14 @@ class ServiceViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+    def maintenance_mode(
+        self,
+        request: Request,
+        *,
+        schedule_task: FromDishka[ScheduleTask],
+        status_scenarios: FromDishka[StatusScenarios],
+        **kwargs,
+    ) -> Response:
         service: Service = get_object_for_user(
             user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
@@ -291,6 +297,7 @@ class ServiceViewSet(
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
+        status_scenarios.update_mm_objects()
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")

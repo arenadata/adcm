@@ -13,7 +13,6 @@
 from dataclasses import asdict
 from typing import Iterable, Literal
 
-from adcm.tests.base import make_default_dishka_container_for_tests
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
@@ -34,6 +33,7 @@ from rest_framework.status import (
 import core
 
 from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.setup.overrides import make_default_dishka_container_for_tests
 
 
 class TestActionProcessAudit(BaseAPITestCase):

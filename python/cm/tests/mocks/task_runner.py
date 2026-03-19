@@ -19,6 +19,7 @@ from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.legacy.job.types import Job, ScriptType, Task
 from core.logs import LogsService
 from django.utils import timezone
+from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
@@ -54,11 +55,13 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         *,
         failed_job: FailedJobInfo | None = None,
         logs_service: LogsService,
+        rbac_scenarios: RBACScenarios,
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
     ):
         super().__init__(
             logs_service=logs_service,
+            rbac_scenarios=rbac_scenarios,
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
         )
@@ -103,11 +106,13 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         *,
         change_jobs: dict[int, JobImitator] | None = None,
         logs_service: LogsService,
+        rbac_scenarios: RBACScenarios,
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
     ):
         super().__init__(
             logs_service=logs_service,
+            rbac_scenarios=rbac_scenarios,
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
         )

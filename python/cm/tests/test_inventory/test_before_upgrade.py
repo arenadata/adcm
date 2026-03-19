@@ -14,6 +14,7 @@ from pathlib import Path
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
+from rbac.scenarios import RBACScenarios
 import core
 
 from cm.legacy.bundle_switch_revert import bundle_switch
@@ -61,7 +62,7 @@ class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
 
         with self.container() as container:
             config_service = container.get(core.config.ConfigService)
-            callbacks = build_switch_revert_callbacks(config_service=config_service)
+            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
             bundle_switch(obj=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
 
     def test_provider_two_hosts(self):

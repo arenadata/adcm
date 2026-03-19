@@ -54,27 +54,24 @@ class ClusterFilter(
         model = Cluster
         fields = ["id"]
 
-    @staticmethod
-    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        return filter_cluster_status(queryset=queryset, value=value)
+    def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_cluster_status(queryset=queryset, value=value, request=self.request)
 
 
 class ClusterStatusesHostFilter(FilterSet):
     status = ChoiceFilter(label="Host status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
-    @staticmethod
-    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        return filter_host_status(queryset=queryset, value=value)
+    def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_host_status(queryset=queryset, value=value, request=self.request)
 
 
 class ClusterStatusesServiceFilter(FilterSet):
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "Id"}, label="ordering")
 
-    @staticmethod
-    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        return filter_service_status(queryset=queryset, value=value)
+    def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_service_status(queryset=queryset, value=value, request=self.request)
 
 
 class ClusterServiceCandidateAndPrototypeFilter(

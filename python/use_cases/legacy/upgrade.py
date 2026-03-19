@@ -15,22 +15,31 @@ from functools import partial
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.bundle_switch_revert import SwitchRevertCallbacks
 from cm.models import Cluster, Component, Prototype, Service
+from rbac.scenarios import RBACScenarios
 import core
 
 
-def build_switch_revert_callbacks(config_service: core.config.ConfigService):
+def build_switch_revert_callbacks(
+    config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
+):
     return SwitchRevertCallbacks(
         add_component_to_service=partial(_add_component_to_service, config_service=config_service),
-        add_service_to_cluster=partial(_add_service_to_cluster, config_service=config_service),
+        add_service_to_cluster=partial(
+            _add_service_to_cluster, config_service=config_service, rbac_scenarios=rbac_scenarios
+        ),
     )
 
 
 def _add_service_to_cluster(
-    cluster: Cluster, prototype: Prototype, config_service: core.config.ConfigService
+    cluster: Cluster,
+    prototype: Prototype,
+    config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> Service:
     from use_cases.transition.cluster.create import CreateServicesFromPrototypes
 
-    service, *_ = CreateServicesFromPrototypes(config_service=config_service).do(
+    service, *_ = CreateServicesFromPrototypes(config_service=config_service, rbac_scenarios=rbac_scenarios).do(
         cluster=cluster, prototype_ids=(prototype.pk,)
     )
 

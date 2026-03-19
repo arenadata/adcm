@@ -22,6 +22,7 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
+from cm.transition.status import StatusScenarios
 from core.errors import NotFoundError
 from core.legacy.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.legacy.rbac.errors import (
@@ -31,6 +32,7 @@ from core.legacy.rbac.errors import (
     UpdateLDAPUserError,
     UsernameTakenError,
 )
+from dishka import FromDishka
 from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from django.db.models import Prefetch
@@ -76,6 +78,7 @@ from api_v2.utils.audit import (
     user_from_lookup,
     user_from_response,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -242,7 +245,14 @@ class UserViewSet(
             ),
         )
     )
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def partial_update(
+        self,
+        request: Request,
+        *,
+        status_scenarios: FromDishka[StatusScenarios],
+        **kwargs,
+    ) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -264,6 +274,7 @@ class UserViewSet(
                     update_data=UserUpdateDTO(**validated_data),
                     new_password=new_password,
                     new_user_groups=set(validated_data["groups"]) if "groups" in validated_data else None,
+                    status_scenarios=status_scenarios,
                 )
             else:
                 if new_password is not None and not request.user.is_superuser:
@@ -279,7 +290,11 @@ class UserViewSet(
                         "ADCM Administrator's rights.",
                     )
 
-                perform_regular_user_update(user_id=user_id, update_data=UserUpdateDTO(**validated_data))
+                perform_regular_user_update(
+                    user_id=user_id,
+                    update_data=UserUpdateDTO(**validated_data),
+                    status_scenarios=status_scenarios,
+                )
         except EmailTakenError:
             raise AdcmEx(code="USER_CONFLICT", msg="User with the same email already exist") from None
         except PasswordError as err:

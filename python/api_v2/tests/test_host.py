@@ -20,6 +20,7 @@ from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from core.types import ADCMCoreType, HostID, HostName
 from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -535,11 +536,19 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_originals_with_duplicates_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
+            )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+                host_id=self.host_2.id,
+                name=f"{self.host_2.fqdn}-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
             )
         )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
@@ -560,11 +569,19 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_original_and_copy_of_host_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
+            )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+                host_id=self.host_2.id,
+                name=f"{self.host_2.fqdn}-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
             )
         )
 
@@ -599,11 +616,19 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_two_duplicates_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
+            )
         )
         h1_dup_2 = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host.id, name=f"{self.host.fqdn}-dup-dup", config_service=get_config_service()
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup-dup",
+                config_service=get_config_service(),
+                rbac_scenarios=RBACScenarios(),
             )
         )
         hosts_to_add = (h1_dup, h1_dup_2)
@@ -762,10 +787,14 @@ class TestClusterHost(BaseAPITestCase):
         host_1 = self.host
         host_2 = self.host_2
         host_duplicate_1 = Host.objects.get(
-            id=create_duplicate(host_id=host_1.pk, name="duplicate", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=host_1.pk, name="duplicate", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            )
         )
         host_duplicate_named_as_host_2 = Host.objects.get(
-            id=create_duplicate(host_id=host_1.pk, name=host_2.name, config_service=get_config_service())
+            id=create_duplicate(
+                host_id=host_1.pk, name=host_2.name, config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            )
         )
 
         candidates = self.get_host_candidates(self.cluster_1)
@@ -775,7 +804,10 @@ class TestClusterHost(BaseAPITestCase):
 
         with self.subTest("exclude by name and origin"):
             perform_host_to_cluster_map(
-                cluster_id=self.cluster_1.pk, hosts=[host_duplicate_named_as_host_2.pk], status_service=notify
+                cluster_id=self.cluster_1.pk,
+                hosts=[host_duplicate_named_as_host_2.pk],
+                status_service=notify,
+                rbac_scenarios=RBACScenarios(),
             )
 
             candidates = self.get_host_candidates(self.cluster_1)
@@ -784,10 +816,12 @@ class TestClusterHost(BaseAPITestCase):
             )
 
         host_duplicate_named_as_host_2.refresh_from_db()
-        remove_host_from_cluster(host=host_duplicate_named_as_host_2)
+        remove_host_from_cluster(host=host_duplicate_named_as_host_2, rbac_scenarios=RBACScenarios())
 
         with self.subTest("exclude by original host add"):
-            perform_host_to_cluster_map(cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify)
+            perform_host_to_cluster_map(
+                cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify, rbac_scenarios=RBACScenarios()
+            )
 
             candidates = self.get_host_candidates(self.cluster_2)
             self.assert_hosts_in_candidates(host_2, candidates=candidates)

@@ -57,6 +57,5 @@ class ServiceFilter(
         },
     )
 
-    @staticmethod
-    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        return filter_service_status(queryset=queryset, value=value)
+    def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_service_status(queryset=queryset, value=value, request=self.request)

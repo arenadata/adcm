@@ -13,11 +13,10 @@
 from copy import deepcopy
 from pathlib import Path
 
-from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
+from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM, init_roles
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from infra.services import get_config_service
 from init_db import init
-from rbac.upgrade.role import init_roles
 import core
 import django.test
 

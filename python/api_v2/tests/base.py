@@ -51,7 +51,7 @@ from rbac.models import Group, Policy, Role, User
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.test import APITestCase
 
-from api_v2.tests.setup.overrides import get_task_runner_manager
+from api_v2.tests.setup.overrides import get_status_scenarios_manager, get_task_runner_manager
 from api_v2.utils.di import prepare_container
 
 AuditTarget: TypeAlias = (
@@ -86,6 +86,7 @@ class BaseAPITestCase(APITestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin
         prepare_container.cache_clear()
 
         self.task_runner.reset()
+        get_status_scenarios_manager().reset()
 
         self.client.login(username="admin", password="admin")
 
