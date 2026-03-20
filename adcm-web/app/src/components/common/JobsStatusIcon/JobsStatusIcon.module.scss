@@ -6,6 +6,8 @@
     --status-icon-color-running: var(--color-xblue);
     --status-icon-color-created: var(--color-xwhite-off);
     --status-icon-color-broken: var(--color-xgray-light);
+    --status-icon-color-warning: var(--color-yellow-lighter);
+    --status-icon-color-info: var(--color-xblue);
   }
   body.theme-light {
     --status-icon-color-success: var(--color-xgreen-saturated);
@@ -14,6 +16,8 @@
     --status-icon-color-running: var(--color-xblue);
     --status-icon-color-created: var(--color-xdark);
     --status-icon-color-broken: var(--color-xgray-light);
+    --status-icon-color-warning: var(--color-warning-orange-new);
+    --status-icon-color-info: var(--color-xblue);
   }
 }
 
@@ -40,5 +44,13 @@
 
   &_broken {
     color: var(--status-icon-color-broken);
+  }
+
+  &_warning {
+    color: var(--status-icon-color-warning);
+  }
+
+  &_info {
+    color: var(--status-icon-color-info);
   }
 }

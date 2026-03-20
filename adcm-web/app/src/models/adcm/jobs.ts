@@ -6,6 +6,8 @@ export enum AdcmJobStatus {
   Locked = 'locked',
   Aborted = 'aborted',
   Broken = 'broken',
+  Info = 'info',
+  Warning = 'warning',
 }
 
 export enum AdcmJobObjectType {
@@ -63,11 +65,18 @@ export interface AdcmSubJobDetails extends AdcmSubJob {
   parentTask: AdcmJob;
 }
 
+export enum AdcmSubJobLogSeverity {
+  Error = 'error',
+  Warning = 'warning',
+  Info = 'info',
+}
+
 export type AdcmSubJobLogCheckContentItem = {
   message: string;
   result: boolean;
   title: string;
   type: 'group' | 'check';
+  severity?: AdcmSubJobLogSeverity;
   content?: AdcmSubJobLogCheckContentItem[];
 };
 

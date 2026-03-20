@@ -61,12 +61,12 @@ const CollapseNode = <T,>({
   };
 
   return (
-    <div className={cn(s.collapseNode, getNodeClassName(node))} data-test="node-container">
-      <div className={s.collapseNode__trigger} data-test="node-block">
+    <div className={cn(s.collapseNode, getNodeClassName(node), 'collapseNode')} data-test="node-container">
+      <div className={cn(s.collapseNode__trigger, 'collapseNode__trigger')} data-test="node-block">
         {renderNodeContent(node, isNodeExpanded, toggleCollapseNode)}
       </div>
       {hasChildren && (
-        <div className={s.collapseNode__children} data-test="children-block">
+        <div className={cn(s.collapseNode__children, 'collapseNode__children')} data-test="children-block">
           <Collapse isExpanded={isNodeExpanded}>
             {children.map((childNode) => (
               <CollapseNode
