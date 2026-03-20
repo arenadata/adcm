@@ -12,8 +12,6 @@
     --subjob-node-status-color-open: var(--color-xwhite-off);
     --subjob-node-title-color-open: var(--color-xgreen-saturated);
 
-    --subjob-node-title-color-failed: var(--color-xred);
-
     --subjob-node-message-background: var(--color-xdark-plate10);
     --subjob-node-message-color: var(--color-xgray-lighter);
   }
@@ -30,8 +28,6 @@
 
     --subjob-node-status-color-open: var(--color-xdark);
     --subjob-node-title-color-open: var(--color-xgreen);
-
-    --subjob-node-title-color-failed: var(--color-xred-light);
 
     --subjob-node-message-background: #f7f9fa;
     --subjob-node-message-color: var(--color-xgray-darker);
@@ -55,11 +51,6 @@
 
   &:global(.is-open) {
     --subjob-node-status-color: var(--subjob-node-status-color-open);
-    --subjob-node-title-color: var(--subjob-node-title-color-open);
-
-    &:global(.is-failed) {
-      --subjob-node-title-color: var(--subjob-node-title-color-failed);
-    }
   }
 
   &__header {

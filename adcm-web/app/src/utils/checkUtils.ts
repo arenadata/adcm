@@ -15,3 +15,7 @@ export const isValueUnset = <T>(value: T | undefined | null): value is T =>
 
 export const isValidData = <T>(data: T | undefined | null): data is T =>
   !(Number.isNaN(data) || typeof data === 'undefined' || data === null);
+
+export function assertExhaustive(): never {
+  throw new Error('should not reach here');
+}

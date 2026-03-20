@@ -3,8 +3,9 @@
     // default
     --subjob-node-border-default: var(--color-xdark);
 
-    // failed
-    --subjob-node-border-error: var(--color-dark-red);
+    --subjob-node-border-error: var(--color-light-red);
+    --subjob-node-border-warning: var(--color-yellow-lighter);
+    --subjob-node-border-info: var(--color-xblue);
   }
 
   body.theme-light {
@@ -12,7 +13,9 @@
     --subjob-node-border-default: var(--color-xgray-lighter);
 
     // failed
-    --subjob-node-border-error: var(--color-xred-light);
+    --subjob-node-border-error: var(--color-light-red);
+    --subjob-node-border-warning: var(--color-warning-orange-new);
+    --subjob-node-border-info: var(--color-xblue);
   }
 }
 
@@ -20,13 +23,43 @@
   margin: 32px 0;
 
   &__collapseNode {
-    --subjob-node-border: var(--subjob-node-border-default);
     // borders
-    --collapse-node-parent-border-color: var(--subjob-node-border-default);
     --collapse-node-child-border-color: var(--subjob-node-border);
+
+    :global(.collapseNode__children) :global(.collapseNode__trigger):not(:has(.expandButton))::before {
+      border-left: 2px solid var(--subjob-node-border);
+      height: var(--verticalBorderHeight);
+    }
+
+    &_failed,
+    &_warning,
+    &_info,
+    &_success {
+      position: relative;
+    }
 
     &_failed {
       --subjob-node-border: var(--subjob-node-border-error);
+      z-index: 10;
+    }
+
+    &_warning {
+      --subjob-node-border: var(--subjob-node-border-warning);
+      z-index: 8;
+    }
+
+    &_info {
+      --subjob-node-border: var(--subjob-node-border-info);
+      z-index: 6;
+    }
+
+    &_success {
+      --subjob-node-border: var(--subjob-node-border-default);
+      z-index: 1;
+    }
+
+    &_running {
+      border-color: var(--subjob-node-border-default);
     }
 
     & > div {
