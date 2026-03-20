@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0152_processstep_description"),
+        ("cm", "0152_release_2_11_0"),
     ]
 
     operations = [
