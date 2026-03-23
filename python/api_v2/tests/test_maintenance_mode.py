@@ -15,35 +15,34 @@ from cm.tests.mocks.task_runner import FailedJobInfo
 from core.types import TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
+from tests.dependencies import TaskRunnerOverride
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
-from api_v2.tests.setup.overrides import TaskRunnerOverride
 
-
-class TestMMActions(BaseAPITestCase):
+class TestMMActions(ADCMDjangoAPISuite):
     """
     Tests for reserved mm-action names
     No actual ansible playbook runs, thus checking for `changing` mm status
     """
 
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
-        self.task_runner.reset()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.executor_with_failed_first_job_overrides = (
+        cls.executor_with_failed_first_job_overrides = (
             TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),
         )
 
-        bundle_mm_plugins_mm_actions = self.add_bundle(
-            source_dir=self.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
+        bundle_mm_plugins_mm_actions = cls.uc.upload_bundle(
+            src=cls.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
         )
-        self.cluster = self.add_cluster(bundle=bundle_mm_plugins_mm_actions, name="cluster_mm_plugins_mm_actions")
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component = self.service.components.get(prototype__name="component_1")
+        cls.cluster = cls.uc.add_cluster(bundle=bundle_mm_plugins_mm_actions, name="cluster_mm_plugins_mm_actions")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component = cls.service.components.get(prototype__name="component_1")
 
-        provider_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider")
-        provider = self.add_provider(bundle=provider_bundle, name="provider", description="provider")
-        self.host = self.add_host(provider=provider, fqdn="host")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
+        cls.host = cls.uc.add_host(provider=provider, fqdn="host")
 
     def do_change_mm_request(self, obj: Host | Service | Component) -> Response:
         match obj.maintenance_mode:

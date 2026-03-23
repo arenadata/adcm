@@ -15,43 +15,44 @@ from copy import deepcopy
 from typing import Literal
 from uuid import uuid4
 
-from adcm.tests.base import BusinessLogicMixin
-from adcm.tests.client import APINode
 from cm.legacy.services.action_process.operations import find_current_and_last_completed_steps
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.models import Action, Component, Host, Process, ProcessStep, ProcessStepInput
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+from tests.client import APINode
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers
 
 
-class TestWizardActionProcessMapping(BaseAPITestCase, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
-    def setUp(self) -> None:
-        super().setUp()
+class TestWizardActionProcessMapping(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
         suffix = uuid4().hex[:8]
-        mapping_bundle = self.test_bundles_dir / "wizard_mapping"
-        self.mapping_bundle = self.create_bundle(src=mapping_bundle)
-        self.cluster_3 = self.create_cluster(
-            bundle=self.mapping_bundle,
+        mapping_bundle = cls.test_bundles_dir / "wizard_mapping"
+        cls.mapping_bundle = cls.uc.upload_bundle(src=mapping_bundle)
+        cls.cluster_3 = cls.uc.add_cluster(
+            bundle=cls.mapping_bundle,
             name=f"cluster_3_{suffix}",
             description=f"cluster_3_{suffix}",
         )
 
-        provider_bundle_path = self.test_bundles_dir / "provider"
-        self.provider_bundle = self.create_bundle(src=provider_bundle_path)
-        self.provider = self.create_provider(
-            bundle=self.provider_bundle,
+        provider_bundle_path = cls.test_bundles_dir / "provider"
+        cls.provider_bundle = cls.uc.upload_bundle(src=provider_bundle_path)
+        cls.provider = cls.uc.add_provider(
+            bundle=cls.provider_bundle,
             name=f"provider_{suffix}",
             description=f"provider_{suffix}",
         )
 
-        bundle_hc_restrictions_dir = self.test_bundles_dir / "wizard_mapping_restrictions"
-        bundle = self.create_bundle(src=bundle_hc_restrictions_dir)
-        self.cluster_with_mapping_restrictions = self.create_cluster(
+        bundle_hc_restrictions_dir = cls.test_bundles_dir / "wizard_mapping_restrictions"
+        bundle = cls.uc.upload_bundle(src=bundle_hc_restrictions_dir)
+        cls.cluster_with_mapping_restrictions = cls.uc.add_cluster(
             bundle=bundle, name=f"cluster with mapping restrictions {suffix}"
         )
 

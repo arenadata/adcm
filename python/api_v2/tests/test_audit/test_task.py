@@ -29,12 +29,12 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.dependencies import TaskRunnerOverride
+from tests.deprecated import TaskTestMixin
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
-from api_v2.tests.setup.overrides import TaskRunnerOverride
 
-
-class TestTaskAudit(BaseAPITestCase):
+class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

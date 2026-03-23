@@ -22,11 +22,11 @@ from cm.models import (
 )
 from django.conf import settings
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
+from tests.deprecated import TaskTestMixin
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestJob(BaseAPITestCase):
+class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
     TRUNCATED_LOG_MESSAGE = settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
 
     def setUp(self) -> None:

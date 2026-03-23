@@ -14,7 +14,6 @@ from configparser import ConfigParser
 from pathlib import Path
 import json
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -28,6 +27,8 @@ from django.db.models import Model
 from django.urls import reverse
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx

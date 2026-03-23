@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
 from core.legacy.cluster.types import HostComponentEntry
 from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
 
 from cm.errors import AdcmEx
 from cm.legacy.api import add_service_to_cluster

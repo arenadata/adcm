@@ -286,6 +286,8 @@
   version: "hehe"
 
   components:
+    have_no_config:
+
     will_miss_config:
       description: This component will not have config after upgrade
       config: *config

@@ -13,10 +13,11 @@
 from pathlib import Path
 import json
 
-from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
-from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from api_v2.tests.setup.overrides import MockWithEnvProvider
+from tests.ansible import ADCMAnsiblePluginTestMixin
+from tests.base import WithPreparedFSAndInitADCM
+from tests.dependencies import MockWithEnvProvider
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 import django.test
 
@@ -38,7 +39,7 @@ class TestEffectsOfADCMAnsiblePlugins(
         super().setUpClass()
 
         # shouldn't be here
-        from api_v2.tests.setup.overrides import get_task_runner_manager
+        from tests.dependencies import get_task_runner_manager
 
         cls.task_runner = get_task_runner_manager()
 

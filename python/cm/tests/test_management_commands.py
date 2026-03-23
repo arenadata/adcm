@@ -22,8 +22,6 @@ import tarfile
 import datetime
 import unittest
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from api_v2.tests.base import BaseAPITestCase
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
@@ -32,6 +30,9 @@ from infra.services import get_config_service
 from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from cm.collect_statistics.collectors import BundleCollector, get_host_name_hash
 from cm.collect_statistics.encoders import TarFileEncoder
@@ -438,7 +439,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
             self.assertDictEqual(actual_hosts, expected_hosts)
 
 
-class TestStorage(BaseAPITestCase):
+class TestStorage(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None

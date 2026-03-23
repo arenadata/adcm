@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from tests.base import BaseTestCase
 
 from cm.legacy.issue import add_concern_to_object, unlink_concern_from_object
 from cm.legacy.services.concern import create_issue

@@ -18,9 +18,10 @@ from cm.errors import HTTP_409_CONFLICT
 from cm.models import Action, Process, ProcessStep
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
+from tests.suites import ADCMDjangoAPISuite
 import core
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin
 from api_v2.utils.di import prepare_container
 
 T = TypeVar("T")
@@ -33,7 +34,7 @@ class RenderErrorCase(Generic[T]):
     check: Callable[[T], None]
 
 
-class TestRenderErrors(APIV2Mixin, BaseAPITestCase):
+class TestRenderErrors(APIV2Mixin, ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

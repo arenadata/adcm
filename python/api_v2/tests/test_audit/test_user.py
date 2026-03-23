@@ -22,11 +22,10 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestUserAudit(BaseAPITestCase):
+class TestUserAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

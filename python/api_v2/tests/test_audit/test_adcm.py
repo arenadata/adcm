@@ -20,13 +20,12 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-
-from api_v2.tests.base import BaseAPITestCase
+from tests.suites import ADCMDjangoAPISuite
 
 CONFIGS = "configs"
 
 
-class TestADCMAudit(BaseAPITestCase):
+class TestADCMAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

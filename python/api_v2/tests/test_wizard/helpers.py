@@ -80,7 +80,8 @@ class WizardProcessHelpers:
         steps_qs.filter(id__in=self_and_next_ids).update(state=ProcessStepState.CREATED)
         ProcessStepInput.objects.filter(step_id__in=self_and_next_ids).delete()
 
-    def get_object_action_with_process(self, obj: Cluster | Service | Component):
+    @staticmethod
+    def get_object_action_with_process(obj: Cluster | Service | Component):
         return Action.objects.get(name="wizard_jinja", prototype=obj.prototype)
 
     @staticmethod

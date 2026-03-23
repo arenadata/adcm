@@ -14,16 +14,16 @@
 from contextlib import contextmanager
 from uuid import uuid4
 
-from adcm.tests.base import BusinessLogicMixin
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from rest_framework.status import HTTP_404_NOT_FOUND
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers
 
 
-class TestWizardActionProcessPermissions(BaseAPITestCase, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
+class TestWizardActionProcessPermissions(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 

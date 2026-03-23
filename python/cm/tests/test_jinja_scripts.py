@@ -13,9 +13,10 @@
 from pathlib import Path
 from uuid import uuid4
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
 import core

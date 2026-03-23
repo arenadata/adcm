@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from rest_framework.status import HTTP_200_OK
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestSchema(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        return
 
-class TestSchema(BaseAPITestCase):
     def test_swagger_available(self):
         response = self.client.v2["schema", "swagger-ui"].get()
 

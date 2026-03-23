@@ -12,17 +12,16 @@
 
 import asyncio
 
-from adcm.tests.base import APPLICATION_JSON
-from adcm.tests.client import ADCMAsyncTestClient
 from asgiref.sync import sync_to_async
 from cm.models import ClusterBind
 from rbac.models import User
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from tests.base import APPLICATION_JSON
+from tests.client import ADCMAsyncTestClient
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestImport(BaseAPITestCase):
+class TestImport(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 

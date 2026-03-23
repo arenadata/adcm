@@ -12,8 +12,6 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BusinessLogicMixin, WithPreparedFSAndInitADCM
-from adcm.tests.client import ADCMTestClient
 from cm.models import ConfigHostGroup
 from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
@@ -21,9 +19,11 @@ from djangorestframework_camel_case.util import camelize
 from rbac.models import Group, Role, User
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
+from tests.base import WithPreparedFSAndInitADCM
+from tests.client import ADCMTestClient
+from tests.dependencies import get_status_scenarios_manager
+from tests.deprecated import BusinessLogicMixin
 import django.test
-
-from api_v2.tests.setup.overrides import get_status_scenarios_manager
 
 
 class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin):

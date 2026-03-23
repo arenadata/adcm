@@ -11,10 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-import unittest
 
-from adcm.tests.base import WithPreparedFSAndInitADCM
-from adcm.tests.client import ADCMTestClient
 from cm.models import (
     Action,
     Bundle,
@@ -26,7 +23,6 @@ from cm.models import (
     Host,
     HostComponent,
     MaintenanceMode,
-    Prototype,
     Service,
     Upgrade,
 )
@@ -39,40 +35,29 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
 )
-from rest_framework.test import APITestCase
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
-from api_v2.utils.di import prepare_container
+from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
 
 
-class TestMapping(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestMapping(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="test_host_B")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="test_host_B", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="test_host_A", cluster=cls.cluster_1)
+        cls.host_3 = cls.uc.add_host(provider=cls.provider, fqdn="test_host_C", cluster=cls.cluster_2)
 
-        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host_A")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.component_3 = Component.objects.get(service=cls.service_1, prototype__name="component_3")
 
-        self.host_3 = self.add_host(provider=self.provider, fqdn="test_host_C")
-        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_3)
+        cls.uc.set_hostcomponent(cluster=cls.cluster_1, entries=[(cls.host_1, cls.component_1)])
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
-        self.component_3 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_3"
-        )
-
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, self.component_1)])
-
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_mapping_success(self):
         response = self.client.v2[self.cluster_1, "mapping"].get()
@@ -230,8 +215,8 @@ class TestMapping(BaseAPITestCase):
 
     def test_mapping_components_with_requires_success(self):
         bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "cluster_requires_component")
-        cluster = self.add_cluster(bundle=bundle, name="cluster_requires")
-        self.add_services_to_cluster(service_names=["hbase", "zookeeper", "hdfs"], cluster=cluster)
+        cluster = self.uc.add_cluster(bundle=bundle, name="cluster_requires")
+        self.uc.add_services_to_cluster(names=["hbase", "zookeeper", "hdfs"], cluster=cluster)
 
         response = self.client.v2[cluster, "mapping", "components"].get()
 
@@ -249,28 +234,27 @@ class TestMapping(BaseAPITestCase):
             self.assertEqual(len(component.prototype.requires), len(component_data["dependOn"]))
 
 
-class TestMappingConstraints(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+class TestMappingConstraints(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        cluster_bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "hc_mapping_constraints")
-        provider_bundle = self.uc.upload_bundle(src=self.test_bundles_dir / "provider")
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "hc_mapping_constraints")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster_with_hc_requirements")
-        second_cluster = self.add_cluster(bundle=cluster_bundle, name="second_cluster")
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="cluster_with_hc_requirements")
+        second_cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="second_cluster")
 
-        provider = self.add_provider(bundle=provider_bundle, name="provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider")
 
-        self.host_not_in_cluster = self.add_host(provider=provider, fqdn="host_not_in_cluster")
-        self.host_1 = self.add_host(provider=provider, fqdn="host_1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=provider, fqdn="host_2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=provider, fqdn="host_3", cluster=self.cluster)
-        self.foreign_host = self.add_host(provider=provider, fqdn="foreign_host", cluster=second_cluster)
+        cls.host_not_in_cluster = cls.uc.add_host(provider=provider, fqdn="host_not_in_cluster")
+        cls.host_1 = cls.uc.add_host(provider=provider, fqdn="host_1", cluster=cls.cluster)
+        cls.host_2 = cls.uc.add_host(provider=provider, fqdn="host_2", cluster=cls.cluster)
+        cls.host_3 = cls.uc.add_host(provider=provider, fqdn="host_3", cluster=cls.cluster)
+        cls.foreign_host = cls.uc.add_host(provider=provider, fqdn="foreign_host", cluster=second_cluster)
 
     def test_host_not_in_cluster_fail(self):
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -295,9 +279,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_foreign_host_fail(self):
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -321,9 +303,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_non_existent_host_fail(self):
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -350,9 +330,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_non_existent_component_fail(self):
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -379,9 +357,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_no_required_service_fail(self):
-        service_requires_service = self.add_services_to_cluster(
-            service_names=["service_requires_service"], cluster=self.cluster
-        ).get()
+        service_requires_service = self.uc.add_services_to_cluster(
+            names=["service_requires_service"], cluster=self.cluster
+        )[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_requires_service, cluster=self.cluster
         )
@@ -404,14 +382,14 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_required_service_success(self):
-        service_requires_service = self.add_services_to_cluster(
-            service_names=["service_requires_service"], cluster=self.cluster
-        ).get()
+        service_requires_service = self.uc.add_services_to_cluster(
+            names=["service_requires_service"], cluster=self.cluster
+        )[0]
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_requires_service, cluster=self.cluster
         )
         # required service must be added (not exactly mapped) on mapping save
-        self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
+        self.uc.add_services_to_cluster(names=["service_required"], cluster=self.cluster)[0]
 
         response = self.client.v2[self.cluster, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": component_1.pk}],
@@ -421,17 +399,17 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 1)
 
     def test_no_required_component_fail(self):
-        service_requires_component = self.add_services_to_cluster(
-            service_names=["service_requires_component"], cluster=self.cluster
-        ).get()
+        service_requires_component = self.uc.add_services_to_cluster(
+            names=["service_requires_component"], cluster=self.cluster
+        )[0]
         component_1 = Component.objects.get(
             prototype__name="component_1",
             service=service_requires_component,
             cluster=self.cluster,
         )
-        service_with_component_required = self.add_services_to_cluster(
-            service_names=["service_with_component_required"], cluster=self.cluster
-        ).get()
+        service_with_component_required = self.uc.add_services_to_cluster(
+            names=["service_with_component_required"], cluster=self.cluster
+        )[0]
         not_required_component = Component.objects.get(
             prototype__name="not_required_component",
             service=service_with_component_required,
@@ -460,18 +438,18 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_no_required_component_but_unrequired_component_present_fail(self):
-        service_requires_component = self.add_services_to_cluster(
-            service_names=["service_requires_component"], cluster=self.cluster
-        ).get()
+        service_requires_component = self.uc.add_services_to_cluster(
+            names=["service_requires_component"], cluster=self.cluster
+        )[0]
         component_1 = Component.objects.get(
             prototype__name="component_1",
             service=service_requires_component,
             cluster=self.cluster,
         )
 
-        service_with_component_required = self.add_services_to_cluster(
-            service_names=["service_with_component_required"], cluster=self.cluster
-        ).get()
+        service_with_component_required = self.uc.add_services_to_cluster(
+            names=["service_with_component_required"], cluster=self.cluster
+        )[0]
         not_required_component = Component.objects.get(
             prototype__name="not_required_component",
             service=service_with_component_required,
@@ -500,18 +478,18 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_required_component_success(self):
-        service_requires_component = self.add_services_to_cluster(
-            service_names=["service_requires_component"], cluster=self.cluster
-        ).get()
+        service_requires_component = self.uc.add_services_to_cluster(
+            names=["service_requires_component"], cluster=self.cluster
+        )[0]
         component_1 = Component.objects.get(
             prototype__name="component_1",
             service=service_requires_component,
             cluster=self.cluster,
         )
 
-        service_with_component_required = self.add_services_to_cluster(
-            service_names=["service_with_component_required"], cluster=self.cluster
-        ).get()
+        service_with_component_required = self.uc.add_services_to_cluster(
+            names=["service_with_component_required"], cluster=self.cluster
+        )[0]
         required_component = Component.objects.get(
             prototype__name="required_component",
             service=service_with_component_required,
@@ -529,9 +507,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 2)
 
     def test_no_bound_fail(self):
-        service_with_bound_component = self.add_services_to_cluster(
-            service_names=["service_with_bound_component"], cluster=self.cluster
-        ).get()
+        service_with_bound_component = self.uc.add_services_to_cluster(
+            names=["service_with_bound_component"], cluster=self.cluster
+        )[0]
         bound_component = Component.objects.get(
             prototype__name="bound_component",
             service=service_with_bound_component,
@@ -551,18 +529,16 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_on_different_host_fail(self):
-        service_with_bound_component = self.add_services_to_cluster(
-            service_names=["service_with_bound_component"], cluster=self.cluster
-        ).get()
+        service_with_bound_component = self.uc.add_services_to_cluster(
+            names=["service_with_bound_component"], cluster=self.cluster
+        )[0]
         bound_component = Component.objects.get(
             prototype__name="bound_component",
             service=service_with_bound_component,
             cluster=self.cluster,
         )
 
-        bound_target_service = self.add_services_to_cluster(
-            service_names=["bound_target_service"], cluster=self.cluster
-        ).get()
+        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
         bound_target_component = Component.objects.get(
             prototype__name="bound_target_component",
             service=bound_target_service,
@@ -583,18 +559,16 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_success(self):
-        service_with_bound_component = self.add_services_to_cluster(
-            service_names=["service_with_bound_component"], cluster=self.cluster
-        ).get()
+        service_with_bound_component = self.uc.add_services_to_cluster(
+            names=["service_with_bound_component"], cluster=self.cluster
+        )[0]
         bound_component = Component.objects.get(
             prototype__name="bound_component",
             service=service_with_bound_component,
             cluster=self.cluster,
         )
 
-        bound_target_service = self.add_services_to_cluster(
-            service_names=["bound_target_service"], cluster=self.cluster
-        ).get()
+        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
         bound_target_component = Component.objects.get(
             prototype__name="bound_target_component",
             service=bound_target_service,
@@ -612,9 +586,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 2)
 
     def test_one_constraint_zero_in_hc_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service = self.uc.add_services_to_cluster(
+            names=["service_with_one_component_constraint"], cluster=self.cluster
+        )[0]
         component = Component.objects.get(
             prototype__name="one",
             service=service,
@@ -638,9 +612,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_constraint_two_in_hc_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service = self.uc.add_services_to_cluster(
+            names=["service_with_one_component_constraint"], cluster=self.cluster
+        )[0]
         component = Component.objects.get(
             prototype__name="one",
             service=service,
@@ -669,9 +643,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service = self.uc.add_services_to_cluster(
+            names=["service_with_one_component_constraint"], cluster=self.cluster
+        )[0]
         component = Component.objects.get(
             prototype__name="one",
             service=service,
@@ -686,9 +660,9 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 1)
 
     def test_zero_one_constraint_two_in_hc_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_zero_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service = self.uc.add_services_to_cluster(
+            names=["service_with_zero_one_component_constraint"], cluster=self.cluster
+        )[0]
         component = Component.objects.get(
             prototype__name="zero_one",
             service=service,
@@ -1183,65 +1157,60 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
 
-@unittest.skip("ADCM-7894 Bundle update is required")
-class TestBoundTo(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestBoundTo(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.old_bundle = Bundle.objects.get(name="cluster_one", version="1.0")
-        self.new_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_one_upgrade")
-        Prototype.objects.filter(license="unaccepted").update(license="accepted")
+        bundles_dir = cls.test_bundles_dir / "adcm_7894"
+        cls.old_bundle = cls.uc.upload_bundle(bundles_dir / "old")
+        cls.new_bundle = cls.uc.upload_bundle(bundles_dir / "new")
+
+        provider_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle)
+        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1")
+        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2")
+
+    def prepare_cluster_with_two_components(self, bundle: Bundle) -> tuple[Cluster, Component, Component]:
+        cluster = self.uc.add_cluster(bundle=bundle)
+        self.uc.add_services_to_cluster(["service_1", "service_with_bound_to_component"], cluster=cluster)
+        self.uc.add_host_to_cluster(host=self.host_1, cluster=cluster)
+        self.uc.add_host_to_cluster(host=self.host_2, cluster=cluster)
+        component = Component.objects.get(service__prototype__name="service_1", prototype__name="component_1")
+        dependent_component = Component.objects.get(
+            service__prototype__name="service_with_bound_to_component", prototype__name="will_have_bound_to"
+        )
+        return cluster, component, dependent_component
 
     def test_concern_appear_after_upgrade_success(self) -> None:
-        cluster_old = self.add_cluster(bundle=self.old_bundle, name="Created Old")
-
-        service = self.add_services_to_cluster(["service_1"], cluster=cluster_old).get()
-        component = service.components.get(prototype__name="component_1")
-        service_with_dependency = self.add_services_to_cluster(
-            ["service_with_miss_config_service"], cluster=cluster_old
-        ).get()
-        dependent_component = service_with_dependency.components.get(prototype__name="will_have_bound_to")
-
-        host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_old)
-        host_2 = self.add_host(provider=self.provider, fqdn="h2", cluster=cluster_old)
-
-        self.set_hostcomponent(
-            cluster=cluster_old, entries=((host_1, component), (host_2, component), (host_2, dependent_component))
+        upgrade = Upgrade.objects.get(name="upgrade")
+        cluster_old, component, dependent_component = self.prepare_cluster_with_two_components(self.old_bundle)
+        self.uc.set_hostcomponent(
+            cluster=cluster_old,
+            entries=((self.host_1, component), (self.host_2, component), (self.host_2, dependent_component)),
         )
-
         self.assertFalse(ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).exists())
 
-        upgrade = Upgrade.objects.get(name="upgrade")
-
         response = self.client.v2[cluster_old, "upgrades", upgrade, "run"].post()
+
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-
-        cluster_old.refresh_from_db()
-
         concern = ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).first()
-
         self.assertIsNotNone(concern)
+        cluster_old.refresh_from_db()
         self.assertEqual(concern.owner, cluster_old)
 
     def test_save_mapping_with_unsatisfied_bound_to_fail(self) -> None:
-        cluster_new = self.add_cluster(bundle=self.new_bundle, name="Created New")
+        cluster_new, component, dependent_component = self.prepare_cluster_with_two_components(self.new_bundle)
+        mapping_to_set = [
+            {"hostId": host.id, "componentId": component.id}
+            for host, component in (
+                (self.host_1, component),
+                (self.host_2, component),
+                (self.host_2, dependent_component),
+            )
+        ]
 
-        service = self.add_services_to_cluster(["service_1"], cluster=cluster_new).get()
-        component = service.components.get(prototype__name="component_1")
-        service_with_dependency = self.add_services_to_cluster(
-            ["service_with_miss_config_service"], cluster=cluster_new
-        ).get()
-        dependent_component = service_with_dependency.components.get(prototype__name="will_have_bound_to")
-
-        host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_new)
-        host_2 = self.add_host(provider=self.provider, fqdn="h2", cluster=cluster_new)
-
-        response = self.client.v2[cluster_new, "mapping"].post(
-            data=[
-                {"hostId": host.id, "componentId": component.id}
-                for host, component in ((host_1, component), (host_2, component), (host_2, dependent_component))
-            ]
-        )
+        response = self.client.v2[cluster_new, "mapping"].post(data=mapping_to_set)
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         data = response.json()
@@ -1249,18 +1218,19 @@ class TestBoundTo(BaseAPITestCase):
         self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
-class ConfigHostGroupRelatedTests(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class ConfigHostGroupRelatedTests(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
+        cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host_1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host_2", cluster=cls.cluster_1)
 
-        self.service_1 = Service.objects.get(prototype__name="service_1", cluster=self.cluster_1)
-        self.component_1_from_s1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
-        self.component_2_from_s1 = Component.objects.get(prototype__name="component_2", service=self.service_1)
+        cls.service_1 = Service.objects.get(prototype__name="service_1", cluster=cls.cluster_1)
+        cls.component_1_from_s1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
+        cls.component_2_from_s1 = Component.objects.get(prototype__name="component_2", service=cls.service_1)
 
     def _prepare_config_host_group_via_api(
         self, obj: Cluster | Service | Component, hosts: list[Host], name: str, description: str = ""
@@ -1349,31 +1319,22 @@ class ConfigHostGroupRelatedTests(BaseAPITestCase):
         self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})
 
 
-class TestMappingNew(APITestCase, WithPreparedFSAndInitADCM, APIV2Mixin, TestUtilsMixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
+class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        prepare_container.cache_clear()
-        cls.test_bundles_dir = Path(__file__).parent / "bundles"
-
-    def setUp(self):
-        self.client.login(username="admin", password="admin")
-
-        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "cluster_one")
-        self.cluster_1 = self.create_cluster(bundle=cluster_bundle, name="Test cluster for mapping")
-        self.service_1 = self.create_services(names=["service_1"], cluster=self.cluster_1)[0]
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one")
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cluster_bundle, name="Test cluster for mapping")
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
         # existence check, needed to set component's MM = ON without affecting service's MM
-        Component.objects.get(prototype__name="component_2", service=self.service_1)
+        Component.objects.get(prototype__name="component_2", service=cls.service_1)
 
-        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
-        provider = self.create_provider(bundle=provider_bundle, name="provider")
-        self.host_1 = self.create_host(provider=provider, name="host-1", cluster=self.cluster_1)
-        self.host_2 = self.create_host(provider=provider, name="host-2", cluster=self.cluster_1)
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider")
+        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2", cluster=cls.cluster_1)
 
     def test_add_remove_simple_success(self):
         self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
@@ -1447,7 +1408,7 @@ class TestMappingNew(APITestCase, WithPreparedFSAndInitADCM, APIV2Mixin, TestUti
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
 
-class TestHC(BaseAPITestCase):
+class TestHC(ADCMDjangoAPISuite):
     # moved from cm.tests.test_hc
     def test_adcm_4929_run_same_hc_success(self) -> None:
         # Since it was moved from CM, need to pass it,

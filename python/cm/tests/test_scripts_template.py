@@ -14,10 +14,11 @@ from pathlib import Path
 from uuid import uuid4
 import unittest
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.action.process.types import ProcessState
 from django.utils import timezone
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
 
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs

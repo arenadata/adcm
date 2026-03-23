@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BusinessLogicMixin
 from cm.legacy.api import add_host_to_cluster, add_service_to_cluster
 from cm.models import (
     Cluster,
@@ -20,6 +19,7 @@ from cm.models import (
     Provider,
     Service,
 )
+from tests.deprecated import BusinessLogicMixin
 
 from rbac.models import Group, Policy, User
 from rbac.scenarios import RBACScenarios

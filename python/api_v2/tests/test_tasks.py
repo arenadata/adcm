@@ -35,14 +35,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.transition.cluster.delete import DeleteService
 import pytz
 
-from api_v2.tests.base import BaseAPITestCase
-from api_v2.tests.setup.overrides import get_rbac_scenarios_manager
 
+class TestTask(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-class TestTask(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -245,7 +245,7 @@ class TestTask(BaseAPITestCase):
         service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
         service_admin = self.create_user(**service_admin_credentials)
 
-        with get_rbac_scenarios_manager().enabled(), self.grant_permissions(
+        with self.grant_permissions(
             to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator"
         ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
             # run action as service admin (create all permissions we interested in)
@@ -316,7 +316,7 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
 
 
-class TestTaskObjects(BaseAPITestCase):
+class TestTaskObjects(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

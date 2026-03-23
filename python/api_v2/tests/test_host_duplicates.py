@@ -24,16 +24,16 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.host.duplicate import create_duplicate
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestDuplicateHost(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-class TestDuplicateHost(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
 
     def get_ids(self, collection: list[dict]) -> set[int]:
         return set(map(itemgetter("id"), collection))

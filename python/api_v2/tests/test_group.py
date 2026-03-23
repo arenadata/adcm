@@ -18,16 +18,16 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestGroupAPI(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestGroupAPI(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.group_local = Group.objects.create(name="test_local_group")
-        self.group_ldap = Group.objects.create(name="test_ldap_group", type=OriginType.LDAP)
+        cls.group_local = Group.objects.create(name="test_local_group")
+        cls.group_ldap = Group.objects.create(name="test_ldap_group", type=OriginType.LDAP)
 
     def test_list_success(self):
         response: Response = (self.client.v2 / "rbac" / "groups").get()

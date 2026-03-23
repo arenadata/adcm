@@ -19,39 +19,39 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestPolicy(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-class TestPolicy(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.remove_provider_role = role_create(
+        cls.remove_provider_role = role_create(
             name="Remove Host-Provider",
             display_name="Remove Host-Provider",
             child=[Role.objects.get(name="Remove provider", built_in=True)],
         )
-        self.create_user_role = role_create(
+        cls.create_user_role = role_create(
             name="Create Users",
             display_name="Create Users",
             child=[Role.objects.get(name="Create user", built_in=True)],
         )
 
-        self.group_1 = Group.objects.create(name="test_local_group_1")
-        self.group_2 = Group.objects.create(name="test_local_group_2")
+        cls.group_1 = Group.objects.create(name="test_local_group_1")
+        cls.group_2 = Group.objects.create(name="test_local_group_2")
 
-        self.remove_provider_policy = policy_create(
+        cls.remove_provider_policy = policy_create(
             name="Awesome Policy",
-            role=self.remove_provider_role,
-            group=[self.group_1],
-            object=[self.provider],
+            role=cls.remove_provider_role,
+            group=[cls.group_1],
+            object=[cls.provider],
             description="first description",
         )
-        self.create_user_policy = policy_create(
+        cls.create_user_policy = policy_create(
             name="Create User Policy",
-            role=self.create_user_role,
-            group=[self.group_1, self.group_2],
+            role=cls.create_user_role,
+            group=[cls.group_1, cls.group_2],
             object=[],
             description="second description",
         )

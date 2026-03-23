@@ -12,10 +12,11 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionTargetDescriptor, ADCMCoreType
 from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.transition.host.duplicate import create_duplicate
 
 from cm.legacy.services.job.context import get_inventory_data

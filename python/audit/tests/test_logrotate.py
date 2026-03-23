@@ -12,7 +12,6 @@
 
 from datetime import datetime, timedelta
 
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Bundle,
@@ -26,6 +25,7 @@ from cm.models import (
 from django.core.management import call_command
 from django.utils import timezone
 from rbac.models import User
+from tests.base import BaseTestCase
 
 from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 
