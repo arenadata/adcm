@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from collections.abc import Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
@@ -59,7 +58,7 @@ from rbac.scenarios import RBACScenarios
 from use_cases.transition.job.schedule import TaskStarter
 import dishka
 
-_PYTHON_DIR = python_dir = Path(__file__).parent.parent.parent.parent
+_PYTHON_DIR = Path(__file__).parent.parent
 
 
 @dataclass(slots=True)
@@ -183,30 +182,6 @@ class StatusScenariosTestManager:
 @cache
 def get_status_scenarios_manager() -> StatusScenariosTestManager:
     return StatusScenariosTestManager()
-
-
-@dataclass(slots=True)
-class RBACScenariosTestManager:
-    enabled_flag: bool = False
-
-    @contextmanager
-    def enabled(self):
-        """
-        Temporal solution: tests can toggle RBAC on for a block.
-        Correct approach is to use per-test provider overrides in DI.
-        """
-
-        previous_state = self.enabled_flag
-        self.enabled_flag = True
-        try:
-            yield
-        finally:
-            self.enabled_flag = previous_state
-
-
-@cache
-def get_rbac_scenarios_manager() -> RBACScenariosTestManager:
-    return RBACScenariosTestManager()
 
 
 @cache
@@ -355,29 +330,19 @@ class RBACScenariosDummy(RBACScenarios):
         apply_object: ADCMEntity,  # noqa: ARG002
         keep_objects: Mapping[type[Model], Iterable[int]] | None = None,  # noqa: ARG002
     ) -> None:
-        if not get_rbac_scenarios_manager().enabled_flag:
-            return
-        super().re_apply_object_policy(apply_object=apply_object, keep_objects=keep_objects)
+        return
 
     def apply_policy_for_new_config(self, config_object: ADCMEntity, config_log: ConfigLog) -> None:  # noqa: ARG002
-        if not get_rbac_scenarios_manager().enabled_flag:
-            return
-        super().apply_policy_for_new_config(config_object=config_object, config_log=config_log)
+        return
 
     def re_apply_policy_for_jobs(self, task: TaskLog) -> None:  # noqa: ARG002
-        if not get_rbac_scenarios_manager().enabled_flag:
-            return
-        super().re_apply_policy_for_jobs(task=task)
+        return
 
     def assign_view_logstorage_permissions_by_job(self, log_storage_id: int) -> None:  # noqa: ARG002
-        if not get_rbac_scenarios_manager().enabled_flag:
-            return
-        super().assign_view_logstorage_permissions_by_job(log_storage_id=log_storage_id)
+        return
 
     def prepare_action_roles(self, bundle: Bundle) -> None:  # noqa: ARG002
-        if not get_rbac_scenarios_manager().enabled_flag:
-            return
-        super().prepare_action_roles(bundle=bundle)
+        return
 
 
 class RBACScenariosOverride(dishka.Provider):
@@ -443,19 +408,28 @@ def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
     )
 
 
-def make_default_dishka_container_for_tests() -> dishka.Container:
-    providers = get_default_overridden_providers()
+@dataclass(slots=True)
+class ContainerManager:
+    current: str = "__unset__"
+    containers: dict[str, dishka.Container] = field(default_factory=dict)
 
-    return dishka.make_container(*providers)
+    @property
+    def container(self) -> dishka.Container:
+        return self.containers[self.current]
+
+
+@cache
+def get_container_manager() -> ContainerManager:
+    return ContainerManager()
 
 
 class DishkaMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-        self.container = make_default_dishka_container_for_tests()
+        self.container_manager = get_container_manager()
 
     def __call__(self, request):
-        with self.container(scope=dishka.Scope.REQUEST) as request_container:
+        with self.container_manager.container(scope=dishka.Scope.REQUEST) as request_container:
             request.container = request_container
             return self.get_response(request)

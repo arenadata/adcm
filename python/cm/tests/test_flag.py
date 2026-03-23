@@ -13,8 +13,9 @@
 from pathlib import Path
 import random
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.concern import create_issue

@@ -13,11 +13,12 @@
 from pathlib import Path
 import tempfile
 
-from adcm.tests.base import BaseTestCase, BundleLogicMixin, BusinessLogicMixin
 from django.db import IntegrityError
 from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
+from tests.base import BaseTestCase, BundleLogicMixin
+from tests.deprecated import BusinessLogicMixin
 import yaml
 
 from cm.errors import AdcmEx

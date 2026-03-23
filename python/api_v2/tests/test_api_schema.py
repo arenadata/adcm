@@ -13,14 +13,18 @@
 from pathlib import Path
 
 from rest_framework.status import HTTP_200_OK
+from tests.suites import ADCMDjangoAPISuite
 import yaml
-
-from api_v2.tests.base import BaseAPITestCase
 
 SCHEMA_PATH = Path(__file__).parent.parent.parent / "adcm" / "api_schema.yaml"
 
 
-class TestAPISchema(BaseAPITestCase):
+class TestAPISchema(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        # somehow related to auth, probably can be optimized
+        cls._initialize_roles_and_adcm()
+
     def test_endpoints(self):
         response = self.client.v2["schema"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)

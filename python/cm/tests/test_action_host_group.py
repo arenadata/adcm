@@ -12,7 +12,6 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -22,6 +21,8 @@ from core.legacy.job.runners import (
 )
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
 

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from adcm.tests.client import APINode
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
 from cm.models import (
@@ -27,27 +26,30 @@ from cm.models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from tests.client import APINode
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
 
 
-class TestWizardOnAHG(BaseAPITestCase, APIV2Mixin):
-    def setUp(self):
-        super().setUp()
-        self.maxDiff = None
+class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
+    maxDiff = None
 
-        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_action")
-        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.cluster = self.create_cluster(bundle=cluster_bundle, name="test_cluster")
-        self.service = self.create_services(names=["service_1"], cluster=self.cluster)[0]
-        self.component = Component.objects.get(service=self.service, prototype__name="component_1")
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "wizard_action")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
 
-        self.provider = self.create_provider(bundle=provider_bundle, name="test_provider")
-        self.host = self.create_host(provider=self.provider, name="test-host", cluster=self.cluster)
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        cls.service = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)[0]
+        cls.component = Component.objects.get(service=cls.service, prototype__name="component_1")
 
-        self.expected_step_spec = {
+        cls.provider = cls.uc.add_provider(bundle=provider_bundle, name="test_provider")
+        cls.host = cls.uc.add_host(provider=cls.provider, name="test-host", cluster=cls.cluster)
+
+        cls.expected_step_spec = {
             "step_1_config": [
                 {
                     "groups": {},
@@ -99,7 +101,7 @@ class TestWizardOnAHG(BaseAPITestCase, APIV2Mixin):
                 },
             ],
             "step_2_mapping": [
-                {"service": self.component.service.name, "component": self.component.name, "operation": "remove"}
+                {"service": cls.component.service.name, "component": cls.component.name, "operation": "remove"}
             ],
             "step_3_operation": [
                 {

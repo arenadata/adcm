@@ -21,7 +21,7 @@ from .shared.constants import *  # noqa
 
 # Important overrides
 MIDDLEWARE.remove("api_v2.utils.di.DishkaMiddleware")  # noqa: F405
-MIDDLEWARE.insert(0, "api_v2.tests.setup.overrides.DishkaMiddleware")  # noqa: F405
+MIDDLEWARE.insert(0, "tests.dependencies.DishkaMiddleware")  # noqa: F405
 
 logging.disable(logging.CRITICAL)
 
@@ -50,8 +50,8 @@ LOG_DIR = DATA_DIR / "log"
 TMP_DIR = DATA_DIR / "tmp"
 CODE_DIR = pathlib.Path(__file__).parent.parent.parent
 
-DEFAULT_DISHKA_PROVIDERS = "api_v2.tests.setup.overrides.get_default_overridden_providers"
+DEFAULT_DISHKA_PROVIDERS = "tests.dependencies.get_default_overridden_providers"
 
 # Strictly for tests
 
-TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"
+TEST_RUNNER = "tests.runner.SubTestParallelRunner"

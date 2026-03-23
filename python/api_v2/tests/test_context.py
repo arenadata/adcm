@@ -14,12 +14,13 @@ import json
 
 from cm.models import Action
 from rest_framework.status import HTTP_200_OK
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import TEST_BUNDLES_DIR, APIV2Mixin, BaseAPITestCase
+from api_v2.tests.base import TEST_BUNDLES_DIR, APIV2Mixin
 from api_v2.utils.di import prepare_container
 
 
-class TestConfigTemplateContext(APIV2Mixin, BaseAPITestCase):
+class TestConfigTemplateContext(APIV2Mixin, ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

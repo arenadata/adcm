@@ -22,13 +22,13 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
 
 
-class TestWizardActionProcessSteps(APIV2Mixin, BaseAPITestCase, WizardProcessHelpers):
+class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcessHelpers):
     def setUp(self) -> None:
         super().setUp()
 

@@ -26,56 +26,59 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.prototype.utils import accept_license
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
-from api_v2.tests.setup.base import BaseAPITestCase as BaseAPITestCaseALT
+from api_v2.tests.base import APIV2Mixin
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 
-class TestUpgrade(APIV2Mixin, BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
 
-        cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
-        cluster_bundle_1_upgrade_other_constraints_path = (
-            self.test_bundles_dir / "cluster_one_upgrade_other_constraints"
-        )
-        provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
-        cluster_bundle_upgrade = self.uc.upload_bundle(src=cluster_bundle_1_upgrade_path)
-        cluster_bundle_upgrade_2 = self.uc.upload_bundle(src=cluster_bundle_1_upgrade_other_constraints_path)
-        provider_bundle_upgrade = self.uc.upload_bundle(src=provider_bundle_upgrade_path)
-        self.uc.upload_bundle(src=self.test_bundles_dir / "cluster_two_upgrade_from_any")
+        cluster_bundle_1_upgrade_path = cls.test_bundles_dir / "cluster_one_upgrade"
+        cluster_bundle_1_upgrade_other_constraints_path = cls.test_bundles_dir / "cluster_one_upgrade_other_constraints"
+        provider_bundle_upgrade_path = cls.test_bundles_dir / "provider_upgrade"
+        cluster_bundle_upgrade = cls.uc.upload_bundle(src=cluster_bundle_1_upgrade_path)
+        cluster_bundle_upgrade_2 = cls.uc.upload_bundle(src=cluster_bundle_1_upgrade_other_constraints_path)
+        provider_bundle_upgrade = cls.uc.upload_bundle(src=provider_bundle_upgrade_path)
+        cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_two_upgrade_from_any")
 
-        self.cluster_upgrade = Upgrade.objects.get(
+        cls.cluster_upgrade = Upgrade.objects.get(
             name="upgrade",
             bundle=cluster_bundle_upgrade,
         )
-        self.cluster_upgrade_2 = Upgrade.objects.get(
+        cls.cluster_upgrade_2 = Upgrade.objects.get(
             name="upgrade",
             bundle=cluster_bundle_upgrade_2,
         )
-        self.provider_upgrade = Upgrade.objects.get(
+        cls.provider_upgrade = Upgrade.objects.get(
             name="upgrade",
             bundle=provider_bundle_upgrade,
         )
-        self.upgrade_cluster_via_action_simple = Upgrade.objects.get(
+        cls.upgrade_cluster_via_action_simple = Upgrade.objects.get(
             name="upgrade_via_action_simple", bundle=cluster_bundle_upgrade
         )
-        self.upgrade_host_via_action_simple = Upgrade.objects.get(
+        cls.upgrade_host_via_action_simple = Upgrade.objects.get(
             name="upgrade_via_action_simple", bundle=provider_bundle_upgrade
         )
-        self.upgrade_cluster_via_action_complex = Upgrade.objects.get(
+        cls.upgrade_cluster_via_action_complex = Upgrade.objects.get(
             name="upgrade_via_action_complex", bundle=cluster_bundle_upgrade
         )
-        self.upgrade_host_via_action_complex = Upgrade.objects.get(
+        cls.upgrade_host_via_action_complex = Upgrade.objects.get(
             name="upgrade_via_action_complex", bundle=provider_bundle_upgrade
         )
 
-        self.user = self.create_user()
+        cls.user = cls.uc.create_user()
+
+    def setUp(self) -> None:
+        super().setUp()
+
         self.unauthorized_client = self.client_class()
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
@@ -401,29 +404,30 @@ class TestUpgrade(APIV2Mixin, BaseAPITestCase):
         self.assertEqual(response.json()["code"], "GROUP_CONFIG_NO_CONFIG_ERROR")
 
 
-class TestScriptsTemplate(APIV2Mixin, BaseAPITestCaseALT):
-    def test_apply_config_in_script(self):
-        # Arrange:
-        # upload bundles
-        old_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_one")
-        new_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_one_upgrade")
-        # create from old bundle
-        cluster = self.create_cluster(bundle=old_bundle, name="whatever")
-        service = self.create_services(["adcm_7807"], cluster=cluster)[0]
-        upgrade = Upgrade.objects.get(name="with_scripts_adcm_7807", bundle=new_bundle)
+class TestScriptsTemplate(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        # Act:
+        old_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one")
+        new_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one_upgrade")
+
+        cls.cluster = cls.uc.add_cluster(bundle=old_bundle, name="whatever")
+        cls.service = cls.uc.add_services_to_cluster(["adcm_7807"], cluster=cls.cluster)[0]
+
+        cls.upgrade = Upgrade.objects.get(name="with_scripts_adcm_7807", bundle=new_bundle)
+
+    def test_apply_config_in_script(self):
         # upgrade
-        response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
         # run upgrade action
         launched_task = self.task_runner.expect_task_launched()
         self.task_runner.run_task(launched_task.id)
 
-        # Assert:
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task.id)
         self.assertEqual(task_status, "success")
         # config migrated
-        config = ConfigLog.objects.get(id=service.config.current)
+        config = ConfigLog.objects.get(id=self.service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)

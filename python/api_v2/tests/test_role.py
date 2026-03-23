@@ -23,21 +23,23 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestRole(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-class TestRole(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.view_cluster_config_role = Role.objects.get(name="View cluster configurations", built_in=True)
-        self.edit_cluster_config_role = Role.objects.get(name="Edit cluster configurations", built_in=True)
+        cls.view_cluster_config_role = Role.objects.get(name="View cluster configurations", built_in=True)
+        cls.edit_cluster_config_role = Role.objects.get(name="Edit cluster configurations", built_in=True)
 
-        self.cluster_config_role = role_create(
+        cls.cluster_config_role = role_create(
             name="Change cluster config",
             display_name="Change cluster config",
-            child=[self.view_cluster_config_role],
+            child=[cls.view_cluster_config_role],
         )
 
     def test_retrieve_not_found_fail(self):

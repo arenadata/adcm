@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import WithPreparedFSAndInitADCM
-from adcm.tests.client import ADCMTestClient
 from rbac.models import User
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from tests.base import WithPreparedFSAndInitADCM
+from tests.client import ADCMTestClient
+from tests.dependencies import get_status_scenarios_manager
 import django.test
-
-from api_v2.tests.setup.overrides import get_status_scenarios_manager
 
 
 class TestStatusServerSync(django.test.TestCase, WithPreparedFSAndInitADCM):

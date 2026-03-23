@@ -29,12 +29,12 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.host.duplicate import create_duplicate
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestHost(BaseAPITestCase):
+class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -331,18 +331,19 @@ class TestHost(BaseAPITestCase):
             )
 
 
-class TestClusterHost(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host = self.add_host(provider=self.provider, fqdn="test-host")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="second-host")
-        self.control_free_host = self.add_host(provider=self.provider, fqdn="not-bound-host")
-        self.control_host_same_cluster = self.add_host(
-            provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="test-host")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="second-host")
+        cls.control_free_host = cls.uc.add_host(provider=cls.provider, fqdn="not-bound-host")
+        cls.control_host_same_cluster = cls.uc.add_host(
+            provider=cls.provider, fqdn="bound-to-same-host", cluster=cls.cluster_1
         )
-        self.control_host_another_cluster = self.add_host(
-            provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
+        cls.control_host_another_cluster = cls.uc.add_host(
+            provider=cls.provider, fqdn="bound-to-another-host", cluster=cls.cluster_2
         )
 
     def check_control_hosts(self) -> None:
@@ -854,16 +855,16 @@ class TestClusterHost(BaseAPITestCase):
             self.assertGreater(len(response.json()), 0)
 
 
-class TestHostActions(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host = self.add_host(provider=self.provider, fqdn="test-host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="test-host", cluster=cls.cluster_1)
+        cls.action = Action.objects.get(name="host_action", prototype=cls.host.prototype)
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
 
     def test_host_cluster_list_success(self):
         response = self.client.v2[self.cluster_1, "hosts", self.host, "actions"].get()
@@ -1025,28 +1026,23 @@ class TestHostActions(BaseAPITestCase):
         )
 
 
-class TestClusterHostComponent(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterHostComponent(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host2")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
-        self.set_hostcomponent(
-            cluster=self.cluster_1,
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host2", cluster=cls.cluster_1)
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1,
             entries=[
-                (self.host_1, self.component_1),
-                (self.host_1, self.component_2),
-                (self.host_2, self.component_1),
-                (self.host_2, self.component_2),
+                (cls.host_1, cls.component_1),
+                (cls.host_1, cls.component_2),
+                (cls.host_2, cls.component_1),
+                (cls.host_2, cls.component_2),
             ],
         )
 
@@ -1084,19 +1080,22 @@ class TestClusterHostComponent(BaseAPITestCase):
         )
 
 
-class TestAdvancedFilters(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAdvancedFilters(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
+        cls.host_3 = cls.uc.add_host(provider=cls.provider, fqdn="host-3")
 
-        self.status_map = FullStatusMap(
-            hosts={
-                str(self.host_1.pk): {"status": 0},
-                str(self.host_2.pk): {"status": 16},
-                str(self.host_3.pk): {"status": 16},
+        cls.status_map = FullStatusMap.model_validate(
+            {
+                "hosts": {
+                    str(cls.host_1.pk): {"status": 0},
+                    str(cls.host_2.pk): {"status": 16},
+                    str(cls.host_3.pk): {"status": 16},
+                }
             }
         )
 

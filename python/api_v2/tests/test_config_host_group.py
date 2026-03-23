@@ -13,7 +13,6 @@
 from operator import attrgetter, itemgetter
 from typing import Iterable, NamedTuple, TypeAlias
 
-from adcm.tests.client import WithID
 from cm.converters import orm_object_to_core_type
 from cm.models import Cluster, Component, ConfigHostGroup, ConfigLog, Host, Provider, Service
 from django.contrib.contenttypes.models import ContentType
@@ -26,9 +25,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-
-from api_v2.tests.base import BaseAPITestCase
-from api_v2.tests.setup.overrides import get_rbac_scenarios_manager
+from tests.client import WithID
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
 CONFIG_GROUPS = "config-groups"
 HOST_CANDIDATES = "host-candidates"
@@ -36,59 +34,54 @@ HOST_CANDIDATES = "host-candidates"
 ObjectWithCHG: TypeAlias = Cluster | Service | Component | Provider
 
 
-class BaseClusterCHGTestCase(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class BaseClusterCHGTestCase(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.cluster_1_host_group = ConfigHostGroup.objects.create(
+        cls.cluster_1_host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.cluster_1),
-            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(cls.cluster_1),
+            object_id=cls.cluster_1.pk,
             description="test description",
         )
-        self.host_fqdn = "host"
-        self.host = self.add_host(provider=self.provider, fqdn=self.host_fqdn)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.cluster_1_host_group.hosts.add(self.host)
-        self.new_host_fqdn = "new_host"
-        self.new_host = self.add_host(provider=self.provider, fqdn=self.new_host_fqdn)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
+        cls.host_fqdn = "host"
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn=cls.host_fqdn, cluster=cls.cluster_1)
+        cls.cluster_1_host_group.hosts.add(cls.host)
+        cls.new_host_fqdn = "new_host"
+        cls.new_host = cls.uc.add_host(provider=cls.provider, fqdn=cls.new_host_fqdn, cluster=cls.cluster_1)
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_2, *_ = cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster_1)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
 
 class BaseServiceCHGTestCase(BaseClusterCHGTestCase):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1_host_group = ConfigHostGroup.objects.create(
+        cls.service_1_host_group = ConfigHostGroup.objects.create(
             name="service_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
+            object_type=ContentType.objects.get_for_model(cls.service_1),
+            object_id=cls.service_1.pk,
         )
-        self.service_2_host_group = ConfigHostGroup.objects.create(
+        cls.service_2_host_group = ConfigHostGroup.objects.create(
             name="service_2_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.service_2),
-            object_id=self.service_2.pk,
+            object_type=ContentType.objects.get_for_model(cls.service_2),
+            object_id=cls.service_2.pk,
         )
-        self.service_1_host_group.hosts.add(self.host)
-        self.host_for_service = self.add_host(provider=self.provider, fqdn="host_for_service")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
-        self.host_in_cluster = self.add_host(provider=self.provider, fqdn="host_in_cluster", cluster=self.cluster_1)
+        cls.service_1_host_group.hosts.add(cls.host)
+        cls.host_for_service = cls.uc.add_host(provider=cls.provider, fqdn="host_for_service", cluster=cls.cluster_1)
+        cls.host_in_cluster = cls.uc.add_host(provider=cls.provider, fqdn="host_in_cluster", cluster=cls.cluster_1)
 
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1, entries=[(cls.host, cls.component_1), (cls.host_for_service, cls.component_1)]
         )
-        self.component_2 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
-        self.set_hostcomponent(
-            cluster=self.cluster_1, entries=[(self.host, self.component_1), (self.host_for_service, self.component_1)]
-        )
-        self.service_1_host_group.hosts.add(self.host)
+        cls.service_1_host_group.hosts.add(cls.host)
 
 
 class TestCHGNaming(BaseServiceCHGTestCase):
@@ -136,6 +129,8 @@ class TestCHGNaming(BaseServiceCHGTestCase):
 
 
 class TestClusterCHG(BaseClusterCHGTestCase):
+    suite_setup = SETUP_WITH_RBAC
+
     def test_list_success(self):
         response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get()
 
@@ -322,6 +317,8 @@ class TestClusterCHG(BaseClusterCHGTestCase):
 
 
 class TestServiceCHG(BaseServiceCHGTestCase):
+    suite_setup = SETUP_WITH_RBAC
+
     def test_list_success(self):
         response = self.client.v2[self.service_1, CONFIG_GROUPS].get()
 
@@ -376,9 +373,7 @@ class TestServiceCHG(BaseServiceCHGTestCase):
 
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
-        with get_rbac_scenarios_manager().enabled(), self.grant_permissions(
-            to=self.test_user, on=self.service_1, role_name="Service Administrator"
-        ):
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
             response = self.client.v2[self.service_1, CONFIG_GROUPS].post(
                 data={"name": "service-group-config-new", "description": "service-group-config-new"},
             )
@@ -545,26 +540,30 @@ class TestServiceCHG(BaseServiceCHGTestCase):
 
 
 class TestComponentCHG(BaseServiceCHGTestCase):
-    def setUp(self) -> None:
-        super().setUp()
+    suite_setup = SETUP_WITH_RBAC
 
-        self.component_1_host_group = ConfigHostGroup.objects.create(
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.component_1_host_group = ConfigHostGroup.objects.create(
             name="component_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.component_1),
-            object_id=self.component_1.pk,
+            object_type=ContentType.objects.get_for_model(cls.component_1),
+            object_id=cls.component_1.pk,
         )
-        self.component_2_host_group = ConfigHostGroup.objects.create(
+        cls.component_2_host_group = ConfigHostGroup.objects.create(
             name="component_2_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.component_2),
-            object_id=self.component_2.pk,
+            object_type=ContentType.objects.get_for_model(cls.component_2),
+            object_id=cls.component_2.pk,
         )
 
-        self.host_for_component = self.add_host(provider=self.provider, fqdn="host_for_component")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
-        self.set_hostcomponent(
-            cluster=self.cluster_1, entries=[(self.host, self.component_1), (self.host_for_component, self.component_1)]
+        cls.host_for_component = cls.uc.add_host(
+            provider=cls.provider, fqdn="host_for_component", cluster=cls.cluster_1
         )
-        self.component_1_host_group.hosts.add(self.host)
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1, entries=[(cls.host, cls.component_1), (cls.host_for_component, cls.component_1)]
+        )
+        cls.component_1_host_group.hosts.add(cls.host)
 
     def test_list_success(self):
         response = self.client.v2[self.component_1, CONFIG_GROUPS].get()
@@ -619,9 +618,7 @@ class TestComponentCHG(BaseServiceCHGTestCase):
 
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
-        with get_rbac_scenarios_manager().enabled(), self.grant_permissions(
-            to=self.test_user, on=self.service_1, role_name="Service Administrator"
-        ):
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
             response = self.client.v2[self.component_1, CONFIG_GROUPS].post(
                 data={"name": "component-group-config-new", "description": "component-group-config-new"},
             )
@@ -802,19 +799,23 @@ class TestComponentCHG(BaseServiceCHGTestCase):
         self.assertEqual(self.service_1_host_group.hosts.count(), 0)
 
 
-class TestProviderCHG(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.host = self.add_host(provider=self.provider, fqdn="host")
-        self.new_host = self.add_host(provider=self.provider, fqdn="new-host")
-        self.host_group = ConfigHostGroup.objects.create(
+class TestProviderCHG(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="host")
+        cls.new_host = cls.uc.add_host(provider=cls.provider, fqdn="new-host")
+        cls.host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.provider),
-            object_id=self.provider.pk,
+            object_type=ContentType.objects.get_for_model(cls.provider),
+            object_id=cls.provider.pk,
         )
-        self.host_group.hosts.add(self.host)
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.host_group.hosts.add(cls.host)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.provider, CONFIG_GROUPS].get()
@@ -1037,16 +1038,17 @@ class TestProviderCHG(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestHostCandidateForConfigHostsGroups(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestHostCandidateForConfigHostsGroups(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.cluster = self.cluster_1
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = self.service.components.get(prototype__name="component_1")
-        self.component_2 = self.service.components.get(prototype__name="component_2")
+        cls.cluster = cls.cluster_1
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = cls.service.components.get(prototype__name="component_1")
+        cls.component_2 = cls.service.components.get(prototype__name="component_2")
 
-        self.hosts = tuple(self.add_host(provider=self.provider, fqdn=f"host-{i}") for i in range(4))
+        cls.hosts = tuple(cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}") for i in range(4))
 
     class Case(NamedTuple):
         target: ObjectWithCHG

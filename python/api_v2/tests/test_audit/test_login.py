@@ -16,12 +16,11 @@ from audit.models import AuditSession, AuditSessionLoginResult
 from cm.models import ADCM, ConfigLog
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from tests.suites import ADCMDjangoAPISuite
 import pytz
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestLoginAudit(BaseAPITestCase):
+class TestLoginAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

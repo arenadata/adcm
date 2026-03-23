@@ -18,22 +18,18 @@ from cm.models import Action, Component, ConcernType, MaintenanceMode, TaskLog
 from cm.tests.utils import gen_concern_item
 from core.types import TaskID
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestComponentAPI(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-class TestComponentAPI(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            prototype__name="component_1", service=self.service_1, cluster=self.cluster_1
-        )
-        self.component_2_to_delete = Component.objects.get(
-            prototype__name="component_2", service=self.service_1, cluster=self.cluster_1
-        )
-        self.action_1 = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
+        cls.component_2_to_delete = Component.objects.get(prototype__name="component_2", service=cls.service_1)
+        cls.action_1 = Action.objects.get(name="action_1_comp_1", prototype=cls.component_1.prototype)
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
@@ -143,19 +139,16 @@ class TestComponentAPI(BaseAPITestCase):
                 )
 
 
-class TestComponentMaintenanceMode(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestComponentMaintenanceMode(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1_cl_1 = Component.objects.get(
-            prototype__name="component_1", service=self.service_1_cl_1, cluster=self.cluster_1
-        )
+        cls.service_1_cl_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1_cl_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1_cl_1)
 
-        self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
-        self.component_cl_1 = Component.objects.get(
-            prototype__name="component", service=self.service_cl_2, cluster=self.cluster_2
-        )
+        cls.service_cl_2, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster_2)
+        cls.component_cl_1 = Component.objects.get(prototype__name="component", service=cls.service_cl_2)
 
     def test_change_mm_success(self):
         response = self.client.v2[self.component_1_cl_1, "maintenance-mode"].post(
@@ -180,56 +173,51 @@ class TestComponentMaintenanceMode(BaseAPITestCase):
         )
 
 
-class TestAdvancedFilters(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAdvancedFilters(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        other_service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
-        other_component = Component.objects.get(
-            prototype__name="component", service=other_service, cluster=self.cluster_2
-        )
+        other_service, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster_2)
+        other_component = Component.objects.get(prototype__name="component", service=other_service)
 
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            prototype__name="component_1", service=self.service, cluster=self.cluster_1
-        )
-        self.component_2 = Component.objects.get(
-            prototype__name="component_2", service=self.service, cluster=self.cluster_1
-        )
-        self.component_3 = Component.objects.get(
-            prototype__name="component_3", service=self.service, cluster=self.cluster_1
-        )
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service)
+        cls.component_2 = Component.objects.get(prototype__name="component_2", service=cls.service)
+        cls.component_3 = Component.objects.get(prototype__name="component_3", service=cls.service)
 
-        self.status_map = FullStatusMap(
-            clusters={
-                str(self.cluster_1.pk): {
-                    "services": {
-                        str(self.service.pk): {
-                            "components": {
-                                str(self.component_1.pk): {"status": 0},
-                                str(self.component_2.pk): {"status": 16},
-                                str(self.component_3.pk): {"status": 16},
-                            },
-                            "status": 16,
-                            "details": [],
-                        }
+        cls.status_map = FullStatusMap.model_validate(
+            {
+                "clusters": {
+                    str(cls.cluster_1.pk): {
+                        "services": {
+                            str(cls.service.pk): {
+                                "components": {
+                                    str(cls.component_1.pk): {"status": 0},
+                                    str(cls.component_2.pk): {"status": 16},
+                                    str(cls.component_3.pk): {"status": 16},
+                                },
+                                "status": 16,
+                                "details": [],
+                            }
+                        },
+                        "status": 16,
+                        "hosts": {},
                     },
-                    "status": 16,
-                    "hosts": {},
-                },
-                str(self.cluster_2.pk): {
-                    "services": {
-                        str(other_service.pk): {
-                            "components": {
-                                str(other_component.pk): {"status": 0},
-                            },
-                            "status": 0,
-                            "details": [],
-                        }
+                    str(cls.cluster_2.pk): {
+                        "services": {
+                            str(other_service.pk): {
+                                "components": {
+                                    str(other_component.pk): {"status": 0},
+                                },
+                                "status": 0,
+                                "details": [],
+                            }
+                        },
+                        "status": 0,
+                        "hosts": {},
                     },
-                    "status": 0,
-                    "hosts": {},
-                },
+                }
             }
         )
 

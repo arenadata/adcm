@@ -20,18 +20,18 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestProvider(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestProvider(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+        host_provider_path = cls.test_bundles_dir / "provider"
 
-        host_provider_path = self.test_bundles_dir / "provider"
-
-        self.host_provider_bundle = self.add_bundle(source_dir=host_provider_path)
-        self.host_provider = self.add_provider(self.host_provider_bundle, "test host provider")
+        cls.host_provider_bundle = cls.uc.upload_bundle(src=host_provider_path)
+        cls.host_provider = cls.uc.add_provider(cls.host_provider_bundle, "test host provider")
 
     def test_list_success(self):
         response = (self.client.v2 / "hostproviders").get()
@@ -152,12 +152,7 @@ class TestProvider(BaseAPITestCase):
         )
 
 
-class TestProviderActions(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
-
+class TestProviderActions(ADCMDjangoAPISuite):
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, status)
@@ -169,13 +164,17 @@ class TestProviderActions(BaseAPITestCase):
         self.assertEqual(len(response.json()), 1)
 
     def test_action_retrieve_success(self):
-        response = self.client.v2[self.provider, "actions", self.action].get()
+        action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
+
+        response = self.client.v2[self.provider, "actions", action].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        response = self.client.v2[self.provider, "actions", self.action, "run"].post(
+        action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
+
+        response = self.client.v2[self.provider, "actions", action, "run"].post(
             data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
         )
 

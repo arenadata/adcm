@@ -13,10 +13,11 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
 from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 import core
 

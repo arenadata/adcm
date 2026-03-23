@@ -36,8 +36,8 @@ class WithDishkaContainer:
 
     def _make_container(self) -> Container:
         # should be moved in commmon place
-        from api_v2.tests.setup.overrides import EnvironmentOverride, TaskStarterOverride
         from application.di.containers import get_main_providers
+        from tests.dependencies import EnvironmentOverride, TaskStarterOverride
 
         providers = get_main_providers()
 

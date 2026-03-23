@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import TypeAlias
 from uuid import uuid4
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 

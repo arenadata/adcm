@@ -32,8 +32,8 @@ from cm.models import (
     GroupCheckLog,
     Provider,
 )
+from core.files.directories import ADCMBundleDir
 from core.secrets import Secret, SecretsBackend
-from core.settings import Directories
 from jobs.scheduler.recover import recover_statuses
 from rbac.models import User
 from rest_framework.authtoken.models import Token
@@ -123,9 +123,9 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     clear_temp_tables()
 
     # maybe should be encapsulated in DI too
-    adcm_conf_file = adcm_conf_file or container.get(Directories).code.parent / "conf" / "adcm" / "config.yaml"
+    adcm_conf_file = adcm_conf_file.parent if adcm_conf_file else container.get(ADCMBundleDir)
 
-    container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file.parent)
+    container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file)
 
     if not use_new_job_scheduler():
         drop_locks()

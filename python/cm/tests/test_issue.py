@@ -14,8 +14,8 @@ from operator import attrgetter
 from typing import Iterable
 from unittest.mock import patch
 
-from adcm.tests.base import BaseTestCase
 from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
 
 from cm.legacy.api import add_cluster, add_service_to_cluster
 from cm.legacy.hierarchy import Tree

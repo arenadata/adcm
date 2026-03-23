@@ -41,15 +41,14 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
-
-from api_v2.tests.base import BaseAPITestCase
+from tests.suites import ADCMDjangoAPISuite
 
 
 class FakePopenResponse(NamedTuple):
     pid: int
 
 
-class TestServiceAPI(BaseAPITestCase):
+class TestServiceAPI(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -428,7 +427,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assert_task_status_is(task_id, "success")
 
 
-class TestServiceDeleteAction(BaseAPITestCase):
+class TestServiceDeleteAction(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -490,7 +489,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
         return task
 
 
-class TestServiceMaintenanceMode(BaseAPITestCase):
+class TestServiceMaintenanceMode(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -546,7 +545,7 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         )
 
 
-class TestServicePermissions(BaseAPITestCase):
+class TestServicePermissions(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -603,7 +602,7 @@ class TestServicePermissions(BaseAPITestCase):
             self.assertDictEqual(response_detail.json(), response.json())
 
 
-class TestAdvancedFilters(BaseAPITestCase):
+class TestAdvancedFilters(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

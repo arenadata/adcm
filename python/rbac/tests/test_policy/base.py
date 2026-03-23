@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, ObjectType, Prototype
+from tests.base import BaseTestCase
 
 from rbac.models import Group
 
