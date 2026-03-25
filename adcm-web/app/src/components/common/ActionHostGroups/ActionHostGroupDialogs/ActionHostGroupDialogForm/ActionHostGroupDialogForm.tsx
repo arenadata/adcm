@@ -72,7 +72,7 @@ const ActionHostGroupDialogForm = ({
               autoComplete="off"
             />
           ) : (
-            <TextFormField>{formData.name}</TextFormField>
+            <TextFormField>{formData.description}</TextFormField>
           )}
         </FormField>
       </div>

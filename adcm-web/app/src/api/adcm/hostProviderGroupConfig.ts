@@ -82,4 +82,13 @@ export class AdcmHostProviderConfigGroupsApi {
     );
     return response.data;
   }
+
+  public static async patchConfigGroupDescription(hostProviderId: number, configGroupId: number, description: string) {
+    const response = await httpClient.patch<AdcmConfigGroup>(
+      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/`,
+      { description },
+    );
+
+    return response.data;
+  }
 }

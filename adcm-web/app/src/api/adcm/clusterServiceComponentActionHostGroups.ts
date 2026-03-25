@@ -60,6 +60,22 @@ export class AdcmClusterServiceComponentActionHostGroupsApi {
     );
   }
 
+  public static async patchActionHostGroupDescription(args: {
+    clusterId: number;
+    serviceId: number;
+    componentId: number;
+    actionHostGroupId: number;
+    description: string;
+  }) {
+    const { clusterId, serviceId, componentId, actionHostGroupId, description } = args;
+    const response = await httpClient.patch<AdcmActionHostGroup>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/action-host-groups/${actionHostGroupId}/`,
+      { description },
+    );
+
+    return response.data;
+  }
+
   // Actions
 
   public static async getActionHostGroupActions(args: GetAdcmComponentActionHostGroupActionsArgs) {

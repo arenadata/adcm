@@ -55,6 +55,8 @@ const HostProviderConfigurationGroups: React.FC = () => {
             onMapping={handleMappingConfigGroup}
             editUrlPattern={`/hostproviders/${hostProviderId}/configuration-groups/:configGroupId`}
             onDelete={handleDeleteConfigGroup}
+            entityType="hostprovider"
+            entityArgs={{ hostProviderId }}
           />
           <HostProviderConfigurationGroupTableFooter />
         </>

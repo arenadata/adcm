@@ -1,13 +1,16 @@
 import type React from 'react';
 import { useEffect } from 'react';
 import { useDispatch, useStore } from '@hooks';
+import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 import { useServiceComponentConfigGroupSingle } from './useServiceComponentConfigGroupSingle';
 import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader';
 import ServiceComponentConfigGroupConfiguration from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupConfiguration/ServiceComponentConfigGroupConfiguration';
+import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const ServiceComponentConfigGroupSingle: React.FC = () => {
   const dispatch = useDispatch();
+  const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   const cluster = useStore((s) => s.adcm.cluster.cluster);
   const service = useStore((s) => s.adcm.service.service);
@@ -49,8 +52,11 @@ const ServiceComponentConfigGroupSingle: React.FC = () => {
     <>
       <ConfigGroupSingleHeader
         configGroup={serviceComponentConfigGroup}
-        returnUrl={`/clusters/${cluster?.id}/services/${service?.id}/components/${component?.id}/configuration-groups`}
+        returnUrl={`/clusters/${clusterId}/services/${serviceId}/components/${componentId}/configuration-groups`}
+        entityType="component"
+        entityArgs={{ clusterId, serviceId, componentId }}
       />
+      <EditConfigGroupDescriptionDialog />
 
       <ServiceComponentConfigGroupConfiguration />
     </>

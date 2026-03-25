@@ -58,6 +58,20 @@ export class AdcmClusterActionHostGroupsApi {
     await httpClient.delete(`/api/v2/clusters/${clusterId}/action-host-groups/${actionHostGroupId}/`);
   }
 
+  public static async patchActionHostGroupDescription(args: {
+    clusterId: number;
+    actionHostGroupId: number;
+    description: string;
+  }) {
+    const { clusterId, actionHostGroupId, description } = args;
+    const response = await httpClient.patch<AdcmActionHostGroup>(
+      `/api/v2/clusters/${clusterId}/action-host-groups/${actionHostGroupId}/`,
+      { description },
+    );
+
+    return response.data;
+  }
+
   // Actions
 
   public static async getActionHostGroupActions(args: GetAdcmClusterActionHostGroupActionsArgs) {
