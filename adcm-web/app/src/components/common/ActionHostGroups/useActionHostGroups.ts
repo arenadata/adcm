@@ -34,6 +34,8 @@ import type {
 import { useRequestActionHostGroups } from './useRequestActionHostGroups';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useEntityDynamicActionWizardDialog } from '@commonComponents/EntityWizard/hooks';
+import type { EntityDynamicActionWizardDialogProps } from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
 
 type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   entityArgs: EntityArgs<T>;
@@ -43,6 +45,7 @@ type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   dynamicActionDialogProps?: DynamicActionDialogProps;
   editDialogProps?: EditActionHostGroupDialogProps;
   deleteDialogProps?: DeleteActionHostGroupDialogProps;
+  wizardProps?: EntityDynamicActionWizardDialogProps;
 };
 
 export const useActionHostGroups = <T extends ActionHostGroupOwner>(
@@ -53,6 +56,7 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   const dispatch = useDispatch();
 
   useRequestActionHostGroups(entityType, entityArgs);
+  const wizardProps = { entityType, entityArgs, ...useEntityDynamicActionWizardDialog(entityType, entityArgs) };
 
   const isActionHostGroupsLoading = useStore(({ adcm }) => isShowSpinner(adcm.actionHostGroups.loadState));
   const actionHostGroups = useStore(({ adcm }) => adcm.actionHostGroups.actionHostGroups);
@@ -193,15 +197,16 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
       onClose: handleCloseCreateDialog,
       onCreate: handleCreate,
     },
-    dynamicActionDialogProps: dynamicActionDetails
-      ? {
-          actionDetails: dynamicActionDetails,
-          actionHostGroup: runnableActionHostGroup ?? undefined,
-          clusterId: entityArgs.clusterId,
-          onSubmit: handleSubmitDynamicAction,
-          onCancel: handleCloseDynamicActionDialog,
-        }
-      : undefined,
+    dynamicActionDialogProps:
+      dynamicActionDetails?.processes === null
+        ? {
+            actionDetails: dynamicActionDetails,
+            actionHostGroup: runnableActionHostGroup ?? undefined,
+            clusterId: entityArgs.clusterId,
+            onSubmit: handleSubmitDynamicAction,
+            onCancel: handleCloseDynamicActionDialog,
+          }
+        : undefined,
     editDialogProps: editableActionHostGroup
       ? {
           isOpen: true,
@@ -219,5 +224,6 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
           onClose: handleCloseDeleteDialog,
         }
       : undefined,
+    wizardProps: dynamicActionDetails?.processes !== null ? wizardProps : undefined,
   };
 };

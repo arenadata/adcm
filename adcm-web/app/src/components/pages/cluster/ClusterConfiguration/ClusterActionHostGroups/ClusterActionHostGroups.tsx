@@ -8,10 +8,18 @@ import { useClusterActionHostGroups } from './useClusterActionHostGroups';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useEffect } from 'react';
+import EntityDynamicActionWizardDialog from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
 
 const ClusterActionHostGroups = () => {
-  const { toolbarProps, tableProps, createDialogProps, dynamicActionDialogProps, editDialogProps, deleteDialogProps } =
-    useClusterActionHostGroups();
+  const {
+    toolbarProps,
+    tableProps,
+    createDialogProps,
+    dynamicActionDialogProps,
+    editDialogProps,
+    deleteDialogProps,
+    wizardProps,
+  } = useClusterActionHostGroups();
 
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
@@ -38,6 +46,7 @@ const ClusterActionHostGroups = () => {
       {dynamicActionDialogProps && <DynamicActionDialog {...dynamicActionDialogProps} />}
       {editDialogProps && <EditActionHostGroupDialog {...editDialogProps} />}
       {deleteDialogProps && <DeleteActionHostGroupDialog {...deleteDialogProps} />}
+      {wizardProps && <EntityDynamicActionWizardDialog {...wizardProps} />}
     </>
   );
 };

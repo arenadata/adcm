@@ -116,6 +116,9 @@ import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/config
 import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice';
 import clustersWizardMappingSlice from '@store/adcm/clusters/clustersWizardMappingSlice';
 
+import wizardSlice from './adcm/entityWizard/wizardSlice';
+import wizardActionsSlice from './adcm/entityWizard/wizardActionsSlice';
+
 const rootReducer = combineReducers({
   auth: authSlice,
   notifications: notificationsSlice,
@@ -226,6 +229,8 @@ const rootReducer = combineReducers({
     adcmSettingsDynamicActions: adcmSettingsDynamicActionsSlice,
     entityConfigurationCompare: adcmEntityConfigurationCompareSlice,
     entityConfiguration: adcmEntityConfigurationSlice,
+    entityWizard: wizardSlice,
+    entityWizardActions: wizardActionsSlice,
     dynamicActions: dynamicActionsSlice,
     dynamicActionsMapping: dynamicActionsMappingSlice,
   }),
