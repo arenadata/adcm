@@ -76,7 +76,12 @@ const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWiz
   const isMaxStepInStage = useMemo(() => currentStep === stageMaxIds[stageNumber - 1], [currentStep, stageNumber]);
 
   const steps = useMemo(() => {
-    if (stepsWithData.length === 0 || (currentStep && currentStep > getMaxStepId(stepsWithData))) {
+    if (
+      stepsWithData.length === 0 ||
+      // (process?.stages.at(-2) - `-2` is real last stage (manual last stage we append after get/update process)
+      // only in case when currentStepId > maxStepId from real last stage -> we show imaginary last stage (which we manually appended)
+      (currentStep && currentStep > getMaxStepId(process?.stages.at(-2)?.steps ?? []))
+    ) {
       return process?.stages.at(-1)?.steps;
     } else {
       return stepsWithData;
