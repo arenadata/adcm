@@ -27,24 +27,63 @@ const ROOT_PATH_PATTERN = /^#?\//;
 const HASH_PREFIX = /^#/;
 const ARRAY_INDEX_PATTERN = /^\d+$/;
 
-function getSchemaAtPath(schema: SchemaLike, instancePath: string): Schema | undefined {
+/** Value in `root` at JSON-pointer prefix (e.g. `/foo/bar`), or `root` when prefix is empty/root. */
+function valueAtPath(root: unknown, instancePathPrefix: string): unknown {
+  if (root === undefined) return undefined;
+  if (instancePathPrefix === '' || instancePathPrefix === '/') return root;
+  return getValueByPath(root, instancePathPrefix, '/');
+}
+
+/** Pick oneOf branch by comparing `instance[discriminator]` to each branch's const. */
+function branchForDiscriminatedOneOf(schema: Schema, instance: unknown): Schema | undefined {
+  const branches = schema.oneOf;
+  const disc = schema.discriminator as { propertyName?: string } | undefined;
+  if (!Array.isArray(branches) || !disc?.propertyName) return undefined;
+  if (instance === null || typeof instance !== 'object' || Array.isArray(instance)) return undefined;
+
+  const value = (instance as Record<string, unknown>)[disc.propertyName];
+  for (const b of branches) {
+    if (!isSchema(b)) continue;
+    const property = b.properties?.[disc.propertyName];
+    if (isSchema(property) && 'const' in property && property.const === value) return b;
+  }
+  return undefined;
+}
+
+/**
+ * Walk schema by instance path. With `instanceRoot`, steps into the matching oneOf branch when the
+ * current node uses `discriminator` (config tree paths under selection groups).
+ */
+function getSchemaAtPath(schema: SchemaLike, instancePath: string, instanceRoot?: unknown): Schema | undefined {
   if (!isSchema(schema)) return undefined;
   if (!instancePath || instancePath === '/' || instancePath === '#') return schema;
 
-  const parts = instancePath.replace(ROOT_PATH_PATTERN, '').split('/');
+  const parts = instancePath.replace(ROOT_PATH_PATTERN, '').split('/').filter(Boolean);
   let current: Schema | undefined = schema;
+  /** Path to the JSON value that matches `current`; empty before the first segment. */
+  let instancePathPrefix = '';
 
   for (const part of parts) {
     if (!current || !isSchema(current)) return undefined;
 
-    const next: unknown = current.properties?.[part];
+    const prefixAfterThisPart = instancePathPrefix === '' ? `/${part}` : `${instancePathPrefix}/${part}`;
+    let next: unknown = current.properties?.[part];
+
+    if (!isSchema(next) && instanceRoot !== undefined) {
+      const valueForCurrentSchema = valueAtPath(instanceRoot, instancePathPrefix);
+      const branch = branchForDiscriminatedOneOf(current, valueForCurrentSchema);
+      if (branch) next = branch.properties?.[part];
+    }
+
     if (isSchema(next)) {
       current = next;
+      instancePathPrefix = prefixAfterThisPart;
       continue;
     }
 
     if (ARRAY_INDEX_PATTERN.test(part) && isSchema(current.items)) {
       current = current.items;
+      instancePathPrefix = prefixAfterThisPart;
       continue;
     }
 
@@ -98,7 +137,7 @@ function mapLibraryErrorsToValidationErrors(
   return errors.map((err) => {
     const instancePath = err.instanceLocation?.replace(HASH_PREFIX, '') || '';
     const normalizedPath = normalizeInstancePathFromKeywordLocation(instancePath, err.keywordLocation);
-    const parentSchema = getSchemaAtPath(schema, normalizedPath) ?? rootSchema;
+    const parentSchema = getSchemaAtPath(schema, normalizedPath, validatedData) ?? rootSchema;
     const data = getValueByPath(validatedData, normalizedPath, '/');
 
     return {

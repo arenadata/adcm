@@ -60,7 +60,6 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
     return result;
   }
 
-  // group error by fieldPath
   for (const error of errors) {
     addError(
       error.instancePath,
@@ -69,17 +68,38 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
       error.keyword,
       error.message || '',
     );
-
-    // config tree generates from schema. And we must show missing property error on property node
-    // extend error from structure to field,
-    if (error.keyword === 'required') {
-      const fieldPath = `${error.instancePath}/${error.params.missingProperty}`;
-      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data as JSONValue, error.keyword, 'required');
-    }
   }
 
   return result;
 };
+
+/** Path `p` is a strict descendant of `ancestorKey` in the config tree (`/a` → `/a/b`, not `/ab`). */
+function isStrictDescendantErrorPath(ancestorKey: string, path: string): boolean {
+  if (ancestorKey === rootNodeKey) {
+    return path !== rootNodeKey && path.length > 1 && path.startsWith('/');
+  }
+  return path.startsWith(`${ancestorKey}/`);
+}
+
+/**
+ * FieldErrors for row UI (MarkerIcon). Omit when any strict descendant already has its own FieldErrors;
+ * parent may still be `true` in the map for {@link CollapseNode} styling.
+ */
+export function getErrorsForTreeRow(
+  configurationErrors: ConfigurationErrors,
+  nodeKey: string,
+): FieldErrors | undefined {
+  const entry = configurationErrors[nodeKey];
+  if (typeof entry !== 'object') return undefined;
+
+  for (const path of Object.keys(configurationErrors)) {
+    if (path === nodeKey) continue;
+    if (typeof configurationErrors[path] !== 'object') continue;
+    if (isStrictDescendantErrorPath(nodeKey, path)) return undefined;
+  }
+
+  return entry as FieldErrors;
+}
 
 export const filterConfigurationErrors = (errors: ConfigurationErrors, attributes: ConfigurationAttributes) => {
   // ignore errors for not active groups
@@ -884,18 +904,16 @@ export const getOneOfSchemaDefaults = (fieldSchema: SchemaDefinition): Record<st
     return {};
   }
 
-  const { oneOf, discriminator, ...rest } = fieldSchema;
+  const { oneOf, discriminator, default: _default, ...rest } = fieldSchema;
 
   const result: Record<string, JSONValue> = {};
 
   for (const oneOfSchema of oneOf) {
     const discriminatorValue = (oneOfSchema?.properties?.[discriminatorFieldName].const as string) ?? '';
     const option = generateFromSchema({ ...rest, ...oneOfSchema }) as object;
-
-    // set discriminator value;
     result[discriminatorValue] = {
-      [discriminatorFieldName]: discriminatorValue,
       ...option,
+      [discriminatorFieldName]: discriminatorValue,
     };
   }
 

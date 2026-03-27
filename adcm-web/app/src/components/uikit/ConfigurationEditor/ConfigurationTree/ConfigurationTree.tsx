@@ -17,10 +17,11 @@ import {
   buildConfigurationNodes,
   buildConfigurationTree,
   buildNodeDictionary,
+  getErrorsForTreeRow,
   getFailedNodeInfo,
   validate,
 } from './ConfigurationTree.utils';
-import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema, FieldErrors } from '@models/adcm';
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type {
   ChangeConfigurationNodeHandler,
   MoveConfigurationNodeHandler,
@@ -148,8 +149,7 @@ const ConfigurationTree = ({
     isExpanded: boolean,
     onExpand: (isOpen: boolean) => void,
   ) => {
-    const errors =
-      typeof configurationErrors[node.key] === 'object' ? (configurationErrors[node.key] as FieldErrors) : undefined;
+    const errors = getErrorsForTreeRow(configurationErrors, node.key);
 
     switch (node.data.type) {
       case 'field': {
