@@ -20,10 +20,12 @@ import type {
   AdcmSubJobLogItem,
   NotAddedServicesDictionary,
 } from '@models/adcm';
-import { fulfilledFilter } from '@utils/promiseUtils';
+import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
 import { LoadState, RequestState } from '@models/loadState';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
+import { isCancelledError } from '@api/httpClient/HttpClient.ts';
+import { AbortPayload } from '@constants';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -144,6 +146,11 @@ const getSteps = createAsyncThunk(
         }),
       );
       const steps = await Promise.allSettled(stepPromises);
+
+      const isSomeRequestAborted = rejectedFilter(steps).some((request) => isCancelledError(request));
+      if (isSomeRequestAborted) {
+        return thunkAPI.rejectWithValue(AbortPayload);
+      }
 
       return fulfilledFilter(steps);
     } catch (error) {
@@ -373,8 +380,10 @@ const clustersWizardSlice = createSlice({
     builder.addCase(getSteps.fulfilled, (state, action) => {
       state.steps = action.payload;
     });
-    builder.addCase(getSteps.rejected, (state) => {
-      state.steps = [];
+    builder.addCase(getSteps.rejected, (state, action) => {
+      if (action.payload !== AbortPayload) {
+        state.steps = [];
+      }
     });
     builder.addCase(loadJobFromBackend.fulfilled, (state, action) => {
       const id = action.meta.arg.stepId;
