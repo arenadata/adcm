@@ -18,6 +18,7 @@ import {
   readonlyListSchema,
   readonlyMapSchema,
   selectableObjectConfig,
+  selectableObjectFieldSchemaWithUnionDefault,
   selectableObjectSchema,
   structureSchema,
   structureSchemaWithTitle,
@@ -30,12 +31,16 @@ import {
   buildConfigurationNodes,
   buildConfigurationTree,
   fillParentPathParts,
+  getConfigurationErrors,
   getDefaultValue,
+  getErrorsForTreeRow,
+  getOneOfSchemaDefaults,
   validate,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
 import type { JSONObject } from '@models/json';
+import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
   discriminatorFieldName,
   nestedPropsErrorKeyword,
@@ -447,8 +452,16 @@ describe('validate', () => {
     const { isValid, configurationErrors } = validate(validateNestedErrorsSchema, configuration, attributes);
     expect(isValid).toBe(false);
 
-    const fieldErrors = configurationErrors['/list'];
-    expect((fieldErrors as FieldErrors).messages[nestedPropsErrorKeyword]).toBe(nestedPropsErrorMessage);
+    expect(typeof configurationErrors['/list']).toBe('object');
+    expect((configurationErrors['/list'] as FieldErrors).messages[nestedPropsErrorKeyword]).toBe(
+      nestedPropsErrorMessage,
+    );
+    expect(getErrorsForTreeRow(configurationErrors, '/list')).toBeUndefined();
+    const leafKey = Object.keys(configurationErrors).find(
+      (k) => k.startsWith('/list/') && typeof configurationErrors[k] === 'object',
+    );
+    expect(leafKey).toBeDefined();
+    expect(getErrorsForTreeRow(configurationErrors, leafKey!)).toBeDefined();
   });
 
   test('validate configuration schema: errors on expected paths with correct structure', () => {
@@ -622,5 +635,72 @@ describe('selection groups', () => {
     expect(clusterConfigNode.data.type).toStrictEqual('selectableObject');
     expect(clusterConfigNode.children?.[0].key.endsWith(discriminatorFieldName)).toBeTruthy();
     expect(clusterConfigNode.children?.[0].data.type).toStrictEqual('field');
+  });
+});
+
+describe('getErrorsForTreeRow', () => {
+  test('hides parent FieldErrors when a descendant has FieldErrors', () => {
+    const errors: ConfigurationErrors = {
+      '/g': { schema: {} as SchemaDefinition, value: {}, messages: { oneOf: 'x' } },
+      '/g/x': { schema: {} as SchemaDefinition, value: null, messages: { required: 'required' } },
+    };
+    expect(getErrorsForTreeRow(errors, '/g')).toBeUndefined();
+    expect(getErrorsForTreeRow(errors, '/g/x')).toBeDefined();
+  });
+
+  test('keeps FieldErrors when no object-shaped descendant', () => {
+    const errors: ConfigurationErrors = {
+      '/g': { schema: {} as SchemaDefinition, value: {}, messages: { type: 'x' } },
+      '/g/x': true,
+    };
+    expect(getErrorsForTreeRow(errors, '/g')).toBeDefined();
+  });
+});
+
+describe('getConfigurationErrors + discriminated oneOf', () => {
+  test('leaf path exists for missing required inside selected branch', () => {
+    const data: JSONObject = {
+      selectable_no_default_required: { _selection: 'a', a: {} },
+    };
+    const raw = validateJsonSchema(selectableObjectSchema, data);
+    expect(raw).not.toBe(null);
+    const map = getConfigurationErrors(raw);
+    expect(map['/selectable_no_default_required/a/plain']).toBeDefined();
+  });
+});
+
+describe('getOneOfSchemaDefaults', () => {
+  const selectableFieldSchema = selectableObjectSchema.properties!.selectable_no_default_required;
+
+  test('returns empty object when oneOf is absent', () => {
+    expect(getOneOfSchemaDefaults({ type: 'object', properties: {} } as SchemaDefinition)).toEqual({});
+  });
+
+  test('builds a default object per discriminator value', () => {
+    const defaults = getOneOfSchemaDefaults(selectableFieldSchema as SchemaDefinition);
+
+    expect(Object.keys(defaults).sort()).toEqual(['a', 'b']);
+
+    const a = defaults.a as JSONObject;
+    const b = defaults.b as JSONObject;
+
+    expect(a[discriminatorFieldName]).toBe('a');
+    expect(b[discriminatorFieldName]).toBe('b');
+    expect(a.a).toEqual({ plain: 2 });
+    expect(b.b).toEqual({ plain: 2 });
+    expect(a.b).toBeUndefined();
+    expect(b.a).toBeUndefined();
+  });
+
+  test('parent union default does not leak into other branches', () => {
+    const defaults = getOneOfSchemaDefaults(selectableObjectFieldSchemaWithUnionDefault);
+
+    const a = defaults.a as JSONObject;
+    const b = defaults.b as JSONObject;
+
+    expect(a[discriminatorFieldName]).toBe('a');
+    expect(b[discriminatorFieldName]).toBe('b');
+    expect(b.a).toBeUndefined();
+    expect(b.b).toEqual({ plain: 2 });
   });
 });

@@ -722,4 +722,34 @@ describe('generateFromSchema', () => {
     const errors3 = validate(schema, object);
     expect(errors3).not.toBe(null);
   });
+
+  test('discriminated oneOf: missing required nested field gets leaf instancePath', () => {
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        group: {
+          type: 'object',
+          discriminator: { propertyName: '_selection' },
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                _selection: { const: 'a', type: 'string' },
+                a: {
+                  type: 'object',
+                  required: ['plain'],
+                  properties: { plain: { type: 'integer', default: 1 } },
+                },
+              },
+              required: ['_selection', 'a'],
+            },
+          ],
+        },
+      },
+    };
+
+    const errors = validate(schema, { group: { _selection: 'a', a: {} } });
+    expect(errors).not.toBe(null);
+    expect(errors!.some((e) => e.instancePath === '/group/a/plain' && e.keyword === 'required')).toBe(true);
+  });
 });

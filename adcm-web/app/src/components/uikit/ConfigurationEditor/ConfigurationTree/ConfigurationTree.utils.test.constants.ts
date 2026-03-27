@@ -1,4 +1,4 @@
-import type { ConfigurationSchema } from '@models/adcm';
+import type { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
 import type { ConfigurationTreeFilter } from '../ConfigurationEditor.types';
 
 export const emptyFilter: ConfigurationTreeFilter = { title: '', showAdvanced: true, showInvisible: true };
@@ -538,5 +538,15 @@ export const selectableObjectConfig = {
     a: {
       plain: 2,
     },
+  },
+};
+
+/** Same oneOf as `selectable_no_default_required`; parent `default` is one union instance (variant a). */
+export const selectableObjectFieldSchemaWithUnionDefault: SchemaDefinition = {
+  ...selectableObjectSchema.properties!.selectable_no_default_required,
+  title: 'selectable_with_union_default',
+  default: {
+    _selection: 'a',
+    a: { plain: 2 },
   },
 };
