@@ -111,6 +111,7 @@ function runValidator<T>(schema: SchemaLike, data: T): { valid: boolean; errors:
  * - instancePath: "/cluster", keywordLocation: "#/properties/cluster" → "/cluster" (unchanged)
  * - instancePath: "", keywordLocation: "#/properties/foo" → "/foo"
  * - instancePath: "/a", keywordLocation: "#/properties/a/properties/b" → "/a/b"
+ * - instancePath: "/cfg/cluster/0", keywordLocation: ".../properties/cluster/items/required" → unchanged (do not append `cluster`)
  */
 function normalizeInstancePathFromKeywordLocation(instancePath: string, keywordLocation: string | undefined): string {
   if (!instancePath || !keywordLocation) return instancePath;
@@ -121,7 +122,17 @@ function normalizeInstancePathFromKeywordLocation(instancePath: string, keywordL
   while ((match = propertyMatch.exec(keywordLocation)) !== null) {
     lastProperty = match[1];
   }
+
   if (lastProperty && !instancePath.endsWith(`/${lastProperty}`)) {
+    const segments = instancePath.split('/').filter(Boolean);
+    const lastSeg = segments.at(-1);
+    const prevSeg = segments.at(-2);
+    // the last `properties` segment is then the array field name
+    // while `instancePath` is already `/.../cluster/<index>`. Appending
+    // `cluster` again would break leaf paths and tree error highlighting.
+    if (lastSeg && ARRAY_INDEX_PATTERN.test(lastSeg) && prevSeg === lastProperty) {
+      return instancePath;
+    }
     return `${instancePath}/${lastProperty}`;
   }
   return instancePath;

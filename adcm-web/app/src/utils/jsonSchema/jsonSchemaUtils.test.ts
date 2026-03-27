@@ -752,4 +752,121 @@ describe('generateFromSchema', () => {
     expect(errors).not.toBe(null);
     expect(errors!.some((e) => e.instancePath === '/group/a/plain' && e.keyword === 'required')).toBe(true);
   });
+
+  test('discriminated oneOf deep in schema: branch a vs b and distinct leaf instancePaths', () => {
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        level1: {
+          type: 'object',
+          properties: {
+            level2: {
+              type: 'object',
+              properties: {
+                level3: {
+                  type: 'object',
+                  discriminator: { propertyName: '_selection' },
+                  oneOf: [
+                    {
+                      type: 'object',
+                      properties: {
+                        _selection: { const: 'a', type: 'string' },
+                        a: {
+                          type: 'object',
+                          required: ['plain'],
+                          properties: { plain: { type: 'integer', default: 1 } },
+                        },
+                      },
+                      required: ['_selection', 'a'],
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        _selection: { const: 'b', type: 'string' },
+                        b: {
+                          type: 'object',
+                          required: ['label'],
+                          properties: { label: { type: 'string', minLength: 2 } },
+                        },
+                      },
+                      required: ['_selection', 'b'],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const errorsA = validate(schema, {
+      level1: {
+        level2: {
+          level3: { _selection: 'a', a: {} },
+        },
+      },
+    });
+    expect(errorsA).not.toBe(null);
+    expect(errorsA!.some((e) => e.instancePath === '/level1/level2/level3/a/plain' && e.keyword === 'required')).toBe(
+      true,
+    );
+    expect(errorsA!.some((e) => e.instancePath.includes('/b/'))).toBe(false);
+
+    const errorsB = validate(schema, {
+      level1: {
+        level2: {
+          level3: { _selection: 'b', b: { label: 'x' } },
+        },
+      },
+    });
+    expect(errorsB).not.toBe(null);
+    expect(errorsB!.some((e) => e.instancePath === '/level1/level2/level3/b/label' && e.keyword === 'minLength')).toBe(
+      true,
+    );
+    expect(errorsB!.some((e) => e.instancePath.includes('/a/'))).toBe(false);
+
+    const okB = validate(schema, {
+      level1: {
+        level2: {
+          level3: { _selection: 'b', b: { label: 'ok' } },
+        },
+      },
+    });
+    expect(okB).toBe(null);
+  });
+
+  test('required on array item: leaf instancePath matches tree (ConfigurationEditor cluster)', () => {
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        cluster_config: {
+          type: 'object',
+          properties: {
+            cluster: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['cluster_name'],
+                properties: {
+                  cluster_name: { type: 'string', pattern: '[a-z]' },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const errors = validate(schema, {
+      cluster_config: {
+        cluster: [{}],
+      },
+    });
+
+    expect(errors).not.toBe(null);
+    expect(
+      errors!.some((e) => e.instancePath === '/cluster_config/cluster/0/cluster_name' && e.keyword === 'required'),
+    ).toBe(true);
+  });
 });
