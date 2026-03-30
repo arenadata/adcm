@@ -1,7 +1,81 @@
-import { type OutputUnit, type Schema, Validator } from '@cfworker/json-schema';
+// @ts-nocheck
+
+import { type OutputUnit, Validator } from '@cfworker/json-schema';
 import { deepClone, getValueByPath } from '@utils/objectUtils';
 
+/* eslint-disable spellcheck/spell-checker */
+import { safePattern } from './patternKeyword';
+import Ajv2020, { type Schema } from 'ajv/dist/2020';
+
+const ajv = new Ajv2020({
+  strictSchema: true,
+  allErrors: true,
+  verbose: true,
+  unicodeRegExp: false,
+  discriminator: true,
+});
+
+ajv.addVocabulary(['adcmMeta']);
+ajv.removeKeyword('pattern');
+ajv.addKeyword(safePattern);
+
+const ajvWithDefaults = new Ajv2020({
+  strictSchema: false,
+  useDefaults: true,
+  allErrors: true,
+  discriminator: true,
+});
+
+ajvWithDefaults.addVocabulary(['adcmMeta']);
+ajvWithDefaults.addFormat('json', true);
+ajvWithDefaults.addFormat('yaml', true);
+
+export const validate = <T>(schema: Schema, data: T) => {
+  const validate = ajv.compile<T>(schema, true);
+  validate(data);
+
+  return validate.errors;
+};
+
 export type SchemaLike = Schema | object | boolean;
+
+export const generateFromSchema = <T>(schema: Schema): T | null => {
+  if (typeof schema === 'object') {
+    if (schema.oneOf !== undefined) {
+      const tmpSchema: Schema = {
+        type: 'object',
+        properties: {
+          t: { ...schema },
+        },
+      };
+
+      // t property required for applying defaults (defaults applies only for object properties and not for object itself)
+      const result = { t: undefined } as { t: T };
+      const validate = ajvWithDefaults.compile(tmpSchema);
+      validate(result);
+
+      return result.t;
+    }
+
+    if (schema.type === 'object') {
+      const result = {} as T;
+      const validate = ajvWithDefaults.compile(schema);
+      validate(result);
+
+      return result;
+    }
+
+    return schema.default;
+  }
+
+  return null;
+};
+
+export type { Schema };
+
+/**
+ * CF Worker
+ **/
 
 function isSchema(x: unknown): x is Schema {
   return typeof x === 'object' && x !== null;
@@ -209,7 +283,7 @@ function expandRequiredErrors(errors: ValidationError[]): ValidationError[] {
   return result;
 }
 
-export const validate = (schema: SchemaLike, data: unknown): ValidationError[] | null => {
+export const validateWithCfWorker = (schema: SchemaLike, data: unknown): ValidationError[] | null => {
   if (schema === true) return null;
 
   if (schema === false) {
@@ -307,7 +381,7 @@ function ensureStaticInResult(
   if (staticSchema.default !== undefined) {
     result[PROP_STATIC] = deepClone(staticSchema.default);
   } else {
-    const generated = generateFromSchema(staticSchema);
+    const generated = generateFromSchemaWithCfWorker(staticSchema);
     if (generated !== undefined) result[PROP_STATIC] = generated;
   }
 }
@@ -331,7 +405,7 @@ function generateFromOneOfNonObject<T>(schema: Schema): T | undefined {
 
   const base = schema.default !== undefined ? deepClone(schema.default as T) : undefined;
   const selected = selectOneOfBranchByDefault(oneOf);
-  const branch = generateFromSchema<T>(selected);
+  const branch = generateFromSchemaWithCfWorker<T>(selected);
 
   if (branch && typeof branch === 'object' && base && typeof base === 'object') {
     return { ...(base as object), ...(branch as object) } as T;
@@ -348,7 +422,7 @@ function generateFromObjectWithOneOf<T>(schema: Schema): T {
   const selectedByConst = selectOneOfBranchByConst(oneOf, result as Record<string, unknown>);
   const selected = selectedByConst ?? selectOneOfBranchByDefault(oneOf) ?? oneOf[0];
 
-  const branchValue = generateFromSchema<T>(selected);
+  const branchValue = generateFromSchemaWithCfWorker<T>(selected);
   if (branchValue && typeof branchValue === 'object') Object.assign(result, branchValue);
 
   ensureStaticInResult(result, oneOf, selected);
@@ -364,7 +438,7 @@ function generateFromObjectProperties<T>(schema: Schema): T {
   for (const [key, propSchema] of Object.entries(schema.properties!)) {
     if (!isSchema(propSchema) || result[key] !== undefined) continue;
 
-    const value = generateFromSchema(propSchema);
+    const value = generateFromSchemaWithCfWorker(propSchema);
 
     if (
       value &&
@@ -387,12 +461,12 @@ function generateFromObjectProperties<T>(schema: Schema): T {
 
 function generateFromArray<T>(schema: Schema): T | undefined {
   if (!isSchema(schema.items)) return undefined;
-  const item = generateFromSchema(schema.items);
+  const item = generateFromSchemaWithCfWorker(schema.items);
 
   return (item != null ? [item] : []) as unknown as T;
 }
 
-export const generateFromSchema = <T>(schema: SchemaLike): T | undefined => {
+export const generateFromSchemaWithCfWorker = <T>(schema: SchemaLike): T | undefined => {
   if (!isSchema(schema)) return undefined;
 
   if (schema.default === null) return null as T;

@@ -1,6 +1,6 @@
 import type { Schema } from '@cfworker/json-schema';
 
-import { validate, generateFromSchema, type SchemaLike } from './jsonSchemaUtils';
+import { validateWithCfWorker as validate, generateFromSchema, type SchemaLike } from './jsonSchemaUtils';
 
 describe('validate', () => {
   const schema: Schema = {
