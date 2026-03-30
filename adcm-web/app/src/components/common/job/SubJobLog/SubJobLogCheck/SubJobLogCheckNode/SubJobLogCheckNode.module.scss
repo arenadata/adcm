@@ -40,6 +40,7 @@
   padding: 4px 8px;
   transition: background-color 250ms;
   flex: 1;
+  min-width: 0;
 
   background: var(--subjob-node-background);
 
