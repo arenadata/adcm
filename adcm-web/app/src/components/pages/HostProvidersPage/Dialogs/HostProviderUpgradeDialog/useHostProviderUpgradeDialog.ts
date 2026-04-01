@@ -106,6 +106,8 @@ export const useHostProviderUpgradeDialog = () => {
       return false;
     }
 
+    if (upgradeDetails.startImpossibleReason) return false;
+
     return true;
   }, [formData, upgradeDetails]);
 

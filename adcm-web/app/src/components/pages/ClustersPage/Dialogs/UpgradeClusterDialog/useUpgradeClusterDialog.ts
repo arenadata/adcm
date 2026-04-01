@@ -128,6 +128,8 @@ export const useUpgradeClusterDialog = () => {
       }
     }
 
+    if (upgradeDetails.startImpossibleReason) return false;
+
     return true;
   }, [currentStep, formData, upgradeDetails]);
 
