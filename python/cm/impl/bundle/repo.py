@@ -19,8 +19,8 @@ import json
 import hashlib
 
 from core import action, bundle
-from core.bundle._types import BundleInfo
-from core.types import ADCMCoreType, BundleID
+from core.types import ADCMCoreType, BundleID, PrototypeID
+from django.conf import settings
 from django.db import IntegrityError
 from pydantic import BaseModel
 
@@ -42,7 +42,7 @@ STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 
 
 class BundleRepo(bundle.BundleRepoI):
-    def save_definitions(self, definitions: bundle.d.DefinitionsMap, bundle_info: BundleInfo) -> BundleID:
+    def save_definitions(self, definitions: bundle.d.DefinitionsMap, bundle_info: bundle.BundleInfo) -> BundleID:
         bundle_definition = definitions.get(("cluster",)) or definitions.get(("provider",)) or definitions[("adcm",)]
 
         try:
@@ -155,6 +155,13 @@ class BundleRepo(bundle.BundleRepoI):
     def retrieve_versions_info(self) -> set[bundle.InstalledBundleVersion]:
         bundle_info = Bundle.objects.values_list("name", "edition", "version", "contract_version")
         return {bundle.InstalledBundleVersion(*row) for row in bundle_info}
+
+    def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> bundle.BundleContext:
+        bundle_id, hash_, contract_version = Prototype.objects.values_list(
+            "bundle_id", "bundle__hash", "bundle__contract_version"
+        ).get(id=prototype_id)
+        path = Path(settings.BUNDLE_DIR, hash_)
+        return bundle.BundleContext(id=bundle_id, root=path, contract_version=contract_version)
 
 
 def convert_config_definition_to_orm_model(

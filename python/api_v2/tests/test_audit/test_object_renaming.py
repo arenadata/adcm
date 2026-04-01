@@ -15,11 +15,10 @@ from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestAuditObjectNameChanged(BaseAPITestCase):
+class TestAuditObjectNameChanged(ADCMDjangoAPISuite):
     def test_cluster_rename(self) -> None:
         first_new_name = "Best Cluster Name EVER"
         second_new_name = "Another Name"

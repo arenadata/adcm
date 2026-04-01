@@ -56,6 +56,7 @@ class AuditLogFilter(
     time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
     username = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     user_name = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
+    operation_name = CharFilter(field_name="operation_name", label="Filter by operation name")
     ordering = OrderingFilter(
         fields={
             "audit_object__object_name": "objectName",
@@ -115,6 +116,7 @@ class AuditSessionFilter(
     )
     time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
     time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
+    login_time = DateTimeFilter(field_name="login_time", lookup_expr="exact", label="Filter by login time")
     ordering = AuditSessionOrderingFilter(
         fields={"login_time": "loginTime"},
         field_labels={"login_time": "Login time"},

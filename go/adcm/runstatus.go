@@ -13,15 +13,14 @@
 package main
 
 import (
+	"adcm/config"
 	"adcm/status"
 	"flag"
+	"fmt"
 	"os"
 )
 
 func main() {
-	fileAuthKey := flag.String("secretfile",
-		"/adcm/data/var/secrets.json",
-		"Path to json config with secrets")
 	logFile := flag.String("logfile", "", "log file name (with full path)")
 	help := flag.Bool("help", false, "Print usage")
 	flag.Parse()
@@ -30,7 +29,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	status.Start(status.ReadSecret(fileAuthKey), *logFile, GetLogLevel())
+	accessTokens, err := RetrieveAccessTokensFromBackend()
+	if err != nil {
+		panic(err)
+	}
+
+	status.Start(status.NewSecretConfig(accessTokens), *logFile, GetLogLevel())
 }
 
 func GetLogLevel() string {
@@ -45,4 +49,39 @@ func GetLogLevel() string {
 	}
 
 	return logLevel
+}
+
+func RetrieveAccessTokensFromBackend() (config.AccessTokens, error) {
+	secretBackend, ok := os.LookupEnv("SECRET_BACKEND")
+	if !ok {
+		secretBackend = ""
+	}
+
+	switch secretBackend {
+	case "VaultBackend":
+		settings, err := config.ClientSettingsFromEnv()
+		if err != nil {
+			return config.AccessTokens{}, err
+		}
+
+		client, err := config.BuildVaultClient(settings)
+		if err != nil {
+			return config.AccessTokens{}, err
+		}
+
+		backend := config.NewSecretsBackendVault(client, settings.MountPoint)
+		return backend.Retrieve()
+
+	case "", "FileSystemBackend":
+		path := os.Getenv("SECRETS_FILE_PATH")
+		if path == "" {
+			path = "/adcm/data/var/secrets_v2.json"
+		}
+
+		backend := config.NewSecretsBackendFileSystem(path)
+		return backend.Retrieve()
+
+	default:
+		return config.AccessTokens{}, fmt.Errorf("unexpected value of SECRET_BACKEND=%q", secretBackend)
+	}
 }

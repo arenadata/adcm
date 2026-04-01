@@ -14,14 +14,21 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+# for now it's separated from `core.files.directories`
+# until actual usages and dependencies are cleared
 @dataclass(slots=True)
 class Directories:
+    # main ones
+    base: Path
+    stack: Path
+
+    # subdirs
     bundles: Path
     downloads: Path
     files: Path
-    vars: Path
-
-
-@dataclass(slots=True)
-class Settings:
-    directories: Directories
+    secrets: Path
+    code: Path
+    data: Path
+    run: Path
+    logs: Path
+    temp: Path

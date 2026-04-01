@@ -1,0 +1,18 @@
+- name: switch
+  script_type: internal
+  script: bundle_switch
+- name: migrate_field
+  script_type: internal
+  script: config_apply
+  params:
+    changes:
+      - object:
+          type: service
+          service_name: adcm_7807
+        parameters:
+          - key: "pick_me"
+            value: "b"
+          - key: "pick_me/b/b1"
+            value: {{ services.adcm_7807.before_upgrade.config.b_value }}
+          - key: "with_default/a/a1"
+            value: "{{ services.adcm_7807.before_upgrade.config.a_value }}"

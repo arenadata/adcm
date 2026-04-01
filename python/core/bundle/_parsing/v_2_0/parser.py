@@ -22,6 +22,7 @@ from core.bundle._parsing.v_2_0.targets import (
     Cluster,
     DynamicActionScripts,
     DynamicConfig,
+    DynamicUpgradeScripts,
     DynamicWizardScripts,
     Host,
     ObjectTarget,
@@ -51,11 +52,13 @@ class Parser(PydanticParser[RootTarget, ObjectTarget]):
         return DynamicConfig
 
     def _get_scripts_model(
-        self, mode: Literal["action", "wizard"]
-    ) -> type[DynamicActionScripts | DynamicWizardScripts]:
+        self, mode: Literal["action", "upgrade", "wizard"]
+    ) -> type[DynamicActionScripts | DynamicUpgradeScripts | DynamicWizardScripts]:
         match mode:
             case "action":
                 return DynamicActionScripts
+            case "upgrade":
+                return DynamicUpgradeScripts
             case "wizard":
                 return DynamicWizardScripts
 

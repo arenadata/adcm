@@ -33,14 +33,16 @@ from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.transition.cluster.delete import DeleteService
 import pytz
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestTask(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-class TestTask(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -98,6 +100,8 @@ class TestTask(BaseAPITestCase):
 
     def test_filtering_success(self):
         task = self.cluster_task
+        task.name = "test_task"
+        task.display_name = "Test Task"
         task.status = "running"
         task.start_date = timezone.now() - timedelta(days=3)
         task.finish_date = timezone.now()
@@ -108,6 +112,8 @@ class TestTask(BaseAPITestCase):
 
         filters = {
             "id": (task.pk, None, 0),
+            "name": (task.name, task.name[:1], 0),
+            "display_name": (task.display_name, task.name[:1], 0),
             "jobName": (task.action.display_name, task.action.display_name[1:-7].upper(), "wrong"),
             "objectName": (self.component_1.name, self.component_1.name[2:].upper(), "wrong"),
             "status": (task.status, None, "broken"),
@@ -149,6 +155,8 @@ class TestTask(BaseAPITestCase):
         empty_task = TaskLog.objects.get(action=None)
         empty_task.delete()
         for i, task in enumerate(TaskLog.objects.all()):
+            task.name = f"{i}_test_task"
+            task.display_name = f"{i}_Test Task"
             task.start_date = timezone.now() - timedelta(days=3 + i)
             task.finish_date = timezone.now() - timedelta(days=i)
             task.save()
@@ -163,7 +171,8 @@ class TestTask(BaseAPITestCase):
 
         ordering_fields = {
             "id": "id",
-            "action__name": "name",
+            "name": "name",
+            "display_name": "displayName",
             "start_date": "startTime",
             "finish_date": "endTime",
         }
@@ -175,8 +184,6 @@ class TestTask(BaseAPITestCase):
                     datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
                     for item in response.json()["results"]
                 ]
-            if ordering_field == "name":
-                return [item["action"]["name"] for item in response.json()["results"]]
             return [item[ordering_field] for item in response.json()["results"]]
 
         for model_field, ordering_field in ordering_fields.items():
@@ -274,7 +281,7 @@ class TestTask(BaseAPITestCase):
             self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
             # delete service skipping some checks
-            DeleteService().do(service=self.service_1)
+            DeleteService(rbac_scenarios=RBACScenarios()).do(service=self.service_1)
 
             # check tasklog visibility for cluster admin
             self.client.login(**cluster_admin_credentials)
@@ -309,7 +316,7 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
 
 
-class TestTaskObjects(BaseAPITestCase):
+class TestTaskObjects(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

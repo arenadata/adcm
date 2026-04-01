@@ -11,38 +11,38 @@
 # limitations under the License.
 
 from cm.models import Component, Host, MaintenanceMode, Service, TaskLog
-from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo
+from cm.tests.mocks.task_runner import FailedJobInfo
 from core.types import TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
+from tests.dependencies import TaskRunnerOverride
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestMMActions(BaseAPITestCase):
+class TestMMActions(ADCMDjangoAPISuite):
     """
     Tests for reserved mm-action names
     No actual ansible playbook runs, thus checking for `changing` mm status
     """
 
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
-        self.task_runner.reset()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.executor_with_failed_first_job = ExecutionTargetFactoryDummyMock(
-            failed_job=FailedJobInfo(position=0, return_code=1)
+        cls.executor_with_failed_first_job_overrides = (
+            TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),
         )
 
-        bundle_mm_plugins_mm_actions = self.add_bundle(
-            source_dir=self.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
+        bundle_mm_plugins_mm_actions = cls.uc.upload_bundle(
+            src=cls.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
         )
-        self.cluster = self.add_cluster(bundle=bundle_mm_plugins_mm_actions, name="cluster_mm_plugins_mm_actions")
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component = self.service.components.get(prototype__name="component_1")
+        cls.cluster = cls.uc.add_cluster(bundle=bundle_mm_plugins_mm_actions, name="cluster_mm_plugins_mm_actions")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component = cls.service.components.get(prototype__name="component_1")
 
-        provider_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider")
-        provider = self.add_provider(bundle=provider_bundle, name="provider", description="provider")
-        self.host = self.add_host(provider=provider, fqdn="host")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
+        cls.host = cls.uc.add_host(provider=provider, fqdn="host")
 
     def do_change_mm_request(self, obj: Host | Service | Component) -> Response:
         match obj.maintenance_mode:
@@ -138,7 +138,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
@@ -155,7 +155,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
@@ -172,7 +172,7 @@ class TestMMActions(BaseAPITestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         task_id = self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=self.executor_with_failed_first_job)
+        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)

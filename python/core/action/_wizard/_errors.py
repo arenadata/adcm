@@ -13,5 +13,31 @@
 from core.errors import OperationError
 
 
-class SyncKeyMismatchError(OperationError):
+class ActionProcessError(OperationError):
+    def __init__(self, msg: str = ""):
+        self.msg = msg
+        super().__init__(msg)
+
+
+class ActionProcessOperationError(ActionProcessError):
+    ...
+
+
+class SyncKeyMismatchError(ActionProcessError):
+    ...
+
+
+class ActionProcessDBError(ActionProcessError):
+    ...
+
+
+class ActionProcessNotFoundError(ActionProcessError):
+    ...
+
+
+class ActionProcessStepNotFoundError(ActionProcessError):
+    ...
+
+
+class ActionProcessPayloadError(ActionProcessError):
     ...

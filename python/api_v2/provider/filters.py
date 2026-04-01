@@ -26,9 +26,18 @@ class ProviderFilter(
     prototype_display_name = CharFilter(
         field_name="prototype__display_name", label="Filter by prototype display name.", lookup_expr="exact"
     )
-    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
+    state = CharFilter(label="Filter by state.", field_name="state", lookup_expr="exact")
+    version = CharFilter(label="Filter by version.", field_name="prototype__version")
     ordering = OrderingFilter(
-        fields={"name": "name"},
-        field_labels={"name": "Name"},
+        fields={
+            "name": "name",
+            "prototype__version": "version",
+            "prototype__display_name": "prototypeDisplayName",
+        },
+        field_labels={
+            "name": "Name",
+            "prototype__version": "Version",
+            "prototype__display_name": "Prototype display name",
+        },
         label="ordering",
     )

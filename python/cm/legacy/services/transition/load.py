@@ -31,6 +31,7 @@ from core.types import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 from rbac.roles import apply_policy_for_new_config
+from rbac.scenarios import RBACScenarios
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 import core
 import dishka
@@ -100,6 +101,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
     di_container = dishka.make_container(*get_main_providers())
     with di_container() as container:
         config_service = container.get(core.config.ConfigService)
+        rbac_scenarios = container.get(RBACScenarios)
 
         report("Host Providers discovery/creation")
         providers = discover_providers(providers={entry.name: entry.bundle for entry in data.providers})
@@ -121,6 +123,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
             hosts=data.hosts,
             providers=providers,
             config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
         )
 
         report("Cluster creation")
@@ -132,6 +135,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
             ahg_service=container.get(ActionHostGroupService),
             create_cluster_use_case=container.get(CreateCluster),
             add_services_use_case=container.get(CreateServicesFromPrototypes),
+            rbac_scenarios=rbac_scenarios,
         )
 
         if hosts_in_mm:
@@ -183,7 +187,10 @@ def create_new_providers(
 
 
 def create_new_hosts(
-    hosts: Iterable[HostInfo], providers: ProviderNameIDsMap, config_service: core.config.ConfigService
+    hosts: Iterable[HostInfo],
+    providers: ProviderNameIDsMap,
+    config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
 ) -> tuple[HostNameIDMap, HostsInMM]:
     result = {}
 
@@ -191,7 +198,13 @@ def create_new_hosts(
 
     for host_info in hosts:
         provider_id, bundle_id = providers[host_info.provider]
-        host = create_host(bundle_id=bundle_id, provider_id=provider_id, fqdn=host_info.name, cluster=None)
+        host = create_host(
+            bundle_id=bundle_id,
+            provider_id=provider_id,
+            fqdn=host_info.name,
+            cluster=None,
+            rbac_scenarios=rbac_scenarios,
+        )
         result[host_info.name] = host.id
         _restore_state(target=host, condition=host_info.condition, config_service=config_service)
         if host_info.maintenance_mode == "on":
@@ -212,6 +225,7 @@ def create_cluster(
     add_services_use_case: CreateServicesFromPrototypes,
     config_service: core.config.ConfigService,
     ahg_service: ActionHostGroupService,
+    rbac_scenarios: RBACScenarios,
 ) -> ClusterID:
     bundle_id = bundles[cluster.bundle]
     cluster_prototype = Prototype.objects.get(bundle_id=bundle_id, type=ObjectType.CLUSTER)
@@ -235,7 +249,12 @@ def create_cluster(
     if services_to_add:
         add_services_use_case.do(cluster=cluster_object, prototype_ids=services_to_add)
 
-    perform_host_to_cluster_map(cluster_id=cluster_object.id, hosts=hosts.values(), status_service=notify)
+    perform_host_to_cluster_map(
+        cluster_id=cluster_object.id,
+        hosts=hosts.values(),
+        status_service=notify,
+        rbac_scenarios=rbac_scenarios,
+    )
 
     _restore_state(target=cluster_object, condition=cluster.condition, config_service=config_service)
 

@@ -12,13 +12,11 @@
 
 from functools import partial
 from operator import itemgetter
-from pathlib import Path
 from typing import Collection, Literal, TypeAlias
 from unittest.mock import patch
 import json
 import unittest
 
-from adcm.tests.client import ADCMTestClient
 from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
     Action,
@@ -36,13 +34,10 @@ from cm.models import (
     TaskLog,
 )
 from core.types import TaskID
-from infra.services import get_config_service
-from init_db import init
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -50,72 +45,75 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
-from api_v2.utils.di import prepare_container
+from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
 
 ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
-class TestActionsFiltering(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionsFiltering(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-        self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
-        self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        self.component_2: Component = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        self.provider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_actions")
+        cls.cluster = cls.uc.add_cluster(cls.cluster_bundle, "Cluster with Actions")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster)
 
-        self.available_at_any = ["state_any"]
-        common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
-        self.available_at_created_no_multi = [
+        provider_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "provider_actions")
+        cls.provider = cls.uc.add_provider(provider_bundle, "Provider with Actions")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
+
+        cls.available_at_any = ["state_any"]
+        common_at_created = [*cls.available_at_any, "state_created", "state_created_masking"]
+        cls.available_at_created_no_multi = [
             *common_at_created,
             "multi_flag_unavailable",
             "state_created_available_multi_bag_unavailable",
         ]
-        self.available_at_created_flag = [
+        cls.available_at_created_flag = [
             *common_at_created,
             "multi_flag_masking",
             "state_created_available_multi_bag_unavailable",
         ]
-        self.available_at_created_bag = [
+        cls.available_at_created_bag = [
             *common_at_created,
             "multi_flag_unavailable",
             "state_created_available_multi_bag_available",
         ]
 
         common_at_installed = [
-            *self.available_at_any,
+            *cls.available_at_any,
             "state_installed",
             "state_installed_masking",
             "state_created_unavailable",
         ]
-        self.available_at_installed_no_multi = [
+        cls.available_at_installed_no_multi = [
             *common_at_installed,
             "multi_flag_unavailable",
             "state_created_unavailable_multi_bag_unavailable",
         ]
-        self.available_at_installed_flag = [
+        cls.available_at_installed_flag = [
             *common_at_installed,
             "multi_flag_masking",
             "state_created_unavailable_multi_bag_unavailable",
         ]
-        self.available_at_installed_bag = [
+        cls.available_at_installed_bag = [
             *common_at_installed,
             "multi_flag_unavailable",
             "state_created_unavailable_multi_bag_available",
         ]
 
-        self.installed_state = "installed"
-        self.flag_multi_state = "flag"
-        self.bag_multi_state = "bag"
+        cls.installed_state = "installed"
+        cls.flag_multi_state = "flag"
+        cls.bag_multi_state = "bag"
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
@@ -531,16 +529,17 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertListEqual(actual_actions, sorted(expected_actions))
 
 
-class TestActionWithJinjaConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
-        self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
-        self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
-        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
+        cluster_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_actions_jinja")
+        cls.cluster = cls.uc.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["first_service"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="first_component")
 
     def test_group_jinja_config(self):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
@@ -694,13 +693,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
 
-class TestAction(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAction(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.action_with_config = Action.objects.filter(name="with_config", prototype=self.cluster_1.prototype).first()
+        cls.action_with_config = Action.objects.get(name="with_config", prototype=cls.cluster_1.prototype)
 
     def test_retrieve_with_config(self):
         response = self.client.v2[self.cluster_1, "actions", self.action_with_config].get()
@@ -789,35 +789,23 @@ class TestAction(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestActionHCMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
+class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-        cls.test_bundles_dir = Path(__file__).parent / "bundles"
-        init_roles()
-        init()
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one")
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cluster_bundle, name="Test cluster for hc_acl action")
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
+        cls.component_2 = Component.objects.get(prototype__name="component_2", service=cls.service_1)
 
-    def setUp(self):
-        self.client.login(username="admin", password="admin")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider")
+        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2", cluster=cls.cluster_1)
 
-        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "cluster_one")
-        self.cluster_1 = self.create_cluster(bundle=cluster_bundle, name="Test cluster for hc_acl action")
-        self.service_1 = self.create_services(names=["service_1"], cluster=self.cluster_1)[0]
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
-        self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service_1)
-
-        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
-        provider = self.create_provider(bundle=provider_bundle, name="provider")
-        self.host_1 = self.create_host(provider=provider, name="host-1", cluster=self.cluster_1)
-        self.host_2 = self.create_host(provider=provider, name="host-2", cluster=self.cluster_1)
-
-        self.action = Action.objects.get(name="with_hc", prototype_id=self.cluster_1.prototype_id)
+        cls.action = Action.objects.get(name="with_hc", prototype_id=cls.cluster_1.prototype_id)
 
     def run_task(
         self,

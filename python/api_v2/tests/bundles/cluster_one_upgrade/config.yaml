@@ -2,6 +2,8 @@
 - type: cluster
   name: cluster_one
   version: &version '2.0'
+  contract_version: "2.0"
+  venv: "2.16"
   edition: community
   config_group_customization: true
   license: ./EULA.txt
@@ -85,6 +87,15 @@
         available:
           - doesnotexist
 
+    - name: with_scripts_adcm_7807
+      versions: *correct_versions
+      states: *always_available
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./adcm_7807_upgrade_scripts.j2
+
   config: &config
     - name: string
       type: string
@@ -99,9 +110,10 @@
           default: string
   actions:
     action: &action
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+      scripts:
+        - script: ./playbook.yaml
+          script_type: ansible
+          name: some
       states:
         available: any
 
@@ -138,17 +150,36 @@
   version: *version
   config: *config
 
-
-- name: service_with_bound_to
+- name: service_with_miss_config_service
   type: service
   version: "hehe"
 
   components:
-    will_have_bound_to:
-      description: This component will have `bound_to` constraint after upgrade
-      bound_to:
-        service: service_1
-        component: component_1
-
     will_miss_config:
       description: This component will not have config after upgrade
+
+- name: adcm_7807
+  type: service
+  version: "20"
+  config_group_customization: false
+
+  config:
+    - name: pick_me
+      type: selection_group
+      subs: &subs
+        - name: a
+          type: group
+          subs:
+            - name: a1
+              type: string
+        - name: b
+          type: group
+          subs:
+            - name: b1
+              type: integer
+              default: 4
+
+    - name: with_default
+      type: selection_group
+      default: a
+      subs: *subs

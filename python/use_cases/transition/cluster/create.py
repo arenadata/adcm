@@ -28,7 +28,7 @@ from core.result import Fail, Success
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, PrototypeID
 from django.db import transaction
 from django.db.models import Count, QuerySet
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 import core
 
 
@@ -61,6 +61,7 @@ class CreateCluster:
 @dataclass(slots=True)
 class CreateServicesFromPrototypes:
     config_service: core.config.ConfigService
+    rbac_scenarios: RBACScenarios
 
     def do(self, cluster: models.Cluster, prototype_ids: Iterable[PrototypeID]) -> tuple[models.Service, ...]:
         result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
@@ -83,7 +84,7 @@ class CreateServicesFromPrototypes:
             )
             added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
-            re_apply_object_policy(apply_object=cluster)
+            self.rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
         reset_hc_map()
         notify_about_redistributed_concerns_from_maps(added=added, removed=removed)

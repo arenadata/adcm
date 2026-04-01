@@ -26,8 +26,8 @@ from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Component, Host, Service
+from cm.transition.status import StatusScenarios
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -179,7 +179,6 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
             after=extract_current_from_response("maintenance_mode"),
         )
     )
-    @update_mm_objects
     @action(
         methods=["post"],
         detail=True,
@@ -187,7 +186,14 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+    def maintenance_mode(
+        self,
+        request: Request,
+        *_,
+        schedule_task: FromDishka[ScheduleTask],
+        status_scenarios: FromDishka[StatusScenarios],
+        **kwargs,
+    ) -> Response:
         component: Component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
         )
@@ -208,6 +214,7 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
+        status_scenarios.update_mm_objects()
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")

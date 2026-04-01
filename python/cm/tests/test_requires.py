@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
 from core.legacy.cluster.types import HostComponentEntry
+from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
 
 from cm.errors import AdcmEx
 from cm.legacy.api import add_service_to_cluster
@@ -69,7 +70,9 @@ class TestComponent(BaseTestCase):
         )
 
     def test_requires_hc(self):
-        service_1 = add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_1)
+        service_1 = add_service_to_cluster(
+            cluster=self.cluster, proto=self.service_proto_1, rbac_scenarios=RBACScenarios()
+        )
         component_1 = Component.objects.get(prototype=self.component_1_1_proto, service=service_1)
         host = Host.objects.create(
             prototype=Prototype.objects.create(type="host", bundle=self.bundle), cluster=self.cluster

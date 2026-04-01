@@ -17,10 +17,14 @@ from typing import Any, Callable, Generator, Iterable, NamedTuple
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.legacy.job.types import Job, ScriptType, Task
+from core.logs import LogsService
 from django.utils import timezone
+from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
+from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.provider.update import ResetBeforeUpgradeProvider
 
-from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
+from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.repo import JobRepoImpl
 
 
@@ -46,8 +50,21 @@ default_imitator = JobImitator()
 
 
 class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
-    def __init__(self, failed_job: FailedJobInfo | None = None):
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        failed_job: FailedJobInfo | None = None,
+        logs_service: LogsService,
+        rbac_scenarios: RBACScenarios,
+        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
+        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+    ):
+        super().__init__(
+            logs_service=logs_service,
+            rbac_scenarios=rbac_scenarios,
+            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
+            reset_provider_before_upgrade=reset_provider_before_upgrade,
+        )
 
         self._failed_job = failed_job
 
@@ -84,8 +101,21 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
 
 
 class ETFMockWithEnvPreparation(ExecutionTargetFactory):
-    def __init__(self, change_jobs: dict[int, JobImitator] | None = None):
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        change_jobs: dict[int, JobImitator] | None = None,
+        logs_service: LogsService,
+        rbac_scenarios: RBACScenarios,
+        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
+        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+    ):
+        super().__init__(
+            logs_service=logs_service,
+            rbac_scenarios=rbac_scenarios,
+            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
+            reset_provider_before_upgrade=reset_provider_before_upgrade,
+        )
 
         self.imitators = change_jobs or {}
         self.default_imitator = default_imitator

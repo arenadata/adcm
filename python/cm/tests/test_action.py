@@ -14,7 +14,6 @@ from configparser import ConfigParser
 from pathlib import Path
 import json
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -26,7 +25,10 @@ from core.legacy.job.types import HcAclRule, TaskMappingDelta
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -171,6 +173,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
         add_service_to_cluster(
             cluster=self.cluster,
             proto=Prototype.objects.get(name="service_1", display_name="Service 1", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
 
         provider = gen_provider()
@@ -214,6 +217,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
         self.service_2_robot = add_service_to_cluster(
             cluster=self.cluster_2,
             proto=Prototype.objects.get(name="robot", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
         self.component_wheel_of_robot = Component.objects.get(cluster=self.cluster_2, prototype__name="wheel")
 
@@ -297,7 +301,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
         task = JobRepoImpl.get_task(id=response.json()["id"])
         job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
 
-        job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+        job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)
         prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
 

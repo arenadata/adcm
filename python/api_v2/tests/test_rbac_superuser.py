@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import TestUserCreateDTO
 from django.contrib.auth.hashers import check_password
 from rbac.models import Role, User
 from rbac.services import group
@@ -19,15 +18,17 @@ from rbac.services.role import role_create
 from rbac.services.user import perform_user_creation
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT
+from tests.client import ADCMTestClient
+from tests.deprecated import TestUserCreateDTO
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import ADCMTestClient, BaseAPITestCase
 
+class TestUserCreateEdit(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestUserCreateEdit(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.password = "yes" * 5
+        cls.password = "yes" * 5
         create_user_role = role_create(
             name="Create Users",
             display_name="Create Users",
@@ -41,34 +42,37 @@ class TestUserCreateEdit(BaseAPITestCase):
         creators_group = group.create(name_to_display="Creators")
         editors_group = group.create(name_to_display="Editors")
 
-        self.creator = User.objects.get(
+        cls.creator = User.objects.get(
             id=perform_user_creation(
-                create_data=TestUserCreateDTO(username="icancreate", password=self.password, is_superuser=False),
+                create_data=TestUserCreateDTO(username="icancreate", password=cls.password, is_superuser=False),
                 groups=[creators_group.pk],
             )
         )
-        self.editor = User.objects.get(
+        cls.editor = User.objects.get(
             id=perform_user_creation(
-                create_data=TestUserCreateDTO(username="icanedit", password=self.password, is_superuser=False),
+                create_data=TestUserCreateDTO(username="icanedit", password=cls.password, is_superuser=False),
                 groups=[editors_group.pk],
             )
         )
 
-        self.creator_client = self.client_class()
-        self.creator_client.login(username="icancreate", password=self.password)
-        self.editor_client = self.client_class()
-        self.editor_client.login(username="icanedit", password=self.password)
-
         policy_create(name="Creators policy", role=create_user_role, group=[creators_group])
         policy_create(name="Editors policy", role=edit_user_role, group=[editors_group])
 
-        self.new_user_data = {
+        cls.new_user_data = {
             "username": "newcooluser",
             "password": "bestpassever",
             "firstName": "Awesome",
             "lastName": "Tiger",
             "email": "difficult@to.me",
         }
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.creator_client = self.client_class()
+        self.creator_client.login(username="icancreate", password=self.password)
+        self.editor_client = self.client_class()
+        self.editor_client.login(username="icanedit", password=self.password)
 
     @staticmethod
     def request_create_user(client: ADCMTestClient, data: dict) -> Response:

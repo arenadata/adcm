@@ -44,7 +44,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         ...
 
     @abstractmethod
-    def _get_scripts_model(self, mode: Literal["action", "wizard"]) -> type[BundleModel]:
+    def _get_scripts_model(self, mode: Literal["action", "upgrade", "wizard"]) -> type[BundleModel]:
         ...
 
     @abstractmethod
@@ -103,7 +103,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         scripts: list[dict],
         template_path: Path,
         action_allow_to_terminate: bool,
-        mode: Literal["action", "wizard"],
+        mode: Literal["action", "upgrade", "wizard"],
     ) -> list[action.JobSpec]:
         model_ = self._get_scripts_model(mode)
         parsed = model_.model_validate({"scripts": scripts})

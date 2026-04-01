@@ -26,8 +26,27 @@ class UserFilterSet(
 ):
     username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
     status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
-    type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="type")
-    ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
+    email = CharFilter(field_name="email", label="Filter by email.")
+    type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="Filter by type.")
+    group_name = CharFilter(
+        field_name="groups__group__display_name",
+        label="Case insensitive and partial filter by group display name.",
+        lookup_expr="icontains",
+        distinct=True,
+    )
+    ordering = OrderingFilter(
+        fields={
+            "username": "username",
+            "email": "email",
+            "type": "type",
+        },
+        field_labels={
+            "username": "Username",
+            "email": "Email",
+            "type": "Type",
+        },
+        label="ordering",
+    )
 
     # Advanced filters
     group__eq = NumberFilter(field_name="groups__id", lookup_expr="exact", label="group__eq")

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.alt.api import audit_create, audit_delete
 from cm.errors import AdcmEx
@@ -72,12 +71,21 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
             OpenApiParameter(
+                name="state",
+                description="Filter by state.",
+            ),
+            OpenApiParameter(
+                name="version",
+                description="Filter by version.",
+            ),
+            OpenApiParameter(
+                name="prototype_display_name",
+                description="Filter by prototype display name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=(
-                    "name",
-                    "-name",
-                ),
+                enum=("name", "-name", "prototypeDisplayName", "-prototypeDisplayName", "version", "-version"),
                 default="name",
             ),
         ],
@@ -133,7 +141,10 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
 
         try:
             host_provider_id = create_hostprovider(
-                prototype=prototype, name=name, description=description, config_service=get_config_service()
+                prototype=prototype,
+                name=name,
+                description=description,
+                config_service=get_config_service(),
             )
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e

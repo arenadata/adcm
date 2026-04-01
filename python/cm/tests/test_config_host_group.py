@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from adcm.tests.base import BaseTestCase
+from tests.base import BaseTestCase
 
 from cm.models import ConfigLog
 from cm.tests.utils import gen_cluster, gen_config, gen_group, gen_prototype_config

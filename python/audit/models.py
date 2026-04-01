@@ -71,6 +71,7 @@ class AuditSessionLoginResult(TextChoices):
     SUCCESS = "success", "success"
     WRONG_PASSWORD = "wrong password", "wrong password"
     ACCOUNT_DISABLED = "account disabled", "account disabled"
+    LOG_IN_TO_A_BLOCKED_ACCOUNT = "log in to a blocked account", "log in to a blocked account"
     USER_NOT_FOUND = "user not found", "user not found"
 
 

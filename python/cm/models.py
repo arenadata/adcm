@@ -21,6 +21,7 @@ import os.path
 
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.legacy.job.types import ScriptType
+from core.logs import Severity
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -1477,11 +1478,16 @@ class JobLog(AbstractSubAction):
         return (self.finish_date - self.start_date).total_seconds()
 
 
+SeverityChoices = tuple((severity.value, severity.value) for severity in Severity)
+DEFAULT_SEVERITY = Severity.ERROR.value
+
+
 class GroupCheckLog(ADCMModel):
     job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
     title = models.TextField()
     message = models.TextField(blank=True, null=True)
     result = models.BooleanField(blank=True, null=True)
+    severity = models.CharField(max_length=100, choices=SeverityChoices, default=DEFAULT_SEVERITY)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["job", "title"], name="unique_group_job")]
@@ -1493,6 +1499,7 @@ class CheckLog(ADCMModel):
     title = models.TextField()
     message = models.TextField()
     result = models.BooleanField()
+    severity = models.CharField(max_length=100, choices=SeverityChoices, default=DEFAULT_SEVERITY)
 
 
 LOG_TYPE = (

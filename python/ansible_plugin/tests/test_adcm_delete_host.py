@@ -16,6 +16,7 @@ from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
 from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from use_cases.transition.host.duplicate import create_duplicate
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError
@@ -107,7 +108,11 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         host = self.add_host(provider=self.another_provider, fqdn="original-host")
 
         create_duplicate(
-            host_id=host.id, name="duplicate-1", cluster_id=self.cluster.id, config_service=self.config_service
+            host_id=host.id,
+            name="duplicate-1",
+            cluster_id=self.cluster.id,
+            config_service=self.config_service,
+            rbac_scenarios=RBACScenarios(),
         )
 
         task = self.prepare_task(owner=host, name="dummy")

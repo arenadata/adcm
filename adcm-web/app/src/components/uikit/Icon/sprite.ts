@@ -74,6 +74,8 @@ export const allowIconsNames = [
   'g2-locked-10x10',
   'g2-created-10x10',
   'g2-running-10x10',
+  'g2-info-10x10',
+  'g2-warning-10x10',
   'g3-add',
   'g3-clear',
   'g3-delete',

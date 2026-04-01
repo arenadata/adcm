@@ -10,31 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.action import wizard
 
-class ActionProcessError(Exception):
-    def __init__(self, msg: str = ""):
-        self.msg = msg
+ActionProcessError = wizard.ActionProcessError
+ActionProcessOperationError = wizard.ActionProcessOperationError
+SyncKeyMismatchError = wizard.SyncKeyMismatchError
+ActionProcessDBError = wizard.ActionProcessDBError
+ActionProcessNotFoundError = wizard.ActionProcessNotFoundError
+ActionProcessStepNotFoundError = wizard.ActionProcessStepNotFoundError
+ActionProcessPayloadError = wizard.ActionProcessPayloadError
 
-
-class ActionProcessOperationError(ActionProcessError):
-    pass
-
-
-class SyncKeyMismatchError(ActionProcessError):
-    pass
-
-
-class ActionProcessDBError(ActionProcessError):
-    pass
-
-
-class ActionProcessNotFoundError(ActionProcessError):
-    pass
-
-
-class ActionProcessStepNotFoundError(ActionProcessError):
-    pass
-
-
-class ActionProcessPayloadError(ActionProcessError):
-    pass
+__all__ = [
+    "ActionProcessDBError",
+    "ActionProcessError",
+    "ActionProcessNotFoundError",
+    "ActionProcessOperationError",
+    "ActionProcessPayloadError",
+    "ActionProcessStepNotFoundError",
+    "SyncKeyMismatchError",
+]

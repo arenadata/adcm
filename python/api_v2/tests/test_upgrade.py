@@ -10,79 +10,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-import unittest
 
 from cm.models import (
-    ADCM,
     Component,
     ConfigLog,
-    HostComponent,
     ObjectType,
     Prototype,
     TaskLog,
     Upgrade,
 )
 from core.types import TaskID
-from init_db import init
-from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from rest_framework.test import APITestCase
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.prototype.utils import accept_license
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import APIV2Mixin
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 
-class TestUpgrade(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
 
-        cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
-        cluster_bundle_1_upgrade_other_constraints_path = (
-            self.test_bundles_dir / "cluster_one_upgrade_other_constraints"
-        )
-        provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
-        cluster_bundle_upgrade = self.add_bundle(source_dir=cluster_bundle_1_upgrade_path)
-        cluster_bundle_upgrade_2 = self.add_bundle(source_dir=cluster_bundle_1_upgrade_other_constraints_path)
-        provider_bundle_upgrade = self.add_bundle(source_dir=provider_bundle_upgrade_path)
-        self.add_bundle(source_dir=self.test_bundles_dir / "cluster_two_upgrade_from_any")
+        cluster_bundle_1_upgrade_path = cls.test_bundles_dir / "cluster_one_upgrade"
+        cluster_bundle_1_upgrade_other_constraints_path = cls.test_bundles_dir / "cluster_one_upgrade_other_constraints"
+        provider_bundle_upgrade_path = cls.test_bundles_dir / "provider_upgrade"
+        cluster_bundle_upgrade = cls.uc.upload_bundle(src=cluster_bundle_1_upgrade_path)
+        cluster_bundle_upgrade_2 = cls.uc.upload_bundle(src=cluster_bundle_1_upgrade_other_constraints_path)
+        provider_bundle_upgrade = cls.uc.upload_bundle(src=provider_bundle_upgrade_path)
+        cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_two_upgrade_from_any")
 
-        self.cluster_upgrade = Upgrade.objects.get(
+        cls.cluster_upgrade = Upgrade.objects.get(
             name="upgrade",
             bundle=cluster_bundle_upgrade,
         )
-        self.cluster_upgrade_2 = Upgrade.objects.get(
+        cls.cluster_upgrade_2 = Upgrade.objects.get(
             name="upgrade",
             bundle=cluster_bundle_upgrade_2,
         )
-        self.provider_upgrade = Upgrade.objects.get(
+        cls.provider_upgrade = Upgrade.objects.get(
             name="upgrade",
             bundle=provider_bundle_upgrade,
         )
-        self.upgrade_cluster_via_action_simple = Upgrade.objects.get(
+        cls.upgrade_cluster_via_action_simple = Upgrade.objects.get(
             name="upgrade_via_action_simple", bundle=cluster_bundle_upgrade
         )
-        self.upgrade_host_via_action_simple = Upgrade.objects.get(
+        cls.upgrade_host_via_action_simple = Upgrade.objects.get(
             name="upgrade_via_action_simple", bundle=provider_bundle_upgrade
         )
-        self.upgrade_cluster_via_action_complex = Upgrade.objects.get(
+        cls.upgrade_cluster_via_action_complex = Upgrade.objects.get(
             name="upgrade_via_action_complex", bundle=cluster_bundle_upgrade
         )
-        self.upgrade_host_via_action_complex = Upgrade.objects.get(
+        cls.upgrade_host_via_action_complex = Upgrade.objects.get(
             name="upgrade_via_action_complex", bundle=provider_bundle_upgrade
         )
 
-        self.user = self.create_user()
+        cls.user = cls.uc.create_user()
+
+    def setUp(self) -> None:
+        super().setUp()
+
         self.unauthorized_client = self.client_class()
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
@@ -103,7 +99,7 @@ class TestUpgrade(BaseAPITestCase):
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
+        self.assertEqual(len(response.json()), 7)
 
         for upgrade in response.json():
             self.assertIn("bundle", upgrade)
@@ -165,30 +161,6 @@ class TestUpgrade(BaseAPITestCase):
             },
         )
 
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_cluster_upgrade_retrieve_complex_success(self):
-        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex].get()
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        upgrade_data = response.json()
-        self.assertTrue(
-            set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
-            )
-        )
-
-        self.assertEqual(upgrade_data["id"], self.upgrade_cluster_via_action_complex.pk)
-        self.assertEqual(upgrade_data["disclaimer"], "Cool upgrade")
-        self.assertFalse(upgrade_data["isAllowToTerminate"])
-
-        self.assertSetEqual(
-            {
-                (entry["action"], entry["service"], entry["component"])
-                for entry in upgrade_data["hostComponentMapRules"]
-            },
-            {("add", "service_1", "component_1"), ("remove", "service_1", "component_2")},
-        )
-
     def test_cluster_upgrade_run_success(self):
         self.accept_license_of_first_service()
 
@@ -206,155 +178,6 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_cluster_upgrade_run_complex_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
-
-        host = self.add_host(provider=self.provider, fqdn="one_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host)
-        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
-
-        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-            data={
-                "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
-                "configuration": {
-                    "config": {
-                        "simple": "val",
-                        "file": "content",
-                        "grouped": {
-                            "simple": 5,
-                            "second": 4.3,
-                            "structure": {
-                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                "quantity": 122,
-                            },
-                        },
-                        "after": ["x", "y"],
-                        "variant_config_type_strict": "value3",
-                    },
-                    "adcmMeta": {},
-                },
-                "isVerbose": True,
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        data = response.json()
-        self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        launched_task = self.task_runner.expect_task_launched(data["id"])
-
-        self.task_runner.run_task(launched_task.id)
-        self.assert_task_status_is(launched_task.id, "success")
-
-        self.cluster_1.refresh_from_db()
-        self.assertEqual(
-            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
-        )
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_5246_cluster_upgrade_other_constraints_run_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
-
-        host_1 = self.add_host(provider=self.provider, fqdn="first_host")
-        host_2 = self.add_host(provider=self.provider, fqdn="second_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
-        component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host_1)
-        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_1)
-        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_2)
-
-        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-            data={
-                "hostComponentMap": [
-                    {"hostId": host_1.pk, "componentId": component_1.pk},
-                    {"hostId": host_2.pk, "componentId": component_1.pk},
-                ],
-                "configuration": {
-                    "config": {
-                        "simple": "val",
-                        "file": "content",
-                        "grouped": {
-                            "simple": 5,
-                            "second": 4.3,
-                            "structure": {
-                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                "quantity": 122,
-                            },
-                        },
-                        "after": ["x", "y"],
-                        "variant_config_type_strict": "value3",
-                    },
-                    "adcmMeta": {},
-                },
-                "isVerbose": True,
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        data = response.json()
-        self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        launched_task = self.task_runner.expect_task_launched(data["id"])
-
-        self.task_runner.run_task(launched_task.id)
-
-        self.assert_task_status_is(launched_task.id, "success")
-
-        self.cluster_1.refresh_from_db()
-        self.assertEqual(
-            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
-        )
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
-        host = self.add_host(provider=self.provider, fqdn="one_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host)
-
-        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-            data={
-                "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
-                "configuration": {
-                    "config": {
-                        "simple": "val",
-                        "file": "content",
-                        "grouped": {
-                            "simple": 5,
-                            "second": 4.3,
-                            "structure": {
-                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                "quantity": 122,
-                            },
-                        },
-                        "after": ["x", "y"],
-                        "variant_config_type_strict": "value3",
-                    },
-                    "adcmMeta": {},
-                },
-                "isVerbose": True,
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
-        self.task_runner.expect_task_not_launched()
 
     def test_provider_list_upgrades_success(self):
         response = self.client.v2[self.provider, "upgrades"].get()
@@ -440,36 +263,6 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_cluster_upgrade_hostcomponent_validation_fail(self):
-        endpoint = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"]
-        for hc_data in ([{"hostId": 1}], [{"componentId": 4}], [{}]):
-            with self.subTest(f"Pass host_component_map as {hc_data}"):
-                response = endpoint.post(
-                    data={
-                        "hostComponentMap": hc_data,
-                        "configuration": {
-                            "config": {
-                                "simple": "val",
-                                "file": "content",
-                                "grouped": {
-                                    "simple": 5,
-                                    "second": 4.3,
-                                    "structure": {
-                                        "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                        "quantity": 122,
-                                    },
-                                },
-                                "after": ["x", "y"],
-                                "variant_config_type_strict": "value3",
-                            },
-                            "adcmMeta": {},
-                        },
-                    }
-                )
-
-                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-
     def test_cluster_list_unauthorized_fail(self) -> None:
         response = self.unauthorized_client.v2[self.cluster_1, "upgrades"].get()
 
@@ -511,15 +304,10 @@ class TestUpgrade(BaseAPITestCase):
             schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
         )
 
-    def test_list_cluster_upgrades_success(self):
-        response = self.client.v2[self.cluster_1, "upgrades"].get()
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
-
     def test_list_upgrades_permission_success(self):
         permission_cases = (
-            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 6),
-            (self.cluster_1, [], "ADCM User", 6),
+            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 7),
+            (self.cluster_1, [], "ADCM User", 7),
             (self.provider, [], "ADCM User", 3),
             (self.provider, self.provider, "Upgrade provider bundle", 3),
         )
@@ -556,36 +344,6 @@ class TestUpgrade(BaseAPITestCase):
         response = (self.client.v2 / "jobs").get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
-
-    @unittest.skip(reason="Removed support for updates from hc_acl. ADCM-6563")
-    def test_adcm_5965_no_constraints_check(self) -> None:
-        bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "old")
-        new_bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "new")
-
-        cluster = self.add_cluster(bundle=bundle, name="Cluster For Upgrade")
-        service = self.add_services_to_cluster(["service_with_constraints"], cluster=cluster).get()
-        component = Component.objects.get(prototype__name="dummy", service=service)
-
-        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
-
-        self.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
-
-        with self.subTest("No HC"):
-            upgrade = Upgrade.objects.get(name="Simple upgrade", bundle=new_bundle)
-            response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
-
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
-
-        with self.subTest("With HC"):
-            upgrade = Upgrade.objects.get(name="With HC", bundle=new_bundle)
-            # Passing the same HC unchanged, expect it to first be checked against upgrade restrictions
-            response = self.client.v2[cluster, "upgrades", upgrade, "run"].post(
-                data={"hostComponentMap": [{"hostId": host_1.id, "componentId": component.id}]}
-            )
-
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
 
     def test_cluster_upgrade_retrieve_complex_invalid_config_variant_value_fail(self):
         response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
@@ -634,7 +392,7 @@ class TestUpgrade(BaseAPITestCase):
     def test_adcm_7676_create_config_host_group_without_config_correct_error(self):
         self.accept_license_of_first_service()
 
-        service = self.add_services_to_cluster(["service_with_bound_to"], cluster=self.cluster_1).get()
+        service = self.add_services_to_cluster(["service_with_miss_config_service"], cluster=self.cluster_1).get()
         response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         component = Component.objects.get(service=service, prototype__name="will_miss_config")
@@ -646,31 +404,30 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.json()["code"], "GROUP_CONFIG_NO_CONFIG_ERROR")
 
 
-class TestAdcmUpgrade(APITestCase):
+class TestScriptsTemplate(ADCMDjangoAPISuite):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        init_roles()
-        init(adcm_conf_file=Path(__file__).parent / "bundles" / "adcm_configs" / "config.yaml")
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.original_adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(pk=self.original_adcm.config.current)
-        config_log.config["job_log"]["log_rotation_on_fs"] = 120
-        config_log.config["job_log"]["log_rotation_in_db"] = 50
-        config_log.config["config_rotation"]["config_rotation_in_db"] = 10
-        config_log.save(update_fields=["config"])
+        old_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one")
+        new_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one_upgrade")
 
-    def test_adcm_2_6_upgrade_success(self):
-        init()
-        new_adcm = ADCM.objects.first()
-        old_adcm_version = float(self.original_adcm.prototype.version)
-        new_adcm_version = float(new_adcm.prototype.version)
-        config_log = ConfigLog.objects.get(obj_ref=new_adcm.config, id=new_adcm.config.current)
-        self.assertNotIn("job_log", config_log.config)
-        self.assertNotIn("config_rotation", config_log.config)
-        self.assertEqual(config_log.config["audit_data_retention"]["log_rotation_in_db"], 50)
-        self.assertEqual(config_log.config["audit_data_retention"]["log_rotation_on_fs"], 120)
-        self.assertEqual(config_log.config["audit_data_retention"]["config_rotation_in_db"], 10)
-        self.assertGreater(new_adcm_version, old_adcm_version)
+        cls.cluster = cls.uc.add_cluster(bundle=old_bundle, name="whatever")
+        cls.service = cls.uc.add_services_to_cluster(["adcm_7807"], cluster=cls.cluster)[0]
+
+        cls.upgrade = Upgrade.objects.get(name="with_scripts_adcm_7807", bundle=new_bundle)
+
+    def test_apply_config_in_script(self):
+        # upgrade
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        # run upgrade action
+        launched_task = self.task_runner.expect_task_launched()
+        self.task_runner.run_task(launched_task.id)
+
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task.id)
+        self.assertEqual(task_status, "success")
+        # config migrated
+        config = ConfigLog.objects.get(id=self.service.config.current)
+        expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
+        self.assertEqual(config.config, expected_config)

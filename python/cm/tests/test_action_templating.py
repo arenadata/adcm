@@ -12,10 +12,11 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.bundle import BundleContext
 from core.dynamic_bundle.render import BundleRenderer
 from core.templates import parse_template
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 

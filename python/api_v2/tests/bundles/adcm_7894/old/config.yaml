@@ -1,0 +1,18 @@
+- name: adcm_7894
+  type: cluster
+  contract_version: "1.0"
+  version: "3"
+
+- name: service_1
+  type: service
+  version: "1"
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_with_bound_to_component
+  type: service
+  version: "1"
+  components:
+    will_have_bound_to:
+      description: i do not have bound_to yet

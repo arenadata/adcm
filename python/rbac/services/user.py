@@ -15,7 +15,7 @@ from operator import attrgetter
 from typing import Any, Iterable
 
 from cm.legacy.services.adcm import retrieve_password_requirements
-from cm.legacy.status_api import send_object_update_event
+from cm.transition.status import StatusScenarios
 from core.errors import NotFoundError
 from core.legacy.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.legacy.rbac.errors import UpdateLDAPUserError
@@ -151,19 +151,35 @@ def perform_user_creation(create_data: UserCreateDTO, groups: Iterable[GroupID])
 
 
 def perform_user_update_as_superuser(
-    user_id: UserID, update_data: UserUpdateDTO, new_password: str | None, new_user_groups: set[GroupID] | None
+    user_id: UserID,
+    update_data: UserUpdateDTO,
+    new_password: str | None,
+    new_user_groups: set[GroupID] | None,
+    status_scenarios: StatusScenarios,
 ):
     return _perform_user_update(
-        user_id=user_id, update_data=update_data, new_password=new_password, new_user_groups=new_user_groups
+        user_id=user_id,
+        update_data=update_data,
+        new_password=new_password,
+        new_user_groups=new_user_groups,
+        status_scenarios=status_scenarios,
     )
 
 
-def perform_regular_user_update(user_id: UserID, update_data: UserUpdateDTO) -> UserID:
+def perform_regular_user_update(
+    user_id: UserID, update_data: UserUpdateDTO, status_scenarios: StatusScenarios
+) -> UserID:
     # users can't change `is_superuser` flag if is not superuser themselves,
     # so we need to nullify it here
     update_data.is_superuser = None
 
-    return _perform_user_update(user_id=user_id, update_data=update_data, new_password=None, new_user_groups=None)
+    return _perform_user_update(
+        user_id=user_id,
+        update_data=update_data,
+        new_password=None,
+        new_user_groups=None,
+        status_scenarios=status_scenarios,
+    )
 
 
 def perform_users_block(users: Iterable[UserID]) -> Iterable[UserID]:
@@ -186,7 +202,11 @@ def perform_users_unblock(users: Iterable[UserID]) -> Iterable[UserID]:
 
 
 def _perform_user_update(
-    user_id: UserID, update_data: UserUpdateDTO, new_password: str | None, new_user_groups: set[GroupID] | None
+    user_id: UserID,
+    update_data: UserUpdateDTO,
+    new_password: str | None,
+    new_user_groups: set[GroupID] | None,
+    status_scenarios: StatusScenarios,
 ) -> UserID:
     users = tuple(UserDB.get_users_info(ids=[user_id]))
     if not users:
@@ -215,7 +235,7 @@ def _perform_user_update(
 
         on_commit(
             func=partial(
-                send_object_update_event,
+                status_scenarios.send_object_update_event,
                 obj_id=user_id,
                 obj_type=RBACCoreType.USER.value,
                 changes=dict(camelize(update_data.model_dump())),

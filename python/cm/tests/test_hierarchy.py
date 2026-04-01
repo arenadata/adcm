@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from adcm.tests.base import BaseTestCase
+from tests.base import BaseTestCase
 
 from cm.legacy.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (

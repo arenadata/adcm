@@ -38,22 +38,37 @@ class TaskFilter(
     owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact", label="owner_id__eq")
     owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact", label="owner_type__eq")
     # ---
-
+    name = CharFilter(
+        label="Case insensitive and partial filter by task name.", field_name="name", lookup_expr="icontains"
+    )
+    display_name = CharFilter(
+        label="Case insensitive and partial filter by task display name.",
+        field_name="display_name",
+        lookup_expr="icontains",
+    )
     job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
     object_name = CharFilter(label="Object name", method="filter_object_name")
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
     ordering = OrderingFilter(
         fields={
             "id": "id",
-            "action__name": "name",
+            "name": "name",
+            "display_name": "displayName",
             "start_date": "startTime",
             "finish_date": "endTime",
+            "action__display_name": "jobName",
+            "status": "status",
+            "duration": "duration",
         },
         field_labels={
             "id": "ID",
-            "action__name": "Name",
+            "name": "Name",
+            "display_name": "Display name",
             "start_date": "Start time",
             "finish_date": "End time",
+            "action__display_name": "Job name",
+            "status": "Status",
+            "duration": "Duration",
         },
         label="ordering",
     )

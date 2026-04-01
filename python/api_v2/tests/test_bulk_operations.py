@@ -19,13 +19,12 @@ from cm.models import (
     Service,
 )
 from rest_framework.status import HTTP_200_OK
-
-from api_v2.tests.base import BaseAPITestCase
+from tests.suites import ADCMDjangoAPISuite
 
 CONFIGS = "configs"
 
 
-class TestBulkAddServices(BaseAPITestCase):
+class TestBulkAddServices(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 

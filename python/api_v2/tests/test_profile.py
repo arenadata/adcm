@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from rest_framework.status import HTTP_401_UNAUTHORIZED
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestProfile(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        return
 
-class TestProfile(BaseAPITestCase):
     def test_adcm_4946_unauthenticated_access_fail(self):
         self.client.logout()
 

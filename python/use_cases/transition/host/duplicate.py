@@ -22,12 +22,17 @@ from cm.models import Cluster, Host
 from core.config import ConfigService
 from core.types import ADCMCoreType, ClusterID, Descriptor, HostDesc, HostID, HostName
 from django.db.transaction import atomic
+from rbac.scenarios import RBACScenarios
 
 HostDuplicateID: TypeAlias = HostID
 
 
 def create_duplicate(
-    config_service: ConfigService, host_id: HostID, name: HostName, cluster_id: ClusterID | None = None
+    config_service: ConfigService,
+    host_id: HostID,
+    name: HostName,
+    rbac_scenarios: RBACScenarios,
+    cluster_id: ClusterID | None = None,
 ) -> HostDuplicateID:
     with atomic():
         try:
@@ -49,6 +54,7 @@ def create_duplicate(
                     cluster_id=cluster_id,
                     hosts=[duplicate.pk],
                     status_service=notify,
+                    rbac_scenarios=rbac_scenarios,
                 )
             except Cluster.DoesNotExist as e:
                 raise AdcmEx("CLUSTER_NOT_FOUND") from e

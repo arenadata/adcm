@@ -85,11 +85,11 @@ func getAuthorizationToken(r *http.Request) string {
 type authCheckerFunc func(*http.Request, Hub) bool
 
 func isADCM(r *http.Request, hub Hub) bool {
-	return getAuthorizationToken(r) == hub.Secrets.ADCMInternalToken
+	return getAuthorizationToken(r) == hub.Secrets.AccessTokens.ADCMIn
 }
 
 func isStatusChecker(r *http.Request, hub Hub) bool {
-	return getAuthorizationToken(r) == hub.Secrets.Token
+	return getAuthorizationToken(r) == hub.Secrets.AccessTokens.StatusCheckerIn
 }
 
 func isADCMUser(r *http.Request, hub Hub) bool {

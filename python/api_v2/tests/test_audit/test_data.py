@@ -13,11 +13,10 @@
 from audit.models import AuditLog, AuditSession
 from cm.models import ObjectType, Prototype
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestAgentFieldAudit(BaseAPITestCase):
+class TestAgentFieldAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
         self.client.logout()

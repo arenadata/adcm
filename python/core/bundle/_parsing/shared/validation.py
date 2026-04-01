@@ -16,6 +16,8 @@ from adcm_version import compare_prototype_versions
 
 from core import config
 from core.bundle._constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET, NAME_REGEX
+from core.bundle._validate import validate_bundle_switch_amount
+from core.result import Fail, Success
 from core.templates import Template
 
 if TYPE_CHECKING:
@@ -171,6 +173,16 @@ def field_not_set_mode_before(value: T, field_name: str) -> T:
         raise ValueError(message)
 
     return value
+
+
+def upgrade_scripts_are_valid(scripts: list) -> list:
+    match validate_bundle_switch_amount(scripts):
+        case Success(None):
+            return scripts
+
+        case Fail(value=err_message):
+            message = f"{err_message} in upgrade"
+            raise ValueError(message)
 
 
 # bad typehint due to universality requirement

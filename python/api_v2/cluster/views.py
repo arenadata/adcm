@@ -40,8 +40,6 @@ from cm.legacy.services.cluster import (
     retrieve_clusters_objects_maintenance_mode,
 )
 from cm.legacy.services.mapping import set_host_component_mapping
-from cm.legacy.services.status import notify
-from cm.legacy.status_api import send_object_update_event
 from cm.models import (
     AnsibleConfig,
     Bundle,
@@ -54,6 +52,7 @@ from cm.models import (
     Prototype,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from core.legacy.bundle.operations import build_requires_dependencies_map
 from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
@@ -67,6 +66,7 @@ from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -196,6 +196,14 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
                 enum=("up", "down"),
             ),
             OpenApiParameter(
+                name="state",
+                description="Filter by state.",
+            ),
+            OpenApiParameter(
+                name="version",
+                description="Filter by version.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -203,6 +211,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
                     "-name",
                     "prototypeDisplayName",
                     "-prototypeDisplayName",
+                    "state",
+                    "-state",
+                    "version",
+                    "-version",
                 ),
                 default="name",
             ),
@@ -392,7 +404,8 @@ class ClusterViewSet(
             after=extract_current_from_response("name", "description"),
         )
     )
-    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -408,7 +421,7 @@ class ClusterViewSet(
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
 
-        send_object_update_event(
+        status_scenarios.send_object_update_event(
             instance.pk,
             ADCMCoreType.CLUSTER.value,
             changes={"name": instance.name, "description": instance.description},
@@ -785,6 +798,18 @@ class ClusterViewSet(
         summary="GET cluster hosts",
         parameters=[
             OpenApiParameter(
+                name="state",
+                description="Filter by host state.",
+            ),
+            OpenApiParameter(
+                name="hostprovider_name",
+                description="Case insensitive and partial filter by the hostprovider display name.",
+            ),
+            OpenApiParameter(
+                name="component_name",
+                description="Case insensitive and partial filter by the component display name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -890,7 +915,15 @@ class HostClusterViewSet(
         return by_cluster_qs
 
     @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
-    def create(self, request, *_, **kwargs):
+    @inject
+    def create(
+        self,
+        request,
+        *_,
+        status_scenarios: FromDishka[StatusScenarios],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        **kwargs,
+    ):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
         )
@@ -908,7 +941,8 @@ class HostClusterViewSet(
                 entry["host_id"]
                 for entry in (serializer.validated_data if multiple_hosts else [serializer.validated_data])
             ],
-            status_service=notify,
+            status_service=status_scenarios,
+            rbac_scenarios=rbac_scenarios,
         )
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)
@@ -926,11 +960,12 @@ class HostClusterViewSet(
             pre_call=set_removed_host_name, on_collect=adjust_denied_on_404_result(objects_exist=nested_host_does_exist)
         )
     )
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, request, *args, rbac_scenarios: FromDishka[RBACScenarios], **kwargs):  # noqa: ARG002
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
-        remove_host_from_cluster(host=host)
+        remove_host_from_cluster(host=host, rbac_scenarios=rbac_scenarios)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @audit_update(name="Host updated", object_=host_from_lookup).track_changes(

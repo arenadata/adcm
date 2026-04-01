@@ -13,11 +13,9 @@
 package status
 
 import (
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -25,7 +23,6 @@ const LoadServiceMapTimeOut = 60 // seconds
 
 type AdcmApi struct {
 	Url        string
-	token      string
 	httpClient *http.Client
 	Secrets    *SecretConfig
 }
@@ -42,44 +39,6 @@ func (api *AdcmApi) getClient() *http.Client {
 		api.httpClient = &http.Client{Timeout: 800 * time.Millisecond}
 	}
 	return api.httpClient
-}
-
-func (api *AdcmApi) getToken() (string, bool) {
-	if api.token != "" {
-		return api.token, true
-	}
-	resp, err := http.PostForm(api.Url+"/token/",
-		url.Values{
-			"username": {api.Secrets.ADCMUser.User},
-			"password": {api.Secrets.ADCMUser.Password},
-		})
-	if err != nil {
-		logg.E.Printf("getToken: http error: %v", err)
-		return "", false
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		logg.E.Printf("getToken: http status: %s", resp.Status)
-		body, err := ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
-		if err == nil {
-			logg.E.Printf("getToken: POST body: %q", body)
-		}
-		return "", false
-	}
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
-	if err != nil {
-		logg.E.Printf("getToken: body read error: %v", err)
-		return "", false
-	}
-
-	var v struct{ Token string }
-	if err := json.Unmarshal(body, &v); err != nil {
-		logg.E.Printf("getToken: json decode error: %v", err)
-		return "", false
-	}
-
-	api.token = v.Token
-	return v.Token, true
 }
 
 func (api *AdcmApi) checkAuth(token string) bool {
@@ -120,10 +79,7 @@ func (api *AdcmApi) checkSessionAuth(sessionId string) bool {
 }
 
 func (api *AdcmApi) loadServiceMap() bool {
-	token, ok := api.getToken()
-	if !ok {
-		return false
-	}
+	token := api.Secrets.AccessTokens.ADCMOut
 	client := api.getClient()
 	req, _ := http.NewRequest("POST", api.Url+"/internal/unstable/status-server/sync/", nil)
 	req.Header.Add("Authorization", "Token "+token)

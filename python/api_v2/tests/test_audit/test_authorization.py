@@ -17,12 +17,12 @@ from core.legacy.rbac.dto import UserUpdateDTO
 from rbac.models import User
 from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
+from tests.dependencies import SkipStatusScenarios
+from tests.suites import ADCMDjangoAPISuite
 import pytz
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestAuthorizationAudit(BaseAPITestCase):
+class TestAuthorizationAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
         self.username = self.password = "user"
@@ -68,6 +68,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
             ),
             new_password="newtestpassword",
             new_user_groups=None,
+            status_scenarios=SkipStatusScenarios(),
         )
 
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"
@@ -173,7 +174,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
                 )
 
 
-class TestOperationsAudit(BaseAPITestCase):
+class TestOperationsAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
         self.username = self.password = "user"

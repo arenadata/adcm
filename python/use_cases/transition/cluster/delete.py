@@ -49,7 +49,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 from django.db.transaction import atomic, on_commit
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 import core
 
 from use_cases.dto import RunActionDTO
@@ -59,6 +59,7 @@ from use_cases.transition.job.schedule import ScheduleTask
 @dataclass(slots=True)
 class DeleteService:
     # copied from cm.legacy.api.delete_service
+    rbac_scenarios: RBACScenarios
 
     def do(self, service: Service) -> None:
         service_pk = service.pk
@@ -97,7 +98,7 @@ class DeleteService:
                 for log in job.logstorage_set.all():
                     keep_objects[log.__class__].add(log.pk)
 
-        re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
+        self.rbac_scenarios.re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
 
         reset_hc_map()
         on_commit(func=partial(send_delete_service_event, service_id=service_pk))

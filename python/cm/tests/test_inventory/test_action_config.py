@@ -107,9 +107,10 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
         self.context = {
             "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
-            "datadir": self.directories["DATA_DIR"],
-            "stackdir": self.directories["STACK_DIR"],
-            "filedir": self.directories["FILE_DIR"],
+            "datadir": self.directories.data,
+            "stackdir": self.directories.stack,
+            "filedir": self.directories.files,
+            "bundledir": self.directories.bundles,
             "token": settings.STATUS_SECRET_KEY,
             "component_type_id": self.component.prototype_id,
             "service_type_id": self.service.prototype_id,
@@ -358,8 +359,10 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
 
         self.context = {
             "cluster_bundle": self.cluster.prototype.bundle,
-            "datadir": self.directories["DATA_DIR"],
-            "stackdir": self.directories["STACK_DIR"],
+            "datadir": self.directories.data,
+            "stackdir": self.directories.stack,
+            "filedir": self.directories.files,
+            "bundledir": self.directories.bundles,
             "token": settings.STATUS_SECRET_KEY,
             "adcm_id": self.adcm_id,
             "cluster": self.cluster,

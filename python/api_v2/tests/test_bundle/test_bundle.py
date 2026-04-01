@@ -30,32 +30,49 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 import pytz
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestBundleDelete(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestBundle(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
-
+    def test_delete_success(self):
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
+        bundle_1 = self.uc.upload_bundle(src=cluster_bundle_1_path)
+        bundle_hash = bundle_1.hash
+        response = self.client.v2[bundle_1].delete()
 
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(Bundle.objects.filter(pk=bundle_1.pk).exists(), False)
+        self.assertIsNone(_get_file_hashes(path=self.directories.downloads).get(bundle_hash))
 
-        cluster_new_bundle_path = self.test_bundles_dir / "cluster_two"
 
-        self.new_bundle_file = self.prepare_bundle_file(source_dir=cluster_new_bundle_path, target_dir=settings.TMP_DIR)
+class TestBundle(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        same_names_bundle_path = self.test_bundles_dir / "cluster_identical_cluster_and_service_names"
-        self.same_names_bundle = self.add_bundle(source_dir=same_names_bundle_path)
+        cluster_bundle_1_path = cls.test_bundles_dir / "cluster_one"
+        cls.bundle_1 = cls.uc.upload_bundle(src=cluster_bundle_1_path)
+
+        cluster_new_bundle_path = cls.test_bundles_dir / "cluster_two"
+        cls.new_bundle_file = cls.prepare_bundle_file(source_dir=cluster_new_bundle_path, target_dir=settings.TMP_DIR)
+
+        same_names_bundle_path = cls.test_bundles_dir / "cluster_identical_cluster_and_service_names"
+        cls.same_names_bundle = cls.uc.upload_bundle(src=same_names_bundle_path)
+
+    def setUp(self) -> None:
+        super().setUp()
 
         adcm_config.cache_clear()
 
     def test_list_success(self):
         response = (self.client.v2 / "bundles").get()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
         self.assertEqual(response.json()["count"], 2)
 
     def test_upload_success(self):
@@ -309,14 +326,6 @@ class TestBundle(BaseAPITestCase):
         response = (self.client.v2 / "bundles" / self.get_non_existent_pk(model=Bundle)).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-
-    def test_delete_success(self):
-        bundle_hash = self.bundle_1.hash
-        response = self.client.v2[self.bundle_1].delete()
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.assertEqual(Bundle.objects.filter(pk=self.bundle_1.pk).exists(), False)
-        self.assertIsNone(_get_file_hashes(path=self.directories["DOWNLOAD_DIR"]).get(bundle_hash))
 
     def test_delete_not_found_fail(self):
         response = (self.client.v2 / "bundles" / self.get_non_existent_pk(model=Bundle)).delete()
@@ -628,7 +637,7 @@ class TestBundle(BaseAPITestCase):
         self.assertIn("variant", response["desc"])
 
 
-class TestBundleContract_V_2_0(BaseAPITestCase):  # noqa: N801
+class TestBundleContract_V_2_0(ADCMDjangoAPISuite):  # noqa: N801
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

@@ -17,9 +17,11 @@ from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
@@ -40,6 +42,7 @@ from api_v2.utils.config import (
     convert_json_fields_to_strings,
     convert_main_config,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -86,7 +89,12 @@ class ConfigLogViewSet(
 
         return super().handle_exception(exc)
 
-    def new_create(self, parent_object: MainObject | ADCM | ConfigHostGroup, serializer: BaseSerializer):
+    def new_create(
+        self,
+        parent_object: MainObject | ADCM | ConfigHostGroup,
+        serializer: BaseSerializer,
+        rbac_scenarios: RBACScenarios,
+    ):
         service = get_config_service()
 
         if isinstance(parent_object, ConfigHostGroup):
@@ -102,6 +110,7 @@ class ConfigLogViewSet(
                 owner=owner,
                 group=group,
                 config_service=service,
+                rbac_scenarios=rbac_scenarios,
             )
         else:
             owner: MainObject | ADCM | ConfigHostGroup = parent_object
@@ -115,11 +124,13 @@ class ConfigLogViewSet(
                 ),
                 owner=owner,
                 config_service=service,
+                rbac_scenarios=rbac_scenarios,
             )
 
         return ConfigLog.objects.get(id=config_id)
 
-    def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def create(self, request, *args, rbac_scenarios: FromDishka[RBACScenarios], **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object(raise_=NotFound())
 
         self._check_parent_permissions(parent_object=parent_object)
@@ -128,7 +139,7 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
-        config_log = self.new_create(parent_object=parent_object, serializer=serializer)
+        config_log = self.new_create(parent_object=parent_object, serializer=serializer, rbac_scenarios=rbac_scenarios)
         config_log = self.new_convert(config_log, parent_object)
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)

@@ -19,6 +19,7 @@ from cm.models import LogStorage
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import model_validator
+from rbac.roles import assign_view_logstorage_permissions_by_job
 from typing_extensions import Self
 
 from ansible_plugin.base import (
@@ -29,7 +30,6 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
 )
-from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
 
 
 class LogFormat(str, Enum):
@@ -77,7 +77,7 @@ class ADCMCustomLogPluginExecutor(ADCMAnsiblePluginExecutor[CustomLogArguments, 
             log = LogStorage.objects.create(
                 job_id=runtime.vars.job.id, name=arguments.name, type="custom", format=arguments.format.value, body=body
             )
-            assign_view_logstorage_permissions_by_job(log_storage=log)
+            assign_view_logstorage_permissions_by_job(log_storage_id=log.id)
 
         return CallResult(value=None, changed=False, error=None)
 

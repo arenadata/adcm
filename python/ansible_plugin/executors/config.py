@@ -19,6 +19,7 @@ from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
 from infra.services import get_config_service
 from pydantic import model_validator
+from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
 from use_cases.transition.config import update_configuration_from_job
 import core
@@ -124,6 +125,7 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         model = core_type_to_model(core_type=target.type)
         db_object = model.objects.get(id=target.id)
 
+        rbac_scenarios = self._container.get(RBACScenarios)
         changes, has_changed = update_configuration_from_job(
             owner=target,
             changes_input=original_changes,
@@ -131,6 +133,7 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
             description="ansible update",
             job_id=runtime.vars.job.id,
             config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
             owner_orm=db_object,
         )
 

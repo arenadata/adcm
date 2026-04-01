@@ -25,14 +25,10 @@ from cm.legacy.services.action_process.errors import (
     ActionProcessStepNotFoundError,
     SyncKeyMismatchError,
 )
-from cm.legacy.services.action_process.operations import OperationContext, initiate_process, perform_operation
+from cm.legacy.services.action_process.operations import OperationContext
 from cm.legacy.services.action_process.schema_validation import Configuration
 from cm.legacy.services.action_process.types import ProcessContext, Step
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
-from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag_for_process, update_hierarchy_for_flag
-from cm.legacy.services.job.action import check_no_blocking_concerns
 from cm.legacy.services.job.run.repo import ActionRepoImpl
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -43,19 +39,17 @@ from cm.models import (
     ProcessStepInput,
     TaskLog,
 )
-from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job import JobService
 from core.types import ActionProcessID, CoreObjectDescriptor
 from dishka import FromDishka
 from django.conf import settings
-from django.db.transaction import atomic
 from django.http.response import Http404
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from use_cases.transition.job.schedule import TaskStarter
+from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
 from api_v2.generic.action.process.serializers import (
@@ -203,33 +197,21 @@ class ActionProcessViewSet(
         self,
         request,
         job_service: FromDishka[JobService],
-        bundle_renderer: FromDishka[BundleRenderer[ActionArgs, TaskArgs]],
+        initiate_wizard_process: FromDishka[InitiateWizardProcess],
         **_,
     ):
         process_context = self.get_process_context(job_service=job_service)
-        cluster_relative_object_orm = process_context.cluster_relative_object()
-        cluster_relative_object_cod = process_context.cluster_relative_object(as_descriptor=True)
 
         self.check_permissions_for_run(
-            request=request, action=process_context.action_orm, parent_object=cluster_relative_object_orm
+            request=request,
+            action=process_context.action_orm,
+            parent_object=process_context.cluster_relative_object(),
         )
-        check_no_blocking_concerns(lock_owner=cluster_relative_object_orm, action_name=process_context.action.name)
 
         # TODO: check if Process already exists
-        with atomic():
-            process_id = initiate_process(process_context=process_context, bundle_renderer=bundle_renderer)
-
-            flag = BuiltInFlag.ACTION_PROCESS_RUNNING.value
-            changed = raise_flag_for_process(
-                flag=flag,
-                on_objects=[cluster_relative_object_cod],
-                action=process_context.action_orm,
-                action_owner=cluster_relative_object_orm,
-            )
-
-            if changed:
-                added = update_hierarchy_for_flag(flag=flag, on_objects=[cluster_relative_object_cod])
-                notify_about_redistributed_concerns_from_maps(added=added, removed={})
+        process_id = initiate_wizard_process.do(
+            process_context=process_context,
+        )
 
         context = {
             "process_id": process_id,
@@ -251,9 +233,7 @@ class ActionProcessViewSet(
         *,
         pk: ActionProcessID,
         job_service: FromDishka[JobService],
-        config_service: FromDishka[core.config.ConfigService],
-        bundle_renderer: FromDishka[BundleRenderer[ActionArgs, TaskArgs]],
-        start_task: FromDishka[TaskStarter],
+        perform_wizard_process_operation: FromDishka[PerformWizardProcessOperation],
         **_,
     ):  # noqa: ARG002
         process_id = int(pk)
@@ -270,14 +250,10 @@ class ActionProcessViewSet(
         payload = serializer.validated_data
 
         context = OperationContext(process_context=process_context, config_processor=self._convert_configuration)
-        perform_operation(
+        perform_wizard_process_operation.do(
             process_id=process_id,
             payload=payload,
             context=context,
-            config_service=config_service,
-            job_service=job_service,
-            bundle_renderer=bundle_renderer,
-            start_task=start_task,
         )
 
         return Response(

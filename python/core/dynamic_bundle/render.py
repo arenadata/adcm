@@ -73,6 +73,26 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
             action_allow_to_terminate=action_allow_to_terminate,
         )
 
+    def render_scripts_for_upgrade(
+        self,
+        template: templates.Template,
+        args: CtxTT,
+        bundle_context: bundle.BundleContext,
+        action_allow_to_terminate: bool,
+    ) -> list[action.JobSpec]:
+        render_context = self.context.prepare_context_for_task(args)
+
+        data = self._render_template(
+            template=template, encrypted_context=render_context, bundle_root=bundle_context.root
+        )
+
+        return self.bundle_service.parse_to_upgrade_scripts(
+            data=data,
+            bundle_context=bundle_context,
+            template_path=template.file.path,
+            action_allow_to_terminate=action_allow_to_terminate,
+        )
+
     def render_scripts_for_wizard(
         self,
         template: templates.Template,

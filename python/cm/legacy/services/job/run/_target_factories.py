@@ -15,16 +15,16 @@ from configparser import ConfigParser
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable, Literal
+from typing import Any, Generator, Iterable, Literal
 import json
 import traceback
 
-from ansible_plugin.utils import finish_check
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.dto import TaskUpdateDTO
 from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.legacy.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
+from core.logs import LogsService
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -32,6 +32,7 @@ from django.db.models import Q
 from django.db.transaction import atomic
 from infra.services import get_config_service
 from rbac.roles import re_apply_policy_for_jobs
+from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 import core
@@ -78,17 +79,26 @@ logger = getLogger("adcm")
 
 
 class ExecutionTargetFactory(ExecutionTargetFactoryI):
-    def __init__(self):
-        self._default_ansible_finalizers = (finish_check_logs,)
+    def __init__(
+        self,
+        logs_service: LogsService,
+        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
+        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+        rbac_scenarios: RBACScenarios,
+    ):
+        self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
+        self._rbac_scenarios = rbac_scenarios
         self._supported_internal_scripts = {
-            "bundle_switch": internal_script_bundle_switch,
-            "bundle_revert": internal_script_bundle_revert,
+            "bundle_switch": partial(internal_script_bundle_switch, rbac_scenarios=rbac_scenarios),
+            "bundle_revert": partial(internal_script_bundle_revert, rbac_scenarios=rbac_scenarios),
             "hc_apply": internal_script_hc_apply,
-            "config_apply": internal_script_config_apply,
+            "config_apply": partial(internal_script_config_apply, rbac_scenarios=rbac_scenarios),
+            "before_upgrade_clean": partial(
+                internal_script_before_upgrade_clean,
+                cluster_uc=reset_cluster_before_upgrade,
+                provider_uc=reset_provider_before_upgrade,
+            ),
         }
-
-    def register_internal_scripts(self, extra_internal_scripts: dict[str, Callable[[Task, Job], int]]):
-        self._supported_internal_scripts |= extra_internal_scripts
 
     def __call__(
         self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
@@ -145,7 +155,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 
 
 @atomic()
-def internal_script_bundle_switch(task: Task, job: Job) -> int:
+def internal_script_bundle_switch(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -155,7 +165,7 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
     from cm.legacy.bundle_switch_revert import bundle_switch
 
     config_service = get_config_service()
-    callbacks = build_switch_revert_callbacks(config_service=config_service)
+    callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
     bundle_switch(
         obj=task_.task_object, upgrade=task_.action.upgrade, callbacks=callbacks, config_service=config_service
     )
@@ -168,7 +178,7 @@ def internal_script_bundle_switch(task: Task, job: Job) -> int:
 
 
 @atomic()
-def internal_script_bundle_revert(task: Task, job: Job) -> int:
+def internal_script_bundle_revert(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -179,7 +189,7 @@ def internal_script_bundle_revert(task: Task, job: Job) -> int:
         from cm.legacy.bundle_switch_revert import bundle_revert
 
         config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service)
+        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
 
         bundle_revert(obj=task_.task_object, callbacks=callbacks, config_service=config_service)
 
@@ -246,55 +256,57 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
     return 0
 
 
-def internal_script_config_apply(task: Task, job: Job) -> int:
+def internal_script_config_apply(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
         _apply_config_changes(
-            job.id, changing_object, change["parameters"], f"{task.action.display_name} process update"
+            job.id,
+            changing_object,
+            change["parameters"],
+            f"{task.action.display_name} process update",
+            rbac_scenarios,
         )
     return 0
 
 
-def internal_script_before_upgrade_clean_cluster(task: Task, job: Job, use_case: ResetBeforeUpgradeCluster) -> int:
+def internal_script_before_upgrade_clean(
+    task: Task, job: Job, cluster_uc: ResetBeforeUpgradeCluster, provider_uc: ResetBeforeUpgradeProvider
+) -> int:
     _ = job
 
-    if not (
-        task.owner
-        and task.owner.type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
-        and task.owner.related_objects
-    ):
-        raise RuntimeError("misconfigured task runner")
+    if not task.owner:
+        raise RuntimeError("misconfigured task runner: no owner")
 
     descriptor = task.owner.as_descriptor
 
-    if descriptor.type == ADCMCoreType.CLUSTER:
-        cluster_id = descriptor.id
-    else:
-        if not task.owner.related_objects.cluster:
-            raise RuntimeError("cluster is missing")
+    match descriptor.type:
+        case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT if task.owner.related_objects:
+            if descriptor.type == ADCMCoreType.CLUSTER:
+                cluster_id = descriptor.id
+            else:
+                if not task.owner.related_objects.cluster:
+                    raise RuntimeError("cluster is missing")
 
-        cluster_id = task.owner.related_objects.cluster.id
+                cluster_id = task.owner.related_objects.cluster.id
 
-    use_case.do(target=descriptor, cluster_id=cluster_id)
+            cluster_uc.do(target=descriptor, cluster_id=cluster_id)
 
-    return 0
+        case ADCMCoreType.PROVIDER | ADCMCoreType.HOST:
+            provider_uc.do(target=descriptor)
 
-
-def internal_script_before_upgrade_clean_provider(task: Task, job: Job, use_case: ResetBeforeUpgradeProvider) -> int:
-    _ = job
-
-    if not (task.owner and task.owner.type in (ADCMCoreType.PROVIDER, ADCMCoreType.HOST)):
-        raise RuntimeError("misconfigured task runner")
-
-    descriptor = task.owner.as_descriptor
-    use_case.do(target=descriptor)
+        case _:
+            raise RuntimeError("misconfigured task runner")
 
     return 0
 
 
 def _apply_config_changes(
-    job_id: int, db_object: ADCM | CoreObject, parameters: list[dict], changes_description: str
+    job_id: int,
+    db_object: ADCM | CoreObject,
+    parameters: list[dict],
+    changes_description: str,
+    rbac_scenarios: RBACScenarios,
 ) -> None:
     from use_cases.transition.config import update_configuration_from_job
 
@@ -308,6 +320,7 @@ def _apply_config_changes(
         job_id=job_id,
         description=changes_description,
         config_service=config_service,
+        rbac_scenarios=rbac_scenarios,
         owner_orm=db_object,
     )
 
@@ -651,10 +664,6 @@ def _get_owner_specific_data(
 
 
 # FINALIZERS
-
-
-def finish_check_logs(job: Job) -> None:
-    finish_check(job.id)
 
 
 def save_fs_logs_to_db(job: Job, work_dir: Path, log_type: Literal["stdout", "stderr"]) -> None:

@@ -12,13 +12,15 @@
 
 from pathlib import Path
 
-from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TaskTestMixin, TestCaseWithCommonSetUpTearDown
+from tests.ansible import ADCMAnsiblePluginTestMixin
+from tests.base import WithPreparedFSAndInitADCM
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
+import django.test
 
 
 class BaseTestEffectsOfADCMAnsiblePlugins(
-    TestCaseWithCommonSetUpTearDown,
-    ParallelReadyTestCase,
+    django.test.TestCase,
+    WithPreparedFSAndInitADCM,
     BusinessLogicMixin,
     ADCMAnsiblePluginTestMixin,
     TaskTestMixin,

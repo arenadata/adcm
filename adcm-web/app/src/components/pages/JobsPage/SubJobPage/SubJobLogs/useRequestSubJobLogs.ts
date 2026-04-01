@@ -8,12 +8,14 @@ const maxUpdatesAfterFinishCount = 2;
 
 const finishedStatuses: { [key in AdcmJobStatus]: boolean } = {
   [AdcmJobStatus.Created]: false,
+  [AdcmJobStatus.Running]: false,
   [AdcmJobStatus.Success]: true,
   [AdcmJobStatus.Failed]: true,
-  [AdcmJobStatus.Running]: false,
   [AdcmJobStatus.Locked]: true,
   [AdcmJobStatus.Aborted]: true,
   [AdcmJobStatus.Broken]: true,
+  [AdcmJobStatus.Info]: true,
+  [AdcmJobStatus.Warning]: true,
 };
 
 export const useRequestSubJobLogs = () => {

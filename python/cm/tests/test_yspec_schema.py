@@ -11,16 +11,15 @@
 # limitations under the License.
 
 from pathlib import Path
+import unittest
 
-from adcm.tests.base import ParallelReadyTestCase
 from core.legacy.bundle_alt import FormatError, process_rule
-from django.test import TestCase
 import yaml
 
 from cm.legacy.services.bundle_alt.load import _get_rules_for_yspec_schema
 
 
-class TestYspecSchema(TestCase, ParallelReadyTestCase):
+class TestYspecSchema(unittest.TestCase):
     def setUp(self):
         self.yspec_schemas_dir = Path(__file__).parent / "files" / "yspec_schemas"
         self.schema = _get_rules_for_yspec_schema()

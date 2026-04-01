@@ -13,8 +13,8 @@
 from functools import partial
 
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.legacy.status_api import send_object_update_event
 from cm.models import ADCMEntity
+from cm.transition.status import StatusScenarios
 from core.types import RBACCoreType
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
@@ -75,7 +75,12 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
 
 
 @atomic
-def policy_update(policy: Policy, group: list[Group] | None = None, **kwargs) -> Policy:
+def policy_update(
+    policy: Policy,
+    status_scenarios: StatusScenarios,
+    group: list[Group] | None = None,
+    **kwargs,
+) -> Policy:
     groups = group
     if groups is not None and len(groups) == 0:
         raise AdcmEx(
@@ -131,7 +136,7 @@ def policy_update(policy: Policy, group: list[Group] | None = None, **kwargs) ->
 
     on_commit(
         func=partial(
-            send_object_update_event,
+            status_scenarios.send_object_update_event,
             obj_id=policy.id,
             obj_type=RBACCoreType.POLICY.value,
             changes=changes,

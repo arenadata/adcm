@@ -13,10 +13,11 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from init_db import init as init_adcm
+from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 import core
 
@@ -173,7 +174,6 @@ class TestInventory(BaseTestCase):
 class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
-        init_adcm()
 
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 
@@ -197,6 +197,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         self.service_hc_acl = add_service_to_cluster(
             cluster=self.cluster_hc_acl,
             proto=Prototype.objects.get(name="service_1", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
 
         self.component_hc_acl_1 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_1")
@@ -259,6 +260,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         self.service_target_group = add_service_to_cluster(
             cluster=self.cluster_target_group,
             proto=Prototype.objects.get(name="service_1_target_group", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
         self.component_target_group = Component.objects.get(
             cluster=self.cluster_target_group, prototype__name="component_1_target_group"

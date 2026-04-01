@@ -16,9 +16,8 @@ from itertools import chain
 from operator import itemgetter
 
 from cm.converters import model_to_core_type, orm_object_to_core_type
-from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.models import Action, ActionHostGroup, Cluster, Component, ConcernItem, Host, Service, TaskLog
-from core.types import CoreObjectDescriptor
 from rbac.models import Role
 from rbac.services.group import create
 from rbac.services.policy import policy_create
@@ -31,43 +30,25 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-
-from api_v2.tests.base import BaseAPITestCase
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
 ACTION_HOST_GROUPS = "action-host-groups"
 
 
-class CommonActionHostGroupTest(BaseAPITestCase):
-    action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+class TestActionHostGroup(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-    def create_action_host_group(
-        self, name: str, owner: Cluster | Service | Component, description: str = ""
-    ) -> ActionHostGroup:
-        return ActionHostGroup.objects.get(
-            id=self.action_host_group_service.create(
-                CreateDTO(
-                    name=name,
-                    owner=CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner)),
-                    description=description,
-                )
-            )
-        )
+        cls.bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_action_host_group")
 
-
-class TestActionHostGroup(CommonActionHostGroupTest):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_action_host_group")
-
-        self.cluster = self.service = self.component = None
         for i in range(3):
-            self.cluster = self.add_cluster(bundle=self.bundle, name=f"Cluster {i}")
-            self.service = self.add_services_to_cluster(["example"], cluster=self.cluster).get()
-            self.component = self.service.components.first()
+            cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name=f"Cluster {i}")
+            cls.service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.cluster)
+            cls.component = cls.service.components.first()
 
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
-        self.hosts = [self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3)]
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider")
+        cls.hosts = [cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}", cluster=cls.cluster) for i in range(3)]
 
     def test_create_group_success(self) -> None:
         group_counter = 0
@@ -153,14 +134,12 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             cluster=self.cluster, entries=((self.hosts[0], self.component), (self.hosts[1], self.component))
         )
 
-        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
-        self.action_host_group_service.add_hosts_to_group(group_id=cluster_group.id, hosts=[self.hosts[0].id])
-        service_group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
-        self.create_action_host_group(name="Service Group #2", owner=self.service)
-        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
-        self.action_host_group_service.add_hosts_to_group(
-            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
-        )
+        cluster_group = self.uc.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        self.uc.add_hosts_to_action_host_group(group_id=cluster_group.id, hosts=[self.hosts[0].id])
+        service_group_1 = self.uc.create_action_host_group(name="Service Group", owner=self.service)
+        self.uc.create_action_host_group(name="Service Group #2", owner=self.service)
+        component_group = self.uc.create_action_host_group(name="Component Group", owner=self.component)
+        self.uc.add_hosts_to_action_host_group(group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id])
 
         for target, group_to_delete, groups_left_amount in (
             (self.cluster, cluster_group, 0),
@@ -209,18 +188,16 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             ),
         )
 
-        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
-        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_2)
-        component_group_3 = self.create_action_host_group(name="Component Group 3", owner=component_3)
-        self.action_host_group_service.add_hosts_to_group(
-            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
-        )
+        component_group = self.uc.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.uc.create_action_host_group(name="Component Group 2", owner=component_2)
+        component_group_3 = self.uc.create_action_host_group(name="Component Group 3", owner=component_3)
+        self.uc.add_hosts_to_action_host_group(group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id])
 
-        self.action_host_group_service.add_hosts_to_group(
+        self.uc.add_hosts_to_action_host_group(
             group_id=component_group_2.id, hosts=[self.hosts[3].id, self.hosts[4].id, self.hosts[5].id]
         )
 
-        self.action_host_group_service.add_hosts_to_group(
+        self.uc.add_hosts_to_action_host_group(
             group_id=component_group_3.id, hosts=[self.hosts[0].id, self.hosts[1].id, self.hosts[2].id]
         )
 
@@ -275,19 +252,19 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             ),
         )
 
-        service_group = self.create_action_host_group(name="Service Group", owner=self.service)
-        service_group_2 = self.create_action_host_group(name="Service Group 2", owner=service_2)
+        service_group = self.uc.create_action_host_group(name="Service Group", owner=self.service)
+        service_group_2 = self.uc.create_action_host_group(name="Service Group 2", owner=service_2)
 
-        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
-        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_1)
-        component_group_3 = self.create_action_host_group(name="Component Group 3", owner=component_2)
+        component_group = self.uc.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.uc.create_action_host_group(name="Component Group 2", owner=component_1)
+        component_group_3 = self.uc.create_action_host_group(name="Component Group 3", owner=component_2)
 
         for group in [service_group, service_group_2, component_group, component_group_2]:
-            self.action_host_group_service.add_hosts_to_group(
+            self.uc.add_hosts_to_action_host_group(
                 group_id=group.id, hosts=[self.hosts[0].id, self.hosts[1].id, self.hosts[2].id]
             )
 
-        self.action_host_group_service.add_hosts_to_group(group_id=component_group_3.id, hosts=[self.hosts[0].id])
+        self.uc.add_hosts_to_action_host_group(group_id=component_group_3.id, hosts=[self.hosts[0].id])
 
         response = self.client.v2[self.cluster, "mapping"].post(
             data=[
@@ -326,14 +303,12 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             ),
         )
 
-        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
-        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_2)
+        component_group = self.uc.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.uc.create_action_host_group(name="Component Group 2", owner=component_2)
 
-        self.action_host_group_service.add_hosts_to_group(
-            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
-        )
+        self.uc.add_hosts_to_action_host_group(group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id])
 
-        self.action_host_group_service.add_hosts_to_group(
+        self.uc.add_hosts_to_action_host_group(
             group_id=component_group_2.id, hosts=[self.hosts[0].id, self.hosts[1].id]
         )
 
@@ -360,14 +335,12 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             cluster=self.cluster, entries=((self.hosts[0], self.component), (self.hosts[1], self.component))
         )
 
-        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
-        self.action_host_group_service.add_hosts_to_group(group_id=cluster_group.id, hosts=[self.hosts[0].id])
-        service_group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
-        self.create_action_host_group(name="Service Group #2", owner=self.service)
-        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
-        self.action_host_group_service.add_hosts_to_group(
-            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
-        )
+        cluster_group = self.uc.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        self.uc.add_hosts_to_action_host_group(group_id=cluster_group.id, hosts=[self.hosts[0].id])
+        service_group_1 = self.uc.create_action_host_group(name="Service Group", owner=self.service)
+        self.uc.create_action_host_group(name="Service Group #2", owner=self.service)
+        component_group = self.uc.create_action_host_group(name="Component Group", owner=self.component)
+        self.uc.add_hosts_to_action_host_group(group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id])
 
         response = self.client.v2[self.cluster, "mapping"].post(data=[])
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -405,10 +378,10 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         name = "aWeSOME Group NAmE"
         host_1, host_2, host_3, *_ = self.hosts
         self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
-        another_group = self.create_action_host_group(name=f"{name}XXX21321", owner=self.service, description="hoho")
-        service_group = self.create_action_host_group(name=name, owner=self.service)
-        self.action_host_group_service.add_hosts_to_group(group_id=service_group.id, hosts=[host_1.id, host_3.id])
-        self.action_host_group_service.add_hosts_to_group(group_id=another_group.id, hosts=[host_1.id, host_2.id])
+        another_group = self.uc.create_action_host_group(name=f"{name}XXX21321", owner=self.service, description="hoho")
+        service_group = self.uc.create_action_host_group(name=name, owner=self.service)
+        self.uc.add_hosts_to_action_host_group(group_id=service_group.id, hosts=[host_1.id, host_3.id])
+        self.uc.add_hosts_to_action_host_group(group_id=another_group.id, hosts=[host_1.id, host_2.id])
 
         response = self.client.v2[service_group].get()
 
@@ -439,20 +412,20 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             entries=[(host, self.component) for host in self.hosts] + [(self.hosts[1], another_component)],
         )
 
-        self.create_action_host_group(name="Cluster Group", owner=self.cluster)
-        self.create_action_host_group(name="Service Group", owner=self.service)
-        self.create_action_host_group(name="Service Group #2", owner=self.service)
-        component_group_1 = self.create_action_host_group(name=name_1, owner=self.component)
-        component_group_2 = self.create_action_host_group(name=name_2, owner=self.component, description=description)
-        another_component_group = self.create_action_host_group(
+        self.uc.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        self.uc.create_action_host_group(name="Service Group", owner=self.service)
+        self.uc.create_action_host_group(name="Service Group #2", owner=self.service)
+        component_group_1 = self.uc.create_action_host_group(name=name_1, owner=self.component)
+        component_group_2 = self.uc.create_action_host_group(name=name_2, owner=self.component, description=description)
+        another_component_group = self.uc.create_action_host_group(
             name=name_2, owner=another_component, description=description
         )
-        component_group_3 = self.create_action_host_group(name=name_3, owner=self.component, description=description)
-        self.action_host_group_service.add_hosts_to_group(
+        component_group_3 = self.uc.create_action_host_group(name=name_3, owner=self.component, description=description)
+        self.uc.add_hosts_to_action_host_group(
             group_id=component_group_1.id, hosts=[self.hosts[0].id, self.hosts[2].id]
         )
-        self.action_host_group_service.add_hosts_to_group(group_id=component_group_3.id, hosts=[self.hosts[0].id])
-        self.action_host_group_service.add_hosts_to_group(group_id=another_component_group.id, hosts=[self.hosts[1].id])
+        self.uc.add_hosts_to_action_host_group(group_id=component_group_3.id, hosts=[self.hosts[0].id])
+        self.uc.add_hosts_to_action_host_group(group_id=another_component_group.id, hosts=[self.hosts[1].id])
 
         # amount of queries checked on no host group -- it's the same
         # When there aren't any components, there will be 1 more query (for concerns prefetch),
@@ -497,21 +470,21 @@ class TestActionHostGroup(CommonActionHostGroupTest):
     def test_filter_groups_success(self) -> None:
         host_1, host_2, host_3, *_ = self.hosts
 
-        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
-        group_1 = self.create_action_host_group(
+        cluster_group = self.uc.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        group_1 = self.uc.create_action_host_group(
             name="Service Group", owner=self.service, description="some description"
         )
-        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service, description="another text")
-        group_3 = self.create_action_host_group(
+        group_2 = self.uc.create_action_host_group(name="Super Custom", owner=self.service, description="another text")
+        group_3 = self.uc.create_action_host_group(
             name="Service Group #2", owner=self.service, description="some description 2"
         )
 
         self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
 
-        self.action_host_group_service.add_hosts_to_group(cluster_group.id, hosts=[host_1.id, host_2.id, host_3.id])
-        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
-        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_2.id, host_3.id])
-        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_1.id])
+        self.uc.add_hosts_to_action_host_group(cluster_group.id, hosts=[host_1.id, host_2.id, host_3.id])
+        self.uc.add_hosts_to_action_host_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.uc.add_hosts_to_action_host_group(group_2.id, hosts=[host_2.id, host_3.id])
+        self.uc.add_hosts_to_action_host_group(group_3.id, hosts=[host_1.id])
 
         endpoint = self.client.v2[self.service, ACTION_HOST_GROUPS]
 
@@ -555,17 +528,17 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         host_1, host_2, *_ = self.hosts
         host_3 = self.add_host(provider=host_1.provider, fqdn="special", cluster=self.cluster)
 
-        group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
-        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service)
-        group_3 = self.create_action_host_group(name="Super Custom #2", owner=self.service)
+        group_1 = self.uc.create_action_host_group(name="Service Group", owner=self.service)
+        group_2 = self.uc.create_action_host_group(name="Super Custom", owner=self.service)
+        group_3 = self.uc.create_action_host_group(name="Super Custom #2", owner=self.service)
 
         self.set_hostcomponent(
             cluster=self.cluster, entries=[(host, self.component) for host in (host_1, host_2, host_3)]
         )
 
-        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
-        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_1.id, host_3.id, host_2.id])
-        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_3.id])
+        self.uc.add_hosts_to_action_host_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.uc.add_hosts_to_action_host_group(group_2.id, hosts=[host_1.id, host_3.id, host_2.id])
+        self.uc.add_hosts_to_action_host_group(group_3.id, hosts=[host_3.id])
 
         with self.subTest("Only hasHost filter"):
             response = self.client.v2[self.service, ACTION_HOST_GROUPS].get(query={"hasHost": "host"})
@@ -584,13 +557,13 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         host_1_data, host_2_data, host_3_data = ({"id": host.id, "name": host.fqdn} for host in self.hosts)
         self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
-        cluster_group = self.create_action_host_group(name="Some Taken", owner=self.cluster)
-        cluster_group_2 = self.create_action_host_group(name="None Taken", owner=self.cluster)
-        service_group = self.create_action_host_group(name="One Taken", owner=self.service)
-        component_group = self.create_action_host_group(name="None Taken", owner=self.component)
+        cluster_group = self.uc.create_action_host_group(name="Some Taken", owner=self.cluster)
+        cluster_group_2 = self.uc.create_action_host_group(name="None Taken", owner=self.cluster)
+        service_group = self.uc.create_action_host_group(name="One Taken", owner=self.service)
+        component_group = self.uc.create_action_host_group(name="None Taken", owner=self.component)
 
-        self.action_host_group_service.add_hosts_to_group(group_id=cluster_group.id, hosts=[host_1.id, host_2.id])
-        self.action_host_group_service.add_hosts_to_group(group_id=service_group.id, hosts=[host_1.id])
+        self.uc.add_hosts_to_action_host_group(group_id=cluster_group.id, hosts=[host_1.id, host_2.id])
+        self.uc.add_hosts_to_action_host_group(group_id=service_group.id, hosts=[host_1.id])
 
         for target, expected in (
             (cluster_group, [host_3_data]),
@@ -625,43 +598,48 @@ class TestActionHostGroup(CommonActionHostGroupTest):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
-class TestHostsInActionHostGroup(CommonActionHostGroupTest):
-    def setUp(self) -> None:
-        super().setUp()
+class TestHostsInActionHostGroup(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_action_host_group")
+        cls.bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_action_host_group")
 
-        self.cluster = self.service = self.component = None
+        cls.cluster = cls.service = cls.component = None
         for i in range(2):
-            self.cluster = self.add_cluster(bundle=self.bundle, name=f"Cluster {i}")
-            self.service = self.add_services_to_cluster(["example"], cluster=self.cluster).get()
-            self.component = self.service.components.first()
+            cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name=f"Cluster {i}")
+            cls.service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.cluster)
+            cls.component = cls.service.components.first()
 
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
-        self.hosts = [self.add_host(provider=self.provider, fqdn=f"host-{i}") for i in range(5)]
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider")
+        cls.hosts = [cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}") for i in range(5)]
 
-        self.service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
-        self.component_2, self.component_3 = self.service_2.components.all()
+        cls.service_2, *_ = cls.add_services_to_cluster(["second"], cluster=cls.cluster)
+        cls.component_2, cls.component_3 = cls.service_2.components.all()
 
-        for host in self.hosts[:3]:
-            self.add_host_to_cluster(cluster=self.cluster, host=host)
+        for host in cls.hosts[:3]:
+            cls.uc.add_host_to_cluster(cluster=cls.cluster, host=host)
 
-        self.set_hostcomponent(
-            cluster=self.cluster,
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
             entries=(
-                (self.hosts[0], self.component),
-                (self.hosts[1], self.component),
-                (self.hosts[0], self.component_2),
+                (cls.hosts[0], cls.component),
+                (cls.hosts[1], cls.component),
+                (cls.hosts[0], cls.component_2),
             ),
         )
 
-        objects = (self.cluster, self.service, self.component, self.service_2, self.component_2, self.component_3)
-        self.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
-            object_: self.create_action_host_group(owner=object_, name=f"Group for {object_.name}")
+        objects = (cls.cluster, cls.service, cls.component, cls.service_2, cls.component_2, cls.component_3)
+        cls.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
+            object_: cls.uc.create_action_host_group(owner=object_, name=f"Group for {object_.name}")
             for object_ in objects
         }
-        self.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(user_data=self.user_credentials)
+        cls.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(user_data=cls.user_credentials)
+
+    def setUp(self) -> None:
+        super().setUp()
+
         self.user_client = self.client_class()
         self.user_client.login(**self.user_credentials)
 
@@ -673,7 +651,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
             with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
-                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+                self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
 
                 response = self.client.v2[group, "hosts"].get()
 
@@ -688,7 +666,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
             with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
-                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+                self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
 
                 response = self.client.v2[group, "hosts", host_1.pk].get()
 
@@ -702,7 +680,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
             with self.subTest(f"[{type_.name}] {target.name} Expect Not Found"):
-                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+                self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
 
                 response = self.client.v2[group, "hosts", host_3.pk].get()
 
@@ -716,7 +694,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
             with self.subTest(f"[{type_.name}] {target.name} Expect Permission Denied"):
-                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+                self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
 
                 response = self.user_client.v2[group, "hosts", host_1.pk].get()
 
@@ -724,6 +702,9 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
 
     def test_add_host_to_group(self) -> None:
         host_1, host_2, host_3, host_4, *_ = self.hosts
+
+        # todo ?
+        action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
 
         for target in (self.cluster, self.service, self.component):
             type_ = orm_object_to_core_type(target)
@@ -738,7 +719,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             )
 
             with self.subTest(f"[{type_.name}] Add Host SUCCESS"):
-                hosts_in_group = self.action_host_group_service.retrieve(group.id).hosts
+                hosts_in_group = action_host_group_service.retrieve(group.id).hosts
                 self.assertEqual(len(hosts_in_group), 1)
                 self.assertEqual(hosts_in_group[0].id, host_1.id)
 
@@ -753,7 +734,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             with self.subTest(f"[{type_.name}] Add Host Duplicate FAIL"):
                 response = self.client.v2[group, "hosts"].post(data={"hostId": host_1.id})
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-                self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), 1)
+                self.assertEqual(len(action_host_group_service.retrieve(group.id).hosts), 1)
                 self.assertIn("hosts are already in action group", response.json()["desc"])
 
             with self.subTest(f"[{type_.name}] Add Host Duplicate Audit FAIL"):
@@ -769,7 +750,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             response = self.client.v2[group, "hosts"].post(data={"hostId": host_2.id})
 
             self.assertEqual(response.status_code, HTTP_201_CREATED)
-            self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), 2)
+            self.assertEqual(len(action_host_group_service.retrieve(group.id).hosts), 2)
 
         for target, unmapped_host, expected_host_count in (
             (self.cluster, host_4, 1),
@@ -784,7 +765,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 response = self.client.v2[group, "hosts"].post(data={"hostId": unmapped_host.id})
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-                self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), expected_host_count)
+                self.assertEqual(len(action_host_group_service.retrieve(group.id).hosts), expected_host_count)
 
         with self.subTest("[SERVICE] Add Non Existing Host FAIL"):
             group = self.group_map[self.service]
@@ -805,18 +786,21 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
     def test_remove_host_from_group(self) -> None:
         host_1, host_2, *_ = self.hosts
 
+        # todo ?
+        action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+
         for target in (self.cluster, self.service, self.component):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
             endpoint = self.client.v2[group, "hosts", host_1]
 
-            self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+            self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
 
             with self.subTest(f"[{type_.name}] Remove Host SUCCESS"):
                 response = endpoint.delete()
 
                 self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-                hosts_in_group = self.action_host_group_service.retrieve(group.id).hosts
+                hosts_in_group = action_host_group_service.retrieve(group.id).hosts
                 self.assertEqual(len(hosts_in_group), 1)
                 self.assertEqual(hosts_in_group[0].id, host_2.id)
 
@@ -832,7 +816,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 response = endpoint.delete()
 
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-                self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), 1)
+                self.assertEqual(len(action_host_group_service.retrieve(group.id).hosts), 1)
 
             with self.subTest(f"[{type_.name}] Remove Removed Host Audit FAIL"):
                 self.check_last_audit_record(
@@ -846,7 +830,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 response = self.client.v2[group, "hosts", host_2].delete()
 
                 self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-                hosts_in_group = self.action_host_group_service.retrieve(group.id).hosts
+                hosts_in_group = action_host_group_service.retrieve(group.id).hosts
                 self.assertEqual(len(hosts_in_group), 0)
 
     def test_same_hosts_in_group_of_one_object_success(self) -> None:
@@ -855,7 +839,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
         for target in (self.cluster, self.service, self.component):
             group = self.group_map[target]
             type_ = orm_object_to_core_type(target)
-            second_group = self.create_action_host_group(owner=target, name="Another Group")
+            second_group = self.uc.create_action_host_group(owner=target, name="Another Group")
 
             with self.subTest(type_.name):
                 for host in (host_1, host_2):
@@ -866,19 +850,20 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                     self.assertEqual(response_second_group.status_code, HTTP_201_CREATED)
 
 
-class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_action_host_group")
+        cls.bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_action_host_group")
 
-        self.cluster = self.add_cluster(bundle=self.bundle, name="Cluster Bombaster")
-        self.service = self.add_services_to_cluster(["example"], cluster=self.cluster).get()
-        self.component = self.service.components.first()
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name="Cluster Bombaster")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.cluster)
+        cls.component = cls.service.components.first()
 
-        objects = (self.cluster, self.service, self.component)
-        self.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
-            object_: self.create_action_host_group(
+        objects = (cls.cluster, cls.service, cls.component)
+        cls.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
+            object_: cls.uc.create_action_host_group(
                 name=f"Group for {object_.name}", owner=object_, description="wait for action"
             )
             for object_ in objects
@@ -943,7 +928,7 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
             (self.component, "allowed_from_component"),
         ):
             group = self.group_map[target]
-            self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id])
+            self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id])
             type_name = orm_object_to_core_type(target).name
             action = Action.objects.get(prototype=target.prototype, name=action_name)
             expected_lock_error_message = f"group #{group.id}, because it has running task: "
@@ -1038,7 +1023,7 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
         self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
         group = self.group_map[self.cluster]
-        self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+        self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
         action = Action.objects.get(prototype=self.cluster.prototype, name="allowed_in_group_1")
 
         response = self.client.v2[group, "actions", action, "run"].post(
@@ -1052,53 +1037,60 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestActionHostGroupRBAC(CommonActionHostGroupTest):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-        self.bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_action_host_group")
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.cluster = self.add_cluster(bundle=self.bundle, name="Cluster")
-        self.service = self.add_services_to_cluster(["example"], cluster=self.cluster).get()
-        self.component = self.service.components.first()
+        cls.bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_action_host_group")
 
-        self.control_cluster = self.add_cluster(bundle=self.bundle, name="Control Cluster")
-        self.control_service = self.add_services_to_cluster(["example"], cluster=self.control_cluster).get()
-        self.control_component = self.control_service.components.first()
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name="Cluster")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.cluster)
+        cls.component = cls.service.components.first()
 
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
-        self.host_1, self.host_2 = (
-            self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2)
+        cls.control_cluster = cls.uc.add_cluster(bundle=cls.bundle, name="Control Cluster")
+        cls.control_service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.control_cluster)
+        cls.control_component = cls.control_service.components.first()
+
+        cls.provider = cls.add_provider(bundle=cls.provider_bundle, name="Provider")
+        cls.host_1, cls.host_2 = (
+            cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}", cluster=cls.cluster) for i in range(2)
         )
-        self.host_3, self.host_4 = (
-            self.add_host(provider=self.provider, fqdn=f"control-host-{i}", cluster=self.control_cluster)
+        cls.host_3, cls.host_4 = (
+            cls.uc.add_host(provider=cls.provider, fqdn=f"control-host-{i}", cluster=cls.control_cluster)
             for i in range(2)
         )
 
-        self.set_hostcomponent(
-            cluster=self.cluster, entries=[(self.host_1, self.component), (self.host_2, self.component)]
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster, entries=[(cls.host_1, cls.component), (cls.host_2, cls.component)]
         )
-        self.set_hostcomponent(
-            cluster=self.control_cluster,
-            entries=[(self.host_3, self.control_component), (self.host_4, self.control_component)],
+        cls.uc.set_hostcomponent(
+            cluster=cls.control_cluster,
+            entries=[(cls.host_3, cls.control_component), (cls.host_4, cls.control_component)],
         )
 
-        self.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
-            object_: self.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
-            for object_ in (self.cluster, self.service, self.component)
+        cls.group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
+            object_: cls.uc.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
+            for object_ in (cls.cluster, cls.service, cls.component)
         }
-        for group in self.group_map.values():
-            self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[self.host_2.id])
+        for group in cls.group_map.values():
+            cls.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[cls.host_2.id])
 
-        self.control_group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
-            object_: self.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
-            for object_ in (self.control_cluster, self.control_service, self.control_component)
+        cls.control_group_map: dict[Cluster | Service | Component, ActionHostGroup] = {
+            object_: cls.uc.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
+            for object_ in (cls.control_cluster, cls.control_service, cls.control_component)
         }
-        for group in self.control_group_map.values():
-            self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[self.host_3.id])
+        for group in cls.control_group_map.values():
+            cls.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[cls.host_3.id])
 
-        self.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.user = self.create_user(user_data=self.user_credentials)
+        cls.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.user = cls.uc.create_user(user_data=cls.user_credentials)
+
+    def setUp(self) -> None:
+        super().setUp()
+
         self.user_client = self.client_class()
         self.user_client.login(**self.user_credentials)
 

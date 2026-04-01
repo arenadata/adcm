@@ -25,8 +25,8 @@ from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog,
 from core.legacy.cluster.types import HostComponentEntry
 from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
-from infra.services import get_config_service
 from rbac.models import User
+from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import get_object_or_404
@@ -194,7 +194,15 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
 
     @action(methods=["post"], detail=True)
     @inject
-    def run(self, request: Request, *_, schedule_task: FromDishka[ScheduleTask], **__) -> Response:
+    def run(
+        self,
+        request: Request,
+        *_,
+        config_service: FromDishka[core.config.ConfigService],
+        schedule_task: FromDishka[ScheduleTask],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        **__,
+    ) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -230,14 +238,13 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
 
-        config_service = get_config_service()
-
         result = upgrade_object(
             obj=parent,
             upgrade=upgrade,
             payload=payload,
             schedule_task=schedule_task,
             config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
         )
 
         match result:

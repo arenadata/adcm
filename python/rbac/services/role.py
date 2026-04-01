@@ -13,7 +13,7 @@
 import functools
 
 from cm.errors import raise_adcm_ex
-from cm.legacy.status_api import send_object_update_event
+from cm.transition.status import StatusScenarios
 from core.types import RBACCoreType
 from django.db import IntegrityError
 from django.db.transaction import atomic, on_commit
@@ -78,7 +78,7 @@ def role_create(built_in=False, type_of_role=RoleTypes.ROLE, **kwargs) -> Role |
 
 
 @atomic
-def role_update(role: Role, partial, **kwargs) -> Role:
+def role_update(role: Role, partial, status_scenarios: StatusScenarios, **kwargs) -> Role:
     child = kwargs.pop("child", [])
     parametrized_by = check_role_child(child, partial)
     kwargs["parametrized_by_type"] = parametrized_by
@@ -100,7 +100,7 @@ def role_update(role: Role, partial, **kwargs) -> Role:
 
     on_commit(
         func=functools.partial(
-            send_object_update_event,
+            status_scenarios.send_object_update_event,
             obj_id=role.id,
             obj_type=RBACCoreType.ROLE.value,
             changes={

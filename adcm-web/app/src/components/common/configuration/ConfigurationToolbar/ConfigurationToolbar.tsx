@@ -38,7 +38,7 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
         <Button variant="secondary" onClick={onRevert} disabled={!isViewDraft}>
           Discard changes
         </Button>
-        <Button onClick={onSave} hasError={!isValid} disabled={!isValid}>
+        <Button onClick={onSave} hasError={!isValid} disabled={!isViewDraft || !isValid}>
           Save
         </Button>
       </ButtonGroup>

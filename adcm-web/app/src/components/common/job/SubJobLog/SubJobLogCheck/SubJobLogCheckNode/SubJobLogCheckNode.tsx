@@ -1,25 +1,19 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import cn from 'classnames';
 import type { SubJobLogNode } from '@commonComponents/job/SubJobLog/SubJobLogCheck/SubJobLogCheck.types';
 import JobsStatusIcon from '@commonComponents/JobsStatusIcon/JobsStatusIcon';
-import { AdcmJobStatus } from '@models/adcm';
 import s from './SubJobLogCheckNode.module.scss';
 import { Collapse, IconButton } from '@uikit';
+import { getSubJobStatusLabel } from '../SubJobLog.utils';
 
 interface SubJobLogCheckNodeProps {
   logNode: SubJobLogNode;
   isExpanded: boolean;
   onExpand: (isOpen: boolean) => void;
 }
-const SubJobLogCheckNode: React.FC<SubJobLogCheckNodeProps> = ({ logNode: { data, key }, isExpanded, onExpand }) => {
-  let status: AdcmJobStatus = data.result ? AdcmJobStatus.Success : AdcmJobStatus.Failed;
-  let statusLabel = data.result ? 'success' : 'failed';
-
-  if (key === 'root' && data.subJobStatus === AdcmJobStatus.Running) {
-    status = AdcmJobStatus.Running;
-    statusLabel = 'processing';
-  }
+const SubJobLogCheckNode: React.FC<SubJobLogCheckNodeProps> = ({ logNode: { data }, isExpanded, onExpand }) => {
+  const statusLabel = useMemo(() => getSubJobStatusLabel(data.status), [data.status]);
 
   const hasChildren = data.type === 'group';
 
@@ -36,10 +30,14 @@ const SubJobLogCheckNode: React.FC<SubJobLogCheckNodeProps> = ({ logNode: { data
   };
 
   return (
-    <div className={cn(s.subJobLogCheckNode, { 'is-open': isOpen, 'is-failed': !data.result })}>
+    <div
+      className={cn(s.subJobLogCheckNode, {
+        'is-open': isOpen,
+      })}
+    >
       <div className={s.subJobLogCheckNode__header}>
         <span className={s.subJobLogCheckNode__iconWrapper}>
-          <JobsStatusIcon status={status} size={14} />
+          <JobsStatusIcon status={data.status} size={14} />
         </span>
 
         <span className={s.subJobLogCheckNode__status}>{statusLabel}</span>

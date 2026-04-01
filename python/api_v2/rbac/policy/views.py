@@ -19,6 +19,8 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -50,6 +52,7 @@ from api_v2.utils.audit import (
     retrieve_policy_role_object_group,
     update_policy_name,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -63,9 +66,17 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.OFFSET,
             OpenApiParameter(name="name", description="Case insensitive and partial filter by policy name."),
             OpenApiParameter(
+                name="group_name", description="Case insensitive and partial filter by group display name."
+            ),
+            OpenApiParameter(name="role_name", description="Case insensitive and partial filter by role display name."),
+            OpenApiParameter(
+                name="object_name",
+                description="Case insensitive and partial filter by object name.",
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("name", "-name"),
+                enum=("name", "-name", "roleName", "-roleName"),
                 default="name",
             ),
         ],
@@ -144,7 +155,14 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
             ),
         )
     )
-    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def partial_update(
+        self,
+        request,
+        *,
+        status_scenarios: FromDishka[StatusScenarios],
+        **_,
+    ):
         policy = self.get_object()
 
         if policy.built_in:
@@ -152,7 +170,7 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
 
         serializer = self.get_serializer(policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        policy = policy_update(policy, **serializer.validated_data)
+        policy = policy_update(policy, status_scenarios=status_scenarios, **serializer.validated_data)
         return Response(data=PolicySerializer(policy).data)
 
     @audit_delete(name="Policy deleted", object_=policy_from_lookup, removed_on_success=True)
