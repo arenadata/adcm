@@ -4,7 +4,7 @@ import type { AdcmActionProcessStep, AdcmActionWizardProcess, AdcmWizardJobsData
 import { AdcmWizardStepType, AdcmWizardStepStates } from '@models/adcm/wizard';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { fulfilledFilter } from '@utils/promiseUtils';
+import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
 import type {
   AdcmHostShortView,
   AdcmJob,
@@ -18,6 +18,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { LoadState, RequestState } from '@models/loadState';
 import { arrayToHash } from '@utils/arrayUtils';
+import { isCancelledError } from '@api/httpClient/HttpClient.ts';
+import { AbortPayload } from '@constants';
 
 interface AdcmGetProcessPayload {
   clusterId: number;
@@ -162,6 +164,12 @@ const getSteps = createAsyncThunk(
         }),
       );
       const steps = await Promise.allSettled(stepPromises);
+
+      const isSomeRequestAborted = rejectedFilter(steps).find((request) => isCancelledError(request));
+      if (isSomeRequestAborted) {
+        return thunkAPI.rejectWithValue(AbortPayload);
+      }
+
       return fulfilledFilter(steps);
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -390,8 +398,10 @@ const clusterServicesWizardSlice = createSlice({
     builder.addCase(getSteps.fulfilled, (state, action) => {
       state.steps = action.payload;
     });
-    builder.addCase(getSteps.rejected, (state) => {
-      state.steps = [];
+    builder.addCase(getSteps.rejected, (state, action) => {
+      if (action.payload !== AbortPayload) {
+        state.steps = [];
+      }
     });
     builder.addCase(loadJobFromBackend.fulfilled, (state, action) => {
       const id = action.meta.arg.stepId;

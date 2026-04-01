@@ -184,6 +184,67 @@ describe('mergeWithRawData', () => {
       a: { field: 'edited' },
     });
   });
+
+  test('does not override nested edited primitive from raw when editing same variant', () => {
+    const rawData: ConfigurationData = {
+      database_type: {
+        external_dbms: {
+          external_clickhouse_address_port: { port: '12.12.12.15' },
+        },
+      },
+    };
+
+    const newData: ConfigurationData = {
+      database_type: {
+        [SELECTION_KEY]: 'external_dbms',
+        external_dbms: {
+          external_clickhouse_address_port: { port: '12.12.12.16' },
+        },
+      },
+    };
+
+    const previousDraft: ConfigurationData = {
+      database_type: {
+        [SELECTION_KEY]: 'external_dbms',
+        external_dbms: {
+          external_clickhouse_address_port: { port: '12.12.12.15' },
+        },
+      },
+    };
+
+    const result = mergeWithRawData(rawData, newData, previousDraft);
+    const databaseType = result.database_type as ConfigurationData;
+    const externalDbms = databaseType.external_dbms as ConfigurationData;
+    const addressPort = externalDbms.external_clickhouse_address_port as ConfigurationData;
+    const port = addressPort.port;
+    expect(port).toBe('12.12.12.16');
+  });
+
+  test('does not resurrect deleted keys from raw when editing same variant', () => {
+    const rawData: ConfigurationData = {
+      selectable: {
+        a: { keep: 1, deleted: 2 },
+      },
+    };
+    const newData: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: { keep: 1 },
+      },
+    };
+    const previousDraft: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: { keep: 1, deleted: 2 },
+      },
+    };
+
+    const result = mergeWithRawData(rawData, newData, previousDraft);
+    expect(result.selectable).toEqual({
+      [SELECTION_KEY]: 'a',
+      a: { keep: 1 },
+    });
+  });
 });
 
 describe('storeRawData', () => {
@@ -345,6 +406,56 @@ describe('storeRawData', () => {
 
     expect(nestedSelectable).toEqual({
       a: { field: 'default' },
+    });
+  });
+
+  test('drops deleted keys inside selectable variant raw payload when editing', () => {
+    const rawData: ConfigurationData = {
+      selectable: {
+        a: { keep: 1, deleted: 2 },
+      },
+    };
+    const newData: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: { keep: 1 },
+      },
+    };
+    const currentDraft: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: { keep: 1, deleted: 2 },
+      },
+    };
+
+    const result = storeRawData(rawData, newData, currentDraft);
+    expect(result.selectable).toEqual({
+      a: { keep: 1 },
+    });
+  });
+
+  test('stores primitives inside selectable variant payload even if absent in raw', () => {
+    const rawData: ConfigurationData = {
+      selectable: {
+        a: {},
+      },
+    };
+    const newData: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: { primitive: 'new' },
+      },
+    };
+    const currentDraft: ConfigurationData = {
+      selectable: {
+        [SELECTION_KEY]: 'a',
+        a: {},
+      },
+    };
+
+    const result = storeRawData(rawData, newData, currentDraft);
+    expect(result.selectable).toEqual({
+      a: { primitive: 'new' },
     });
   });
 });

@@ -110,14 +110,25 @@ const mergeVariantValue = (
       const baseVal = baseValue[key];
       const overrideVal = overrideValue[key];
 
+      // If base already has the key, it wins. For nested objects we still need to merge
+      // selectable subobjects. `mergeVariantValue` signature is (raw, new, isSelectionChanged).
       if (baseVal !== undefined) {
-        // If both are objects, recurse; otherwise keep base value
-        result[key] =
-          isJSONObject(baseVal) && isJSONObject(overrideVal)
-            ? mergeVariantValue(baseVal, overrideVal, isSelectionChanged)
-            : baseVal;
-      } else {
-        // Base doesn't have this key, use override
+        const shouldRecurse = isJSONObject(baseVal) && isJSONObject(overrideVal);
+        if (!shouldRecurse) {
+          result[key] = baseVal;
+          continue;
+        }
+
+        const rawChild = (isSelectionChanged ? baseVal : overrideVal) as ConfigurationData;
+        const newChild = (isSelectionChanged ? overrideVal : baseVal) as ConfigurationData;
+        result[key] = mergeVariantValue(rawChild, newChild, isSelectionChanged);
+        continue;
+      }
+
+      // If base doesn't have the key:
+      // - switching variants: bring keys from the new branch
+      // - editing the same variant: don't resurrect deleted keys from raw
+      if (isSelectionChanged) {
         result[key] = overrideVal;
       }
     }
@@ -163,8 +174,9 @@ function storeRawData(
   rawData: ConfigurationData,
   newData: ConfigurationData,
   currentDraftData?: ConfigurationData,
+  persistPlainValues = false,
 ): ConfigurationData {
-  const result: ConfigurationData = { ...rawData };
+  const result: ConfigurationData = {};
 
   for (const key in newData) {
     if (!checkHasOwnProperty(newData, key)) continue;
@@ -184,13 +196,16 @@ function storeRawData(
     if (isJSONObject(newValue)) {
       const currentDraftObject = getDraftValueAsObject(currentDraftData, key);
       const rawObjectValue = isJSONObject(rawValue) ? rawValue : {};
-      result[key] = storeRawData(rawObjectValue, newValue, currentDraftObject);
+      result[key] = storeRawData(rawObjectValue, newValue, currentDraftObject, persistPlainValues);
       continue;
     }
 
-    // Don't store non-selectable primitives/arrays in raw at top level
-    // But inside selectable variants, update them
-    if (rawValue !== undefined) {
+    // Don't store non-selectable primitives/arrays in raw at top level.
+    // But inside selectable variants (persistPlainValues=true), persist them as well.
+    if (persistPlainValues) {
+      result[key] = newValue;
+    } else if (rawValue !== undefined) {
+      // Preserve only those primitives that already exist in raw.
       result[key] = newValue;
     }
   }
@@ -214,7 +229,7 @@ const updateVariantInRaw = (
   }
 
   if (isJSONObject(newVariantValue) && isJSONObject(existingRawVariant)) {
-    rawSelectable[variantKey] = storeRawData(existingRawVariant, newVariantValue, currentDraftVariantData);
+    rawSelectable[variantKey] = storeRawData(existingRawVariant, newVariantValue, currentDraftVariantData, true);
     return;
   }
 
