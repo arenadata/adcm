@@ -82,3 +82,10 @@ class ClusterTopology:
             for service in self.services.values()
             for component_id, component in service.components.items()
         }
+
+    def get_component(self, component_id: ComponentID) -> ComponentTopology:
+        for service in self.services.values():
+            if component := service.components.get(component_id):
+                return component
+        else:
+            raise KeyError(f"No component with id {component_id}")

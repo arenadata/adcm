@@ -58,8 +58,8 @@ from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     find_host_candidates_for_cluster,
 )
-from core.legacy.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
-from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
+from core.legacy.cluster.types import HostComponentEntry
+from core.types import ADCMCoreType, ComponentNameKey, MaintenanceModeOfObjects, ServiceNameKey
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q

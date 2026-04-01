@@ -15,6 +15,7 @@ from itertools import chain
 from typing import Protocol
 
 from cm.models import (
+    ADCM,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -101,6 +102,7 @@ class RootNode(APINode, ABC):
 
 class V2RootNode(RootNode):
     _CLASS_ROOT_EP_MAP = {
+        ADCM: "adcm",
         Bundle: "bundles",
         Cluster: "clusters",
         Provider: "hostproviders",
@@ -133,7 +135,7 @@ class V2RootNode(RootNode):
             object_id_path = ()
         else:
             root_endpoint = self._CLASS_ROOT_EP_MAP.get(path_object.__class__)
-            object_id_path = (str(path_object.id),)
+            object_id_path = (str(path_object.id),) if not isinstance(path_object, ADCM) else ()
 
         if root_endpoint:
             return self._node_class(

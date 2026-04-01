@@ -12,7 +12,6 @@
 
 from collections import UserDict
 from dataclasses import dataclass, field
-from enum import Enum
 from itertools import chain
 from typing import Generic, Iterable, NamedTuple, TypeAlias, TypeVar
 
@@ -133,15 +132,3 @@ class MovedHosts:
 class TopologyHostDiff:
     mapped: MovedHosts = field(default_factory=MovedHosts)
     unmapped: MovedHosts = field(default_factory=MovedHosts)
-
-
-class ObjectMaintenanceModeState(Enum):
-    ON = "on"
-    OFF = "off"
-    CHANGING = "changing"
-
-
-class MaintenanceModeOfObjects(NamedTuple):
-    services: dict[ServiceID, ObjectMaintenanceModeState]
-    components: dict[ComponentID, ObjectMaintenanceModeState]
-    hosts: dict[HostID, ObjectMaintenanceModeState]

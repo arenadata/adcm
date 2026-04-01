@@ -14,10 +14,12 @@
 from core.action._types import JobSpec, ScriptType  # noqa
 from core.action import _wizard as wizard  # noqa
 from core.action import _context as context
+from core.action import operations
 
 __all__ = [
     "JobSpec",
     "ScriptType",
     "context",
     "wizard",
+    "operations",
 ]

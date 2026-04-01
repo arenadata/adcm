@@ -15,6 +15,7 @@ from typing import cast
 from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
 from cm.models import ADCM, ConfigLog
+from cm.transition.action import RetrieveStartImpossibleReason
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from dishka import FromDishka
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -110,7 +111,14 @@ class ADCMActionViewSet(ActionViewSet):
     def get_parent_object(self):
         return ADCM.objects.first()
 
-    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def list(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
         self.parent_object = self.get_parent_object()
 
-        return self._list_actions_available_to_user(request)
+        return self._list_actions_available_to_user(request=request, retrieve_sir=retrieve_sir)

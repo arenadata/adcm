@@ -14,6 +14,8 @@
 from cm.models import (
     Component,
     ConfigLog,
+    Host,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     TaskLog,
@@ -302,6 +304,95 @@ class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
         self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host", None])
         self.assertEqual(
             schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
+        )
+
+    def test_start_impossible_reason(self):
+        host_1 = self.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
+        host_2 = self.add_host(provider=self.provider, fqdn="second_host", cluster=self.cluster_1)
+        component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
+        self.set_hostcomponent(cluster=self.cluster_1, entries=((host_1, component_2), (host_2, component_2)))
+
+        # list
+        mm_response = self.client.v2[self.cluster_1, "hosts", host_1, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.ON}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.cluster_1, "upgrades"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertSetEqual(
+            {r["startImpossibleReason"] for r in response.json()},
+            {'The Upgrade is not available. One or more hosts in "Maintenance mode"'},
+        )
+
+        mm_response = self.client.v2[self.cluster_1, "hosts", host_1, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.OFF}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.cluster_1, "upgrades"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertSetEqual({r["startImpossibleReason"] for r in response.json()}, {None})
+
+        # retrieve
+        mm_response = self.client.v2[component_2, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.ON}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(
+            response.json()["startImpossibleReason"],
+            'The Upgrade is not available. One or more components in "Maintenance mode"',
+        )
+
+        mm_response = self.client.v2[component_2, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.OFF}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["startImpossibleReason"], None)
+
+        # run
+        mm_response = self.client.v2[self.service_1, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.ON}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        expected_response = {
+            "code": "UPGRADE_ERROR",
+            "desc": 'The Upgrade is not available. One or more services in "Maintenance mode"',
+            "level": "error",
+        }
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+        mm_response = self.client.v2[self.service_1, "maintenance-mode"].post(
+            data={"maintenance_mode": MaintenanceMode.OFF}
+        )
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # list provider upgrades
+        response = self.client.v2[self.provider, "upgrades"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertSetEqual({r["startImpossibleReason"] for r in response.json()}, {None})
+
+        host = Host.objects.filter(provider=self.provider).first()
+        mm_response = self.client.v2[host, "maintenance-mode"].post(data={"maintenance_mode": MaintenanceMode.ON})
+        self.assertEqual(mm_response.status_code, HTTP_200_OK)
+
+        response = self.client.v2[self.provider, "upgrades"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertSetEqual(
+            {r["startImpossibleReason"] for r in response.json()},
+            {'The Upgrade is not available. One or more hosts in "Maintenance mode"'},
         )
 
     def test_list_upgrades_permission_success(self):
