@@ -1,7 +1,81 @@
-import { type OutputUnit, type Schema, Validator } from '@cfworker/json-schema';
+// @ts-nocheck
+
+import { type OutputUnit, Validator } from '@cfworker/json-schema';
 import { deepClone, getValueByPath } from '@utils/objectUtils';
 
+/* eslint-disable spellcheck/spell-checker */
+import { safePattern } from './patternKeyword';
+import Ajv2020, { type Schema } from 'ajv/dist/2020';
+
+const ajv = new Ajv2020({
+  strictSchema: true,
+  allErrors: true,
+  verbose: true,
+  unicodeRegExp: false,
+  discriminator: true,
+});
+
+ajv.addVocabulary(['adcmMeta']);
+ajv.removeKeyword('pattern');
+ajv.addKeyword(safePattern);
+
+const ajvWithDefaults = new Ajv2020({
+  strictSchema: false,
+  useDefaults: true,
+  allErrors: true,
+  discriminator: true,
+});
+
+ajvWithDefaults.addVocabulary(['adcmMeta']);
+ajvWithDefaults.addFormat('json', true);
+ajvWithDefaults.addFormat('yaml', true);
+
+export const validate = <T>(schema: Schema, data: T) => {
+  const validate = ajv.compile<T>(schema, true);
+  validate(data);
+
+  return validate.errors;
+};
+
 export type SchemaLike = Schema | object | boolean;
+
+export const generateFromSchema = <T>(schema: Schema): T | null => {
+  if (typeof schema === 'object') {
+    if (schema.oneOf !== undefined) {
+      const tmpSchema: Schema = {
+        type: 'object',
+        properties: {
+          t: { ...schema },
+        },
+      };
+
+      // t property required for applying defaults (defaults applies only for object properties and not for object itself)
+      const result = { t: undefined } as { t: T };
+      const validate = ajvWithDefaults.compile(tmpSchema);
+      validate(result);
+
+      return result.t;
+    }
+
+    if (schema.type === 'object') {
+      const result = {} as T;
+      const validate = ajvWithDefaults.compile(schema);
+      validate(result);
+
+      return result;
+    }
+
+    return schema.default;
+  }
+
+  return null;
+};
+
+export type { Schema };
+
+/**
+ * CF Worker
+ **/
 
 function isSchema(x: unknown): x is Schema {
   return typeof x === 'object' && x !== null;
@@ -27,24 +101,63 @@ const ROOT_PATH_PATTERN = /^#?\//;
 const HASH_PREFIX = /^#/;
 const ARRAY_INDEX_PATTERN = /^\d+$/;
 
-function getSchemaAtPath(schema: SchemaLike, instancePath: string): Schema | undefined {
+/** Value in `root` at JSON-pointer prefix (e.g. `/foo/bar`), or `root` when prefix is empty/root. */
+function valueAtPath(root: unknown, instancePathPrefix: string): unknown {
+  if (root === undefined) return undefined;
+  if (instancePathPrefix === '' || instancePathPrefix === '/') return root;
+  return getValueByPath(root, instancePathPrefix, '/');
+}
+
+/** Pick oneOf branch by comparing `instance[discriminator]` to each branch's const. */
+function branchForDiscriminatedOneOf(schema: Schema, instance: unknown): Schema | undefined {
+  const branches = schema.oneOf;
+  const disc = schema.discriminator as { propertyName?: string } | undefined;
+  if (!Array.isArray(branches) || !disc?.propertyName) return undefined;
+  if (instance === null || typeof instance !== 'object' || Array.isArray(instance)) return undefined;
+
+  const value = (instance as Record<string, unknown>)[disc.propertyName];
+  for (const b of branches) {
+    if (!isSchema(b)) continue;
+    const property = b.properties?.[disc.propertyName];
+    if (isSchema(property) && 'const' in property && property.const === value) return b;
+  }
+  return undefined;
+}
+
+/**
+ * Walk schema by instance path. With `instanceRoot`, steps into the matching oneOf branch when the
+ * current node uses `discriminator` (config tree paths under selection groups).
+ */
+function getSchemaAtPath(schema: SchemaLike, instancePath: string, instanceRoot?: unknown): Schema | undefined {
   if (!isSchema(schema)) return undefined;
   if (!instancePath || instancePath === '/' || instancePath === '#') return schema;
 
-  const parts = instancePath.replace(ROOT_PATH_PATTERN, '').split('/');
+  const parts = instancePath.replace(ROOT_PATH_PATTERN, '').split('/').filter(Boolean);
   let current: Schema | undefined = schema;
+  /** Path to the JSON value that matches `current`; empty before the first segment. */
+  let instancePathPrefix = '';
 
   for (const part of parts) {
     if (!current || !isSchema(current)) return undefined;
 
-    const next: unknown = current.properties?.[part];
+    const prefixAfterThisPart = instancePathPrefix === '' ? `/${part}` : `${instancePathPrefix}/${part}`;
+    let next: unknown = current.properties?.[part];
+
+    if (!isSchema(next) && instanceRoot !== undefined) {
+      const valueForCurrentSchema = valueAtPath(instanceRoot, instancePathPrefix);
+      const branch = branchForDiscriminatedOneOf(current, valueForCurrentSchema);
+      if (branch) next = branch.properties?.[part];
+    }
+
     if (isSchema(next)) {
       current = next;
+      instancePathPrefix = prefixAfterThisPart;
       continue;
     }
 
     if (ARRAY_INDEX_PATTERN.test(part) && isSchema(current.items)) {
       current = current.items;
+      instancePathPrefix = prefixAfterThisPart;
       continue;
     }
 
@@ -72,6 +185,7 @@ function runValidator<T>(schema: SchemaLike, data: T): { valid: boolean; errors:
  * - instancePath: "/cluster", keywordLocation: "#/properties/cluster" → "/cluster" (unchanged)
  * - instancePath: "", keywordLocation: "#/properties/foo" → "/foo"
  * - instancePath: "/a", keywordLocation: "#/properties/a/properties/b" → "/a/b"
+ * - instancePath: "/cfg/cluster/0", keywordLocation: ".../properties/cluster/items/required" → unchanged (do not append `cluster`)
  */
 function normalizeInstancePathFromKeywordLocation(instancePath: string, keywordLocation: string | undefined): string {
   if (!instancePath || !keywordLocation) return instancePath;
@@ -82,7 +196,17 @@ function normalizeInstancePathFromKeywordLocation(instancePath: string, keywordL
   while ((match = propertyMatch.exec(keywordLocation)) !== null) {
     lastProperty = match[1];
   }
+
   if (lastProperty && !instancePath.endsWith(`/${lastProperty}`)) {
+    const segments = instancePath.split('/').filter(Boolean);
+    const lastSeg = segments.at(-1);
+    const prevSeg = segments.at(-2);
+    // the last `properties` segment is then the array field name
+    // while `instancePath` is already `/.../cluster/<index>`. Appending
+    // `cluster` again would break leaf paths and tree error highlighting.
+    if (lastSeg && ARRAY_INDEX_PATTERN.test(lastSeg) && prevSeg === lastProperty) {
+      return instancePath;
+    }
     return `${instancePath}/${lastProperty}`;
   }
   return instancePath;
@@ -98,7 +222,7 @@ function mapLibraryErrorsToValidationErrors(
   return errors.map((err) => {
     const instancePath = err.instanceLocation?.replace(HASH_PREFIX, '') || '';
     const normalizedPath = normalizeInstancePathFromKeywordLocation(instancePath, err.keywordLocation);
-    const parentSchema = getSchemaAtPath(schema, normalizedPath) ?? rootSchema;
+    const parentSchema = getSchemaAtPath(schema, normalizedPath, validatedData) ?? rootSchema;
     const data = getValueByPath(validatedData, normalizedPath, '/');
 
     return {
@@ -159,7 +283,7 @@ function expandRequiredErrors(errors: ValidationError[]): ValidationError[] {
   return result;
 }
 
-export const validate = (schema: SchemaLike, data: unknown): ValidationError[] | null => {
+export const validateWithCfWorker = (schema: SchemaLike, data: unknown): ValidationError[] | null => {
   if (schema === true) return null;
 
   if (schema === false) {
@@ -257,7 +381,7 @@ function ensureStaticInResult(
   if (staticSchema.default !== undefined) {
     result[PROP_STATIC] = deepClone(staticSchema.default);
   } else {
-    const generated = generateFromSchema(staticSchema);
+    const generated = generateFromSchemaWithCfWorker(staticSchema);
     if (generated !== undefined) result[PROP_STATIC] = generated;
   }
 }
@@ -281,7 +405,7 @@ function generateFromOneOfNonObject<T>(schema: Schema): T | undefined {
 
   const base = schema.default !== undefined ? deepClone(schema.default as T) : undefined;
   const selected = selectOneOfBranchByDefault(oneOf);
-  const branch = generateFromSchema<T>(selected);
+  const branch = generateFromSchemaWithCfWorker<T>(selected);
 
   if (branch && typeof branch === 'object' && base && typeof base === 'object') {
     return { ...(base as object), ...(branch as object) } as T;
@@ -298,7 +422,7 @@ function generateFromObjectWithOneOf<T>(schema: Schema): T {
   const selectedByConst = selectOneOfBranchByConst(oneOf, result as Record<string, unknown>);
   const selected = selectedByConst ?? selectOneOfBranchByDefault(oneOf) ?? oneOf[0];
 
-  const branchValue = generateFromSchema<T>(selected);
+  const branchValue = generateFromSchemaWithCfWorker<T>(selected);
   if (branchValue && typeof branchValue === 'object') Object.assign(result, branchValue);
 
   ensureStaticInResult(result, oneOf, selected);
@@ -314,7 +438,7 @@ function generateFromObjectProperties<T>(schema: Schema): T {
   for (const [key, propSchema] of Object.entries(schema.properties!)) {
     if (!isSchema(propSchema) || result[key] !== undefined) continue;
 
-    const value = generateFromSchema(propSchema);
+    const value = generateFromSchemaWithCfWorker(propSchema);
 
     if (
       value &&
@@ -337,12 +461,12 @@ function generateFromObjectProperties<T>(schema: Schema): T {
 
 function generateFromArray<T>(schema: Schema): T | undefined {
   if (!isSchema(schema.items)) return undefined;
-  const item = generateFromSchema(schema.items);
+  const item = generateFromSchemaWithCfWorker(schema.items);
 
   return (item != null ? [item] : []) as unknown as T;
 }
 
-export const generateFromSchema = <T>(schema: SchemaLike): T | undefined => {
+export const generateFromSchemaWithCfWorker = <T>(schema: SchemaLike): T | undefined => {
   if (!isSchema(schema)) return undefined;
 
   if (schema.default === null) return null as T;

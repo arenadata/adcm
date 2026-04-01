@@ -18,8 +18,8 @@ const ClustersTableFilters = () => {
   } = useStore((s) => s.adcm.clustersTable);
 
   const productsOptions = useMemo(() => {
-    return prototypes.map(({ name, displayName }) => ({
-      value: name,
+    return prototypes.map(({ displayName }) => ({
+      value: displayName,
       label: displayName,
     }));
   }, [prototypes]);

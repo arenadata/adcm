@@ -52,3 +52,5 @@ export enum HttpStatus {
   // 5xx - Server errors
   INTERNAL_SERVER_ERROR = 500,
 }
+
+export const AbortPayload = 'aborted';
