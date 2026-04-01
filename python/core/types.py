@@ -34,6 +34,8 @@ ActionProcessID: TypeAlias = int
 ActionProcessStepID: TypeAlias = int
 PID: TypeAlias = int
 
+ActionHostGroupID: TypeAlias = int
+
 ObjectConfigID: TypeAlias = int
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int
@@ -219,3 +221,27 @@ class Concern(NamedTuple):
     id: ObjectID
     type: str
     cause: str
+
+
+class ObjectMaintenanceModeState(Enum):
+    ON = "on"
+    OFF = "off"
+    CHANGING = "changing"
+
+
+class MaintenanceModeOfObjects(NamedTuple):
+    services: dict[ServiceID, ObjectMaintenanceModeState]
+    components: dict[ComponentID, ObjectMaintenanceModeState]
+    hosts: dict[HostID, ObjectMaintenanceModeState]
+
+    @property
+    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
+        iterables = set()
+        for entities, core_type in (
+            (self.services, ADCMCoreType.SERVICE),
+            (self.components, ADCMCoreType.COMPONENT),
+            (self.hosts, ADCMCoreType.HOST),
+        ):
+            iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, mm in entities.items()))
+
+        return dict(iterables)

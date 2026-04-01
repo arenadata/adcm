@@ -19,10 +19,14 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.legacy.upgrade import check_upgrade, get_upgrade
 from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog, Upgrade
+from cm.transition.action import RetrieveStartImpossibleReason
+from core.action import operations
 from core.legacy.cluster.types import HostComponentEntry
+from core.types import Descriptor
 from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
 from rbac.models import User
@@ -53,11 +57,11 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
     queryset = Upgrade.objects.select_related("action", "action__prototype")
     filterset_class = UpgradeFilter
     pagination_class = None
+    exc_conversion_map = {core.config.ConfigOperationError: "UPGRADE_OPERATION_ERROR"}
 
     def handle_exception(self, exc: Exception) -> Response:
-        # temporal handling
-        if isinstance(exc, core.config.ConfigOperationError):
-            exc = AdcmEx(code="UPGRADE_OPERATION_ERROR", msg=exc.args[0])
+        if exc_code := self.exc_conversion_map.get(exc.__class__):
+            exc = AdcmEx(code=exc_code, msg=exc.args[0])
 
         return super().handle_exception(exc)
 
@@ -140,7 +144,9 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             case _:
                 raise ValueError("Wrong object")
 
-    def get_upgrade(self, parent: Cluster | Provider):
+    def get_upgrade_and_start_impossible_reason(
+        self, parent: Cluster | Provider, retrieve_sir: RetrieveStartImpossibleReason
+    ) -> tuple[Upgrade, operations.StartImpossibleReason | None]:
         upgrade = self.get_object()
         if upgrade.bundle.name != parent.prototype.bundle.name:
             raise AdcmEx(code="UPGRADE_NOT_FOUND")
@@ -149,14 +155,32 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         if not upgrade_is_allowed:
             raise AdcmEx(code="UPGRADE_NOT_FOUND", msg=error)
 
-        return upgrade
+        start_impossible_reason = retrieve_sir.for_upgrade_target(
+            target=Descriptor(id=parent.id, type=orm_object_to_core_type(parent))
+        )
 
-    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
+        return upgrade, start_impossible_reason
+
+    @inject
+    def list(
+        self,
+        request: Request,
+        *args,  # noqa: ARG001, ARG002
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        **kwargs,  # noqa: ARG001, ARG002
+    ) -> Response:
+        parent = self.get_parent_object_for_user(user=request.user)
         # TODO: This is very not optimal, and requires reworking
         available_upgrades = [upgrade.id for upgrade in get_upgrade(obj=parent)]
         queryset = self.filter_queryset(queryset=self.get_queryset().filter(id__in=available_upgrades))
-        serializer = self.get_serializer_class()(instance=queryset, many=True)
+
+        start_impossible_reason = retrieve_sir.for_upgrade_target(
+            target=Descriptor(id=parent.id, type=orm_object_to_core_type(parent))
+        )
+        serializer = self.get_serializer_class()(
+            instance=queryset, many=True, context={"start_impossible_reason": start_impossible_reason}
+        )
+
         return Response(data=serializer.data)
 
     @inject
@@ -165,18 +189,21 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         request: Request,
         retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
         config_service: FromDishka[core.config.ConfigService],
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
         **_,
     ) -> Response:  # noqa: ARG001, ARG002
-        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
+        parent_orm: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
 
-        upgrade = self.get_upgrade(parent=parent)
+        upgrade, start_impossible_reason = self.get_upgrade_and_start_impossible_reason(
+            parent=parent_orm, retrieve_sir=retrieve_sir
+        )
 
         jsonschema = None
         config = None
         adcm_meta = None
 
         if upgrade.action:
-            result = retrieve_configuration.do(action_orm=upgrade.action, target=parent)
+            result = retrieve_configuration.do(action_orm=upgrade.action, target=parent_orm)
             if result:
                 spec, defaults, default_config, owner = result
                 adcm_meta = {name: {"isActive": attrs.is_active} for name, attrs in default_config.attributes.items()}
@@ -187,7 +214,13 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
 
         serializer = self.get_serializer_class()(
             instance=upgrade,
-            context={"parent": parent, "config_schema": jsonschema, "config": config, "adcm_meta": adcm_meta},
+            context={
+                "parent": parent_orm,
+                "config_schema": jsonschema,
+                "config": config,
+                "adcm_meta": adcm_meta,
+                "start_impossible_reason": start_impossible_reason,
+            },
         )
 
         return Response(serializer.data)
@@ -201,13 +234,18 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         config_service: FromDishka[core.config.ConfigService],
         schedule_task: FromDishka[ScheduleTask],
         rbac_scenarios: FromDishka[RBACScenarios],
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
         **__,
     ) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        parent: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
-        upgrade = self.get_upgrade(parent=parent)
+        parent_orm: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
+        upgrade, start_impossible_reason = self.get_upgrade_and_start_impossible_reason(
+            parent=parent_orm, retrieve_sir=retrieve_sir
+        )
+        if start_impossible_reason:
+            raise AdcmEx(code="UPGRADE_ERROR", msg=start_impossible_reason)
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
@@ -239,7 +277,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         )
 
         result = upgrade_object(
-            obj=parent,
+            obj=parent_orm,
             upgrade=upgrade,
             payload=payload,
             schedule_task=schedule_task,

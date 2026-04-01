@@ -21,10 +21,15 @@ from api_v2.generic.action.serializers import ActionConfigurationSerializer, HCM
 
 class UpgradeListSerializer(ModelSerializer):
     bundle = UpgradeListBundleSerializer()
+    start_impossible_reason = SerializerMethodField()
 
     class Meta:
         model = Upgrade
-        fields = ["id", "name", "display_name", "bundle"]
+        fields = ["id", "name", "display_name", "bundle", "start_impossible_reason"]
+
+    def get_start_impossible_reason(self, instance: Upgrade) -> str:
+        _ = instance
+        return self.context["start_impossible_reason"]
 
 
 class UpgradeRetrieveSerializer(UpgradeListSerializer):
@@ -45,6 +50,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "configuration",
             "disclaimer",
             "bundle",
+            "start_impossible_reason",
         )
 
     @staticmethod

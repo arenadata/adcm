@@ -17,7 +17,7 @@ from tests.suites import ADCMDjangoAPISuite
 class TestSchema(ADCMDjangoAPISuite):
     @classmethod
     def setUpTestData(cls) -> None:
-        return
+        cls._initialize_roles_and_adcm()
 
     def test_swagger_available(self):
         response = self.client.v2["schema", "swagger-ui"].get()

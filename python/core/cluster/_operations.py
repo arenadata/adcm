@@ -14,12 +14,18 @@ from itertools import chain
 from typing import Iterable
 
 from core.cluster._types import ClusterTopology
-from core.types import ADCMCoreType, ClusterObjectDesc, ComponentDesc, Descriptor, ServiceDesc
+from core.types import ADCMCoreType, ClusterObjectDesc, ComponentDesc, Descriptor, HostDesc, ServiceDesc
 
 
 def find_children_excluding_hosts(
     target: ClusterObjectDesc, topology: ClusterTopology
 ) -> Iterable[ServiceDesc | ComponentDesc]:
+    return (desc for desc in find_children(target=target, topology=topology) if desc.type != ADCMCoreType.HOST)
+
+
+def find_children(
+    target: ClusterObjectDesc, topology: ClusterTopology
+) -> Iterable[ServiceDesc | ComponentDesc | HostDesc]:
     match target:
         case Descriptor(type=ADCMCoreType.CLUSTER):
             services: Iterable[ServiceDesc] = (
@@ -28,11 +34,23 @@ def find_children_excluding_hosts(
             components: Iterable[ComponentDesc] = (
                 Descriptor(id=id_, type=ADCMCoreType.COMPONENT) for id_ in topology.component_ids
             )
-            return chain.from_iterable((services, components))
+            hosts: Iterable[HostDesc] = (Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in topology.hosts)
+
+            return chain.from_iterable((services, components, hosts))
 
         case Descriptor(id=service_id, type=ADCMCoreType.SERVICE):
             service_topology = topology.services[service_id]
-            return (Descriptor(id=id_, type=ADCMCoreType.COMPONENT) for id_ in service_topology.components)
+            components: Iterable[ComponentDesc] = (
+                Descriptor(id=id_, type=ADCMCoreType.COMPONENT) for id_ in service_topology.components
+            )
+            hosts: Iterable[HostDesc] = (
+                Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in service_topology.host_ids
+            )
+
+            return chain.from_iterable((components, hosts))
 
         case Descriptor(type=ADCMCoreType.COMPONENT):
-            return ()
+            component = topology.get_component(component_id=target.id)
+            hosts: Iterable[HostDesc] = (Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in component.hosts)
+
+            return hosts

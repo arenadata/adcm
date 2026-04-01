@@ -13,9 +13,7 @@
 from itertools import compress
 
 from adcm.mixins import GetParentObjectMixin
-from cm.converters import (
-    orm_object_to_action_target_descriptor,
-)
+from cm.converters import orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -25,6 +23,7 @@ from cm.models import (
     Host,
     HostComponent,
 )
+from cm.transition.action import RetrieveStartImpossibleReason
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType, ExtraActionTargetType
@@ -97,6 +96,13 @@ class ActionViewSet(
         .order_by("pk")
     )
     pagination_class = None
+    exc_conversion_map = {core.config.ConfigOperationError: "ACTION_OPERATION_ERROR"}
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if exc_code := self.exc_conversion_map.get(exc.__class__):
+            exc = AdcmEx(code=exc_code, msg=exc.args[0])
+
+        return super().handle_exception(exc)
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         # Using getattr here for schema generation purposes.
@@ -146,19 +152,19 @@ class ActionViewSet(
 
         return ActionListSerializer
 
-    def handle_exception(self, exc: Exception) -> Response:
-        # temporal handling
-        if isinstance(exc, core.config.ConfigOperationError):
-            exc = AdcmEx(code="ACTION_OPERATION_ERROR", msg=exc.args[0])
-
-        return super().handle_exception(exc)
-
-    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def list(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
         self.parent_object = self.get_parent_object()
 
         self.check_permissions_for_list(request=request, parent_object=self.parent_object)
 
-        return self._list_actions_available_to_user(request)
+        return self._list_actions_available_to_user(request=request, retrieve_sir=retrieve_sir)
 
     @inject
     def retrieve(
@@ -166,6 +172,7 @@ class ActionViewSet(
         request,
         config_service: FromDishka[core.config.ConfigService],
         retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
         **_,
     ):
         self.parent_object = self.get_parent_object()
@@ -207,10 +214,13 @@ class ActionViewSet(
         ):
             processes = get_action_processes(action=action_, object_=action_target)
 
+        start_impossible_reasons = retrieve_sir.for_action_target(
+            target=action_target, allowed_in_mm={action_.pk: action_.allow_in_maintenance_mode}
+        )
         serializer = self.get_serializer_class()(
             instance=action_,
             context={
-                "obj": self.parent_object,
+                "start_impossible_reasons": start_impossible_reasons,
                 "config_schema": config_schema,
                 "config": config,
                 "adcm_meta": adcm_meta,
@@ -222,15 +232,26 @@ class ActionViewSet(
 
     @action(methods=["post"], detail=True, url_path="run")
     @inject
-    def run(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def run(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        schedule_task: FromDishka[ScheduleTask],
+        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
-        action_owner = self._get_actions_owner()
+        action_target = self._get_action_target()
 
         self.check_permissions_for_run(request=request, action=target_action, parent_object=self.parent_object)
 
-        if reason := target_action.get_start_impossible_reason(action_owner):
-            raise AdcmEx("ACTION_ERROR", msg=reason)
+        start_impossible_reason = retrieve_sir.for_action_target(
+            target=orm_object_to_action_target_descriptor(object_=action_target),
+            allowed_in_mm={target_action.pk: target_action.allow_in_maintenance_mode},
+        )[target_action.id]
+        if start_impossible_reason:
+            raise AdcmEx(code="ACTION_ERROR", msg=start_impossible_reason)
 
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -289,15 +310,25 @@ class ActionViewSet(
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
-    def _list_actions_available_to_user(self, request: Request) -> Response:
+    def _list_actions_available_to_user(
+        self,
+        request: Request,
+        retrieve_sir: RetrieveStartImpossibleReason,
+    ) -> Response:
         actions = self.filter_queryset(self.get_queryset())
         allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
         actions = list(compress(actions, allowed_actions_mask))
-        actions = filter_actions_by_user_perm(user=request.user, obj=self._get_actions_owner(), actions=actions)
+        actions = list(filter_actions_by_user_perm(user=request.user, obj=self._get_action_target(), actions=actions))
 
-        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
+        start_impossible_reasons = retrieve_sir.for_action_target(
+            target=orm_object_to_action_target_descriptor(self.parent_object),
+            allowed_in_mm={act.pk: act.allow_in_maintenance_mode for act in actions},
+        )
+        serializer = self.get_serializer_class()(
+            instance=actions, many=True, context={"start_impossible_reasons": start_impossible_reasons}
+        )
 
         return Response(data=serializer.data)
 
-    def _get_actions_owner(self) -> ADCMEntity:
+    def _get_action_target(self) -> ActionTarget:
         return self.parent_object

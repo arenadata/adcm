@@ -21,7 +21,9 @@ from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.status_api import send_task_status_update_event
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.legacy.job.types import ExecutionStatus
-from core.types import PID
+from core.types import (
+    PID,
+)
 from django.db import connection
 from django.db.transaction import atomic
 

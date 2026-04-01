@@ -11,18 +11,69 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Collection, Generator, Iterable
+from typing import Collection, Generator, Iterable, cast
 
 from core import cluster
-from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
+from core.types import (
+    ActionHostGroupID,
+    ADCMCoreType,
+    ClusterID,
+    ClusterObjectDesc,
+    ComponentID,
+    Descriptor,
+    HostID,
+    MaintenanceModeOfObjects,
+    ObjectMaintenanceModeState,
+    ShortObjectInfo,
+)
 
-from cm.models import Host, HostComponent, Service
+from cm.converters import model_name_to_core_type
+from cm.models import ActionHostGroup, Component, Host, HostComponent, Service
 
 
 class ClusterRepo(cluster.ClusterRepoI):
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> cluster.ClusterTopology:
         topologies = retrieve_multiple_topologies(cluster_ids=(cluster_id,))
         return next(topologies)
+
+    def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
+        match object_:
+            case Descriptor(type=ADCMCoreType.CLUSTER):
+                return object_.id
+            case Descriptor(type=ADCMCoreType.SERVICE):
+                return Service.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
+            case Descriptor(type=ADCMCoreType.COMPONENT):
+                return Component.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
+
+    def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
+        # COPIED FROM cm.legacy.services.cluster.retrieve_clusters_objects_maintenance_mode
+
+        return MaintenanceModeOfObjects(
+            hosts={
+                host_id: ObjectMaintenanceModeState(mm)
+                for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
+            },
+            services={
+                service_id: ObjectMaintenanceModeState(mm)
+                for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
+                    cluster_id__in=cluster_ids
+                )
+            },
+            components={
+                component_id: ObjectMaintenanceModeState(mm)
+                for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
+                    cluster_id__in=cluster_ids
+                )
+            },
+        )
+
+    def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
+        object_id, model_name = (
+            ActionHostGroup.objects.filter(id=ahg_id).values_list("object_id", "object_type__model").get()
+        )
+
+        # only cluster, service or component can have AHG
+        return cast(ClusterObjectDesc, Descriptor(id=object_id, type=model_name_to_core_type(model_name)))
 
 
 def retrieve_multiple_topologies(cluster_ids: Iterable[ClusterID]) -> Generator[cluster.ClusterTopology, None, None]:
