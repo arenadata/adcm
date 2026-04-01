@@ -8,6 +8,7 @@ export interface AdcmUpgradeShort {
   name: string;
   displayName: string;
   bundle: AdcmBundleShort;
+  startImpossibleReason: string | null;
 }
 
 type AdcmUnacceptedServicesPrototype = Omit<AdcmPrototype, 'type' | 'bundleId' | 'description'>;
