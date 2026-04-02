@@ -33,8 +33,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.status import (

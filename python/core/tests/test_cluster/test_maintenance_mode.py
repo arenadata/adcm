@@ -21,14 +21,13 @@ from core.legacy.cluster.operations import (
 from core.legacy.cluster.types import (
     ClusterTopology,
     ComponentTopology,
-    MaintenanceModeOfObjects,
     MovedHosts,
     NoEmptyValuesDict,
     ServiceTopology,
     TopologyHostDiff,
 )
-from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
-from core.types import ShortObjectInfo
+from core.types import MaintenanceModeOfObjects, ShortObjectInfo
+from core.types import ObjectMaintenanceModeState as MM  # noqa: N814
 
 
 class TestMaintenanceMode(TestCase):

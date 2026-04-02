@@ -3716,9 +3716,13 @@ components:
           maxLength: 1000
         bundle:
           $ref: '#/components/schemas/UpgradeListBundle'
+        startImpossibleReason:
+          type: string
+          readOnly: true
       required:
       - bundle
       - id
+      - startImpossibleReason
     UpgradeListBundle:
       type: object
       properties:
@@ -3772,6 +3776,9 @@ components:
           readOnly: true
         bundle:
           $ref: '#/components/schemas/UpgradeBundle'
+        startImpossibleReason:
+          type: string
+          readOnly: true
       required:
       - id
       - name
@@ -3781,6 +3788,7 @@ components:
       - configuration
       - disclaimer
       - bundle
+      - startImpossibleReason
     UpgradeRun:
       type: object
       properties:

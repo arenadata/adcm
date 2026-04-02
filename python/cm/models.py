@@ -1156,68 +1156,6 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity | ActionHostGroup) -> str | None:
-        if isinstance(obj, ActionHostGroup):
-            obj = obj.object
-
-        if obj.prototype.type == "adcm":
-            current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-            if not current_configlog.attr["ldap_integration"]["active"]:
-                return NO_LDAP_SETTINGS
-
-        if obj.prototype.type == "cluster":
-            if not self.allow_in_maintenance_mode:
-                if Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists():
-                    return MANY_HOSTS_IN_MM
-
-                related_services = Service.objects.filter(cluster=obj)
-
-                if any(service.maintenance_mode == MaintenanceMode.ON for service in related_services):
-                    return SERVICE_IN_MM
-
-                if any(
-                    component.maintenance_mode == MaintenanceMode.ON
-                    for component in Component.objects.filter(service__in=related_services)
-                ):
-                    return COMPONENT_IN_MM
-
-        elif obj.prototype.type == "service":
-            if not self.allow_in_maintenance_mode:
-                if obj.maintenance_mode == MaintenanceMode.ON:
-                    return SERVICE_IN_MM
-
-                if any(
-                    component.maintenance_mode == MaintenanceMode.ON
-                    for component in Component.objects.filter(service=obj)
-                ):
-                    return COMPONENT_IN_MM
-
-                if HostComponent.objects.filter(
-                    service=obj,
-                    cluster=obj.cluster,
-                    host__maintenance_mode=MaintenanceMode.ON,
-                ).exists():
-                    return MANY_HOSTS_IN_MM
-
-        elif obj.prototype.type == "component":
-            if not self.allow_in_maintenance_mode:
-                if obj.maintenance_mode == MaintenanceMode.ON:
-                    return COMPONENT_IN_MM
-
-                if HostComponent.objects.filter(
-                    component=obj,
-                    cluster=obj.cluster,
-                    service=obj.service,
-                    host__maintenance_mode=MaintenanceMode.ON,
-                ).exists():
-                    return MANY_HOSTS_IN_MM
-
-        elif obj.prototype.type == "host":  # noqa: SIM102
-            if not self.allow_in_maintenance_mode and obj.maintenance_mode == MaintenanceMode.ON:
-                return HOST_IN_MM
-
-        return None
-
 
 class AbstractSubAction(ADCMModel):
     action = None

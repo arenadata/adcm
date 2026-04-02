@@ -427,5 +427,5 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
         if not has_run_perms(user=request.user, action=action, obj=parent_object.object):
             raise NotFound()
 
-    def _get_actions_owner(self) -> ADCMEntity:
+    def _get_action_target(self) -> ADCMEntity:
         return self.parent_object.object

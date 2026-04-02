@@ -24,10 +24,8 @@ from core.legacy.cluster.types import (
     HostAddInfo,
     HostClusterPair,
     HostComponentEntry,
-    MaintenanceModeOfObjects,
-    ObjectMaintenanceModeState,
 )
-from core.types import ClusterID, HostID, ShortObjectInfo
+from core.types import ClusterID, HostID, MaintenanceModeOfObjects, ObjectMaintenanceModeState, ShortObjectInfo
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios

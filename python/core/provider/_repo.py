@@ -12,9 +12,12 @@
 
 from typing import Protocol
 
-from core.types import HostDesc, ProviderID
+from core.types import HostDesc, HostID, ObjectMaintenanceModeState, ProviderID, ProviderObjectDesc
 
 
 class ProviderRepoI(Protocol):
     def find_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostDesc, ...]:
+        ...
+
+    def get_hosts_own_maintenance_mode(self, object_: ProviderObjectDesc) -> dict[HostID, ObjectMaintenanceModeState]:
         ...

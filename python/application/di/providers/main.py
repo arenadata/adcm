@@ -30,6 +30,7 @@ from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from cm.legacy.services.job.run import start_task
+from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
 from core.bundle import VersionSupportStatus
@@ -187,6 +188,7 @@ class ScenariosProvider(Provider):
         FillWizardStepSpecLegacy,
         provides=FillWizardStepSpec[ActionArgs, TaskArgs],
     )
+    retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
 
 
 class LogsServiceProvider(Provider):

@@ -4,9 +4,10 @@ import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { Checkbox, DialogV2 } from '@uikit';
+import { Checkbox, DialogV2, WarningMessage } from '@uikit';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 import SelectUpgradeStep from './SelectUpgradeStep/SelectUpgradeStep';
+import s from './UpgradeProviderDialog.module.scss';
 
 const HostProviderUpgradeDialog: React.FC = () => {
   const {
@@ -74,6 +75,11 @@ const HostProviderUpgradeDialog: React.FC = () => {
       dialogControls={dialogControls}
     >
       <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
+      {upgradeDetails?.startImpossibleReason && (
+        <WarningMessage className={s.upgradeProviderDialog__errorMessage}>
+          {upgradeDetails.startImpossibleReason}
+        </WarningMessage>
+      )}
     </DialogV2>
   );
 };

@@ -34,8 +34,7 @@ from cm.models import (
     Service,
 )
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ObjectMaintenanceModeState
-from core.types import ClusterID
+from core.types import ClusterID, ObjectMaintenanceModeState
 from rbac.models import Group, Policy, Role, User
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from tests.client import ADCMTestClient, APINode

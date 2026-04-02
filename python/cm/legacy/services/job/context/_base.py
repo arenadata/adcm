@@ -15,7 +15,7 @@ from operator import itemgetter
 from typing import Iterable
 
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
+from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
@@ -24,7 +24,9 @@ from core.types import (
     ExtraActionTargetType,
     HostID,
     HostName,
+    MaintenanceModeOfObjects,
     ObjectID,
+    ObjectMaintenanceModeState,
 )
 from django.db.models import F
 from infra.services import get_config_service

@@ -32,8 +32,8 @@ class ActionListSerializer(ModelSerializer):
         model = Action
         fields = ["id", "name", "display_name", "start_impossible_reason"]
 
-    def get_start_impossible_reason(self, action: Action) -> str | None:
-        return action.get_start_impossible_reason(obj=self.context["obj"])
+    def get_start_impossible_reason(self, instance: Action) -> str | None:
+        return self.context["start_impossible_reasons"][instance.pk]
 
 
 class HCMapRuleEntrySerializer(EmptySerializer):
