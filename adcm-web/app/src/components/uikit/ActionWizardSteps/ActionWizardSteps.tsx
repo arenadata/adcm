@@ -14,7 +14,7 @@ import cn from 'classnames';
 import ActionWizardConfigurationEditor from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditor';
 import ActionWizardLastStage from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStage';
 import { useActionWizardValidationContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardValidationContextProvider/ActionWizardValidationContext.context';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type React from 'react';
 import type { AdcmDynamicActionDetails, AdcmJob } from '@models/adcm';
 import {
@@ -62,6 +62,13 @@ const stepPanelLabelClassName = (step: AdcmActionProcessStep, hasConflict: boole
   });
 };
 
+const getHiddenSteps = (steps: AdcmActionProcessStep[], actualStepId: number) => {
+  return steps.reduce<Record<number, boolean>>((acc, step) => {
+    acc[step.id] = step.id !== actualStepId;
+    return acc;
+  }, {});
+};
+
 const ActionWizardSteps = ({
   clusterId,
   jobsData,
@@ -80,14 +87,7 @@ const ActionWizardSteps = ({
   const { isValid, isDraft, setIsValid, setIsDraft } = useActionWizardValidationContext();
   const WizardOperation = entityDynamicActionWizardOperation;
 
-  const initialHiddenStates = useMemo(() => {
-    return steps.reduce<Record<number, boolean>>((acc, step) => {
-      acc[step.id] = step.id !== (selectedStep || currentStep);
-      return acc;
-    }, {});
-  }, [steps]);
-
-  const [hiddenStates, setHiddenStates] = useState(initialHiddenStates);
+  const [hiddenStates, setHiddenStates] = useState(() => getHiddenSteps(steps, selectedStep || currentStep));
 
   useEffect(() => {
     const element = document.getElementById(`step-${selectedStep}`);
@@ -97,8 +97,8 @@ const ActionWizardSteps = ({
   }, [steps]);
 
   useEffect(() => {
-    setHiddenStates(initialHiddenStates);
-  }, [initialHiddenStates]);
+    setHiddenStates(getHiddenSteps(steps, selectedStep || currentStep));
+  }, [steps, selectedStep, currentStep]);
 
   useEffect(() => {
     if (selectedStep) {
