@@ -303,3 +303,53 @@
     - name: b_value
       type: integer
       default: 100
+
+- name: adcm_7586
+  type: service
+  version: "14"
+
+  config:
+    - name: pass_no_default
+      type: password
+      required: false
+    - name: pass_default
+      type: password
+      required: false
+      default: 'a'
+    - name: pass_empty_default
+      type: password
+      required: false
+      default: ''
+    - name: stext_no_default
+      type: secrettext
+      required: false
+    - name: stext_empty_default
+      type: secrettext
+      required: false
+      default: ''
+    - name: stext_default
+      type: secrettext
+      required: false
+      default: 'a'
+    - name: smap_no_default
+      type: secretmap
+      required: false
+    - name: smap_empty_default
+      type: secretmap
+      required: false
+      default: {"k": ""}
+    - name: smap_default
+      type: secretmap
+      required: false
+      default: {"k": "a"}
+    - name: sfile_no_default
+      type: secretfile
+      required: false
+    - name: sfile_empty_default
+      type: secretfile
+      required: false
+      default: empty_file.txt
+    - name: sfile_default
+      type: secretfile
+      required: false
+      default: secretfile.txt
