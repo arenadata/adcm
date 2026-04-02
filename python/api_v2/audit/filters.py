@@ -107,10 +107,10 @@ class AuditSessionOrderingFilter(OrderingFilter):
 
 class AuditSessionFilter(
     AdvancedFilterSet,
-    char_fields=(("username", "user__username"), "login_result"),
+    char_fields=(("username", "login_details__username"), "login_result"),
     number_fields=("id",),
 ):
-    login = CharFilter(field_name="user__username", label="Login", lookup_expr="icontains")
+    login = CharFilter(field_name="login_details__username", label="Login", lookup_expr="icontains")
     login_result = ChoiceFilter(
         field_name="login_result", label="Login result", choices=AuditSessionLoginResult.choices
     )
