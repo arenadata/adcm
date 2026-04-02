@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+from operator import eq
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 import json
 import unittest
@@ -31,6 +34,7 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from infra.services import get_config_service
@@ -47,6 +51,7 @@ from rest_framework.status import (
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
+import core
 
 from api_v2.tests.base import APIV2Mixin
 
@@ -61,8 +66,10 @@ class TestClusterConfig(ADCMDjangoAPISuite):
 
         cls.cluster_1_config = ConfigLog.objects.get(id=cls.cluster_1.config.current)
 
-        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
-        cls.service_2, *_ = cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster_1)
+        cls.uc.add_services_to_cluster(names=["service_1", "service_2"], cluster=cls.cluster_1)
+
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
+
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
@@ -659,12 +666,31 @@ class TestServiceConfig(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.uc.add_services_to_cluster(names=["service_1", "service_2"], cluster=cls.cluster_1)
+
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
         cls.service_1_initial_config = ConfigLog.objects.get(pk=cls.service_1.config.current)
 
-        cls.service_2, *_ = cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster_1)
+        cls.service_2 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_2")
+
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
+
+    def check_values(self, values: dict[str, Any], checks: dict) -> None:
+        checked_keys = set()
+
+        for (check_name, check_func), fields in checks.items():
+            for field in fields:
+                checked_keys.add(field)
+                with self.subTest(f"{check_name}-{field}"):
+                    value = values[field]
+                    err_message = f"Check {check_name} failed for {field=} with {value=}"
+                    self.assertTrue(check_func(value), err_message)
+
+        unchecked_keys = checked_keys.difference(values.keys())
+        if unchecked_keys:
+            message = f"All keys must be checked, missing: {', '.join(sorted(unchecked_keys))}"
+            raise RuntimeError(message)
 
     def test_list_success(self):
         response = self.client.v2[self.service_1, CONFIGS].get()
@@ -849,6 +875,95 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             service.refresh_from_db(fields=["config"])
             record = ConfigLog.objects.get(id=service.config.current)
             self.assertEqual(record.config["json"], {})
+
+    def test_adcm_7586_secrets_encryption(self):
+        """
+        Based on ADCM-7586 bug born from inconsistency of empty values encryption + ansible preparation.
+        Default and empty values save tested via API (where empty values are allowed), ansible via service.
+        """
+        config_service = self.container.get(core.config.ConfigService)
+
+        is_encrypted_plain = ("is_encrypted_plain", config_service.secrets.is_encrypted)
+        is_encrypted_map_value = (
+            "is_encrypted_map_values",
+            lambda x: isinstance(x, dict) and all(map(config_service.secrets.is_encrypted, x.values())),
+        )
+        is_none = ("is_none", partial(eq, None))
+        is_empty = ("is_empty", partial(eq, ""))
+        is_path = ("is_path", lambda x: isinstance(x, str) and x.startswith("/"))
+        is_encrypted_in_ansible_dict = (
+            "is_encrypted_in_ansible_dict",
+            lambda x: isinstance(x, dict) and is_encrypted_plain[1](x.get("__ansible_vault", "")),
+        )
+        is_encrypted_in_ansible_dict_map_value = (
+            "is_encrypted_in_ansible_dict_map_value",
+            lambda x: isinstance(x, dict) and all(map(is_encrypted_in_ansible_dict[1], x.values())),
+        )
+
+        default_checks = {
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default", "sfile_empty_default"),
+            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            # empty default for plain values are converted to None's
+            is_none: (
+                "pass_empty_default",
+                "pass_no_default",
+                "stext_no_default",
+                "stext_empty_default",
+                "smap_no_default",
+                "sfile_no_default",
+            ),
+        }
+        save_with_empty_checks = {
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
+            is_empty: ("pass_empty_default", "stext_empty_default", "sfile_empty_default"),
+            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
+        }
+        ansible_ready_format_checks = {
+            is_encrypted_in_ansible_dict: ("pass_default", "stext_default"),
+            is_empty: ("pass_empty_default", "stext_empty_default"),
+            is_path: ("sfile_default", "sfile_empty_default"),
+            is_encrypted_in_ansible_dict_map_value: ("smap_default", "smap_empty_default"),
+            is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
+        }
+
+        service, *_ = self.uc.add_services_to_cluster(["adcm_7586"], cluster=self.cluster_1)
+        desc = CoreObjectDescriptor(id=service.pk, type=ADCMCoreType.SERVICE)
+
+        # Default configuration (API)
+
+        response = self.client.v2[service, CONFIGS, service.config.current].get()
+        default_config = response.json()["config"]
+
+        self.check_values(values=default_config, checks=default_checks)
+
+        # Save with empty fields (API)
+
+        config_with_explicit_empty_values = {
+            "config": default_config
+            | {
+                "pass_empty_default": "",
+                "stext_empty_default": "",
+                "sfile_empty_default": "",
+                "smap_empty_default": {"k": ""},
+            },
+            "adcmMeta": {},
+        }
+
+        response = self.client.v2[service, CONFIGS].post(data=config_with_explicit_empty_values)
+
+        self.check_values(values=response.json()["config"], checks=save_with_empty_checks)
+
+        # Prepare for ansible (SERVICE)
+
+        configuration = config_service.retrieve_current_configuration(owner=desc)
+        specification = config_service.retrieve_specification(owner=desc)
+
+        result = config_service.prepare_configuration_for_ansible(
+            configuration=configuration, specification=specification, file_owner=desc
+        )
+
+        self.check_values(values=result.values, checks=ansible_ready_format_checks)
 
 
 class TestServiceCHG(ADCMDjangoAPISuite):
@@ -2551,7 +2666,7 @@ class TestADCMConfig(ADCMDjangoAPISuite):
                 )
 
 
-class TestAttrTransformation(ADCMDjangoAPISuite):
+class TestAttrTransformation(unittest.TestCase):
     def test_transformation_success(self):
         attr = {
             "activatable_group": {"active": True},

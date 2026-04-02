@@ -318,6 +318,7 @@ class TestCluster(ADCMDjangoAPISuite):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7586",
                 "adcm_7807",
                 "service_1",
                 "service_1_clone",
@@ -340,6 +341,7 @@ class TestCluster(ADCMDjangoAPISuite):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7586",
                 "adcm_7807",
                 "service_1",
                 "service_1_clone",
