@@ -12,8 +12,10 @@
 
 from datetime import datetime, timedelta
 
-from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditUser
+from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditSessionLoginResult, AuditUser
+from cm.models import ADCM, ConfigLog
 from core.legacy.rbac.dto import UserUpdateDTO
+from parameterized import parameterized
 from rbac.models import User
 from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
@@ -289,6 +291,73 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
                     response = self.client.v2["audit-operation"].get(query={filter_name: partial_value})
                     self.assertEqual(response.status_code, HTTP_200_OK)
                     self.assertEqual(response.json()["count"], partial_items_found)
+
+    @parameterized.expand(
+        [
+            ("Find a success login record", "user", "user", AuditSessionLoginResult.SUCCESS),
+            (
+                "Find a record of an attempt to login as a non-existent user",
+                "nonexistent_user",
+                "nonexistent",
+                AuditSessionLoginResult.USER_NOT_FOUND,
+            ),
+            (
+                "Find a disabled account record",
+                "disabled_user",
+                "disabled_passw",
+                AuditSessionLoginResult.ACCOUNT_DISABLED,
+            ),
+        ]
+    )
+    def test_adcm_6048_filtering_login_users(
+        self, _, username: str, password: str, login_result: AuditSessionLoginResult
+    ):
+        if login_result == AuditSessionLoginResult.ACCOUNT_DISABLED:
+            disabled_user = self.create_user(username=username, password=password)
+            disabled_user.is_active = False
+            disabled_user.save(update_fields=["is_active"])
+
+        self.client.v2["token"].post(data={"username": username, "password": password})
+
+        response = self.client.v2["audit-login"].get(query={"login": username})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        user_audit_data = response.json()["results"][0]
+        self.assertEqual(user_audit_data["details"], {"username": username})
+        self.assertEqual(user_audit_data["result"], login_result.value)
+
+    def test_filtering_blocked_user_by_wrong_password(self):
+        username = "blocked_user"
+        password = "blocked_password"
+        audit_records_with_user = 2
+
+        self.create_user(username=username, password=password)
+        adcm_config = ConfigLog.objects.get(obj_ref=ADCM.objects.first().config)
+
+        # for block a user
+        adcm_config.config["auth_policy"]["login_attempt_limit"] = 1
+        adcm_config.save()
+        # create a record with the "wrong_password" reason
+        self.client.v2["token"].post(data={"username": username, "password": "wrong_password"})
+        # create a record with the "log in to a blocked account" reason
+        self.client.v2["token"].post(
+            data={"username": username, "password": password},
+        )
+        # log in for audit as an admin
+        self.client.v2["token"].post(
+            data={"username": "admin", "password": "admin"},
+        )
+        response = self.client.v2["audit-login"].get(query={"login": username})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], audit_records_with_user)
+        results = {item["result"] for item in response.json()["results"]}
+        self.assertSetEqual(
+            results,
+            {
+                AuditSessionLoginResult.WRONG_PASSWORD.value,
+                AuditSessionLoginResult.LOG_IN_TO_A_BLOCKED_ACCOUNT.value,
+            },
+        )
 
     def test_ordering_success(self):
         ordering_fields = {
