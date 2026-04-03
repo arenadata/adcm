@@ -125,6 +125,26 @@ class TestClusterConfig(ADCMDjangoAPISuite):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_create_more_than_64_bit_number(self):
+        large_int = 8**35
+        self.assertTrue(large_int.bit_length() > 64)
+
+        data = {
+            "config": {
+                "activatable_group": {"integer": large_int},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
+        self.assertEqual(response.json()["config"]["activatable_group"]["integer"], large_int)
+
     def test_create_bad_attr_fail(self):
         data = {
             "config": {

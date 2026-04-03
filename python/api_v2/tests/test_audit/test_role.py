@@ -127,30 +127,27 @@ class TestRoleAudit(ADCMDjangoAPISuite):
 
         self.custom_role.refresh_from_db()
 
-        expected_object_changes = (
-            {
-                "current": {
-                    "description": "new description",
-                    "display_name": "Custom `view cluster configurations` role",
-                    "child": ["Manage cluster Maintenance mode", "View cluster configurations"],
-                },
-                "previous": {
-                    "description": old_description,
-                    "display_name": "Custom `view service configurations` role",
-                    "child": ["View service configurations"],
-                },
+        expected_object_changes = {
+            "current": {
+                "description": "new description",
+                "display_name": "Custom `view cluster configurations` role",
+                "child": ["Manage cluster Maintenance mode", "View cluster configurations"],
             },
-        )
+            "previous": {
+                "description": old_description,
+                "display_name": "Custom `view service configurations` role",
+                "child": ["View service configurations"],
+            },
+        }
 
-        last_audit_log = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.custom_role),
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
             user__username="admin",
         )
-        self.assertDictEqual(last_audit_log.object_changes, *expected_object_changes)
 
     def test_role_update_one_field_success(self):
         role_create_data = {
@@ -164,26 +161,23 @@ class TestRoleAudit(ADCMDjangoAPISuite):
 
         self.custom_role.refresh_from_db()
 
-        expected_object_changes = (
-            {
-                "current": {
-                    "description": "new description",
-                },
-                "previous": {
-                    "description": "",
-                },
+        expected_object_changes = {
+            "current": {
+                "description": "new description",
             },
-        )
+            "previous": {
+                "description": "",
+            },
+        }
 
-        last_audit_log = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.custom_role),
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
             user__username="admin",
         )
-        self.assertDictEqual(last_audit_log.object_changes, *expected_object_changes)
 
     def test_role_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)

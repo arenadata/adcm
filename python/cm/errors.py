@@ -96,7 +96,6 @@ ERRORS = {
     "TASK_IS_SUCCESS": ("task is success", HTTP_409_CONFLICT, ERR),
     "NOT_ALLOWED_TERMINATION": ("not allowed termination the task", HTTP_409_CONFLICT, ERR),
     "WRONG_ACTION_HC": ("action hostcomponentmap error", HTTP_409_CONFLICT, ERR),
-    "OVERFLOW": ("integer or floats in a request cause an overflow", HTTP_400_BAD_REQUEST, ERR),
     "WRONG_NAME": ("wrong name", HTTP_400_BAD_REQUEST, ERR),
     "INVALID_INPUT": ("invalid input", HTTP_400_BAD_REQUEST, ERR),
     "JSON_ERROR": ("json decoding error", HTTP_400_BAD_REQUEST, ERR),
@@ -286,13 +285,6 @@ def raise_adcm_ex(code, msg="", args=""):
 
 
 def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
-    if isinstance(exc, OverflowError):
-        # This is an error with DB mostly. For example SQLite can't handle 64-bit numbers.
-        # So we have to handle this right and rise HTTP 400, instead of HTTP 500
-        # SQLite support ended in release 2.7.0. We need to review this code.
-
-        return exception_handler(exc=AdcmEx(code="OVERFLOW"), context=context)
-
     if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
         msg = ""
         for field_name, error in exc.detail.items():

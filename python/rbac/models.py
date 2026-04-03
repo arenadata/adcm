@@ -42,8 +42,6 @@ from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission
 from guardian.shortcuts import get_perms_for_model
 
-from rbac.utils import get_query_tuple_str
-
 
 class ObjectType(TextChoices):
     CLUSTER = "cluster", "cluster"
@@ -199,9 +197,6 @@ class Policy(Model):
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self, keep_objects: dict | None = None):
-        # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
-        # to use placeholder for list of multiple values for SQLite so used string formatting
-        # SQLite support ended in release 2.7.0. We need to review this code.
         group_pks = self.group.values_list("pk", flat=True)
 
         cursor = connection.cursor()
@@ -217,11 +212,11 @@ class Policy(Model):
             permission_ids_to_delete = {item[0] for item in cursor.fetchall()}
             if permission_ids_to_delete:
                 cursor.execute(
-                    f"""
-                        SELECT policypermission_id FROM rbac_policy_model_perm 
-                        WHERE policypermission_id in {get_query_tuple_str(tuple_items=permission_ids_to_delete)} 
-                        AND policy_id != {self.pk};
-                    """  # noqa: S608, W291
+                    """
+                        SELECT policypermission_id FROM rbac_policy_model_perm
+                        WHERE policypermission_id = ANY(%s) AND policy_id != %s;
+                    """,
+                    [list(permission_ids_to_delete), self.pk],
                 )
 
                 permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
@@ -231,16 +226,15 @@ class Policy(Model):
                     permission_ids_to_delete = tuple(permission_ids_to_delete)
 
             if permission_ids_to_delete:
-                permission_ids_to_delete_str = get_query_tuple_str(tuple_items=permission_ids_to_delete)
-
                 if group_pks:
                     cursor.execute(
-                        f"""
+                        """
                             DELETE FROM auth_group_permissions WHERE permission_id IN (
-                                SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL 
-                                AND id IN {permission_ids_to_delete_str}
-                            ) AND group_id IN {get_query_tuple_str(tuple_items=tuple(group_pks))};
-                        """,  # noqa: S608, W291
+                                SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL
+                                AND id = ANY(%s)
+                            ) AND group_id = ANY(%s);
+                        """,
+                        [list(permission_ids_to_delete), list(group_pks)],
                     )
 
                 cursor.execute(
@@ -251,11 +245,11 @@ class Policy(Model):
                 )
 
                 cursor.execute(
-                    f"""
-                        DELETE FROM rbac_policypermission WHERE 
-                        (user_id IS NOT NULL OR group_id IS NOT NULL) AND id 
-                        IN {get_query_tuple_str(tuple_items=permission_ids_to_delete)};
-                    """,  # noqa: S608, W291
+                    """
+                        DELETE FROM rbac_policypermission WHERE
+                        (user_id IS NOT NULL OR group_id IS NOT NULL) AND id = ANY(%s);
+                    """,
+                    [list(permission_ids_to_delete)],
                 )
 
             cursor.execute(
@@ -280,12 +274,11 @@ class Policy(Model):
                         keep_group_object_permission_ids |= set(group_object_permission_ids)
 
                 cursor.execute(
-                    f"""
-                        SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm 
-                        WHERE groupobjectpermission_id 
-                        in {get_query_tuple_str(tuple_items=groupobj_permission_ids_to_delete)}
-                        AND policy_id != {self.pk};
-                    """  # noqa: S608, W291
+                    """
+                        SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm
+                        WHERE groupobjectpermission_id = ANY(%s) AND policy_id != %s;
+                    """,
+                    [list(groupobj_permission_ids_to_delete), self.pk],
                 )
 
                 groupobj_permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
@@ -298,19 +291,16 @@ class Policy(Model):
                     groupobj_permission_ids_to_delete = tuple(groupobj_permission_ids_to_delete)
 
             if groupobj_permission_ids_to_delete:
-                groupobj_permission_ids_to_delete_str = get_query_tuple_str(
-                    tuple_items=groupobj_permission_ids_to_delete
+                cursor.execute(
+                    """
+                        DELETE FROM rbac_policy_group_object_perm WHERE groupobjectpermission_id = ANY(%s);
+                    """,
+                    [list(groupobj_permission_ids_to_delete)],
                 )
 
                 cursor.execute(
-                    f"""
-                        DELETE FROM rbac_policy_group_object_perm WHERE groupobjectpermission_id 
-                        IN {groupobj_permission_ids_to_delete_str};
-                    """,  # noqa: S608, W291
-                )
-
-                cursor.execute(
-                    f"DELETE FROM guardian_groupobjectpermission WHERE id IN {groupobj_permission_ids_to_delete_str};",  # noqa: S608, W291
+                    "DELETE FROM guardian_groupobjectpermission WHERE id =ANY(%s);",
+                    [list(groupobj_permission_ids_to_delete)],
                 )
 
     def add_object(self, obj) -> None:

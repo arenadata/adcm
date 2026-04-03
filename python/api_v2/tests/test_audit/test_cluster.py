@@ -1078,7 +1078,6 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={"current": {"name": "new_cluster_name"}, "previous": {"name": self.cluster_1.name}},
         )
 
@@ -1094,7 +1093,6 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             operation_type="update",
             operation_result="fail",
             user__username="admin",
-            expect_object_changes_=False,
         )
 
     def test_cluster_object_changes_all_fields_success(self):
@@ -1112,7 +1110,6 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes=expected_object_changes,
         )
 
@@ -1137,8 +1134,8 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
 
             expected_object_changes = {
-                "current": {"defaults": {"forks": "13"}},
-                "previous": {},
+                "current": {"defaults": {"forks": 13}},
+                "previous": {"defaults": {"forks": "5"}},
             }
 
             self.check_last_audit_record(
@@ -1146,7 +1143,7 @@ class TestClusterAudit(ADCMDjangoAPISuite):
                 operation_type="update",
                 operation_result="success",
                 user__username="test_user_username",
-                expect_object_changes_=expected_object_changes,
+                object_changes=expected_object_changes,
             )
 
     def test_update_ansible_config_denied(self):
@@ -1220,8 +1217,8 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
 
             expected_object_changes = {
-                "current": {"defaults": {"forks": "13"}},
-                "previous": {},
+                "current": {"defaults": {"forks": 13}},
+                "previous": {"defaults": {"forks": "5"}},
             }
 
             self.check_last_audit_record(
@@ -1229,7 +1226,7 @@ class TestClusterAudit(ADCMDjangoAPISuite):
                 operation_type="update",
                 operation_result="success",
                 user__username="test_user_username",
-                expect_object_changes_=expected_object_changes,
+                object_changes=expected_object_changes,
             )
 
     def test_update_ansible_config_not_found_fail(self):
