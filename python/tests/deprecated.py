@@ -305,8 +305,6 @@ class AuditMixin:
     def check_last_audit_record(
         self,
         model: type[AuditLog | AuditSession] = AuditLog,
-        *,
-        expect_object_changes_: bool = True,
         **kwargs,
     ) -> AuditLog:
         last_audit_record = model.objects.order_by("pk").last()
@@ -316,22 +314,13 @@ class AuditMixin:
         if model is AuditLog:
             kwargs.setdefault("user__username", "admin")
 
-        object_changes = kwargs.pop("object_changes", {})
+        # Object changes are {} for most cases, we always want to check it, but providing it each time is redundant.
+        if model is AuditLog:
+            kwargs.setdefault("object_changes", {})
 
         expected_record = model.objects.filter(**kwargs).order_by("pk").last()
         self.assertIsNotNone(expected_record, "Can't find audit record")
         self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
-
-        # Object changes are {} for most cases,
-        # we always want to check it, but providing it each time is redundant.
-        # But sometimes structure is too complex for sqlite/ORM to handle,
-        # so we have to check changes separately.
-        #
-        # Check is on equality after retrieve for more clear message
-        # and to avoid object changes filtering
-        # SQLite support ended in release 2.7.0. We need to review this code.
-        if (model is AuditLog) and expect_object_changes_:
-            self.assertDictEqual(expected_record.object_changes, object_changes)
 
         return last_audit_record
 

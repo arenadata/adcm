@@ -132,15 +132,14 @@ class TestUserAudit(ADCMDjangoAPISuite):
             },
         }
 
-        last_record = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.test_user),
             user__username="admin",
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
         )
-        self.assertDictEqual(expected_object_changes, last_record.object_changes)
 
     def test_user_update_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)

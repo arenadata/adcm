@@ -102,7 +102,6 @@ class TestHostAudit(ADCMDjangoAPISuite):
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={"current": {"fqdn": "new.name"}, "previous": {"fqdn": "test_host_2"}},
         )
 
@@ -120,7 +119,6 @@ class TestHostAudit(ADCMDjangoAPISuite):
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={
                 "current": {"fqdn": "new.name", "description": "new description"},
                 "previous": {"fqdn": "test_host_2", "description": ""},
@@ -540,7 +538,6 @@ class TestHostAudit(ADCMDjangoAPISuite):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={
                 "current": {"fqdn": "new.name", "description": "new description"},
                 "previous": {"fqdn": "test_host_2", "description": ""},

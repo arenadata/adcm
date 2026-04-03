@@ -27,6 +27,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
     extract_current_from_response,
+    extract_from_object,
     extract_previous_from_object,
     only_on_success,
 )
@@ -165,6 +166,8 @@ from api_v2.utils.audit import (
     nested_host_does_exist,
     parent_cluster_from_lookup,
     parent_host_from_lookup,
+    retrieve_cluster_ansible_config_from_object,
+    retrieve_cluster_ansible_config_from_response,
     set_add_hosts_name,
     set_removed_host_name,
     update_cluster_name,
@@ -699,7 +702,10 @@ class ClusterViewSet(
             errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
         ),
     )
-    @audit_update(name="Ansible configuration updated", object_=cluster_from_lookup)
+    @audit_update(name="Ansible configuration updated", object_=cluster_from_lookup).track_changes(
+        before=extract_from_object(func=retrieve_cluster_ansible_config_from_object, section="previous"),
+        after=retrieve_cluster_ansible_config_from_response(),
+    )
     @action(methods=["get", "post"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config")
     def ansible_config(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()

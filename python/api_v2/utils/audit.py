@@ -17,7 +17,7 @@ from typing import Any, TypeAlias
 import json
 
 from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
-from audit.alt.hooks import AuditHook
+from audit.alt.hooks import AuditHook, AuditHookFunc
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
 from cm.converters import (
@@ -31,6 +31,7 @@ from cm.legacy.utils import get_obj_type
 from cm.models import (
     ADCM,
     ActionHostGroup,
+    AnsibleConfig,
     Bundle,
     Cluster,
     Component,
@@ -41,6 +42,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, Prefetch
 from django.http.request import RawPostDataException
@@ -442,6 +444,28 @@ def retrieve_role_children(id_: int) -> dict:
         return {}
 
     return {"child": sorted(child_role.display_name for child_role in role.child.all())}
+
+
+def retrieve_cluster_ansible_config_from_object(id_: int) -> dict:
+    try:
+        return (
+            AnsibleConfig.objects.filter(object_id=id_, object_type=ContentType.objects.get_for_model(Cluster))
+            .values_list("value", flat=True)
+            .get()
+        )
+    except AnsibleConfig.DoesNotExist:
+        return {}
+
+
+def retrieve_cluster_ansible_config_from_response() -> AuditHookFunc:
+    class HookImpl(AuditHook):
+        def __call__(self):
+            if not isinstance(self.result, Response):
+                return
+
+            self.context.meta.changes["current"] = self.result.data["config"]
+
+    return HookImpl
 
 
 # name changers
