@@ -83,7 +83,7 @@ def check_definitions_are_valid(
         with localize_error(repr_from_key(key)):
             check_import_defaults_exist_in_config(imports=definition.imports, config=definition.config)
             check_exported_values_exists_in_config(exports=definition.exports, config=definition.config)
-            check_upgrades(upgrades=definition.upgrades, definitions=definitions)
+            check_upgrades(upgrades=definition.upgrades, definitions=definitions, bundle_root=context.bundle_root)
 
             if definition.config:
                 check_config_definition(definition=definition.config, bundle_root=context.bundle_root)
@@ -300,7 +300,7 @@ def check_action_scripts(action: ActionDefinition):
                 raise BundleValidationError(message)
 
 
-def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap) -> None:
+def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap, bundle_root: Path) -> None:
     for upgrade in upgrades:
         if not upgrade.action:
             continue
@@ -309,6 +309,8 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
             check_action_hc_acl_rules(hostcomponentmap=upgrade.action.hostcomponentmap, definitions=definitions)
             if upgrade.action.scripts_template is None:
                 check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
+            else:
+                check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
 
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:

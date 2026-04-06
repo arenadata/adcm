@@ -38,7 +38,7 @@ from core.bundle._parsing.v_2_0.schema import (
     ServiceRequiresSchema,
     Version,
 )
-from core.bundle._parsing.v_2_0.upgrades import ClusterUpgrades, ProviderUpgrades, UpgradeDynamicInternalScript
+from core.bundle._parsing.v_2_0.upgrades import ClusterUpgrades, DynamicUpgradeScriptList, ProviderUpgrades
 
 # Cluster Objects
 
@@ -204,7 +204,7 @@ class DynamicActionScripts(BundleModel):
 
 
 class DynamicUpgradeScripts(BundleModel):
-    scripts: Annotated[list[UpgradeDynamicInternalScript], Field(min_length=1)]
+    scripts: Annotated[DynamicUpgradeScriptList, Field(min_length=1)]
 
 
 class DynamicWizardScripts(BundleModel):
