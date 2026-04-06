@@ -43,9 +43,8 @@ UpgradeScript = Annotated[
     Field(discriminator="script_type"),
     BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
 ]
-UpgradeDynamicScript = Annotated[
-    UpgradeDynamicInternalScript | AnsibleScript,
-    Field(discriminator="script_type"),
+DynamicUpgradeScriptList = Annotated[
+    list[Annotated[UpgradeDynamicInternalScript | AnsibleScript, Field(discriminator="script_type")]],
     BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
     AfterValidator(upgrade_scripts_are_valid),
 ]

@@ -494,23 +494,14 @@ class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "GROUP_CONFIG_NO_CONFIG_ERROR")
 
-
-class TestScriptsTemplate(ADCMDjangoAPISuite):
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls._initialize_roles_and_adcm()
-
-        old_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one")
-        new_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_one_upgrade")
-
-        cls.cluster = cls.uc.add_cluster(bundle=old_bundle, name="whatever")
-        cls.service = cls.uc.add_services_to_cluster(["adcm_7807"], cluster=cls.cluster)[0]
-
-        cls.upgrade = Upgrade.objects.get(name="with_scripts_adcm_7807", bundle=new_bundle)
-
     def test_apply_config_in_script(self):
+        cluster = self.cluster_1
+        self.accept_license_of_first_service()
+        service = self.uc.add_services_to_cluster(["adcm_7807"], cluster=cluster)[0]
+        upgrade = Upgrade.objects.get(name="with_scripts_adcm_7807")
+
         # upgrade
-        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
+        response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
         # run upgrade action
         launched_task = self.task_runner.expect_task_launched()
@@ -519,6 +510,6 @@ class TestScriptsTemplate(ADCMDjangoAPISuite):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task.id)
         self.assertEqual(task_status, "success")
         # config migrated
-        config = ConfigLog.objects.get(id=self.service.config.current)
+        config = ConfigLog.objects.get(id=service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)
