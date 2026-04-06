@@ -56,35 +56,6 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="id",
-                type=int,
-                description="Filter by id.",
-            ),
-            OpenApiParameter(
-                name="display_name",
-                description="Case insensitive and partial filter by display name.",
-            ),
-            OpenApiParameter(
-                name="product",
-                description="Case insensitive filter by product.",
-            ),
-            OpenApiParameter(
-                name="version",
-                description="Filter by version.",
-            ),
-            OpenApiParameter(
-                name="edition",
-                description="Filter by edition.",
-            ),
-            OpenApiParameter(
-                name="signature_status",
-                description="Case insensitive and partial filter by bundle signature status.",
-            ),
-            OpenApiParameter(
-                name="license_status",
-                description="Case insensitive and partial filter by bundle license status.",
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -98,8 +69,8 @@ from api_v2.views import ADCMGenericViewSet
                     "-edition",
                     "signatureStatus",
                     "-signatureStatus",
-                    "licenseStatus",
-                    "-licenseStatus",
+                    "mainPrototypeLicenseStatus",
+                    "-mainPrototypeLicenseStatus",
                 ),
                 default="displayName",
             ),

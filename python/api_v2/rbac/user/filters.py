@@ -12,11 +12,12 @@
 
 from decimal import Decimal
 
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django_filters.rest_framework import CharFilter, ChoiceFilter, NumberFilter, OrderingFilter
+from rbac.models import OriginType
 
 from api_v2.filters import AdvancedFilterSet, NumberInFilter
-from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
+from api_v2.rbac.user.constants import UserStatusChoices
 
 
 class UserFilterSet(
@@ -24,55 +25,46 @@ class UserFilterSet(
     char_fields=("username", "type"),
     number_fields=("id",),
 ):
-    username = CharFilter(field_name="username", label="username", lookup_expr="icontains")
-    status = ChoiceFilter(choices=UserStatusChoices.choices, method="filter_status", label="status")
-    email = CharFilter(field_name="email", label="Filter by email.")
-    type = ChoiceFilter(choices=UserTypeChoices.choices, method="filter_type", label="Filter by type.")
-    group_name = CharFilter(
-        field_name="groups__group__display_name",
-        label="Case insensitive and partial filter by group display name.",
-        lookup_expr="icontains",
-        distinct=True,
-    )
-    ordering = OrderingFilter(
-        fields={
-            "username": "username",
-            "email": "email",
-            "type": "type",
-        },
-        field_labels={
-            "username": "Username",
-            "email": "Email",
-            "type": "Type",
-        },
-        label="ordering",
-    )
-
     # Advanced filters
     group__eq = NumberFilter(field_name="groups__id", lookup_expr="exact", label="group__eq")
     group__ne = NumberFilter(method="filter_group__ne", label="group__ne")
     group__in = NumberInFilter(field_name="groups__id", lookup_expr="in", distinct=True, label="group__in")
     group__exclude = NumberInFilter(field_name="groups__id", exclude=True, lookup_expr="in", label="group__exclude")
     # ---
-
-    @staticmethod
-    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
-        filter_value = False
-
-        if value == UserStatusChoices.ACTIVE:
-            filter_value = True
-            return queryset.filter(blocked_at__isnull=filter_value, is_active=filter_value)
-
-        return queryset.filter(Q(blocked_at__isnull=filter_value) | Q(is_active=filter_value))
-
-    @staticmethod
-    def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
-        filter_value = UserTypeChoices.LOCAL.value
-
-        if value == UserTypeChoices.LDAP:
-            filter_value = UserTypeChoices.LDAP.value
-
-        return queryset.filter(type=filter_value)
+    username = CharFilter(
+        field_name="username", label="Case insensitive and partial filter by user name.", lookup_expr="icontains"
+    )
+    # The User model does not have a status field, this is the magic of annotations, see queryset
+    status = ChoiceFilter(field_name="status", choices=UserStatusChoices, label="User status.")
+    email = CharFilter(field_name="email", label="Filter by email.", lookup_expr="exact")
+    type = ChoiceFilter(field_name="type", choices=OriginType.choices, label="User type.")
+    group_name = CharFilter(
+        field_name="groups__group__name",
+        label="Filter by group name.",
+        lookup_expr="exact",
+        distinct=True,
+    )
+    group_display_name = CharFilter(
+        field_name="groups__group__display_name",
+        label="Filter by group display name.",
+        lookup_expr="exact",
+        distinct=True,
+    )
+    ordering = OrderingFilter(
+        fields={
+            "username": "username",
+            "status": "status",
+            "email": "email",
+            "type": "type",
+        },
+        field_labels={
+            "username": "Username",
+            "status": "Status",
+            "email": "Email",
+            "type": "Type",
+        },
+        label="ordering",
+    )
 
     @staticmethod
     def filter_group__ne(queryset: QuerySet, name: str, value: Decimal) -> QuerySet:

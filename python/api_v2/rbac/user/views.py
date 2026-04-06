@@ -35,7 +35,8 @@ from core.legacy.rbac.errors import (
 from dishka import FromDishka
 from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
-from django.db.models import Prefetch
+from django.db.models import Case, F, Prefetch, Value, When
+from django.db.models.lookups import Exact, IsNull
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -64,6 +65,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import DefaultParams, responses
+from api_v2.rbac.user.constants import UserStatus
 from api_v2.rbac.user.filters import UserFilterSet
 from api_v2.rbac.user.permissions import UserPermissions
 from api_v2.rbac.user.serializers import (
@@ -90,13 +92,6 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(name="username", description="Case insensitive and partial filter by user name."),
-            OpenApiParameter(name="status", description="User status.", enum=("active", "blocked")),
-            OpenApiParameter(name="type", description="User type.", enum=("local", "ldap")),
-            OpenApiParameter(
-                name="group_name", description="Case insensitive and partial filter by group display name"
-            ),
-            OpenApiParameter(name="email", description="Filter by email"),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -177,6 +172,15 @@ class UserViewSet(
             Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group").filter(group__isnull=False))
         )
         .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+        .annotate(
+            status=Case(
+                When(
+                    Exact(F("is_active"), True) & IsNull(F("blocked_at"), True),
+                    then=Value(f"{UserStatus.active.value}"),
+                ),
+                default=Value(f"{UserStatus.blocked.value}"),
+            )
+        )
         .order_by("username")
     )
     filter_backends = (DjangoFilterBackend,)

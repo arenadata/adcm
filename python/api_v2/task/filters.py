@@ -11,18 +11,64 @@
 # limitations under the License.
 
 
-from cm.models import ActionHostGroup, Cluster, Component, Host, JobStatus, Provider, Service, TaskLog
-from django.contrib.contenttypes.models import ContentType
-from django.db import connection
-from django.db.models import QuerySet
-from django_filters import NumberFilter
+from cm.models import JobStatus, TaskLog
+from django.db.models import Case, F, FloatField, Func, QuerySet, Value, When
+from django.db.models.lookups import IsNull
+from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework.filters import (
     CharFilter,
     ChoiceFilter,
+    DateTimeFilter,
+    NumberFilter,
     OrderingFilter,
 )
 
 from api_v2.filters import AdvancedFilterSet
+
+
+class Epoch(Func):
+    template = "EXTRACT(epoch FROM %(expressions)s)::FLOAT"
+    output_field = FloatField()
+
+
+def _add_target_name_field_to_queryset(queryset: QuerySet) -> QuerySet:
+    return queryset.annotate(
+        target_name=Case(
+            When(IsNull(F("selector__action_host_group__name"), False), then=F("selector__action_host_group__name")),
+            When(IsNull(F("selector__host__name"), False), then=F("selector__host__name")),
+            When(IsNull(F("selector__provider__name"), False), then=F("selector__provider__name")),
+            When(IsNull(F("selector__component__name"), False), then=F("selector__component__name")),
+            When(IsNull(F("selector__service__name"), False), then=F("selector__service__name")),
+            When(IsNull(F("selector__cluster__name"), False), then=F("selector__cluster__name")),
+            When(IsNull(F("selector__adcm__name"), False), then=F("selector__adcm__name")),
+        )
+    )
+
+
+def _add_duration_time_field_to_queryset(queryset: QuerySet) -> QuerySet:
+    # I cannot use the duration field name because it is already used in the model.
+    return queryset.annotate(
+        duration_time=Case(
+            When(IsNull(F("start_date"), True), then=Value(None)),
+            When(IsNull(F("finish_date"), True), then=Value(None)),
+            default=Epoch(F("finish_date") - F("start_date")),
+        )
+    )
+
+
+class TaskOrderingFilter(OrderingFilter):
+    def filter(self, qs, value):
+        if value in EMPTY_VALUES:
+            return qs
+
+        if "objectName" in value or "-objectName" in value:
+            qs = _add_target_name_field_to_queryset(queryset=qs)
+
+        if "duration" in value or "-duration" in value:
+            qs = _add_duration_time_field_to_queryset(queryset=qs)
+
+        ordering = [self.get_ordering_value(param) for param in value if param not in EMPTY_VALUES]
+        return qs.order_by(*ordering)
 
 
 class TaskFilter(
@@ -38,6 +84,14 @@ class TaskFilter(
     owner_id__eq = NumberFilter(field_name="owner_id", lookup_expr="exact", label="owner_id__eq")
     owner_type__eq = CharFilter(field_name="owner_type", lookup_expr="exact", label="owner_type__eq")
     # ---
+    # Deprecate filters, saved for backward compatibility.
+    job_name = CharFilter(
+        label="Case insensitive and partial filter by job name.",
+        field_name="action__display_name",
+        lookup_expr="icontains",
+    )
+    # ---
+    id = NumberFilter(field_name="id", label="Filter by id.", lookup_expr="exact")
     name = CharFilter(
         label="Case insensitive and partial filter by task name.", field_name="name", lookup_expr="icontains"
     )
@@ -46,19 +100,23 @@ class TaskFilter(
         field_name="display_name",
         lookup_expr="icontains",
     )
-    job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
-    object_name = CharFilter(label="Object name", method="filter_object_name")
-    status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
-    ordering = OrderingFilter(
+    object_name = CharFilter(
+        label="Case insensitive and partial filter by object name.", method="filter_by_object_name"
+    )
+    status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Filter by status.")
+    duration = NumberFilter(label="Filter by duration.", method="filter_by_duration")
+    start_time = DateTimeFilter(field_name="start_date", label="Filter by start time.", lookup_expr="exact")
+    end_time = DateTimeFilter(field_name="finish_date", label="Filter by end time.", lookup_expr="exact")
+    ordering = TaskOrderingFilter(
         fields={
             "id": "id",
             "name": "name",
             "display_name": "displayName",
             "start_date": "startTime",
             "finish_date": "endTime",
-            "action__display_name": "jobName",
             "status": "status",
-            "duration": "duration",
+            "duration_time": "duration",
+            "target_name": "objectName",
         },
         field_labels={
             "id": "ID",
@@ -66,39 +124,12 @@ class TaskFilter(
             "display_name": "Display name",
             "start_date": "Start time",
             "finish_date": "End time",
-            "action__display_name": "Job name",
             "status": "Status",
             "duration": "Duration",
+            "object_name": "Object name",
         },
         label="ordering",
     )
-
-    def filter_object_name(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet:
-        model_names = {m._meta.model_name for m in (Cluster, Service, Component, Provider, Host, ActionHostGroup)}
-        ct_selector_map = {
-            ct_id: model_name if model_name != "actionhostgroup" else "action_host_group"
-            for ct_id, model_name in ContentType.objects.filter(app_label="cm", model__in=model_names).values_list(
-                "id", "model"
-            )
-        }
-
-        # ideally, we want to use jsonb_path_exists here
-        # params substitution takes place in single-quoted argument of jsonb_path_exists,
-        # therefore it must be double-quoted, but django querying functionality can't handle this case
-        # Example:
-        # WHERE object_type_id = {ct_id} AND
-        #       jsonb_path_exists(selector, '$ ? ($.{field}.name like_regex %s flag "i" )')
-        where_clause = " OR ".join(
-            f"(object_type_id = {ct_id} AND COALESCE(selector ->> '{field}', '{{}}')::jsonb ->> 'name' ILIKE %s)"
-            for ct_id, field in ct_selector_map.items()
-        )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                sql=f"SELECT id FROM {TaskLog._meta.db_table} WHERE {where_clause}",  # noqa:S608. Not an injection
-                params=[f"%{value}%"] * len(ct_selector_map),
-            )
-
-            return queryset.filter(id__in=[row[0] for row in cursor.fetchall()])
 
     def advanced_filter_by_target_type(self, queryset: QuerySet, name: str, value: str) -> QuerySet[TaskLog]:
         if value == "action_host_group":
@@ -106,6 +137,8 @@ class TaskFilter(
 
         return queryset.filter(**{f"{name}__exact": value})
 
-    class Meta:
-        model = TaskLog
-        fields = ["id"]
+    def filter_by_object_name(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
+        return _add_target_name_field_to_queryset(queryset=queryset).filter(target_name__icontains=value)
+
+    def filter_by_duration(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
+        return _add_duration_time_field_to_queryset(queryset=queryset).filter(duration_time__exact=value)

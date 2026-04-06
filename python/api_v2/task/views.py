@@ -49,34 +49,15 @@ from api_v2.views import ADCMGenericViewSet
         description="Get a list of ADCM tasks.",
         summary="GET tasks",
         parameters=[
-            DefaultParams.LIMIT,
-            DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="id",
-                description="Filter by id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="name",
-                description="Case insensitive and partial filter by task name.",
-            ),
-            OpenApiParameter(
-                name="display_name",
-                description="Case insensitive and partial filter by task display name.",
-            ),
-            OpenApiParameter(
-                name="job_name",
-                description="Case insensitive and partial filter by job name.",
-            ),
-            OpenApiParameter(
-                name="object_name",
-                description="Case insensitive and partial filter by object name.",
-            ),
+            # TODO: This redefinition is necessary because we have not yet released a release in Celery Worker.
+            # We should not disclose new statuses yet: queued, revoked, scheduled.
             OpenApiParameter(
                 name="status",
                 description="Filter by status.",
                 enum=["created", "running", "success", "failed", "aborted", "broken", "locked"],
             ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -91,8 +72,6 @@ from api_v2.views import ADCMGenericViewSet
                     "-startTime",
                     "endTime",
                     "-endTime",
-                    "jobName",
-                    "-jobName",
                     "status",
                     "-status",
                     "duration",

@@ -64,19 +64,10 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(name="name", description="Case insensitive and partial filter by policy name."),
-            OpenApiParameter(
-                name="group_name", description="Case insensitive and partial filter by group display name."
-            ),
-            OpenApiParameter(name="role_name", description="Case insensitive and partial filter by role display name."),
-            OpenApiParameter(
-                name="object_name",
-                description="Case insensitive and partial filter by object name.",
-            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("name", "-name", "roleName", "-roleName"),
+                enum=("name", "-name", "roleName", "-roleName", "roleDisplayName", "-roleDisplayName"),
                 default="name",
             ),
         ],

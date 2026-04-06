@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCMEntityStatus, Cluster
+from cm.models import ADCMEntityStatus
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
     FilterSet,
+    NumberFilter,
     OrderingFilter,
 )
 
@@ -28,17 +29,23 @@ class ClusterFilter(
     number_fields=(("bundle", "prototype__bundle__id"),),
     with_object_status=True,
 ):
-    status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
+    id = NumberFilter(field_name="id", label="Filter by id.")
+    status = ChoiceFilter(label="Filter by status.", choices=ADCMEntityStatus.choices, method="filter_status")
     prototype_name = CharFilter(label="Filter by prototype name.", field_name="prototype__name")
     prototype_display_name = CharFilter(label="Filter by prototype display name.", field_name="prototype__display_name")
-    name = CharFilter(label="Case insensitive and partial filter by cluster name.", lookup_expr="icontains")
+    name = CharFilter(label="Case insensitive and partial filter by name.", field_name="name", lookup_expr="icontains")
     state = CharFilter(label="Filter by state.", field_name="state", lookup_expr="exact")
-    version = CharFilter(label="Filter by version.", field_name="prototype__version")
+    prototype_version = CharFilter(
+        label="Filter by prototype version.",
+        field_name="prototype__version",
+        lookup_expr="exact",
+    )
     ordering = OrderingFilter(
         fields={
             "name": "name",
+            "prototype__name": "prototypeName",
             "prototype__display_name": "prototypeDisplayName",
-            "prototype__version": "version",
+            "prototype__version": "prototypeVersion",
             "state": "state",
         },
         field_labels={
@@ -49,10 +56,6 @@ class ClusterFilter(
         },
         label="ordering",
     )
-
-    class Meta:
-        model = Cluster
-        fields = ["id"]
 
     def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
         return filter_cluster_status(queryset=queryset, value=value, request=self.request)

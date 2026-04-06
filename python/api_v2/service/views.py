@@ -129,18 +129,21 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
-            OpenApiParameter(
-                name="state",
-                description="Filter by state.",
-            ),
-            OpenApiParameter(
-                name="version",
-                description="Filter by version.",
-            ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("displayName", "-displayName", "state", "-state", "version", "-version"),
+                enum=(
+                    "displayName",
+                    "-displayName",
+                    "state",
+                    "-state",
+                    "prototypeVersion",
+                    "-prototypeVersion",
+                    "id",
+                    "-id",
+                ),
                 default="id",
             ),
         ],

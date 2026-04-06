@@ -32,7 +32,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.hostprovider.create import create_hostprovider
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -70,22 +70,19 @@ from api_v2.views import ADCMGenericViewSet
         summary="GET hostproviders",
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
-            OpenApiParameter(
-                name="state",
-                description="Filter by state.",
-            ),
-            OpenApiParameter(
-                name="version",
-                description="Filter by version.",
-            ),
-            OpenApiParameter(
-                name="prototype_display_name",
-                description="Filter by prototype display name.",
-            ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("name", "-name", "prototypeDisplayName", "-prototypeDisplayName", "version", "-version"),
+                enum=(
+                    "name",
+                    "-name",
+                    "prototypeDisplayName",
+                    "-prototypeDisplayName",
+                    "prototypeVersion",
+                    "-prototypeVersion",
+                ),
                 default="name",
             ),
         ],
