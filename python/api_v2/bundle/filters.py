@@ -12,9 +12,9 @@
 
 from typing import Collection
 
-from cm.models import Bundle, ObjectType
+from cm.models import LICENSE_STATE, Bundle, ObjectType, SignatureStatus
 from django.db.models.query import QuerySet
-from django_filters.rest_framework import CharFilter, OrderingFilter
+from django_filters.rest_framework import CharFilter, ChoiceFilter, DateTimeFilter, NumberFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet, CharInFilter
 
@@ -24,40 +24,6 @@ class BundleFilter(
     char_fields=("name", "version", "edition"),
     number_fields=("id",),
 ):
-    display_name = CharFilter(label="Display name", field_name="prototype__display_name", method="filter_display_name")
-    product = CharFilter(label="Product name", field_name="prototype__name", method="filter_product")
-    version = CharFilter(label="Filter by version", field_name="version")
-    edition = CharFilter(label="Filter by edition", field_name="edition")
-    signature_status = CharFilter(
-        label="Case insensitive and partial filter by bundle signature status",
-        field_name="signature_status",
-        lookup_expr="icontains",
-    )
-    license_status = CharFilter(
-        label="Case insensitive and partial filter by bundle license status",
-        field_name="prototype__license",
-        lookup_expr="icontains",
-        distinct=True,
-    )
-    ordering = OrderingFilter(
-        fields={
-            "prototype__display_name": "displayName",
-            "date": "uploadTime",
-            "version": "version",
-            "edition": "edition",
-            "signature_status": "signatureStatus",
-            "prototype__license": "licenseStatus",
-        },
-        field_labels={
-            "prototype__display_name": "Display name",
-            "date": "Upload time",
-            "version": "Version",
-            "edition": "Edition",
-            "signature_status": "Signature status",
-            "prototype__license": "License status",
-        },
-        label="ordering",
-    )
     # Advanced filters
     display_name__eq = CharFilter(
         field_name="prototype__display_name__exact",
@@ -110,20 +76,47 @@ class BundleFilter(
         method="advanced_filter_by_display_name_exclude",
     )
     # ---
-
-    class Meta:
-        model = Bundle
-        fields = ["id"]
-
-    def filter_display_name(self, queryset: QuerySet[Bundle], name: str, value: str) -> QuerySet[Bundle]:
-        return queryset.filter(
-            **{f"{name}__icontains": value, "prototype__type__in": [ObjectType.CLUSTER, ObjectType.PROVIDER]}
-        )
-
-    def filter_product(self, queryset: QuerySet[Bundle], name: str, value: str) -> QuerySet[Bundle]:
-        return queryset.filter(
-            **{f"{name}__iexact": value, "prototype__type__in": [ObjectType.CLUSTER, ObjectType.PROVIDER]}
-        )
+    id = NumberFilter(field_name="id", label="Filter by id.")
+    display_name = CharFilter(
+        label="Case insensitive and partial filter by display name.",
+        field_name="display_name",
+        lookup_expr="icontains",
+    )
+    product = CharFilter(
+        label="Case insensitive filter by product.", field_name="prototype__name", lookup_expr="iexact"
+    )
+    version = CharFilter(label="Filter by version.", field_name="version", lookup_expr="exact")
+    edition = CharFilter(label="Filter by edition.", field_name="edition", lookup_expr="exact")
+    signature_status = ChoiceFilter(
+        label="Filter by bundle signature status.",
+        field_name="signature_status",
+        choices=SignatureStatus.choices,
+    )
+    main_prototype_license_status = ChoiceFilter(
+        label="Filter by bundle license status.",
+        field_name="main_prototype_license",
+        choices=LICENSE_STATE,
+    )
+    upload_time = DateTimeFilter(label="Filter by upload time.", field_name="date", lookup_expr="exact")
+    ordering = OrderingFilter(
+        fields={
+            "display_name": "displayName",
+            "date": "uploadTime",
+            "version": "version",
+            "edition": "edition",
+            "signature_status": "signatureStatus",
+            "main_prototype_license": "mainPrototypeLicenseStatus",
+        },
+        field_labels={
+            "display_name": "Display name",
+            "date": "Upload time",
+            "version": "Version",
+            "edition": "Edition",
+            "signature_status": "Signature status",
+            "main_prototype_license": "License status",
+        },
+        label="ordering",
+    )
 
     def advanced_filter_by_display_name(
         self, queryset: QuerySet[Bundle], name: str, value: Collection[str] | str

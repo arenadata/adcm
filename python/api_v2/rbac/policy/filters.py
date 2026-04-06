@@ -13,8 +13,7 @@
 from cm.models import Cluster, Host, Provider, Service
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, QuerySet
-from django_filters.rest_framework import CharFilter, OrderingFilter
-from rbac.models import Policy
+from django_filters.rest_framework import CharFilter, NumberFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet
 
@@ -24,41 +23,73 @@ class PolicyFilter(
     char_fields=("name",),
     number_fields=("id",),
 ):
-    name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
+    id = NumberFilter(field_name="id", label="Filter by id.")
+    name = CharFilter(
+        label="Case insensitive and partial filter by policy name.", field_name="name", lookup_expr="icontains"
+    )
     group_name = CharFilter(
-        label="Case insensitive and partial filter by group display name.",
+        label="Filter by group name.",
+        field_name="group__name",
+        lookup_expr="exact",
+    )
+    group_display_name = CharFilter(
+        label="Filter by group display name.",
         field_name="group__display_name",
-        lookup_expr="icontains",
+        lookup_expr="exact",
     )
     role_name = CharFilter(
-        label="Case insensitive and partial filter by role display name.",
-        field_name="role__display_name",
-        lookup_expr="icontains",
+        label="Filter by role name.",
+        field_name="role__name",
+        lookup_expr="exact",
     )
-    object_name = CharFilter(label="Case insensitive and partial filter by object name.", method="filter_object_name")
+    role_display_name = CharFilter(
+        label="Filter by role display name.",
+        field_name="role__display_name",
+        lookup_expr="exact",
+    )
+    object_name = CharFilter(label="Filter by object name.", method="filter_by_object_name")
+    object_display_name = CharFilter(label="Filter by object display name.", method="filter_by_object_display_name")
     ordering = OrderingFilter(
         fields={
             "name": "name",
             "role__name": "roleName",
+            "role__display_name": "roleDisplayName",
         },
-        field_labels={"name": "Name", "role__name": "Role"},
+        field_labels={
+            "name": "Name",
+            "role__name": "Role Name",
+            "role__display_name": "Role Display Name",
+        },
         label="ordering",
     )
 
-    class Meta:
-        model = Policy
-        fields = ["id"]
-
-    def filter_object_name(self, queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG002, ARG004
+    def filter_by_object_name(self, queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG002
+        # `Cluster`, `Provider` and `Host` don't have any real `display_name` fields.
+        #  Therefore, the name fields are duplicated for these objects.
         model_name_map = {
+            Cluster: "name",
+            Provider: "name",
+            Host: "fqdn",
+            Service: "prototype__name",
+        }
+
+        return self._filter_by_object(queryset=queryset, value=value, model_map=model_name_map)
+
+    def filter_by_object_display_name(self, queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG002
+        model_display_name_map = {
             Cluster: "name",
             Provider: "name",
             Host: "fqdn",
             Service: "prototype__display_name",
         }
 
+        return self._filter_by_object(queryset=queryset, value=value, model_map=model_display_name_map)
+
+    def _filter_by_object(
+        self, queryset: QuerySet, value: str, model_map: dict[type[Cluster | Provider | Host | Service], str]
+    ) -> QuerySet:
         query = Q()
-        for model, field in model_name_map.items():
+        for model, field in model_map.items():
             content_type = ContentType.objects.get_for_model(model)
             model_query = Q()
             name_filter_field = f"{field}__icontains"

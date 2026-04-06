@@ -53,7 +53,7 @@ from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host as create_host_new
 from use_cases.transition.job.schedule import ScheduleTask
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -87,10 +87,8 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
         description="Get a list of all hosts.",
         summary="GET hosts",
         parameters=[
-            OpenApiParameter(
-                name="state",
-                description="Filter by state",
-            ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',

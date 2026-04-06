@@ -23,21 +23,32 @@ class ProviderFilter(
     name = CharFilter(
         field_name="name", label="Case insensitive and partial filter by hostprovider name.", lookup_expr="icontains"
     )
+    prototype_name = CharFilter(
+        field_name="prototype__name",
+        label="Filter by prototype name.",
+        lookup_expr="exact",
+    )
     prototype_display_name = CharFilter(
         field_name="prototype__display_name", label="Filter by prototype display name.", lookup_expr="exact"
     )
     state = CharFilter(label="Filter by state.", field_name="state", lookup_expr="exact")
-    version = CharFilter(label="Filter by version.", field_name="prototype__version")
+    prototype_version = CharFilter(
+        label="Filter by prototype version.", field_name="prototype__version", lookup_expr="exact"
+    )
     ordering = OrderingFilter(
         fields={
             "name": "name",
-            "prototype__version": "version",
+            "state": "state",
+            "prototype__name": "prototypeName",
             "prototype__display_name": "prototypeDisplayName",
+            "prototype__version": "prototypeVersion",
         },
         field_labels={
             "name": "Name",
-            "prototype__version": "Version",
+            "state": "State",
+            "prototype__name": "Prototype name",
             "prototype__display_name": "Prototype display name",
+            "prototype__version": "Prototype version",
         },
         label="ordering",
     )

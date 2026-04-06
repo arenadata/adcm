@@ -46,7 +46,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.job.schedule import ScheduleTask
 
-from api_v2.api_schema import exclude_params, responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -119,10 +119,14 @@ from api_v2.views import (
         description="Get a list of all components of a particular service with information on them.",
         summary="GET components",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
+                    "id",
+                    "-id",
                     "name",
                     "-name",
                     "displayName",
@@ -130,7 +134,6 @@ from api_v2.views import (
                 ),
                 default="id",
             ),
-            *exclude_params(names=("id",)),
         ],
         responses=responses(success=ComponentSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
     ),

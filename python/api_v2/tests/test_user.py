@@ -34,7 +34,6 @@ from tests.client import ADCMTestClient
 from tests.suites import ADCMDjangoAPISuite
 import zoneinfo
 
-from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
 
 UTC = zoneinfo.ZoneInfo("UTC")
@@ -738,7 +737,7 @@ class TestUserAPI(ADCMDjangoAPISuite):
         target_user.type = OriginType.LDAP
         target_user.save(update_fields=["type"])
 
-        response = (self.client.v2 / "rbac" / "users").get(query={"type": UserTypeChoices.LDAP.value})
+        response = (self.client.v2 / "rbac" / "users").get(query={"type": OriginType.LDAP.value})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)

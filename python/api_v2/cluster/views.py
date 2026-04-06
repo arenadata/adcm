@@ -194,19 +194,6 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="status",
-                description="Status filter.",
-                enum=("up", "down"),
-            ),
-            OpenApiParameter(
-                name="state",
-                description="Filter by state.",
-            ),
-            OpenApiParameter(
-                name="version",
-                description="Filter by version.",
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -216,8 +203,8 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
                     "-prototypeDisplayName",
                     "state",
                     "-state",
-                    "version",
-                    "-version",
+                    "prototypeVersion",
+                    "-prototypeVersion",
                 ),
                 default="name",
             ),
@@ -803,18 +790,8 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
-            OpenApiParameter(
-                name="state",
-                description="Filter by host state.",
-            ),
-            OpenApiParameter(
-                name="hostprovider_name",
-                description="Case insensitive and partial filter by the hostprovider display name.",
-            ),
-            OpenApiParameter(
-                name="component_name",
-                description="Case insensitive and partial filter by the component display name.",
-            ),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',

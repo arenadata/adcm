@@ -41,19 +41,27 @@ class ServiceFilter(
         lookup_expr="icontains",
     )
     status = ChoiceFilter(label="Filter by status.", choices=ADCMEntityStatus.choices, method="filter_status")
-    version = CharFilter(label="Filter by version.", field_name="prototype__version")
+    prototype_version = CharFilter(
+        label="Filter by version.",
+        field_name="prototype__version",
+        lookup_expr="exact",
+    )
     state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
 
     ordering = OrderingFilter(
         fields={
+            "prototype__name": "name",
             "prototype__display_name": "displayName",
-            "prototype__version": "version",
+            "prototype__version": "prototypeVersion",
             "state": "state",
+            "id": "id",
         },
         field_labels={
+            "prototype__name": "Name",
             "prototype__display_name": "Display name",
             "prototype__version": "Version",
             "state": "State",
+            "id": "Id",
         },
     )
 

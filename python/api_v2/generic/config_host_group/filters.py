@@ -20,16 +20,15 @@ class CHGFilter(
     char_fields=("name",),
     number_fields=("id",),
 ):
-    name = CharFilter(
-        field_name="name", label="Case insensitive and partial filter by object display name.", lookup_expr="icontains"
-    )
-    has_host = CharFilter(
+    name = CharFilter(field_name="name", label="Case insensitive and partial filter by name.", lookup_expr="icontains")
+    host_name = CharFilter(
         field_name="hosts__fqdn",
-        label="Case insensitive and partial filter by object display name.",
+        label="Case insensitive and partial filter by host name.",
         lookup_expr="icontains",
+        distinct=True,
     )
     ordering = OrderingFilter(
-        fields={"name": "configGroupName"},
-        field_labels={"name": "Config group name"},
+        fields={"name": "name"},
+        field_labels={"name": "Name"},
         label="ordering",
     )

@@ -72,19 +72,6 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="categories",
-                description="Filter by a comma-separated list of categories in the role.",
-            ),
-            OpenApiParameter(
-                name="permission_name",
-                description="Filter by a permission name.",
-            ),
-            OpenApiParameter(
-                name="type",
-                description="Filter by type.",
-                enum=("business", "role"),
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=("displayName", "-displayName"),

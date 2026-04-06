@@ -20,12 +20,23 @@ class ActionHostGroupFilter(
     char_fields=("name",),
     number_fields=("id",),
 ):
-    name = CharFilter(
-        field_name="name", label="Case insensitive and partial filter by object display name.", lookup_expr="icontains"
+    # Deprecate filters, saved for backward compatibility.
+    has_host = CharFilter(
+        field_name="hosts__fqdn",
+        label="Case insensitive and partial filter by host name.",
+        lookup_expr="icontains",
+        distinct=True,
     )
-    has_host = CharFilter(field_name="hosts__fqdn", label="Group Has Host", lookup_expr="icontains", distinct=True)
+    # ---
+    name = CharFilter(field_name="name", label="Case insensitive and partial filter by name.", lookup_expr="icontains")
+    host_name = CharFilter(
+        field_name="hosts__fqdn",
+        label="Case insensitive and partial filter by host name.",
+        lookup_expr="icontains",
+        distinct=True,
+    )
     ordering = OrderingFilter(
-        fields={"name": "actionGroupName"},
-        field_labels={"name": "Action group name"},
+        fields={"id": "id", "name": "name"},
+        field_labels={"id": "Id", "name": "Name"},
         label="ordering",
     )
