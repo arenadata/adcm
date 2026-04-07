@@ -14,5 +14,5 @@ import os
 
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings.main")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings")
 django.setup()

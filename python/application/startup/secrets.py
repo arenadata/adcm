@@ -67,8 +67,8 @@ def initialize_secrets(
     if old_file.is_file() and not new_file_is_present:
         message = "\n".join(
             (
-                "Initialization of secrets disallowed."
-                f"Old secrets file exists ({old_file}) while new one doesn't ({new_file})."
+                "Initialization of secrets disallowed.",
+                f"Old secrets file exists ({old_file}) while new one doesn't ({new_file}).",
                 "You should run this script with `migrate` first even if you are using Vault Backend.",
             )
         )
@@ -113,15 +113,15 @@ def initialize_secrets(
 
                 # most likely non-fs secrets unmigrated
                 message = "\n".join(
-                    "Initialization of secrets failed."
-                    f"Secrets are absent in backend thou secrets file exists on filesystem ({new_file})."
-                    "You need to migrate secrets to your backend with `load` command."
+                    (
+                        "Initialization of secrets failed.",
+                        f"Secrets are absent in backend thou secrets file exists on filesystem ({new_file}).",
+                        "You need to migrate secrets to your backend with `load` command.",
+                    )
                 )
                 return Fail(message)
 
-    from django.core.management.utils import get_random_secret_key
-
-    django_secret_key = get_random_secret_key()
+    django_secret_key = _get_or_create_django_secret_key()
 
     new_secrets = secrets.ADCMSecrets(
         ansible=secrets.AnsibleSecrets(ansible_vault=token_hex(_SECRET_TOKEN_LENGTH)),
@@ -164,10 +164,7 @@ def migrate_secrets_on_fs_if_required(*, source_file: Path, target_file: Path) -
     old_secrets_content = source_file.read_text(encoding="utf-8")
     old_data = _ADCMSecretsDeprecated.model_validate_json(old_secrets_content)
 
-    # django settings are unavailable here, using same code to retrieve/generate it
-    from django.core.management.utils import get_random_secret_key
-
-    django_secret_key = os.getenv("SECRET_KEY", get_random_secret_key())
+    django_secret_key = _get_or_create_django_secret_key()
 
     status_service_token = token_hex(_SECRET_TOKEN_LENGTH)
 
@@ -214,7 +211,7 @@ def load_secrets(
         case Success() if not overwrite_if_exist:
             return Fail("Can't proceed, because all secrets exist.")
 
-        case Fail((_, _)) if not overwrite_if_exist:
+        case Fail((existing, _)) if existing != {} and not overwrite_if_exist:
             message = "\n".join(
                 (
                     "Secrets load failed.",
@@ -254,6 +251,13 @@ def load_secrets(
                 )
             )
             return Fail(message)
+
+
+def _get_or_create_django_secret_key():
+    # django settings are unavailable here, using same code to retrieve/generate it
+    from django.core.management.utils import get_random_secret_key
+
+    return os.getenv("SECRET_KEY", get_random_secret_key())
 
 
 def _format_missing_secrets(missing_secrets: Iterable[secrets.Secret]) -> str:

@@ -10,19 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-WSGI config for adcm project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
-"""
-
-import os
-
-from django.core.wsgi import get_wsgi_application
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings")
-
-application = get_wsgi_application()
+from adcm.settings_setups.main import *  # noqa

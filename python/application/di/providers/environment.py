@@ -100,6 +100,10 @@ class EnvironmentProvider(Provider):
                 raise secrets.SecretBaseError(message)
 
     @provide
+    def vault_settings(self) -> vault.ClientSettings:
+        return parse_vault_settings_from_env().vault
+
+    @provide
     def secrets_backend(self, source: SecretsSource, directories: Directories) -> secrets.SecretsBackend:
         match source:
             case SecretsSource.FILE_SYSTEM:
