@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from cm.models import (
     Component,
     ConfigLog,
@@ -22,6 +21,7 @@ from cm.models import (
     Upgrade,
 )
 from core.types import TaskID
+from parameterized import parameterized
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -31,12 +31,11 @@ from rest_framework.status import (
 from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.prototype.utils import accept_license
-from api_v2.tests.base import APIV2Mixin
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 
-class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
+class TestUpgrade(ADCMDjangoAPISuite):
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -436,7 +435,14 @@ class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
 
-    def test_cluster_upgrade_retrieve_complex_invalid_config_variant_value_fail(self):
+    @parameterized.expand(
+        input=[
+            ("incorrect value", "incorrect value"),
+            ("Empty value", ""),
+        ]
+    )
+    def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, _, config_type_strict):
+        checked_configuration = "variant_config_type_strict"
         response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
             data={
                 "configuration": {
@@ -452,7 +458,7 @@ class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
                             },
                         },
                         "after": ["x", "y"],
-                        "variant_config_type_strict": "incorrect value",
+                        checked_configuration: config_type_strict,
                     },
                     "adcmMeta": {},
                 },
@@ -463,7 +469,7 @@ class TestUpgrade(APIV2Mixin, ADCMDjangoAPISuite):
         self.task_runner.expect_task_not_launched()
         data = response.json()
         self.assertEqual(data["code"], "UPGRADE_OPERATION_ERROR")
-        self.assertIn("/variant_config_type_strict", data["desc"])
+        self.assertIn(f"/{checked_configuration}", data["desc"])
         self.assertIn("not in variant list", data["desc"])
 
     def test_adcm_7535_encrypt_secrets_from_new_defaults(self):
