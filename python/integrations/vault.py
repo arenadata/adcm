@@ -62,6 +62,10 @@ class VaultSecretsBackend(SecretsBackend):
     mount_point: str
 
     _cache: dict[Secret, str] = field(default_factory=dict, repr=False)
+    _mount_point_check_result: bool | None = field(default=None)
+    """
+    None when check wasn't performed, otherwise check result value is stored
+    """
 
     @classmethod
     def from_settings(cls, settings: ClientSettings) -> Self:
@@ -139,6 +143,10 @@ class VaultSecretsBackend(SecretsBackend):
         try:
             response = self.client.secrets.kv.v2.read_secret(path, mount_point=self.mount_point)
         except hvac.exceptions.InvalidPath as e:
+            if not self._is_mount_point_available():
+                message = f'Mount point "{self.mount_point}" is most likely not available'
+                raise SourceError(message) from e
+
             message = f'Failed to retrieve secret "{path}" from mount point "{self.mount_point}"'
             raise RetrieveError(message) from e
         except hvac.exceptions.VaultError as e:
@@ -161,6 +169,21 @@ class VaultSecretsBackend(SecretsBackend):
 
         return value
 
+    def _is_mount_point_available(self) -> bool:
+        if self._mount_point_check_result is not None:
+            return self._mount_point_check_result
+
+        try:
+            self.client.secrets.kv.v2.read_configuration(mount_point=self.mount_point)
+            self._mount_point_check_result = True
+        except hvac.exceptions.InvalidPath:
+            self._mount_point_check_result = False
+        except hvac.exceptions.VaultError as e:
+            message = f'Failed to connect to vault during availability check of mount point "{self.mount_point}"'
+            raise SourceError(message) from e
+
+        return self._mount_point_check_result
+
 
 def _build_client(settings: ClientSettings) -> hvac.Client:
     cert = None
@@ -176,7 +199,7 @@ def _build_client(settings: ClientSettings) -> hvac.Client:
         verify = False
 
     try:
-        token = settings.token_file.read_text(encoding="utf-8")
+        token = settings.token_file.read_text(encoding="utf-8").strip()
     except OSError as e:
         message = f"Failed to retrieve token from {settings.token_file}"
         raise ConfigurationError(message) from e

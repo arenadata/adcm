@@ -70,12 +70,14 @@ COPY conf /adcm/conf
 COPY python/ansible_share/plugins /usr/share/ansible/plugins
 COPY python /adcm/python
 
+RUN ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py
+
 RUN python -m pip uninstall -y pip && \
     rm -rf /root/.cache/pip
 
 RUN mkdir -p /adcm/data/log
 
-RUN DJANGO_SETTINGS_MODULE=adcm.settings.build python /adcm/python/manage.py collectstatic --noinput
+RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build python /adcm/python/manage.py collectstatic --noinput
 
 ENV PYTHONPATH=/adcm/python
 

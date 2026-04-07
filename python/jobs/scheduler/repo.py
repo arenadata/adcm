@@ -12,7 +12,7 @@
 
 from typing import Generator, Sequence
 
-from adcm.settings.shared.constants import (
+from adcm.settings_setups.shared.constants import (
     ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
     ADCM_HOST_TURN_ON_MM_ACTION_NAME,
     ADCM_TURN_OFF_MM_ACTION_NAME,
