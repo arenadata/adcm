@@ -12,7 +12,7 @@
 
 from collections import deque
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from typing import Generic, Literal, NamedTuple, NewType, TypeAlias, TypeVar
 
 CurrentADCMVersion = NewType("CurrentADCMVersion", str)
@@ -229,6 +229,13 @@ class ObjectMaintenanceModeState(Enum):
     CHANGING = "changing"
 
 
+class MMReason(Enum):
+    ALL_HOSTS_IN_MM = auto()
+    SERVICE_IN_MM = auto()
+    ALL_COMPONENTS_IN_MM = auto()
+    SELF = auto()
+
+
 class MaintenanceModeOfObjects(NamedTuple):
     services: dict[ServiceID, ObjectMaintenanceModeState]
     components: dict[ComponentID, ObjectMaintenanceModeState]
@@ -243,5 +250,29 @@ class MaintenanceModeOfObjects(NamedTuple):
             (self.hosts, ADCMCoreType.HOST),
         ):
             iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, mm in entities.items()))
+
+        return dict(iterables)
+
+
+ServiceMMReason: TypeAlias = Literal[MMReason.ALL_COMPONENTS_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
+ComponentMMReason: TypeAlias = Literal[MMReason.SERVICE_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
+HostMMReason: TypeAlias = Literal[MMReason.SELF]
+
+
+@dataclass(slots=True, frozen=True)
+class MaintenanceModeOfObjectsWithReason:
+    services: dict[ServiceID, tuple[ObjectMaintenanceModeState, ServiceMMReason]]
+    components: dict[ComponentID, tuple[ObjectMaintenanceModeState, ComponentMMReason]]
+    hosts: dict[HostID, tuple[ObjectMaintenanceModeState, HostMMReason]]
+
+    @property
+    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
+        iterables = set()
+        for entities, core_type in (
+            (self.services, ADCMCoreType.SERVICE),
+            (self.components, ADCMCoreType.COMPONENT),
+            (self.hosts, ADCMCoreType.HOST),
+        ):
+            iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, (mm, _) in entities.items()))
 
         return dict(iterables)

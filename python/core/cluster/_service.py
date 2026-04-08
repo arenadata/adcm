@@ -20,6 +20,7 @@ from core.types import (
     ClusterID,
     ClusterObjectDesc,
     MaintenanceModeOfObjects,
+    MaintenanceModeOfObjectsWithReason,
 )
 
 
@@ -41,5 +42,5 @@ class ClusterService:
 
     def calculate_maintenance_mode(
         self, topology: ClusterTopology, objects_own_mm: MaintenanceModeOfObjects
-    ) -> MaintenanceModeOfObjects:
+    ) -> MaintenanceModeOfObjectsWithReason:
         return calculate_maintenance_mode_for_cluster_objects(topology=topology, own_maintenance_mode=objects_own_mm)

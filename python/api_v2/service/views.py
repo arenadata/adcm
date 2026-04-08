@@ -31,6 +31,7 @@ from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
 from cm.models import Cluster, Service
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -275,6 +276,7 @@ class ServiceViewSet(
         *,
         schedule_task: FromDishka[ScheduleTask],
         status_scenarios: FromDishka[StatusScenarios],
+        cluster_service: FromDishka[ClusterService],
         **kwargs,
     ) -> Response:
         service: Service = get_object_for_user(
@@ -291,8 +293,17 @@ class ServiceViewSet(
         serializer = self.get_serializer_class()(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        cluster_id = service.cluster_id
+        topology = cluster_service.retrieve_topology(cluster_id=cluster_id)
+        own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
+        objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
+
         response: Response = get_maintenance_mode_response(
-            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+            obj=self.get_object(),
+            own_mm=own_mm.services[service.id],
+            calculated_mm=objects_mm.services[service.id],
+            serializer=serializer,
+            schedule_task=schedule_task,
         )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data

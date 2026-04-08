@@ -13,18 +13,25 @@
 from typing import Iterable
 
 from core.cluster._types import ClusterTopology
-from core.types import MaintenanceModeOfObjects, ObjectMaintenanceModeState
+from core.types import (
+    ComponentMMReason,
+    MaintenanceModeOfObjects,
+    MaintenanceModeOfObjectsWithReason,
+    MMReason,
+    ObjectMaintenanceModeState,
+    ServiceMMReason,
+)
 
 
 # COPIED from core.legacy.cluster.operations.calculate_maintenance_mode_for_cluster_objects
 def calculate_maintenance_mode_for_cluster_objects(
     topology: ClusterTopology, own_maintenance_mode: MaintenanceModeOfObjects
-) -> MaintenanceModeOfObjects:
-    cluster_objects_mm = MaintenanceModeOfObjects(
+) -> MaintenanceModeOfObjectsWithReason:
+    cluster_objects_mm = MaintenanceModeOfObjectsWithReason(
         services={},
         components={},
         hosts={
-            host_id: own_maintenance_mode.hosts.get(host_id, ObjectMaintenanceModeState.OFF)
+            host_id: (own_maintenance_mode.hosts.get(host_id, ObjectMaintenanceModeState.OFF), MMReason.SELF)
             for host_id in topology.hosts
         },
     )
@@ -60,30 +67,30 @@ def _calculate_maintenance_mode_for_service(
     own_mm: ObjectMaintenanceModeState,
     service_components_own_mm: Iterable[ObjectMaintenanceModeState],
     service_hosts_mm: Iterable[ObjectMaintenanceModeState],
-) -> ObjectMaintenanceModeState:
+) -> tuple[ObjectMaintenanceModeState, ServiceMMReason]:
     # service has components and all components' maintenance mode is set to ON
     if set(service_components_own_mm) == {ObjectMaintenanceModeState.ON}:
-        return ObjectMaintenanceModeState.ON
+        return ObjectMaintenanceModeState.ON, MMReason.ALL_COMPONENTS_IN_MM
 
     # service has hosts and all hosts' maintenance mode is set to ON
     if set(service_hosts_mm) == {ObjectMaintenanceModeState.ON}:
-        return ObjectMaintenanceModeState.ON
+        return ObjectMaintenanceModeState.ON, MMReason.ALL_HOSTS_IN_MM
 
-    return own_mm
+    return own_mm, MMReason.SELF
 
 
 def _calculate_maintenance_mode_for_component(
     own_mm: ObjectMaintenanceModeState,
     service_mm: ObjectMaintenanceModeState,
     component_hosts_mm: Iterable[ObjectMaintenanceModeState],
-) -> ObjectMaintenanceModeState:
+) -> tuple[ObjectMaintenanceModeState, ComponentMMReason]:
     if service_mm == ObjectMaintenanceModeState.ON:
-        return ObjectMaintenanceModeState.ON
+        return ObjectMaintenanceModeState.ON, MMReason.SERVICE_IN_MM
 
     if set(component_hosts_mm) == {ObjectMaintenanceModeState.ON}:
-        return ObjectMaintenanceModeState.ON
+        return ObjectMaintenanceModeState.ON, MMReason.ALL_HOSTS_IN_MM
 
-    return own_mm
+    return own_mm, MMReason.SELF
 
 
 # END COPY
