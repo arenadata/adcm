@@ -28,6 +28,7 @@ from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import ADCMCoreType
 from dishka import FromDishka
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -304,8 +305,17 @@ class HostViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
+    def maintenance_mode(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        schedule_task: FromDishka[ScheduleTask],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
+        return maintenance_mode(
+            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
+        )
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(

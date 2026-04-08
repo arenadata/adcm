@@ -23,6 +23,7 @@ from core.types import (
     ComponentDesc,
     HostDesc,
     MaintenanceModeOfObjects,
+    MaintenanceModeOfObjectsWithReason,
     ObjectMaintenanceModeState,
     ServiceDesc,
 )
@@ -47,7 +48,7 @@ def detect_start_impossible_reason_for_adcm(
 def detect_start_impossible_reason_for_cluster_objects(
     target: ClusterDesc | ServiceDesc | ComponentDesc,
     topology: ClusterTopology,
-    maintenance_mode: MaintenanceModeOfObjects,
+    maintenance_mode: MaintenanceModeOfObjectsWithReason,
 ) -> Success[None] | Fail[tuple[Literal[ActionStartImpossibleReason.MAINTENANCE_MODE], ADCMCoreType]]:
     in_mm = _get_objects_with_not_off_mm(mm_objects=maintenance_mode)
     children = set(find_children(target=target, topology=topology))
@@ -75,6 +76,6 @@ def detect_start_impossible_reason_for_provider_objects(
 
 
 def _get_objects_with_not_off_mm(
-    mm_objects: MaintenanceModeOfObjects,
+    mm_objects: MaintenanceModeOfObjectsWithReason | MaintenanceModeOfObjects,
 ) -> Iterator[ServiceDesc | ComponentDesc | HostDesc]:
     return (desc for desc, mm in mm_objects.objects_dict.items() if mm != ObjectMaintenanceModeState.OFF)

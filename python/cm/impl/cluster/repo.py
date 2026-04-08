@@ -21,6 +21,7 @@ from core.types import (
     ClusterObjectDesc,
     ComponentID,
     Descriptor,
+    HostDesc,
     HostID,
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
@@ -36,7 +37,7 @@ class ClusterRepo(cluster.ClusterRepoI):
         topologies = retrieve_multiple_topologies(cluster_ids=(cluster_id,))
         return next(topologies)
 
-    def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
+    def get_related_cluster_id(self, object_: ClusterObjectDesc | HostDesc) -> ClusterID:
         match object_:
             case Descriptor(type=ADCMCoreType.CLUSTER):
                 return object_.id
@@ -44,6 +45,8 @@ class ClusterRepo(cluster.ClusterRepoI):
                 return Service.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
             case Descriptor(type=ADCMCoreType.COMPONENT):
                 return Component.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
+            case Descriptor(type=ADCMCoreType.HOST):
+                return Host.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
 
     def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
         # COPIED FROM cm.legacy.services.cluster.retrieve_clusters_objects_maintenance_mode

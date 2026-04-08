@@ -14,12 +14,27 @@ from cm.models import Component, Host, MaintenanceMode, Service, TaskLog
 from cm.tests.mocks.task_runner import FailedJobInfo
 from core.types import TaskID
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from tests.dependencies import TaskRunnerOverride
 from tests.suites import ADCMDjangoAPISuite
 
 
-class TestMMActions(ADCMDjangoAPISuite):
+class MMUtilsMixin:
+    def do_change_mm_request(self, obj: Host | Service | Component) -> Response:
+        match obj.maintenance_mode:
+            case MaintenanceMode.ON:
+                data = {"maintenanceMode": MaintenanceMode.OFF.value}
+            case MaintenanceMode.OFF:
+                data = {"maintenanceMode": MaintenanceMode.ON.value}
+            case _:
+                raise ValueError(f"Unexpected mm status: {obj.maintenance_mode}")
+
+        object_endpoint = self.client.v2[(obj.cluster, "hosts", obj) if isinstance(obj, Host) else obj]
+
+        return (object_endpoint / "maintenance-mode").post(data=data)
+
+
+class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
     """
     Tests for reserved mm-action names
     No actual ansible playbook runs, thus checking for `changing` mm status
@@ -43,19 +58,6 @@ class TestMMActions(ADCMDjangoAPISuite):
         provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
         provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
         cls.host = cls.uc.add_host(provider=provider, fqdn="host")
-
-    def do_change_mm_request(self, obj: Host | Service | Component) -> Response:
-        match obj.maintenance_mode:
-            case MaintenanceMode.ON:
-                data = {"maintenanceMode": MaintenanceMode.OFF.value}
-            case MaintenanceMode.OFF:
-                data = {"maintenanceMode": MaintenanceMode.ON.value}
-            case _:
-                raise ValueError(f"Unexpected mm status: {obj.maintenance_mode}")
-
-        object_endpoint = self.client.v2[(obj.cluster, "hosts", obj) if isinstance(obj, Host) else obj]
-
-        return (object_endpoint / "maintenance-mode").post(data=data)
 
     def expect_task_launched_with_name(self, name: str) -> TaskID:
         task_id = self.task_runner.expect_task_launched().id
@@ -176,3 +178,166 @@ class TestMMActions(ADCMDjangoAPISuite):
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)
+
+
+class TestMaintenanceMode(ADCMDjangoAPISuite, MMUtilsMixin):
+    maxDiff = None
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one")
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="test-cluster")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = cls.service.components.get(prototype__name="component_1")
+        cls.component_2 = cls.service.components.get(prototype__name="component_2")
+        cls.component_3 = cls.service.components.get(prototype__name="component_3")
+
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
+        cls.host_1 = cls.uc.add_host(provider=provider, fqdn="host-1", cluster=cls.cluster)
+        cls.host_2 = cls.uc.add_host(provider=provider, fqdn="host-2", cluster=cls.cluster)
+        cls.host_3 = cls.uc.add_host(provider=provider, fqdn="host-3", cluster=cls.cluster)
+
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.host_1, cls.component_1), (cls.host_2, cls.component_2), (cls.host_3, cls.component_3)),
+        )
+
+    def test_turn_off_mm_service_in_implicit_mm_from_hosts(self):
+        # turn ON mm on all hosts
+        for host in (self.host_1, self.host_2, self.host_3):
+            response = self.do_change_mm_request(obj=host)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            host.refresh_from_db()
+            self.assertEqual(host.maintenance_mode, MaintenanceMode.ON)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "The service is in maintenance mode because the hosts where it is installed are in maintenance "
+            "mode. To turn it off, disable maintenance mode on related hosts.",
+        }
+
+        response = self.do_change_mm_request(obj=self.service)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_service_in_implicit_mm_from_components(self):
+        # turn ON mm on all components
+        for component in (self.component_1, self.component_2, self.component_3):
+            response = self.do_change_mm_request(obj=component)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            component.refresh_from_db()
+            self.assertEqual(component.maintenance_mode, MaintenanceMode.ON)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "The service is in maintenance mode because all it's components are in maintenance mode. "
+            "To turn it off, disable maintenance mode on related components.",
+        }
+
+        response = self.do_change_mm_request(obj=self.service)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_service_not_in_mm(self):
+        self.assertEqual(self.service.maintenance_mode, MaintenanceMode.OFF)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "Maintenance mode already off.",
+        }
+
+        response = (self.client.v2[self.service] / "maintenance-mode").post(
+            data={"maintenanceMode": MaintenanceMode.OFF.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_component_in_implicit_mm_from_service(self):
+        response = self.do_change_mm_request(obj=self.service)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.service.refresh_from_db()
+        self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "The component is in maintenance mode because it's service is in maintenance mode. "
+            "To turn it off, disable maintenance mode on related service.",
+        }
+
+        response = self.do_change_mm_request(obj=self.component_1)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_component_in_implicit_mm_from_hosts(self):
+        response = self.do_change_mm_request(obj=self.host_1)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.host_1.refresh_from_db()
+        self.assertEqual(self.host_1.maintenance_mode, MaintenanceMode.ON)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "The component is in maintenance mode because the hosts where it is installed are in maintenance "
+            "mode. To turn it off, disable maintenance mode on related hosts.",
+        }
+
+        response = self.do_change_mm_request(obj=self.component_1)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_component_not_in_mm(self):
+        self.assertEqual(self.component_1.maintenance_mode, MaintenanceMode.OFF)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "Maintenance mode already off.",
+        }
+
+        response = (self.client.v2[self.component_1] / "maintenance-mode").post(
+            data={"maintenanceMode": MaintenanceMode.OFF.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def test_turn_off_mm_host_not_in_mm(self):
+        self.assertEqual(self.host_1.maintenance_mode, MaintenanceMode.OFF)
+
+        expected_response = {
+            "code": "MAINTENANCE_MODE",
+            "level": "error",
+            "desc": "Maintenance mode already off.",
+        }
+
+        # host endpoint
+        response = (self.client.v2[self.host_1] / "maintenance-mode").post(
+            data={"maintenanceMode": MaintenanceMode.OFF.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
+
+        # cluster-host endpoint
+        response = (self.client.v2[(self.host_1.cluster, "hosts", self.host_1)] / "maintenance-mode").post(
+            data={"maintenanceMode": MaintenanceMode.OFF.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)

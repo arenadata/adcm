@@ -54,6 +54,7 @@ from cm.models import (
     Service,
 )
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.legacy.bundle.operations import build_requires_dependencies_map
 from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
@@ -962,8 +963,17 @@ class HostClusterViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
+    def maintenance_mode(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        schedule_task: FromDishka[ScheduleTask],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
+        return maintenance_mode(
+            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
+        )
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
