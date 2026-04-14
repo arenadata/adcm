@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Component, Host, MaintenanceMode, Service, TaskLog
+from cm.converters import orm_object_to_action_target_descriptor
+from cm.models import Action, Component, Host, MaintenanceMode, Service, TaskLog
 from cm.tests.mocks.task_runner import FailedJobInfo
+from cm.transition.action import RetrieveStartImpossibleReason
 from core.types import TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
@@ -85,6 +87,30 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
+
+    def test_start_impossible_reason_does_not_affects_mm_actions(self):
+        mm_action_name = "adcm_turn_on_maintenance_mode"
+        service, *_ = self.uc.add_services_to_cluster(["service_2"], cluster=self.cluster)
+        component_1 = service.components.get(prototype__name="component_1")
+        component_2 = service.components.get(prototype__name="component_2")
+
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, component_1), (self.host, self.component)])
+
+        # put one component in MM, retrieve service's SIR
+        mm_action = Action.objects.get(name=mm_action_name, prototype=service.prototype)
+        retrieve_sir = self.container.get(RetrieveStartImpossibleReason)
+        component_2._maintenance_mode = "on"
+        component_2.save(update_fields=["_maintenance_mode"])
+        service_sir = retrieve_sir.for_action_target(
+            target=orm_object_to_action_target_descriptor(service),
+            allowed_in_mm={mm_action.id: mm_action.allow_in_maintenance_mode},
+        )[mm_action.pk]
+        self.assertEqual(service_sir, 'The Action is not available. One or more components in "Maintenance mode"')
+
+        response = self.do_change_mm_request(obj=service)
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_no_task_run_without_hc_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)

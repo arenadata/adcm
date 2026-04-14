@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from typing import Literal
 
 from cm import models
@@ -20,6 +21,7 @@ from cm.legacy.status_api import send_prototype_and_state_update_event
 
 # todo waiting for refactoring, don't want to copy it anywhere for now
 from cm.legacy.upgrade import check_upgrade, update_before_upgrade
+from cm.transition.action import RetrieveStartImpossibleReason
 from core.types import TaskID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
@@ -30,42 +32,48 @@ from use_cases.legacy.upgrade import build_switch_revert_callbacks
 from use_cases.transition.job.schedule import ScheduleTask
 
 
-def upgrade_object(
-    obj: models.Cluster | models.Provider,
-    upgrade: models.Upgrade,
-    *,
-    payload: UpgradeActionDTO,
-    schedule_task: ScheduleTask,
-    config_service: core.config.ConfigService,
-    rbac_scenarios: RBACScenarios,
-) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
-    with atomic():
-        check_license(prototype=obj.prototype)
-        upgrade_prototype = models.Prototype.objects.get(
-            bundle=upgrade.bundle,
-            name=upgrade.bundle.name,
-            type__in=(models.ObjectType.CLUSTER, models.ObjectType.PROVIDER),
-        )
-        check_license(prototype=upgrade_prototype)
+@dataclass(slots=True)
+class UpgradeObject:
+    schedule_task: ScheduleTask
+    config_service: core.config.ConfigService
+    rbac_scenarios: RBACScenarios
+    retrieve_sir: RetrieveStartImpossibleReason
 
-        success, msg = check_upgrade(obj=obj, upgrade=upgrade)
-        if not success:
-            raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
+    def do(
+        self,
+        upgrade: models.Upgrade,
+        target: models.Cluster | models.Provider,
+        payload: UpgradeActionDTO,
+    ) -> tuple[Literal["plain"], None] | tuple[Literal["task"], TaskID]:
+        with atomic():
+            check_license(prototype=target.prototype)
+            upgrade_prototype = models.Prototype.objects.get(
+                bundle=upgrade.bundle,
+                name=upgrade.bundle.name,
+                type__in=(models.ObjectType.CLUSTER, models.ObjectType.PROVIDER),
+            )
+            check_license(prototype=upgrade_prototype)
 
-        obj.before_upgrade["bundle_id"] = obj.prototype.bundle.pk
-        update_before_upgrade(obj=obj)
+            success, msg = check_upgrade(obj=target, upgrade=upgrade, retrieve_sir=self.retrieve_sir)
+            if not success:
+                raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
 
-        if not upgrade.action:
-            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
-            bundle_switch(obj=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
+            target.before_upgrade["bundle_id"] = target.prototype.bundle.pk
+            update_before_upgrade(obj=target)
 
-            if upgrade.state_on_success:
-                obj.state = upgrade.state_on_success
-                obj.save(update_fields=["state"])
+            if not upgrade.action:
+                callbacks = build_switch_revert_callbacks(
+                    config_service=self.config_service, rbac_scenarios=self.rbac_scenarios
+                )
+                bundle_switch(obj=target, upgrade=upgrade, callbacks=callbacks, config_service=self.config_service)
 
-            send_prototype_and_state_update_event(object_=obj)
-            return "plain", None
+                if upgrade.state_on_success:
+                    target.state = upgrade.state_on_success
+                    target.save(update_fields=["state"])
 
-        task = schedule_task.do(action_orm=upgrade.action, target=obj, payload=payload.to_run_action_dto())
+                send_prototype_and_state_update_event(object_=target)
+                return "plain", None
 
-        return "task", task.pk
+            task = self.schedule_task.do(action_orm=upgrade.action, target=target, payload=payload.to_run_action_dto())
+
+            return "task", task.pk

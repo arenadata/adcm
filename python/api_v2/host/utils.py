@@ -25,7 +25,7 @@ from rbac.scenarios import RBACScenarios
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
@@ -80,7 +80,7 @@ def create_host(
 def maintenance_mode(
     request: Request,
     host: Host,
-    schedule_task: ScheduleTask,
+    schedule_task: ScheduleMMChangingTask,
     cluster_service: ClusterService,
 ) -> Response:
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)

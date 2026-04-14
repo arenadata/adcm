@@ -45,7 +45,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.component.filters import ComponentFilter
@@ -194,7 +194,7 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         self,
         request: Request,
         *_,
-        schedule_task: FromDishka[ScheduleTask],
+        schedule_task: FromDishka[ScheduleMMChangingTask],
         status_scenarios: FromDishka[StatusScenarios],
         cluster_service: FromDishka[ClusterService],
         **kwargs,

@@ -57,7 +57,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.cluster.create import CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteServiceFromAPI
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -277,7 +277,7 @@ class ServiceViewSet(
         self,
         request: Request,
         *,
-        schedule_task: FromDishka[ScheduleTask],
+        schedule_task: FromDishka[ScheduleMMChangingTask],
         status_scenarios: FromDishka[StatusScenarios],
         cluster_service: FromDishka[ClusterService],
         **kwargs,

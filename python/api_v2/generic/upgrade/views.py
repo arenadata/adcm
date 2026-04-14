@@ -21,16 +21,14 @@ from adcm.permissions import (
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.legacy.upgrade import check_upgrade, get_upgrade
+from cm.legacy.upgrade import DifferentBundleError, check_upgrade, get_upgrade
 from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog, Upgrade
 from cm.transition.action import RetrieveStartImpossibleReason
-from core.action import operations
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import Descriptor
 from dishka import FromDishka
 from django.db.models import OuterRef, Prefetch, Subquery
 from rbac.models import User
-from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import get_object_or_404
@@ -39,15 +37,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from use_cases.dto import ConfigurationDTO, UpgradeActionDTO
-from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask
-from use_cases.transition.upgrade import upgrade_object
+from use_cases.transition.job.schedule import RetrieveConfigurationForAction
+from use_cases.transition.upgrade import UpgradeObject
 import core
 
 from api_v2.generic.action.serializers import UpgradeRunSerializer
 from api_v2.generic.upgrade.filters import UpgradeFilter
 from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.utils.checks import check_hostcomponents_objects_exist
 from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
@@ -57,11 +54,14 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
     queryset = Upgrade.objects.select_related("action", "action__prototype")
     filterset_class = UpgradeFilter
     pagination_class = None
-    exc_conversion_map = {core.config.ConfigOperationError: "UPGRADE_OPERATION_ERROR"}
+    exc_conversion_map = {
+        core.config.ConfigOperationError: "UPGRADE_OPERATION_ERROR",
+        DifferentBundleError: "UPGRADE_NOT_FOUND",  # ADCM-7976
+    }
 
     def handle_exception(self, exc: Exception) -> Response:
         if exc_code := self.exc_conversion_map.get(exc.__class__):
-            exc = AdcmEx(code=exc_code, msg=exc.args[0])
+            exc = AdcmEx(code=exc_code, msg=exc.args[0] if exc.args else "")
 
         return super().handle_exception(exc)
 
@@ -144,23 +144,6 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             case _:
                 raise ValueError("Wrong object")
 
-    def get_upgrade_and_start_impossible_reason(
-        self, parent: Cluster | Provider, retrieve_sir: RetrieveStartImpossibleReason
-    ) -> tuple[Upgrade, operations.StartImpossibleReason | None]:
-        upgrade = self.get_object()
-        if upgrade.bundle.name != parent.prototype.bundle.name:
-            raise AdcmEx(code="UPGRADE_NOT_FOUND")
-
-        upgrade_is_allowed, error = check_upgrade(obj=parent, upgrade=upgrade)
-        if not upgrade_is_allowed:
-            raise AdcmEx(code="UPGRADE_NOT_FOUND", msg=error)
-
-        start_impossible_reason = retrieve_sir.for_upgrade_target(
-            target=Descriptor(id=parent.id, type=orm_object_to_core_type(parent))
-        )
-
-        return upgrade, start_impossible_reason
-
     @inject
     def list(
         self,
@@ -193,9 +176,15 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         **_,
     ) -> Response:  # noqa: ARG001, ARG002
         parent_orm: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
+        upgrade = self.get_object()
 
-        upgrade, start_impossible_reason = self.get_upgrade_and_start_impossible_reason(
-            parent=parent_orm, retrieve_sir=retrieve_sir
+        # for retrieve endpoint start_impossible_reason should not cause an exception
+        success, msg = check_upgrade(obj=parent_orm, upgrade=upgrade, retrieve_sir=None)
+        if not success:
+            raise AdcmEx(code="UPGRADE_NOT_FOUND", msg=msg)
+
+        start_impossible_reason = retrieve_sir.for_upgrade_target(
+            target=Descriptor(id=parent_orm.id, type=orm_object_to_core_type(parent_orm))
         )
 
         jsonschema = None
@@ -231,25 +220,15 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         self,
         request: Request,
         *_,
-        config_service: FromDishka[core.config.ConfigService],
-        schedule_task: FromDishka[ScheduleTask],
-        rbac_scenarios: FromDishka[RBACScenarios],
-        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        upgrade_object: FromDishka[UpgradeObject],
         **__,
     ) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        data: dict = serializer.validated_data
         parent_orm: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
-        upgrade, start_impossible_reason = self.get_upgrade_and_start_impossible_reason(
-            parent=parent_orm, retrieve_sir=retrieve_sir
-        )
-        if start_impossible_reason:
-            raise AdcmEx(code="UPGRADE_ERROR", msg=start_impossible_reason)
-
-        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
-
-        data = serializer.validated_data
+        upgrade = self.get_object()
 
         configuration = None
         if data["configuration"] is not None:
@@ -276,13 +255,10 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
 
-        result = upgrade_object(
-            obj=parent_orm,
+        result = upgrade_object.do(
+            target=parent_orm,
             upgrade=upgrade,
             payload=payload,
-            schedule_task=schedule_task,
-            config_service=config_service,
-            rbac_scenarios=rbac_scenarios,
         )
 
         match result:
