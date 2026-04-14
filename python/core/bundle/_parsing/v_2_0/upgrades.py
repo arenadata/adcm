@@ -25,18 +25,15 @@ from core.bundle._parsing.shared.validation import (
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
     BeforeUpgradeCleanScript,
-    BundleRevertInternalScript,
     BundleSwitchInternalScript,
     ConfigApplyInternalScript,
     StateActionResultSchema,
 )
 from core.bundle._parsing.v_2_0.schema import Masking, ScriptsTemplate, StatesSchema, VersionsSchema
 
-_SwitchRevertCleanScripts = BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript
-UpgradeCommonInternalScript = Annotated[_SwitchRevertCleanScripts, Field(discriminator="script")]
-UpgradeDynamicInternalScript = Annotated[
-    _SwitchRevertCleanScripts | ConfigApplyInternalScript, Field(discriminator="script")
-]
+_SwitchCleanScripts = BundleSwitchInternalScript | BeforeUpgradeCleanScript
+UpgradeCommonInternalScript = Annotated[_SwitchCleanScripts, Field(discriminator="script")]
+UpgradeDynamicInternalScript = Annotated[_SwitchCleanScripts | ConfigApplyInternalScript, Field(discriminator="script")]
 # extra validator is added to not duplicate scripts structure, yet it's not allowed in upgrade
 UpgradeScript = Annotated[
     UpgradeCommonInternalScript | AnsibleScript,
