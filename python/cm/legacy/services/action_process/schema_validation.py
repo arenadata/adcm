@@ -25,6 +25,7 @@ class ProcessOperationType(str, Enum):
     SUBMIT = "submit_step"
     COMPLETE = "complete"
     RESET = "reset_step"
+    SKIP = "skip_step"
 
 
 class Configuration(BaseModel):
@@ -80,10 +81,24 @@ class ResetStepPayload(BaseModel):
     params: _ResetStepParams
 
 
+# Skip
+
+
+class SkipOperationStepParams(_SyncKeyParam, _StepIDParam):
+    ...
+
+
+class SkipStepPayload(BaseModel):
+    method: Literal[ProcessOperationType.SKIP]
+    params: SkipOperationStepParams
+
+
 # Payload
 
 
 class OperationPayloadSchema(BaseModel):
-    payload: SubmitStepPayload | CompleteProcessPayload | ResetStepPayload = Field(discriminator="method")
+    payload: SubmitStepPayload | CompleteProcessPayload | ResetStepPayload | SkipStepPayload = Field(
+        discriminator="method"
+    )
 
     model_config = ConfigDict(extra="forbid")

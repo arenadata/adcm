@@ -16,12 +16,14 @@ from cm.legacy.services.action_process.schema_validation import (
     CompleteProcessPayload,
     OperationPayloadSchema,
     ResetStepPayload,
+    SkipStepPayload,
     SubmitStepPayload,
 )
 from cm.models import Process
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import (
+    BooleanField,
     CharField,
     DictField,
     IntegerField,
@@ -81,13 +83,14 @@ class StepSerializer(Serializer):
     name = CharField()
     type = CharField()
     state = CharField()
+    required = BooleanField()
 
 
 class OperationSerializer(Serializer):
     method = CharField()
     params = DictField()
 
-    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteProcessPayload | ResetStepPayload:
+    def validate(self, attrs: Any) -> SubmitStepPayload | CompleteProcessPayload | ResetStepPayload | SkipStepPayload:
         try:
             validated = OperationPayloadSchema.model_validate({"payload": attrs}).payload
         except pydantic.ValidationError as e:

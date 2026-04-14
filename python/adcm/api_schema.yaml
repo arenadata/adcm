@@ -1628,6 +1628,21 @@ components:
       - reset_step
       type: string
       description: '* `reset_step` - reset_step'
+    OperationSkipStep:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationSkipStepMethodEnum'
+        params:
+          $ref: '#/components/schemas/SkipStepParams'
+      required:
+      - method
+      - params
+    OperationSkipStepMethodEnum:
+      enum:
+      - skip_step
+      type: string
+      description: '* `skip_step` - skip_step'
     OperationSubmitStep:
       type: object
       properties:
@@ -3240,6 +3255,17 @@ components:
         * `valid` - valid
         * `invalid` - invalid
         * `absent` - absent
+    SkipStepParams:
+      type: object
+      properties:
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
+      required:
+      - processSyncKey
+      - stepId
     Source:
       type: object
       properties:
@@ -3906,6 +3932,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3915,6 +3942,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3924,6 +3952,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3933,6 +3962,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3942,6 +3972,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3951,6 +3982,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3960,6 +3992,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -5572,27 +5605,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 58b59ab6-e675-491d-9f30-c06543f2bf69
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 18deb4cc-824c-4ca7-ad09-2cb1e6e6a620
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: c710d578-801d-4460-a3da-81dfb0a9a595
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 42fa7097-dec8-4886-b322-7b95b6e60754
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5745,6 +5785,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -5754,6 +5795,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -5801,6 +5843,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -6711,27 +6754,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: cf07aab6-8557-4877-993a-21c5aa7eadc2
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 1a71415a-a442-488b-9505-901092effab8
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 1198cf5a-0281-4ce5-832b-d95f339d8070
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 10430ea6-abd2-474d-ab1c-9d4d5b6c953a
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6877,6 +6927,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -6886,6 +6937,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -6933,6 +6985,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -8736,27 +8789,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: f88da111-f472-4e6a-ba4b-46100a9b7540
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 2e39dd2c-b5a8-440e-8e24-07d5873279dc
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 3ce3651f-3641-41aa-84c4-3f65806d1031
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: cfd6f12a-6e35-4d46-aa1d-38ef448feb6d
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8908,6 +8968,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -8917,6 +8978,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -8964,6 +9026,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -10514,27 +10577,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 5ed4d53a-a8e3-4e63-91ff-ef278df3d5dc
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 60bc30ff-8f81-4c69-83f9-4cf12480aa9f
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 6e35a7bd-0f0f-45e0-b82c-1f1d268553c7
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 447f0d11-69e6-49aa-9797-4c97acc07c5e
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10693,6 +10763,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -10702,6 +10773,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -10749,6 +10821,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -11743,27 +11816,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 63b5850e-8457-4c1e-9e92-d04664f95a33
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 8222d386-a52e-4c74-ab6b-0c755fc413d8
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 3486c62e-2429-4986-957e-0100f4e68253
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 78ce7452-3e33-423b-823e-ccf47f67be0f
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11915,6 +11995,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -11924,6 +12005,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -11971,6 +12053,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -12746,27 +12829,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 68c29a61-50ea-479a-8f37-f4b83c7d00ff
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: f5a64928-16e5-42df-ab12-c9faa4a13428
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 23f08b3a-82ef-4941-8b79-cc25279c4813
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 5993e22c-eb2c-4b90-a059-b689bfdb562c
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12931,6 +13021,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -12940,6 +13031,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -12987,6 +13079,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -14065,27 +14158,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: af83b55e-f8bf-424c-991d-2b20a5b66c08
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 9005f087-1564-431e-98ff-896db0ceb7a0
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 15b8c3ac-3c82-4351-bf8d-93e7406fbd84
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 189e554d-40f4-4ab0-8781-6c88c78d9af3
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -14243,6 +14343,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -14252,6 +14353,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -14299,6 +14401,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component

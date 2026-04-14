@@ -906,6 +906,7 @@ class TestBlockUnblockAPI(ADCMDjangoAPISuite):
 class TestAdvancedUserFilters(ADCMDjangoAPISuite):
     @classmethod
     def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
         cls.admin_user = User.objects.get(username="admin")
         cls.user_1 = cls.uc.create_user(username="user-1", password="secretPassword")
         cls.user_2 = cls.uc.create_user(username="user-2", password="secretPassword")

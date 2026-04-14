@@ -91,6 +91,7 @@ class WizardRepo(wizard.WizardRepoI):
                         description=step.extra.description,
                         display_name=step.extra.display_name,
                         step_spec=None,
+                        required=step.required,
                     )
                 )
         return ProcessStep.objects.bulk_create(objects)
@@ -226,9 +227,10 @@ def serialize_step(
     type_ = wizard.StepType(orm_step.type)
     state = wizard.StepState(orm_step.state)
     full_name = (orm_step.stage, orm_step.name)
+    required = orm_step.required
     extra = wizard.StepExtra(display_name=orm_step.display_name, description=orm_step.description)
 
-    common_args = {"id": orm_step.pk, "state": state, "full_name": full_name, "extra": extra}
+    common_args = {"id": orm_step.pk, "state": state, "full_name": full_name, "extra": extra, "required": required}
 
     data = None
     spec = None

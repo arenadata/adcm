@@ -16,8 +16,9 @@ from uuid import UUID
 from core.action._wizard import operations
 from core.action._wizard._errors import ActionProcessOperationError, SyncKeyMismatchError
 from core.action._wizard._repo import WizardRepoI
-from core.action._wizard._types import ProcessID, ProcessState, Stage, StepID, StepWithData
+from core.action._wizard._types import ProcessID, ProcessState, Stage, StepID, StepState, StepWithData
 from core.action._wizard._types_purgatory import (
+    SUCCESS_FINAL_PROCESS_STATES,
     ActionProcess,
     HostComponentMapDeltaSets,
     MappingInputDTO,
@@ -71,7 +72,7 @@ class WizardService:
 
     def complete_process(self, process: ActionProcess) -> None:
         for step in self.repo.retrieve_steps(process_id=process.id):
-            if step.state != ProcessStepState.COMPLETED:
+            if step.state not in SUCCESS_FINAL_PROCESS_STATES:
                 raise ActionProcessOperationError("All steps must be completed")
 
         self.repo.set_process_status(process=process, state=ProcessState.COMPLETED)
@@ -98,8 +99,9 @@ class WizardService:
         *,
         process_id: ProcessID,
         step_id: ActionProcessStepID,
+        completed_state: ProcessStepState = ProcessStepState.COMPLETED,
     ) -> ActionProcessStepID | None:
-        self.repo.update_step(step_id=step_id, data=StepUpdateDTO(state=ProcessStepState.COMPLETED))
+        self.repo.update_step(step_id=step_id, data=StepUpdateDTO(state=completed_state))
 
         current_id, last_completed_id = operations.find_current_and_last_completed_steps(
             steps=self.repo.retrieve_steps(process_id=process_id)
@@ -154,3 +156,24 @@ class WizardService:
         )
 
         self.repo.upsert_step_input(step_id=step_id, data=step_input_data)
+
+    def skip_step(self, *, process_id: ProcessID, step_id: ActionProcessStepID) -> ActionProcessStepID | None:
+        steps = tuple(self.repo.retrieve_steps(process_id=process_id))
+
+        step = operations.get_step_by_id(steps=steps, step_id=step_id)
+        if step.required:
+            raise ActionProcessOperationError("The required step can't be skipped")
+
+        if step.state in (StepState.BROKEN, StepState.RUNNING):
+            raise ActionProcessOperationError(f"The {step.state} step can't be skipped")
+
+        current_step_id, _ = operations.find_current_and_last_completed_steps(steps=steps)
+        if step_id != current_step_id:
+            raise ActionProcessOperationError("Only current step can be skipped")
+
+        self.revoke_next_steps(process_id=process_id, step_id=step_id)
+        current_id = self.complete_step(
+            process_id=process_id, step_id=step_id, completed_state=ProcessStepState.SKIPPED
+        )
+
+        return current_id  # noqa RET504

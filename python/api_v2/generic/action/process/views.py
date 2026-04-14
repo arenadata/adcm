@@ -305,7 +305,7 @@ class ProcessStepViewSet(
         self.check_permissions_for_run(request=request, action=action_orm, parent_object=parent_object)
 
         step = repo.retrieve_step(process_id=process_id, step_id=step_id)
-        data = step.model_dump(include={"id", "name", "display_name", "description", "type", "state"})
+        data = step.model_dump(include={"id", "name", "display_name", "description", "type", "state", "required"})
 
         target = orm_object_to_action_target_descriptor(parent_object)
         owner = job_service.repo.find_action_owner(action_id=action_orm.id, target=target)

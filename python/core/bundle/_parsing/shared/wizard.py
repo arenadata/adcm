@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import abstractmethod
 from typing import Annotated
 
 from pydantic import Field, model_validator
@@ -26,6 +27,18 @@ class _Names(BundleModel):
 
 class _BaseStep(_Names):
     description: Annotated[str, Field(default="")]
+    required: Annotated[bool, Field(default=True)]
+
+    @property
+    @abstractmethod
+    def type(self) -> action.wizard.StepType:
+        ...
+
+    @model_validator(mode="after")
+    def validate_required_flag(self):
+        if not self.required and self.type != action.wizard.StepType.OPERATION:
+            raise ValueError(f"{self.type} type step can't be non-required.")
+        return self
 
 
 class OperationStep(_BaseStep):

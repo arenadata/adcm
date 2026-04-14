@@ -1660,6 +1660,7 @@ class ProcessStep(models.Model):
         default=DEFAULT_PROCESS_STEP_STATE,
     )
     description = models.CharField(max_length=255, blank=True, default="")
+    required = models.BooleanField(default=True)
 
 
 class ProcessStepInput(models.Model):
