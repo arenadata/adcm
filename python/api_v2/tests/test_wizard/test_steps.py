@@ -16,7 +16,7 @@ from uuid import uuid4
 from cm.legacy.services.action_process.schema_validation import (
     ProcessOperationType,
 )
-from cm.models import Component, ProcessStep, ProcessStepInput, TaskLog
+from cm.models import Action, Component, ProcessStep, ProcessStepInput, TaskLog
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -379,3 +379,97 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
 
         self.assertEqual(response.json()["code"], "ACTION_PROCESS_OPERATION_CONFLICT")
         self.assertEqual(response.json()["desc"], "Only current step can be submitted")
+
+    def test_skip_operation_step(self):
+        action = Action.objects.get(name="wizard_skip_steps", prototype=self.cluster_1.prototype)
+        process = self.start_process(self.cluster_1, action)
+        steps = tuple(ProcessStep.objects.filter(process_id=process.pk).order_by("id"))
+        step_for_skip, step_required = steps
+
+        payload = {
+            "method": ProcessOperationType.SKIP,
+            "params": {
+                "processSyncKey": process.sync_key,
+                "stepId": step_for_skip.pk,
+            },
+        }
+
+        with self.subTest("Successful skip a step"):
+            response = self.submit_step_r(target=self.cluster_1, action=action, process_id=process.pk, data=payload)
+            response_data = response.json()
+            self.assertEqual(response_data["currentStep"], step_required.pk)
+
+            step_response = self.get_step_r(
+                target=self.cluster_1,
+                action=action,
+                process_id=process.pk,
+                step_id=step_for_skip.pk,
+            )
+            step_data = step_response.json()
+            self.assertEqual(step_data["state"], "skipped")
+            self.assertIsNone(step_data["task"])
+
+        process.refresh_from_db()
+        payload["params"]["processSyncKey"] = process.sync_key
+
+        with self.subTest("Check: only current step can be skipped"):
+            response = self.submit_step_r(
+                target=self.cluster_1,
+                action=action,
+                process_id=process.pk,
+                data=payload,
+                expected_status=HTTP_409_CONFLICT,
+            )
+            self.assertEqual(response.json()["code"], "ACTION_PROCESS_OPERATION_CONFLICT")
+            self.assertEqual(response.json()["desc"], "Only current step can be skipped")
+
+        process.refresh_from_db()
+        payload["params"]["processSyncKey"] = process.sync_key
+        payload["params"]["stepId"] = step_required.pk
+
+        with self.subTest("Check: required step can't be skipped"):
+            response = self.submit_step_r(
+                target=self.cluster_1,
+                action=action,
+                process_id=process.pk,
+                data=payload,
+                expected_status=HTTP_409_CONFLICT,
+            )
+            self.assertEqual(response.json()["code"], "ACTION_PROCESS_OPERATION_CONFLICT")
+            self.assertEqual(response.json()["desc"], "The required step can't be skipped")
+
+    def test_operations_with_broken_step(self):
+        action = Action.objects.get(name="wizard_broken_step", prototype=self.cluster_1.prototype)
+        process = self.start_process(self.cluster_1, action)
+        steps = tuple(ProcessStep.objects.filter(process_id=process.pk).order_by("id"))
+        step_for_skip, broken_step = steps
+
+        payload = {
+            "method": ProcessOperationType.SKIP,
+            "params": {
+                "processSyncKey": process.sync_key,
+                "stepId": step_for_skip.pk,
+            },
+        }
+        # skip a step for broken step rendering
+        _ = self.submit_step_r(target=self.cluster_1, action=action, process_id=process.pk, data=payload)
+        process.refresh_from_db()
+        payload["params"]["processSyncKey"] = process.sync_key
+        payload["params"]["stepId"] = broken_step.pk
+        action_mapping = {
+            "skipped": ProcessOperationType.SKIP,
+            "submitted": ProcessOperationType.SUBMIT,
+        }
+
+        for name, operation in action_mapping.items():
+            with self.subTest(f"Check: the {operation.value} operation failed for a broken step"):
+                payload["method"] = operation
+                response = self.submit_step_r(
+                    target=self.cluster_1,
+                    action=action,
+                    process_id=process.pk,
+                    data=payload,
+                    expected_status=HTTP_409_CONFLICT,
+                )
+                self.assertEqual(response.json()["code"], "ACTION_PROCESS_OPERATION_CONFLICT")
+                self.assertEqual(response.json()["desc"], f"The broken step can't be {name}")

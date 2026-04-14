@@ -38,6 +38,7 @@ from cm.legacy.services.action_process.errors import (
 from cm.legacy.services.action_process.schema_validation import (
     CompleteProcessPayload,
     ResetStepPayload,
+    SkipStepPayload,
     SubmitStepPayload,
 )
 from cm.legacy.services.action_process.types import ProcessContext
@@ -48,8 +49,9 @@ from cm.logger import logger
 SerializedConfigStep: TypeAlias = dict[
     Literal["configuration"], dict[Literal["config_schema", "adcm_meta", "config"], dict | None]
 ]
-SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task"], dict | None]
-OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload
+
+SerializedOperationStep: TypeAlias = dict[Literal["ui_options", "task", "required"], dict | None]
+OperationPayload: TypeAlias = SubmitStepPayload | CompleteProcessPayload | ResetStepPayload | SkipStepPayload
 MappingRules: TypeAlias = dict[Literal["add", "remove"], set[ComponentID]]
 
 

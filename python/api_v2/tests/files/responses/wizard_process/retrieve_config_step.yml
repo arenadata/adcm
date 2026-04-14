@@ -5,6 +5,7 @@
   "displayName": "Stage1.Step1",
   "type": "configuration",
   "state": "created",
+  "required": True,
   "configuration": {
     "configSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

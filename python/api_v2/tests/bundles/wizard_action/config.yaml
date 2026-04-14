@@ -26,6 +26,22 @@
         engine:
           type: jinja2
 
+    wizard_skip_steps:
+      <<: *wizard_action
+      wizard_template:
+        file:
+          path: wizard_jinja/stages_skip_step.j2
+        engine:
+          type: jinja2
+
+    wizard_broken_step:
+      <<: *wizard_action
+      wizard_template:
+        file:
+          path: wizard_jinja/stages_broken_step.j2
+        engine:
+          type: jinja2
+
     wizard_with_mapping_only:
       type: job
       script: ./sleep.yaml

@@ -32,6 +32,12 @@ from core.types import (
 
 ProcessStepState = StepState
 
+SUCCESS_FINAL_PROCESS_STATES = (
+    ProcessStepState.COMPLETED,
+    ProcessStepState.SKIPPED,
+)
+WORK_PROCESS_STATES = (ProcessStepState.CREATED, ProcessStepState.RUNNING)
+
 
 class ProcessUpdateDTO(BaseModel):
     sync_key: UUID | None = None
@@ -119,6 +125,7 @@ class Step(BaseModel):
     display_name: str
     step_spec: list[dict] | None = None
     description: str = ""
+    required: bool = True
     type: StepType
     state: ProcessStepState
 

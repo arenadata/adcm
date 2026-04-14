@@ -144,20 +144,34 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
                 match step:
                     case ConfigurationStep():
                         step_definition = action.wizard.ConfigStepDefinition(
-                            name=step.name, type=action.wizard.StepType.CONFIGURATION, template=template, extra=meta
+                            name=step.name,
+                            type=action.wizard.StepType.CONFIGURATION,
+                            template=template,
+                            extra=meta,
+                            required=step.required,
                         )
 
                     case OperationStep(ui_options=ui_options):
                         meta = action.wizard.OperationStepExtra(
-                            display_name=meta.display_name, description=meta.description, ui_options=ui_options
+                            display_name=meta.display_name,
+                            description=meta.description,
+                            ui_options=ui_options,
                         )
                         step_definition = action.wizard.OperationStepDefinition(
-                            name=step.name, type=action.wizard.StepType.OPERATION, template=template, extra=meta
+                            name=step.name,
+                            type=action.wizard.StepType.OPERATION,
+                            template=template,
+                            extra=meta,
+                            required=step.required,
                         )
 
                     case MappingStep():
                         step_definition = action.wizard.MappingStepDefinition(
-                            name=step.name, type=action.wizard.StepType.MAPPING, template=template, extra=meta
+                            name=step.name,
+                            type=action.wizard.StepType.MAPPING,
+                            template=template,
+                            extra=meta,
+                            required=step.required,
                         )
 
                 result_steps.append(step_definition)

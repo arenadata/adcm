@@ -32,7 +32,7 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitOperationStepParams,
     SubmitStepPayload,
 )
-from cm.legacy.services.action_process.types import ProcessContext
+from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
@@ -183,15 +183,16 @@ class PerformWizardProcessOperation:
 
         match payload.method:
             case ProcessOperationType.SUBMIT:
-                steps = self.wizard_repo.retrieve_steps(process_id=process.id)
+                steps = tuple(self.wizard_repo.retrieve_steps(process_id=process.id))
+
+                step = core.action.wizard.operations.get_step_by_id(steps=steps, step_id=payload.params.step_id)
+                if step.state in (ProcessStepState.RUNNING, ProcessStepState.BROKEN):
+                    raise core.action.wizard.ActionProcessOperationError(f"The {step.state} step can't be submitted")
+
                 current_step_id, _ = core.action.wizard.operations.find_current_and_last_completed_steps(steps=steps)
                 if payload.params.step_id != current_step_id:
                     raise core.action.wizard.ActionProcessOperationError("Only current step can be submitted")
 
-                if self.wizard_repo.retrieve_running_step_ids(process_id=process.id):
-                    raise core.action.wizard.ActionProcessOperationError("There is a running step")
-
-                step = self.wizard_repo.retrieve_step(process_id=process.id, step_id=payload.params.step_id)
                 step_spec = step.spec
                 if not step_spec:
                     message = f"Step spec is unexpectedly missing: {step=}"
@@ -248,6 +249,23 @@ class PerformWizardProcessOperation:
                     BuiltInFlag.ACTION_PROCESS_RUNNING.value.name,
                     on_objects=[context.process_context.cluster_relative_object(as_descriptor=True)],
                 )
+
+            case ProcessOperationType.SKIP:
+                current_id = self.wizard_service.skip_step(process_id=process.id, step_id=payload.params.step_id)
+                if current_id:
+                    step = self.wizard_repo.retrieve_step(process_id=process.id, step_id=current_id)
+                    template = core.action.wizard.operations.find_step_spec_declaration(
+                        step=step, process_flow_spec=process.flow_spec
+                    ).template
+                    self.fill_wizard_step_spec.do(
+                        step_id=current_id,
+                        step_type=step.type,
+                        template=template,
+                        bundle_context=bundle_context,
+                        owner=context.process_context.owner,
+                        action_args=context.process_context.build_action_args(process_id=process.id),
+                        action_allow_to_terminate=context.process_context.action_orm.allow_to_terminate,
+                    )
 
         self.wizard_service.update_process_sync_key(
             process_id=process_id,
@@ -439,7 +457,11 @@ class PerformWizardProcessOperation:
             "id": step.id,
             "full_name": (step.stage, step.name),
             "state": step.state,
-            "extra": core.action.wizard.StepExtra(display_name=step.display_name, description=step.description),
+            "required": step.required,
+            "extra": core.action.wizard.StepExtra(
+                display_name=step.display_name,
+                description=step.description,
+            ),
         }
 
         match step.type:
