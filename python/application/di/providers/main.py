@@ -48,7 +48,13 @@ from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
-from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, TaskStarter
+from use_cases.transition.job.schedule import (
+    RetrieveConfigurationForAction,
+    ScheduleMMChangingTask,
+    ScheduleTask,
+    TaskStarter,
+)
+from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
@@ -204,7 +210,7 @@ class UseCaseProvider(Provider):
     parse_bundle_from_request = provide(ParseBundleFromRequest)
     init_upgrade_adcm = provide(InitOrUpgradeADCM, scope=Scope.APP)
 
-    schedule_task = provide(ScheduleTask)
+    schedule_task = provide_all(ScheduleTask, ScheduleMMChangingTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
 
@@ -220,6 +226,7 @@ class UseCaseProvider(Provider):
         PerformWizardProcessOperation,
     )
 
+    upgrade_object = provide(UpgradeObject)
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,
         ResetBeforeUpgradeProvider,

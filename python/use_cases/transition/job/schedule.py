@@ -10,10 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Iterable, NamedTuple, Protocol, TypeAlias
+from typing import Any, Iterable, NamedTuple, Protocol, TypeAlias, cast
 
-from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.converters import (
+    orm_object_to_action_target_descriptor,
+    orm_object_to_core_descriptor,
+    orm_object_to_core_type,
+)
 from cm.errors import AdcmEx
 from cm.legacy.services import mapping
 from cm.legacy.services.action_process.types import ProcessState
@@ -24,7 +29,6 @@ from cm.legacy.services.bundle_alt.render import (
     Environment,
     TaskArgs,
 )
-from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.config.jinja import get_jinja_config
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
@@ -46,17 +50,22 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.transition.action import RetrieveStartImpossibleReason
+from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
 from core.legacy.job.types import (
+    AssociatedProcess,
     ScriptType,
     TaskMappingDelta,
 )
 from core.templates import parse_template
 from core.types import (
     ActionID,
+    ActionTargetDescriptor,
+    ADCMCoreType,
     ADCMHostGroupType,
     BundleID,
     CoreObjectDescriptor,
@@ -91,14 +100,64 @@ class TaskStarter(Protocol):
         ...
 
 
-@dataclass(slots=True)
-class ScheduleTask:
+class _ActionLaunchObjects:
+    """
+    Utility container to process differences in action's target/owner in one place
+    """
+
+    __slots__ = ("target", "owner", "cluster", "object_to_lock")
+
+    target: ActionTarget
+    """Object on which action will be launched: may be owner OR host with this object OR action host group"""
+
+    owner: ObjectWithAction
+    """Object that "owns" action: action is described in """
+
+    object_to_lock: ObjectWithAction
+    """Object owner of locks/issues and which will be locked on action launch"""
+
+    cluster: Cluster | None
+    """Related cluster, is None for own Provider/Host actions"""
+
+    def __init__(self, target: ActionTarget, action: Action) -> None:
+        self.target = target
+        self.object_to_lock = self.target  # pyright: ignore [reportAttributeAccessIssue]
+
+        if isinstance(target, (Cluster, Service, Component)):
+            self.owner = target
+            self.cluster = target if isinstance(target, Cluster) else target.cluster
+        elif action.host_action and isinstance(target, Host):
+            self.cluster = target.cluster
+            match action.prototype.type:
+                case "component":
+                    self.owner = Component.objects.get(cluster=self.cluster, prototype=action.prototype)
+                case "service":
+                    self.owner = Service.objects.get(cluster=self.cluster, prototype=action.prototype)
+                case "cluster" if self.cluster:
+                    self.owner = self.cluster
+                case _:
+                    message = f"Can't handle {action.prototype.type} type for owner of host action detection"
+                    raise NotImplementedError(message)
+        elif isinstance(target, ActionHostGroup):
+            # action group support only objects in Cluster hierarchy,
+            # so we can safely assume that there is related cluster
+            self.owner = target.object  # pyright: ignore
+            self.cluster = self.owner if isinstance(self.owner, Cluster) else self.owner.cluster  # pyright: ignore
+            self.object_to_lock = self.owner
+        else:
+            self.owner = target
+            self.cluster = None  # it's safe to assume cluster is None for host own action
+
+
+class _ScheduleTask(ABC):
     job_service: core.job.JobService
     config_service: core.config.ConfigService
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     start_task: TaskStarter
     rbac_scenarios: RBACScenarios
+    retrieve_sir: RetrieveStartImpossibleReason
+    cluster_service: ClusterService
 
     def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
         action_objects = _ActionLaunchObjects(target=target, action=action_orm)
@@ -109,25 +168,8 @@ class ScheduleTask:
         if action_has_hc_acl and not action_objects.cluster:
             raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
-        # shouldn't be here, extract and check correctly
-        if action_orm.wizard_template:
-            if payload.process is None:
-                raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
-
-            if not Process.objects.filter(
-                id=payload.process.id,
-                action=action_orm,
-                target_id=target.pk,
-                target_type=orm_object_to_action_target_type(target).value,
-                state=ProcessState.COMPLETED,
-            ).exists():
-                raise AdcmEx(code="TASK_ERROR", msg="Process must be bound to action and be in completed state")
-
         with atomic():
-            _check_no_target_conflict(target=action_objects.target, action=action_orm)
-            _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action_orm.name)
-            _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action_orm.pk)
-            _check_action_is_available_for_object(owner=action_objects.owner, action=action_orm)
+            self.perform_checks(action_orm=action_orm, payload=payload, action_objects=action_objects)
 
             descriptor = orm_object_to_core_descriptor(action_objects.owner)
 
@@ -215,7 +257,7 @@ class ScheduleTask:
                     scripts = self.job_service.retrieve_scripts(action_id=action_orm.pk)
 
                 case Cluster(id=cluster_id) | Service(cluster_id=cluster_id) | Component(cluster_id=cluster_id):
-                    topology = retrieve_cluster_topology(cluster_id=cluster_id)
+                    topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
 
                     # it's actually an incorrect possibility for target, should be resolved earlier
                     if isinstance(action_objects.target, (ADCM, Provider)):
@@ -225,7 +267,9 @@ class ScheduleTask:
                     if action_has_hc_acl or is_upgrade_action:
                         delta = _check_hostcomponent_and_get_delta(
                             bundle_id=int(action_orm.prototype.bundle_id),
-                            topology=topology,
+                            # TODO: unite `core.legacy.cluster.types.ClusterTopology` and
+                            #  `core.cluster._types.ClusterTopology`
+                            topology=cast(ClusterTopology, topology),
                             hc_payload=payload.mapping or set(),
                             hc_rules=action_orm.hostcomponentmap,
                             mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
@@ -270,6 +314,43 @@ class ScheduleTask:
         self.start_task(orm_task)
 
         return orm_task
+
+    @abstractmethod
+    def perform_checks(self, action_orm: Action, payload: RunActionDTO, action_objects: _ActionLaunchObjects):
+        raise NotImplementedError()
+
+
+@dataclass(slots=True)
+class ScheduleTask(_ScheduleTask):
+    job_service: core.job.JobService
+    config_service: core.config.ConfigService
+    context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
+    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
+    start_task: TaskStarter
+    rbac_scenarios: RBACScenarios
+    retrieve_sir: RetrieveStartImpossibleReason
+    cluster_service: ClusterService
+
+    def perform_checks(self, action_orm: Action, payload: RunActionDTO, action_objects: _ActionLaunchObjects):
+        target_descriptor = orm_object_to_action_target_descriptor(action_objects.target)
+
+        _check_associated_process(process_payload=payload.process, action=action_orm, target=target_descriptor)
+        _check_no_start_impossible_reason(retrieve_sir=self.retrieve_sir, action=action_orm, target=target_descriptor)
+        _check_no_target_conflict(target=action_objects.target, action=action_orm)
+        _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action_orm.name)
+        _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action_orm.pk)
+        _check_action_is_available_for_object(owner=action_objects.owner, action=action_orm)
+
+
+@dataclass(slots=True)
+class ScheduleMMChangingTask(ScheduleTask):
+    def perform_checks(self, action_orm: Action, payload: RunActionDTO, action_objects: _ActionLaunchObjects):
+        _ = payload
+
+        _check_no_target_conflict(target=action_objects.target, action=action_orm)
+        _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action_orm.name)
+        _check_action_is_not_already_launched(owner=action_objects.object_to_lock, action_id=action_orm.pk)
+        _check_action_is_available_for_object(owner=action_objects.owner, action=action_orm)
 
 
 # todo should be moved out of here, just a "simple" cover-up of most cornerstones
@@ -454,53 +535,49 @@ def _resolve_scripts(
     return tuple(scripts)
 
 
-class _ActionLaunchObjects:
-    """
-    Utility container to process differences in action's target/owner in one place
-    """
+def _check_associated_process(
+    process_payload: AssociatedProcess | None, action: Action, target: ActionTargetDescriptor
+) -> None:
+    if not action.wizard_template:
+        return
 
-    __slots__ = ("target", "owner", "cluster", "object_to_lock")
+    if process_payload is None:
+        raise AdcmEx(code="TASK_ERROR", msg="Process must be specified for this action")
 
-    target: ActionTarget
-    """Object on which action will be launched: may be owner OR host with this object OR action host group"""
+    if target.type in {
+        ADCMCoreType.ADCM,
+        ADCMCoreType.PROVIDER,
+    }:
+        msg = f"Objects of the '{target.type.value}' type do not support action processes"
+        raise AdcmEx(code="TASK_ERROR", msg=msg)
 
-    owner: ObjectWithAction
-    """Object that "owns" action: action is described in """
+    # must be the last completed process of `action` on `target`
+    last_completed_process_id: int | None = (
+        Process.objects.filter(
+            action=action,
+            target_id=target.id,
+            target_type=target.type.value,
+            state=ProcessState.COMPLETED,
+        )
+        .order_by("-created_at")
+        .values_list("id", flat=True)
+        .first()
+    )
+    if process_payload.id != last_completed_process_id:
+        raise AdcmEx(
+            code="TASK_ERROR",
+            msg=f'Can\'t find completed process for action "{action.display_name}" of {target}',
+        )
 
-    object_to_lock: ObjectWithAction
-    """Object owner of locks/issues and which will be locked on action launch"""
 
-    cluster: Cluster | None
-    """Related cluster, is None for own Provider/Host actions"""
-
-    def __init__(self, target: ActionTarget, action: Action) -> None:
-        self.target = target
-        self.object_to_lock = self.target  # pyright: ignore [reportAttributeAccessIssue]
-
-        if isinstance(target, (Cluster, Service, Component)):
-            self.owner = target
-            self.cluster = target if isinstance(target, Cluster) else target.cluster
-        elif action.host_action and isinstance(target, Host):
-            self.cluster = target.cluster
-            match action.prototype.type:
-                case "component":
-                    self.owner = Component.objects.get(cluster=self.cluster, prototype=action.prototype)
-                case "service":
-                    self.owner = Service.objects.get(cluster=self.cluster, prototype=action.prototype)
-                case "cluster" if self.cluster:
-                    self.owner = self.cluster
-                case _:
-                    message = f"Can't handle {action.prototype.type} type for owner of host action detection"
-                    raise NotImplementedError(message)
-        elif isinstance(target, ActionHostGroup):
-            # action group support only objects in Cluster hierarchy,
-            # so we can safely assume that there is related cluster
-            self.owner = target.object  # pyright: ignore
-            self.cluster = self.owner if isinstance(self.owner, Cluster) else self.owner.cluster  # pyright: ignore
-            self.object_to_lock = self.owner
-        else:
-            self.owner = target
-            self.cluster = None  # it's safe to assume cluster is None for host own action
+def _check_no_start_impossible_reason(
+    retrieve_sir: RetrieveStartImpossibleReason, action: Action, target: ActionTargetDescriptor
+) -> None:
+    if start_impossible_reason := retrieve_sir.for_action_target(
+        target=target,
+        allowed_in_mm={action.pk: action.allow_in_maintenance_mode},
+    )[action.pk]:
+        raise AdcmEx(code="TASK_ERROR", msg=start_impossible_reason)
 
 
 def _check_no_target_conflict(target: ActionTarget, action: Action) -> None:

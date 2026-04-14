@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from use_cases.dto import RunActionDTO
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.status.notify import reset_objects_in_mm
@@ -41,7 +41,7 @@ def _change_mm_via_action(
     action_name: str,
     obj: Host | Service | Component,
     serializer: Serializer,
-    schedule_task: ScheduleTask,
+    schedule_task: ScheduleMMChangingTask,
 ) -> Serializer:
     action = Action.objects.filter(prototype=prototype, name=action_name).first()
     if action:
@@ -57,7 +57,7 @@ def get_maintenance_mode_response(
     own_mm: ObjectMaintenanceModeState,
     calculated_mm: tuple[ObjectMaintenanceModeState, MMReason],
     serializer: Serializer,
-    schedule_task: ScheduleTask,
+    schedule_task: ScheduleMMChangingTask,
 ) -> Response:
     if own_mm == ObjectMaintenanceModeState.CHANGING:
         return Response(

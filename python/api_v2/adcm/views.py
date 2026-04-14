@@ -108,8 +108,9 @@ class ADCMConfigView(ConfigLogViewSet):
 @document_action_viewset(object_type="ADCM", operation_id_variant="ADCM")
 @audit_action_viewset(retrieve_owner=adcm_audit_object)
 class ADCMActionViewSet(ActionViewSet):
-    def get_parent_object(self):
-        return ADCM.objects.first()
+    def get_parent_object(self, raise_: Exception | None = None, ignore_groups: bool = False):
+        _ = raise_, ignore_groups
+        return ADCM.objects.get()
 
     @inject
     def list(

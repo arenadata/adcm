@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import cast
 import functools
 
 from adcm_version import compare_prototype_versions
+from core.types import Descriptor
 
-from cm.legacy.api import (
-    is_version_suitable,
-)
+from cm.converters import orm_object_to_core_type
+from cm.legacy.api import is_version_suitable
 from cm.legacy.upgrade.before_upgrade_schemas import (
     ActionHostGroupBeforeUpgrade,
     BeforeUpgrade,
@@ -42,9 +43,25 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from cm.transition.action import RetrieveStartImpossibleReason
 
 
-def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]:
+class DifferentBundleError(Exception):
+    ...
+
+
+def check_upgrade(
+    obj: Cluster | Provider, upgrade: Upgrade, retrieve_sir: RetrieveStartImpossibleReason | None
+) -> tuple[bool, str]:
+    _check_same_bundle(obj=obj, upgrade=upgrade)
+
+    if retrieve_sir and (
+        start_impossible_reason := retrieve_sir.for_upgrade_target(
+            target=Descriptor(id=obj.id, type=orm_object_to_core_type(obj))
+        )
+    ):
+        return False, start_impossible_reason
+
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]
 
@@ -62,7 +79,7 @@ def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]
         return False, "no available states"
 
     if obj.prototype.type == ObjectType.CLUSTER:
-        success, msg = _check_upgrade_import(obj=obj, upgrade=upgrade)
+        success, msg = _check_upgrade_import(obj=cast(Cluster, obj), upgrade=upgrade)
         if not success:
             return False, msg
 
@@ -158,6 +175,12 @@ def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
 
     obj.before_upgrade = before_upgrade.model_dump()
     obj.save(update_fields=["before_upgrade"])
+
+
+def _check_same_bundle(obj: Cluster | Provider, upgrade: Upgrade) -> None:
+    # preserving old behavior: 404 on foreign upgrade error. See ADCM-7976
+    if upgrade.bundle.name != obj.prototype.bundle.name:
+        raise DifferentBundleError()
 
 
 def _check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:

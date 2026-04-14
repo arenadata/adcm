@@ -382,11 +382,14 @@ class ActionHostGroupActionsViewSet(ActionViewSet):
     def __init_subclass__(cls, **__):
         audit_action_viewset(retrieve_owner=parent_action_host_group_from_lookup)(cls)
 
-    def get_parent_object(self) -> ActionHostGroup | None:
+    def get_parent_object(self, raise_: Exception | None = None) -> ActionHostGroup | None:
         if "action_host_group_pk" not in self.kwargs:
+            if raise_:
+                raise raise_
+
             return None
 
-        parent = super().get_parent_object(ignore_groups=True)
+        parent = super().get_parent_object(raise_=raise_, ignore_groups=True)
 
         return (
             ActionHostGroup.objects.prefetch_related("object__prototype")
