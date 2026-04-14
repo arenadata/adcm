@@ -60,12 +60,16 @@ export const isFirstButtonDisabled = (
     return (isCurrentStep && !isDraft) || isInRunningState;
   }
 
+  if (step.type === AdcmWizardStepType.Operation && step.state === AdcmWizardStepStates.Skipped) {
+    return true;
+  }
+
   return wizardStepStates.has(step.state);
 };
 
 export const isSecondButtonDisabled = (step: AdcmActionProcessStep) => {
   if (step.type === AdcmWizardStepType.Operation) {
-    return step.state !== AdcmWizardStepStates.Completed;
+    return step.required && step.state !== AdcmWizardStepStates.Completed;
   }
 
   return step.state === AdcmWizardStepStates.Completed;

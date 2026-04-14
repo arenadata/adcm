@@ -83,7 +83,8 @@
       --title-label-color: var(--title-label-color-running);
     }
 
-    &_completed {
+    &_completed,
+    &_skipped {
       --title-label-color: var(--title-label-color-completed);
     }
 

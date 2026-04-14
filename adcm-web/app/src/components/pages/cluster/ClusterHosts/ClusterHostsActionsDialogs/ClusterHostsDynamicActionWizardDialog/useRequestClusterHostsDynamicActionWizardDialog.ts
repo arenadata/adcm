@@ -20,6 +20,11 @@ export const useRequestClusterHostsDynamicActionWizardDialog = (step: AdcmAction
   const currentStep = useStore((s) => s.adcm.clusterHostsWizard.process)?.currentStep;
   const selectedStep = useStore((s) => s.adcm.clusterHostsWizardActions.selectedStepId);
 
+  const jobId = (step as AdcmActionProcessOperationStep)?.task?.id;
+  const stepId = step.id;
+  const job = useMemo(() => (step ? jobsData[stepId]?.job : null), [step, jobsData]);
+  const isJobFinished = job?.status && terminalStatuses.has(job.status);
+
   useEffect(() => {
     if (clusterId && hostId && actionId && processId) {
       const stepId = selectedStep ?? currentStep;
@@ -27,12 +32,9 @@ export const useRequestClusterHostsDynamicActionWizardDialog = (step: AdcmAction
         dispatch(getStep({ clusterId, hostId, actionId, processId, stepId }));
       }
     }
-  }, [dispatch, selectedStep, currentStep]);
+  }, [dispatch, selectedStep, currentStep, isJobFinished]);
 
-  const jobId = (step as AdcmActionProcessOperationStep)?.task?.id;
-  const stepId = step.id;
-  const job = useMemo(() => (step ? jobsData[stepId]?.job : null), [step, jobsData]);
-  const requestFrequency = useMemo(() => (job?.status && terminalStatuses.has(job.status) ? 0 : 3), [job?.status]);
+  const requestFrequency = isJobFinished ? 0 : 3;
 
   const getJobData = () => {
     if (jobId && currentStep && step.id <= currentStep) {

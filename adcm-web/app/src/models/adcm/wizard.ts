@@ -11,12 +11,14 @@ export enum AdcmWizardStepStates {
   Completed = 'completed',
   Running = 'running',
   Broken = 'broken',
+  Skipped = 'skipped',
 }
 
 export enum AdcmWizardMethodType {
   Submit = 'submit_step',
   Complete = 'complete',
   Reset = 'reset_step',
+  SkipStep = 'skip_step',
 }
 
 export enum AdcmWizardStepType {
@@ -63,6 +65,7 @@ export interface AdcmActionProcessOperationStep {
   state: AdcmWizardStepStates;
   task: { id: number };
   description: string;
+  required: boolean;
 }
 
 export interface AdcmWizardConfigSchema {
@@ -89,6 +92,7 @@ export interface AdcmActionProcessConfigurationStep {
   state: AdcmWizardStepStates;
   configuration: AdcmWizardConfiguration;
   description: string;
+  required: boolean;
 }
 
 export interface AdcmActionProcessMappingStepRules {
@@ -96,6 +100,7 @@ export interface AdcmActionProcessMappingStepRules {
   component: string;
   service: string;
   description: string;
+  required: boolean;
 }
 
 interface DeltaMapping {
@@ -118,6 +123,7 @@ export interface AdcmActionProcessMappingStep {
   delta: Delta | null;
   cumulativeDelta: Delta | null;
   description: string;
+  required: boolean;
 }
 
 export interface AdcmActionProcessLastStep {
@@ -126,6 +132,7 @@ export interface AdcmActionProcessLastStep {
   type: AdcmWizardStepType.LastStep;
   state: AdcmWizardStepStates;
   description: string;
+  required: boolean;
 }
 
 export type AdcmActionProcessStep =
@@ -136,6 +143,14 @@ export type AdcmActionProcessStep =
 
 export interface AdcmWizardResetStepPayload {
   method: AdcmWizardMethodType.Reset;
+  params: {
+    processSyncKey: string;
+    stepId: number;
+  };
+}
+
+export interface AdcmWizardSkipOperationStepPayload {
+  method: AdcmWizardMethodType.SkipStep;
   params: {
     processSyncKey: string;
     stepId: number;
@@ -190,7 +205,8 @@ export type AdcmWizardProcessOperationPayload =
   | AdcmWizardSubmitOperationStepPayload
   | AdcmWizardSubmitConfigurationStepPayload
   | AdcmWizardCompleteOperationPayload
-  | AdcmWizardSubmitMappingStepPayload;
+  | AdcmWizardSubmitMappingStepPayload
+  | AdcmWizardSkipOperationStepPayload;
 
 export type AdcmWizardProcessOperation = AdcmActionWizardProcess;
 

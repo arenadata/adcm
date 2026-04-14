@@ -28,6 +28,10 @@ interface ClusterServicesDynamicActionWizardStepProps {
   onClose: () => void;
 }
 
+interface SubmitStepHandlerOptions {
+  isStepSkippable: boolean;
+}
+
 const ClusterServicesDynamicActionWizardStep: React.FC<ClusterServicesDynamicActionWizardStepProps> = ({
   stageNumber,
   onClose,
@@ -45,6 +49,7 @@ const ClusterServicesDynamicActionWizardStep: React.FC<ClusterServicesDynamicAct
   const jobsData = useStore((s) => s.adcm.clusterServicesWizard.jobsData);
   const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardMapping.hostComponentMapDelta);
   const actionDetails = useStore(({ adcm }) => adcm.servicesDynamicActions.dialog.actionDetails);
+  const step = useStore(({ adcm }) => adcm.clusterServicesWizard.step);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
   const { formData } = useActionWizardLastStageContext();
@@ -155,7 +160,7 @@ const ClusterServicesDynamicActionWizardStep: React.FC<ClusterServicesDynamicAct
     }
   }, [dispatch, stepIds, selectedStep]);
 
-  const handleSubmitStep = (stepType: string) => {
+  const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!clusterId || !serviceId || !actionId || !process) {
       return;
     }
@@ -199,6 +204,10 @@ const ClusterServicesDynamicActionWizardStep: React.FC<ClusterServicesDynamicAct
           },
         },
       };
+
+      if (options?.isStepSkippable) {
+        payload.operation.method = AdcmWizardMethodType.SkipStep;
+      }
 
       dispatch(
         postOperationWithTask({
@@ -288,10 +297,15 @@ const ClusterServicesDynamicActionWizardStep: React.FC<ClusterServicesDynamicAct
   };
 
   const handleChangeStep = () => {
-    if (clusterId && serviceId && actionId && process && currentStep) {
+    if (clusterId && serviceId && actionId && process && currentStep && step) {
       if (isMaxStepInStage) {
         dispatch(resetStep());
       }
+
+      if (!step.required && step.type === AdcmWizardStepType.Operation && step.state === AdcmWizardStepStates.Created) {
+        handleSubmitStep(step.type, { isStepSkippable: true });
+      }
+
       dispatch(resetSelectedStepId());
       dispatch(getProcess({ clusterId, serviceId, actionId, processId: process.id }));
     }
