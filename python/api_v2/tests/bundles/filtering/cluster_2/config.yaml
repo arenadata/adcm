@@ -1,0 +1,7 @@
+---
+- type: cluster
+  name: a_cluster
+  display_name: A Cluster
+  version: "2.0.0"
+  license: EULA.txt
+  description: Minimal cluster bundle for ClusterFilter coverage

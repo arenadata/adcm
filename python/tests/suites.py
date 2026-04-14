@@ -16,16 +16,18 @@ from typing import Final, Literal
 
 from cm.models import (
     ADCM,
+    Cluster,
     ConfigLog,
 )
 from infra.services import prepare_container
 from init_db import init
 from rbac.upgrade.role import init_roles
+from rest_framework.status import HTTP_200_OK
 import dishka
 import django.test
 
 from tests._base import WithIndependentDirectories
-from tests.client import ADCMTestClient
+from tests.client import ADCMTestClient, APINode
 from tests.dependencies import (
     RBACScenariosOverride,
     get_container_manager,
@@ -145,3 +147,56 @@ class ADCMDjangoAPISuite(_ADCMTestCase, AuditMixin, BusinessLogicMixin, django.t
         super().setUp()
 
         self.client.login(username="admin", password="admin")
+
+
+class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
+    client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
+    client_class = ADCMTestClient
+    test_bundles_dir = TEST_API_V2_BUNDLES_DIR / "filtering"
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls._initialize_roles_and_adcm()
+
+        # prepare bundles
+        cls.bundle_cl_1 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_1")
+        cls.bundle_cl_2 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_2")
+        cls.bundle_cl_3 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_3")
+
+        # prepare clusters
+        cls.cl_1 = cls.uc.add_cluster(cls.bundle_cl_1, "cluster_1")
+        cls.cl_2 = cls.uc.add_cluster(cls.bundle_cl_2, "cluster_2")
+        cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "cluster_3")
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.client.login(username="admin", password="admin")
+
+    def get_r(self, url: APINode, query: dict) -> dict:
+        response = url.get(query=query)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        return response.json()
+
+    def extract_values(self, data: dict, value_path: str) -> list:
+        """
+        Extract values along a path from a nested structure.
+        """
+
+        keys = value_path.split(".")
+        values = []
+        for item in data:
+            current = item
+            for key in keys:
+                current = current[key]
+            values.append(current)
+        return values
+
+    def get_results(self, url: APINode, value_path: str, query: dict) -> list:
+        response = self.get_r(url=url, query=query)
+        return self.extract_values(response["results"], value_path)
+
+    def set_cluster_state(self, cluster: Cluster, state: str) -> None:
+        cluster.set_state(state)
