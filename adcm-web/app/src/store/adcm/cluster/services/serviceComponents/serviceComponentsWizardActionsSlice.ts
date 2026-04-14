@@ -132,6 +132,7 @@ const postOperationWithStepReset = createAsyncThunk(
   async (payload: postOperationWithStepResetPayload, thunkAPI) => {
     thunkAPI.dispatch(setInProgress(true));
 
+    thunkAPI.dispatch(resetSelectedStepId());
     await thunkAPI.dispatch(postOperation(payload.postOperationPayload));
     thunkAPI.dispatch(resetJobDataByStep(payload.stepId));
 

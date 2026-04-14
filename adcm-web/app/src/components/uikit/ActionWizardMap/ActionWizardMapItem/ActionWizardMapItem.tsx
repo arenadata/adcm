@@ -38,7 +38,7 @@ const getStepIcon = (step: AdcmActionProcessStep, isValid: boolean, jobsData?: A
   if (isStepFailed(step, isValid, jobsData)) {
     return <MarkerIcon variant="round" type="alert" size={12} />;
   }
-  if (step.state === AdcmWizardStepStates.Completed) {
+  if (step.state === AdcmWizardStepStates.Completed || step.state === AdcmWizardStepStates.Skipped) {
     return <MarkerIcon variant="round" type="check" size={12} />;
   }
 
@@ -49,7 +49,10 @@ const getStageIcon = (stage: AdcmWizardStage, currentStep: number, isValid: bool
   if (isStageActiveWithError(stage, currentStep, isValid, jobsData)) {
     return <MarkerIcon variant="round" type="alert" size={12} />;
   }
-  if (stage.steps.every((step) => step.state === AdcmWizardStepStates.Completed)) {
+  if (
+    stage.steps.every((step) => step.state === AdcmWizardStepStates.Completed) ||
+    stage.steps.some((step) => step.state === AdcmWizardStepStates.Skipped)
+  ) {
     return <MarkerIcon variant="round" type="check" size={12} />;
   }
 
@@ -69,6 +72,7 @@ const stageClassName = (
     [s.mapItem__stage_error]: isStageActiveWithError(stage, currentStep, isValid, jobsData),
     [s.mapItem__stage_running]: stage.steps.some((step) => step.state === AdcmWizardStepStates.Running),
     [s.mapItem__stage_completed]: stage.steps.every((step) => step.state === AdcmWizardStepStates.Completed),
+    [s.mapItem__stage_skipped]: stage.steps.some((step) => step.state === AdcmWizardStepStates.Skipped),
     [s.active]: stage.steps.some((step) => step.id === currentStep),
   });
 };
@@ -79,6 +83,7 @@ const stepClassName = (step: AdcmActionProcessStep, currentStep: number, isValid
     [s.mapItem__step_error]: isStepFailed(step, isValid, jobsData),
     [s.mapItem__step_running]: step.state === AdcmWizardStepStates.Running,
     [s.mapItem__step_completed]: step.state === AdcmWizardStepStates.Completed,
+    [s.mapItem__step_skipped]: step.state === AdcmWizardStepStates.Skipped,
   });
 };
 

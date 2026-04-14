@@ -28,6 +28,10 @@ interface ClusterDynamicActionWizardStepProps {
   onClose: () => void;
 }
 
+interface SubmitStepHandlerOptions {
+  isStepSkippable: boolean;
+}
+
 const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepProps> = ({
   stageNumber,
   onClose,
@@ -44,6 +48,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   const jobsData = useStore((s) => s.adcm.clustersWizard.jobsData);
   const hostComponentMapDelta = useStore(({ adcm }) => adcm.clustersWizardMapping.hostComponentMapDelta);
   const actionDetails = useStore(({ adcm }) => adcm.clustersDynamicActions.dialog.actionDetails);
+  const step = useStore(({ adcm }) => adcm.clustersWizard.step);
 
   const { configuration } = useActionWizardConfigurationEditorContext();
   const { formData } = useActionWizardLastStageContext();
@@ -146,7 +151,7 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
     }
   }, [dispatch, stepIds, selectedStep]);
 
-  const handleSubmitStep = (stepType: string) => {
+  const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!clusterId || !actionId || !process) {
       return;
     }
@@ -188,6 +193,10 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
           },
         },
       };
+
+      if (options?.isStepSkippable) {
+        payload.operation.method = AdcmWizardMethodType.SkipStep;
+      }
 
       dispatch(
         postOperationWithTask({
@@ -272,10 +281,15 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
   };
 
   const handleChangeStep = () => {
-    if (clusterId && actionId && process && currentStep) {
+    if (clusterId && actionId && process && currentStep && step) {
       if (isMaxStepInStage) {
         dispatch(resetStep());
       }
+
+      if (!step.required && step.type === AdcmWizardStepType.Operation && step.state === AdcmWizardStepStates.Created) {
+        handleSubmitStep(step.type, { isStepSkippable: true });
+      }
+
       dispatch(resetSelectedStepId());
       dispatch(getProcess({ clusterId, actionId, processId: process.id }));
     }

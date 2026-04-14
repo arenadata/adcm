@@ -59,6 +59,7 @@ const stepPanelLabelClassName = (step: AdcmActionProcessStep, hasConflict: boole
     [s.actionWizardSteps__stageInfo_running]: step.state === AdcmWizardStepStates.Running,
     [s.actionWizardSteps__stageInfo_error]: isStepFailed(step, !hasConflict, jobsData),
     [s.actionWizardSteps__stageInfo_completed]: step.state === AdcmWizardStepStates.Completed,
+    [s.actionWizardSteps__stageInfo_skipped]: step.state === AdcmWizardStepStates.Skipped,
   });
 };
 

@@ -66,6 +66,7 @@ const addLastStage = (state: AdcmClustersWizardState) => {
           id: newStepId,
           displayName: 'Step 1. Confirmation',
           description: '',
+          required: true,
           type: AdcmWizardStepType.LastStep,
           state:
             state.process.state === AdcmWizardStepStates.Completed
