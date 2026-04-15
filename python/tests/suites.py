@@ -11,13 +11,16 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Final, Literal
 
 from cm.models import (
     ADCM,
+    Bundle,
     Cluster,
     ConfigLog,
+    SignatureStatus,
 )
 from infra.services import prepare_container
 from init_db import init
@@ -200,3 +203,9 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
 
     def set_cluster_state(self, cluster: Cluster, state: str) -> None:
         cluster.set_state(state)
+
+    def normalize_upload_time(self, value: datetime) -> str:
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    def set_bundle_signature_status(self, bundle: Bundle, status: SignatureStatus) -> None:
+        Bundle.objects.filter(pk=bundle.pk).update(signature_status=status)
