@@ -14,7 +14,7 @@ from typing import Collection
 
 from cm.models import LICENSE_STATE, Bundle, ObjectType, SignatureStatus
 from django.db.models.query import QuerySet
-from django_filters.rest_framework import CharFilter, ChoiceFilter, DateTimeFilter, NumberFilter, OrderingFilter
+from django_filters.rest_framework import CharFilter, ChoiceFilter, NumberFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet, CharInFilter
 
@@ -97,7 +97,6 @@ class BundleFilter(
         field_name="main_prototype_license",
         choices=LICENSE_STATE,
     )
-    upload_time = DateTimeFilter(label="Filter by upload time.", field_name="date", lookup_expr="exact")
     ordering = OrderingFilter(
         fields={
             "display_name": "displayName",
