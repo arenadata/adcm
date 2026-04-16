@@ -4469,12 +4469,6 @@ paths:
           * `log in to a blocked account` - log in to a blocked account
           * `user not found` - user not found
       - in: query
-        name: time
-        schema:
-          type: string
-          format: date-time
-        description: Filter by time.
-      - in: query
         name: timeFrom
         schema:
           type: string
@@ -4847,12 +4841,6 @@ paths:
           * `valid` - valid
           * `invalid` - invalid
           * `absent` - absent
-      - in: query
-        name: uploadTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by upload time.
       - in: query
         name: version
         schema:
@@ -22755,12 +22743,6 @@ paths:
           type: string
         description: Filter by duration.
       - in: query
-        name: endTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by end time.
-      - in: query
         name: id
         schema:
           type: integer
@@ -22812,12 +22794,6 @@ paths:
           default: -id
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
-      - in: query
-        name: startTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by start time.
       - in: query
         name: status
         schema:

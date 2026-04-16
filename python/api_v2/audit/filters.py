@@ -139,7 +139,6 @@ class AuditSessionFilter(
         lookup_expr="icontains",
     )
     result = ChoiceFilter(field_name="login_result", label="Filter by result.", choices=AuditSessionLoginResult.choices)
-    time = DateTimeFilter(field_name="login_time", lookup_expr="exact", label="Filter by time.")
     time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Filter by time from.")
     time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Filter by time to.")
     ordering = AuditSessionOrderingFilter(

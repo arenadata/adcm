@@ -18,7 +18,6 @@ from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework.filters import (
     CharFilter,
     ChoiceFilter,
-    DateTimeFilter,
     NumberFilter,
     OrderingFilter,
 )
@@ -105,8 +104,6 @@ class TaskFilter(
     )
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Filter by status.")
     duration = NumberFilter(label="Filter by duration.", method="filter_by_duration")
-    start_time = DateTimeFilter(field_name="start_date", label="Filter by start time.", lookup_expr="exact")
-    end_time = DateTimeFilter(field_name="finish_date", label="Filter by end time.", lookup_expr="exact")
     ordering = TaskOrderingFilter(
         fields={
             "id": "id",
