@@ -295,7 +295,7 @@ class JobSequenceRunner(TaskRunner):
             # Owner should be updated only when action's not a part of operation step of wizard process.
             # This patch raises questions about what can be updated and what not,
             # but that requires clarification of task runner process and configurability of it,
-            # which for now is not archievable.
+            # which for now is not achievable.
             self._update_owner_object(
                 owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
                 finished_task=finished_task,

@@ -46,6 +46,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.transition.status import StatusScenarios
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.dto import TaskPayloadDTO
 from core.legacy.job.types import Task
@@ -123,7 +124,7 @@ class BusinessLogicMixin(BundleLogicMixin):
             accept_license(prototype=prototype)
             prototype.refresh_from_db(fields=["license"])
 
-        cluster_id = CreateCluster(config_service=get_config_service()).do(
+        cluster_id = CreateCluster(config_service=get_config_service(), status_scenarios=StatusScenarios()).do(
             prototype=prototype, name=name, description=description
         )
 
@@ -133,7 +134,11 @@ class BusinessLogicMixin(BundleLogicMixin):
     def add_provider(bundle: Bundle, name: str, description: str = "") -> Provider:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
         provider_id = create_hostprovider(
-            prototype=prototype, name=name, description=description, config_service=get_config_service()
+            prototype=prototype,
+            name=name,
+            description=description,
+            config_service=get_config_service(),
+            status_scenarios=StatusScenarios(),
         )
 
         return Provider.objects.get(id=provider_id)
@@ -145,6 +150,7 @@ class BusinessLogicMixin(BundleLogicMixin):
             cluster=cluster,
             config_service=get_config_service(),
             rbac_scenarios=RBACScenarios(),
+            status_scenarios=StatusScenarios(),
         )
 
         return Host.objects.get(id=host_id)
@@ -161,6 +167,7 @@ class BusinessLogicMixin(BundleLogicMixin):
         services = CreateServicesFromPrototypes(
             config_service=get_config_service(),
             rbac_scenarios=RBACScenarios(),
+            status_scenarios=StatusScenarios(),
         ).do(cluster=cluster, prototype_ids=list(service_prototypes))
         return Service.objects.filter(id__in=[service.id for service in services])
 

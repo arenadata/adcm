@@ -14,110 +14,111 @@ from typing import TypeAlias
 
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Cluster, Component, Host, Provider, Service
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.base import ADCMAnsiblePluginExecutor
 from ansible_plugin.executors.multi_state_set import ADCMMultiStateSetPluginExecutor
 from ansible_plugin.executors.multi_state_unset import ADCMMultiStateUnsetPluginExecutor
 from ansible_plugin.executors.state import ADCMStatePluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 ADCMObject: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
-class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestADCMStatePluginExecutors(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        services = self.add_services_to_cluster(service_names=["service_1", "service_2"], cluster=self.cluster)
-        self.service = services.get(prototype__name="service_1")
-        self.component = self.service.components.first()
+        cls.uc.add_services_to_cluster(["service_1", "service_2"], cluster=cls.cluster)
+        cls.service = Service.objects.get(prototype__name="service_1")
+        cls.component = cls.service.components.first()
 
-        self.target_state = "brand new object's (multi)state"
-        self.default_multi_state = "default multi-state"
+        cls.target_state = "brand new object's (multi)state"
+        cls.default_multi_state = "default multi-state"
 
-        self.another_provider = self.add_provider(bundle=self.provider_bundle, name="another_provider")
+        cls.another_provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="another_provider")
 
-        provider = self.add_provider(bundle=self.provider_bundle, name="Control provider")
-        cluster = self.add_cluster(bundle=self.cluster_bundle, name="Control cluster")
-        service_2 = services.get(prototype__name="service_2")
-        other_components = Component.objects.filter(cluster=self.cluster).exclude(pk=self.component.pk)
-        self.control_objects = [cluster, service_2, *list(other_components), provider, self.host_2]
+        provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Control provider")
+        cluster = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Control cluster")
+        service_2 = Service.objects.get(prototype__name="service_2")
+        other_components = Component.objects.filter(cluster=cls.cluster).exclude(pk=cls.component.pk)
+        cls.control_objects = [cluster, service_2, *list(other_components), provider, cls.host_2]
 
-        self.allowed_owner_target_args = (
-            (self.cluster, self.cluster, {"type": "cluster", "state": self.target_state}),
+        cls.allowed_owner_target_args = (
+            (cls.cluster, cls.cluster, {"type": "cluster", "state": cls.target_state}),
             (
-                self.cluster,
-                self.service,
-                {"type": "service", "service_name": self.service.name, "state": self.target_state},
+                cls.cluster,
+                cls.service,
+                {"type": "service", "service_name": cls.service.name, "state": cls.target_state},
             ),
             (
-                self.cluster,
-                self.component,
+                cls.cluster,
+                cls.component,
                 {
                     "type": "component",
-                    "service_name": self.service.name,
-                    "component_name": self.component.name,
-                    "state": self.target_state,
+                    "service_name": cls.service.name,
+                    "component_name": cls.component.name,
+                    "state": cls.target_state,
                 },
             ),
-            (self.service, self.cluster, {"type": "cluster", "state": self.target_state}),
-            (self.service, self.service, {"type": "service", "state": self.target_state}),
+            (cls.service, cls.cluster, {"type": "cluster", "state": cls.target_state}),
+            (cls.service, cls.service, {"type": "service", "state": cls.target_state}),
             (
-                self.service,
-                self.component,
-                {"type": "component", "component_name": self.component.name, "state": self.target_state},
+                cls.service,
+                cls.component,
+                {"type": "component", "component_name": cls.component.name, "state": cls.target_state},
             ),
-            (self.component, self.cluster, {"type": "cluster", "state": self.target_state}),
-            (self.component, self.service, {"type": "service", "state": self.target_state}),
-            (self.component, self.component, {"type": "component", "state": self.target_state}),
-            (self.provider, self.provider, {"type": "provider", "state": self.target_state}),
-            (self.provider, self.host_1, {"type": "host", "host_id": self.host_1.pk, "state": self.target_state}),
-            (self.host_1, self.provider, {"type": "provider", "state": self.target_state}),
-            (self.host_1, self.host_1, {"type": "host", "state": self.target_state}),
+            (cls.component, cls.cluster, {"type": "cluster", "state": cls.target_state}),
+            (cls.component, cls.service, {"type": "service", "state": cls.target_state}),
+            (cls.component, cls.component, {"type": "component", "state": cls.target_state}),
+            (cls.provider, cls.provider, {"type": "provider", "state": cls.target_state}),
+            (cls.provider, cls.host_1, {"type": "host", "host_id": cls.host_1.pk, "state": cls.target_state}),
+            (cls.host_1, cls.provider, {"type": "provider", "state": cls.target_state}),
+            (cls.host_1, cls.host_1, {"type": "host", "state": cls.target_state}),
         )
-        self.forbidden_owner_target_args = (
+        cls.forbidden_owner_target_args = (
             (  # owner host, target host, not self
-                self.host_1,
-                self.host_2,
-                {"type": "host", "host_id": self.host_2.pk, "state": self.target_state},
+                cls.host_1,
+                cls.host_2,
+                {"type": "host", "host_id": cls.host_2.pk, "state": cls.target_state},
             ),
             (  # foreign host
-                self.another_provider,
-                self.host_2,
-                {"type": "host", "host_id": self.host_2.pk, "state": self.target_state},
+                cls.another_provider,
+                cls.host_2,
+                {"type": "host", "host_id": cls.host_2.pk, "state": cls.target_state},
             ),
             # forbidden args for target type
-            (self.cluster, self.cluster, {"type": "cluster", "state": self.target_state, "test": "test"}),
-            (self.service, self.cluster, {"type": "cluster", "state": self.target_state, "service_name": "some_name"}),
+            (cls.cluster, cls.cluster, {"type": "cluster", "state": cls.target_state, "test": "test"}),
+            (cls.service, cls.cluster, {"type": "cluster", "state": cls.target_state, "service_name": "some_name"}),
             (
-                self.component,
-                self.cluster,
-                {"type": "cluster", "state": self.target_state, "component_name": "some_name"},
+                cls.component,
+                cls.cluster,
+                {"type": "cluster", "state": cls.target_state, "component_name": "some_name"},
             ),
-            (self.cluster, self.cluster, {"type": "cluster", "state": self.target_state, "host_id": 8}),
+            (cls.cluster, cls.cluster, {"type": "cluster", "state": cls.target_state, "host_id": 8}),
             (
-                self.service,
-                self.service,
-                {"type": "service", "state": self.target_state, "component_name": "some_name"},
+                cls.service,
+                cls.service,
+                {"type": "service", "state": cls.target_state, "component_name": "some_name"},
             ),
-            (self.component, self.service, {"type": "service", "state": self.target_state, "host_id": 8}),
-            (self.component, self.component, {"type": "component", "state": self.target_state, "host_id": 8}),
+            (cls.component, cls.service, {"type": "service", "state": cls.target_state, "host_id": 8}),
+            (cls.component, cls.component, {"type": "component", "state": cls.target_state, "host_id": 8}),
             (
-                self.provider,
-                self.provider,
-                {"type": "provider", "state": self.target_state, "service_name": "some_name"},
+                cls.provider,
+                cls.provider,
+                {"type": "provider", "state": cls.target_state, "service_name": "some_name"},
             ),
             (
-                self.provider,
-                self.provider,
-                {"type": "provider", "state": self.target_state, "component_name": "some_name"},
+                cls.provider,
+                cls.provider,
+                {"type": "provider", "state": cls.target_state, "component_name": "some_name"},
             ),
-            (self.host_1, self.provider, {"type": "provider", "state": self.target_state, "host_id": 8}),
-            (self.host_1, self.host_1, {"type": "host", "state": self.target_state, "service_name": "some_name"}),
+            (cls.host_1, cls.provider, {"type": "provider", "state": cls.target_state, "host_id": 8}),
+            (cls.host_1, cls.host_1, {"type": "host", "state": cls.target_state, "service_name": "some_name"}),
             (
-                self.provider,
-                self.host_1,
-                {"type": "host", "host_id": self.host_1.pk, "state": self.target_state, "component_name": "some_name"},
+                cls.provider,
+                cls.host_1,
+                {"type": "host", "host_id": cls.host_1.pk, "state": cls.target_state, "component_name": "some_name"},
             ),
         )
 

@@ -14,48 +14,30 @@ from pathlib import Path
 import json
 
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from tests.ansible import ADCMAnsiblePluginTestMixin
-from tests.base import WithPreparedFSAndInitADCM
 from tests.dependencies import MockWithEnvProvider
-from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMPluginExecutorSuite
 from use_cases.dto import RunActionDTO
-import django.test
 
 from cm.models import Action, Component, JobLog, TaskLog
-from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.mocks.task_runner import JobImitator
 from cm.tests.test_action_host_group import ScheduleTask
 
 
-class TestEffectsOfADCMAnsiblePlugins(
-    django.test.TestCase,
-    WithDishkaContainer,
-    WithPreparedFSAndInitADCM,
-    BusinessLogicMixin,
-    ADCMAnsiblePluginTestMixin,
-):
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        # shouldn't be here
-        from tests.dependencies import get_task_runner_manager
+        cls.bundles_dir = Path(__file__).parent / "bundles"
 
-        cls.task_runner = get_task_runner_manager()
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.bundles_dir / "cluster")
+        cls.provider_bundle = cls.uc.upload_bundle(cls.bundles_dir / "provider")
 
-    def setUp(self) -> None:
-        super().setUp()
+        cls.cluster = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Just Cluster")
 
-        self.bundles_dir = Path(__file__).parent / "bundles"
-
-        self.cluster_bundle = self.add_bundle(self.bundles_dir / "cluster")
-        self.provider_bundle = self.add_bundle(self.bundles_dir / "provider")
-
-        self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Just Cluster")
-
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="Just HP")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Just HP")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()

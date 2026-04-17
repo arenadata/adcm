@@ -15,37 +15,36 @@ from unittest.mock import patch
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
-from infra.services import get_config_service
+from cm.transition.status import StatusScenarios
 from rbac.scenarios import RBACScenarios
+from tests.suites import ADCMPluginExecutorSuite
 from use_cases.transition.host.duplicate import create_duplicate
+import core
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError
 from ansible_plugin.executors.delete_host import ADCMDeleteHostPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.add_host"
 
 
-class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
-        self.config_service = get_config_service()
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.provider_2 = self.add_provider(bundle=self.provider_bundle, name="Second Provider")
+        cls.provider_2 = cls.uc.add_provider(bundle=cls.provider_bundle, name="Second Provider")
 
-        bundle = self.add_bundle(self.bundles_dir / "second_provider")
-        self.another_provider = self.add_provider(bundle=bundle, name="Target Provider")
-        self.host_prototype = Prototype.objects.get(bundle=bundle, type="host")
-        self.tp_host = self.add_host(provider=self.another_provider, fqdn="of-target-provider")
+        bundle = cls.uc.upload_bundle(cls.bundles_dir / "second_provider")
+        cls.another_provider = cls.uc.add_provider(bundle=bundle, name="Target Provider")
+        cls.host_prototype = Prototype.objects.get(bundle=bundle, type="host")
+        cls.tp_host = cls.uc.add_host(provider=cls.another_provider, fqdn="of-target-provider", cluster=cls.cluster)
 
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.tp_host)
-
-        self.set_hostcomponent(
-            cluster=self.cluster,
-            entries=((self.tp_host, self.component_1),),
+        cls.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.tp_host, cls.component_1),),
         )
 
     def test_delete_host_success(self) -> None:
@@ -111,8 +110,9 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             host_id=host.id,
             name="duplicate-1",
             cluster_id=self.cluster.id,
-            config_service=self.config_service,
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         task = self.prepare_task(owner=host, name="dummy")

@@ -51,10 +51,11 @@ from core.legacy.job.runners import (
 )
 from core.result import Success
 from core.settings import Directories
-from core.types import PID, ConcernID, CurrentADCMVersion, HostID, TaskID
+from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
 from dishka.provider import provide
 from django.db.models import Model
 from rbac.scenarios import RBACScenarios
+from requests import Response
 from use_cases.transition.job.schedule import TaskStarter
 import dishka
 
@@ -279,6 +280,22 @@ class SkipStatusScenarios(StatusScenarios):
         get_status_scenarios_manager().inc_call("notify_about_redistributed_concerns_from_maps")
         return
 
+    def send_config_creation_event(self, owner: CoreObjectDescriptor | Descriptor, created_by: str) -> None:  # noqa: ARG002
+        get_status_scenarios_manager().inc_call("send_config_creation_event")
+        return
+
+    def send_task_status_update_event(self, task_id: int, status: str) -> None:  # noqa: ARG002
+        get_status_scenarios_manager().inc_call("send_task_status_update_event")
+        return
+
+    def send_prototype_and_state_update_event(self, object_: ADCMEntity) -> None:  # noqa: ARG002
+        get_status_scenarios_manager().inc_call("send_prototype_and_state_update_event")
+        return
+
+    def send_delete_service_event(self, service_id: int) -> Response | None:  # noqa: ARG002
+        get_status_scenarios_manager().inc_call("send_delete_service_event")
+        return
+
     def notify_about_new_concern(
         self,
         concern_id: ConcernID,  # noqa: ARG002
@@ -304,15 +321,9 @@ class SkipStatusScenarios(StatusScenarios):
         return
 
     def register_all_duplicates(self) -> None:
-        get_status_scenarios_manager().inc_call("register_all_duplicates")
         return
 
-    def register_host_duplicates(
-        self,
-        original: HostID,  # noqa: ARG002
-        duplicates: Iterable[HostID],  # noqa: ARG002
-    ) -> None:
-        get_status_scenarios_manager().inc_call("register_host_duplicates")
+    def register_host_duplicates(self, original: HostID, duplicates: Iterable[HostID]) -> None:  # noqa: ARG002
         return
 
 

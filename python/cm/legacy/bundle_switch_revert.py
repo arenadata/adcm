@@ -19,6 +19,7 @@ from typing import Callable, Generic, TypeVar
 from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
+from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -95,31 +96,57 @@ def bundle_switch(
     upgrade: Upgrade,
     callbacks: SwitchRevertCallbacks,
     config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ) -> None:
     if isinstance(obj, Cluster):
-        switch = _ClusterBundleSwitch(target=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
+        switch = _ClusterBundleSwitch(
+            target=obj,
+            upgrade=upgrade,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
     elif isinstance(obj, Provider):
-        switch = _ProviderBundleSwitch(target=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
+        switch = _ProviderBundleSwitch(
+            target=obj,
+            upgrade=upgrade,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
     switch.perform()
 
 
 def bundle_revert(
-    obj: Cluster | Provider, callbacks: SwitchRevertCallbacks, config_service: core.config.ConfigService
+    obj: Cluster | Provider,
+    callbacks: SwitchRevertCallbacks,
+    config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ) -> None:
     if isinstance(obj, Cluster):
         upgraded_bundle = obj.prototype.bundle
         before_upgrade = ClusterBeforeUpgrade(**obj.before_upgrade)
         old_bundle = Bundle.objects.get(pk=before_upgrade.bundle_id)
         old_proto = Prototype.objects.get(bundle=old_bundle, name=old_bundle.name, type=ObjectType.CLUSTER)
-        _revert_object(obj=obj, old_proto=old_proto, config_service=config_service)
+        _revert_object(
+            obj=obj,
+            old_proto=old_proto,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
         for service_prototype in Prototype.objects.filter(bundle=old_bundle, type=ObjectType.SERVICE):
             service = Service.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
             if not service:
                 continue
 
-            _revert_object(obj=service, old_proto=service_prototype, config_service=config_service)
+            _revert_object(
+                obj=service,
+                old_proto=service_prototype,
+                config_service=config_service,
+                config_scenarios=config_scenarios,
+            )
             for component_prototype in Prototype.objects.filter(
                 bundle=old_bundle, parent=service_prototype, type=ObjectType.COMPONENT
             ):
@@ -130,7 +157,12 @@ def bundle_revert(
                 ).first()
 
                 if component:
-                    _revert_object(obj=component, old_proto=component_prototype, config_service=config_service)
+                    _revert_object(
+                        obj=component,
+                        old_proto=component_prototype,
+                        config_service=config_service,
+                        config_scenarios=config_scenarios,
+                    )
                 else:
                     component = callbacks.add_component_to_service(service, component_prototype)
                     _restore_deleted_objects(
@@ -187,21 +219,37 @@ def bundle_revert(
         before_upgrade = ProviderBeforeUpgrade(**obj.before_upgrade)
         old_bundle = Bundle.objects.get(pk=before_upgrade.bundle_id)
         old_proto = Prototype.objects.get(bundle=old_bundle, name=old_bundle.name, type=ObjectType.PROVIDER)
-        _revert_object(obj=obj, old_proto=old_proto, config_service=config_service)
+        _revert_object(
+            obj=obj,
+            old_proto=old_proto,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
         for host in Host.objects.filter(provider=obj):
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type=ObjectType.HOST, name=host.prototype.name)
-            _revert_object(obj=host, old_proto=old_host_proto, config_service=config_service)
+            _revert_object(
+                obj=host,
+                old_proto=old_host_proto,
+                config_service=config_service,
+                config_scenarios=config_scenarios,
+            )
 
 
 class _BundleSwitch(ABC, Generic[OT, MT]):
     def __init__(
-        self, target: OT, upgrade: Upgrade, callbacks: SwitchRevertCallbacks, config_service: core.config.ConfigService
+        self,
+        target: OT,
+        upgrade: Upgrade,
+        callbacks: SwitchRevertCallbacks,
+        config_service: core.config.ConfigService,
+        config_scenarios: ConfigScenarios,
     ):
         self._target = target
         self._upgrade = upgrade
         self._call = callbacks
         self._config_service = config_service
+        self._config_scenarios = config_scenarios
 
     def perform(self) -> None:
         with transaction.atomic():
@@ -217,6 +265,7 @@ class _BundleSwitch(ABC, Generic[OT, MT]):
                 new_prototype=new_prototype,
                 old_prototype=old_prototype,
                 config_service=self._config_service,
+                config_scenarios=self._config_scenarios,
             )
 
             self._target.refresh_from_db()
@@ -263,13 +312,19 @@ class _ClusterBundleSwitch(_BundleSwitch[Cluster, Cluster | Service | Component]
                     name=service.prototype.name,
                 )
                 check_license(prototype=new_service_prototype)
-                _switch_object(obj=service, new_prototype=new_service_prototype, config_service=self._config_service)
+                _switch_object(
+                    obj=service,
+                    new_prototype=new_service_prototype,
+                    config_service=self._config_service,
+                    config_scenarios=self._config_scenarios,
+                )
                 before_upgrade_deleted_components = _switch_components(
                     cluster=self._target,
                     service=service,
                     new_component_prototype=new_service_prototype,
                     callbacks=self._call,
                     config_service=self._config_service,
+                    config_scenarios=self._config_scenarios,
                 )
 
                 if before_upgrade_deleted_components:
@@ -371,7 +426,12 @@ class _ProviderBundleSwitch(_BundleSwitch):
     def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:  # noqa: ARG002
         for prototype in Prototype.objects.filter(bundle_id=self._upgrade.bundle_id, type="host"):  # pyright: ignore [reportAttributeAccessIssue]
             for host in Host.objects.filter(provider=self._target, prototype__name=prototype.name):
-                _switch_object(host, prototype, config_service=self._config_service)
+                _switch_object(
+                    host,
+                    prototype,
+                    config_service=self._config_service,
+                    config_scenarios=self._config_scenarios,
+                )
 
     def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
         added, removed = defaultdict(lambda: defaultdict(set)), {}
@@ -435,7 +495,10 @@ class _ProviderBundleSwitch(_BundleSwitch):
 
 
 def _switch_object(
-    obj: Host | Service | Component, new_prototype: Prototype, config_service: core.config.ConfigService
+    obj: Host | Service | Component,
+    new_prototype: Prototype,
+    config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ) -> None:
     logger.info("upgrade switch from %s to %s", proto_ref(prototype=obj.prototype), proto_ref(prototype=new_prototype))
 
@@ -443,7 +506,13 @@ def _switch_object(
     obj.prototype = new_prototype
     obj.save(update_fields=["prototype"])
 
-    switch_config(obj=obj, new_prototype=new_prototype, old_prototype=old_prototype, config_service=config_service)
+    switch_config(
+        obj=obj,
+        new_prototype=new_prototype,
+        old_prototype=old_prototype,
+        config_service=config_service,
+        config_scenarios=config_scenarios,
+    )
 
 
 def _switch_components(
@@ -452,6 +521,7 @@ def _switch_components(
     new_component_prototype: Prototype,
     callbacks: SwitchRevertCallbacks,
     config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ) -> dict[str, DeletedObjectBeforeUpgrade]:
     before_upgrade_deleted_components = {}
 
@@ -460,7 +530,12 @@ def _switch_components(
             new_comp_prototype = Prototype.objects.get(
                 parent=new_component_prototype, type="component", name=component.prototype.name
             )
-            _switch_object(obj=component, new_prototype=new_comp_prototype, config_service=config_service)
+            _switch_object(
+                obj=component,
+                new_prototype=new_comp_prototype,
+                config_service=config_service,
+                config_scenarios=config_scenarios,
+            )
         except Prototype.DoesNotExist:
             before_upgrade_deleted_components[component.prototype.name] = _get_before_upgrade_for_deleted_object(
                 object_before_upgrade=component.before_upgrade
@@ -498,7 +573,12 @@ def _get_before_upgrade_for_deleted_object(object_before_upgrade: dict) -> Delet
     return before_upgrade
 
 
-def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.config.ConfigService) -> None:
+def _revert_object(
+    obj: MainObject,
+    old_proto: Prototype,
+    config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
+) -> None:
     if obj.prototype == old_proto:
         return
 
@@ -525,7 +605,12 @@ def _revert_object(obj: MainObject, old_proto: Prototype, config_service: core.c
 
         _restore_config_host_groups(obj=obj)
         _restore_config_of_main_object_and_update_host_groups(
-            owner=owner, config=config, new=new_spec, old=previous_spec, config_service=config_service
+            owner=owner,
+            config=config,
+            new=new_spec,
+            old=previous_spec,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
         )
 
     obj.before_upgrade = {"state": None}
@@ -615,17 +700,9 @@ def _restore_config_of_main_object_and_update_host_groups(
     old: tuple[core.config.spec.FullSpec, core.config.Defaults],
     new: tuple[core.config.spec.FullSpec, core.config.Defaults],
     config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ):
     description = "revert_upgrade"
-
-    # create main config based on input
-    config_service.create_new_configuration_by_descriptor(
-        configuration=config,
-        configuration_extra_info=core.config.ConfigurationExtraInfo(
-            description=description, created_by=SYSTEM_CONFIG_CREATOR
-        ),
-        owner=owner,
-    )
 
     # update all existing configurations of host groups
     old_spec, old_defaults = old
@@ -649,29 +726,14 @@ def _restore_config_of_main_object_and_update_host_groups(
             raise core.config.ConfigOperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
-    updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=adapted_configs_of_host_groups, specification=new_spec
-    )
-    for owner_group, updated_configuration in updated_host_group_configs.items():
-        config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration,
-            configuration_extra_info=core.config.ConfigurationExtraInfo(
-                description=description, created_by=SYSTEM_CONFIG_CREATOR
-            ),
-            owner=owner_group,
-        )
-    prepare_files = partial(
-        config_service.prepare_file_parameter_values_on_fs,
+
+    config_scenarios.save_encrypted_config_with_host_groups(
+        owner=owner,
+        encrypted_main_config=config,
         specification=new_spec,
+        config_extra_info=core.config.ConfigurationExtraInfo(description=description, created_by=SYSTEM_CONFIG_CREATOR),
+        host_group_configs=adapted_configs_of_host_groups,
     )
-
-    # since we have no "fallback" mechanism for write failures, have to write files within transaction
-    prepare_files(configuration=config, owner_prefix=core.config.files.build_config_prefix(owner))
-
-    for owner_group, updated_configuration in updated_host_group_configs.items():
-        group_file_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=owner_group.id)
-        # since we have no "fallback" mechanism for write failures, have to write files within transaction
-        prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)
 
 
 def _restore_config_of_main_object(
@@ -735,6 +797,7 @@ def switch_config(
     new_prototype: Prototype,
     old_prototype: Prototype,
     config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ):
     specs_and_defaults = config_service.retrieve_specifications_by_prototypes_with_defaults(
         prototypes=(new_prototype.pk, old_prototype.pk)
@@ -749,7 +812,9 @@ def switch_config(
     # REDACTED: empty configuration (spec) may be received in order to "work correctly"
     #           when configuration is removed from object
     try:
-        _switch_configuration_version(owner, old=old, new=new, config_service=config_service)
+        _switch_configuration_version(
+            owner=owner, old=old, new=new, config_service=config_service, config_scenarios=config_scenarios
+        )
     except core.config.ObjectWithoutConfigError:
         # no current config
         new_spec, new_defaults = new
@@ -776,6 +841,7 @@ def _switch_configuration_version(
     old: tuple[core.config.spec.FullSpec, core.config.Defaults],
     new: tuple[core.config.spec.FullSpec, core.config.Defaults],
     config_service: core.config.ConfigService,
+    config_scenarios: ConfigScenarios,
 ):
     description = "upgrade"
 
@@ -798,14 +864,6 @@ def _switch_configuration_version(
 
     config = update_result.value
 
-    config_service.create_new_configuration_by_descriptor(
-        configuration=config,
-        configuration_extra_info=core.config.ConfigurationExtraInfo(
-            description=description, created_by=SYSTEM_CONFIG_CREATOR
-        ),
-        owner=owner,
-    )
-
     configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
     adaptation_results = {
         group: update_for_new_spec(configuration=config_of_group, include_synchronization=True)
@@ -818,25 +876,13 @@ def _switch_configuration_version(
 
         adapted_configs_of_host_groups[group] = result.value
 
-    updated_host_group_configs = config_service.prepare_updated_configurations_of_host_groups(
-        main=config, groups=adapted_configs_of_host_groups, specification=new_spec
+    config_scenarios.save_encrypted_config_with_host_groups(
+        owner=owner,
+        encrypted_main_config=config,
+        specification=new_spec,
+        config_extra_info=core.config.ConfigurationExtraInfo(description=description, created_by=SYSTEM_CONFIG_CREATOR),
+        host_group_configs=adapted_configs_of_host_groups,
     )
-    for owner_group, updated_configuration in updated_host_group_configs.items():
-        config_service.create_new_configuration_by_descriptor(
-            configuration=updated_configuration,
-            configuration_extra_info=core.config.ConfigurationExtraInfo(
-                description="upgrade", created_by=SYSTEM_CONFIG_CREATOR
-            ),
-            owner=owner_group,
-        )
-
-    prepare_files = partial(config_service.prepare_file_parameter_values_on_fs, specification=new_spec)
-
-    prepare_files(configuration=config, owner_prefix=core.config.files.build_config_prefix(owner))
-
-    for owner_group, updated_configuration in updated_host_group_configs.items():
-        group_file_prefix = core.config.files.build_config_host_group_prefix(owner=owner, group_id=owner_group.id)
-        prepare_files(configuration=updated_configuration, owner_prefix=group_file_prefix)
 
 
 def _clean_imports_bind(target: Cluster, upgrade: Upgrade) -> None:

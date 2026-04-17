@@ -39,8 +39,8 @@ from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.models import TaskLog
+from cm.transition.status import StatusScenarios
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology
@@ -86,6 +86,7 @@ class InitiateWizardProcess:
     wizard_repo: core.action.wizard.WizardRepoI
     wizard_service: core.action.wizard.WizardService
     fill_wizard_step_spec: FillWizardStepSpec[ActionArgs, TaskArgs]
+    status_scenarios: StatusScenarios
 
     @atomic
     @convert_bundle_errors_to_adcm_ex
@@ -141,7 +142,7 @@ class InitiateWizardProcess:
 
         if changed:
             added = update_hierarchy_for_flag(flag=flag, on_objects=[cluster_relative_object_cod])
-            notify_about_redistributed_concerns_from_maps(added=added, removed={})
+            self.status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed={})
 
         return process_id
 

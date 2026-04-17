@@ -13,27 +13,29 @@
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, HostComponent, Service
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginTargetDetectionError
 from ansible_plugin.executors.delete_service import ADCMDeleteServicePluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.add_host"
 
 
-class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        cls.uc.add_services_to_cluster(["service_1", "service_2"], cluster=cls.cluster)
+        cls.service_1 = Service.objects.get(prototype__name="service_1", cluster=cls.cluster)
+        cls.service_2 = Service.objects.get(prototype__name="service_2", cluster=cls.cluster)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_1)
 
-        self.initial_hc = self.set_hostcomponent(
-            cluster=self.cluster,
-            entries=((self.host_1, self.component_1),),
+        cls.initial_hc = cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.host_1, cls.component_1),),
         )
 
     def test_delete_service_from_cluster_context_success(self) -> None:

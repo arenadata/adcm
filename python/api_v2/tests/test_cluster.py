@@ -841,6 +841,8 @@ class TestClusterMM(ADCMDjangoAPISuite):
 class TestClusterStatuses(ADCMDjangoAPISuite):
     @classmethod
     def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
         hierarchy_1 = generate_hierarchy()
         cls.cluster_1 = hierarchy_1["cluster"]
         cls.service_11 = hierarchy_1["service"]

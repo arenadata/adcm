@@ -15,35 +15,35 @@ from unittest.mock import patch
 
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
 from cm.legacy.services.job.run.repo import JobRepoImpl
-from cm.models import Component, ConcernItem
+from cm.models import Component, ConcernItem, Service
 from core.legacy.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.change_flag"
 
 
-class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
         ConcernItem.objects.all().delete()
 
-        self.service_1, self.service_2 = self.add_services_to_cluster(
-            ["service_1", "service_2"], cluster=self.cluster
-        ).order_by("prototype__name")
-        self.component_1, self.component_2 = (
-            Component.objects.filter(service=self.service_1).order_by("prototype__name").all()
+        cls.uc.add_services_to_cluster(["service_1", "service_2"], cluster=cls.cluster)
+        cls.service_1, cls.service_2 = Service.objects.filter(cluster=cls.cluster).order_by("prototype__name")
+        cls.component_1, cls.component_2 = (
+            Component.objects.filter(service=cls.service_1).order_by("prototype__name").all()
         )
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_1)
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_2)
 
-        self.set_hostcomponent(
-            cluster=self.cluster,
-            entries=((self.host_1, self.component_1), (self.host_1, self.component_2), (self.host_2, self.component_1)),
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.host_1, cls.component_1), (cls.host_1, cls.component_2), (cls.host_2, cls.component_1)),
         )
 
     def execute_plugin_patched(self, task, arguments):

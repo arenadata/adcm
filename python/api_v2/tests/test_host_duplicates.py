@@ -13,8 +13,8 @@
 from operator import itemgetter
 
 from cm.models import Action, Cluster, Component, Host, MaintenanceMode
+from cm.transition.status import StatusScenarios
 from core.types import HostID
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
     HTTP_200_OK,
@@ -26,6 +26,7 @@ from rest_framework.status import (
 )
 from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.host.duplicate import create_duplicate
+import core
 
 
 class TestDuplicateHost(ADCMDjangoAPISuite):
@@ -46,8 +47,9 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             host_id=origin.pk,
             name=name,
             cluster_id=getattr(cluster, "id", None),
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         return Host.objects.get(id=duplicate_id)
 
@@ -89,13 +91,18 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
 
     def test_add_duplicate_to_cluster_after_creation(self):
         duplicate_1_id = create_duplicate(
-            host_id=self.host_1.id, name="awesome", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            host_id=self.host_1.id,
+            name="awesome",
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         duplicate_2_id = create_duplicate(
             host_id=self.host_1.id,
             name="another-host",
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         expected_duplicates = [
@@ -145,13 +152,18 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
 
     def test_adcm_6943_new_host_with_name_of_duplicate_pass(self):
         create_duplicate(
-            host_id=self.host_1.id, name="awesome", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            host_id=self.host_1.id,
+            name="awesome",
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         create_duplicate(
             host_id=self.host_1.id,
             name="awesome-2",
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         with self.subTest("New host"):
             response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
@@ -170,14 +182,16 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             host_id=self.host_1.id,
             name="duplicate-1",
             cluster_id=self.cluster_1.id,
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         duplicate_2_id = create_duplicate(
             host_id=self.host_1.id,
             name="duplicate-2",
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).first()
@@ -307,7 +321,11 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
         # ("django_content_type"."app_label" = 'cm' AND "auth_permission"."codename" = 'view_host') LIMIT 21
         # yet amount of queries won't increase when more instances/duplicates arrive
         create_duplicate(
-            host_id=self.host_1.pk, name="jjjj", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            host_id=self.host_1.pk,
+            name="jjjj",
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         with self.assertNumQueries(expected_queries_amount):
@@ -318,7 +336,11 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
         self.add_host(provider=self.provider, fqdn="something")
         another_host = self.add_host(provider=self.provider, fqdn="something-else")
         create_duplicate(
-            host_id=another_host.pk, name="wow", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+            host_id=another_host.pk,
+            name="wow",
+            config_service=self.container.get(core.config.ConfigService),
+            rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         with self.assertNumQueries(expected_queries_amount):

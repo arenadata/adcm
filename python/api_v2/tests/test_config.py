@@ -34,10 +34,11 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.config._types import ChangeRequest
+from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -51,6 +52,7 @@ from rest_framework.status import (
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
+from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
 from api_v2.tests.base import APIV2Mixin
@@ -1267,6 +1269,25 @@ class TestServiceCHG(ADCMDjangoAPISuite):
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
             response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_7951_update_from_job(self):
+        owner = CoreObjectDescriptor(id=self.service_1.pk, type=ADCMCoreType.SERVICE)
+        expected = "nondefault"
+        changes = [ChangeRequest(type="value", parameter="/string", value=expected)]
+
+        with patch("use_cases.transition.config.update_related_configs"):
+            self.container.get(UpdateConfigurationFromJob).do(
+                owner=owner,
+                changes_input=changes,
+                convert=lambda x, _: x,
+                description="",
+                job_id=1,
+                owner_orm=self.service_1,
+            )
+
+        self.host_group.refresh_from_db(fields=["config"])
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
+        self.assertEqual(config_log.config["string"], expected)
 
 
 class TestComponentConfig(ADCMDjangoAPISuite):
@@ -3351,9 +3372,15 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
 
         # revert upgrade
-        config_service = get_config_service()
+        config_service = self.container.get(core.config.ConfigService)
+        config_scenarios = ConfigScenarios(config_service=config_service)
         callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
-        bundle_revert(obj=self.cluster, callbacks=callbacks, config_service=config_service)
+        bundle_revert(
+            obj=self.cluster,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
         # CHGs must be restored
         chg_hosts_map = {

@@ -33,6 +33,7 @@ from cm.models import (
     Provider,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from core.config._service import ConfigService
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
@@ -99,6 +100,7 @@ class UseCases:
             name=name or self.faker.name(),
             description=description,
             config_service=self.container.get(ConfigService),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         return Provider.objects.get(id=provider_id)
@@ -113,6 +115,7 @@ class UseCases:
             cluster=cluster,
             config_service=self.container.get(ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
         )
 
         return Host.objects.get(id=host_id)

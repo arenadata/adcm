@@ -51,8 +51,9 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.host.duplicate import create_duplicate
-from use_cases.transition.hostprovider.create import create_host as create_host_new
+from use_cases.transition.hostprovider.create import create_host
 from use_cases.transition.job.schedule import ScheduleTask
+import core
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -214,9 +215,10 @@ class HostViewSet(
     def create(
         self,
         request,
-        *_,
+        config_service: FromDishka[core.config.ConfigService],
         rbac_scenarios: FromDishka[RBACScenarios],
-        **__,
+        status_scenarios: FromDishka[StatusScenarios],
+        **_,
     ):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -234,12 +236,13 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        host_id = create_host_new(
+        host_id = create_host(
             hostprovider=request_provider,
             name=serializer.validated_data["fqdn"],
             cluster=request_cluster,
-            config_service=get_config_service(),
+            config_service=config_service,
             rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
         )
         host = Host.objects.get(id=host_id)
 
@@ -331,6 +334,7 @@ class HostViewSet(
         request: Request,
         *_,
         rbac_scenarios: FromDishka[RBACScenarios],
+        status_scenarios: FromDishka[StatusScenarios],
         **__,
     ):
         serializer = self.get_serializer(data=request.data)
@@ -348,6 +352,7 @@ class HostViewSet(
             cluster_id=data["cluster_id"],
             config_service=get_config_service(),
             rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
         )
 
         duplicate = Host.objects.get(id=duplicate_id)
