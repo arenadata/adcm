@@ -38,6 +38,7 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.config import ConfigScenarios
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
@@ -48,6 +49,11 @@ from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
+from use_cases.transition.config import (
+    UpdateConfigurationFromJob,
+    UpdateConfigurationOfHostGroup,
+    UpdateConfigurationOfObject,
+)
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
@@ -195,6 +201,7 @@ class ScenariosProvider(Provider):
         provides=FillWizardStepSpec[ActionArgs, TaskArgs],
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
+    config_scenarios = provide(ConfigScenarios)
 
 
 class LogsServiceProvider(Provider):
@@ -235,3 +242,7 @@ class UseCaseProvider(Provider):
     )
 
     add_check_log_record = provide(AddCheckLogRecordForJob)
+
+    update_configuration_of_object = provide(UpdateConfigurationOfObject)
+    update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)
+    update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)

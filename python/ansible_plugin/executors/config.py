@@ -17,11 +17,9 @@ from cm.converters import core_type_to_model
 from core.legacy.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from infra.services import get_config_service
 from pydantic import model_validator
-from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
-from use_cases.transition.config import update_configuration_from_job
+from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
 from ansible_plugin.base import (
@@ -118,22 +116,18 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeAdcmConfigArgumen
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value={}, changed=False, error=error)
 
-        config_service = get_config_service()
-
         original_changes = arguments.get_changes()
 
         model = core_type_to_model(core_type=target.type)
         db_object = model.objects.get(id=target.id)
 
-        rbac_scenarios = self._container.get(RBACScenarios)
-        changes, has_changed = update_configuration_from_job(
+        update_configuration_from_job = self._container.get(UpdateConfigurationFromJob)
+        changes, has_changed = update_configuration_from_job.do(
             owner=target,
             changes_input=original_changes,
             convert=to_changes,
             description="ansible update",
             job_id=runtime.vars.job.id,
-            config_service=config_service,
-            rbac_scenarios=rbac_scenarios,
             owner_orm=db_object,
         )
 

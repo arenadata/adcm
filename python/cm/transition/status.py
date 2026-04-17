@@ -13,7 +13,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from core.types import ConcernID, HostID
+from core.types import ConcernID, CoreObjectDescriptor, Descriptor, HostID
 from requests import Response
 
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
@@ -44,8 +44,21 @@ from cm.legacy.status_api import (
     notify_about_redistributed_concerns_from_maps as legacy_notify_about_redistributed_concerns_from_maps,
 )
 from cm.legacy.status_api import (
+    send_config_creation_event as legacy_send_config_creation_event,
+)
+from cm.legacy.status_api import (
+    send_delete_service_event as legacy_send_delete_service_event,
+)
+from cm.legacy.status_api import (
     send_object_update_event as legacy_send_object_update_event,
 )
+from cm.legacy.status_api import (
+    send_prototype_and_state_update_event as legacy_send_prototype_and_state_update_event,
+)
+from cm.legacy.status_api import (
+    send_task_status_update_event as legacy_send_task_status_update_event,
+)
+from cm.models import ADCMEntity
 
 
 @dataclass(slots=True)
@@ -58,6 +71,23 @@ class StatusScenarios:
 
     def send_object_update_event(self, obj_id: int, obj_type: str, changes: dict) -> None:
         legacy_send_object_update_event(obj_id=obj_id, obj_type=obj_type, changes=changes)
+
+    def send_config_creation_event(self, owner: CoreObjectDescriptor | Descriptor, created_by: str) -> None:
+        object_type = owner.type if isinstance(owner.type, str) else owner.type.value
+        legacy_send_config_creation_event(
+            object_id=owner.id,
+            object_type=object_type,
+            changes={"createdBy": created_by},
+        )
+
+    def send_task_status_update_event(self, task_id: int, status: str) -> None:
+        legacy_send_task_status_update_event(task_id=task_id, status=status)
+
+    def send_prototype_and_state_update_event(self, object_: ADCMEntity) -> None:
+        legacy_send_prototype_and_state_update_event(object_=object_)
+
+    def send_delete_service_event(self, service_id: int) -> Response | None:
+        return legacy_send_delete_service_event(service_id=service_id)
 
     def notify_about_redistributed_concerns_from_maps(
         self,

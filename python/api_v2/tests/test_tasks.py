@@ -33,7 +33,6 @@ from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
-from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.transition.cluster.delete import DeleteService
@@ -281,7 +280,8 @@ class TestTask(ADCMDjangoAPISuite):
             self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
             # delete service skipping some checks
-            DeleteService(rbac_scenarios=RBACScenarios()).do(service=self.service_1)
+            with self.container() as container:
+                container.get(DeleteService).do(service=self.service_1)
 
             # check tasklog visibility for cluster admin
             self.client.login(**cluster_admin_credentials)

@@ -18,8 +18,8 @@ from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
+from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, HostID, HostName
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
     HTTP_200_OK,
@@ -32,6 +32,7 @@ from rest_framework.status import (
 from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.host.duplicate import create_duplicate
+import core.config
 
 
 class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
@@ -540,16 +541,18 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             id=create_duplicate(
                 host_id=self.host.id,
                 name=f"{self.host.fqdn}-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
                 host_id=self.host_2.id,
                 name=f"{self.host_2.fqdn}-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
@@ -573,16 +576,18 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             id=create_duplicate(
                 host_id=self.host.id,
                 name=f"{self.host.fqdn}-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
                 host_id=self.host_2.id,
                 name=f"{self.host_2.fqdn}-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
 
@@ -620,16 +625,18 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             id=create_duplicate(
                 host_id=self.host.id,
                 name=f"{self.host.fqdn}-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         h1_dup_2 = Host.objects.get(
             id=create_duplicate(
                 host_id=self.host.id,
                 name=f"{self.host.fqdn}-dup-dup",
-                config_service=get_config_service(),
-                rbac_scenarios=RBACScenarios(),
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         hosts_to_add = (h1_dup, h1_dup_2)
@@ -789,12 +796,20 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         host_2 = self.host_2
         host_duplicate_1 = Host.objects.get(
             id=create_duplicate(
-                host_id=host_1.pk, name="duplicate", config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+                host_id=host_1.pk,
+                name="duplicate",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         host_duplicate_named_as_host_2 = Host.objects.get(
             id=create_duplicate(
-                host_id=host_1.pk, name=host_2.name, config_service=get_config_service(), rbac_scenarios=RBACScenarios()
+                host_id=host_1.pk,
+                name=host_2.name,
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
 

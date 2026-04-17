@@ -14,39 +14,39 @@ from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run.repo import JobRepoImpl
-from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog
+from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog, Service
 from core.legacy.job.types import Task
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.base import CallResult
 from ansible_plugin.errors import PluginTargetError
 from ansible_plugin.executors.config import ADCMConfigPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.config"
 
 
-class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.cluster_bundle = self.add_bundle(self.bundles_dir / "cluster_complex_config")
-        self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Cluster With Config")
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.bundles_dir / "cluster_complex_config")
+        cls.cluster = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Cluster With Config")
 
         ConcernItem.objects.all().delete()
 
-        self.service_1, self.service_2 = self.add_services_to_cluster(
-            ["service_1", "service_2"], cluster=self.cluster
-        ).order_by("prototype__name")
-        self.component_1, self.component_2 = (
-            Component.objects.filter(service=self.service_1).order_by("prototype__name").all()
+        cls.uc.add_services_to_cluster(["service_1", "service_2"], cluster=cls.cluster)
+        cls.service_1, cls.service_2 = Service.objects.filter(cluster=cls.cluster).order_by("prototype__name")
+        cls.component_1, cls.component_2 = (
+            Component.objects.filter(service=cls.service_1).order_by("prototype__name").all()
         )
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_1)
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_2)
 
-        self.set_hostcomponent(
-            cluster=self.cluster,
-            entries=((self.host_1, self.component_1), (self.host_1, self.component_2), (self.host_2, self.component_1)),
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.host_1, cls.component_1), (cls.host_1, cls.component_2), (cls.host_2, cls.component_1)),
         )
 
     def get_config_attr(self, object_: ADCMEntity) -> ConfigAttrPair:

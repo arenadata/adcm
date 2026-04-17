@@ -255,11 +255,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
 
-        result = upgrade_object.do(
-            target=parent_orm,
-            upgrade=upgrade,
-            payload=payload,
-        )
+        result = upgrade_object.do(target=parent_orm, upgrade=upgrade, payload=payload)
 
         match result:
             case ("plain", _):

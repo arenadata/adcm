@@ -16,9 +16,8 @@ from cm.errors import AdcmEx
 from cm.legacy.services import cluster
 from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.legacy.services.host import repo
-from cm.legacy.services.status import notify
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
 from cm.models import Cluster, Host
+from cm.transition.status import StatusScenarios
 from core.config import ConfigService
 from core.types import ADCMCoreType, ClusterID, Descriptor, HostDesc, HostID, HostName
 from django.db.transaction import atomic
@@ -32,6 +31,7 @@ def create_duplicate(
     host_id: HostID,
     name: HostName,
     rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
     cluster_id: ClusterID | None = None,
 ) -> HostDuplicateID:
     with atomic():
@@ -53,7 +53,7 @@ def create_duplicate(
                 cluster.perform_host_to_cluster_map(
                     cluster_id=cluster_id,
                     hosts=[duplicate.pk],
-                    status_service=notify,
+                    status_service=status_scenarios,
                     rbac_scenarios=rbac_scenarios,
                 )
             except Cluster.DoesNotExist as e:
@@ -61,7 +61,7 @@ def create_duplicate(
 
         attached_concern_map = distribute_concern_from_provider_to_host(host_id=duplicate.pk)
 
-    notify.register_host_duplicates(original=host_id, duplicates=(duplicate.pk,))
-    notify_about_redistributed_concerns_from_maps(added=attached_concern_map, removed={})
+    status_scenarios.register_host_duplicates(original=host_id, duplicates=(duplicate.pk,))
+    status_scenarios.notify_about_redistributed_concerns_from_maps(added=attached_concern_map, removed={})
 
     return duplicate.pk

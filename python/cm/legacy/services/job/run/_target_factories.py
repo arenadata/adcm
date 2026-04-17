@@ -25,6 +25,7 @@ from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.legacy.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.logs import LogsService
+from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -35,6 +36,7 @@ from rbac.roles import re_apply_policy_for_jobs
 from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
+from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
 from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
@@ -84,15 +86,24 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         logs_service: LogsService,
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+        update_configuration_from_job: UpdateConfigurationFromJob,
         rbac_scenarios: RBACScenarios,
+        config_scenarios: ConfigScenarios,
     ):
         self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
         self._rbac_scenarios = rbac_scenarios
         self._supported_internal_scripts = {
-            "bundle_switch": partial(internal_script_bundle_switch, rbac_scenarios=rbac_scenarios),
-            "bundle_revert": partial(internal_script_bundle_revert, rbac_scenarios=rbac_scenarios),
+            "bundle_switch": partial(
+                internal_script_bundle_switch, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+            ),
+            "bundle_revert": partial(
+                internal_script_bundle_revert, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+            ),
             "hc_apply": internal_script_hc_apply,
-            "config_apply": partial(internal_script_config_apply, rbac_scenarios=rbac_scenarios),
+            "config_apply": partial(
+                internal_script_config_apply,
+                update_configuration_from_job=update_configuration_from_job,
+            ),
             "before_upgrade_clean": partial(
                 internal_script_before_upgrade_clean,
                 cluster_uc=reset_cluster_before_upgrade,
@@ -155,7 +166,9 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 
 
 @atomic()
-def internal_script_bundle_switch(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
+def internal_script_bundle_switch(
+    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
+) -> int:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -167,7 +180,11 @@ def internal_script_bundle_switch(task: Task, job: Job, rbac_scenarios: RBACScen
     config_service = get_config_service()
     callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
     bundle_switch(
-        obj=task_.task_object, upgrade=task_.action.upgrade, callbacks=callbacks, config_service=config_service
+        obj=task_.task_object,
+        upgrade=task_.action.upgrade,
+        callbacks=callbacks,
+        config_service=config_service,
+        config_scenarios=config_scenarios,
     )
 
     _switch_hc_if_required(task=task)
@@ -178,7 +195,9 @@ def internal_script_bundle_switch(task: Task, job: Job, rbac_scenarios: RBACScen
 
 
 @atomic()
-def internal_script_bundle_revert(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
+def internal_script_bundle_revert(
+    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
+) -> int:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -191,7 +210,12 @@ def internal_script_bundle_revert(task: Task, job: Job, rbac_scenarios: RBACScen
         config_service = get_config_service()
         callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
 
-        bundle_revert(obj=task_.task_object, callbacks=callbacks, config_service=config_service)
+        bundle_revert(
+            obj=task_.task_object,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
     except ObjectDoesNotExist as error:
         # This is a hack. We can do this, since all AdcmEx are intercepted in the Executer,
@@ -256,7 +280,11 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
     return 0
 
 
-def internal_script_config_apply(task: Task, job: Job, rbac_scenarios: RBACScenarios) -> int:
+def internal_script_config_apply(
+    task: Task,
+    job: Job,
+    update_configuration_from_job: UpdateConfigurationFromJob,
+) -> int:
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
@@ -265,7 +293,7 @@ def internal_script_config_apply(task: Task, job: Job, rbac_scenarios: RBACScena
             changing_object,
             change["parameters"],
             f"{task.action.display_name} process update",
-            rbac_scenarios,
+            update_configuration_from_job,
         )
     return 0
 
@@ -306,21 +334,16 @@ def _apply_config_changes(
     db_object: ADCM | CoreObject,
     parameters: list[dict],
     changes_description: str,
-    rbac_scenarios: RBACScenarios,
+    update_configuration_from_job: UpdateConfigurationFromJob,
 ) -> None:
-    from use_cases.transition.config import update_configuration_from_job
-
     _check_parameters_unique(parameters)
 
-    config_service = get_config_service()
-    update_configuration_from_job(
+    update_configuration_from_job.do(
         owner=orm_object_to_core_descriptor(db_object),
         changes_input=parameters,
         convert=_prepare_changes_new,
         job_id=job_id,
         description=changes_description,
-        config_service=config_service,
-        rbac_scenarios=rbac_scenarios,
         owner_orm=db_object,
     )
 

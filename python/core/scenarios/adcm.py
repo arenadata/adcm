@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import NewType
 
 from core import config
+from core.scenarios.config import ConfigScenarios
 from core.types import BundleID
 
 DefaultURL = NewType("DefaultURL", str)
@@ -34,6 +35,7 @@ class InitializeADCM:
 @dataclass(slots=True)
 class UpgradeADCM:
     config_service: config.ConfigService
+    config_scenarios: ConfigScenarios
 
     @abstractmethod
     def do(self, bundle_id: BundleID):

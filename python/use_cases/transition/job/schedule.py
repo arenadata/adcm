@@ -34,7 +34,6 @@ from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delt
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template_new
 from cm.legacy.services.job.types import ActionHCRule
-from cm.legacy.status_api import send_task_status_update_event
 from cm.models import (
     ADCM,
     UNFINISHED_STATUS,
@@ -51,6 +50,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.transition.action import RetrieveStartImpossibleReason
+from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
@@ -149,6 +149,7 @@ class _ActionLaunchObjects:
             self.cluster = None  # it's safe to assume cluster is None for host own action
 
 
+@dataclass(slots=True)
 class _ScheduleTask(ABC):
     job_service: core.job.JobService
     config_service: core.config.ConfigService
@@ -156,6 +157,7 @@ class _ScheduleTask(ABC):
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     start_task: TaskStarter
     rbac_scenarios: RBACScenarios
+    status_scenarios: StatusScenarios
     retrieve_sir: RetrieveStartImpossibleReason
     cluster_service: ClusterService
 
@@ -309,7 +311,7 @@ class _ScheduleTask(ABC):
             orm_task = TaskLog.objects.get(id=task_id)
             self.rbac_scenarios.re_apply_policy_for_jobs(task=orm_task)
 
-        send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
+        self.status_scenarios.send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
 
         self.start_task(orm_task)
 
@@ -322,15 +324,6 @@ class _ScheduleTask(ABC):
 
 @dataclass(slots=True)
 class ScheduleTask(_ScheduleTask):
-    job_service: core.job.JobService
-    config_service: core.config.ConfigService
-    context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
-    bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
-    start_task: TaskStarter
-    rbac_scenarios: RBACScenarios
-    retrieve_sir: RetrieveStartImpossibleReason
-    cluster_service: ClusterService
-
     def perform_checks(self, action_orm: Action, payload: RunActionDTO, action_objects: _ActionLaunchObjects):
         target_descriptor = orm_object_to_action_target_descriptor(action_objects.target)
 
