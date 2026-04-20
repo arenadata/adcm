@@ -79,7 +79,7 @@ class EnvironmentProvider(Provider):
             data=base_data_dir,
             run=base_data_dir / "run",
             logs=base_data_dir / "log",
-            temp=base_data_dir / "temp",
+            temp=base_data_dir / "tmp",
         )
 
     @provide
