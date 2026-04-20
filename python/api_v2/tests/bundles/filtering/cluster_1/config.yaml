@@ -13,3 +13,18 @@
       states:
         available: any
         on_success: installed
+
+- name: service_1
+  type: service
+  display_name: A Service
+  version: "1.0.0"
+
+- name: service_2
+  type: service
+  display_name: A Service
+  version: "12.0.1"
+
+- name: service_3
+  type: service
+  display_name: B Service
+  version: "2.0.1"
