@@ -11,17 +11,10 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Final, Literal
 
-from cm.models import (
-    ADCM,
-    Bundle,
-    Cluster,
-    ConfigLog,
-    SignatureStatus,
-)
+from cm.models import ADCM, Bundle, Cluster, ConfigLog, Provider, Service, SignatureStatus
 from infra.services import prepare_container
 from init_db import init
 from rbac.upgrade.role import init_roles
@@ -167,11 +160,28 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.bundle_cl_1 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_1")
         cls.bundle_cl_2 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_2")
         cls.bundle_cl_3 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_3")
+        cls.bundle_hp_1 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider_1")
+        cls.bundle_hp_2 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider_2")
+        cls.bundle_hp_3 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider_3")
+        cls.set_bundle_signature_status(cls.bundle_cl_1, SignatureStatus.VALID)
 
         # prepare clusters
         cls.cl_1 = cls.uc.add_cluster(cls.bundle_cl_1, "cluster_1")
         cls.cl_2 = cls.uc.add_cluster(cls.bundle_cl_2, "cluster_2")
         cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "cluster_3")
+        cls.set_state(cls.cl_1, "installed")
+
+        # prepare services
+        cls.service_1, cls.service_2, cls.service_3 = cls.uc.add_services_to_cluster(
+            names=["service_1", "service_2", "service_3"], cluster=cls.cl_1
+        )
+        cls.set_state(cls.service_3, "installed")
+
+        # prepare hostproviders
+        cls.hp_1 = cls.uc.add_provider(cls.bundle_hp_1, "provider_1")
+        cls.hp_2 = cls.uc.add_provider(cls.bundle_hp_2, "provider_2")
+        cls.hp_3 = cls.uc.add_provider(cls.bundle_hp_3, "provider_3")
+        cls.set_state(cls.hp_1, "installed")
 
     def setUp(self) -> None:
         super().setUp()
@@ -183,7 +193,12 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         return response.json()
 
-    def extract_values(self, data: dict, value_path: str) -> list:
+    def get_results(self, url: APINode, value_path: str, query: dict) -> list:
+        response = self.get_r(url=url, query=query)
+        return self.extract_values(response["results"], value_path)
+
+    @staticmethod
+    def extract_values(data: dict, value_path: str) -> list:
         """
         Extract values along a path from a nested structure.
         """
@@ -197,15 +212,10 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
             values.append(current)
         return values
 
-    def get_results(self, url: APINode, value_path: str, query: dict) -> list:
-        response = self.get_r(url=url, query=query)
-        return self.extract_values(response["results"], value_path)
+    @staticmethod
+    def set_state(entity: Cluster | Provider | Service, state: str) -> None:
+        entity.set_state(state)
 
-    def set_cluster_state(self, cluster: Cluster, state: str) -> None:
-        cluster.set_state(state)
-
-    def normalize_upload_time(self, value: datetime) -> str:
-        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
-    def set_bundle_signature_status(self, bundle: Bundle, status: SignatureStatus) -> None:
+    @staticmethod
+    def set_bundle_signature_status(bundle: Bundle, status: SignatureStatus) -> None:
         Bundle.objects.filter(pk=bundle.pk).update(signature_status=status)
