@@ -18,6 +18,13 @@
   type: service
   display_name: A Service
   version: "1.0.0"
+  components:
+    component_1:
+      display_name: Component 1
+    component_2:
+      display_name: Component 2
+    component_3:
+      display_name: Component 3
 
 - name: service_2
   type: service
