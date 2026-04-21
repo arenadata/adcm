@@ -35,6 +35,7 @@ class CeleryTaskState(str, Enum):
     RETRY = "RETRY"
     FAILURE = "FAILURE"
     SUCCESS = "SUCCESS"
+    REVOKED = "REVOKED"
     ADCM_UNREACHABLE = "ADCM-UNREACHABLE"
 
 
@@ -49,6 +50,7 @@ CELERY_STATE_ADCM_STATUS_MAP = {
     CeleryTaskState.RETRY: _ADCMStatus(recover_status=None, is_final=False),
     CeleryTaskState.FAILURE: _ADCMStatus(recover_status=ExecutionStatus.BROKEN, is_final=True),
     CeleryTaskState.SUCCESS: _ADCMStatus(recover_status=ExecutionStatus.SUCCESS, is_final=True),
+    CeleryTaskState.REVOKED: _ADCMStatus(recover_status=ExecutionStatus.REVOKED, is_final=True),
     # TODO: retry getting an actual state before considering final/broken?
     CeleryTaskState.ADCM_UNREACHABLE: _ADCMStatus(recover_status=ExecutionStatus.BROKEN, is_final=True),
 }
