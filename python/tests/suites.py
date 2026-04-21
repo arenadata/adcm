@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Literal
 
-from cm.models import ADCM, Bundle, Cluster, ConfigLog, Provider, Service, SignatureStatus
+from cm.models import ADCM, Bundle, Cluster, Component, ConfigLog, Provider, Service, SignatureStatus
+from django.db.models import QuerySet
 from infra.services import prepare_container
 from init_db import init
 from rbac.upgrade.role import init_roles
@@ -171,9 +172,15 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "cluster_3")
         cls.set_state(cls.cl_1, "installed")
 
-        # prepare services
-        cls.service_1, cls.service_2, cls.service_3 = cls.uc.add_services_to_cluster(
-            names=["service_1", "service_2", "service_3"], cluster=cls.cl_1
+        # prepare service with components
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cl_1)
+        # prepare components
+        components = cls.get_components(cls.service_1)
+        cls.comp_1, cls.comp_2, cls.comp_3 = components[0], components[1], components[2]
+
+        # prepare other services
+        cls.service_2, cls.service_3 = cls.uc.add_services_to_cluster(
+            names=["service_2", "service_3"], cluster=cls.cl_1
         )
         cls.set_state(cls.service_3, "installed")
 
@@ -219,3 +226,7 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
     @staticmethod
     def set_bundle_signature_status(bundle: Bundle, status: SignatureStatus) -> None:
         Bundle.objects.filter(pk=bundle.pk).update(signature_status=status)
+
+    @staticmethod
+    def get_components(service: Service) -> QuerySet[Component]:
+        return Component.objects.filter(service=service).order_by("pk")

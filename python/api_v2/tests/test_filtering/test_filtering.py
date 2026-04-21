@@ -16,9 +16,11 @@ from tests.dependencies import get_status_scenarios_manager
 from tests.suites import ADCMFiltersDataSuite
 
 from api_v2.tests.test_filtering.cases import (
-    BundlesCase,
-    ClustersCase,
-    HostProvidersCase,
+    BundlesTestCase,
+    ClustersTestCase,
+    ComponentsTestCase,
+    HostProvidersTestCase,
+    ServicesTestCase,
 )
 
 
@@ -102,46 +104,78 @@ class TestAPIFilters(FiltersBaseCheck):
     """
 
     def test_filters_clusters(self) -> None:
-        case = ClustersCase(self)
+        case = ClustersTestCase(self)
         self.check_filters(
             url=case.get_url(),
             filters_cases=case.get_filters_cases(),
         )
 
     def test_ordering_clusters(self) -> None:
-        case = ClustersCase(self)
+        case = ClustersTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),
         )
 
     def test_filter_status_clusters(self) -> None:
-        case = ClustersCase(self)
+        case = ClustersTestCase(self)
         self.check_filter_status(url=case.get_url(), checked_status="up")
 
     def test_filters_bundles(self) -> None:
-        case = BundlesCase(self)
+        case = BundlesTestCase(self)
         self.check_filters(
             url=case.get_url(),
             filters_cases=case.get_filters_cases(),
         )
 
     def test_ordering_bundles(self) -> None:
-        case = BundlesCase(self)
+        case = BundlesTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),
         )
 
     def test_filters_hostproviders(self) -> None:
-        case = HostProvidersCase(self)
+        case = HostProvidersTestCase(self)
         self.check_filters(
             url=case.get_url(),
             filters_cases=case.get_filters_cases(),
         )
 
     def test_ordering_hostproviders(self) -> None:
-        case = HostProvidersCase(self)
+        case = HostProvidersTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filters_services(self) -> None:
+        case = ServicesTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_services(self) -> None:
+        case = ServicesTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filter_status_services(self) -> None:
+        case = ServicesTestCase(self)
+        self.check_filter_status(url=case.get_url(), checked_status="up")
+
+    def test_filters_components(self) -> None:
+        case = ComponentsTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_components(self) -> None:
+        case = ComponentsTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),

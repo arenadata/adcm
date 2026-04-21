@@ -18,7 +18,7 @@ from tests.suites import ADCMFiltersDataSuite
 
 
 @dataclass(slots=True)
-class BaseCase:
+class BaseTestCase:
     suite: ADCMFiltersDataSuite
 
     @abstractmethod
@@ -44,7 +44,7 @@ class BaseCase:
         """
 
 
-class BundlesCase(BaseCase):
+class BundlesTestCase(BaseTestCase):
     def get_url(self) -> APINode:
         return self.suite.client.v2 / "bundles"
 
@@ -89,7 +89,7 @@ class BundlesCase(BaseCase):
         ]
 
 
-class ClustersCase(BaseCase):
+class ClustersTestCase(BaseTestCase):
     def get_url(self) -> APINode:
         return self.suite.client.v2 / "clusters"
 
@@ -123,23 +123,23 @@ class ClustersCase(BaseCase):
         ]
 
 
-class HostProvidersCase(BaseCase):
+class HostProvidersTestCase(BaseTestCase):
     def get_url(self) -> APINode:
         return self.suite.client.v2 / "hostproviders"
 
     def get_filters_cases(self) -> list:
         return [
-            ("name", "name", "PROVIDER_1", ["provider_1"], "wrong"),
-            ("prototypeName", "prototype.name", "a_provider", ["a_provider", "a_provider"], "wrong"),
+            ("name", "name", "DER_1", ["provider_1"], "wrong"),  # check icontains
+            ("prototypeName", "prototype.name", "a_provider", ["a_provider", "a_provider"], "a_pro"),  # check exact
             (
                 "prototypeDisplayName",
                 "prototype.displayName",
                 "A Provider",
                 ["A Provider", "A Provider"],
-                "wrong",
+                "A Pro",  # check exact
             ),
             ("state", "state", "installed", ["installed"], "wrong"),
-            ("prototypeVersion", "prototype.version", "2.0.1", ["2.0.1"], "2"),
+            ("prototypeVersion", "prototype.version", "2.0.1", ["2.0.1"], "2"),  # check exact
         ]
 
     def get_ordering_cases(self) -> list:
@@ -153,4 +153,44 @@ class HostProvidersCase(BaseCase):
             ),
             ("prototypeVersion", "prototype.version", ["1.0.0", "12.0.1", "2.0.1"]),
             ("state", "state", ["created", "created", "installed"]),
+        ]
+
+
+class ServicesTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2[self.suite.cl_1, "services"]
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("name", "name", "CE_1", ["service_1"], "wrong"),  # check icontains
+            ("displayName", "displayName", "A SE", ["A Service", "A Service"], "wrong"),  # check icontains
+            ("prototypeVersion", "prototype.version", "1.0.0", ["1.0.0"], "1"),  # check exact
+            ("state", "state", "installed", ["installed"], "inst"),  # check exact
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("displayName", "displayName", ["A Service", "A Service", "B Service"]),
+            ("prototypeVersion", "prototype.version", ["1.0.0", "12.0.1", "2.0.1"]),
+            ("state", "state", ["created", "created", "installed"]),
+            ("id", "id", [self.suite.service_1.pk, self.suite.service_2.pk, self.suite.service_3.pk]),
+        ]
+
+
+class ComponentsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2[self.suite.cl_1, "services", self.suite.service_1, "components"]
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("name", "name", "NT_1", ["component_1"], "wrong"),  # check icontains
+            ("displayName", "displayName", "NT 1", ["Component 1"], "wrong"),  # check icontains
+            ("id", "id", self.suite.comp_1.pk, [self.suite.comp_1.pk], "0"),
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("name", "name", ["component_1", "component_2", "component_3"]),
+            ("displayName", "displayName", ["Component 1", "Component 2", "Component 3"]),
+            ("id", "id", [self.suite.comp_1.pk, self.suite.comp_2.pk, self.suite.comp_3.pk]),
         ]
