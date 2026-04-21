@@ -110,7 +110,7 @@ class ADCMHostGroupType(Enum):
     ACTION = "action-group"
 
 
-class ExtraActionTargetType(Enum):
+class ExtraActionTargetType(str, Enum):
     ACTION_HOST_GROUP = "action-host-group"
 
 
