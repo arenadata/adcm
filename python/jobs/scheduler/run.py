@@ -19,6 +19,7 @@ import sys
 from dishka import make_container
 
 sys.path.append("/adcm/python")
+import adcm.init_django  # noqa
 from application.di.containers import get_main_providers
 from cm.transition.action import RetrieveStartImpossibleReason
 

@@ -135,14 +135,14 @@ def validate(
     except AdcmEx as e:
         raise LauncherError(e.msg) from e
 
-    mm_action = scheduler_repo.retrieve_task(task_id=task_id).action.is_mm_action
+    is_mm_action = scheduler_repo.retrieve_task(task_id=task_id).action.is_mm_action
     start_impossible_reason = retrieve_sir.for_action_target(
         target=orm_object_to_action_target_descriptor(target_orm),
         allowed_in_mm={action_orm.pk: action_orm.allow_in_maintenance_mode},
-        is_run_action=True,
     )
-    if not mm_action and start_impossible_reason:
-        raise LauncherError(start_impossible_reason)
+
+    if not is_mm_action and start_impossible_reason[action_orm.pk] is not None:
+        raise LauncherError(start_impossible_reason[action_orm.pk])
 
     if task.hostcomponent.mapping_delta:
         cluster = target_orm if isinstance(target_orm, Cluster) else target_orm.cluster
