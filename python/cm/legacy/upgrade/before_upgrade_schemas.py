@@ -100,6 +100,8 @@ class DeletedServiceBeforeUpgrade(DeletedObjectBeforeUpgrade):
 
 class ClusterBeforeUpgrade(_WithBundleID, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup):
     hc: Annotated[list[ServiceHostComponentMapBeforeUpgrade], Field(default_factory=list)]
+    # todo add better typehint (see ImportsDict from context._imports)
+    imports: Annotated[dict, Field(default_factory=dict)]
     services: Annotated[list[ServiceName], Field(default_factory=list)]
     deleted_services: Annotated[dict[ServiceName, DeletedServiceBeforeUpgrade], Field(default_factory=dict)]
     service_deleted_components: Annotated[

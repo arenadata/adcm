@@ -17,15 +17,21 @@ from uuid import UUID
 from core.action._context._wizard_process import construct_process_info
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import TaskMappingDelta
-from core.types import HostID, HostName, ServiceName
+from core.types import HostID, HostName
 from django.conf import settings
 from pydantic import BaseModel
 from typing_extensions import Self, TypedDict
 import core
 
 from cm.legacy.services.cluster import retrieve_related_cluster_topology
-from cm.legacy.services.job import context as context_m
-from cm.legacy.services.job.context import sort_hosts_within_groups
+from cm.legacy.services.job.context import (
+    HostGroupName,
+    ProcessContext,
+    cluster_vars_to_dict,
+    detect_host_groups_for_cluster_bundle_action,
+    get_cluster_vars,
+    sort_hosts_within_groups,
+)
 from cm.legacy.services.job.context._base import add_mapping_groups_from_process_steps
 from cm.models import (
     ADCM,
@@ -93,7 +99,7 @@ class _ActionContext(TypedDict):
 
 
 class _ActionWithProcessContext(_ActionContext):
-    process: context_m.ProcessContext
+    process: ProcessContext
 
 
 class _TaskContext(TypedDict):
@@ -102,9 +108,9 @@ class _TaskContext(TypedDict):
 
 
 class ActionRenderContext(BaseModel):
-    cluster: context_m.ClusterNode
-    services: dict[ServiceName, context_m.ServiceNode]
-    groups: dict[context_m.HostGroupName, list[HostName]]
+    cluster: dict  # ClusterNode
+    services: dict[str, dict]  # dict[ServiceName, ServiceNode]
+    groups: dict[HostGroupName, list[HostName]]
     action: _ActionContext | _ActionWithProcessContext
     env: _Env
     adcm: _ADCM
@@ -127,7 +133,7 @@ class ContextGatherer:
         args: ActionArgs,
     ) -> dict:
         context = self._prepare_context_for_action(args=args, delta=TaskMappingDelta())
-        return context.model_dump(mode="python", by_alias=True)
+        return context.model_dump(mode="json", by_alias=True)
 
     def prepare_context_for_task(self, args: TaskArgs) -> dict:
         action_context = self._prepare_context_for_action(args=args, delta=args.delta or TaskMappingDelta())
@@ -152,7 +158,9 @@ class ContextGatherer:
     ) -> ActionRenderContext:
         cluster_topology = retrieve_related_cluster_topology(orm_object=args.owner_object)
 
-        clusters_vars = context_m.get_cluster_vars(topology=cluster_topology, config_service=self.config_service)
+        clusters_vars = cluster_vars_to_dict(
+            get_cluster_vars(topology=cluster_topology, config_service=self.config_service)
+        )
 
         process_cumulative_delta = {}
 
@@ -185,8 +193,8 @@ class ContextGatherer:
                 groups["target"] = target_group_hosts
 
         return ActionRenderContext(
-            cluster=clusters_vars.cluster,
-            services=clusters_vars.services,
+            cluster=clusters_vars["cluster"],
+            services=clusters_vars["services"],
             groups=groups,
             action=action_context,
             env=_Env(
@@ -202,8 +210,8 @@ class ContextGatherer:
 
 
 def _get_host_group_names_only(
-    host_groups: dict[context_m.HostGroupName, list[tuple[HostID, HostName]]],
-) -> dict[context_m.HostGroupName, list[HostName]]:
+    host_groups: dict[HostGroupName, list[tuple[HostID, HostName]]],
+) -> dict[HostGroupName, list[HostName]]:
     return {group_name: [host_name for _, host_name in group_data] for group_name, group_data in host_groups.items()}
 
 
@@ -225,13 +233,13 @@ def _get_host_group_names_for_cluster(
     cluster_topology: ClusterTopology,
     hc_delta: TaskMappingDelta,
     process_cumulative_delta: dict[str, set[tuple[int, str]]],
-) -> dict[context_m.HostGroupName, list[HostName]]:
+) -> dict[HostGroupName, list[HostName]]:
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(cluster_id=cluster_topology.cluster_id, maintenance_mode=MaintenanceMode.ON).values_list(
             "id", flat=True
         )
     )
-    host_groups = context_m.detect_host_groups_for_cluster_bundle_action(
+    host_groups = detect_host_groups_for_cluster_bundle_action(
         cluster_topology=cluster_topology,
         hosts_in_maintenance_mode=hosts_in_maintenance_mode,
         hc_delta=hc_delta,

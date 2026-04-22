@@ -15,9 +15,11 @@ import functools
 
 from adcm_version import compare_prototype_versions
 from core.types import Descriptor
+import core
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.api import is_version_suitable
+from cm.legacy.services.job.context import get_imports_for_inventory
 from cm.legacy.upgrade.before_upgrade_schemas import (
     ActionHostGroupBeforeUpgrade,
     BeforeUpgrade,
@@ -120,24 +122,32 @@ def get_upgrade(obj: Cluster | Provider, order=None) -> list[Upgrade]:
     return res
 
 
-def update_before_upgrade(obj: Cluster | Provider) -> None:
+def update_before_upgrade(obj: Cluster | Provider, config_service: core.config.ConfigService) -> None:
     if isinstance(obj, Cluster):
-        _set_before_upgrade(obj=obj, before_upgrade=ClusterBeforeUpgrade(**obj.before_upgrade))
+        _set_before_upgrade(
+            obj=obj, before_upgrade=ClusterBeforeUpgrade(**obj.before_upgrade), config_service=config_service
+        )
 
         for service in Service.objects.filter(cluster=obj):
-            _set_before_upgrade(obj=service, before_upgrade=ServiceBeforeUpgrade())
+            _set_before_upgrade(obj=service, before_upgrade=ServiceBeforeUpgrade(), config_service=config_service)
 
             for component in Component.objects.filter(service=service, cluster=obj):
-                _set_before_upgrade(obj=component, before_upgrade=ComponentBeforeUpgrade())
+                _set_before_upgrade(
+                    obj=component, before_upgrade=ComponentBeforeUpgrade(), config_service=config_service
+                )
 
     if isinstance(obj, Provider):
-        _set_before_upgrade(obj=obj, before_upgrade=ProviderBeforeUpgrade(**obj.before_upgrade))
+        _set_before_upgrade(
+            obj=obj, before_upgrade=ProviderBeforeUpgrade(**obj.before_upgrade), config_service=config_service
+        )
 
-        for host in Host.objects.filter(provider=obj):
-            _set_before_upgrade(obj=host, before_upgrade=HostBeforeUpgrade())
+        for host in Host.objects.filter(provider=obj).select_related("config"):
+            _set_before_upgrade(obj=host, before_upgrade=HostBeforeUpgrade(), config_service=config_service)
 
 
-def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
+def _set_before_upgrade(
+    obj: MainObject, before_upgrade: BeforeUpgrade, config_service: core.config.ConfigService
+) -> None:
     before_upgrade.state = obj.state
 
     if obj.config:
@@ -159,6 +169,7 @@ def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
         }
 
     if isinstance(obj, Cluster):
+        before_upgrade.imports = {"config": get_imports_for_inventory(cluster_id=obj.pk, config_service=config_service)}
         before_upgrade.hc = [
             ServiceHostComponentMapBeforeUpgrade(
                 service=service,

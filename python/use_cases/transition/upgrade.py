@@ -62,7 +62,7 @@ class UpgradeObject:
                 raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
 
             target.before_upgrade["bundle_id"] = target.prototype.bundle.pk
-            update_before_upgrade(obj=target)
+            update_before_upgrade(obj=target, config_service=self.config_service)
 
         if not upgrade.action:
             callbacks = build_switch_revert_callbacks(
