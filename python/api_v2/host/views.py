@@ -52,7 +52,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 import core
 
 from api_v2.api_schema import DefaultParams, responses
@@ -312,7 +312,7 @@ class HostViewSet(
         self,
         request: Request,
         *args,  # noqa: ARG002
-        schedule_task: FromDishka[ScheduleTask],
+        schedule_task: FromDishka[ScheduleMMChangingTask],
         cluster_service: FromDishka[ClusterService],
         **kwargs,  # noqa: ARG002
     ) -> Response:
