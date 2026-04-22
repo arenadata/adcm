@@ -3,12 +3,22 @@
   name: cluster_export
   version: &version '1.0'
   config:
-    - name: string
-      type: string
-      required: false
-      default: string
+    - name: gfe
+      type: group
+      subs:
+        - name: plain
+          type: string
+          default: pt
+        - name: sec
+          type: password
+          default: very_secret
+        - name: secmap
+          type: secretmap
+          default:
+            a: vs
+
   export:
-    - string
+    - gfe
 
 - name: service_export
   type: service

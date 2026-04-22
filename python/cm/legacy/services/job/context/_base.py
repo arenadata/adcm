@@ -168,6 +168,10 @@ def get_cluster_vars(topology: ClusterTopology, config_service: core.config.Conf
     )
 
 
+def cluster_vars_to_dict(vars_: ClusterVars) -> dict:
+    return vars_.model_dump(mode="json", by_alias=True, exclude_defaults=True)
+
+
 def _get_inventory_for_action_from_cluster_bundle(
     cluster_id: int,
     delta: TaskMappingDelta,
@@ -222,9 +226,8 @@ def _get_inventory_for_action_from_cluster_bundle(
         config_service=config_service,
     )
 
-    cluster_vars_dict = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes).model_dump(
-        mode="json", by_alias=True, exclude_defaults=True
-    )
+    cluster_vars = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes)
+    cluster_vars_dict = cluster_vars_to_dict(cluster_vars)
 
     alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
         config_host_groups=config_host_groups.values(),

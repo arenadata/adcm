@@ -23,6 +23,11 @@ from cm.converters import db_record_type_to_core_type
 from cm.models import Cluster, ClusterBind, PrototypeExport, PrototypeImport, Service
 
 ImportedObjectName: TypeAlias = str
+ImportName: TypeAlias = str
+
+ConfigAsDict: TypeAlias = dict
+
+ImportsDict: TypeAlias = dict[ImportName, ConfigAsDict | list[ConfigAsDict]]
 
 
 class _ImportTarget(NamedTuple):
@@ -31,7 +36,7 @@ class _ImportTarget(NamedTuple):
     default: tuple[str, ...] | None
 
 
-def get_imports_for_inventory(cluster_id: int, config_service: core.config.ConfigService) -> dict:
+def get_imports_for_inventory(cluster_id: int, config_service: core.config.ConfigService) -> ImportsDict:
     targets = _get_import_targets_for_bundle(
         bundle_id=Cluster.objects.values_list("prototype__bundle_id", flat=True).get(id=cluster_id)
     )

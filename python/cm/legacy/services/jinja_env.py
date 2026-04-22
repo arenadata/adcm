@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated
 
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import TaskMappingDelta
-from core.types import HostID, HostName, ServiceName
+from core.types import HostID, HostName
 from infra.services import get_config_service
 from pydantic import BaseModel
 from typing_extensions import TypedDict
@@ -53,8 +52,8 @@ class TaskContext(TypedDict):
 
 
 class JinjaScriptsEnvironment(BaseModel):
-    cluster: Annotated[dict, context.ClusterNode]
-    services: dict[ServiceName, Annotated[dict, context.ServiceNode]]
+    cluster: dict
+    services: dict
     groups: dict[context.HostGroupName, list[HostName]]
     task: TaskContext
     action: ActionContext | ActionContextWithProcess
@@ -78,7 +77,9 @@ def get_env_for_jinja_scripts(
 
     cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
 
-    cluster_vars = context.get_cluster_vars(topology=cluster_topology, config_service=get_config_service())
+    cluster_vars = context.cluster_vars_to_dict(
+        context.get_cluster_vars(topology=cluster_topology, config_service=get_config_service())
+    )
 
     host_groups = _get_host_group_names_for_cluster(cluster_topology, hc_delta=delta)
     if action_group:
@@ -91,15 +92,12 @@ def get_env_for_jinja_scripts(
         }
 
     return JinjaScriptsEnvironment(
-        cluster=cluster_vars.cluster.model_dump(by_alias=True),
-        services={
-            service_name: service_data.model_dump(by_alias=True)
-            for service_name, service_data in cluster_vars.services.items()
-        },
+        cluster=cluster_vars["cluster"],
+        services=cluster_vars["services"],
         groups=host_groups,
         task=TaskContext(config=task.config, verbose=task.verbose),
         action=_get_action_info(action=task.action, process=process),
-    ).model_dump(mode="python")
+    ).model_dump(mode="json")
 
 
 def get_env_for_jinja_config(

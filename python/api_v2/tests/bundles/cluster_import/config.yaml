@@ -57,3 +57,13 @@
     - name: string
       type: string
       default: string
+
+- type: service
+  name: staying_alive
+  version: 1.0
+  import:
+    service_export:
+      required: true
+      versions:
+        min: 1.0
+        max: 2.0
