@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Literal
 
-from cm.models import ADCM, Bundle, Cluster, Component, ConfigLog, Provider, Service, SignatureStatus
+from cm.models import ADCM, ADCMEntity, Bundle, Component, ConfigLog, Service, SignatureStatus
 from django.db.models import QuerySet
 from infra.services import prepare_container
 from init_db import init
@@ -34,6 +34,7 @@ from tests.dependencies import (
 )
 from tests.deprecated import AuditMixin, BusinessLogicMixin
 from tests.use_cases import UseCases
+from tests.utils import extract_from_nested_structure
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
 TEST_API_V2_BUNDLES_DIR = PROJECT_DIR / "python" / "api_v2" / "tests" / "bundles"
@@ -167,9 +168,9 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.set_bundle_signature_status(cls.bundle_cl_1, SignatureStatus.VALID)
 
         # prepare clusters
-        cls.cl_1 = cls.uc.add_cluster(cls.bundle_cl_1, "cluster_1")
-        cls.cl_2 = cls.uc.add_cluster(cls.bundle_cl_2, "cluster_2")
-        cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "cluster_3")
+        cls.cl_1 = cls.uc.add_cluster(cls.bundle_cl_1, "AlphaCl")
+        cls.cl_2 = cls.uc.add_cluster(cls.bundle_cl_2, "BettaCl")
+        cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "GammaCl")
         cls.set_state(cls.cl_1, "installed")
 
         # prepare service with components
@@ -185,10 +186,20 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.set_state(cls.service_3, "installed")
 
         # prepare hostproviders
-        cls.hp_1 = cls.uc.add_provider(cls.bundle_hp_1, "provider_1")
-        cls.hp_2 = cls.uc.add_provider(cls.bundle_hp_2, "provider_2")
-        cls.hp_3 = cls.uc.add_provider(cls.bundle_hp_3, "provider_3")
+        cls.hp_1 = cls.uc.add_provider(cls.bundle_hp_1, "FooProvider")
+        cls.hp_2 = cls.uc.add_provider(cls.bundle_hp_2, "BarProvider")
+        cls.hp_3 = cls.uc.add_provider(cls.bundle_hp_3, "FizzProvider")
         cls.set_state(cls.hp_1, "installed")
+
+        # prepare hosts
+        cls.host_1 = cls.uc.add_host(provider=cls.hp_1, fqdn="Host1", cluster=cls.cl_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.hp_2, fqdn="Host2", cluster=cls.cl_1)
+        cls.host_3 = cls.uc.add_host(provider=cls.hp_2, fqdn="Host3", cluster=cls.cl_3)
+        cls.host_4 = cls.uc.add_host(provider=cls.hp_3, fqdn="Host4")
+        cls.set_state(cls.host_2, "installed")
+
+        # host-component mapping
+        cls.uc.set_hostcomponent(cluster=cls.cl_1, entries=[(cls.host_1, cls.comp_1), (cls.host_2, cls.comp_2)])
 
     def setUp(self) -> None:
         super().setUp()
@@ -202,25 +213,10 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
 
     def get_results(self, url: APINode, value_path: str, query: dict) -> list:
         response = self.get_r(url=url, query=query)
-        return self.extract_values(response["results"], value_path)
+        return extract_from_nested_structure(response["results"], value_path)
 
     @staticmethod
-    def extract_values(data: dict, value_path: str) -> list:
-        """
-        Extract values along a path from a nested structure.
-        """
-
-        keys = value_path.split(".")
-        values = []
-        for item in data:
-            current = item
-            for key in keys:
-                current = current[key]
-            values.append(current)
-        return values
-
-    @staticmethod
-    def set_state(entity: Cluster | Provider | Service, state: str) -> None:
+    def set_state(entity: ADCMEntity, state: str) -> None:
         entity.set_state(state)
 
     @staticmethod

@@ -33,7 +33,7 @@ class HostFilter(
     )
     cluster_name = CharFilter(label="Filter by cluster name.", field_name="cluster__name", lookup_expr="exact")
     is_in_cluster = BooleanFilter(label="Filter by is host in cluster.", method="filter_is_in_cluster")
-    state = CharFilter(field_name="state", label="Filter byy state.", lookup_expr="exact")
+    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
     ordering = OrderingFilter(
         fields={
             "fqdn": "name",
