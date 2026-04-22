@@ -14,12 +14,15 @@ from cm.legacy.services.status.client import FullStatusMap
 from tests.client import APINode
 from tests.dependencies import get_status_scenarios_manager
 from tests.suites import ADCMFiltersDataSuite
+from tests.utils import extract_from_nested_structure
 
 from api_v2.tests.test_filtering.cases import (
     BundlesTestCase,
+    ClusterHostsTestCase,
     ClustersTestCase,
     ComponentsTestCase,
     HostProvidersTestCase,
+    HostsTestCase,
     ServicesTestCase,
 )
 
@@ -84,7 +87,7 @@ class FiltersBaseCheck(ADCMFiltersDataSuite):
         manager.set_status_map(status_map)
 
         response = self.get_r(url=url, query={"status": checked_status})
-        result = self.extract_values(response["results"], "status")
+        result = extract_from_nested_structure(response["results"], "status")
 
         expected_value = [checked_status]
         self.assertEqual(expected_value, result)
@@ -176,6 +179,42 @@ class TestAPIFilters(FiltersBaseCheck):
 
     def test_ordering_components(self) -> None:
         case = ComponentsTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filters_hosts(self) -> None:
+        case = HostsTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+        # Parameter isInCluster is boolean and the empty list of the response is not expected
+        filter_field = "isInCluster"
+        with self.subTest(filter_result="matched", filter_field=filter_field):
+            response = self.get_r(url=case.get_url(), query={filter_field: False})
+            result = extract_from_nested_structure(response["results"], "id")
+            expected_value = [self.host_4.pk]
+            self.assertListEqual(expected_value, result)
+
+    def test_ordering_hosts(self) -> None:
+        case = HostsTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filters_cluster_hosts(self) -> None:
+        case = ClusterHostsTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_cluster_hosts(self) -> None:
+        case = ClusterHostsTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),

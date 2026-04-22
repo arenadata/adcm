@@ -32,7 +32,8 @@ class BaseTestCase:
         """
         Return filter cases as tuples of:
 
-        a filter parameter, a response value path, a filter value, an expected result, a mismatch value.
+        a filter parameter, a response value path, a filter value, a value of the expected result,
+        a mismatch value.
         """
 
     @abstractmethod
@@ -96,7 +97,7 @@ class ClustersTestCase(BaseTestCase):
     def get_filters_cases(self) -> list:
         return [
             ("id", "id", self.suite.cl_1.pk, [self.suite.cl_1.pk], "0"),
-            ("name", "name", "ER_1", ["cluster_1"], "wrong"),
+            ("name", "name", "HAcl", ["AlphaCl"], "wrong"),
             ("prototypeName", "prototype.name", "a_cluster", ["a_cluster", "a_cluster"], "wrong"),
             (
                 "prototypeDisplayName",
@@ -111,7 +112,7 @@ class ClustersTestCase(BaseTestCase):
 
     def get_ordering_cases(self) -> list:
         return [
-            ("name", "name", ["cluster_1", "cluster_2", "cluster_3"]),
+            ("name", "name", ["AlphaCl", "BettaCl", "GammaCl"]),
             ("prototypeName", "prototype.name", ["a_cluster", "a_cluster", "b_cluster"]),
             (
                 "prototypeDisplayName",
@@ -129,7 +130,7 @@ class HostProvidersTestCase(BaseTestCase):
 
     def get_filters_cases(self) -> list:
         return [
-            ("name", "name", "DER_1", ["provider_1"], "wrong"),  # check icontains
+            ("name", "name", "opro", ["FooProvider"], "wrong"),  # check icontains
             ("prototypeName", "prototype.name", "a_provider", ["a_provider", "a_provider"], "a_pro"),  # check exact
             (
                 "prototypeDisplayName",
@@ -144,7 +145,7 @@ class HostProvidersTestCase(BaseTestCase):
 
     def get_ordering_cases(self) -> list:
         return [
-            ("name", "name", ["provider_1", "provider_2", "provider_3"]),
+            ("name", "name", ["BarProvider", "FizzProvider", "FooProvider"]),
             ("prototypeName", "prototype.name", ["a_provider", "a_provider", "b_provider"]),
             (
                 "prototypeDisplayName",
@@ -193,4 +194,67 @@ class ComponentsTestCase(BaseTestCase):
             ("name", "name", ["component_1", "component_2", "component_3"]),
             ("displayName", "displayName", ["Component 1", "Component 2", "Component 3"]),
             ("id", "id", [self.suite.comp_1.pk, self.suite.comp_2.pk, self.suite.comp_3.pk]),
+        ]
+
+
+class HostsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "hosts"
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("name", "name", "st1", ["Host1"], "wrong"),  # check icontains
+            (
+                "hostproviderName",
+                "hostprovider.name",
+                "FooProvider",
+                ["FooProvider"],
+                "prov",  # check exact
+            ),
+            (
+                "clusterName",
+                "cluster.name",
+                "AlphaCl",
+                ["AlphaCl", "AlphaCl"],
+                "clus",
+            ),  # check exact
+            ("state", "state", "installed", ["installed"], "ins"),  # check exact
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("id", "id", [self.suite.host_1.pk, self.suite.host_2.pk, self.suite.host_3.pk, self.suite.host_4.pk]),
+            ("name", "name", ["Host1", "Host2", "Host3", "Host4"]),
+            ("state", "state", ["created", "created", "created", "installed"]),
+            ("hostproviderName", "hostprovider.name", ["BarProvider", "BarProvider", "FizzProvider", "FooProvider"]),
+            ("clusterName", "cluster.name", ["AlphaCl", "AlphaCl", "GammaCl", None]),
+        ]
+
+
+class ClusterHostsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2[self.suite.cl_1, "hosts"]
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("name", "name", "st1", ["Host1"], "wrong"),  # check icontains
+            (
+                "hostproviderName",
+                "hostprovider.name",
+                "FooProvider",
+                ["FooProvider"],
+                "prov",  # check exact
+            ),
+            ("componentId", "components.id", self.suite.comp_1.pk, [self.suite.comp_1.pk], 0),
+            ("componentName", "components.name", "component_1", ["component_1"], "comp"),  # check exact
+            ("componentDisplayName", "components.displayName", "Component 1", ["Component 1"], "Comp"),  # check exact
+            ("state", "state", "created", ["created"], "cre"),  # check exact
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("id", "id", [self.suite.host_1.pk, self.suite.host_2.pk]),
+            ("name", "name", ["Host1", "Host2"]),
+            ("state", "state", ["created", "installed"]),
+            ("hostproviderName", "hostprovider.name", ["BarProvider", "FooProvider"]),
         ]
