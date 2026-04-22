@@ -22738,11 +22738,6 @@ paths:
           type: string
         description: Case insensitive and partial filter by task display name.
       - in: query
-        name: duration
-        schema:
-          type: string
-        description: Filter by duration.
-      - in: query
         name: id
         schema:
           type: integer
@@ -22782,6 +22777,7 @@ paths:
           - -endTime
           - -id
           - -name
+          - -objectName
           - -startTime
           - -status
           - displayName
@@ -22789,6 +22785,7 @@ paths:
           - endTime
           - id
           - name
+          - objectName
           - startTime
           - status
           default: -id

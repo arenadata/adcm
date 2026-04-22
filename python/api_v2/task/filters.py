@@ -103,7 +103,6 @@ class TaskFilter(
         label="Case insensitive and partial filter by object name.", method="filter_by_object_name"
     )
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Filter by status.")
-    duration = NumberFilter(label="Filter by duration.", method="filter_by_duration")
     ordering = TaskOrderingFilter(
         fields={
             "id": "id",
@@ -136,6 +135,3 @@ class TaskFilter(
 
     def filter_by_object_name(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
         return _add_target_name_field_to_queryset(queryset=queryset).filter(target_name__icontains=value)
-
-    def filter_by_duration(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
-        return _add_duration_time_field_to_queryset(queryset=queryset).filter(duration_time__exact=value)
