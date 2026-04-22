@@ -205,6 +205,38 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)
 
+    def test_adcm_8005_sir_does_not_affects_mm_action_run(self):
+        endpoint = self.client.v2[self.cluster, "hosts", self.host, "maintenance-mode"]
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+
+        # set mm to 'on'
+        self.host.maintenance_mode = "on"
+        self.host.save(update_fields=["maintenance_mode"])
+
+        expected_sir = 'The Action is not available. One or more hosts in "Maintenance mode"'
+        sir_retriever = self.uc.container.get(RetrieveStartImpossibleReason)
+        mm_action = Action.objects.get(
+            name="adcm_host_turn_off_maintenance_mode", host_action=True, prototype=self.cluster.prototype
+        )
+        sir = sir_retriever.for_action_target(
+            target=orm_object_to_action_target_descriptor(self.host),
+            allowed_in_mm={mm_action.pk: mm_action.allow_in_maintenance_mode},
+        )[mm_action.pk]
+        self.assertEqual(sir, expected_sir)
+
+        # turn MM off via action
+        response = endpoint.post(data={"maintenanceMode": "off"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
+        task_id = self.task_runner.expect_task_launched().id
+
+        # ensure correct task was launched
+        task = TaskLog.objects.get(pk=task_id)
+        self.assertEqual(task.action_id, mm_action.id)
+
 
 class TestMaintenanceMode(ADCMDjangoAPISuite, MMUtilsMixin):
     maxDiff = None
