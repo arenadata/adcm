@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict
-import json
 
 from core import logs
+from core.logs import CheckLogContent, GroupCheckLogContent
 from core.types import CheckLogID, GroupCheckLogID, IsCreated, JobID, LogStorageID
+from pydantic import TypeAdapter
 
 from cm.models import CheckLog, GroupCheckLog, LogStorage
+
+CheckLogContentAdapter = TypeAdapter(list[CheckLogContent | GroupCheckLogContent])
 
 
 class LogsRepo(logs.LogsRepoI):
@@ -50,8 +52,11 @@ class LogsRepo(logs.LogsRepoI):
 
     def update_log_storage_content_for_job(
         self, job_id: JobID, content: list[logs.CheckLogContent | logs.GroupCheckLogContent]
-    ):
-        LogStorage.objects.filter(job=job_id, type="check").update(body=json.dumps([asdict(item) for item in content]))
+    ) -> None:
+        # TypeAdapter’s dump_json methods returns a bytes object, see documentation
+        LogStorage.objects.filter(job=job_id, type="check").update(
+            body=(CheckLogContentAdapter.dump_json(content).decode())
+        )
 
     def clear_check_logs_for_job(self, job_id: JobID) -> None:
         GroupCheckLog.objects.filter(job_id=job_id).delete()
