@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict
-
+from cm.impl.logs.repo import CheckLogContentAdapter
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCM, CheckLog, Component, GroupCheckLog, LogStorage
 from core.logs import LogsService
@@ -492,7 +491,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
             log_service = container.get(LogsService)
             content = log_service.retrieve_check_logs_content_for_job(job_id=job.id)
             self.assertListEqual(
-                [asdict(item) for item in content],
+                CheckLogContentAdapter.dump_python(content),
                 [
                     {
                         "message": "error: fail",

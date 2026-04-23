@@ -17,6 +17,7 @@ from typing import Protocol
 import json
 
 from adcm.serializers import EmptySerializer
+from cm.impl.logs.repo import CheckLogContentAdapter
 from cm.models import LogStorage
 from core.logs import LogFormat, Severity
 from django.conf import settings
@@ -106,7 +107,9 @@ class LogStorageSerializer(ModelSerializer):
                 content = extract_log_content_from_fs(jobs_dir=settings.RUN_DIR, log_info=obj)
 
             if log_type == "check":
-                content = self.context["retrieve_check_logs_content_for_job"](job_id=obj.job_id)
+                content = CheckLogContentAdapter.dump_python(
+                    self.context["retrieve_check_logs_content_for_job"](job_id=obj.job_id)
+                )
 
         # postprocessing
         if (
