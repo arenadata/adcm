@@ -7,8 +7,8 @@ import HostProviderConfigGroupConfiguration from '@pages/HostProviderPage/HostPr
 import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 
 const HostProviderConfigGroupSingle: React.FC = () => {
-  const { hostProviderIdParam } = useParams();
-  const hostProviderId = Number(hostProviderIdParam);
+  const { hostproviderId: hostProviderIdFromUrl } = useParams();
+  const hostProviderId = Number(hostProviderIdFromUrl);
 
   useHostProviderConfigGroupSingle();
   const hostProviderConfigGroup = useStore((s) => s.adcm.hostProviderConfigGroup.hostProviderConfigGroup);

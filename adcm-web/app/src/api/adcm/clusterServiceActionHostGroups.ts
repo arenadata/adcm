@@ -15,6 +15,7 @@ import type {
   GetAdcmServiceActionHostGroupHostsArgs,
   AddAdcmServiceActionHostGroupHostArgs,
   DeleteAdcmServiceActionHostGroupHostArgs,
+  PatchServiceActionHostGroupDescriptionArgs,
 } from '@models/adcm/actionHostGroup';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
@@ -60,12 +61,7 @@ export class AdcmClusterServiceActionHostGroupsApi {
     );
   }
 
-  public static async patchActionHostGroupDescription(args: {
-    clusterId: number;
-    serviceId: number;
-    actionHostGroupId: number;
-    description: string;
-  }) {
+  public static async patchActionHostGroupDescription(args: PatchServiceActionHostGroupDescriptionArgs) {
     const { clusterId, serviceId, actionHostGroupId, description } = args;
     const response = await httpClient.patch<AdcmActionHostGroup>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/`,

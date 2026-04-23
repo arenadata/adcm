@@ -9,6 +9,7 @@ import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useEffect } from 'react';
 import EntityDynamicActionWizardDialog from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
+import EditDescriptionActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/EditDescriptionActionHostGroupDialog';
 
 const ComponentActionHostGroups = () => {
   const {
@@ -19,6 +20,7 @@ const ComponentActionHostGroups = () => {
     editDialogProps,
     deleteDialogProps,
     wizardProps,
+    editDescriptionDialogProps,
   } = useComponentActionHostGroups();
 
   const dispatch = useDispatch();
@@ -54,6 +56,7 @@ const ComponentActionHostGroups = () => {
       {editDialogProps && <EditActionHostGroupDialog {...editDialogProps} />}
       {deleteDialogProps && <DeleteActionHostGroupDialog {...deleteDialogProps} />}
       {wizardProps && <EntityDynamicActionWizardDialog {...wizardProps} />}
+      {editDescriptionDialogProps && <EditDescriptionActionHostGroupDialog {...editDescriptionDialogProps} />}
     </>
   );
 };

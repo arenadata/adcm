@@ -37,7 +37,8 @@ type EditConfigGroupPayload = {
 };
 
 async function patchConfigGroupDescription(payload: EditConfigGroupPayload, dispatch: AppDispatch): Promise<void> {
-  const { entityType, entityArgs, configGroupId, description } = payload;
+  const { entityType, entityArgs, configGroupId, description: descriptionRaw } = payload;
+  const description = descriptionRaw.trim();
   switch (entityType) {
     case 'cluster': {
       const args = entityArgs as ClusterConfigGroupArgs;

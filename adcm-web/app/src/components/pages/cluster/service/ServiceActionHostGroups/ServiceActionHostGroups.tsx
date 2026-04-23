@@ -6,6 +6,7 @@ import EditActionHostGroupDialog from '@commonComponents/ActionHostGroups/Action
 import DeleteActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/DeleteActionHostGroupDialog/DeleteActionHostGroupDialog';
 import { useServiceActionHostGroups } from './useServiceActionHostGroups';
 import EntityDynamicActionWizardDialog from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
+import EditDescriptionActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/EditDescriptionActionHostGroupDialog';
 
 const ServiceActionHostGroups = () => {
   const {
@@ -16,6 +17,7 @@ const ServiceActionHostGroups = () => {
     editDialogProps,
     deleteDialogProps,
     wizardProps,
+    editDescriptionDialogProps,
   } = useServiceActionHostGroups();
 
   return (
@@ -27,6 +29,7 @@ const ServiceActionHostGroups = () => {
       {editDialogProps && <EditActionHostGroupDialog {...editDialogProps} />}
       {deleteDialogProps && <DeleteActionHostGroupDialog {...deleteDialogProps} />}
       {wizardProps && <EntityDynamicActionWizardDialog {...wizardProps} />}
+      {editDescriptionDialogProps && <EditDescriptionActionHostGroupDialog {...editDescriptionDialogProps} />}
     </>
   );
 };
