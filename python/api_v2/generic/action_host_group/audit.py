@@ -14,7 +14,7 @@ from contextlib import suppress
 from functools import partial
 import json
 
-from audit.alt.api import audit_create, audit_delete, audit_view
+from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.core import (
     AuditedCallArguments,
     IDBasedAuditObjectCreator,
@@ -57,6 +57,12 @@ def audit_action_host_group_viewset(retrieve_owner: RetrieveAuditObjectFunc):
         create=(
             audit_create(name="{group_name} action host group created", object_=retrieve_owner).attach_hooks(
                 on_collect=set_group_name_from_response
+            )
+        ),
+        partial_update=(
+            audit_update(name="{group_name} action host group updated", object_=retrieve_owner).attach_hooks(
+                pre_call=set_group_name,
+                on_collect=adjust_denied_on_404_result(objects_exist=action_host_group_exists),
             )
         ),
         destroy=(

@@ -211,6 +211,7 @@ ERRORS = {
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
     "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
     "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
+    "UPDATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
     "BUNDLE_SIGNATURE_VERIFICATION_ERROR": ("Bundle signature verification error", HTTP_409_CONFLICT, ERR),
     "WRONG_OWNER": ("Incorrect owner", HTTP_409_CONFLICT, ERR),

@@ -18,6 +18,7 @@ from operator import itemgetter
 from cm.converters import model_to_core_type, orm_object_to_core_type
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.models import Action, ActionHostGroup, Cluster, Component, ConcernItem, Host, Service, TaskLog
+from parameterized import parameterized
 from rbac.models import Role
 from rbac.services.group import create
 from rbac.services.policy import policy_create
@@ -50,8 +51,24 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider")
         cls.hosts = [cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}", cluster=cls.cluster) for i in range(3)]
 
+        non_main_cluster = Cluster.objects.exclude(id=cls.cluster.pk).first()
+        non_main_service = Service.objects.exclude(id=cls.service.pk).first()
+        non_main_component = Component.objects.exclude(id=cls.component.pk).first()
+
+        cls.cluster_ahg_1 = cls.uc.create_action_host_group(name="init", owner=non_main_cluster)
+        cls.service_ahg_1 = cls.uc.create_action_host_group(name="init", owner=non_main_service)
+        cls.component_ahg_1 = cls.uc.create_action_host_group(name="init", owner=non_main_component)
+
+        cls.cluster_ahg_2 = cls.uc.create_action_host_group(name="second", owner=non_main_cluster)
+        cls.service_ahg_2 = cls.uc.create_action_host_group(name="second", owner=non_main_service)
+        cls.component_ahg_2 = cls.uc.create_action_host_group(name="second", owner=non_main_component)
+
+    def assert_fields_in_ahg(self, group_id: int, expected: dict) -> None:
+        actual = ActionHostGroup.objects.values(*expected.keys()).get(id=group_id)
+        self.assertEqual(actual, expected)
+
     def test_create_group_success(self) -> None:
-        group_counter = 0
+        group_counter = ActionHostGroup.objects.count()
 
         for target in (self.cluster, self.service, self.component):
             type_ = model_to_core_type(target.__class__)
@@ -128,6 +145,48 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             self.assertEqual(response.json()["code"], "CREATE_CONFLICT")
             self.assertEqual(ActionHostGroup.objects.filter(name=name).count(), 1)
+
+    @parameterized.expand(
+        (f"{owner}_{data_name}", owner, payload, expected)
+        for owner in ("cluster", "service", "component")
+        for data_name, payload, expected in (
+            ("name_only", {"name": "changed"}, {"name": "changed", "description": ""}),
+            ("description_only", {"description": "changed"}, {"name": "init", "description": "changed"}),
+            (
+                "name_and_description_new",
+                {"name": "changed", "description": "desc"},
+                {"name": "changed", "description": "desc"},
+            ),
+            ("name_and_description_same", {"name": "init", "description": ""}, {"name": "init", "description": ""}),
+            ("nothing", {}, {"name": "init", "description": ""}),
+        )
+    )
+    def test_update_success(self, _, owner_var_name: str, payload: dict, expected: dict) -> None:
+        group = getattr(self, f"{owner_var_name}_ahg_1")
+
+        response = self.client.v2[group].patch(data=payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertDictContainsSubset(expected, response.json())
+        self.assert_fields_in_ahg(group.pk, expected)
+        self.check_last_audit_record(
+            operation_name=f"{group.name} action host group updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=group.object),
+        )
+
+    @parameterized.expand(owner for owner in ("cluster", "service", "component"))
+    def test_update_to_taken_name_fail(self, owner_var_name: str) -> None:
+        payload = {"name": "second"}
+        expected = {"name": "init", "description": ""}
+        group = getattr(self, f"{owner_var_name}_ahg_1")
+
+        response = self.client.v2[group].patch(data=payload)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("already exists", response.json()["desc"])
+        self.assert_fields_in_ahg(group.pk, expected)
 
     def test_delete_success(self) -> None:
         self.set_hostcomponent(
@@ -1128,6 +1187,7 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
 
                     for ep, disallowed_method in (
                         (self.user_client.v2[group], "get"),
+                        (self.user_client.v2[group], "patch"),
                         (self.user_client.v2[group, "host-candidates"], "get"),
                         (self.user_client.v2[group, "actions"], "get"),
                         (self.user_client.v2[group, "actions", action], "get"),
@@ -1162,6 +1222,7 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
 
                 for ep, disallowed_method in (
                     (self.user_client.v2[target, ACTION_HOST_GROUPS], "post"),
+                    (self.user_client.v2[group], "patch"),
                     (self.user_client.v2[group, "hosts"], "post"),
                     (self.user_client.v2[group, "hosts", self.host_2.id], "delete"),
                     (self.user_client.v2[group], "delete"),
@@ -1175,6 +1236,7 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
 
                 for ep, disallowed_method in (
                     (self.user_client.v2[group], "get"),
+                    (self.user_client.v2[group], "patch"),
                     (self.user_client.v2[group, "host-candidates"], "get"),
                     (self.user_client.v2[group, "actions"], "get"),
                     (self.user_client.v2[group, "actions", action], "get"),
@@ -1247,6 +1309,8 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
                     response = self.user_client.v2[group, "hosts", self.host_1].delete()
                     self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+                    response = self.user_client.v2[group].patch(data={"description": "aljk"})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
 
             with self.subTest("No edit/view on cluster's groups"):
                 target = self.cluster
@@ -1263,6 +1327,7 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
 
                 for ep, disallowed_method in (
                     (self.user_client.v2[group], "get"),
+                    (self.user_client.v2[group], "patch"),
                     (self.user_client.v2[group, "host-candidates"], "get"),
                     (self.user_client.v2[group, "actions"], "get"),
                     (self.user_client.v2[group, "actions", action], "get"),

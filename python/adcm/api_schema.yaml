@@ -62,6 +62,20 @@ components:
           maxLength: 255
       required:
       - name
+    ActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - name
+      - description
     ActionList:
       type: object
       properties:
@@ -2106,6 +2120,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+    PatchedActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
     PatchedCHG:
       type: object
       properties:
@@ -6239,6 +6264,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteClusterActionHostGroup
@@ -11260,6 +11323,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+    patch:
+      operationId: clusters_services_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
+          description: ''
     delete:
       operationId: deleteServiceActionHostGroup
       description: Delete specific service's action host group.
@@ -13559,6 +13666,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_services_components_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteComponentActionHostGroup
