@@ -33,6 +33,11 @@ class ActionHostGroupCreateSerializer(EmptySerializer):
     description = CharField(max_length=255, allow_blank=True, default="")
 
 
+class ActionHostGroupEditSerializer(EmptySerializer):
+    name = CharField(max_length=150, allow_null=True, default=None)
+    description = CharField(max_length=255, allow_blank=True, allow_null=True, default=None)
+
+
 class ActionHostGroupSerializer(ModelSerializer):
     id = IntegerField()
     name = CharField(max_length=150)

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import NamedTuple
+from typing import Generator, NamedTuple
 
 from adcm.permissions import (
     EDIT_ACTION_HOST_GROUPS,
@@ -31,9 +31,12 @@ from cm.legacy.services.action_host_group import (
     GroupIsLockedError,
     HostError,
     NameCollisionError,
+    UpdateDTO,
 )
 from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Component, Host, Service
-from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
+from cm.transition.status import StatusScenarios
+from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
@@ -63,11 +66,13 @@ from api_v2.generic.action_host_group.filters import ActionHostGroupFilter
 from api_v2.generic.action_host_group.serializers import (
     ActionHostGroupCreateResultSerializer,
     ActionHostGroupCreateSerializer,
+    ActionHostGroupEditSerializer,
     ActionHostGroupSerializer,
     AddHostSerializer,
     ShortHostSerializer,
 )
 from api_v2.host.filters import HostGroupHostFilter
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
@@ -137,6 +142,9 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         if self.action == "host_candidate":
             return ShortHostSerializer
+
+        if self.action == "partial_update":
+            return ActionHostGroupEditSerializer
 
         return ActionHostGroupSerializer
 
@@ -251,6 +259,47 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         return Response(data=list(queryset))
 
+    @inject
+    @with_parent_object
+    def partial_update(
+        self,
+        request: Request,
+        *,
+        parent: CoreObjectDescriptor,
+        status_scenarios: FromDishka[StatusScenarios],
+        pk: str,
+        **_,
+    ):
+        object_qs = ActionHostGroup.objects.filter(id=pk)
+        if not self.filter_by_parent(qs=object_qs, parent=parent).exists():
+            raise NotFound()
+
+        check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            with atomic():
+                self.action_host_group_service.update(id=int(pk), dto=UpdateDTO(**serializer.data))
+        except NameCollisionError:
+            message = (
+                f"Action host group with name {serializer.validated_data['name']} already exists "
+                f"for {parent.type.value} {self.get_parent_name(parent=parent)}"
+            )
+            raise AdcmEx("UPDATE_CONFLICT", msg=message) from None
+
+        instance = object_qs.get()
+
+        status_scenarios.send_object_update_event(
+            obj_id=instance.pk,
+            obj_type=ADCMHostGroupType.ACTION.value,
+            changes={"name": instance.name, "description": instance.description},
+        )
+
+        response_serializer = ActionHostGroupSerializer(instance=instance)
+        return Response(data=response_serializer.data)
+
     def filter_by_parent(self, qs: QuerySet, parent: CoreObjectDescriptor) -> QuerySet:
         return qs.filter(
             object_id=parent.id, object_type=ContentType.objects.get_for_model(core_type_to_model(parent.type))
@@ -301,7 +350,7 @@ class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
         )(cls)
 
     @contextmanager
-    def convert_exception(self) -> None:
+    def convert_exception(self) -> Generator[None, None, None]:
         """
         Customization of `handle_exception` leads to "problems" with audit:
         either audit should catch all exception itself

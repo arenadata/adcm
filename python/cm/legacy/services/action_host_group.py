@@ -25,6 +25,8 @@ from core.types import (
     TaskID,
 )
 from django.contrib.contenttypes.models import ContentType
+from django.db import IntegrityError
+from pydantic import TypeAdapter
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.legacy.services.host_group_common import HostGroupRepoMixin
@@ -45,6 +47,15 @@ class CreateDTO(NamedTuple):
     owner: CoreObjectDescriptor
     name: str
     description: str = ""
+
+
+@dataclass(slots=True)
+class UpdateDTO:
+    name: str | None = None
+    description: str | None = None
+
+
+_UpdateTA = TypeAdapter(UpdateDTO)
 
 
 class ActionHostGroupError(ADCMMessageError):
@@ -86,6 +97,18 @@ class ActionHostGroupRepo(HostGroupRepoMixin):
             object_id=dto.owner.id,
             object_type=object_type,
         ).id
+
+    def update(self, id: ActionHostGroupID, dto: UpdateDTO) -> None:  # noqa: A002
+        fields_to_update = _UpdateTA.dump_python(dto, exclude_none=True)
+        if fields_to_update:
+            try:
+                ActionHostGroup.objects.filter(id=id).update(**fields_to_update)
+            except IntegrityError as e:
+                if "duplicate key value violates unique constraint" in e.args[0] and dto.name:
+                    message = f'Another group with name "{dto.name}" exists for group\'s owner'
+                    raise NameCollisionError(message) from e
+
+                raise
 
     def retrieve(self, id: ActionHostGroupID) -> ActionTargetHostGroup:  # noqa: A002
         group = ActionHostGroup.objects.get(id=id)
@@ -145,6 +168,9 @@ class ActionHostGroupService:
             raise TypeError(message)
 
         return self._repo.create(dto=dto)
+
+    def update(self, id: ActionHostGroupID, dto: UpdateDTO) -> None:  # noqa: A002
+        self._repo.update(id=id, dto=dto)
 
     def retrieve(self, group_id: ActionHostGroupID) -> ActionTargetHostGroup:
         return self._repo.retrieve(id=group_id)
