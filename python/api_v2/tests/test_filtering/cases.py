@@ -258,3 +258,32 @@ class ClusterHostsTestCase(BaseTestCase):
             ("state", "state", ["created", "installed"]),
             ("hostproviderName", "hostprovider.name", ["BarProvider", "FooProvider"]),
         ]
+
+
+class TasksTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "tasks"
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("id", "id", self.suite.task_cl_1.pk, [self.suite.task_cl_1.pk], 0),
+            ("name", "name", "B_TA", ["b_task"], "wrong"),  # check icontains
+            ("displayName", "displayName", "A TA", ["A task"], "wrong"),  # check icontains
+            ("status", "status", "success", ["success"], "failed"),
+            # "objectName" sorting is performed by the annotated target_name so task ids are used for validation
+            ("objectName", "id", "ALPH", [self.suite.task_cl_1.pk], "wrong"),  # check icontains
+            ("objectName", "id", "A Service", [self.suite.task_service_1.pk], "service_1"),  # check mapping target_name
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("id", "id", [self.suite.task_cl_1.pk, self.suite.task_service_1.pk, self.suite.task_hp_1.pk]),
+            ("name", "name", ["a_task", "b_task", "c_task"]),
+            ("displayName", "displayName", ["A task", "B task", "C task"]),
+            ("startTime", "name", ["a_task", "b_task", "c_task"]),
+            ("endTime", "name", ["a_task", "b_task", "c_task"]),
+            ("status", "status", ["created", "created", "success"]),
+            ("duration", "name", ["c_task", "b_task", "a_task"]),
+            # "objectName" sorting is performed by the annotated target_name so task ids are used for validation
+            ("objectName", "id", [self.suite.task_cl_1.id, self.suite.task_service_1.id, self.suite.task_hp_1.id]),
+        ]

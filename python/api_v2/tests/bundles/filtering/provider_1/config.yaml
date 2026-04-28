@@ -3,6 +3,13 @@
   name: a_provider
   display_name: A Provider
   version: &version "1.0.0"
+  actions:
+    provider_action:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
 
 - type: host
   name: host

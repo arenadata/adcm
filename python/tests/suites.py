@@ -11,11 +11,28 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Final, Literal
 
-from cm.models import ADCM, ADCMEntity, Bundle, Component, ConfigLog, Service, SignatureStatus
+from cm.converters import core_type_to_model, orm_object_to_core_descriptor
+from cm.impl.job.repo import _get_selector_for_core_object
+from cm.models import (
+    ADCM,
+    Action,
+    ADCMEntity,
+    Bundle,
+    Cluster,
+    Component,
+    ConfigLog,
+    Host,
+    Provider,
+    Service,
+    SignatureStatus,
+    TaskLog,
+)
 from django.db.models import QuerySet
+from django.utils import timezone
 from infra.services import prepare_container
 from init_db import init
 from rbac.upgrade.role import init_roles
@@ -201,6 +218,22 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         # host-component mapping
         cls.uc.set_hostcomponent(cluster=cls.cl_1, entries=[(cls.host_1, cls.comp_1), (cls.host_2, cls.comp_2)])
 
+        # prepare tasks
+        cls.task_cl_1 = cls.create_task(
+            owner=cls.cl_1, action_name="check_action", name="a_task", display_name="A task", duration=4
+        )
+        cls.task_service_1 = cls.create_task(
+            owner=cls.service_1,
+            action_name="check_action",
+            name="b_task",
+            display_name="B task",
+            duration=3,
+            status="success",
+        )
+        cls.task_hp_1 = cls.create_task(
+            owner=cls.hp_1, action_name="provider_action", name="c_task", display_name="C task", duration=2
+        )
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -226,3 +259,40 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
     @staticmethod
     def get_components(service: Service) -> QuerySet[Component]:
         return Component.objects.filter(service=service).order_by("pk")
+
+    @staticmethod
+    def create_task(
+        owner: Cluster | Service | Component | Provider | Host,
+        action_name: str,
+        name: str,
+        display_name: str,
+        duration: int,
+        status: str | None = None,
+    ) -> TaskLog:
+        action = Action.objects.get(name=action_name, prototype=owner.prototype)
+
+        owner_descr = orm_object_to_core_descriptor(owner)
+
+        # to get the selector need to use temporarily the protected function
+        selector = _get_selector_for_core_object(target=owner_descr, owner=owner_descr)
+        object_type = core_type_to_model(core_type=owner_descr.type).class_content_type
+
+        task = TaskLog.objects.create(
+            action=action,
+            object_id=owner_descr.id,
+            object_type=object_type,
+            owner_id=owner_descr.id,
+            owner_type=owner_descr.type.value,
+            verbose=False,
+            status=status if status else "created",
+            selector=selector,
+            is_blocking=True,
+            name=name,
+            display_name=display_name,
+            description="",
+        )
+
+        task.start_date = timezone.now() - timedelta(seconds=duration)
+        task.finish_date = timezone.now()
+        task.save()
+        return task
