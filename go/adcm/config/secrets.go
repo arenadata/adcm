@@ -135,10 +135,12 @@ func BuildVaultClient(settings ClientSettings) (*vault.Client, error) {
 		}
 	}
 
-	token, err := os.ReadFile(settings.TokenFile)
+	token_bytes, err := os.ReadFile(settings.TokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve token from %s: %w", settings.TokenFile, err)
 	}
+	token := strings.TrimSpace(string(token_bytes))
+
 	if len(token) == 0 {
 		return nil, fmt.Errorf("failed to retrieve token from %s: token is empty", settings.TokenFile)
 	}
@@ -147,7 +149,7 @@ func BuildVaultClient(settings ClientSettings) (*vault.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize vault client: %w", err)
 	}
-	client.SetToken(string(token))
+	client.SetToken(token)
 
 	if settings.Namespace != "" {
 		client.SetNamespace(settings.Namespace)
