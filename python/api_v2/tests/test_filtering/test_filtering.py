@@ -24,6 +24,7 @@ from api_v2.tests.test_filtering.cases import (
     HostProvidersTestCase,
     HostsTestCase,
     ServicesTestCase,
+    TasksTestCase,
 )
 
 
@@ -215,6 +216,20 @@ class TestAPIFilters(FiltersBaseCheck):
 
     def test_ordering_cluster_hosts(self) -> None:
         case = ClusterHostsTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filters_tasks(self) -> None:
+        case = TasksTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_tasks(self) -> None:
+        case = TasksTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),

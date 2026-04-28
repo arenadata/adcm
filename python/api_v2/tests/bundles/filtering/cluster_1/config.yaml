@@ -6,18 +6,19 @@
   edition: community
   description: Minimal cluster bundle for ClusterFilter coverage
   actions:
-    install_cluster:
+    check_action: &task_action
       type: job
       script: ./playbook.yaml
       script_type: ansible
       states:
         available: any
-        on_success: installed
 
 - name: service_1
   type: service
   display_name: A Service
   version: "1.0.0"
+  actions:
+    check_action: *task_action
   components:
     component_1:
       display_name: Component 1
