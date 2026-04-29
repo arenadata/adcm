@@ -260,30 +260,109 @@ class ClusterHostsTestCase(BaseTestCase):
         ]
 
 
-class TasksTestCase(BaseTestCase):
+class AuditOperationsTestCase(BaseTestCase):
     def get_url(self) -> APINode:
-        return self.suite.client.v2 / "tasks"
+        return self.suite.client.v2 / "audit" / "operations"
 
     def get_filters_cases(self) -> list:
         return [
-            ("id", "id", self.suite.task_cl_1.pk, [self.suite.task_cl_1.pk], 0),
-            ("name", "name", "B_TA", ["b_task"], "wrong"),  # check icontains
-            ("displayName", "displayName", "A TA", ["A task"], "wrong"),  # check icontains
-            ("status", "status", "success", ["success"], "failed"),
-            # "objectName" sorting is performed by the annotated target_name so task ids are used for validation
-            ("objectName", "id", "ALPH", [self.suite.task_cl_1.pk], "wrong"),  # check icontains
-            ("objectName", "id", "A Service", [self.suite.task_service_1.pk], "service_1"),  # check mapping target_name
+            ("id", "id", self.suite.audit_log_create_cluster.pk, [self.suite.audit_log_create_cluster.pk], 0),
+            ("object_name", "object.name", "alph", ["AlphaCl"], "wrong"),
+            ("object_type", "object.type", "provider", ["provider"], "adcm"),
+            ("user_name", "user.name", "cluster", ["AdminClusterBobby", "AdminClusterBobby"], "wrong"),
+            ("name", "name", "create_provider", ["create_provider"], "wrong"),
+            ("result", "result", "success", ["success"], "denied"),
+            ("type", "type", "update", ["update"], "delete"),
+            (
+                "time_from",
+                "id",
+                self.suite.matched_time_from_value,
+                [self.suite.audit_log_create_provider_fail.pk, self.suite.audit_log_update_service.pk],
+                self.suite.empty_match_time_from_value,
+            ),
+            (
+                "time_to",
+                "id",
+                self.suite.matched_time_to_value,
+                [self.suite.audit_log_create_cluster.pk],
+                self.suite.empty_match_time_to_value,
+            ),
         ]
 
-    def get_ordering_cases(self) -> list:
+    def get_ordering_cases(self) -> list[tuple]:
         return [
-            ("id", "id", [self.suite.task_cl_1.pk, self.suite.task_service_1.pk, self.suite.task_hp_1.pk]),
-            ("name", "name", ["a_task", "b_task", "c_task"]),
-            ("displayName", "displayName", ["A task", "B task", "C task"]),
-            ("startTime", "name", ["a_task", "b_task", "c_task"]),
-            ("endTime", "name", ["a_task", "b_task", "c_task"]),
-            ("status", "status", ["created", "created", "success"]),
-            ("duration", "name", ["c_task", "b_task", "a_task"]),
-            # "objectName" sorting is performed by the annotated target_name so task ids are used for validation
-            ("objectName", "id", [self.suite.task_cl_1.id, self.suite.task_service_1.id, self.suite.task_hp_1.id]),
+            ("objectName", "object.name", ["AlphaCl", "FooProvider", "service_1"]),
+            ("objectType", "object.type", ["cluster", "provider", "service"]),
+            ("name", "name", ["create_cluster", "create_provider", "update_service"]),
+            ("type", "type", ["create", "create", "update"]),
+            ("result", "result", ["fail", "fail", "success"]),
+            ("userName", "user.name", ["AdminClusterBobby", "AdminClusterBobby", "ProviderAdminPeter"]),
+            (
+                "time",
+                "id",
+                [
+                    self.suite.audit_log_create_cluster.pk,
+                    self.suite.audit_log_update_service.pk,
+                    self.suite.audit_log_create_provider_fail.pk,
+                ],
+            ),
+        ]
+
+
+class AuditLoginsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "audit" / "logins"
+
+    def get_filters_cases(self) -> list:
+        return [
+            ("id", "id", self.suite.audit_login_success_cluster.pk, [self.suite.audit_login_success_cluster.pk], 0),
+            ("user_name", "user.name", "ProviderAdminPeter", ["ProviderAdminPeter"], "wrong"),
+            ("details_username", "details.username", "invis", [self.suite.non_existent_user_name], "missing"),
+            ("result", "result", "user not found", ["user not found"], "account disabled"),
+            (
+                "time_from",
+                "id",
+                self.suite.matched_time_from_value,
+                [self.suite.audit_login_user_not_found.pk, self.suite.audit_login_wrong_password.pk],
+                self.suite.empty_match_time_from_value,
+            ),
+            (
+                "time_to",
+                "id",
+                self.suite.matched_time_to_value,
+                [self.suite.audit_login_success_cluster.pk],
+                self.suite.empty_match_time_to_value,
+            ),
+        ]
+
+    def get_ordering_cases(self) -> list[tuple]:
+        return [
+            (
+                "loginTime",
+                "id",
+                [
+                    self.suite.audit_login_success_cluster.pk,
+                    self.suite.audit_login_wrong_password.pk,
+                    self.suite.audit_login_user_not_found.pk,
+                ],
+            ),
+            (
+                "userName",
+                "user.name",
+                [
+                    "AdminClusterBobby",
+                    "ProviderAdminPeter",
+                    None,
+                ],
+            ),
+            ("result", "result", ["success", "user not found", "wrong password"]),
+            (
+                "time",
+                "id",
+                [
+                    self.suite.audit_login_success_cluster.pk,
+                    self.suite.audit_login_wrong_password.pk,
+                    self.suite.audit_login_user_not_found.pk,
+                ],
+            ),
         ]
