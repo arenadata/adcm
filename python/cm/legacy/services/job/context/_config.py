@@ -15,7 +15,7 @@ from copy import deepcopy
 from functools import reduce
 from typing import Any, Iterable, NamedTuple
 
-from core.config.types import ConfigDict
+from core.config import ConfigDict
 from core.legacy.cluster.types import ClusterTopology
 from core.types import (
     ADCMCoreType,

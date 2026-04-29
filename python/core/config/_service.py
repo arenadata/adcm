@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Callable, Iterable, Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
-from core.config._config import detect_active_groups, nested_to_flat
+from core.config._config import detect_active_groups, detect_changes, nested_to_flat
 from core.config._errors import ConfigOperationError
 from core.config._names import is_parameter_file_name_startswith
 from core.config._pattern_validators import PossiblyEncryptedPatternValidator
@@ -31,6 +31,7 @@ from core.config._types import (
     Defaults,
     FlatConfiguration,
     HostGroupConfigOwner,
+    RevisionDiff,
 )
 from core.config._validate import (
     AlwaysPassValidator,
@@ -65,6 +66,13 @@ T = TypeVar("T")
 class NewConfigurationResult:
     encrypted_config: Configuration
     has_changed: bool
+
+
+@dataclass(slots=True)
+class RevisionDiffSource:
+    revision: Configuration
+    current: Configuration
+    specification: spec.FullSpec
 
 
 class ConfigLogAlike(Protocol):
@@ -199,6 +207,17 @@ class ConfigService:
         self, owner: CoreObjectDescriptor
     ) -> dict[HostGroupDescriptor, Configuration]:
         return self.repo.find_host_group_configurations(owner=owner)
+
+    def prepare_revision_diffs(
+        self,
+        revisions: dict[CoreObjectDescriptor, RevisionDiffSource],
+    ) -> dict[CoreObjectDescriptor, RevisionDiff]:
+        revision_diffs: dict[CoreObjectDescriptor, RevisionDiff] = {}
+        for descriptor, source in revisions.items():
+            changes = detect_changes(previous=source.revision, new=source.current, specification=source.specification)
+            revision_diffs[descriptor] = operations.changes_to_revision_diff(changes=changes)
+
+        return revision_diffs
 
     # create
 

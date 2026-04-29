@@ -10,22 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, TypeAlias, TypedDict
+from collections import defaultdict
+from typing import TypeVar
 
-from core.types import ConfigID, CoreObjectDescriptor, PrototypeID
-
-ConfigDict: TypeAlias = dict
-AttrDict: TypeAlias = dict
-
-
-class RelatedConfigs(TypedDict):
-    object_id: int
-    object_type: str
-    prototype_id: int
-    primary_config_id: int
+K = TypeVar("K")
+V = TypeVar("V")
 
 
-class ConfigCoreObjectWithPrototype(NamedTuple):
-    object: CoreObjectDescriptor
-    prototype_id: PrototypeID
-    config_id: ConfigID
+def recursive_defaultdict():
+    return defaultdict(recursive_defaultdict)
+
+
+def recursive_defaultdict_to_dict(d: defaultdict[K, V]) -> dict[K, V]:
+    return {k: recursive_defaultdict_to_dict(v) if isinstance(v, defaultdict) else v for k, v in d.items()}

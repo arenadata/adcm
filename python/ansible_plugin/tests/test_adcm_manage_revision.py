@@ -39,7 +39,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
         hierarchy = retrieve_object_hierarchy(object_=orm_object_to_core_descriptor(object_))
         return retrieve_primary_configs(objects=hierarchy)
 
-    @patch.object(ADCMManageRevisionPluginExecutor, attribute="_get_related_configs")
+    @patch("use_cases.transition.config_revision._get_related_configs")
     def test_set_revisions_success(self, mock_get_related_configs):
         mock_get_related_configs.return_value = self.get_related_configs(self.cluster)
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -70,7 +70,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
                 actual_revisions = set(ConfigRevision.objects.values_list("configlog_id", flat=True))
                 self.assertSetEqual(actual_revisions, expected_revisions)
 
-    @patch.object(ADCMManageRevisionPluginExecutor, attribute="_get_related_configs")
+    @patch("use_cases.transition.config_revision._get_related_configs")
     def test_get_diff_success(self, mock_get_related_configs):
         current_config_ids = {
             self.cluster.config.current,
