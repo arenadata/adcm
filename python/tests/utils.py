@@ -10,6 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
+from typing import Literal
+
+from django.utils import timezone
+
+
+def calculate_time_with_delta(
+    delta_value: int,
+    unit: Literal["seconds", "minutes", "hours", "days"] = "minutes",
+    isoformat: bool = False,
+    base_time: datetime | None = None,
+) -> datetime | str:
+    current_time = base_time or timezone.now()
+    delta = timedelta(**{unit: delta_value})
+    result = current_time - delta
+
+    if isoformat:
+        return result.isoformat()
+    return result
+
 
 def extract_from_nested_structure(data: list, value_path: str) -> list:
     """

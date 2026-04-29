@@ -14,7 +14,18 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import Final, Literal
+import datetime
 
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+    AuditSession,
+    AuditSessionLoginResult,
+    AuditUser,
+)
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
 from cm.impl.job.repo import _get_selector_for_core_object
 from cm.models import (
@@ -51,7 +62,7 @@ from tests.dependencies import (
 )
 from tests.deprecated import AuditMixin, BusinessLogicMixin
 from tests.use_cases import UseCases
-from tests.utils import extract_from_nested_structure
+from tests.utils import calculate_time_with_delta, extract_from_nested_structure
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
 TEST_API_V2_BUNDLES_DIR = PROJECT_DIR / "python" / "api_v2" / "tests" / "bundles"
@@ -233,6 +244,74 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.task_hp_1 = cls.create_task(
             owner=cls.hp_1, action_name="provider_action", name="c_task", display_name="C task", duration=2
         )
+        # prepare audit users and objects
+        cls.cluster_admin = cls.uc.create_user(
+            user_data={"username": "AdminClusterBobby", "password": "admin_password"}
+        )
+        cls.provider_admin = cls.uc.create_user(
+            user_data={"username": "ProviderAdminPeter", "password": "admin_password"}
+        )
+
+        cls.cluster_audit_admin = cls.get_audit_user("AdminClusterBobby")
+        cls.provider_audit_admin = cls.get_audit_user("ProviderAdminPeter")
+        cls.non_existent_user_name = "Invisible"
+
+        cls.audit_obj_cluster = cls.create_audit_obj(entity=cls.cl_1, object_type=AuditObjectType.CLUSTER)
+        cls.audit_obj_service = cls.create_audit_obj(entity=cls.service_1, object_type=AuditObjectType.SERVICE)
+        cls.audit_obj_provider = cls.create_audit_obj(entity=cls.hp_1, object_type=AuditObjectType.PROVIDER)
+
+        # prepare audit log records
+        now_time = timezone.now()
+        cls.audit_log_time_1 = calculate_time_with_delta(delta_value=20, base_time=now_time)
+        cls.audit_log_time_2 = calculate_time_with_delta(delta_value=10, base_time=now_time)
+        cls.audit_log_time_3 = calculate_time_with_delta(delta_value=5, base_time=now_time)
+
+        cls.matched_time_from_value = calculate_time_with_delta(delta_value=10, base_time=now_time, isoformat=True)
+        cls.empty_match_time_from_value = calculate_time_with_delta(delta_value=1, base_time=now_time, isoformat=True)
+        cls.matched_time_to_value = calculate_time_with_delta(delta_value=20, base_time=now_time, isoformat=True)
+        cls.empty_match_time_to_value = calculate_time_with_delta(delta_value=25, base_time=now_time, isoformat=True)
+        cls.audit_log_update_service = cls.create_audit_operation_log(
+            audit_object=cls.audit_obj_service,
+            operation_name="update_service",
+            operation_type=AuditLogOperationType.UPDATE,
+            operation_result=AuditLogOperationResult.FAIL,
+            user=cls.cluster_audit_admin,
+            operation_time=cls.audit_log_time_2,
+        )
+        cls.audit_log_create_provider_fail = cls.create_audit_operation_log(
+            audit_object=cls.audit_obj_provider,
+            operation_name="create_provider",
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.FAIL,
+            user=cls.provider_audit_admin,
+            operation_time=cls.audit_log_time_3,
+        )
+        cls.audit_log_create_cluster = cls.create_audit_operation_log(
+            audit_object=cls.audit_obj_cluster,
+            operation_name="create_cluster",
+            operation_type=AuditLogOperationType.CREATE,
+            operation_result=AuditLogOperationResult.SUCCESS,
+            user=cls.cluster_audit_admin,
+            operation_time=cls.audit_log_time_1,
+        )
+        cls.audit_login_wrong_password = cls.create_audit_login_log(
+            user=cls.provider_audit_admin,
+            login_result=AuditSessionLoginResult.WRONG_PASSWORD,
+            login_time=cls.audit_log_time_2,
+            login_details={"username": cls.provider_audit_admin.username},
+        )
+        cls.audit_login_user_not_found = cls.create_audit_login_log(
+            user=None,
+            login_result=AuditSessionLoginResult.USER_NOT_FOUND,
+            login_time=cls.audit_log_time_3,
+            login_details={"username": cls.non_existent_user_name},
+        )
+        cls.audit_login_success_cluster = cls.create_audit_login_log(
+            user=cls.cluster_audit_admin,
+            login_result=AuditSessionLoginResult.SUCCESS,
+            login_time=cls.audit_log_time_1,
+            login_details={"username": cls.cluster_audit_admin.username},
+        )
 
     def setUp(self) -> None:
         super().setUp()
@@ -296,3 +375,51 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         task.finish_date = timezone.now()
         task.save()
         return task
+
+    @staticmethod
+    def get_audit_user(username: str) -> AuditUser:
+        return AuditUser.objects.filter(username=username).order_by("-pk").first()
+
+    @staticmethod
+    def create_audit_obj(entity: ADCMEntity, object_type: AuditObjectType) -> AuditObject:
+        return AuditObject.objects.create(
+            object_id=entity.pk,
+            object_name=entity.name,
+            object_type=object_type,
+        )
+
+    @staticmethod
+    def create_audit_operation_log(
+        audit_object: AuditObject,
+        operation_name: str,
+        operation_type: AuditLogOperationType,
+        operation_result: AuditLogOperationResult,
+        user: AuditUser,
+        operation_time: datetime.datetime,
+    ) -> AuditLog:
+        audit_log = AuditLog.objects.create(
+            audit_object=audit_object,
+            operation_name=operation_name,
+            operation_type=operation_type,
+            operation_result=operation_result,
+            user=user,
+        )
+        audit_log.operation_time = operation_time
+        audit_log.save()
+        return audit_log
+
+    @staticmethod
+    def create_audit_login_log(
+        login_result: AuditSessionLoginResult,
+        login_time: datetime.datetime,
+        login_details: dict,
+        user: AuditUser | None = None,
+    ) -> AuditSession:
+        audit_session = AuditSession.objects.create(
+            user=user,
+            login_result=login_result,
+            login_details=login_details,
+        )
+        audit_session.login_time = login_time
+        audit_session.save()
+        return audit_session

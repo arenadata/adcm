@@ -17,6 +17,8 @@ from tests.suites import ADCMFiltersDataSuite
 from tests.utils import extract_from_nested_structure
 
 from api_v2.tests.test_filtering.cases import (
+    AuditLoginsTestCase,
+    AuditOperationsTestCase,
     BundlesTestCase,
     ClusterHostsTestCase,
     ClustersTestCase,
@@ -24,7 +26,6 @@ from api_v2.tests.test_filtering.cases import (
     HostProvidersTestCase,
     HostsTestCase,
     ServicesTestCase,
-    TasksTestCase,
 )
 
 
@@ -221,15 +222,29 @@ class TestAPIFilters(FiltersBaseCheck):
             ordering_cases=case.get_ordering_cases(),
         )
 
-    def test_filters_tasks(self) -> None:
-        case = TasksTestCase(self)
+    def test_filters_audit_operations(self) -> None:
+        case = AuditOperationsTestCase(self)
         self.check_filters(
             url=case.get_url(),
             filters_cases=case.get_filters_cases(),
         )
 
-    def test_ordering_tasks(self) -> None:
-        case = TasksTestCase(self)
+    def test_ordering_audit_operations(self) -> None:
+        case = AuditOperationsTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_filters_audit_logins(self) -> None:
+        case = AuditLoginsTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_audit_logins(self) -> None:
+        case = AuditLoginsTestCase(self)
         self.check_ordering(
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),
