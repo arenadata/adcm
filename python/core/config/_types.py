@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, TypeAlias
+from enum import Enum
+from typing import Any, Callable, Literal, NamedTuple, TypeAlias, TypedDict
 
 from typing_extensions import Self
 
 from core.config.constants import SYSTEM_CONFIG_CREATOR
-from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor
+from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor, PrototypeID
 
 EncryptFunc: TypeAlias = Callable[[str], str]
 DecryptFunc: TypeAlias = Callable[[str], str]
@@ -92,6 +93,21 @@ e.g. `{"a": {"b": {"c": 4}}}` instead of `{"/a/b/c": 4}` (flat format)
 
 ConfigFlatValues: TypeAlias = dict[ParameterFullName, ConfigParameterValue]
 ConfigAttrs: TypeAlias = dict[ParameterFullName, Attributes]
+RevisionDiff: TypeAlias = dict[Literal["diff", "attr_diff"], dict]
+ConfigDict: TypeAlias = dict
+
+
+class RelatedConfigs(TypedDict):
+    object_id: int
+    object_type: str
+    prototype_id: int
+    primary_config_id: int
+
+
+class ConfigCoreObjectWithPrototype(NamedTuple):
+    object: CoreObjectDescriptor
+    prototype_id: PrototypeID
+    config_id: ConfigID
 
 
 @dataclass(slots=True)
@@ -143,20 +159,36 @@ class FlatConfiguration:
     attributes: ConfigAttrs = field(default_factory=dict)
 
 
+class ChangeType(str, Enum):
+    VALUE = "value"
+    ACTIVATION = "activation"
+    SELECTION = "selection"
+    SYNCHRONIZATION = "synchronization"
+
+
+@dataclass(slots=True)
+class Change:
+    parameter: ParameterFullName
+    type: ChangeType
+    # keep bool in here for "attrs", thou I doubt it'll require changing in near future
+    old: ConfigParameterValue | bool | None
+    new: ConfigParameterValue | bool | None
+
+
 @dataclass(slots=True)
 class ChangeRequest:
-    type: Literal["value", "activation", "selection"]
+    type: Literal[ChangeType.VALUE, ChangeType.ACTIVATION, ChangeType.SELECTION]
     parameter: ParameterFullName
     value: Any
 
     @classmethod
     def for_value(cls, name: ParameterFullName, value: Any) -> Self:
-        return cls(type="value", parameter=name, value=value)
+        return cls(type=ChangeType.VALUE, parameter=name, value=value)
 
     @classmethod
     def for_activation_attribute(cls, name: ParameterFullName, value: bool) -> Self:
-        return cls(type="activation", parameter=name, value=value)
+        return cls(type=ChangeType.ACTIVATION, parameter=name, value=value)
 
     @classmethod
     def for_group_selection(cls, name: ParameterFullName, value: str | None) -> Self:
-        return cls(type="selection", parameter=name, value=value)
+        return cls(type=ChangeType.SELECTION, parameter=name, value=value)

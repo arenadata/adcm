@@ -54,6 +54,7 @@ from use_cases.transition.config import (
     UpdateConfigurationOfHostGroup,
     UpdateConfigurationOfObject,
 )
+from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
@@ -246,3 +247,5 @@ class UseCaseProvider(Provider):
     update_configuration_of_object = provide(UpdateConfigurationOfObject)
     update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)
     update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
+    set_primary_config_revision = provide(SetPrimaryConfigRevision)
+    find_primary_config_diff = provide(FindPrimaryConfigDiff)
