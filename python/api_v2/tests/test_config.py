@@ -62,6 +62,8 @@ CONFIG_SCHEMA = "config-schema"
 
 
 class TestClusterConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -301,6 +303,8 @@ class TestClusterConfig(ADCMDjangoAPISuite):
 
 
 class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -347,6 +351,8 @@ class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
 
 
 class TestClusterCHG(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -683,6 +689,7 @@ class TestClusterCHG(ADCMDjangoAPISuite):
 
 class TestServiceConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -1292,6 +1299,7 @@ class TestServiceCHG(ADCMDjangoAPISuite):
 
 class TestComponentConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -1487,6 +1495,8 @@ class TestComponentConfig(ADCMDjangoAPISuite):
 
 
 class TestComponentCHG(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -1834,7 +1844,6 @@ class TestComponentCHG(ADCMDjangoAPISuite):
 
 class TestProviderConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
-
     maxDiff = None
 
     @classmethod
@@ -2372,6 +2381,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
 
 class TestHostConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -2760,6 +2770,8 @@ class TestAttrTransformation(unittest.TestCase):
 
 
 class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -2814,6 +2826,8 @@ class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
 
 
 class TestCHGUpgrade(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         cls._initialize_roles_and_adcm()
@@ -3024,6 +3038,8 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
 
 
 class TestPatternInConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
     _PATTERNS = {
         "patterned_string": r"[a-z][A-Z][0-9]*?",
         "patterned_password": r"[A-z]{4,}[0-9]+[^A-z0-9]+",
@@ -3250,6 +3266,8 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
 
 
 class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
+    maxDiff = None
+
     _empty_schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Configuration",
