@@ -16,10 +16,12 @@ import type {
   UpdateActionHostGroupActionPayload,
   OpenDeleteDialogActionPayload,
   DeleteActionHostGroupActionPayload,
+  EditDescriptionActionHostGroupActionPayload,
 } from './actionHostGroups.types';
 import type { AdcmActionHostGroup, AdcmActionHostGroupHost } from '@models/adcm';
 import { splitHosts } from './actionHostGroupsActionsSlice.utils';
 import { fulfilledFilter } from '@utils/promiseUtils';
+import { isValidData } from '@utils/checkUtils.ts';
 
 const openCreateDialog = createAsyncThunk(
   'adcm/actionHostsGroupsActions/openCreateDialog',
@@ -47,6 +49,7 @@ const createActionHostGroup = createAsyncThunk(
     try {
       const service = services[entityType];
       thunkAPI.dispatch(setCreatingState('in-progress'));
+      actionHostGroup.description = actionHostGroup.description?.trim();
       const host = await service.postActionHostGroup({ ...entityArgs, actionHostGroup });
 
       const promises = [];
@@ -123,7 +126,10 @@ const loadEditRelatedData = createAsyncThunk(
 
 const updateActionHostGroup = createAsyncThunk(
   'adcm/actionHostsGroupsActions/updateActionHostGroup',
-  async ({ entityType, entityArgs, actionHostGroup, hostIds }: UpdateActionHostGroupActionPayload, thunkAPI) => {
+  async (
+    { entityType, entityArgs, actionHostGroup, hostIds, description }: UpdateActionHostGroupActionPayload,
+    thunkAPI,
+  ) => {
     try {
       const service = services[entityType];
       thunkAPI.dispatch(setEditingState('in-progress'));
@@ -137,7 +143,7 @@ const updateActionHostGroup = createAsyncThunk(
         addPromises.push(
           service.postActionHostGroupHost({
             ...entityArgs,
-            actionHostGroupId: actionHostGroup?.id,
+            actionHostGroupId: actionHostGroup.id,
             hostId: id,
           }),
         );
@@ -147,10 +153,21 @@ const updateActionHostGroup = createAsyncThunk(
         deletePromises.push(
           service.deleteActionHostGroupHost({
             ...entityArgs,
-            actionHostGroupId: actionHostGroup?.id,
+            actionHostGroupId: actionHostGroup.id,
             hostId: id,
           }),
         );
+      }
+
+      if (isValidData(description)) {
+        const trimDescription = description.trim();
+        if (actionHostGroup.description !== trimDescription) {
+          service.patchActionHostGroupDescription({
+            ...entityArgs,
+            actionHostGroupId: actionHostGroup.id,
+            description,
+          });
+        }
       }
 
       const allPromises = await Promise.allSettled([...addPromises, ...deletePromises]);
@@ -214,6 +231,36 @@ const deleteActionHostGroupWithUpdate = createAsyncThunk(
   },
 );
 
+const editActionHostGroupDescription = createAsyncThunk(
+  'adcm/actionHostsGroupsActions/editActionHostGroupDescription',
+  async (
+    { entityType, entityArgs, actionHostGroupId, description }: EditDescriptionActionHostGroupActionPayload,
+    thunkAPI,
+  ) => {
+    try {
+      const service = services[entityType];
+      await service.patchActionHostGroupDescription({
+        ...entityArgs,
+        actionHostGroupId,
+        description,
+      });
+      thunkAPI.dispatch(showSuccess({ message: 'The action host group has been deleted' }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const editActionHostGroupDescriptionWithUpdate = createAsyncThunk(
+  'adcm/actionHostsGroupsActions/editActionHostGroupDescriptionWithUpdate',
+  async (args: EditDescriptionActionHostGroupActionPayload, thunkAPI) => {
+    const { entityType, entityArgs } = args;
+    await thunkAPI.dispatch(editActionHostGroupDescription(args)).unwrap();
+    await thunkAPI.dispatch(getActionHostGroups({ entityType, entityArgs }));
+  },
+);
+
 interface AdcmActionHostGroupsActionsState {
   createDialog: {
     isOpen: boolean;
@@ -232,6 +279,9 @@ interface AdcmActionHostGroupsActionsState {
   deleteDialog: {
     actionHostGroup: AdcmActionHostGroup | null;
     deletingState: ActionState;
+  };
+  editDescriptionDialog: {
+    actionHostGroup: AdcmActionHostGroup | null;
   };
 }
 
@@ -253,6 +303,9 @@ const createInitialState = (): AdcmActionHostGroupsActionsState => ({
   deleteDialog: {
     actionHostGroup: null,
     deletingState: 'not-started',
+  },
+  editDescriptionDialog: {
+    actionHostGroup: null,
   },
 });
 
@@ -277,6 +330,12 @@ const actionHostGroupsActionsSlice = createSlice({
     },
     openDeleteDialog(state, action: PayloadAction<OpenDeleteDialogActionPayload>) {
       state.deleteDialog.actionHostGroup = action.payload.actionHostGroup;
+    },
+    openEditDescriptionDialog(state, action: PayloadAction<OpenDeleteDialogActionPayload>) {
+      state.editDescriptionDialog.actionHostGroup = action.payload.actionHostGroup;
+    },
+    closeEditDescriptionDialog() {
+      return createInitialState();
     },
     closeDeleteDialog() {
       return createInitialState();
@@ -315,6 +374,8 @@ export const {
   openDeleteDialog,
   closeDeleteDialog,
   cleanupActions,
+  openEditDescriptionDialog,
+  closeEditDescriptionDialog,
 } = actionHostGroupsActionsSlice.actions;
 
 export {
@@ -323,6 +384,7 @@ export {
   openEditDialog,
   updateActionHostGroupWithUpdate,
   deleteActionHostGroupWithUpdate,
+  editActionHostGroupDescriptionWithUpdate as editActionHostGroupDescription,
 };
 
 export default actionHostGroupsActionsSlice.reducer;

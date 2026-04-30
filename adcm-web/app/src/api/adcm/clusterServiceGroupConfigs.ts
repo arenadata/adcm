@@ -100,4 +100,18 @@ export class AdcmClusterServiceConfigGroupsApi {
     );
     return response.data;
   }
+
+  public static async patchConfigGroupDescription(
+    clusterId: number,
+    serviceId: number,
+    configGroupId: number,
+    description: string,
+  ) {
+    const response = await httpClient.patch<AdcmConfigGroup>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/config-groups/${configGroupId}/`,
+      { description },
+    );
+
+    return response.data;
+  }
 }

@@ -123,4 +123,19 @@ export class AdcmClusterServiceComponentConfigGroupsApi {
     );
     return response.data;
   }
+
+  public static async patchConfigGroupDescription(
+    clusterId: number,
+    serviceId: number,
+    componentId: number,
+    configGroupId: number,
+    description: string,
+  ) {
+    const response = await httpClient.patch<AdcmConfigGroup>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/config-groups/${configGroupId}/`,
+      { description },
+    );
+
+    return response.data;
+  }
 }

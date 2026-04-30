@@ -4,10 +4,13 @@ import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupS
 import { useDispatch, useStore } from '@hooks';
 import { useServiceConfigGroupSingle } from './useServiceConfigGroupSingle';
 import ServiceConfigGroupSingleConfiguration from './ServiceConfigGroupSingleConfiguration/ServiceConfigGroupSingleConfiguration';
+import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams.ts';
 
 const ServiceConfigGroupSingle: React.FC = () => {
   const dispatch = useDispatch();
+  const { clusterId, serviceId } = useServiceComponentParams();
   const cluster = useStore((s) => s.adcm.cluster.cluster);
   const service = useStore((s) => s.adcm.service.service);
   const serviceConfigGroup = useStore((s) => s.adcm.serviceConfigGroup.serviceConfigGroup);
@@ -36,9 +39,12 @@ const ServiceConfigGroupSingle: React.FC = () => {
     <>
       <ConfigGroupSingleHeader
         configGroup={serviceConfigGroup}
-        returnUrl={`/clusters/${cluster?.id}/services/${service?.id}/configuration-groups`}
+        returnUrl={`/clusters/${clusterId}/services/${serviceId}/configuration-groups`}
+        entityType="service"
+        entityArgs={{ clusterId, serviceId }}
       />
       <ServiceConfigGroupSingleConfiguration />
+      <EditConfigGroupDescriptionDialog />
     </>
   );
 };

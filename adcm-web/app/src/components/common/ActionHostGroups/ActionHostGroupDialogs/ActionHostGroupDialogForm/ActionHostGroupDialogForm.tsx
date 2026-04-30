@@ -63,17 +63,13 @@ const ActionHostGroupDialogForm = ({
           )}
         </FormField>
         <FormField label="Description">
-          {isCreateNew ? (
-            <Input
-              value={formData.description}
-              type="text"
-              onChange={handleDescriptionChange}
-              placeholder="Enter short description"
-              autoComplete="off"
-            />
-          ) : (
-            <TextFormField>{formData.name}</TextFormField>
-          )}
+          <Input
+            value={formData.description}
+            type="text"
+            onChange={handleDescriptionChange}
+            placeholder="Enter short description"
+            autoComplete="off"
+          />
         </FormField>
       </div>
 
