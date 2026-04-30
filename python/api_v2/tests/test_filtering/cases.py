@@ -37,11 +37,19 @@ class BaseTestCase:
         """
 
     @abstractmethod
+    def get_choices_filters_cases(self) -> list[tuple]:
+        """
+        Return filter cases for choices fields as tuples of:
+
+        a filter parameter, a response value path, a filter value, a value of the expected result.
+        """
+
+    @abstractmethod
     def get_ordering_cases(self) -> list[tuple]:
         """
         Return ordering cases as tuples of:
 
-        an ordering parameter, a response value path, an expected (asc) result.
+        an ordering parameter, a response value path, an expected (asc) result, an optional expected (desc) result.
         """
 
 
@@ -365,4 +373,140 @@ class AuditLoginsTestCase(BaseTestCase):
                     self.suite.audit_login_user_not_found.pk,
                 ],
             ),
+        ]
+
+
+class UsersTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "rbac" / "users"
+
+    def get_filters_cases(self) -> list[tuple]:
+        return [
+            ("username", "username", "AdMiN", ["admin"], "wrong"),
+            ("username", "username", "TESTUSER", ["TestUser1"], "wrong"),
+            ("email", "username", "testuser1@example.com", ["TestUser1"], "wrong"),
+            ("groupDisplayName", "username", "Group1", ["TestUser1"], "wrong"),
+            ("groupName", "username", "Group1 [local]", ["TestUser1"], "wrong"),
+        ]
+
+    def get_choices_filters_cases(self) -> list[tuple]:
+        return [
+            ("type", "username", "ldap", ["TestUser1"]),
+            ("type", "username", "local", ["admin"]),
+            ("status", "username", "active", ["admin"]),
+            ("status", "username", "blocked", ["TestUser1"]),
+        ]
+
+    def get_ordering_cases(self) -> list:
+        return [
+            ("username", "username", ["admin", "TestUser1"]),
+            ("status", "username", ["admin", "TestUser1"]),
+            ("email", "username", ["admin", "TestUser1"]),
+            ("type", "username", ["TestUser1", "admin"]),
+        ]
+
+    @property
+    def usernames_to_keep(self) -> list[str]:
+        return ["admin", "TestUser1"]
+
+
+class GroupsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "rbac" / "groups"
+
+    def get_filters_cases(self) -> list[tuple]:
+        return [
+            ("name", "displayName", "TestGroup [local]", ["TestGroup"], "wrong"),
+            ("displayName", "displayName", "TestGroup", ["LDAPTestGroup", "TestGroup"], "wrong"),
+            ("userUsername", "displayName", "admin", ["TestGroup"], "wrong"),
+            ("userUsername", "displayName", "ADMIN", [], "wrong"),
+        ]
+
+    def get_choices_filters_cases(self) -> list[tuple]:
+        return [
+            ("type", "displayName", "local", ["Group1", "TestGroup"]),
+            ("type", "displayName", "ldap", ["LDAPTestGroup"]),
+        ]
+
+    def get_ordering_cases(self) -> list[tuple]:
+        return [
+            ("name", "displayName", ["Group1", "LDAPTestGroup", "TestGroup"]),
+            ("displayName", "displayName", ["Group1", "LDAPTestGroup", "TestGroup"]),
+            ("type", "type", ["ldap", "local", "local"]),
+        ]
+
+
+class RolesTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "rbac" / "roles"
+
+    def get_filters_cases(self) -> list[tuple]:
+        return [
+            ("name", "displayName", "Cluster Administrator", ["Cluster Administrator"], "wrong"),
+            (
+                "displayName",
+                "displayName",
+                "administrator",
+                ["Cluster Administrator", "Service Administrator"],
+                "wrong",
+            ),
+        ]
+
+    def get_choices_filters_cases(self) -> list[tuple]:
+        return [
+            ("type", "displayName", "business", ["Add hosts to the Cluster"]),
+            (
+                "type",
+                "displayName",
+                "role",
+                ["Cluster Administrator", "CustomRole", "CustomRoleAnyCategory", "Service Administrator"],
+            ),
+        ]
+
+    def get_ordering_cases(self) -> list[tuple]:
+        return [
+            ("name", "displayName", ["Cluster Administrator", "Add hosts to the Cluster"]),
+            ("displayName", "displayName", ["Add hosts to the Cluster", "Cluster Administrator"]),
+            ("type", "displayName", ["Add hosts to the Cluster", "Cluster Administrator"]),
+        ]
+
+    @property
+    def display_names_to_keep_filtering(self) -> list[str]:
+        return [
+            "Add hosts to the Cluster",
+            "Cluster Administrator",
+            "Service Administrator",
+            "CustomRole",
+            "CustomRoleAnyCategory",
+        ]
+
+    @property
+    def display_names_to_keep_ordering(self) -> list[str]:
+        return [
+            "Add hosts to the Cluster",
+            "Cluster Administrator",
+        ]
+
+
+class PoliciesTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "rbac" / "policies"
+
+    def get_filters_cases(self) -> list[tuple]:
+        return [
+            ("id", "name", self.suite.policy.pk, ["CustomPolicy"], 0),
+            ("name", "name", "CustomPolicy", ["CustomPolicy"], "wrong"),
+            ("group_name", "name", "TestGroup [local]", ["ClusterPolicy", "ServicePolicy"], "wrong"),
+            ("group_display_name", "name", "Group1", ["CustomPolicy"], "wrong"),
+            ("role_name", "name", "Map hosts", ["ClusterPolicy"], "wrong"),
+            ("role_display_name", "name", "CustomRole", ["CustomPolicy"], "wrong"),
+            ("object_name", "name", "service_1", ["ServicePolicy"], "wrong"),
+            ("object_display_name", "name", "A Service", ["ServicePolicy"], "wrong"),
+        ]
+
+    def get_ordering_cases(self) -> list[tuple]:
+        return [
+            ("name", "name", ["ClusterPolicy", "CustomPolicy", "ServicePolicy"]),
+            ("roleName", "name", ["CustomPolicy", "ClusterPolicy", "ServicePolicy"]),
+            ("roleDisplayName", "name", ["ClusterPolicy", "CustomPolicy", "ServicePolicy"]),
         ]

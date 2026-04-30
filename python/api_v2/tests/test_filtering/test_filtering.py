@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cm.legacy.services.status.client import FullStatusMap
+from rbac.models import Role, User
 from tests.client import APINode
 from tests.dependencies import get_status_scenarios_manager
 from tests.suites import ADCMFiltersDataSuite
@@ -23,9 +24,13 @@ from api_v2.tests.test_filtering.cases import (
     ClusterHostsTestCase,
     ClustersTestCase,
     ComponentsTestCase,
+    GroupsTestCase,
     HostProvidersTestCase,
     HostsTestCase,
+    PoliciesTestCase,
+    RolesTestCase,
     ServicesTestCase,
+    UsersTestCase,
 )
 
 
@@ -55,6 +60,12 @@ class FiltersBaseCheck(ADCMFiltersDataSuite):
             with self.subTest(filter_result="empty", filter_field=filter_field):
                 results = self.get_results(url, value_path, query={filter_field: empty_query_value})
                 self.assertEqual([], results)
+
+    def check_choices_filters(self, *, url: APINode, filters_cases: list):
+        for filter_field, response_value_path, filter_value, expected_value in filters_cases:
+            with self.subTest(filter_result="matched_choice", filter_field=filter_field, filter_value=filter_value):
+                results = self.get_results(url, response_value_path, query={filter_field: filter_value})
+                self.assertEqual(expected_value, results)
 
     def check_filter_status(self, *, url: APINode, checked_status: str) -> None:
         """
@@ -99,14 +110,16 @@ class TestAPIFilters(FiltersBaseCheck):
     """
     The class with tests for checking API filters and sorting.
 
-    Each test declares a test case related to the target entity and one of three methods
-    for checks: check_ordering, check_filters, check_filter_status.
+    Each test declares a test case related to the target entity and one of four methods
+    for checks: check_ordering, check_filters, check_choices_filters, check_filter_status.
 
     The method name consists: test_{check name}_{entity name}.
 
     If you want to add a special test, the name should be:
         test_{check name}_{entity name}_{feature}.
     """
+
+    maxDiff = None
 
     def test_filters_clusters(self) -> None:
         case = ClustersTestCase(self)
@@ -249,3 +262,63 @@ class TestAPIFilters(FiltersBaseCheck):
             url=case.get_url(),
             ordering_cases=case.get_ordering_cases(),
         )
+
+    def test_filtering_users(self) -> None:
+        case = UsersTestCase(self)
+        User.objects.exclude(username__in=case.usernames_to_keep).delete()
+
+        self.check_filters(url=case.get_url(), filters_cases=case.get_filters_cases())
+        self.check_choices_filters(url=case.get_url(), filters_cases=case.get_choices_filters_cases())
+
+    def test_ordering_users(self) -> None:
+        case = UsersTestCase(self)
+        User.objects.exclude(username__in=case.usernames_to_keep).delete()
+
+        self.check_ordering(url=case.get_url(), ordering_cases=case.get_ordering_cases())
+
+    def test_filtering_groups(self) -> None:
+        case = GroupsTestCase(self)
+        self.check_filters(url=case.get_url(), filters_cases=case.get_filters_cases())
+        self.check_choices_filters(url=case.get_url(), filters_cases=case.get_choices_filters_cases())
+
+    def test_ordering_groups(self) -> None:
+        case = GroupsTestCase(self)
+        self.check_ordering(url=case.get_url(), ordering_cases=case.get_ordering_cases())
+
+    def test_filtering_roles(self) -> None:
+        case = RolesTestCase(self)
+        Role.objects.exclude(display_name__in=case.display_names_to_keep_filtering).delete()
+
+        self.check_filters(url=case.get_url(), filters_cases=case.get_filters_cases())
+        self.check_choices_filters(url=case.get_url(), filters_cases=case.get_choices_filters_cases())
+
+    def test_filtering_roles_categories_field(self) -> None:
+        """Special case. any_category=True Roles are shown either way"""
+
+        case = RolesTestCase(self)
+        Role.objects.exclude(display_name__in=case.display_names_to_keep_filtering).delete()
+
+        filter_field = "categories"
+        expected_roles = ["Add hosts to the Cluster", "CustomRole", "CustomRoleAnyCategory"]
+        results = self.get_results(url=case.get_url(), value_path="displayName", query={filter_field: "TestCategory"})
+        self.assertEqual(results, expected_roles)
+
+        expected_roles = ["Add hosts to the Cluster", "CustomRoleAnyCategory"]
+        results = self.get_results(
+            url=case.get_url(), value_path="displayName", query={filter_field: "non-existent-category"}
+        )
+        self.assertEqual(results, expected_roles)
+
+    def test_ordering_roles(self) -> None:
+        case = RolesTestCase(self)
+        Role.objects.exclude(display_name__in=case.display_names_to_keep_ordering).delete()
+
+        self.check_ordering(url=case.get_url(), ordering_cases=case.get_ordering_cases())
+
+    def test_filtering_policies(self) -> None:
+        case = PoliciesTestCase(self)
+        self.check_filters(url=case.get_url(), filters_cases=case.get_filters_cases())
+
+    def test_ordering_policies(self) -> None:
+        case = PoliciesTestCase(self)
+        self.check_ordering(url=case.get_url(), ordering_cases=case.get_ordering_cases())
