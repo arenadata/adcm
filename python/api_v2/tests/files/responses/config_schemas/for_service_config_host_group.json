@@ -29,7 +29,8 @@
             "isInvisible": false,
             "activation": null,
             "synchronization": {
-              "isAllowChange": true
+              "isAllowChange": true,
+              "default": true
             },
             "isSecret": false,
             "stringExtra": {
@@ -71,7 +72,8 @@
             "isInvisible": false,
             "activation": null,
             "synchronization": {
-              "isAllowChange": true
+              "isAllowChange": true,
+              "default": true
             },
             "isSecret": true,
             "stringExtra": {
@@ -96,10 +98,12 @@
         "isAdvanced": false,
         "isInvisible": false,
         "activation": {
-          "isAllowChange": true
+          "isAllowChange": true,
+          "default": true
         },
         "synchronization": {
-          "isAllowChange": true
+          "isAllowChange": true,
+          "default": true
         },
         "isSecret": false,
         "stringExtra": null,
@@ -121,7 +125,8 @@
                 "isInvisible": false,
                 "activation": null,
                 "synchronization": {
-                  "isAllowChange": true
+                  "isAllowChange": true,
+                  "default": true
                 },
                 "isSecret": false,
                 "stringExtra": {
