@@ -37,15 +37,18 @@ from cm.models import (
     Component,
     ConfigLog,
     Host,
+    ProductCategory,
     Provider,
     Service,
     SignatureStatus,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.utils import timezone
 from infra.services import prepare_container
 from init_db import init
+from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK
 import dishka
@@ -244,6 +247,7 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.task_hp_1 = cls.create_task(
             owner=cls.hp_1, action_name="provider_action", name="c_task", display_name="C task", duration=2
         )
+
         # prepare audit users and objects
         cls.cluster_admin = cls.uc.create_user(
             user_data={"username": "AdminClusterBobby", "password": "admin_password"}
@@ -312,6 +316,49 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
             login_time=cls.audit_log_time_1,
             login_details={"username": cls.cluster_audit_admin.username},
         )
+
+        # prepare users
+        assert User.objects.filter(username="admin").exists(), 'The user "admin" is expected to exist'  # noqa: S101
+        group = cls.uc.create_group(display_name="Group1")
+        username = "TestUser1"
+        cls.uc.create_user(
+            username=username,
+            password=username * 2,
+            email=f"{username.lower()}@example.com",
+            groups=[{"id": group.id}],
+        )
+        User.objects.filter(username=username).update(type=OriginType.LDAP.value, blocked_at=timezone.now())
+
+        # prepare groups
+        admin = User.objects.get(username="admin")
+        group2 = cls.uc.create_group(display_name="TestGroup", users=[admin.pk])
+        ldap_group = cls.uc.create_group(display_name="LDAPTestGroup")
+        ldap_group.type = OriginType.LDAP.value
+        ldap_group.save(update_fields=["type"])
+
+        # prepare roles
+        category = ProductCategory.objects.create(value="TestCategory")
+        custom_role = Role.objects.create(
+            name="CustomRole",
+            display_name="CustomRole",
+            module_name=".",
+            class_name=".",
+        )
+        custom_role.category.add(category)
+        Role.objects.create(
+            name="CustomRoleAnyCategory",
+            display_name="CustomRoleAnyCategory",
+            module_name=".",
+            class_name=".",
+            any_category=True,
+        )
+
+        # prepare policies
+        cls.policy = cls.create_policy(name="CustomPolicy", role=custom_role, group=group)
+        cluster_role = Role.objects.get(display_name="Add hosts to the Cluster")
+        cls.create_policy(name="ClusterPolicy", role=cluster_role, group=group2, obj=cls.cl_1)
+        service_role = Role.objects.get(display_name="View service config")
+        cls.create_policy(name="ServicePolicy", role=service_role, group=group2, obj=cls.service_1)
 
     def setUp(self) -> None:
         super().setUp()
@@ -423,3 +470,15 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         audit_session.login_time = login_time
         audit_session.save()
         return audit_session
+
+    @staticmethod
+    def create_policy(name: str, role: Role, group: Group, obj: Cluster | Service | None = None) -> Policy:
+        policy = Policy.objects.create(name=name, description="", role=role)
+        policy.group.add(group)
+
+        if obj:
+            content_type = ContentType.objects.get_for_model(obj)
+            policy_object, _ = PolicyObject.objects.get_or_create(object_id=obj.id, content_type=content_type)
+            policy.object.add(policy_object)
+
+        return policy
