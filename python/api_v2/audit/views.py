@@ -49,8 +49,12 @@ class AuditRoot(APIRootView):
                 enum=(
                     "loginTime",
                     "-loginTime",
+                    "result",
+                    "-result",
                     "time",
                     "-time",
+                    "userName",
+                    "-userName",
                 ),
                 default="-loginTime",
             ),

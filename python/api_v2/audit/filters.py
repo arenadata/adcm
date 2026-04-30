@@ -144,8 +144,8 @@ class AuditSessionFilter(
     ordering = AuditSessionOrderingFilter(
         fields={
             "login_time": "loginTime",
-            "user_name": "userName",
-            "result": "result",
+            "user__username": "userName",
+            "login_result": "result",
             "time": "time",
         },
         field_labels={

@@ -44,7 +44,7 @@ class RoleFilter(
         fields={
             "name": "name",
             "display_name": "displayName",
-            "type": " type",
+            "type": "type",
         },
         field_labels={
             "name": "Name",

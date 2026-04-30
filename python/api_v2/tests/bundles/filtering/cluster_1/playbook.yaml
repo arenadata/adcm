@@ -1,0 +1,10 @@
+---
+- name: install cluster
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: wait a bit
+      pause:
+        seconds: 1

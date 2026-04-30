@@ -39,8 +39,9 @@ from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.settings import Directories
 from faker import Faker
-from rbac.models import User
+from rbac.models import Group, User
 from rbac.scenarios import RBACScenarios
+from rbac.services.group import create as create_group
 from rbac.services.user import perform_user_creation
 from use_cases.bundle import ParseBundleFromRequest
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
@@ -182,6 +183,11 @@ class UseCases:
         user_id = perform_user_creation(create_data=TestUserCreateDTO(**user_data), groups=groups)
 
         return User.objects.get(id=user_id)
+
+    def create_group(self, display_name: str, users: Iterable[int] | None = None, description: str = "") -> Group:
+        return create_group(
+            name_to_display=display_name, description=description, user_set=[{"id": id_} for id_ in users or []]
+        )
 
 
 # Utilities

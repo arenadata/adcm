@@ -1,0 +1,38 @@
+---
+- type: cluster
+  name: a_cluster
+  display_name: A Cluster
+  version: "1.0.1"
+  edition: community
+  description: Minimal cluster bundle for ClusterFilter coverage
+  actions:
+    check_action: &task_action
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+- name: service_1
+  type: service
+  display_name: A Service
+  version: "1.0.0"
+  actions:
+    check_action: *task_action
+  components:
+    component_1:
+      display_name: Component 1
+    component_2:
+      display_name: Component 2
+    component_3:
+      display_name: Component 3
+
+- name: service_2
+  type: service
+  display_name: A Service
+  version: "12.0.1"
+
+- name: service_3
+  type: service
+  display_name: B Service
+  version: "2.0.1"

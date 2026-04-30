@@ -4469,9 +4469,13 @@ paths:
           type: string
           enum:
           - -loginTime
+          - -result
           - -time
+          - -userName
           - loginTime
+          - result
           - time
+          - userName
           default: -loginTime
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
@@ -20301,7 +20305,7 @@ paths:
         name: state
         schema:
           type: string
-        description: Filter byy state.
+        description: Filter by state.
       tags:
       - hosts
       security:
