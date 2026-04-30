@@ -38,6 +38,7 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.config import ConfigScenarios
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
@@ -48,7 +49,19 @@ from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteService, DeleteServiceFromAPI
-from use_cases.transition.job.schedule import RetrieveConfigurationForAction, ScheduleTask, TaskStarter
+from use_cases.transition.config import (
+    UpdateConfigurationFromJob,
+    UpdateConfigurationOfHostGroup,
+    UpdateConfigurationOfObject,
+)
+from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
+from use_cases.transition.job.schedule import (
+    RetrieveConfigurationForAction,
+    ScheduleMMChangingTask,
+    ScheduleTask,
+    TaskStarter,
+)
+from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
@@ -189,6 +202,7 @@ class ScenariosProvider(Provider):
         provides=FillWizardStepSpec[ActionArgs, TaskArgs],
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
+    config_scenarios = provide(ConfigScenarios)
 
 
 class LogsServiceProvider(Provider):
@@ -204,7 +218,7 @@ class UseCaseProvider(Provider):
     parse_bundle_from_request = provide(ParseBundleFromRequest)
     init_upgrade_adcm = provide(InitOrUpgradeADCM, scope=Scope.APP)
 
-    schedule_task = provide(ScheduleTask)
+    schedule_task = provide_all(ScheduleTask, ScheduleMMChangingTask)
 
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
 
@@ -220,6 +234,7 @@ class UseCaseProvider(Provider):
         PerformWizardProcessOperation,
     )
 
+    upgrade_object = provide(UpgradeObject)
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,
         ResetBeforeUpgradeProvider,
@@ -228,3 +243,9 @@ class UseCaseProvider(Provider):
     )
 
     add_check_log_record = provide(AddCheckLogRecordForJob)
+
+    update_configuration_of_object = provide(UpdateConfigurationOfObject)
+    update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)
+    update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
+    set_primary_config_revision = provide(SetPrimaryConfigRevision)
+    find_primary_config_diff = provide(FindPrimaryConfigDiff)

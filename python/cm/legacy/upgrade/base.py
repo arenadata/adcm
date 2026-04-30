@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import cast
 import functools
 
 from adcm_version import compare_prototype_versions
+from core.types import Descriptor
+import core
 
-from cm.legacy.api import (
-    is_version_suitable,
-)
+from cm.converters import orm_object_to_core_type
+from cm.legacy.api import is_version_suitable
+from cm.legacy.services.job.context import get_imports_for_inventory
 from cm.legacy.upgrade.before_upgrade_schemas import (
     ActionHostGroupBeforeUpgrade,
     BeforeUpgrade,
@@ -42,9 +45,25 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from cm.transition.action import RetrieveStartImpossibleReason
 
 
-def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]:
+class DifferentBundleError(Exception):
+    ...
+
+
+def check_upgrade(
+    obj: Cluster | Provider, upgrade: Upgrade, retrieve_sir: RetrieveStartImpossibleReason | None
+) -> tuple[bool, str]:
+    _check_same_bundle(obj=obj, upgrade=upgrade)
+
+    if retrieve_sir and (
+        start_impossible_reason := retrieve_sir.for_upgrade_target(
+            target=Descriptor(id=obj.id, type=orm_object_to_core_type(obj))
+        )
+    ):
+        return False, start_impossible_reason
+
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]
 
@@ -62,7 +81,7 @@ def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]
         return False, "no available states"
 
     if obj.prototype.type == ObjectType.CLUSTER:
-        success, msg = _check_upgrade_import(obj=obj, upgrade=upgrade)
+        success, msg = _check_upgrade_import(obj=cast(Cluster, obj), upgrade=upgrade)
         if not success:
             return False, msg
 
@@ -103,24 +122,32 @@ def get_upgrade(obj: Cluster | Provider, order=None) -> list[Upgrade]:
     return res
 
 
-def update_before_upgrade(obj: Cluster | Provider) -> None:
+def update_before_upgrade(obj: Cluster | Provider, config_service: core.config.ConfigService) -> None:
     if isinstance(obj, Cluster):
-        _set_before_upgrade(obj=obj, before_upgrade=ClusterBeforeUpgrade(**obj.before_upgrade))
+        _set_before_upgrade(
+            obj=obj, before_upgrade=ClusterBeforeUpgrade(**obj.before_upgrade), config_service=config_service
+        )
 
         for service in Service.objects.filter(cluster=obj):
-            _set_before_upgrade(obj=service, before_upgrade=ServiceBeforeUpgrade())
+            _set_before_upgrade(obj=service, before_upgrade=ServiceBeforeUpgrade(), config_service=config_service)
 
             for component in Component.objects.filter(service=service, cluster=obj):
-                _set_before_upgrade(obj=component, before_upgrade=ComponentBeforeUpgrade())
+                _set_before_upgrade(
+                    obj=component, before_upgrade=ComponentBeforeUpgrade(), config_service=config_service
+                )
 
     if isinstance(obj, Provider):
-        _set_before_upgrade(obj=obj, before_upgrade=ProviderBeforeUpgrade(**obj.before_upgrade))
+        _set_before_upgrade(
+            obj=obj, before_upgrade=ProviderBeforeUpgrade(**obj.before_upgrade), config_service=config_service
+        )
 
-        for host in Host.objects.filter(provider=obj):
-            _set_before_upgrade(obj=host, before_upgrade=HostBeforeUpgrade())
+        for host in Host.objects.filter(provider=obj).select_related("config"):
+            _set_before_upgrade(obj=host, before_upgrade=HostBeforeUpgrade(), config_service=config_service)
 
 
-def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
+def _set_before_upgrade(
+    obj: MainObject, before_upgrade: BeforeUpgrade, config_service: core.config.ConfigService
+) -> None:
     before_upgrade.state = obj.state
 
     if obj.config:
@@ -142,6 +169,7 @@ def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
         }
 
     if isinstance(obj, Cluster):
+        before_upgrade.imports = {"config": get_imports_for_inventory(cluster_id=obj.pk, config_service=config_service)}
         before_upgrade.hc = [
             ServiceHostComponentMapBeforeUpgrade(
                 service=service,
@@ -158,6 +186,12 @@ def _set_before_upgrade(obj: MainObject, before_upgrade: BeforeUpgrade) -> None:
 
     obj.before_upgrade = before_upgrade.model_dump()
     obj.save(update_fields=["before_upgrade"])
+
+
+def _check_same_bundle(obj: Cluster | Provider, upgrade: Upgrade) -> None:
+    # preserving old behavior: 404 on foreign upgrade error. See ADCM-7976
+    if upgrade.bundle.name != obj.prototype.bundle.name:
+        raise DifferentBundleError()
 
 
 def _check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:

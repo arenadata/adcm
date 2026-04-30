@@ -76,6 +76,8 @@ from api_v2.views import ADCMGenericViewSet
                     "-status",
                     "duration",
                     "-duration",
+                    "objectName",
+                    "-objectName",
                 ),
                 default="-id",
             ),

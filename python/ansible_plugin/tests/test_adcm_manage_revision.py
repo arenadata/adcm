@@ -17,28 +17,29 @@ from cm.legacy.services.config import retrieve_primary_configs
 from cm.legacy.services.hierarchy import retrieve_object_hierarchy
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, ConfigRevision
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.executors.manage_revision import ADCMManageRevisionPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 
-class TestADCMManageRevisionPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
+class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
     maxDiff = None
 
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = self.service_1.components.get(prototype__name="component_1")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = cls.service_1.components.get(prototype__name="component_1")
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.set_hostcomponent(cluster=self.cluster, entries=((self.host_1, self.component_1),))
+        cls.uc.add_host_to_cluster(cluster=cls.cluster, host=cls.host_1)
+        cls.uc.set_hostcomponent(cluster=cls.cluster, entries=((cls.host_1, cls.component_1),))
 
     def get_related_configs(self, object_: ADCMEntity):
         hierarchy = retrieve_object_hierarchy(object_=orm_object_to_core_descriptor(object_))
         return retrieve_primary_configs(objects=hierarchy)
 
-    @patch.object(ADCMManageRevisionPluginExecutor, attribute="_get_related_configs")
+    @patch("use_cases.transition.config_revision._get_related_configs")
     def test_set_revisions_success(self, mock_get_related_configs):
         mock_get_related_configs.return_value = self.get_related_configs(self.cluster)
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -69,7 +70,7 @@ class TestADCMManageRevisionPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
                 actual_revisions = set(ConfigRevision.objects.values_list("configlog_id", flat=True))
                 self.assertSetEqual(actual_revisions, expected_revisions)
 
-    @patch.object(ADCMManageRevisionPluginExecutor, attribute="_get_related_configs")
+    @patch("use_cases.transition.config_revision._get_related_configs")
     def test_get_diff_success(self, mock_get_related_configs):
         current_config_ids = {
             self.cluster.config.current,

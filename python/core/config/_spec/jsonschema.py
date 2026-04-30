@@ -237,7 +237,7 @@ def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -
 
     if context.is_group_config:
         desyncable = parameter.identifier.full in context.spec.attributes.desyncable_parameters
-        schema["adcmMeta"]["synchronization"] = {"isAllowChange": desyncable}
+        schema["adcmMeta"]["synchronization"] = {"isAllowChange": desyncable, "default": True}
 
     _fill_type_specifics_to_schema_node(schema=schema, parameter=parameter, resolve_variant=context.resolve_variant)
 
@@ -261,13 +261,16 @@ def _group_parameter_to_schema(group: ParameterGroup, context: _Context) -> JSON
     schema["default"] = {}
 
     if group.activation:
-        schema["adcmMeta"]["activation"] = {"isAllowChange": not read_only}
+        schema["adcmMeta"]["activation"] = {
+            "isAllowChange": not read_only,
+            "default": context.defaults.activation[group.identifier.full],
+        }
         if context.is_group_config:
             is_allow_change = group.identifier.full in context.spec.attributes.desyncable_parameters
-            schema["adcmMeta"]["synchronization"] = {"isAllowChange": is_allow_change}
+            schema["adcmMeta"]["synchronization"] = {"isAllowChange": is_allow_change, "default": True}
     elif group.selection and context.is_group_config:
         # patch for UI to disallow change of selection group
-        schema["adcmMeta"]["synchronization"] = {"isAllowChange": False}
+        schema["adcmMeta"]["synchronization"] = {"isAllowChange": False, "default": True}
 
     return schema
 

@@ -471,5 +471,5 @@ func jsonOut3(w http.ResponseWriter, r *http.Request, out interface{}, status_co
 			logg.E.Printf("JSON out error: %v, (%v)", err, out)
 		}
 	}
-	logg.I.Printf("%s %s %d", r.Method, r.URL.Path, status_code)
+	logg.D.Printf("%s %s %d", r.Method, r.URL.Path, status_code)
 }

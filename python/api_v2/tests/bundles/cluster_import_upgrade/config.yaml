@@ -1,14 +1,36 @@
 - type: cluster
   name: cluster_import
+  contract_version: "2.1"
+  venv: "2.16"
   version: 2.0
   upgrade:
     - name: upgrade
-      versions:
+      versions: &versions
         min: '1.0'
         max: '1.0'
-      states:
+      states: &states
         available: any
+    - name: upgrade_with_template
+      versions: *versions
+      states: *states
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: set_context_to_debug.yaml
+
+  actions:
+    revert:
+      masking: {}
+      scripts:
+        - name: revert
+          script_type: internal
+          script: bundle_revert
+        
   config:
+    - name: debug
+      type: json
+      required: false
     - name: boolean
       type: boolean
       default: true
@@ -34,3 +56,7 @@
     - name: string
       type: string
       default: string
+
+- type: service
+  name: staying_alive
+  version: 2.0

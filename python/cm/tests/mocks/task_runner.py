@@ -18,11 +18,13 @@ from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.legacy.job.types import Job, ScriptType, Task
 from core.logs import LogsService
+from core.scenarios.config import ConfigScenarios
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
+from use_cases.transition.config import UpdateConfigurationFromJob
 
 from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.repo import JobRepoImpl
@@ -58,12 +60,16 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         rbac_scenarios: RBACScenarios,
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+        update_configuration_from_job: UpdateConfigurationFromJob,
+        config_scenarios: ConfigScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
             rbac_scenarios=rbac_scenarios,
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
+            update_configuration_from_job=update_configuration_from_job,
+            config_scenarios=config_scenarios,
         )
 
         self._failed_job = failed_job
@@ -109,12 +115,16 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         rbac_scenarios: RBACScenarios,
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
+        update_configuration_from_job: UpdateConfigurationFromJob,
+        config_scenarios: ConfigScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
             rbac_scenarios=rbac_scenarios,
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
+            update_configuration_from_job=update_configuration_from_job,
+            config_scenarios=config_scenarios,
         )
 
         self.imitators = change_jobs or {}

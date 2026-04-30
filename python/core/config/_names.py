@@ -34,6 +34,12 @@ def full_name_to_level_names(full: ParameterFullName) -> tuple[ParameterLevelNam
     return tuple(filter(bool, full.split(PARAMETER_NAME_SEPARATOR)))
 
 
+def full_name_without_root_prefix(full: ParameterFullName) -> str:
+    # sometimes it's required to have full name without leading separator,
+    # mostly for plugins / old APIs
+    return ensure_full_name(full).removeprefix(PARAMETER_NAME_ROOT_PREFIX)
+
+
 def level_names_to_full_name(levels: Iterable[ParameterLevelName]) -> ParameterFullName:
     return ensure_full_name(PARAMETER_NAME_SEPARATOR.join(levels))
 

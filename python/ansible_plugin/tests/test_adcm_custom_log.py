@@ -14,15 +14,15 @@ from unittest.mock import patch
 
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import LogStorage
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.custom_log import ADCMCustomLogPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.custom_log"
 
 
-class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
     EXECUTOR_CLASS = ADCMCustomLogPluginExecutor[lambda _, path: str(path)]
 
     def test_add_custom_log_by_content_success(self) -> None:

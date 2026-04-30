@@ -15,7 +15,6 @@ from itertools import compress
 from typing import Iterable, Iterator, List, Literal
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
-from cm.errors import AdcmEx
 from cm.legacy.services.action_process.types import ProcessState
 from cm.models import (
     Action,
@@ -23,11 +22,10 @@ from cm.models import (
     Component,
     Process,
 )
-from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType
+from core.types import ActionTargetDescriptor
 from django.conf import settings
 from django.utils import timezone
 from rbac.models import User
-from rest_framework.exceptions import NotFound
 
 
 def get_str_hash(value: str) -> str:
@@ -87,17 +85,3 @@ def get_action_processes(action: Action, object_: ActionTargetDescriptor) -> lis
         return [process]
 
     return []
-
-
-def check_process_object(process_id: int, action_id: ActionID, action_target: ActionTargetDescriptor) -> None:
-    if action_target.type in {
-        ADCMCoreType.ADCM,
-        ADCMCoreType.PROVIDER,
-    }:
-        msg = f"Objects of the '{action_target.type.value}' type do not support action processes"
-        raise AdcmEx(code="ACTION_ERROR", msg=msg)
-
-    if not Process.objects.filter(
-        id=process_id, action_id=action_id, target_id=action_target.id, target_type=action_target.type.value
-    ).exists():
-        raise NotFound(f"Process with id {process_id} do not exist")

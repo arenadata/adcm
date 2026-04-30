@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.config.types import ConfigCoreObjectWithPrototype, RelatedConfigs
+from core.config import ConfigCoreObjectWithPrototype, RelatedConfigs
 from core.legacy.job.dto import JobUpdateDTO
 from core.legacy.job.types import TaskOwner
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, PrototypeID

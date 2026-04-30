@@ -211,20 +211,29 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         action = self.process_action_of_cluster
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": 4}})
+        expected_response = {
+            "code": "TASK_ERROR",
+            "level": "error",
+            "desc": f'Can\'t find completed process for action "{action.display_name}" of cluster #{owner.id}',
+        }
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND, response.json())
-        self.assertIn("Process with id", response.json()["desc"])
-        self.assertIn("not exist", response.json()["desc"])
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_adcm_7150_error_running_process_action_with_incomplete_process(self):
         owner = self.cluster_1
         action = self.process_action_of_cluster
         process = self.start_process_r(owner, action).json()
+        expected_response = {
+            "code": "TASK_ERROR",
+            "level": "error",
+            "desc": f'Can\'t find completed process for action "{action.display_name}" of cluster #{owner.id}',
+        }
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": process["id"]}})
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
-        self.assertIn("completed state", response.json()["desc"])
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_create_process_with_broken_render_fail(self):
         response = self.client.v2[

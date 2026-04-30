@@ -20,6 +20,7 @@ from tests.deprecated import BusinessLogicMixin
 from use_cases.transition.host.duplicate import create_duplicate
 
 from cm.legacy.services.job.context import get_inventory_data
+from cm.transition.status import StatusScenarios
 
 
 class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
@@ -48,6 +49,7 @@ class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
             cluster_id=self.cluster.pk,
             config_service=get_config_service(),
             rbac_scenarios=RBACScenarios(),
+            status_scenarios=StatusScenarios(),
         )
 
         target = ActionTargetDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)

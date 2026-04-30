@@ -106,7 +106,8 @@
         "isAdvanced": false,
         "isInvisible": false,
         "activation": {
-          "isAllowChange": true
+          "isAllowChange": true,
+          "default": true
         },
         "synchronization": null,
         "isSecret": false,

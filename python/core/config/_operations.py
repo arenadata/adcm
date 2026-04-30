@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from functools import partial
+from functools import partial, reduce
 from itertools import chain, filterfalse
 from pathlib import Path
 from typing import Any, Callable, Final, Generator, Literal, TypeAlias, TypeVar
@@ -32,9 +33,11 @@ from core.config._config import (
     set_by_full_name_returning_old,
 )
 from core.config._files import construct_parameter_file_full_name
+from core.config._helpers import recursive_defaultdict
 from core.config._names import (
     full_name_to_file_name,
     full_name_to_level_names,
+    full_name_without_root_prefix,
     is_part_of_group,
     join_level_name_with_group_name,
     level_names_to_full_name,
@@ -43,7 +46,9 @@ from core.config._names import (
 from core.config._predicates import is_non_empty_string, is_none, is_not_none, is_str
 from core.config._types import (
     Attributes,
+    Change,
     ChangeRequest,
+    ChangeType,
     ConfigParameterValue,
     Configuration,
     ConfigValues,
@@ -72,7 +77,7 @@ _FORBIDDEN_YSPEC_RULES: Final = frozenset({"one_of", "dict_key_selection", "set"
 @dataclass(slots=True)
 class ValidationResult:
     config: Configuration
-    changes: set[ParameterFullName]
+    changes: list[Change]
 
     @property
     def has_changed(self) -> bool:
@@ -483,17 +488,17 @@ def apply_changes(
 
     for change in ordered_changes:
         match change.type:
-            case "value":
+            case ChangeType.VALUE:
                 change_registered = _apply_value_change_registering_violation(
                     key=change.parameter, value=change.value, target=target, violations=violations
                 )
 
-            case "selection":
+            case ChangeType.SELECTION:
                 change_registered = _apply_selection_group_change_registering_violation(
                     key=change.parameter, value=change.value, target=target, defaults=defaults, violations=violations
                 )
 
-            case "activation":
+            case ChangeType.ACTIVATION:
                 change_registered = _apply_activation_change_registering_violation(
                     key=change.parameter, value=change.value, target=target, violations=violations
                 )
@@ -599,6 +604,25 @@ def adapt_configuration_for_new_specification(
             )
 
     return Success(new_configuration)
+
+
+def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "attr_diff"], dict]:
+    diff = recursive_defaultdict()
+    attr_diff = defaultdict(dict)
+
+    for change in changes:
+        match change.type:
+            case ChangeType.VALUE:
+                levels = full_name_to_level_names(change.parameter)
+                node = reduce(dict.__getitem__, levels, diff)
+                node["value"] = [change.old, change.new]
+
+            case ChangeType.ACTIVATION | ChangeType.SELECTION:
+                attr_name = "active" if change.type == ChangeType.ACTIVATION else "selection"
+                key = full_name_without_root_prefix(change.parameter)
+                attr_diff[key][attr_name] = {"value": [change.old, change.new]}
+
+    return {"diff": diff, "attr_diff": attr_diff}
 
 
 # Utilities

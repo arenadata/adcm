@@ -19,7 +19,6 @@ from cm.models import (
     Action,
     ADCMEntity,
     ConcernType,
-    ConfigHostGroup,
     Host,
     HostComponent,
 )
@@ -54,13 +53,11 @@ from api_v2.generic.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.generic.action.utils import (
-    check_process_object,
     filter_actions_by_user_perm,
     get_action_processes,
     has_run_perms,
 )
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.utils.checks import check_hostcomponents_objects_exist
 from api_v2.utils.config import add_selection_for_selectable_groups, convert_json_fields_to_strings, convert_main_config
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
@@ -237,37 +234,15 @@ class ActionViewSet(
         request: Request,
         *args,  # noqa: ARG002
         schedule_task: FromDishka[ScheduleTask],
-        retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
         **kwargs,  # noqa: ARG002
     ) -> Response:
-        self.parent_object = self.get_parent_object()
+        self.parent_object = self.get_parent_object(raise_=NotFound("Parent object not found"))
         target_action = self.get_object()
-        action_target = self._get_action_target()
 
         self.check_permissions_for_run(request=request, action=target_action, parent_object=self.parent_object)
 
-        start_impossible_reason = retrieve_sir.for_action_target(
-            target=orm_object_to_action_target_descriptor(object_=action_target),
-            allowed_in_mm={target_action.pk: target_action.allow_in_maintenance_mode},
-        )[target_action.id]
-        if start_impossible_reason:
-            raise AdcmEx(code="ACTION_ERROR", msg=start_impossible_reason)
-
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
-
-        if serializer.validated_data["process"]:
-            check_process_object(
-                process_id=serializer.validated_data["process"]["id"],
-                action_id=target_action.id,
-                action_target=orm_object_to_action_target_descriptor(object_=self.parent_object),
-            )
-
-        if self.parent_object is None or isinstance(self.parent_object, ConfigHostGroup):
-            raise ValueError(f"Unexpectedly parent object of object is {self.parent_object}")
-
         data: dict = serializer.validated_data
 
         configuration = None

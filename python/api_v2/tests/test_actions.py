@@ -361,7 +361,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "ACTION_ERROR",
+                "code": "TASK_ERROR",
                 "desc": 'The Action is not available. One or more hosts in "Maintenance mode"',
                 "level": "error",
             },
@@ -404,11 +404,10 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
                 "isVerbose": False,
             },
         )
+        expected_response = {"code": "COMPONENT_NOT_FOUND", "desc": "component doesn't exist", "level": "error"}
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(
-            response.json(), {"code": "API_ERROR", "desc": "Components with ids 1000 do not exist", "level": "ERROR"}
-        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
@@ -423,11 +422,10 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
                 "isVerbose": False,
             },
         )
+        expected_response = {"code": "FOREIGN_HOST", "desc": "host is not belong to the cluster", "level": "error"}
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(
-            response.json(), {"code": "API_ERROR", "desc": "Hosts with ids 1000 do not exist", "level": "ERROR"}
-        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:

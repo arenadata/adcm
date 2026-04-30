@@ -103,7 +103,8 @@
         "isAdvanced": true,
         "isInvisible": false,
         "activation": {
-          "isAllowChange": true
+          "isAllowChange": true,
+          "default": true
         },
         "synchronization": null,
         "isSecret": false,
@@ -255,7 +256,8 @@
         "isAdvanced": false,
         "isInvisible": false,
         "activation": {
-          "isAllowChange": true
+          "isAllowChange": true,
+          "default": false
         },
         "synchronization": null,
         "isSecret": false,

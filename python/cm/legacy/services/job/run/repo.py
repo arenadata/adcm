@@ -30,7 +30,9 @@ from core.legacy.job.dto import (
 from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.types import (
     ActionInfo,
+    AssociatedProcess,
     BundleInfo,
+    CallingProcess,
     ExecutionStatus,
     HcAclRule,
     HostComponentChanges,
@@ -51,6 +53,7 @@ from core.types import (
     ADCMCoreType,
     CoreObjectDescriptor,
     HostID,
+    JobID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     PrototypeDescriptor,
@@ -61,6 +64,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import close_old_connections
 from django.db.models import F, QuerySet, Value
+from pydantic import TypeAdapter
 
 from cm.converters import (
     core_type_to_model,
@@ -86,6 +90,8 @@ from cm.models import (
 )
 
 TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
+
+_RelatedWizardProcess = TypeAdapter(CallingProcess | AssociatedProcess)
 
 
 class JobRepoImpl(JobRepoInterface):
@@ -170,6 +176,13 @@ class JobRepoImpl(JobRepoInterface):
             is_blocking=task_record.is_blocking,
             description=task_record.description,
         )
+
+    def get_related_wizard_process(self, job_id: JobID) -> CallingProcess | AssociatedProcess | None:
+        process_data = JobLog.objects.values_list("task__process", flat=True).get(id=job_id)
+        if process_data is None:
+            return None
+
+        return _RelatedWizardProcess.validate_python(process_data)
 
     @classmethod
     def get_task_mutable_fields(cls, id: int) -> TaskMutableFieldsDTO:  # noqa: A002

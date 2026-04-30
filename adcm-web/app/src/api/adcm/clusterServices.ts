@@ -16,7 +16,7 @@ import type {
   AdcmDynamicActionRunConfig,
 } from '@models/adcm/dynamicAction';
 import type { AdcmWizardProcessOperationPayload } from '@models/adcm/wizard';
-import { AdcmWizardApi } from '@api';
+import { AdcmWizardApi } from './wizard';
 import type { RequestOptions } from '@api/httpClient/HttpClient';
 
 export class AdcmClusterServicesApi {

@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Callable, Collection, NamedTuple, TypeVar
-import json
+from typing import Collection, NamedTuple, TypeVar
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -19,89 +18,10 @@ from ansible_plugin.base import (
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
-    get_main_providers,
 )
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
-from cm.legacy.services.job.run.repo import JobRepoImpl
-from cm.models import JobLog
-from core.legacy.job.executors import Executor as JobExecutor
-from core.legacy.job.runners import (
-    ADCMSettings,
-    AnsibleSettings,
-    ConsulSettings,
-    ExternalSettings,
-    IntegrationsSettings,
-)
-from core.legacy.job.types import Job
 from core.types import CoreObjectDescriptor
-from django.conf import settings
-import yaml
-import dishka
 
 Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
-
-
-class ADCMAnsiblePluginTestMixin:
-    def prepare_executor(
-        self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | Job | int
-    ) -> Executor:
-        """
-        Prepare plugin executor more or less like it will be created inside Ansible plugin call
-
-        You can specify `call_arguments` as dict, then it'll be passed right into executor's init function
-        or write it as plain yaml string (that'll be evaluated to dict) to "imitate" ansible plugin call description
-        (note that it should be inner section of plugin (without name).
-        If it is a string, it'll be parsed with `yaml` (so no ansible filters or environment will be there).
-
-        `call_context` can be either a context dict (with `type` and `*_id` fields)
-        or a job (`Job`, `JobLog` or job's id as `int`) based on which this function will build context.
-        """
-        di_container = dishka.make_container(*get_main_providers())
-        with di_container(scope=dishka.Scope.REQUEST) as container:
-            arguments = call_arguments
-            if isinstance(arguments, str):
-                arguments = yaml.safe_load(arguments)
-
-            context = call_context
-            if not isinstance(call_context, dict):
-                configuration = ExternalSettings(
-                    adcm=ADCMSettings(
-                        code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR
-                    ),
-                    ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
-                    integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
-                    consul=ConsulSettings(
-                        url=settings.CONSUL_URL,
-                        datacenter=settings.CONSUL_DATACENTER,
-                        cacert_file=settings.CONSUL_CACERT_FILE,
-                    ),
-                )
-
-                job_id = call_context if isinstance(call_context, int) else call_context.id
-                task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
-
-                context = prepare_ansible_job_config(
-                    task=JobRepoImpl.get_task(id=task_id),
-                    job=JobRepoImpl.get_job(id=job_id),
-                    configuration=configuration,
-                )
-
-            return executor_type(arguments=arguments, runtime_vars=context, container=container)
-
-    def build_executor_call(
-        self,
-        arguments: dict | str,
-        executor_type: type[ADCMAnsiblePluginExecutor],
-    ) -> Callable[[JobExecutor], Any]:
-        def _executor_func(executor: JobExecutor) -> int:
-            context = json.loads((executor._config.work_dir / "config.json").read_text())["context"]
-            plugin_executor = self.prepare_executor(
-                executor_type=executor_type, call_arguments=arguments, call_context=context
-            )
-            result = plugin_executor.execute()
-            return 0 if result.error is None else 1
-
-        return _executor_func
 
 
 class PassedArguments(NamedTuple):

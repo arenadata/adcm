@@ -34,10 +34,11 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.config._types import ChangeRequest
+from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -51,6 +52,7 @@ from rest_framework.status import (
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
+from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
 from api_v2.tests.base import APIV2Mixin
@@ -60,6 +62,8 @@ CONFIG_SCHEMA = "config-schema"
 
 
 class TestClusterConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -299,6 +303,8 @@ class TestClusterConfig(ADCMDjangoAPISuite):
 
 
 class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -345,6 +351,8 @@ class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
 
 
 class TestClusterCHG(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -681,6 +689,7 @@ class TestClusterCHG(ADCMDjangoAPISuite):
 
 class TestServiceConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -1268,9 +1277,29 @@ class TestServiceCHG(ADCMDjangoAPISuite):
             response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+    def test_adcm_7951_update_from_job(self):
+        owner = CoreObjectDescriptor(id=self.service_1.pk, type=ADCMCoreType.SERVICE)
+        expected = "nondefault"
+        changes = [ChangeRequest(type="value", parameter="/string", value=expected)]
+
+        with patch("use_cases.transition.config.update_related_configs"):
+            self.container.get(UpdateConfigurationFromJob).do(
+                owner=owner,
+                changes_input=changes,
+                convert=lambda x, _: x,
+                description="",
+                job_id=1,
+                owner_orm=self.service_1,
+            )
+
+        self.host_group.refresh_from_db(fields=["config"])
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
+        self.assertEqual(config_log.config["string"], expected)
+
 
 class TestComponentConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -1466,6 +1495,8 @@ class TestComponentConfig(ADCMDjangoAPISuite):
 
 
 class TestComponentCHG(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -1813,7 +1844,6 @@ class TestComponentCHG(ADCMDjangoAPISuite):
 
 class TestProviderConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
-
     maxDiff = None
 
     @classmethod
@@ -2351,6 +2381,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
 
 class TestHostConfig(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -2739,6 +2770,8 @@ class TestAttrTransformation(unittest.TestCase):
 
 
 class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -2793,6 +2826,8 @@ class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
 
 
 class TestCHGUpgrade(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         cls._initialize_roles_and_adcm()
@@ -3003,6 +3038,8 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
 
 
 class TestPatternInConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
     _PATTERNS = {
         "patterned_string": r"[a-z][A-Z][0-9]*?",
         "patterned_password": r"[A-z]{4,}[0-9]+[^A-z0-9]+",
@@ -3229,6 +3266,8 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
 
 
 class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
+    maxDiff = None
+
     _empty_schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Configuration",
@@ -3351,9 +3390,15 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
 
         # revert upgrade
-        config_service = get_config_service()
+        config_service = self.container.get(core.config.ConfigService)
+        config_scenarios = ConfigScenarios(config_service=config_service)
         callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
-        bundle_revert(obj=self.cluster, callbacks=callbacks, config_service=config_service)
+        bundle_revert(
+            obj=self.cluster,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
         # CHGs must be restored
         chg_hosts_map = {

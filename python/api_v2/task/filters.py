@@ -18,7 +18,6 @@ from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework.filters import (
     CharFilter,
     ChoiceFilter,
-    DateTimeFilter,
     NumberFilter,
     OrderingFilter,
 )
@@ -104,9 +103,6 @@ class TaskFilter(
         label="Case insensitive and partial filter by object name.", method="filter_by_object_name"
     )
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Filter by status.")
-    duration = NumberFilter(label="Filter by duration.", method="filter_by_duration")
-    start_time = DateTimeFilter(field_name="start_date", label="Filter by start time.", lookup_expr="exact")
-    end_time = DateTimeFilter(field_name="finish_date", label="Filter by end time.", lookup_expr="exact")
     ordering = TaskOrderingFilter(
         fields={
             "id": "id",
@@ -139,6 +135,3 @@ class TaskFilter(
 
     def filter_by_object_name(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
         return _add_target_name_field_to_queryset(queryset=queryset).filter(target_name__icontains=value)
-
-    def filter_by_duration(self, queryset: QuerySet[TaskLog], _: str, value: str) -> QuerySet[TaskLog]:
-        return _add_duration_time_field_to_queryset(queryset=queryset).filter(duration_time__exact=value)

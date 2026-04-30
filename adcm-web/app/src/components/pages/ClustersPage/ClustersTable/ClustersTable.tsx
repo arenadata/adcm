@@ -6,7 +6,11 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
-import { openDeleteDialog, openClusterRenameDialog } from '@store/adcm/clusters/clustersActionsSlice';
+import {
+  openDeleteDialog,
+  openClusterRenameDialog,
+  openClusterDescriptionChangeDialog,
+} from '@store/adcm/clusters/clustersActionsSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import type { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
@@ -32,6 +36,10 @@ const ClustersTable = () => {
 
   const handleRenameClick = (cluster: AdcmCluster) => {
     dispatch(openClusterRenameDialog(cluster));
+  };
+
+  const handleEditDescription = (cluster: AdcmCluster) => () => {
+    dispatch(openClusterDescriptionChangeDialog(cluster));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -70,7 +78,7 @@ const ClustersTable = () => {
             <MultiStateCell entity={cluster} />
             <TableCell>{cluster.prototype.displayName}</TableCell>
             <TableCell>{cluster.prototype.version}</TableCell>
-            <DescriptionCell cluster={cluster} />
+            <DescriptionCell description={cluster.description} onEdit={handleEditDescription(cluster)} />
             <TableCell hasIconOnly>
               <Concern concerns={cluster.concerns} />
             </TableCell>

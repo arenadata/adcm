@@ -10,6 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base import check_upgrade, get_upgrade, update_before_upgrade
+from .base import DifferentBundleError, check_upgrade, get_upgrade, update_before_upgrade
 
-__all__ = ["check_upgrade", "get_upgrade", "update_before_upgrade"]
+__all__ = ["check_upgrade", "get_upgrade", "update_before_upgrade", "DifferentBundleError"]

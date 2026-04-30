@@ -236,13 +236,25 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
     def test_provider_upgrade_run_violate_constraint_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.cluster_upgrade, "run"].post()
+        expected_response = {
+            "code": "UPGRADE_NOT_FOUND",
+            "desc": "upgrade is not found",
+            "level": "error",
+        }
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_cluster_upgrade_run_violate_constraint_fail(self):
         response = self.client.v2[self.cluster_1, "upgrades", self.provider_upgrade, "run"].post()
+        expected_response = {
+            "code": "UPGRADE_NOT_FOUND",
+            "desc": "upgrade is not found",
+            "level": "error",
+        }
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_provider_upgrade_run_not_found_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.get_non_existent_pk(Upgrade), "run"].post()

@@ -20,10 +20,9 @@ from cm.legacy.services.concern.distribution import (
     distribute_concern_from_provider_to_host,
     distribute_concern_on_related_objects,
 )
-from cm.legacy.services.status.notify import reset_hc_map
-from cm.legacy.status_api import notify_about_new_concern, notify_about_redistributed_concerns_from_maps
 from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
 from cm.transition.concern import create_and_distribute_hostcomponent_concern_on_add_host_to_cluster
+from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
@@ -35,6 +34,7 @@ def create_hostprovider(
     name: str,
     description: str,
     config_service: core.config.ConfigService,
+    status_scenarios: StatusScenarios,
 ) -> ProviderID:
     if prototype.type != ADCMCoreType.PROVIDER.value:
         raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
@@ -55,7 +55,7 @@ def create_hostprovider(
             related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
 
     if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+        status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return provider.pk
 
@@ -66,6 +66,7 @@ def create_host(
     cluster: Cluster | None,
     config_service: core.config.ConfigService,
     rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
 ) -> HostID:
     with atomic():
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=hostprovider.prototype_id)  # pyright: ignore [reportAttributeAccessIssue]
@@ -109,11 +110,11 @@ def create_host(
             rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     # Update hc map in Status Server
-    reset_hc_map()
+    status_scenarios.reset_hc_map()
     # Send events
-    notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
+    status_scenarios.notify_about_redistributed_concerns_from_maps(added=concern_map, removed={})
 
     if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+        status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return host.pk

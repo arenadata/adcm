@@ -84,7 +84,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.cluster.create import CreateCluster
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
@@ -967,7 +967,7 @@ class HostClusterViewSet(
         self,
         request: Request,
         *args,  # noqa: ARG002
-        schedule_task: FromDishka[ScheduleTask],
+        schedule_task: FromDishka[ScheduleMMChangingTask],
         cluster_service: FromDishka[ClusterService],
         **kwargs,  # noqa: ARG002
     ) -> Response:

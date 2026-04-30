@@ -13,6 +13,7 @@
 from pathlib import Path
 from typing import Generator
 
+from core.bundle import BundleParsingError
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
@@ -49,7 +50,7 @@ def get_job_specs_from_template(
     )
 
     if not template_builder.data:
-        raise RuntimeError(f'Template "{scripts_jinja_file}" has no jobs')
+        raise BundleParsingError(f'Template "{scripts_jinja_file}" has no jobs')
 
     dir_with_jinja = scripts_jinja_file.parent.relative_to(path_resolver.bundle_root)
 
@@ -82,7 +83,7 @@ def get_job_specs_from_template_new(
     )
 
     if not template_builder.data:
-        raise RuntimeError(f'Template "{scripts_jinja_file}" has no jobs')
+        raise BundleParsingError(f'Template "{scripts_jinja_file}" has no jobs')
 
     dir_with_jinja = scripts_jinja_file.parent.relative_to(environment.bundle_root)
 

@@ -9,6 +9,9 @@ import {
   openDeleteDialog,
   deleteActionHostGroupWithUpdate,
   closeDeleteDialog,
+  openEditDescriptionDialog,
+  editActionHostGroupDescription,
+  closeEditDescriptionDialog,
 } from '@store/adcm/entityActionHostGroups/actionHostGroupsActionsSlice';
 import {
   openDynamicActionDialog,
@@ -34,6 +37,10 @@ import type {
 import { useRequestActionHostGroups } from './useRequestActionHostGroups';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import { useEntityDynamicActionWizardDialog } from '@commonComponents/EntityWizard/hooks';
+import type { EntityDynamicActionWizardDialogProps } from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
+import type { EditActionHostGroupDescription } from './ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/EditDescriptionActionHostGroupDialog';
+import type { EditDescriptionFormData } from './ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/useEditActionHostGroupDescriptionDialog';
 
 type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   entityArgs: EntityArgs<T>;
@@ -42,7 +49,9 @@ type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   createDialogProps: CreateActionHostGroupDialogProps;
   dynamicActionDialogProps?: DynamicActionDialogProps;
   editDialogProps?: EditActionHostGroupDialogProps;
+  editDescriptionDialogProps?: EditActionHostGroupDescription;
   deleteDialogProps?: DeleteActionHostGroupDialogProps;
+  wizardProps?: EntityDynamicActionWizardDialogProps;
 };
 
 export const useActionHostGroups = <T extends ActionHostGroupOwner>(
@@ -53,6 +62,7 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   const dispatch = useDispatch();
 
   useRequestActionHostGroups(entityType, entityArgs);
+  const wizardProps = { entityType, entityArgs, ...useEntityDynamicActionWizardDialog(entityType, entityArgs) };
 
   const isActionHostGroupsLoading = useStore(({ adcm }) => isShowSpinner(adcm.actionHostGroups.loadState));
   const actionHostGroups = useStore(({ adcm }) => adcm.actionHostGroups.actionHostGroups);
@@ -60,6 +70,9 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   const dynamicActions = useStore(({ adcm }) => adcm.dynamicActions.dynamicActions);
   const runnableActionHostGroup = useStore(({ adcm }) => adcm.dynamicActions.actionHostGroup);
   const dynamicActionDetails = useStore(({ adcm }) => adcm.dynamicActions.actionDetails);
+  const patchableActionHostGroup = useStore(
+    ({ adcm }) => adcm.actionHostGroupsActions.editDescriptionDialog.actionHostGroup,
+  );
 
   const isCreateDialogOpen = useStore(({ adcm }) => adcm.actionHostGroupsActions.createDialog.isOpen);
   const allHostCandidates = useStore(
@@ -134,6 +147,7 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
           entityArgs,
           actionHostGroup: editableActionHostGroup,
           hostIds: formData.hosts,
+          description: formData.description,
         }),
       );
     }
@@ -141,6 +155,29 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
 
   const handleCloseEditDialog = () => {
     dispatch(closeEditDialog());
+  };
+
+  // edit description dialog
+
+  const handleOpenEditDescriptionDialog = (actionHostGroup: AdcmActionHostGroup) => {
+    dispatch(openEditDescriptionDialog({ actionHostGroup }));
+  };
+
+  const handleEditActionHostGroupDescription = (formData: EditDescriptionFormData) => {
+    if (patchableActionHostGroup) {
+      dispatch(
+        editActionHostGroupDescription({
+          entityType,
+          entityArgs,
+          actionHostGroupId: patchableActionHostGroup.id,
+          description: formData.description,
+        }),
+      );
+    }
+  };
+
+  const handleCloseDescriptionDialog = () => {
+    dispatch(closeEditDescriptionDialog());
   };
 
   // Delete dialog
@@ -186,6 +223,7 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
       onOpenDynamicActionDialog: handleOpenDynamicActionDialog,
       onOpenEditDialog: handleOpenEditDialog,
       onOpenDeleteDialog: handleOpenDeleteDialog,
+      onOpenEditDescriptionDialog: handleOpenEditDescriptionDialog,
     },
     createDialogProps: {
       isOpen: isCreateDialogOpen,
@@ -193,15 +231,16 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
       onClose: handleCloseCreateDialog,
       onCreate: handleCreate,
     },
-    dynamicActionDialogProps: dynamicActionDetails
-      ? {
-          actionDetails: dynamicActionDetails,
-          actionHostGroup: runnableActionHostGroup ?? undefined,
-          clusterId: entityArgs.clusterId,
-          onSubmit: handleSubmitDynamicAction,
-          onCancel: handleCloseDynamicActionDialog,
-        }
-      : undefined,
+    dynamicActionDialogProps:
+      dynamicActionDetails?.processes === null
+        ? {
+            actionDetails: dynamicActionDetails,
+            actionHostGroup: runnableActionHostGroup ?? undefined,
+            clusterId: entityArgs.clusterId,
+            onSubmit: handleSubmitDynamicAction,
+            onCancel: handleCloseDynamicActionDialog,
+          }
+        : undefined,
     editDialogProps: editableActionHostGroup
       ? {
           isOpen: true,
@@ -217,6 +256,14 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
           actionHostGroup: deletableActionHostGroup!,
           onDelete: handleDelete,
           onClose: handleCloseDeleteDialog,
+        }
+      : undefined,
+    wizardProps: dynamicActionDetails?.processes !== null ? wizardProps : undefined,
+    editDescriptionDialogProps: patchableActionHostGroup
+      ? {
+          isOpen: true,
+          onEdit: handleEditActionHostGroupDescription,
+          onClose: handleCloseDescriptionDialog,
         }
       : undefined,
   };

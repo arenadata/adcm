@@ -26,11 +26,6 @@ from cm.legacy.services.concern.checks import (
 from cm.legacy.services.concern.distribution import (
     distribute_concern_on_related_objects,
 )
-from cm.legacy.services.status.notify import reset_hc_map
-from cm.legacy.status_api import (
-    notify_about_new_concern,
-    send_delete_service_event,
-)
 from cm.logger import logger
 from cm.models import (
     Action,
@@ -41,6 +36,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.transition.status import StatusScenarios
 from core.converters import named_mapping_from_topology
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.concern.checks import find_not_added_required_services, find_unsatisfied_service_requirements
@@ -60,6 +56,7 @@ from use_cases.transition.job.schedule import ScheduleTask
 class DeleteService:
     # copied from cm.legacy.api.delete_service
     rbac_scenarios: RBACScenarios
+    status_scenarios: StatusScenarios
 
     def do(self, service: Service) -> None:
         service_pk = service.pk
@@ -100,10 +97,16 @@ class DeleteService:
 
         self.rbac_scenarios.re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
 
-        reset_hc_map()
-        on_commit(func=partial(send_delete_service_event, service_id=service_pk))
+        self.status_scenarios.reset_hc_map()
+        on_commit(func=partial(self.status_scenarios.send_delete_service_event, service_id=service_pk))
         if concern_id:
-            on_commit(func=partial(notify_about_new_concern, concern_id=concern_id, related_objects=related_objects))
+            on_commit(
+                func=partial(
+                    self.status_scenarios.notify_about_new_concern,
+                    concern_id=concern_id,
+                    related_objects=related_objects,
+                )
+            )
         logger.info("service #%s is deleted", service_pk)
 
 

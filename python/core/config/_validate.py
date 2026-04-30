@@ -18,6 +18,7 @@ from typing import Any, Callable, Iterable, Protocol, TypeAlias
 from core.config import _yspec, spec
 from core.config._names import is_part_of_group, join_level_name_with_group_name, level_names_to_full_name
 from core.config._types import (
+    Change,
     ConfigAttrs,
     ConfigFlatValues,
     Configuration,
@@ -117,7 +118,7 @@ def validate_configuration_is_consistent(
 
 
 def validate_changes_are_allowed(
-    changes: set[ParameterFullName],
+    changes: list[Change],
     attributes: ConfigAttrs,
     desync_allowed: set[ParameterFullName],
 ) -> Success[None] | Fail[Violations]:
@@ -125,7 +126,8 @@ def validate_changes_are_allowed(
     Check if changes performed on two configurations are allowed based on restrictions.
     """
 
-    desync_disallowed = changes.difference(desync_allowed)
+    changed_params = {change.parameter for change in changes}
+    desync_disallowed = changed_params.difference(desync_allowed)
     desync_disallowed_attrs = {name: attributes[name] for name in desync_disallowed if name in attributes}
     changed_but_synced = tuple(
         name for name, attrs in desync_disallowed_attrs.items() if attrs.synchronization and not attrs.is_synced

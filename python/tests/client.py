@@ -80,7 +80,7 @@ class APINode:
     ) -> Response:
         return self._client.post(path=self.path, data=data, format=format_, **(headers or {}))
 
-    def patch(self, *, data: dict, headers: dict | None = None) -> Response:
+    def patch(self, *, data: dict | None = None, headers: dict | None = None) -> Response:
         return self._client.patch(path=self.path, data=data, **(headers or {}))
 
     def delete(self, headers: dict | None = None) -> Response:

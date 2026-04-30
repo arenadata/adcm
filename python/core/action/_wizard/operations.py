@@ -10,35 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
+from typing import Iterable, TypeAlias
 from uuid import UUID, uuid4
 
-from core.action._wizard._types import Stage, StepDefinition
-from core.action._wizard._types_purgatory import ProcessStepState, Step
+from core.action._wizard._types import Stage, StepDefinition, StepState
+from core.action._wizard._types_purgatory import SUCCESS_FINAL_PROCESS_STATES, Step
 from core.types import ActionProcessStepID
+
+_StepStateIDPair: TypeAlias = tuple[tuple[StepState, ActionProcessStepID], ...]
+_ActualSteps: TypeAlias = tuple[ActionProcessStepID | None, ActionProcessStepID | None]
 
 
 def get_new_process_sync_key() -> UUID:
     return uuid4()
 
 
-def find_current_and_last_completed_steps(
-    steps: Iterable[Step],
-) -> tuple[ActionProcessStepID | None, ActionProcessStepID | None]:
-    current = None
-    last_completed = None
-
-    for step in sorted(steps, key=lambda s: s.id, reverse=True):
-        if step.state in {ProcessStepState.CREATED, ProcessStepState.RUNNING}:
-            current = step.id
-
-        if last_completed is None and step.state == ProcessStepState.COMPLETED:
-            last_completed = step.id
-
-        if current and last_completed:
-            break
-
-    return current, last_completed
+def find_current_and_last_completed_steps(steps: Iterable[Step]) -> _ActualSteps:
+    step_info: _StepStateIDPair = tuple((step.state, step.id) for step in steps)
+    return get_current_and_last_completed_step_ids(step_info)
 
 
 def find_step_spec_declaration(step: Step, process_flow_spec: list[Stage]) -> StepDefinition:
@@ -49,3 +38,25 @@ def find_step_spec_declaration(step: Step, process_flow_spec: list[Stage]) -> St
                     return raw_step
 
     raise RuntimeError(f"Can't find flow_spec for {step}")
+
+
+def get_step_by_id(*, steps: Iterable[Step], step_id: ActionProcessStepID) -> Step:
+    for step in steps:
+        if step.id == step_id:
+            return step
+
+    raise ValueError(f"Can't find a step with id {step_id}")
+
+
+def get_current_and_last_completed_step_ids(step_info: _StepStateIDPair) -> _ActualSteps:
+    current_id = None
+    last_completed_id = None
+
+    sorted_steps = sorted(step_info, key=lambda s: s[1], reverse=True)
+    for state, step_id in sorted_steps:
+        if state in SUCCESS_FINAL_PROCESS_STATES:
+            last_completed_id = step_id
+            break
+        current_id = step_id
+
+    return current_id, last_completed_id

@@ -69,32 +69,31 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
 
         self.expected_env_part = {
             "cluster": {
-                "before_upgrade": {"state": None, "config": None},
+                "before_upgrade": {"state": None},
                 "edition": self.cluster.edition,
                 "config": common_config,
                 "id": self.cluster.pk,
-                "uuid": self.cluster.uuid,
+                "uuid": str(self.cluster.uuid),
                 "multi_state": self.cluster.multi_state,
                 "name": self.cluster.name,
                 "state": self.cluster.state,
                 "version": self.cluster.prototype.version,
-                "imports": None,
             },
             "services": {
                 service.prototype.name: {
-                    "before_upgrade": {"state": None, "config": None},
+                    "before_upgrade": {"state": None},
                     "config": common_config,
                     "id": service.pk,
-                    "uuid": service.uuid,
+                    "uuid": str(service.uuid),
                     "multi_state": service.multi_state,
                     "state": service.state,
                     "display_name": service.display_name,
                     "maintenance_mode": service.maintenance_mode == MaintenanceMode.ON,
                     "version": service.prototype.version,
                     component.prototype.name: {
-                        "before_upgrade": {"state": None, "config": None},
+                        "before_upgrade": {"state": None},
                         "component_id": component.pk,
-                        "uuid": component.uuid,
+                        "uuid": str(component.uuid),
                         "config": common_config,
                         "display_name": component.display_name,
                         "maintenance_mode": component.maintenance_mode.value == MaintenanceMode.ON,

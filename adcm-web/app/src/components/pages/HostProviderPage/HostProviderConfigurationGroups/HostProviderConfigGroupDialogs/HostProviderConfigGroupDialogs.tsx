@@ -11,6 +11,7 @@ import {
 } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
 import type { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
 import HostProviderConfigGroupMappingDialog from './HostProviderConfigGroupMappingDialog/HostProviderConfigGroupMappingDialog';
+import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 
 const HostProviderConfigGroupDialogs: React.FC = () => {
   const navigate = useNavigate();
@@ -62,6 +63,7 @@ const HostProviderConfigGroupDialogs: React.FC = () => {
       />
 
       <HostProviderConfigGroupMappingDialog />
+      <EditConfigGroupDescriptionDialog />
     </>
   );
 };

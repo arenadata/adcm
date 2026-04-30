@@ -10,29 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict
-
+from cm.impl.logs.repo import CheckLogContentAdapter
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCM, CheckLog, Component, GroupCheckLog, LogStorage
-from cm.tests.dependencies import WithDishkaContainer
 from core.logs import LogsService
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.check import ADCMCheckPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.check"
 
 
-class TestCheckPluginExecutor(WithDishkaContainer, BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.adcm = ADCM.objects.first()
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        cls._initialize_roles_and_adcm()
 
-        self.add_host_to_cluster(self.cluster, self.host_1)
+        cls.adcm = ADCM.objects.get()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
+
+        cls.uc.add_host_to_cluster(cls.cluster, cls.host_1)
 
     def test_adcm_check_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -490,7 +491,7 @@ class TestCheckPluginExecutor(WithDishkaContainer, BaseTestEffectsOfADCMAnsibleP
             log_service = container.get(LogsService)
             content = log_service.retrieve_check_logs_content_for_job(job_id=job.id)
             self.assertListEqual(
-                [asdict(item) for item in content],
+                CheckLogContentAdapter.dump_python(content),
                 [
                     {
                         "message": "error: fail",

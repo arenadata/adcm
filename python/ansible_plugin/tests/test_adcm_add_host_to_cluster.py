@@ -14,22 +14,23 @@
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginContextError, PluginValidationError
 from ansible_plugin.executors.add_host_to_cluster import ADCMAddHostToClusterPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.add_host_to_cluster"
 
 
-class TestAddHostToClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
 
-        self.host_3 = self.add_host(provider=self.host_1.provider, fqdn="host-3")
+        cls.host_3 = cls.uc.add_host(provider=cls.host_1.provider, fqdn="host-3")
 
     def test_add_host_to_cluster_success(self) -> None:
         with self.subTest("Cluster Context | by fqdn"):

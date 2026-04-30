@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from uuid import uuid4
-
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
+from django.db.models.fields import BooleanField
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,
@@ -41,6 +40,7 @@ class Step(Serializer):
     display_name = CharField()
     type = CharField()
     state = CharField()
+    required = BooleanField()
 
 
 class SubmitStepConfiguration(Serializer):
@@ -76,6 +76,10 @@ class ResetStepParamsSerializer(Serializer):
     process_sync_key = UUIDField()
 
 
+class SkipStepParamsSerializer(ResetStepParamsSerializer):
+    ...
+
+
 class SubmitStepParamsSerializer(ResetStepParamsSerializer):
     configuration = SubmitStepConfiguration(required=False)
 
@@ -87,6 +91,11 @@ class CompleteProcessParamsSerializer(Serializer):
 class OperationSubmitStep(Serializer):
     method = ChoiceField(choices=[(ProcessOperationType.SUBMIT.value, ProcessOperationType.SUBMIT.value)])
     params = SubmitStepParamsSerializer(required=True)
+
+
+class OperationSkipStep(Serializer):
+    method = ChoiceField(choices=[(ProcessOperationType.SKIP.value, ProcessOperationType.SKIP.value)])
+    params = SkipStepParamsSerializer(required=True)
 
 
 class OperationResetStep(Serializer):
@@ -218,7 +227,7 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                         "params": {
                             "stepId": 1,
                             "configuration": {"config": {"new": "config"}, "adcmMeta": {}},
-                            "processSyncKey": uuid4(),
+                            "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17",
                         },
                     },
                 ),
@@ -227,7 +236,7 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.SUBMIT.value,
-                        "params": {"stepId": 1, "processSyncKey": uuid4()},
+                        "params": {"stepId": 1, "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17"},
                     },
                 ),
                 OpenApiExample(
@@ -235,7 +244,15 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.RESET.value,
-                        "params": {"stepId": 1, "processSyncKey": uuid4()},
+                        "params": {"stepId": 1, "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17"},
+                    },
+                ),
+                OpenApiExample(
+                    "Skip operation",
+                    request_only=True,
+                    value={
+                        "method": ProcessOperationType.SKIP.value,
+                        "params": {"stepId": 1, "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17"},
                     },
                 ),
                 OpenApiExample(
@@ -243,13 +260,13 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.COMPLETE.value,
-                        "params": {"processSyncKey": uuid4()},
+                        "params": {"processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17"},
                     },
                 ),
             ],
             request=PolymorphicProxySerializer(
                 component_name=f"{object_type}Process",
-                serializers=[OperationSubmitStep, OperationResetStep, OperationCompleteProcess],
+                serializers=[OperationSubmitStep, OperationResetStep, OperationSkipStep, OperationCompleteProcess],
                 resource_type_field_name="method",
             ),
             responses={
@@ -293,6 +310,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                 "state": "created",
                                 "task": {"id": 8},
                                 "uiOptions": {"buttonName": "ButtonName"},
+                                "required": True,
                             },
                         ),
                         OpenApiExample(
@@ -304,6 +322,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                 "displayName": "Stage1.Step1",
                                 "description": "",
                                 "state": "created",
+                                "required": True,
                                 "configuration": {
                                     "adcmMeta": {},
                                     "config": {"integer_field": 1, "string_field": "string_value"},
@@ -356,6 +375,7 @@ def document_action_process_step_viewset(object_type: str, operation_id_variant:
                                 "displayName": "Stage1.Step1",
                                 "description": "",
                                 "state": "created",
+                                "required": True,
                                 "rules": [{"operation": "add", "component": "component", "service": "service"}],
                                 "delta": {
                                     "add": [{"hostId": 1, "componentId": 1}],

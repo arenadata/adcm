@@ -146,6 +146,12 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
 
         response = (action_endpoint / "processes").post(data={})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        process_id = response.json()["id"]
+
+        response = action_endpoint.get()
+        processes = response.json()["processes"]
+        self.assertEqual(len(processes), 1)
+        self.assertEqual(processes[0]["id"], process_id)
 
         owner_concerns = ConcernItem.objects.filter(
             owner_id=ahg.object.id,
@@ -154,7 +160,7 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
         )
         self.assertEqual(owner_concerns.count(), 1)
 
-        process = Process.objects.get(id=response.json()["id"])
+        process = Process.objects.get(id=process_id)
         self.assertEqual(process.state, ProcessState.CREATED.value)
 
         return process, action_endpoint

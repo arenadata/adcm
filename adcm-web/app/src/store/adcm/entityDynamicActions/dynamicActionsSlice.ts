@@ -12,6 +12,8 @@ import type {
   OpenDynamicActionActionPayload,
   RunActionHostGroupDynamicActionActionPayload,
 } from '../entityActionHostGroups/actionHostGroups.types';
+import type { AdcmCreateProcessPayload } from '../entityWizard/types/wizardSlice.types';
+import { createProcess } from '../entityWizard/wizardActionsSlice';
 
 const loadDynamicActions = createAsyncThunk(
   'adcm/dynamicActions/loadDynamicActions',
@@ -67,7 +69,7 @@ const openDynamicActionDialog = createAsyncThunk(
 );
 
 const runDynamicAction = createAsyncThunk(
-  'adcm/clustersDynamicActions/runClusterDynamicAction',
+  'adcm/dynamicActions/runDynamicAction',
   async (
     {
       entityType,
@@ -89,6 +91,21 @@ const runDynamicAction = createAsyncThunk(
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(null);
     }
+  },
+);
+
+const createWizardProcess = createAsyncThunk(
+  'adcm/dynamicActions/createWizardProcess',
+  async ({ entityType, entityArgs, actionId }: AdcmCreateProcessPayload, thunkAPI) => {
+    const {
+      adcm: {
+        dynamicActions: { actionHostGroup },
+      },
+    } = thunkAPI.getState();
+
+    return await thunkAPI
+      .dispatch(createProcess({ entityType, entityArgs, actionHostGroupId: actionHostGroup?.id as number, actionId }))
+      .unwrap();
   },
 );
 
@@ -130,6 +147,10 @@ const dynamicActionsSlice = createSlice({
       state.actionDetails = actionDetails;
       state.actionHostGroup = actionHostGroup;
     });
+    builder.addCase(createWizardProcess.fulfilled, (state, action) => {
+      const process = action.payload;
+      state.actionDetails?.processes?.push(process);
+    });
     builder.addCase(openDynamicActionDialog.rejected, (state) => {
       state.actionDetails = null;
       state.actionHostGroup = null;
@@ -142,6 +163,6 @@ const dynamicActionsSlice = createSlice({
 });
 
 export const { cleanupDynamicActions, closeDynamicActionDialog } = dynamicActionsSlice.actions;
-export { loadDynamicActions, openDynamicActionDialog, runDynamicAction };
+export { loadDynamicActions, openDynamicActionDialog, runDynamicAction, createWizardProcess };
 
 export default dynamicActionsSlice.reducer;

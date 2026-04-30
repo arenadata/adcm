@@ -1,7 +1,7 @@
 import type { JSONObject } from '@models/json';
 import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm/jobs';
 import type { AdcmConfiguration } from '@models/adcm/configuration';
-import type { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
+import type { AdcmDynamicActionRunConfig, AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
 export type AdcmWizardMappingStepOperationType = 'add' | 'remove';
 export type AdcmWizardProcessState = 'created' | 'completed' | 'broken';
@@ -11,12 +11,14 @@ export enum AdcmWizardStepStates {
   Completed = 'completed',
   Running = 'running',
   Broken = 'broken',
+  Skipped = 'skipped',
 }
 
 export enum AdcmWizardMethodType {
   Submit = 'submit_step',
   Complete = 'complete',
   Reset = 'reset_step',
+  SkipStep = 'skip_step',
 }
 
 export enum AdcmWizardStepType {
@@ -63,6 +65,7 @@ export interface AdcmActionProcessOperationStep {
   state: AdcmWizardStepStates;
   task: { id: number };
   description: string;
+  required: boolean;
 }
 
 export interface AdcmWizardConfigSchema {
@@ -89,6 +92,7 @@ export interface AdcmActionProcessConfigurationStep {
   state: AdcmWizardStepStates;
   configuration: AdcmWizardConfiguration;
   description: string;
+  required: boolean;
 }
 
 export interface AdcmActionProcessMappingStepRules {
@@ -96,6 +100,7 @@ export interface AdcmActionProcessMappingStepRules {
   component: string;
   service: string;
   description: string;
+  required: boolean;
 }
 
 interface DeltaMapping {
@@ -118,6 +123,7 @@ export interface AdcmActionProcessMappingStep {
   delta: Delta | null;
   cumulativeDelta: Delta | null;
   description: string;
+  required: boolean;
 }
 
 export interface AdcmActionProcessLastStep {
@@ -126,6 +132,7 @@ export interface AdcmActionProcessLastStep {
   type: AdcmWizardStepType.LastStep;
   state: AdcmWizardStepStates;
   description: string;
+  required: boolean;
 }
 
 export type AdcmActionProcessStep =
@@ -136,6 +143,14 @@ export type AdcmActionProcessStep =
 
 export interface AdcmWizardResetStepPayload {
   method: AdcmWizardMethodType.Reset;
+  params: {
+    processSyncKey: string;
+    stepId: number;
+  };
+}
+
+export interface AdcmWizardSkipOperationStepPayload {
+  method: AdcmWizardMethodType.SkipStep;
   params: {
     processSyncKey: string;
     stepId: number;
@@ -190,7 +205,8 @@ export type AdcmWizardProcessOperationPayload =
   | AdcmWizardSubmitOperationStepPayload
   | AdcmWizardSubmitConfigurationStepPayload
   | AdcmWizardCompleteOperationPayload
-  | AdcmWizardSubmitMappingStepPayload;
+  | AdcmWizardSubmitMappingStepPayload
+  | AdcmWizardSkipOperationStepPayload;
 
 export type AdcmWizardProcessOperation = AdcmActionWizardProcess;
 
@@ -204,4 +220,110 @@ export type AdcmWizardJobsData = Record<
 
 export interface ConfigurationMap {
   [stepId: number]: AdcmConfiguration | null;
+}
+
+export interface GetWizardProcessPayload {
+  actionId: number;
+  processId: number;
+  actionHostGroupId: number;
+}
+
+export interface AdcmClusterGetProcessPayloadArgs extends GetWizardProcessPayload {
+  clusterId: number;
+}
+
+export interface AdcmServiceGetProcessPayloadArgs extends GetWizardProcessPayload {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface AdcmComponentGetProcessPayloadArgs extends GetWizardProcessPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+}
+
+export interface GetWizardStepPayload {
+  actionId: number;
+  processId: number;
+  stepId: number;
+  actionHostGroupId: number;
+}
+
+export interface AdcmClusterGetStepPayloadArgs extends GetWizardStepPayload {
+  clusterId: number;
+}
+
+export interface AdcmServiceGetStepPayloadArgs extends GetWizardStepPayload {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface AdcmComponentGetStepPayloadArgs extends GetWizardStepPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+}
+
+export interface CreateWizardProcessPayload {
+  actionHostGroupId: number;
+  actionId: number;
+}
+
+export interface AdcmClusterCreateProcessPayloadArgs extends CreateWizardProcessPayload {
+  clusterId: number;
+}
+
+export interface AdcmServiceCreateProcessPayloadArgs extends CreateWizardProcessPayload {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface AdcmComponentCreateProcessPayloadArgs extends CreateWizardProcessPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+}
+
+export interface PostWizardOperationPayload {
+  actionId: number;
+  processId: number;
+  operation: AdcmWizardProcessOperationPayload;
+  actionHostGroupId: number;
+}
+
+export interface AdcmClusterPostOperationPayloadArgs extends PostWizardOperationPayload {
+  clusterId: number;
+}
+
+export interface AdcmServicePostOperationPayloadArgs extends PostWizardOperationPayload {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface AdcmComponentPostOperationPayloadArgs extends PostWizardOperationPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+}
+
+export interface RunDynamicActionPayload {
+  actionId: number;
+  actionRunConfig: AdcmDynamicActionRunConfig;
+  actionHostGroupId: number;
+}
+
+export interface RunClusterDynamicActionPayload extends RunDynamicActionPayload {
+  clusterId: number;
+}
+
+export interface RunServiceDynamicActionPayload extends RunDynamicActionPayload {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface RunComponentDynamicActionPayload extends RunDynamicActionPayload {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
 }

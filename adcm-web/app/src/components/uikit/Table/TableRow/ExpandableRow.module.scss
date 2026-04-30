@@ -30,11 +30,23 @@ tr.expandableRowMain {
 
 tr.expandableRowContent > td {
   height: auto;
+  overflow: hidden;
   padding-top: 0;
   padding-right: 0;
   padding-bottom: 0;
   border-top: 0;
   background: var(--table-expandable-row-content-background);
+}
+
+.expandableRow {
+  &__container {
+    display: grid;
+  }
+
+  &__wrapper {
+    overflow: hidden;
+    width: 100%;
+  }
 }
 
 .expandableRowContent_wrapper {

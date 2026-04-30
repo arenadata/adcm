@@ -14,7 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from operator import or_
-from typing import Iterable
+from typing import Final, Iterable
 
 from core.types import (
     ADCMCoreType,
@@ -40,6 +40,8 @@ from cm.models import (
     Provider,
     Service,
 )
+
+DEFAULT_BEFORE_UPGRADE: Final = {"state": None}
 
 
 @dataclass(slots=True)
@@ -87,71 +89,48 @@ def extract_objects_before_upgrade(
         ),
     )
 
-    default_before_upgrade = {"state": None}
-
     result = {}
 
     for row in query:
         object_ = CoreObjectDescriptor(id=row["id"], type=ADCMCoreType(row["type"]))
         raw_before_upgrade = row["before_upgrade"]
 
-        if raw_before_upgrade == default_before_upgrade:
-            result[object_] = ProcessedBeforeUpgrade(before_upgrade=raw_before_upgrade, is_default=True)
-            continue
-
-        result[object_] = ProcessedBeforeUpgrade(
-            before_upgrade=raw_before_upgrade,
-            is_default=False,
-            config_id=raw_before_upgrade.get("config_id"),
+        processed_before_upgrade = construct_processed_before_upgrade(
+            raw_before_upgrade=raw_before_upgrade,
             prototype_name=row["prototype_name"]
             if not row["service_name"]
             else (row["service_name"], row["prototype_name"]),
-            bundle_id=raw_before_upgrade.get("bundle_id", row["parent_before_upgrade"].get("bundle_id")),
-            config_host_groups_info={
-                group_name: int(group_info["config_id"])
-                for group_name, group_info in raw_before_upgrade.get("config_host_groups", {}).items()
-            },
+            parent_before_upgrade=row["parent_before_upgrade"],
         )
+
+        result[object_] = processed_before_upgrade
 
     return result
 
 
-def get_before_upgrades(
-    before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade],
-    config_service: core.config.ConfigService,
-    config_host_groups: Iterable[ConfigHostGroupInfo] = (),
-) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict]:
-    required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]] = defaultdict(set)
-    required_configs: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], ConfigID] = {}
+def construct_processed_before_upgrade(
+    raw_before_upgrade: dict, prototype_name: str | tuple[str, str] | None, parent_before_upgrade: dict
+):
+    if raw_before_upgrade == DEFAULT_BEFORE_UPGRADE:
+        return ProcessedBeforeUpgrade(before_upgrade=raw_before_upgrade, is_default=True)
 
-    result: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict] = {}
+    return ProcessedBeforeUpgrade(
+        before_upgrade=raw_before_upgrade,
+        is_default=False,
+        config_id=raw_before_upgrade.get("config_id"),
+        prototype_name=prototype_name,
+        bundle_id=raw_before_upgrade.get("bundle_id", parent_before_upgrade.get("bundle_id")),
+        config_host_groups_info={
+            group_name: int(group_info["config_id"])
+            for group_name, group_info in raw_before_upgrade.get("config_host_groups", {}).items()
+        },
+    )
 
-    for object_, before_upgrade_info in before_upgrades.items():
-        if before_upgrade_info.is_default:
-            result[object_] = before_upgrade_info.before_upgrade
-            continue
 
-        if not before_upgrade_info.bundle_id:
-            # then we can't get the config prototype to convert the config
-            result[object_] = {"state": before_upgrade_info.before_upgrade.get("state"), "config": None}
-            continue
-
-        required_prototypes[before_upgrade_info.bundle_id].add((object_, before_upgrade_info.prototype_name))
-        if before_upgrade_info.config_id:
-            required_configs[object_] = before_upgrade_info.config_id
-
-        for host_group_name, config_id in before_upgrade_info.config_host_groups_info.items():
-            required_configs[object_, host_group_name] = config_id
-
-    if not (required_configs and required_prototypes):
-        for missed_key in set(before_upgrades) - result.keys():
-            result[missed_key] = {"state": before_upgrades[missed_key].before_upgrade.get("state"), "config": None}
-
-        return result
-
-    configurations = config_service.retrieve_configurations_by_id(required_configs.values())
-
-    existing_prototypes: dict[tuple[ADCMCoreType, str, str | None], PrototypeID] = {
+def _retrieve_existing_prototypes(
+    required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]],
+) -> dict[tuple[ADCMCoreType, str, str | None], PrototypeID]:
+    return {
         (db_record_type_to_core_type(proto["type"]), proto["name"], proto["parent__name"]): proto["id"]
         for proto in Prototype.objects.values("id", "type", "name", "parent__name").filter(
             reduce(
@@ -174,6 +153,52 @@ def get_before_upgrades(
             )
         )
     }
+
+
+def get_before_upgrades(
+    before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade],
+    config_service: core.config.ConfigService,
+    config_host_groups: Iterable[ConfigHostGroupInfo] = (),
+    retrieve_existing_prototypes=_retrieve_existing_prototypes,
+) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict]:
+    required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]] = defaultdict(set)
+    required_configs: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], ConfigID] = {}
+    with_config = set()
+
+    result: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict] = {}
+
+    for object_, before_upgrade_info in before_upgrades.items():
+        if before_upgrade_info.is_default:
+            # we rely on ProcessedBeforeUpgrade consistency here, avoiding binding to before upgrade default state
+            result[object_] = before_upgrade_info.before_upgrade
+            continue
+
+        result[object_] = {
+            "state": before_upgrade_info.before_upgrade.get("state"),
+            "config": None,
+        }
+        if "imports" in before_upgrade_info.before_upgrade:
+            result[object_]["imports"] = before_upgrade_info.before_upgrade["imports"]["config"]
+
+        if not before_upgrade_info.bundle_id:
+            # then we can't get the config prototype to convert the config
+            continue
+
+        with_config.add(object_)
+
+        required_prototypes[before_upgrade_info.bundle_id].add((object_, before_upgrade_info.prototype_name))
+        if before_upgrade_info.config_id:
+            required_configs[object_] = before_upgrade_info.config_id
+
+        for host_group_name, config_id in before_upgrade_info.config_host_groups_info.items():
+            required_configs[object_, host_group_name] = config_id
+
+    if not (required_configs and required_prototypes):
+        return result
+
+    configurations = config_service.retrieve_configurations_by_id(required_configs.values())
+
+    existing_prototypes = retrieve_existing_prototypes(required_prototypes)
     specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
         prototypes=existing_prototypes.values()
     )
@@ -182,11 +207,8 @@ def get_before_upgrades(
         group_info.name: group_info.id for group_info in config_host_groups
     }
 
-    for unprocessed_object, before_upgrade_info in (
-        (key, value) for key, value in before_upgrades.items() if key not in result
-    ):
-        # config either will be overriden or kept None
-        result[unprocessed_object] = {"state": before_upgrade_info.before_upgrade.get("state"), "config": None}
+    for unprocessed_object in with_config:
+        before_upgrade_info = before_upgrades[unprocessed_object]
 
         try:
             if isinstance(before_upgrade_info.prototype_name, tuple):
@@ -230,9 +252,8 @@ def get_before_upgrades(
                 ),
             )
 
-            result[unprocessed_object, host_group_name] = {
-                "state": before_upgrade_info.before_upgrade.get("state"),
-                "config": updated_configuration.values,
+            result[unprocessed_object, host_group_name] = result[unprocessed_object] | {
+                "config": updated_configuration.values
             }
 
     return result

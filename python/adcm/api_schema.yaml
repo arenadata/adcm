@@ -62,6 +62,20 @@ components:
           maxLength: 255
       required:
       - name
+    ActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - name
+      - description
     ActionList:
       type: object
       properties:
@@ -1628,6 +1642,21 @@ components:
       - reset_step
       type: string
       description: '* `reset_step` - reset_step'
+    OperationSkipStep:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationSkipStepMethodEnum'
+        params:
+          $ref: '#/components/schemas/SkipStepParams'
+      required:
+      - method
+      - params
+    OperationSkipStepMethodEnum:
+      enum:
+      - skip_step
+      type: string
+      description: '* `skip_step` - skip_step'
     OperationSubmitStep:
       type: object
       properties:
@@ -2091,6 +2120,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+    PatchedActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
     PatchedCHG:
       type: object
       properties:
@@ -3240,6 +3280,17 @@ components:
         * `valid` - valid
         * `invalid` - invalid
         * `absent` - absent
+    SkipStepParams:
+      type: object
+      properties:
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
+      required:
+      - processSyncKey
+      - stepId
     Source:
       type: object
       properties:
@@ -3906,6 +3957,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3915,6 +3967,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3924,6 +3977,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3933,6 +3987,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3942,6 +3997,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3951,6 +4007,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3960,6 +4017,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -4813,12 +4871,6 @@ paths:
           * `invalid` - invalid
           * `absent` - absent
       - in: query
-        name: uploadTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by upload time.
-      - in: query
         name: version
         schema:
           type: string
@@ -5570,27 +5622,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 39ec1288-4272-41b0-9128-02f2f5bcf5a5
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: b8d6a241-9e74-4bea-857c-a83999098e34
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 925b74ca-d415-4303-bfb9-d3bd43439303
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 4af143a9-df89-4cfa-9336-1b65b93e91c2
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5743,6 +5802,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -5752,6 +5812,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -5799,6 +5860,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -6206,6 +6268,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteClusterActionHostGroup
@@ -6709,27 +6809,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: d04c92a4-7563-4e05-a67a-711e5e38e3b4
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 3cae5636-fb94-4a99-9c76-31710d702a9d
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 8d8fae1f-49b7-4ec9-9a80-d4a2ba7b7b44
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 4803acfb-1246-440f-bcd5-2e8d7f7e9400
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6875,6 +6982,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -6884,6 +6992,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -6931,6 +7040,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -8734,27 +8844,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 919b212c-98e7-4142-884e-5463da90d849
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: f7cacafa-fbc7-4750-84ba-89dd2ccd3d45
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: c914d881-cd32-4238-8021-fbeb812a088e
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: d0364f79-45da-48a9-b2cb-7ad8c5ac5e00
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8906,6 +9023,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -8915,6 +9033,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -8962,6 +9081,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -10512,27 +10632,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 93585bc1-59fb-412d-9377-ad6f0e2407e8
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 3ae2c4d1-ce80-4be6-b02d-42027b80ee10
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 4795b4fe-8169-47a6-9199-99b91fb1797b
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 6e2dc9d7-b81f-4f86-95fa-aa10cc191021
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10691,6 +10818,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -10700,6 +10828,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -10747,6 +10876,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -11196,6 +11326,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_services_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteServiceActionHostGroup
@@ -11741,27 +11915,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 7dada19a-2ddd-4ec1-b418-88a9aad1ea5d
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 076d649d-b1bd-4186-8a03-b389163caf3c
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: c401f599-88e9-4d3c-abba-412aa0cdf90b
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 7d7c745a-abd4-4ffa-bfee-4aa5ebdb611e
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11913,6 +12094,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -11922,6 +12104,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -11969,6 +12152,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -12744,27 +12928,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 0cf5b549-3aff-4677-b72b-fdea5d33e4fa
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 47d48b3c-c4de-4e9c-b88c-2dcc3531b147
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: fa194301-c55d-44a1-8f43-e4a41c0637ea
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 2a785a0b-491b-44cc-9666-b9954206f725
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12929,6 +13120,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -12938,6 +13130,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -12985,6 +13178,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -13476,6 +13670,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_services_components_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteComponentActionHostGroup
@@ -14063,27 +14307,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: c8e18941-e298-4c34-b995-d78249712318
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 948dbf87-0214-48cf-9d63-7bf1f7005a4e
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: ab6d698b-55a4-49a2-a88c-fbe0014d1864
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 7e1320c1-4d64-41bf-b717-432c68d1e63e
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -14241,6 +14492,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -14250,6 +14502,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -14297,6 +14550,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -22645,17 +22899,6 @@ paths:
           type: string
         description: Case insensitive and partial filter by task display name.
       - in: query
-        name: duration
-        schema:
-          type: string
-        description: Filter by duration.
-      - in: query
-        name: endTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by end time.
-      - in: query
         name: id
         schema:
           type: integer
@@ -22695,6 +22938,7 @@ paths:
           - -endTime
           - -id
           - -name
+          - -objectName
           - -startTime
           - -status
           - displayName
@@ -22702,17 +22946,12 @@ paths:
           - endTime
           - id
           - name
+          - objectName
           - startTime
           - status
           default: -id
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
-      - in: query
-        name: startTime
-        schema:
-          type: string
-          format: date-time
-        description: Filter by start time.
       - in: query
         name: status
         schema:

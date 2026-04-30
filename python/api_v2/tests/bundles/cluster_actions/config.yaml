@@ -25,6 +25,13 @@
       allow_to_terminate: true
       states:
         available: any
+      hc_acl:
+        - component: component_1
+          service: service_1
+          action: add
+        - component: component_2
+          service: service_1
+          action: add
 
     cluster_host_action_disallowed:
       <<: *job

@@ -10,15 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
 from contextlib import contextmanager, suppress
 from functools import partial
 from typing import Any, Callable, Generator, TypeVar
 
 from core.config import spec
+from core.config._helpers import recursive_defaultdict, recursive_defaultdict_to_dict
 from core.config._names import full_name_to_level_names
 from core.config._predicates import Predicate
 from core.config._types import (
+    Change,
+    ChangeType,
     ConfigAttrs,
     Configuration,
     ConfigValues,
@@ -44,39 +46,56 @@ class MissingKeyError(ADCMMessageError):
     """
 
 
-def detect_changes(previous: Configuration, new: Configuration, specification: spec.FullSpec) -> set[ParameterFullName]:
+def detect_changes(previous: Configuration, new: Configuration, specification: spec.FullSpec) -> list[Change]:
     """
     Find difference values and attribute between two configuration.
-    Configurations in given result contains only changed values/attributes.
 
     Notes:
-    - It is assumed that both configurations are valid and has the same fields based on specification
-    - Attribute changes are registered even when only one of fields changed.
+    - It is assumed that both configurations are valid and has the same fields based on specification.
+    - Attribute changes are registered per attribute.
+    - One parameter may appear in result more than once (e.g. it's sync and attr were changed).
+    - Current algorithm may underperform for big configs (deep, actually) due to values extraction per parameter,
+      yet it's simpler than recursive values approach;
+      change only if performance issues are detected in this function.
     """
-    changed = set()
+    changes = []
 
     for name in specification.parameters:
         new_value = get_by_full_name_or_none(name=name, values=new.values)
         previous_value = get_by_full_name_or_none(name=name, values=previous.values)
 
         if new_value != previous_value:
-            changed.add(name)
-            continue
+            changes.append(Change(parameter=name, type=ChangeType.VALUE, old=previous_value, new=new_value))
 
-        new_attr = new.attributes.get(name)
-        previous_attr = previous.attributes.get(name)
+        activation_changes = _detect_attribute_changes(
+            name=name, previous_attributes=previous.attributes, new_attributes=new.attributes
+        )
+        changes.extend(activation_changes)
 
-        if new_attr != previous_attr:
-            changed.add(name)
+    for name, group in specification.groups.items():
+        if group.selection:
+            new_value = get_by_full_name_or_none(name=name, values=new.values)
+            previous_value = get_by_full_name_or_none(name=name, values=previous.values)
 
-    for name in specification.attributes.activatable_groups:
-        new_attr = new.attributes.get(name)
-        previous_attr = previous.attributes.get(name)
+            new_selection = _detect_selected_group_name(value=new_value)
+            previous_selection = _detect_selected_group_name(value=previous_value)
+            if previous_selection != new_selection:
+                changes.append(
+                    Change(
+                        parameter=name,
+                        type=ChangeType.SELECTION,
+                        old=previous_selection,
+                        new=new_selection,
+                    )
+                )
 
-        if new_attr != previous_attr:
-            changed.add(name)
+        if group.activation:
+            activation_changes = _detect_attribute_changes(
+                name=name, previous_attributes=previous.attributes, new_attributes=new.attributes
+            )
+            changes.extend(activation_changes)
 
-    return changed
+    return changes
 
 
 def get_by_full_name_or_none(name: ParameterFullName, values: ConfigValues) -> None | Any:
@@ -166,13 +185,51 @@ def nested_to_flat(configuration: Configuration, specification: spec.FullSpec) -
 
 
 def flat_to_nested(flat_config: dict[ParameterFullName, Any]) -> ConfigValues:
-    result = _recursive_defaultdict()
+    result = recursive_defaultdict()
 
     for name, value in flat_config.items():
         own_name, group = _get_group_with_value_by_full_name(name=name, values=result)
         group[own_name] = value
 
-    return _recursive_defaultdict_to_dict(result)
+    return recursive_defaultdict_to_dict(result)
+
+
+def _detect_selected_group_name(value: dict | None) -> str | None:
+    if value is None:
+        return None
+
+    selected_keys = tuple(value.keys())
+    is_unsupported_format = len(selected_keys) != 1 or selected_keys[0] == "_selection"
+    if is_unsupported_format:
+        raise ValueError(
+            "Unsupported selection group format: expected exactly one selected-group key and no '_selection' key"
+        )
+
+    return selected_keys[0]
+
+
+def _detect_attribute_changes(
+    name: ParameterFullName,
+    previous_attributes: ConfigAttrs,
+    new_attributes: ConfigAttrs,
+) -> Generator[Change, None, None]:
+    previous = previous_attributes.get(name)
+    new = new_attributes.get(name)
+
+    previous_activation = previous.is_active if previous else None
+    new_activation = new.is_active if new else None
+    if previous_activation != new_activation:
+        yield Change(parameter=name, type=ChangeType.ACTIVATION, old=previous_activation, new=new_activation)
+
+    previous_synchronization = previous.is_synced if previous else None
+    new_synchronization = new.is_synced if new else None
+    if previous_synchronization != new_synchronization:
+        yield Change(
+            parameter=name,
+            type=ChangeType.SYNCHRONIZATION,
+            old=previous_synchronization,
+            new=new_synchronization,
+        )
 
 
 def _get_group_with_value_by_full_name(
@@ -198,11 +255,3 @@ def _convert_node_access_errors_to_missing_key(name: ParameterFullName) -> Gener
         yield
     except (KeyError, TypeError) as e:
         raise MissingKeyError(message=f'Value is missing for full name: "{name}"') from e
-
-
-def _recursive_defaultdict():
-    return defaultdict(_recursive_defaultdict)
-
-
-def _recursive_defaultdict_to_dict(d: defaultdict[K, V]) -> dict[K, V]:
-    return {k: _recursive_defaultdict_to_dict(v) if isinstance(v, defaultdict) else v for k, v in d.items()}

@@ -39,3 +39,4 @@ export { AdcmClusterServiceActionHostGroupsApi } from './adcm/clusterServiceActi
 export { AdcmClusterServiceComponentActionHostGroupsApi } from './adcm/clusterServiceComponentActionHostGroups';
 export { AdcmConcernsApi } from './adcm/concerns';
 export { AdcmWizardApi } from './adcm/wizard';
+export { AdcmClustersWizardApi, AdcmServiceComponentsWizardApi, AdcmServicesWizardApi } from './adcm/entityWizard';
