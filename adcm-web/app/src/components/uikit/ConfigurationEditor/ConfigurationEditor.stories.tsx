@@ -89,6 +89,15 @@ export const ConfigurationEditorStoryWithHooks = ({
     setAttributes(attributes);
   };
 
+  const handleConfigurationAndAttributesChange = (
+    configuration: ConfigurationData,
+    attributes: ConfigurationAttributes,
+  ) => {
+    console.info({ configuration, attributes });
+    setConfiguration(configuration);
+    setAttributes(attributes);
+  };
+
   const handleAdvancedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFilter((prevFilter) => ({ ...prevFilter, showAdvanced: event.target.checked }));
   };
@@ -124,6 +133,7 @@ export const ConfigurationEditorStoryWithHooks = ({
         areExpandedAll={areExpandedAll}
         onConfigurationChange={handleConfigurationChange}
         onAttributesChange={handleAttributesChange}
+        onConfigurationAndAttributesChange={handleConfigurationAndAttributesChange}
       />
     </>
   );

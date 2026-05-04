@@ -27,6 +27,7 @@ import type {
   MoveConfigurationNodeHandler,
   ChangeFieldAttributesHandler,
   ChangeConfigurationNodeValueHandler,
+  ChangeConfigurationNodeValueWithAttributesHandler,
 } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
@@ -44,6 +45,7 @@ export interface ConfigurationTreeProps {
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onChange: ChangeConfigurationNodeValueHandler;
+  onChangeWithAttributes: ChangeConfigurationNodeValueWithAttributesHandler;
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onMoveArrayItem: MoveConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
@@ -83,6 +85,7 @@ const ConfigurationTree = ({
   onClear,
   onDelete,
   onChange,
+  onChangeWithAttributes,
   onAddArrayItem,
   onFieldAttributesChange,
   onMoveArrayItem,
@@ -188,6 +191,7 @@ const ConfigurationTree = ({
             onClear={onClear}
             onDelete={onDelete}
             onChange={onChange}
+            onChangeWithAttributes={onChangeWithAttributes}
             onExpand={onExpand}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}

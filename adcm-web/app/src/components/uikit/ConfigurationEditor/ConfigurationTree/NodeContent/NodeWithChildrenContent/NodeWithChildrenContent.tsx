@@ -9,6 +9,7 @@ import type {
 import type {
   ChangeConfigurationNodeHandler,
   ChangeConfigurationNodeValueHandler,
+  ChangeConfigurationNodeValueWithAttributesHandler,
   ChangeFieldAttributesHandler,
 } from '../../ConfigurationTree.types';
 import s from '../../ConfigurationTree.module.scss';
@@ -24,6 +25,7 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import ObjectSchemaSelect from './ObjectSchemaSelect';
+import { buildOneOfMetaAttributesSyncPayload } from '../../ConfigurationTreeAttributes.utils';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;
@@ -32,6 +34,7 @@ interface NodeWithChildrenContentProps {
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onChange: ChangeConfigurationNodeValueHandler;
+  onChangeWithAttributes: ChangeConfigurationNodeValueWithAttributesHandler;
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
@@ -45,6 +48,7 @@ const NodeWithChildrenContent = ({
   onClear,
   onDelete,
   onChange,
+  onChangeWithAttributes,
   onExpand,
   onFieldAttributeChange,
   onDragStart,
@@ -126,12 +130,18 @@ const NodeWithChildrenContent = ({
     onDragEnd?.(node, isDropped);
   };
 
-  const handleSelect = (selection: string | null) => {
-    if (selection && node.data.type === 'selectableObject') {
-      const defaultValue = node.data.oneOfSchemaDefaults[selection];
-      onChange(node, defaultValue);
-    }
-  };
+  const handleSelect = useCallback(
+    (selection: string | null) => {
+      if (!selection || node.data.type !== 'selectableObject') return;
+
+      const data = node.data as ConfigurationSelectableObject;
+      const defaultValue = data.oneOfSchemaDefaults[selection];
+      const payload = buildOneOfMetaAttributesSyncPayload(data.fieldSchema, data.value, defaultValue, data.path);
+
+      onChangeWithAttributes(node, defaultValue, payload);
+    },
+    [node, onChangeWithAttributes],
+  );
 
   const selectionControl = useMemo(() => {
     if (

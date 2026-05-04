@@ -60,6 +60,7 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
     return result;
   }
 
+  // group error by fieldPath
   for (const error of errors) {
     addError(
       error.instancePath,
@@ -68,6 +69,12 @@ export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSch
       error.keyword,
       error.message || '',
     );
+    // config tree generates from schema. And we must show missing property error on property node
+    // extend error from structure to field,
+    if (error.keyword === 'required') {
+      const fieldPath = `${error.instancePath}/${error.params.missingProperty}`;
+      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data as JSONValue, error.keyword, 'required');
+    }
   }
 
   return result;
