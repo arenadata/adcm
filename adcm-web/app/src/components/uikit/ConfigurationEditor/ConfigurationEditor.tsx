@@ -13,6 +13,8 @@ import {
 } from './ConfigurationEditor.utils';
 import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import type { JSONPrimitive, JSONValue } from '@models/json';
+import { syncFieldAttributes } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTreeAttributes.utils';
+import type { FieldAttributesSyncPayload } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.types';
 
 type SelectedNode = {
   node: ConfigurationNodeView;
@@ -27,6 +29,7 @@ export interface ConfigurationEditorProps {
   areExpandedAll: boolean;
   onConfigurationChange: (configuration: ConfigurationData) => void;
   onAttributesChange: (attributes: ConfigurationAttributes) => void;
+  onConfigurationAndAttributesChange: (configuration: ConfigurationData, attributes: ConfigurationAttributes) => void;
   onChangeIsValid?: (isValid: boolean) => void;
   isReadOnly?: boolean;
 }
@@ -39,6 +42,7 @@ const ConfigurationEditor = ({
   filter,
   onConfigurationChange,
   onAttributesChange,
+  onConfigurationAndAttributesChange,
   onChangeIsValid,
   isReadOnly = false,
 }: ConfigurationEditorProps) => {
@@ -81,6 +85,16 @@ const ConfigurationEditor = ({
       }
     },
     [configuration, onConfigurationChange],
+  );
+
+  const handleValueChangeWithAttributes = useCallback(
+    (node: ConfigurationNodeView, value: JSONValue, payload: FieldAttributesSyncPayload) => {
+      const nextConfiguration = editField(configuration, node.data.path, value);
+      if (!nextConfiguration) return;
+      const nextAttributes = syncFieldAttributes(attributes, payload);
+      onConfigurationAndAttributesChange(nextConfiguration, nextAttributes);
+    },
+    [attributes, configuration, onConfigurationAndAttributesChange],
   );
 
   const handleAddEmptyObject = useCallback(
@@ -166,6 +180,7 @@ const ConfigurationEditor = ({
         onClear={handleClearField}
         onDelete={handleDeleteField}
         onChange={handleValueChange}
+        onChangeWithAttributes={handleValueChangeWithAttributes}
         onAddArrayItem={handleAddArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
         onChangeIsValid={onChangeIsValid}

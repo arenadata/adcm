@@ -6,9 +6,11 @@ export interface AdcmFieldMetaData {
   isInvisible?: boolean;
   activation?: {
     isAllowChange: boolean;
+    default?: boolean;
   } | null;
   synchronization?: {
     isAllowChange: boolean;
+    default?: boolean;
   } | null;
   isSecret?: boolean;
   stringExtra?: {
@@ -21,6 +23,7 @@ export interface AdcmFieldMetaData {
 }
 
 type RedefinedFields = 'items' | 'properties' | 'additionalProperties';
+
 export interface SchemaDefinition extends Omit<JSONSchema7, RedefinedFields> {
   // Fields that must be redefined because they make use of this definition itself
   items?: SchemaDefinition;
