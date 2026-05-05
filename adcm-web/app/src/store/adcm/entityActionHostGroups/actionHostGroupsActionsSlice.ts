@@ -162,7 +162,7 @@ const updateActionHostGroup = createAsyncThunk(
       if (isValidData(description)) {
         const trimDescription = description.trim();
         if (actionHostGroup.description !== trimDescription) {
-          service.patchActionHostGroupDescription({
+          await service.patchActionHostGroupDescription({
             ...entityArgs,
             actionHostGroupId: actionHostGroup.id,
             description,
