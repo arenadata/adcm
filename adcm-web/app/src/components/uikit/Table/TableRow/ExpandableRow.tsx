@@ -34,10 +34,10 @@ const ExpandableRow = ({
       <TableRow isInactive={isInactive} className={rowClasses}>
         {children}
       </TableRow>
-      {expandedContent && (
+      {expandedContent && isExpanded && (
         <tr className={expandedRowClasses}>
           <td colSpan={colSpan}>
-            <Collapse isExpanded={isExpanded}>
+            <Collapse isExpanded={true}>
               <div className={s.expandableRow__container}>
                 <div className={s.expandableRow__wrapper}>
                   <div className={s.expandableRowContent_wrapper}>{expandedContent}</div>
