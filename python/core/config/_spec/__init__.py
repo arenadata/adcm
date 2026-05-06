@@ -20,6 +20,7 @@ from core.config._spec import parameters as p
 from core.config._spec.jsonschema import spec_to_jsonschema
 from core.config._spec.operations import (
     build_identifier_from_name,
+    detect_deactivated_groups,
     detect_deactivated_parameters,
     get_secret_parameters_names,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "SpecAttributes",
     "SpecHierarchyLevel",
     "build_identifier_from_name",
+    "detect_deactivated_groups",
     "detect_deactivated_parameters",
     "get_secret_parameters_names",
     "p",
