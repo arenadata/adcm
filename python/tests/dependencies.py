@@ -332,7 +332,7 @@ class StatusScenariosOverride(dishka.Provider):
 
     @provide
     def status_scenarios(self) -> StatusScenarios:
-        return SkipStatusScenarios()
+        return SkipStatusScenarios(cluster_service=None)
 
 
 class RBACScenariosDummy(RBACScenarios):

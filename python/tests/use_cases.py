@@ -34,6 +34,7 @@ from cm.models import (
     Service,
 )
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.config._service import ConfigService
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
@@ -141,6 +142,7 @@ class UseCases:
             cluster_id=cluster.pk,
             bundle_id=cluster.bundle_id,
             new_mapping=(HostComponentEntry(host_id=host.pk, component_id=component.pk) for host, component in entries),
+            cluster_service=self.container.get(ClusterService),
         )
         return list(HostComponent.objects.filter(cluster_id=cluster.pk))
 

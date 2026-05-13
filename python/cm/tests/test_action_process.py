@@ -16,7 +16,6 @@ from uuid import uuid4
 
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
@@ -156,7 +155,7 @@ class TestActionProcessLogic(BaseTestCase):
             self.assertEqual(last_completed, steps_name_id_map["step_4"])
 
 
-class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
@@ -167,8 +166,8 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         return get_action_process_context(process=process, topology=topology).to_context()
 
     def test_process_step_sequential_rendering(self):
-        bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
-        cluster = self.add_cluster(bundle=bundle, name="cc")
+        bundle = self.uc.upload_bundle(ACTION_PROCESS_BUNDLE)
+        cluster = self.uc.add_cluster(bundle=bundle, name="cc")
         object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
         action_info = ActionRepoImpl.get_action(id=action.pk)

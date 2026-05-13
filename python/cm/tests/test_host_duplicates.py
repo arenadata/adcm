@@ -12,31 +12,32 @@
 
 from pathlib import Path
 
+from core.cluster import ClusterService
 from core.types import ActionTargetDescriptor, ADCMCoreType
 from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 from use_cases.transition.host.duplicate import create_duplicate
 
 from cm.legacy.services.job.context import get_inventory_data
+from cm.tests.dependencies import WithDishkaContainer
 from cm.transition.status import StatusScenarios
 
 
-class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
+class TestHostDuplicateBugs(WithDishkaContainer, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         bundle_root = Path(__file__).parent / "bundles"
 
-        provider_bundle = self.add_bundle(bundle_root / "provider")
+        provider_bundle = self.uc.upload_bundle(bundle_root / "provider")
 
-        provider = self.add_provider(bundle=provider_bundle, name="pp")
-        self.host = self.add_host(provider=provider, fqdn="host-1")
+        provider = self.uc.add_provider(bundle=provider_bundle, name="pp")
+        self.host = self.uc.add_host(provider=provider, fqdn="host-1")
 
-        cluster_bundle = self.add_bundle(bundle_root / "cluster_1")
+        cluster_bundle = self.uc.upload_bundle(bundle_root / "cluster_1")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="cc")
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="cc")
 
     def test_adcm_6948_prepare_inventory_with_host_duplicate_when_original_has_no_config(self):
         # imitate absense of config
@@ -49,8 +50,9 @@ class TestHostDuplicateBugs(BusinessLogicMixin, BaseTestCase):
             cluster_id=self.cluster.pk,
             config_service=get_config_service(),
             rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(),
+            status_scenarios=StatusScenarios(cluster_service=self.uc.container.get(ClusterService)),
         )
 
         target = ActionTargetDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)
-        get_inventory_data(target=target, is_host_action=False)
+
+        get_inventory_data(target=target, is_host_action=False, cluster_service=self.uc.container.get(ClusterService))

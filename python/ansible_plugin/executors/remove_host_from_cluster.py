@@ -14,6 +14,7 @@ from typing import Collection
 
 from cm.legacy.api import remove_host_from_cluster
 from cm.models import Host
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import model_validator
 from rbac.scenarios import RBACScenarios
@@ -91,7 +92,10 @@ class ADCMRemoveHostFromClusterPluginExecutor(ADCMAnsiblePluginExecutor[RemoveHo
                     message=f"Host {host.fqdn} is not in cluster id: {runtime.vars.context.cluster_id}"
                 ),
             )
+
         rbac_scenarios = self._container.get(RBACScenarios)
-        remove_host_from_cluster(host, rbac_scenarios=rbac_scenarios)
+        cluster_service = self._container.get(ClusterService)
+
+        remove_host_from_cluster(host, rbac_scenarios=rbac_scenarios, cluster_service=cluster_service)
 
         return CallResult(value=None, changed=True, error=None)

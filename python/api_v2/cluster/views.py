@@ -37,8 +37,6 @@ from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import (
     ClusterDB,
     perform_host_to_cluster_map,
-    retrieve_cluster_topology,
-    retrieve_clusters_objects_maintenance_mode,
 )
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
@@ -56,12 +54,15 @@ from cm.models import (
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
 from core.legacy.bundle.operations import build_requires_dependencies_map
-from core.legacy.cluster.operations import (
-    calculate_maintenance_mode_for_cluster_objects,
-    find_host_candidates_for_cluster,
-)
+from core.legacy.cluster.operations import find_host_candidates_for_cluster
 from core.legacy.cluster.types import HostComponentEntry
-from core.types import ADCMCoreType, ComponentNameKey, MaintenanceModeOfObjects, ServiceNameKey
+from core.types import (
+    ADCMCoreType,
+    ComponentNameKey,
+    MaintenanceModeOfObjects,
+    MaintenanceModeState,
+    ServiceNameKey,
+)
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -83,8 +84,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.transition.cluster.create import CreateCluster
-from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
@@ -159,7 +160,6 @@ from api_v2.host.serializers import (
     HostShortSerializer,
     ManyHostAddSerializer,
 )
-from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import (
     cluster_from_lookup,
     cluster_from_response,
@@ -423,9 +423,10 @@ class ClusterViewSet(
         )
 
     @audit_delete(name="Cluster deleted", object_=cluster_from_lookup, removed_on_success=True)
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, request, *args, cluster_service: FromDishka[ClusterService], **kwargs):  # noqa: ARG002
         cluster = self.get_object()
-        delete_cluster(cluster=cluster)
+        delete_cluster(cluster=cluster, cluster_service=cluster_service)
 
         return Response(status=HTTP_204_NO_CONTENT)
 
@@ -549,7 +550,8 @@ class ClusterViewSet(
         pagination_class=None,
         filter_backends=[],
     )
-    def mapping(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def mapping(self, request: Request, *args, cluster_service: FromDishka[ClusterService], **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
 
         check_custom_perm(
@@ -595,7 +597,9 @@ class ClusterViewSet(
         cluster_id = cluster.id
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster.prototype_id)
 
-        set_host_component_mapping(cluster_id=cluster_id, bundle_id=bundle_id, new_mapping=new_mapping_entries)
+        set_host_component_mapping(
+            cluster_id=cluster_id, bundle_id=bundle_id, new_mapping=new_mapping_entries, cluster_service=cluster_service
+        )
 
         return Response(
             data=self.get_serializer(instance=HostComponent.objects.filter(cluster_id=cluster_id), many=True).data,
@@ -625,20 +629,26 @@ class ClusterViewSet(
         url_path="mapping/components",
         url_name="mapping-components",
     )
-    def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def mapping_components(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,
+    ):
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         bundle_id, is_mm_available = Prototype.objects.values_list("bundle_id", "allow_maintenance_mode").get(
             id=cluster.prototype_id
         )
 
-        objects_mm = (
-            calculate_maintenance_mode_for_cluster_objects(
-                topology=retrieve_cluster_topology(cluster.id),
-                own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster.id,)),
+        if is_mm_available:
+            objects_mm = cluster_service.calculate_maintenance_mode(
+                topology=cluster_service.retrieve_topology(cluster_id=cluster.pk),
+                objects_own_mm=cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster.pk,)),
             )
-            if is_mm_available
-            else MaintenanceModeOfObjects(services={}, components={}, hosts={})
-        )
+        else:
+            objects_mm = MaintenanceModeOfObjects(services={}, components={}, hosts={})
 
         components = self.filter_queryset(
             queryset=Component.objects.filter(cluster=cluster)
@@ -945,11 +955,18 @@ class HostClusterViewSet(
         )
     )
     @inject
-    def destroy(self, request, *args, rbac_scenarios: FromDishka[RBACScenarios], **kwargs):  # noqa: ARG002
+    def destroy(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        cluster_service: FromDishka[ClusterService],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        **kwargs,
+    ):
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
-        remove_host_from_cluster(host=host, rbac_scenarios=rbac_scenarios)
+        remove_host_from_cluster(host=host, rbac_scenarios=rbac_scenarios, cluster_service=cluster_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @audit_update(name="Host updated", object_=host_from_lookup).track_changes(
@@ -967,13 +984,19 @@ class HostClusterViewSet(
         self,
         request: Request,
         *args,  # noqa: ARG002
-        schedule_task: FromDishka[ScheduleMMChangingTask],
-        cluster_service: FromDishka[ClusterService],
+        set_mm: FromDishka[SetMaintenanceMode],
         **kwargs,  # noqa: ARG002
     ) -> Response:
-        return maintenance_mode(
-            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
-        )
+        host = self.get_object()
+
+        check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
+
+        serializer = self.get_serializer_class()(instance=host, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        value = set_mm.do(target=host, value=MaintenanceModeState(serializer.validated_data["maintenance_mode"]))
+
+        return Response(data={"maintenance_mode": value.value})
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002

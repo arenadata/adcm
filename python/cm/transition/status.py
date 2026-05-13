@@ -13,6 +13,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from core.cluster import ClusterService
 from core.types import ConcernID, CoreObjectDescriptor, Descriptor, HostID
 from requests import Response
 
@@ -63,6 +64,8 @@ from cm.models import ADCMEntity
 
 @dataclass(slots=True)
 class StatusScenarios:
+    cluster_service: ClusterService
+
     def retrieve_status_map(self) -> FullStatusMap:
         return legacy_retrieve_status_map()
 
@@ -118,4 +121,4 @@ class StatusScenarios:
         legacy_register_host_duplicates(original=original, duplicates=duplicates)
 
     def _sync_objects_in_mm(self) -> Response | None:
-        return legacy_reset_objects_in_mm()
+        return legacy_reset_objects_in_mm(cluster_service=self.cluster_service)

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
+from core.cluster import ClusterService
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.types import TaskMappingDelta
@@ -90,7 +91,12 @@ class BaseInventoryTestCase(ADCMDjangoAPISuite):
     ) -> None:
         target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
         actual_inventory = decrypt_secrets(
-            source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta)
+            source=get_inventory_data(
+                target=target,
+                is_host_action=action.host_action,
+                delta=delta,
+                cluster_service=self.uc.container.get(ClusterService),
+            )
         )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)

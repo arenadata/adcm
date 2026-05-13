@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from typing import Iterable
 
 from core.cluster._maintenance_mode import calculate_maintenance_mode_for_cluster_objects
 from core.cluster._operations import find_children_excluding_hosts
@@ -20,7 +21,6 @@ from core.types import (
     ClusterID,
     ClusterObjectDesc,
     MaintenanceModeOfObjects,
-    MaintenanceModeOfObjectsWithReason,
 )
 
 
@@ -37,10 +37,10 @@ class ClusterService:
         children = find_children_excluding_hosts(target=start_from, topology=topology)
         return (start_from, *children)
 
-    def retrieve_own_maintenance_mode(self, cluster_id: ClusterID) -> MaintenanceModeOfObjects:
-        return self.repo.get_clusters_objects_own_maintenance_mode(cluster_ids=(cluster_id,))
+    def retrieve_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
+        return self.repo.get_clusters_objects_own_maintenance_mode(cluster_ids=cluster_ids)
 
     def calculate_maintenance_mode(
         self, topology: ClusterTopology, objects_own_mm: MaintenanceModeOfObjects
-    ) -> MaintenanceModeOfObjectsWithReason:
+    ) -> MaintenanceModeOfObjects:
         return calculate_maintenance_mode_for_cluster_objects(topology=topology, own_maintenance_mode=objects_own_mm)

@@ -19,6 +19,7 @@ from cm.models import (
     MaintenanceMode,
     ProcessStep,
 )
+from core.cluster import ClusterService
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from tests.suites import ADCMDjangoAPISuite
@@ -86,7 +87,9 @@ class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         }
 
         self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster.pk)
+        self.check_mm_is_on_only_for(
+            obj=self.host_1, cluster_id=self.cluster.pk, cluster_service=self.container.get(ClusterService)
+        )
 
         response = self.submit_mapping_step_r(delta=delta, expected_status=HTTP_409_CONFLICT)
 
@@ -100,7 +103,9 @@ class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             entries=[(self.host_1, self.component_1), (self.host_2, self.component_1)],
         )
         self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster.pk)
+        self.check_mm_is_on_only_for(
+            obj=self.host_2, cluster_id=self.cluster.pk, cluster_service=self.container.get(ClusterService)
+        )
 
         self.expect_submit_mapping_step_succeed(delta=delta)
 
@@ -108,7 +113,9 @@ class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         delta = {"add": [{"hostId": self.host_2.pk, "componentId": self.component_1.pk}]}
 
         self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster.pk)
+        self.check_mm_is_on_only_for(
+            obj=self.component_1, cluster_id=self.cluster.pk, cluster_service=self.container.get(ClusterService)
+        )
 
         self.expect_submit_mapping_step_succeed(delta=delta)
 
@@ -123,7 +130,9 @@ class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             ],
         )
         self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster.pk)
+        self.check_mm_is_on_only_for(
+            obj=self.component_1, cluster_id=self.cluster.pk, cluster_service=self.container.get(ClusterService)
+        )
 
         self.expect_submit_mapping_step_succeed(delta=delta)
 
@@ -138,6 +147,8 @@ class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             entries=[(self.host_1, self.component_1)],
         )
         self.set_service_state_not_created()
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster.pk)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster.pk, cluster_service=self.container.get(ClusterService)
+        )
 
         self.expect_submit_mapping_step_succeed(delta=delta)

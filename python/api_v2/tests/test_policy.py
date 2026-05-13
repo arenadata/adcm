@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Service
 from rbac.models import Group, Policy, Role
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -183,14 +184,12 @@ class TestPolicy(ADCMDjangoAPISuite):
         self.assertEqual(policies, ["Awesome Policy", "Best", "Class", "Create User Policy", "Good", "Test"])
 
     def test_adcm_7787_policy_objects_response(self):
-        service_2, service_3, service_6 = (
-            self.add_services_to_cluster(
-                service_names=["service_2", "service_3_manual_add", "service_6_delete_with_action"],
-                cluster=self.cluster_1,
-            )
-            .order_by("prototype__name")
-            .all()
-        )
+        names = ["service_2", "service_3_manual_add", "service_6_delete_with_action"]
+        self.uc.add_services_to_cluster(names=names, cluster=self.cluster_1)
+        service_2, service_3, service_6 = Service.objects.filter(
+            cluster=self.cluster_1, prototype__name__in=names
+        ).order_by("prototype__name")
+
         service_admin_role = Role.objects.get(name="Service Administrator", built_in=True, type="role")
         cluster_admin_role = Role.objects.get(name="Cluster Administrator", built_in=True, type="role")
         name = "Service admin policy"

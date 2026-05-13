@@ -19,6 +19,7 @@ from cm.legacy.services.status import notify
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, HostID, HostName
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
@@ -39,7 +40,7 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(provider=self.provider, fqdn="test-host")
+        self.host = self.uc.add_host(provider=self.provider, fqdn="test-host")
 
         self.host_action = Action.objects.get(name="host_action", prototype=self.host.prototype)
         self.cluster_action = Action.objects.filter(prototype=self.cluster_1.prototype, host_action=True).first()
@@ -137,7 +138,7 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         self.assertEqual(self.host.fqdn, new_test_host_fqdn)
 
     def test_update_name_fail(self):
-        new_host = self.add_host(provider=self.provider, fqdn="new_host")
+        new_host = self.uc.add_host(provider=self.provider, fqdn="new_host")
 
         response = self.client.v2[self.host].patch(data={"name": new_host.name})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -167,7 +168,7 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
     def test_update_name_locking_concern_from_cluster_fail(self):
-        self.add_host_to_cluster(self.cluster_1, self.host)
+        self.uc.add_host_to_cluster(self.cluster_1, self.host)
 
         response = self.client.v2[self.cluster_1, "hosts", self.host, "actions", self.cluster_action, "run"].post(
             data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
@@ -202,7 +203,7 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
     def test_update_name_bound_to_cluster_fail(self):
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
 
         response = self.client.v2[self.host].patch(data={"name": "new-fqdn"})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -227,15 +228,15 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "MAINTENANCE_MODE_NOT_AVAILABLE")
 
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response = self.client.v2[self.host, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], "on")
+        self.assertEqual(response.json(), {"maintenanceMode": "on"})
 
     def test_filtering_success(self):
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.add_host(provider=self.provider, fqdn="host-2")
-        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.uc.add_host(provider=self.provider, fqdn="host-2")
+        self.uc.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
 
         filters = {
             "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
@@ -261,13 +262,13 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                     self.assertEqual(response.json()["count"], count)
 
     def test_ordering_success(self):
-        provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
-        test_host_5 = self.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
-        test_host_2 = self.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2)
+        provider_2 = self.uc.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
+        test_host_5 = self.uc.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
+        test_host_2 = self.uc.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_2)
 
-        test_host_7 = self.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2)
-        test_host_6 = self.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
-        self.add_host(provider=self.provider, fqdn="a_first_host")
+        test_host_7 = self.uc.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_2)
+        test_host_6 = self.uc.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
+        self.uc.add_host(provider=self.provider, fqdn="a_first_host")
         Host.objects.filter(id__in=[test_host_5.id, test_host_6.id]).update(state="running")
         Host.objects.filter(id__in=[test_host_2.id, test_host_7.id]).update(state="active")
 
@@ -676,16 +677,16 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], "on")
+        self.assertEqual(response.json(), {"maintenanceMode": "on"})
 
     def test_ordering_success(self):
-        provider_2 = self.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
-        self.add_host_to_cluster(self.cluster_1, self.host)
-        test_host_5 = self.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
-        self.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_1)
+        provider_2 = self.uc.add_provider(bundle=self.provider_bundle, name="another provider", description="provider")
+        self.uc.add_host_to_cluster(self.cluster_1, self.host)
+        test_host_5 = self.uc.add_host(provider=self.provider, fqdn="test_host_5", cluster=self.cluster_1)
+        self.uc.add_host(provider=self.provider, fqdn="test_host_2", cluster=self.cluster_1)
 
-        test_host_7 = self.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1)
-        test_host_6 = self.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
+        test_host_7 = self.uc.add_host(provider=provider_2, fqdn="test_host_7", cluster=self.cluster_1)
+        test_host_6 = self.uc.add_host(provider=provider_2, fqdn="test_host_6", cluster=self.cluster_1)
 
         Host.objects.filter(id__in=[test_host_5.id, test_host_7.id]).update(state="running")
         Host.objects.filter(id__in=[self.host.id, test_host_6.id]).update(state="active")
@@ -741,9 +742,9 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             )
 
     def test_filtering_success(self):
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.add_host(provider=self.provider, fqdn="host-2")
-        self.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.uc.add_host(provider=self.provider, fqdn="host-2")
+        self.uc.add_host(provider=self.provider, fqdn="host-3", cluster=self.cluster_1)
 
         filters = {
             "name": (self.host.name, self.host.name[1:-3].upper(), "wrong", 1),
@@ -766,14 +767,14 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                     self.assertEqual(response.json()["count"], count)
 
     def test_adcm_5687_filtering_by_component_id(self):
-        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         component_1 = service.components.get(prototype__name="component_1")
         component_2 = service.components.get(prototype__name="component_2")
 
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=((self.host, component_1), (self.host_2, component_2)),
         )
@@ -832,7 +833,11 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             )
 
         host_duplicate_named_as_host_2.refresh_from_db()
-        remove_host_from_cluster(host=host_duplicate_named_as_host_2, rbac_scenarios=RBACScenarios())
+        remove_host_from_cluster(
+            host=host_duplicate_named_as_host_2,
+            rbac_scenarios=RBACScenarios(),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
 
         with self.subTest("exclude by original host add"):
             perform_host_to_cluster_map(

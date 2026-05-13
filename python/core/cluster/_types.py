@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterable, TypeAlias
+from typing import Iterator, TypeAlias
 
 from core.types import (
     ClusterID,
@@ -42,7 +42,7 @@ class ServiceTopology:
     components: dict[ComponentID, ComponentTopology]
 
     @property
-    def host_ids(self) -> Iterable[HostID]:
+    def host_ids(self) -> Iterator[HostID]:
         return chain.from_iterable(component.hosts for component in self.components.values())
 
 
@@ -53,7 +53,7 @@ class ClusterTopology:
     hosts: dict[HostID, ShortObjectInfo]
 
     @property
-    def component_ids(self) -> Iterable[ComponentID]:
+    def component_ids(self) -> Iterator[ComponentID]:
         return chain.from_iterable(service.components for service in self.services.values())
 
     @property

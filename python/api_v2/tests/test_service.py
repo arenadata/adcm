@@ -52,8 +52,8 @@ class TestServiceAPI(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
+        self.service_2, *_ = self.uc.add_services_to_cluster(names=["service_2"], cluster=self.cluster_1)
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
@@ -67,7 +67,7 @@ class TestServiceAPI(ADCMDjangoAPISuite):
         self.assertEqual(response.json()["count"], 2)
 
     def test_adcm_4544_service_ordering_success(self):
-        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        service_3, *_ = self.uc.add_services_to_cluster(names=["service_3_manual_add"], cluster=self.cluster_1)
         self.service_2.state, service_3.state = "non_created", "installed"
 
         for service in (self.service_1, self.service_2, service_3):
@@ -136,9 +136,9 @@ class TestServiceAPI(ADCMDjangoAPISuite):
         self.assertTrue(Service.objects.filter(pk=self.service_2.pk).exists())
 
     def test_delete_mapping_exists_fail(self):
-        host = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
+        host = self.uc.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
         component = self.service_1.components.first()
-        self.set_hostcomponent(cluster=self.cluster_1, entries=((host, component),))
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=((host, component),))
 
         response = self.client.v2[self.service_1].delete()
 
@@ -168,7 +168,7 @@ class TestServiceAPI(ADCMDjangoAPISuite):
         self.assertTrue(Service.objects.filter(pk=self.service_1.pk).exists())
 
     def test_delete_with_export_exists_fail(self):
-        service_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        service_2, *_ = self.uc.add_services_to_cluster(names=["service"], cluster=self.cluster_2)
         ClusterBind.objects.create(
             cluster_id=service_2.cluster.pk,
             service_id=service_2.pk,
@@ -209,11 +209,10 @@ class TestServiceAPI(ADCMDjangoAPISuite):
 
     def test_delete_required_by_other_service_fail(self):
         bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
-        bundle = self.add_bundle(source_dir=bundle_dir)
-        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
-        service = self.add_services_to_cluster(service_names=["service_1", "some_other_service"], cluster=cluster).get(
-            prototype__name="some_other_service"
-        )
+        bundle = self.uc.upload_bundle(bundle_dir)
+        cluster = self.uc.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        self.uc.add_services_to_cluster(names=["service_1", "some_other_service"], cluster=cluster)
+        service = Service.objects.get(cluster=cluster, prototype__name="some_other_service")
         service_1 = cluster.services.get(prototype__name="service_1")
 
         response = self.client.v2[service].delete()
@@ -231,11 +230,10 @@ class TestServiceAPI(ADCMDjangoAPISuite):
 
     def test_delete_required_by_other_component_only_service_fail(self):
         bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
-        bundle = self.add_bundle(source_dir=bundle_dir)
-        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
-        service = self.add_services_to_cluster(
-            service_names=["some_other_service", "third_service"], cluster=cluster
-        ).get(prototype__name="some_other_service")
+        bundle = self.uc.upload_bundle(bundle_dir)
+        cluster = self.uc.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        self.uc.add_services_to_cluster(names=["some_other_service", "third_service"], cluster=cluster)
+        service = Service.objects.get(cluster=cluster, prototype__name="some_other_service")
         third_service = cluster.services.get(prototype__name="third_service")
         component = third_service.components.get(prototype__name="component_from_third_service")
 
@@ -255,11 +253,10 @@ class TestServiceAPI(ADCMDjangoAPISuite):
 
     def test_delete_required_by_other_component_full_requires_fail(self):
         bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
-        bundle = self.add_bundle(source_dir=bundle_dir)
-        cluster = self.add_cluster(bundle=bundle, name="service_requirements_cluster")
-        service = self.add_services_to_cluster(
-            service_names=["some_other_service", "fourth_service"], cluster=cluster
-        ).get(prototype__name="some_other_service")
+        bundle = self.uc.upload_bundle(bundle_dir)
+        cluster = self.uc.add_cluster(bundle=bundle, name="service_requirements_cluster")
+        self.uc.add_services_to_cluster(names=["some_other_service", "fourth_service"], cluster=cluster)
+        service = Service.objects.get(cluster=cluster, prototype__name="some_other_service")
         fourth_service = cluster.services.get(prototype__name="fourth_service")
         component = fourth_service.components.get(prototype__name="component_from_fourth_service")
 
@@ -431,8 +428,8 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_to_delete, *_ = self.add_services_to_cluster(
-            service_names=["service_6_delete_with_action"], cluster=self.cluster_1
+        self.service_to_delete, *_ = self.uc.add_services_to_cluster(
+            names=["service_6_delete_with_action"], cluster=self.cluster_1
         )
         self.service_regular_action: Action = Action.objects.get(
             prototype=self.service_to_delete.prototype, name="regular_action"
@@ -442,7 +439,7 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
             cluster=self.cluster_1,
             service=self.service_to_delete,
             component=Component.objects.get(service=self.service_to_delete, prototype__name="component"),
-            host=self.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1),
+            host=self.uc.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1),
         )
 
     def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:
@@ -493,11 +490,11 @@ class TestServiceMaintenanceMode(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_1_cl_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.component_1_s_1_cl1 = Component.objects.filter(
             cluster_id=self.cluster_1.pk, service_id=self.service_1_cl_1.pk
         ).last()
-        self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        self.service_cl_2, *_ = self.uc.add_services_to_cluster(names=["service"], cluster=self.cluster_2)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
@@ -549,15 +546,17 @@ class TestServicePermissions(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        self.test_user = self.uc.create_user(**self.test_user_credentials)
 
-        self.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
-        self.host_with_component = self.add_host(provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1)
+        self.uc.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
+        self.host_with_component = self.uc.add_host(
+            provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
+        )
         component = Component.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
 
     def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):
         response_list = self.client.v2[self.cluster_1, "hosts"].get()
@@ -606,14 +605,14 @@ class TestAdvancedFilters(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        other_service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        other_service, *_ = self.uc.add_services_to_cluster(names=["service"], cluster=self.cluster_2)
         other_component = Component.objects.get(
             prototype__name="component", service=other_service, cluster=self.cluster_2
         )
 
-        services = self.add_services_to_cluster(service_names=["service_1", "service_2"], cluster=self.cluster_1)
-        self.service_1 = services.get(prototype__name="service_1", cluster=self.cluster_1)
-        self.service_2 = services.get(prototype__name="service_2", cluster=self.cluster_1)
+        self.uc.add_services_to_cluster(names=["service_1", "service_2"], cluster=self.cluster_1)
+        self.service_1 = Service.objects.get(prototype__name="service_1", cluster=self.cluster_1)
+        self.service_2 = Service.objects.get(prototype__name="service_2", cluster=self.cluster_1)
 
         self.component_1 = Component.objects.get(
             prototype__name="component_1", service=self.service_1, cluster=self.cluster_1

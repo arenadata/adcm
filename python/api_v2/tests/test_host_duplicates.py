@@ -194,10 +194,10 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             status_scenarios=self.container.get(StatusScenarios),
         )
 
-        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).first()
+        service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         component_1 = Component.objects.get(service=service, prototype__name="component_1")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (Host.objects.get(id=duplicate_1_id), component_1),
@@ -280,9 +280,9 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
 
     def test_forbid_action_launch_of_host_own_actions_on_duplicates(self):
         duplicate = self.create_duplicate(origin=self.host_1, cluster=self.cluster_1)
-        self.add_services_to_cluster(["service_1"], cluster=self.cluster_1)
+        self.uc.add_services_to_cluster(["service_1"], cluster=self.cluster_1)
         component = Component.objects.get(prototype__name="component_1")
-        self.set_hostcomponent(self.cluster_1, [(duplicate, component)])
+        self.uc.set_hostcomponent(self.cluster_1, [(duplicate, component)])
 
         action_from_component = Action.objects.get(prototype=component.prototype, name="component_on_host")
         action_from_host = Action.objects.get(prototype=duplicate.prototype, name="host_action")
@@ -333,8 +333,8 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.add_host(provider=self.provider, fqdn="something")
-        another_host = self.add_host(provider=self.provider, fqdn="something-else")
+        self.uc.add_host(provider=self.provider, fqdn="something")
+        another_host = self.uc.add_host(provider=self.provider, fqdn="something-else")
         create_duplicate(
             host_id=another_host.pk,
             name="wow",
@@ -349,7 +349,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_duplicate_add_to_wrong_cluster_fail(self):
-        host_2 = self.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_1)
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="host-2", cluster=self.cluster_1)
         duplicate = self.create_duplicate(origin=self.host_1, name=host_2.fqdn)
 
         response = self.client.v2[self.cluster_1, "hosts"].post(data=[{"hostId": duplicate.pk}])
@@ -403,9 +403,9 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
     def test_adcm_7443_files_in_nested_groups_success(self):
         files_dir = self.directories.files
 
-        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "provider_host_nested_groups_with_files")
-        provider = self.add_provider(bundle=bundle, name="provider-with-files-in-nested-groups")
-        host = self.add_host(provider=provider, fqdn="host-with-files-in-nested-groups")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "provider_host_nested_groups_with_files")
+        provider = self.uc.add_provider(bundle=bundle, name="provider-with-files-in-nested-groups")
+        host = self.uc.add_host(provider=provider, fqdn="host-with-files-in-nested-groups")
 
         original_files = {file.name for file in files_dir.rglob(f"host.{host.id}.*")}
         expected_files = {

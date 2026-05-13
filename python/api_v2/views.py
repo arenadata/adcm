@@ -44,6 +44,7 @@ from rest_framework.mixins import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import GenericViewSet
+from use_cases.cluster.maintenance_mode import MMIsChangingError, MMIsNotAvailableError, MMValueError
 
 from api_v2.utils.di import inject
 
@@ -281,6 +282,9 @@ class ClusterHostOperationHandleExceptionMixin:
         ClusterAddHostError: lambda e: AdcmEx(
             "HOST_CONFLICT", getattr(e, "message", "Host can not be added to cluster")
         ),
+        MMIsNotAvailableError: lambda e: AdcmEx("MAINTENANCE_MODE_NOT_AVAILABLE", e.args[0] if e.args else ""),
+        MMIsChangingError: lambda e: AdcmEx("MAINTENANCE_MODE", e.args[0] if e.args else ""),
+        MMValueError: lambda e: AdcmEx("MAINTENANCE_MODE", e.args[0] if e.args else ""),
     }
 
     def handle_exception(self, exc: Exception):

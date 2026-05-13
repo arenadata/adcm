@@ -65,8 +65,8 @@ class TestCluster(ADCMDjangoAPISuite):
         manager.expect_called("retrieve_status_map")
 
     def test_adcm_4539_ordering_success(self):
-        self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
-        self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
+        self.uc.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
+        self.uc.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
 
         response = (self.client.v2 / "clusters").get(query={"ordering": "name"})
         self.assertListEqual(
@@ -332,7 +332,7 @@ class TestCluster(ADCMDjangoAPISuite):
         )
 
     def test_service_candidates_success(self):
-        self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1)
+        self.uc.add_services_to_cluster(names=["service_3_manual_add"], cluster=self.cluster_1)
 
         response = (self.client.v2[self.cluster_1] / "service-candidates").get()
 
@@ -356,8 +356,8 @@ class TestCluster(ADCMDjangoAPISuite):
     def test_depends_on_in_service_candidates(self) -> None:
         self.maxDiff = None
 
-        bundle = self.add_bundle(self.test_bundles_dir / "complex_dependencies")
-        cluster = self.add_cluster(bundle=bundle, name="With Deps")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "complex_dependencies")
+        cluster = self.uc.add_cluster(bundle=bundle, name="With Deps")
         service_proto = Prototype.objects.get(name="first_service", type="service")
         component_proto = Prototype.objects.get(name="first_component", type="component", parent=service_proto)
 
@@ -689,7 +689,7 @@ class TestClusterActions(ADCMDjangoAPISuite):
         cluster_custom_flag_path = self.test_bundles_dir / "cluster_custom_flag"
         cluster_custom_flag_bundle = self.add_bundle(source_dir=cluster_custom_flag_path)
 
-        cluster_1 = self.add_cluster(
+        cluster_1 = self.uc.add_cluster(
             bundle=cluster_custom_flag_bundle, name="cluster_custom_flag_1", description="cluster_1"
         )
 

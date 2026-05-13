@@ -14,6 +14,7 @@ from typing import Collection
 
 from cm.legacy.api import delete_host
 from cm.models import Host
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from ansible_plugin.base import (
@@ -38,9 +39,10 @@ class ADCMDeleteHostPluginExecutor(ADCMAnsiblePluginExecutor[NoArguments, None])
         self, targets: Collection[CoreObjectDescriptor], arguments: NoArguments, runtime: RuntimeEnvironment
     ) -> CallResult[None]:
         _ = targets, arguments
+        cluster_service = self._container.get(ClusterService)
 
         try:
-            delete_host(Host.obj.get(pk=runtime.context_owner.id), cancel_tasks=False)
+            delete_host(Host.obj.get(pk=runtime.context_owner.id), cluster_service=cluster_service, cancel_tasks=False)
         except Host.DoesNotExist:
             return CallResult(
                 value=None,

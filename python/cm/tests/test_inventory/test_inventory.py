@@ -13,11 +13,11 @@
 
 from pathlib import Path
 
+from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
 from rbac.scenarios import RBACScenarios
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 import core
 
@@ -167,11 +167,15 @@ class TestInventory(BaseTestCase):
         for obj, inv in data:
             target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
             with self.subTest(obj=obj, inv=inv):
-                actual_data = get_inventory_data(target=target, is_host_action=action.host_action)
+                actual_data = get_inventory_data(
+                    target=target,
+                    is_host_action=action.host_action,
+                    cluster_service=self.uc.container.get(ClusterService),
+                )
                 self.assertDictEqual(actual_data, inv)
 
 
-class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+class TestInventoryAndMaintenanceMode(WithDishkaContainer, BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -229,7 +233,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
             "component_id": self.component_hc_acl_2.pk,
         }
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_hc_acl,
             entries=(
                 (Host.objects.get(id=entry["host_id"]), Component.objects.get(id=entry["component_id"]))
@@ -266,7 +270,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
             cluster=self.cluster_target_group, prototype__name="component_1_target_group"
         )
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_target_group,
             entries=[
                 (self.host_target_group_1, self.component_target_group),
@@ -308,6 +312,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         inventory = prepare_ansible_inventory(
             task=JobRepoImpl.get_task(task_id),
             topology=retrieve_cluster_topology(cluster_id),
+            cluster_service=self.uc.container.get(ClusterService),
         )
         return inventory["all"]
 

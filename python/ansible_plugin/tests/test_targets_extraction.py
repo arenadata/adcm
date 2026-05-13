@@ -201,8 +201,8 @@ class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):
         parent_cluster = self.cluster_1
         component = Component.objects.filter(cluster=parent_cluster).first()
 
-        self.add_host_to_cluster(cluster=parent_cluster, host=host)
-        self.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
+        self.uc.add_host_to_cluster(cluster=parent_cluster, host=host)
+        self.uc.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
 
         self.check_target_detection(
             arguments=arguments,

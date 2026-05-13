@@ -34,12 +34,11 @@ from cm.legacy.services.job.run._target_factories import prepare_ansible_job_con
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component, ConcernItem, TaskLog
-from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase):
+class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     CONFIG_WITH_NONES = {
         "boolean": True,
         "secrettext": "awe\nsopme\n\ttext\n",
@@ -85,22 +84,22 @@ class TestConfigAndImportsInInventory(WithDishkaContainer, BaseInventoryTestCase
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider = self.add_provider(
-            bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
+        self.provider = self.uc.add_provider(
+            bundle=self.uc.upload_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host-2")
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host-3")
 
-        self.cluster = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
+        self.cluster = self.uc.add_cluster(
+            bundle=self.uc.upload_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
-        self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).get()
+        self.service, *_ = self.uc.add_services_to_cluster(names=["all_params"], cluster=self.cluster)
         self.component = Component.objects.get(service=self.service)
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
-        self.set_hostcomponent(
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=((self.host_1, self.component), (self.host_2, self.component))
         )
 
@@ -352,10 +351,10 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.cluster = self.add_cluster(
+        self.cluster = self.uc.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_various_path"), name="Main Cluster"
         )
-        self.service_1 = self.add_services_to_cluster(service_names=["as_cluster"], cluster=self.cluster).first()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["as_cluster"], cluster=self.cluster)
 
         self.context = {
             "cluster_bundle": self.cluster.prototype.bundle,

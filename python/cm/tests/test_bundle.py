@@ -18,7 +18,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.base import BaseTestCase, BundleLogicMixin
-from tests.deprecated import BusinessLogicMixin
 import yaml
 
 from cm.errors import AdcmEx
@@ -34,7 +33,7 @@ from cm.models import (
 )
 
 
-class TestBundle(BaseTestCase, BusinessLogicMixin):
+class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -58,9 +57,11 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
         for bundle_name, cluster_flag_value in (("cluster_true", True), ("cluster_undefined", False)):
             bundle = self.add_bundle(source_dir=directory / bundle_name)
-            cluster = self.add_cluster(bundle=bundle, name=f"Cluster {cluster_flag_value}")
-            defined_false, defined_true, not_defined = self.add_services_to_cluster(
-                ["defined_false", "defined_true", "not_defined"], cluster=cluster
+            cluster = self.uc.add_cluster(bundle=bundle, name=f"Cluster {cluster_flag_value}")
+            services_names = ["defined_false", "defined_true", "not_defined"]
+            self.uc.add_services_to_cluster(services_names, cluster=cluster)
+            defined_false, defined_true, not_defined = Service.objects.filter(
+                cluster=cluster, prototype__name__in=services_names
             ).order_by("prototype__name")
 
             self.enable_outdated_config_is(cluster, cluster_flag_value)
@@ -74,15 +75,15 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 self.enable_outdated_config_is(self.get_component(service, "defined_false"), False)
 
         bundle = self.add_bundle(source_dir=directory / "provider_false_host_true")
-        provider = self.add_provider(bundle=bundle, name="Provider False")
-        host = self.add_host(provider=provider, fqdn="host-true")
+        provider = self.uc.add_provider(bundle=bundle, name="Provider False")
+        host = self.uc.add_host(provider=provider, fqdn="host-true")
 
         self.enable_outdated_config_is(provider, False)
         self.enable_outdated_config_is(host, True)
 
         bundle = self.add_bundle(source_dir=directory / "provider_true_host_undefined")
-        provider = self.add_provider(bundle=bundle, name="Provider True")
-        host = self.add_host(provider=provider, fqdn="host-undef")
+        provider = self.uc.add_provider(bundle=bundle, name="Provider True")
+        host = self.uc.add_host(provider=provider, fqdn="host-undef")
 
         self.enable_outdated_config_is(provider, True)
         self.enable_outdated_config_is(host, True)

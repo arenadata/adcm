@@ -17,7 +17,8 @@ from core.types import (
     Descriptor,
     HostDesc,
     HostID,
-    ObjectMaintenanceModeState,
+    MaintenanceModeState,
+    ObjectMM,
     ProviderID,
     ProviderObjectDesc,
 )
@@ -30,7 +31,7 @@ class ProviderRepo(provider.ProviderRepoI):
         query = Host.objects.filter(provider_id=provider_id).values_list("id", flat=True)
         return tuple(Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in query)
 
-    def get_hosts_own_maintenance_mode(self, object_: ProviderObjectDesc) -> dict[HostID, ObjectMaintenanceModeState]:
+    def get_hosts_own_maintenance_mode(self, object_: ProviderObjectDesc) -> dict[HostID, ObjectMM]:
         match object_:
             case Descriptor(type=ADCMCoreType.HOST):
                 host_ids = (object_.id,)
@@ -39,4 +40,4 @@ class ProviderRepo(provider.ProviderRepoI):
 
         hosts_qs = Host.objects.filter(id__in=host_ids).values_list("id", "maintenance_mode")
 
-        return {id_: ObjectMaintenanceModeState(mm.lower()) for id_, mm in hosts_qs}
+        return {id_: ObjectMM(MaintenanceModeState(mm.lower())) for id_, mm in hosts_qs}

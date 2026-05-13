@@ -133,6 +133,11 @@ ERRORS = {
         ERR,
     ),
     "LOCK_ERROR": ("lock error", HTTP_409_CONFLICT, ERR),
+    "MAINTENANCE_MODE": (
+        "Maintenance mode error",
+        HTTP_409_CONFLICT,
+        ERR,
+    ),
     "MAINTENANCE_MODE_NOT_AVAILABLE": (
         "you can't manage host maintenance mode",
         HTTP_409_CONFLICT,

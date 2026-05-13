@@ -342,7 +342,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
 
         # map it, try again
         component = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        self.set_hostcomponent(self.cluster_1, entries=((host, component),))
+        self.uc.set_hostcomponent(self.cluster_1, entries=((host, component),))
 
         self.start_process_r(target=host, action=service_host_action)
 
@@ -435,7 +435,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         cluster, service, component = self.cluster_1, self.service_1, self.component_1
         host = self.create_host(provider=self.provider, name="test-host", cluster=cluster)
 
-        self.set_hostcomponent(cluster=cluster, entries=((host, component),))
+        self.uc.set_hostcomponent(cluster=cluster, entries=((host, component),))
         host_action_from_cluster = Action.objects.get(
             name="wizard_host_action_from_cluster", prototype=cluster.prototype
         )

@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import TestCase
 
-from core.legacy.cluster.operations import (
-    calculate_maintenance_mode_for_cluster_objects,
-    calculate_maintenance_mode_for_component,
-    calculate_maintenance_mode_for_service,
-    find_hosts_difference,
+from core.cluster import ClusterService
+from core.cluster._maintenance_mode import (
+    _calculate_maintenance_mode_for_component,
+    _calculate_maintenance_mode_for_service,
 )
+from core.legacy.cluster.operations import find_hosts_difference
 from core.legacy.cluster.types import (
     ClusterTopology,
     ComponentTopology,
@@ -26,15 +25,18 @@ from core.legacy.cluster.types import (
     ServiceTopology,
     TopologyHostDiff,
 )
-from core.types import MaintenanceModeOfObjects, ShortObjectInfo
-from core.types import ObjectMaintenanceModeState as MM  # noqa: N814
+from core.types import MaintenanceModeOfObjects, ObjectMM, ShortObjectInfo
+from core.types import MaintenanceModeState as MM  # noqa: N814
+from tests.base import BaseTestCase
 
 
-class TestMaintenanceMode(TestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestMaintenanceMode(BaseTestCase):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.cluster_service = cls.uc.container.get(ClusterService)
 
     @staticmethod
     def prepare_component_topology(component_id: int, name: str, *hosts: ShortObjectInfo):
@@ -44,32 +46,40 @@ class TestMaintenanceMode(TestCase):
         hosts = {i: ShortObjectInfo(i, f"host-{i}") for i in range(8)}
 
         maintenance_mode_info = MaintenanceModeOfObjects(
-            services={10: MM.OFF, 20: MM.ON, 30: MM.CHANGING, 40: MM.CHANGING, 50: MM.OFF, 60: MM.OFF, 70: MM.ON},
+            services={
+                10: ObjectMM(MM.OFF),
+                20: ObjectMM(MM.ON),
+                30: ObjectMM(MM.CHANGING),
+                40: ObjectMM(MM.CHANGING),
+                50: ObjectMM(MM.OFF),
+                60: ObjectMM(MM.OFF),
+                70: ObjectMM(MM.ON),
+            },
             components={
-                100: MM.OFF,
-                101: MM.OFF,
-                102: MM.ON,
-                103: MM.CHANGING,
-                200: MM.OFF,
-                300: MM.ON,
-                400: MM.OFF,
-                401: MM.OFF,
-                402: MM.ON,
-                500: MM.OFF,
+                100: ObjectMM(MM.OFF),
+                101: ObjectMM(MM.OFF),
+                102: ObjectMM(MM.ON),
+                103: ObjectMM(MM.CHANGING),
+                200: ObjectMM(MM.OFF),
+                300: ObjectMM(MM.ON),
+                400: ObjectMM(MM.OFF),
+                401: ObjectMM(MM.OFF),
+                402: ObjectMM(MM.ON),
+                500: ObjectMM(MM.OFF),
             },
             hosts={
-                hosts[0].id: MM.OFF,
-                hosts[1].id: MM.OFF,
-                hosts[2].id: MM.ON,
-                hosts[3].id: MM.ON,
-                hosts[4].id: MM.CHANGING,
-                hosts[5].id: MM.CHANGING,
-                hosts[6].id: MM.OFF,
-                hosts[7].id: MM.ON,
+                hosts[0].id: ObjectMM(MM.OFF),
+                hosts[1].id: ObjectMM(MM.OFF),
+                hosts[2].id: ObjectMM(MM.ON),
+                hosts[3].id: ObjectMM(MM.ON),
+                hosts[4].id: ObjectMM(MM.CHANGING),
+                hosts[5].id: ObjectMM(MM.CHANGING),
+                hosts[6].id: ObjectMM(MM.OFF),
+                hosts[7].id: ObjectMM(MM.ON),
             },
         )
 
-        result = calculate_maintenance_mode_for_cluster_objects(
+        result = self.cluster_service.calculate_maintenance_mode(
             topology=ClusterTopology(
                 cluster_id=400,
                 services={
@@ -111,30 +121,38 @@ class TestMaintenanceMode(TestCase):
                 },
                 hosts=hosts,
             ),
-            own_maintenance_mode=maintenance_mode_info,
+            objects_own_mm=maintenance_mode_info,
         )
         self.assertEqual(
             {"hosts": result.hosts, "services": result.services, "components": result.components},
             {
                 "hosts": maintenance_mode_info.hosts,
-                "services": {10: MM.OFF, 20: MM.ON, 30: MM.ON, 40: MM.CHANGING, 50: MM.ON, 60: MM.OFF, 70: MM.ON},
+                "services": {
+                    10: ObjectMM(MM.OFF),
+                    20: ObjectMM(MM.ON),
+                    30: ObjectMM(MM.ON),
+                    40: ObjectMM(MM.CHANGING),
+                    50: ObjectMM(MM.ON),
+                    60: ObjectMM(MM.OFF),
+                    70: ObjectMM(MM.ON),
+                },
                 "components": {
-                    100: MM.OFF,
-                    101: MM.ON,
-                    102: MM.ON,
-                    103: MM.CHANGING,
-                    200: MM.ON,
-                    300: MM.ON,
-                    400: MM.OFF,
-                    401: MM.OFF,
-                    402: MM.ON,
-                    500: MM.ON,
+                    100: ObjectMM(MM.OFF),
+                    101: ObjectMM(MM.ON),
+                    102: ObjectMM(MM.ON),
+                    103: ObjectMM(MM.CHANGING),
+                    200: ObjectMM(MM.ON),
+                    300: ObjectMM(MM.ON),
+                    400: ObjectMM(MM.OFF),
+                    401: ObjectMM(MM.OFF),
+                    402: ObjectMM(MM.ON),
+                    500: ObjectMM(MM.ON),
                 },
             },
         )
 
     def test_calculate_maintenance_mode_for_service(self) -> None:
-        for (own_mm, service_components_own_mm, service_hosts_mm), expected_result in [
+        for (own_mm, service_components_calculated_mm, service_hosts_own_mm), expected_result in [
             # own
             ((MM.OFF, (), ()), MM.OFF),
             ((MM.ON, (), ()), MM.ON),
@@ -146,24 +164,28 @@ class TestMaintenanceMode(TestCase):
             ((MM.OFF, (MM.ON, MM.ON), ()), MM.ON),
             ((MM.OFF, (MM.OFF, MM.OFF), ()), MM.OFF),
             ((MM.OFF, (MM.OFF, MM.ON), ()), MM.OFF),
+            ((MM.OFF, (MM.OFF, MM.ON), (MM.ON, MM.ON)), MM.ON),  # all hosts ON -> ON
+            ((MM.OFF, (MM.OFF, MM.ON), (MM.ON, MM.OFF)), MM.OFF),
             # hosts-related
             ((MM.OFF, (), (MM.OFF, MM.CHANGING, MM.ON)), MM.OFF),
             ((MM.OFF, (), (MM.ON, MM.ON)), MM.ON),
             ((MM.CHANGING, (), (MM.OFF, MM.OFF)), MM.CHANGING),
             ((MM.OFF, (), (MM.OFF, MM.ON)), MM.OFF),
         ]:
-            with self.subTest(f"{own_mm=} | {service_components_own_mm=} | {service_hosts_mm=} = {expected_result}"):
+            with self.subTest(
+                f"{own_mm=} | {service_components_calculated_mm=} | {service_hosts_own_mm=} = {expected_result}"
+            ):
                 self.assertEqual(
-                    calculate_maintenance_mode_for_service(
-                        own_mm=own_mm,
-                        service_components_own_mm=service_components_own_mm,
-                        service_hosts_mm=service_hosts_mm,
+                    _calculate_maintenance_mode_for_service(
+                        own_mm=ObjectMM(own_mm),
+                        service_components_calculated_mm=(ObjectMM(mm) for mm in service_components_calculated_mm),
+                        service_hosts_own_mm=(ObjectMM(mm) for mm in service_hosts_own_mm),
                     ),
                     expected_result,
                 )
 
     def test_calculate_maintenance_mode_for_component(self) -> None:
-        for (own_mm, service_mm, component_hosts_mm), expected_result in [
+        for (own_mm, service_own_mm, component_hosts_own_mm), expected_result in [
             # own
             ((MM.OFF, MM.OFF, ()), MM.OFF),
             ((MM.ON, MM.OFF, ()), MM.ON),
@@ -183,10 +205,12 @@ class TestMaintenanceMode(TestCase):
             ((MM.CHANGING, MM.ON, ()), MM.ON),
             ((MM.OFF, MM.ON, (MM.OFF, MM.OFF)), MM.ON),
         ]:
-            with self.subTest(f"{own_mm=} | {service_mm=} | {component_hosts_mm=} = {expected_result}"):
+            with self.subTest(f"{own_mm=} | {service_own_mm=} | {component_hosts_own_mm=} = {expected_result}"):
                 self.assertEqual(
-                    calculate_maintenance_mode_for_component(
-                        own_mm=own_mm, service_mm=service_mm, component_hosts_mm=component_hosts_mm
+                    _calculate_maintenance_mode_for_component(
+                        own_mm=ObjectMM(own_mm),
+                        service_own_mm=ObjectMM(service_own_mm),
+                        component_hosts_own_mm=(ObjectMM(mm) for mm in component_hosts_own_mm),
                     ),
                     expected_result,
                 )

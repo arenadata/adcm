@@ -19,6 +19,7 @@ from typing import Any, Generator, Iterable, Literal
 import json
 import traceback
 
+from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.dto import TaskUpdateDTO
 from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
@@ -87,6 +88,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        cluster_service: ClusterService,
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
     ):
@@ -94,12 +96,18 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         self._rbac_scenarios = rbac_scenarios
         self._supported_internal_scripts = {
             "bundle_switch": partial(
-                internal_script_bundle_switch, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+                internal_script_bundle_switch,
+                rbac_scenarios=rbac_scenarios,
+                config_scenarios=config_scenarios,
+                cluster_service=cluster_service,
             ),
             "bundle_revert": partial(
-                internal_script_bundle_revert, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+                internal_script_bundle_revert,
+                rbac_scenarios=rbac_scenarios,
+                config_scenarios=config_scenarios,
+                cluster_service=cluster_service,
             ),
-            "hc_apply": internal_script_hc_apply,
+            "hc_apply": partial(internal_script_hc_apply, cluster_service=cluster_service),
             "config_apply": partial(
                 internal_script_config_apply,
                 update_configuration_from_job=update_configuration_from_job,
@@ -167,7 +175,11 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 
 @atomic()
 def internal_script_bundle_switch(
-    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
+    task: Task,
+    job: Job,
+    rbac_scenarios: RBACScenarios,
+    config_scenarios: ConfigScenarios,
+    cluster_service: ClusterService,
 ) -> int:
     _ = job
 
@@ -178,7 +190,11 @@ def internal_script_bundle_switch(
     from cm.legacy.bundle_switch_revert import bundle_switch
 
     config_service = get_config_service()
-    callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
+    callbacks = build_switch_revert_callbacks(
+        config_service=config_service,
+        rbac_scenarios=rbac_scenarios,
+        cluster_service=cluster_service,
+    )
     bundle_switch(
         obj=task_.task_object,
         upgrade=task_.action.upgrade,
@@ -196,7 +212,11 @@ def internal_script_bundle_switch(
 
 @atomic()
 def internal_script_bundle_revert(
-    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
+    task: Task,
+    job: Job,
+    rbac_scenarios: RBACScenarios,
+    config_scenarios: ConfigScenarios,
+    cluster_service: ClusterService,
 ) -> int:
     _ = job
 
@@ -208,11 +228,16 @@ def internal_script_bundle_revert(
         from cm.legacy.bundle_switch_revert import bundle_revert
 
         config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
+        callbacks = build_switch_revert_callbacks(
+            config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
+            cluster_service=cluster_service,
+        )
 
         bundle_revert(
             obj=task_.task_object,
             callbacks=callbacks,
+            cluster_service=cluster_service,
             config_service=config_service,
             config_scenarios=config_scenarios,
         )
@@ -234,7 +259,7 @@ def internal_script_bundle_revert(
     return 0
 
 
-def internal_script_hc_apply(task: Task, job: Job) -> int:
+def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterService) -> int:
     if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         raise AdcmEx(
             code="WRONG_OWNER",
@@ -274,6 +299,7 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
             cluster_id=cluster_id,
             bundle_id=bundle_id,
             mapping_delta=delta_part,
+            cluster_service=cluster_service,
             checks_func=check_nothing,
         )
 
@@ -508,7 +534,9 @@ def _switch_hc_if_required(task: Task) -> None:
 # ENVIRONMENT BUILDERS
 
 
-def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
+def prepare_ansible_environment(
+    task: Task, job: Job, configuration: ExternalSettings, cluster_service: ClusterService
+) -> None:
     cluster_id, topology = None, None
     if task.owner:
         if task.owner.type == ADCMCoreType.CLUSTER:
@@ -525,7 +553,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    inventory = prepare_ansible_inventory(task=task, topology=topology)
+    inventory = prepare_ansible_inventory(task=task, topology=topology, cluster_service=cluster_service)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
@@ -534,7 +562,9 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
         ansible_cfg_config_parser.write(config_file)
 
 
-def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = None) -> dict[str, Any]:
+def prepare_ansible_inventory(
+    task: Task, cluster_service: ClusterService, topology: ClusterTopology | None = None
+) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
     if task.action.hc_acl:
@@ -551,6 +581,7 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
         delta=delta,
         related_objects=task.owner.related_objects,
         process_mapping_delta=process_mapping_delta,
+        cluster_service=cluster_service,
     )
 
 

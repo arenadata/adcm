@@ -52,19 +52,19 @@ class TestClusterAudit(ADCMDjangoAPISuite):
 
         self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="test_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="test_host")
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
-        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host2")
-        self.host_3 = self.add_host(provider=self.provider, fqdn="test_host3")
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="test_host2")
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="test_host3")
 
-        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
+        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
         self.component_1 = Component.objects.get(
             cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"
         )
 
-        self.import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        self.import_cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
         self.cluster_1_config_post_data = {
             "config": {

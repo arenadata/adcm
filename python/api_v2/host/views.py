@@ -29,7 +29,7 @@ from cm.legacy.api import delete_host
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, MaintenanceModeState
 from dishka import FromDishka
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -50,9 +50,9 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host
-from use_cases.transition.job.schedule import ScheduleMMChangingTask
 import core
 
 from api_v2.api_schema import DefaultParams, responses
@@ -77,7 +77,6 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
     HostWithDuplicatesSerializer,
 )
-from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
@@ -251,10 +250,11 @@ class HostViewSet(
         )
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, request, *args, cluster_service: FromDishka[ClusterService], **kwargs):  # noqa: ARG002
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
-        delete_host(host=host)
+        delete_host(host=host, cluster_service=cluster_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @(
@@ -312,13 +312,19 @@ class HostViewSet(
         self,
         request: Request,
         *args,  # noqa: ARG002
-        schedule_task: FromDishka[ScheduleMMChangingTask],
-        cluster_service: FromDishka[ClusterService],
+        set_mm: FromDishka[SetMaintenanceMode],
         **kwargs,  # noqa: ARG002
     ) -> Response:
-        return maintenance_mode(
-            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
-        )
+        host = self.get_object()
+
+        check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
+
+        serializer = self.get_serializer_class()(instance=host, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        value = set_mm.do(target=host, value=MaintenanceModeState(serializer.validated_data["maintenance_mode"]))
+
+        return Response(data={"maintenance_mode": value.value})
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(

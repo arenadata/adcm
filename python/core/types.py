@@ -223,7 +223,7 @@ class Concern(NamedTuple):
     cause: str
 
 
-class ObjectMaintenanceModeState(Enum):
+class MaintenanceModeState(Enum):
     ON = "on"
     OFF = "off"
     CHANGING = "changing"
@@ -236,13 +236,28 @@ class MMReason(Enum):
     SELF = auto()
 
 
-class MaintenanceModeOfObjects(NamedTuple):
-    services: dict[ServiceID, ObjectMaintenanceModeState]
-    components: dict[ComponentID, ObjectMaintenanceModeState]
-    hosts: dict[HostID, ObjectMaintenanceModeState]
+@dataclass(slots=True, frozen=True)
+class ObjectMM:
+    state: MaintenanceModeState
+    reason: MMReason = MMReason.SELF
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ObjectMM):
+            return self.state == other.state
+        elif isinstance(other, MaintenanceModeState):
+            return self.state == other
+        else:
+            return False
+
+
+@dataclass(slots=True)
+class MaintenanceModeOfObjects:
+    services: dict[ServiceID, ObjectMM]
+    components: dict[ComponentID, ObjectMM]
+    hosts: dict[HostID, ObjectMM]
 
     @property
-    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
+    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMM]:
         iterables = set()
         for entities, core_type in (
             (self.services, ADCMCoreType.SERVICE),
@@ -250,29 +265,5 @@ class MaintenanceModeOfObjects(NamedTuple):
             (self.hosts, ADCMCoreType.HOST),
         ):
             iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, mm in entities.items()))
-
-        return dict(iterables)
-
-
-ServiceMMReason: TypeAlias = Literal[MMReason.ALL_COMPONENTS_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
-ComponentMMReason: TypeAlias = Literal[MMReason.SERVICE_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
-HostMMReason: TypeAlias = Literal[MMReason.SELF]
-
-
-@dataclass(slots=True, frozen=True)
-class MaintenanceModeOfObjectsWithReason:
-    services: dict[ServiceID, tuple[ObjectMaintenanceModeState, ServiceMMReason]]
-    components: dict[ComponentID, tuple[ObjectMaintenanceModeState, ComponentMMReason]]
-    hosts: dict[HostID, tuple[ObjectMaintenanceModeState, HostMMReason]]
-
-    @property
-    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
-        iterables = set()
-        for entities, core_type in (
-            (self.services, ADCMCoreType.SERVICE),
-            (self.components, ADCMCoreType.COMPONENT),
-            (self.hosts, ADCMCoreType.HOST),
-        ):
-            iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, (mm, _) in entities.items()))
 
         return dict(iterables)

@@ -57,7 +57,7 @@ class TestScriptsTemplateEnvironment(TaskTestMixin, ADCMDjangoAPISuite):
         provider = cls.uc.add_provider(bundle=provider_bundle, name="test_provider")
         host = cls.uc.add_host(provider=provider, fqdn="test_host", cluster=cls.cluster)
         cls.host = host
-        cls.set_hostcomponent(cluster=cls.cluster, entries=((host, cls.component),))
+        cls.uc.set_hostcomponent(cluster=cls.cluster, entries=((host, cls.component),))
 
         cls.cluster_action = Action.objects.get(prototype=cls.cluster.prototype, name="action_on_cluster")
         cls.service_action = Action.objects.get(prototype=cls.service.prototype, name="action_on_service")

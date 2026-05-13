@@ -35,6 +35,7 @@ from cm.models import (
     TaskLog,
 )
 from core.action.operations import ActionStartImpossibleReason
+from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ADCMCoreType, CoreObjectDescriptor, TaskID
 from parameterized import parameterized
@@ -148,7 +149,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_upgrading_status_service_remove_fail(self) -> None:
-        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
             service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
@@ -168,7 +169,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         )
 
     def test_upgrading_status_service_success(self) -> None:
-        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.cluster_1.set_state("upgrading")
 
         response = self.client.v2[service_1].delete()
@@ -475,11 +476,11 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
 
     def test_adcm_5348_action_not_allowed_on_any_cluster_failed(self):
         test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        test_user = self.create_user(**test_user_credentials)
+        test_user = self.uc.create_user(**test_user_credentials)
 
         child_role_action = Role.objects.get(name="Cluster Action: action")
         child_role_clusters = Role.objects.get(name="View cluster configurations")
-        cluster_as_cluster_one = self.add_cluster(bundle=self.bundle_1, name="cluster_as_cluster_1")
+        cluster_as_cluster_one = self.uc.add_cluster(bundle=self.bundle_1, name="cluster_as_cluster_1")
 
         group_actions = create_group(
             name_to_display="Group for role `Cluster with Actions`", user_set=[{"id": test_user.pk}]
@@ -545,15 +546,15 @@ class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
         cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="first_component")
 
     def test_group_jinja_config(self):
-        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
-        cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions 2")
+        cluster_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
+        cluster = self.uc.add_cluster(cluster_bundle, "Cluster with Jinja Actions 2")
 
-        hosts = [self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=cluster) for i in range(1, 15)]
+        hosts = [self.uc.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=cluster) for i in range(1, 15)]
 
-        service = self.add_services_to_cluster(service_names=["service_name"], cluster=cluster)[0]
+        service, *_ = self.uc.add_services_to_cluster(names=["service_name"], cluster=cluster)
 
         component = service.components.get(prototype__name="server")
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=cluster,
             entries=(
                 (hosts[10], component),
@@ -764,8 +765,8 @@ class TestAction(ADCMDjangoAPISuite):
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
 
     def test_adcm_6930_config_apply_jinja_returns_500(self) -> None:
-        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_conf_apply_jinja")
-        cluster = self.add_cluster(bundle=bundle, name="cluster_config_apply", description="cluster_config_apply")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_conf_apply_jinja")
+        cluster = self.uc.add_cluster(bundle=bundle, name="cluster_config_apply", description="cluster_config_apply")
         action = Action.objects.get(name="apply", prototype=cluster.prototype)
 
         response = self.client.v2[cluster, "actions", action, "run"].post(data={})
@@ -779,8 +780,8 @@ class TestAction(ADCMDjangoAPISuite):
         only owner's config as variant values source.
         Absence of <field_name> in action's config should not lead to error.
         """
-        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_actions")
-        cluster = self.add_cluster(bundle=bundle, name="cluster_with_actions")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_actions")
+        cluster = self.uc.add_cluster(bundle=bundle, name="cluster_with_actions")
         action = Action.objects.get(name="with_variant_in_config", prototype=cluster.prototype)
 
         cluster.state = "ready_for_variant"
@@ -831,7 +832,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
 
     def test_adcm_7530_simple_add_remove_success(self):
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
 
         self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
@@ -846,7 +849,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     def test_adcm_7530_add_host_in_mm_fail(self):
         self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
 
-        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.run_task(
             object_=self.cluster_1,
             action=self.action,
@@ -860,7 +865,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             cluster=self.cluster_1, entries=((self.host_1, self.component_2), (self.host_2, self.component_2))
         )
         self.set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
 
         self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_1, self.component_2),))
 
@@ -871,7 +878,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     def test_adcm_7530_component_mm_does_not_affects_remove_mapping_success(self):
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
         self.set_maintenance_mode(obj=self.component_2, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.component_2, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.component_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
 
         self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
@@ -886,7 +895,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     def test_adcm_7530_component_mm_does_not_affects_add_mapping_success(self):
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_2),))
         self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
-        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.component_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
 
         self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
@@ -903,7 +914,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
 
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
 
         self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
@@ -938,7 +951,7 @@ class TestActionStartImpossibleReason(ADCMDjangoAPISuite):
         cls.provider_action = Action.objects.get(name="provider_action", prototype=cls.provider.prototype)
 
         service_names = {"service_1", "service_1_clone"}
-        cls.add_services_to_cluster(service_names=list(service_names), cluster=cls.cluster_1)
+        cls.uc.add_services_to_cluster(names=list(service_names), cluster=cls.cluster_1)
         # to be sure MM distribution is correct
         assert (  # noqa: S101
             set(Service.objects.filter(cluster=cls.cluster_1).values_list("prototype__name", flat=True))

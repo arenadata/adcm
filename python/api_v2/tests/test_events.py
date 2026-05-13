@@ -44,13 +44,13 @@ class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
         provider_bundle_path = self.test_bundles_dir / "provider"
 
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
-        self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
+        self.bundle_1 = self.uc.upload_bundle(cluster_bundle_1_path)
+        self.provider_bundle = self.uc.upload_bundle(provider_bundle_path)
 
-        self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
+        self.cluster_1 = self.uc.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host-1")
         self.group = Group.objects.create(name="test_group")
         self.role = role_create(display_name="Test role", child=[Role.objects.get(name="Create user", built_in=True)])
         self.policy = policy_create(

@@ -13,6 +13,7 @@
 from logging import Logger
 from typing import Protocol
 
+from core.cluster import ClusterService
 from core.legacy.job.types import Task
 from core.types import ADCMCoreType
 from django.conf import settings
@@ -36,7 +37,7 @@ class WithIDAndCoreType(Protocol):
     type: ADCMCoreType
 
 
-def set_hostcomponent(task: Task, logger: Logger):
+def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logger):
     task_object = TaskLog.objects.prefetch_related("task_object").get(id=task.id).task_object
 
     cluster = get_object_cluster(task_object)
@@ -52,6 +53,7 @@ def set_hostcomponent(task: Task, logger: Logger):
         cluster_id=cluster.id,
         bundle_id=cluster.prototype.bundle_id,
         mapping_delta=task.hostcomponent.mapping_delta,
+        cluster_service=cluster_service,
         checks_func=check_nothing,
     )
 

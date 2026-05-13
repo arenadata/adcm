@@ -19,16 +19,19 @@ from core.types import (
     ADCMCoreType,
     ClusterID,
     ClusterObjectDesc,
+    ComponentDesc,
     ComponentID,
     Descriptor,
     HostDesc,
     HostID,
     MaintenanceModeOfObjects,
-    ObjectMaintenanceModeState,
+    MaintenanceModeState,
+    ObjectMM,
+    ServiceDesc,
     ShortObjectInfo,
 )
 
-from cm.converters import model_name_to_core_type
+from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import ActionHostGroup, Component, Host, HostComponent, Service
 
 
@@ -49,21 +52,19 @@ class ClusterRepo(cluster.ClusterRepoI):
                 return Host.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
 
     def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
-        # COPIED FROM cm.legacy.services.cluster.retrieve_clusters_objects_maintenance_mode
-
         return MaintenanceModeOfObjects(
             hosts={
-                host_id: ObjectMaintenanceModeState(mm)
+                host_id: ObjectMM(MaintenanceModeState(mm))
                 for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
             },
             services={
-                service_id: ObjectMaintenanceModeState(mm)
+                service_id: ObjectMM(MaintenanceModeState(mm))
                 for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
                     cluster_id__in=cluster_ids
                 )
             },
             components={
-                component_id: ObjectMaintenanceModeState(mm)
+                component_id: ObjectMM(MaintenanceModeState(mm))
                 for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
                     cluster_id__in=cluster_ids
                 )
@@ -77,6 +78,16 @@ class ClusterRepo(cluster.ClusterRepoI):
 
         # only cluster, service or component can have AHG
         return cast(ClusterObjectDesc, Descriptor(id=object_id, type=model_name_to_core_type(model_name)))
+
+    def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
+        field = "_maintenance_mode"
+        if target.type == ADCMCoreType.HOST:
+            field = "maintenance_mode"
+
+        model = core_type_to_model(target.type)
+        rows_matched = model.objects.filter(id=target.id).update(**{field: value.value})
+
+        return bool(rows_matched)
 
 
 def retrieve_multiple_topologies(cluster_ids: Iterable[ClusterID]) -> Generator[cluster.ClusterTopology, None, None]:

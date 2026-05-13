@@ -31,7 +31,6 @@ from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
 
 from cm.collect_statistics.collectors import BundleCollector, get_host_name_hash
@@ -144,7 +143,7 @@ class TestSender(unittest.TestCase):
         )
 
 
-class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
+class TestBundleCollector(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -153,31 +152,31 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
     def test_collect_community_bundle_collector(self) -> None:
         # prepare data
-        bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")
-        bundle_cluster_full = self.add_bundle(self.bundles_dir / "cluster_full_config")
-        bundle_prov_reg = self.add_bundle(self.bundles_dir / "provider")
-        bundle_prov_full = self.add_bundle(self.bundles_dir / "provider_full_config")
+        bundle_cluster_reg = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
+        bundle_cluster_full = self.uc.upload_bundle(self.bundles_dir / "cluster_full_config")
+        bundle_prov_reg = self.uc.upload_bundle(self.bundles_dir / "provider")
+        bundle_prov_full = self.uc.upload_bundle(self.bundles_dir / "provider_full_config")
 
-        cluster_reg_1 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
-        cluster_full = self.add_cluster(bundle=bundle_cluster_full, name="Full 1")
-        cluster_reg_2 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 2")
+        cluster_reg_1 = self.uc.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
+        cluster_full = self.uc.add_cluster(bundle=bundle_cluster_full, name="Full 1")
+        cluster_reg_2 = self.uc.add_cluster(bundle=bundle_cluster_reg, name="Regular 2")
 
-        provider_full_1 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
-        provider_full_2 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 2")
-        provider_reg_1 = self.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
+        provider_full_1 = self.uc.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
+        provider_full_2 = self.uc.add_provider(bundle=bundle_prov_full, name="Prov Full 2")
+        provider_reg_1 = self.uc.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
 
-        host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
-        host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
+        host_1 = self.uc.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
+        host_2 = self.uc.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
 
-        self.add_services_to_cluster(["service_one_component"], cluster=cluster_reg_1)
-        service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_1).get()
-        service_3 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_2).get()
+        self.uc.add_services_to_cluster(["service_one_component"], cluster=cluster_reg_1)
+        service_2, *_ = self.uc.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_1)
+        service_3, *_ = self.uc.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_2)
 
         component_1, component_2 = service_2.components.order_by("id").all()
         component_3 = service_3.components.order_by("id").first()
-        self.set_hostcomponent(cluster=cluster_reg_1, entries=((host_1, component_1), (host_1, component_2)))
+        self.uc.set_hostcomponent(cluster=cluster_reg_1, entries=((host_1, component_1), (host_1, component_2)))
 
-        self.set_hostcomponent(cluster=cluster_reg_2, entries=((host_2, component_3),))
+        self.uc.set_hostcomponent(cluster=cluster_reg_2, entries=((host_2, component_3),))
 
         # prepare expected
         order_hc_by = itemgetter("component_name")
@@ -186,7 +185,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         current_year = str(timezone.now().year)
         host_1_name_hash = md5(host_1.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
         host_2_name_hash = md5(host_2.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
-        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+        self.uc.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
 
         expected_bundles = [
             {"name": bundle.name, "version": bundle.version, "edition": "community", "date": current_year}
@@ -276,14 +275,14 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         bundle_enterprise.save(update_fields=["edition"])
         bundle_provider = self.add_bundle(self.bundles_dir / "provider")
 
-        cluster_community = self.add_cluster(bundle=bundle_community, name="Cluster community")
-        cluster_enterprise = self.add_cluster(bundle=bundle_enterprise, name="Cluster enterprise")
-        provider = self.add_provider(bundle=bundle_provider, name="Provider")
+        cluster_community = self.uc.add_cluster(bundle=bundle_community, name="Cluster community")
+        cluster_enterprise = self.uc.add_cluster(bundle=bundle_enterprise, name="Cluster enterprise")
+        provider = self.uc.add_provider(bundle=bundle_provider, name="Provider")
 
-        h1_free = self.add_host(provider=provider, fqdn="H1 free")
-        h2_community = self.add_host(provider=provider, fqdn="H2 community", cluster=cluster_community)
-        h3_enterprise = self.add_host(provider=provider, fqdn="H3 enterprise", cluster=cluster_enterprise)
-        h4_enterprise = self.add_host(provider=provider, fqdn="H4 enterprise", cluster=cluster_enterprise)
+        h1_free = self.uc.add_host(provider=provider, fqdn="H1 free")
+        h2_community = self.uc.add_host(provider=provider, fqdn="H2 community", cluster=cluster_community)
+        h3_enterprise = self.uc.add_host(provider=provider, fqdn="H3 enterprise", cluster=cluster_enterprise)
+        h4_enterprise = self.uc.add_host(provider=provider, fqdn="H4 enterprise", cluster=cluster_enterprise)
 
         configs = get_objects_configurations(
             objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}},
@@ -350,15 +349,15 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         bundle_prov_reg = self.add_bundle(self.bundles_dir / "provider")
         bundle_prov_full = self.add_bundle(self.bundles_dir / "provider_full_config")
 
-        cluster_reg_1 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
-        enterprise_cluster = self.add_cluster(bundle=bundle_cluster_enterprise, name="Regular 2 ee")
+        cluster_reg_1 = self.uc.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
+        enterprise_cluster = self.uc.add_cluster(bundle=bundle_cluster_enterprise, name="Regular 2 ee")
 
-        provider_full_1 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
-        provider_reg_1 = self.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
+        provider_full_1 = self.uc.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
+        provider_reg_1 = self.uc.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
 
-        host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
-        host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=enterprise_cluster)
-        host_3 = self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+        host_1 = self.uc.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
+        host_2 = self.uc.add_host(provider=provider_full_1, fqdn="host-2", cluster=enterprise_cluster)
+        host_3 = self.uc.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
 
         host_info = {
             host_1.id: {
@@ -457,21 +456,21 @@ class TestStorage(ADCMDjangoAPISuite):
         adcm_user_role = Role.objects.get(name="ADCM User")
         Policy.objects.create(name="test policy", role=adcm_user_role, built_in=False)
 
-        host_1 = self.add_host(provider=self.provider, fqdn="test_host_1")
-        host_2 = self.add_host(provider=self.provider, fqdn="test_host_2")
-        host_3 = self.add_host(provider=self.provider, fqdn="test_host_3")
-        host_unmapped = self.add_host(provider=self.provider, fqdn="test_host_unmapped")
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="test_host_1")
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="test_host_2")
+        host_3 = self.uc.add_host(provider=self.provider, fqdn="test_host_3")
+        host_unmapped = self.uc.add_host(provider=self.provider, fqdn="test_host_unmapped")
 
-        self.add_host(provider=self.provider, fqdn="test_host_not_in_cluster")
+        self.uc.add_host(provider=self.provider, fqdn="test_host_not_in_cluster")
 
         for host in (host_1, host_2, host_3, host_unmapped):
-            self.add_host_to_cluster(cluster=self.cluster_1, host=host)
+            self.uc.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         component_1 = Component.objects.get(cluster=self.cluster_1, service=service, prototype__name="component_1")
         component_2 = Component.objects.get(cluster=self.cluster_1, service=service, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[(host_1, component_1), (host_2, component_1), (host_3, component_2)]
         )
 

@@ -86,7 +86,7 @@ class BaseServiceCHGTestCase(BaseClusterCHGTestCase):
 
 class TestCHGNaming(BaseServiceCHGTestCase):
     def test_create_group_with_same_name_for_different_entities_of_same_type_success(self) -> None:
-        service_2 = self.add_services_to_cluster(service_names=["service_1_clone"], cluster=self.cluster_1).get()
+        service_2, *_ = self.uc.add_services_to_cluster(names=["service_1_clone"], cluster=self.cluster_1)
         component_of_service_2 = Component.objects.get(service=service_2, prototype__name=self.component_1.name)
 
         with self.subTest("Cluster"):
@@ -226,7 +226,7 @@ class TestClusterCHG(BaseClusterCHGTestCase):
             self.assertEqual(len(response.json()), 1)
             self.assertEqual(response.json()[0]["name"], self.new_host.name)
 
-        new_host = self.add_host(provider=self.provider, fqdn="new-host", cluster=self.cluster_1)
+        new_host = self.uc.add_host(provider=self.provider, fqdn="new-host", cluster=self.cluster_1)
         response = self.client.v2[self.cluster_1_host_group, "hosts"].post(data={"hostId": self.new_host.pk})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -778,7 +778,7 @@ class TestComponentCHG(BaseServiceCHGTestCase):
         self.assertEqual(self.component_1_host_group.hosts.count(), 1)
         self.assertEqual(self.service_1_host_group.hosts.count(), 1)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[(self.host_for_component, self.component_1), (self.host, self.component_2)]
         )
 
@@ -790,7 +790,7 @@ class TestComponentCHG(BaseServiceCHGTestCase):
         self.assertEqual(self.component_1_host_group.hosts.count(), 1)
         self.assertEqual(self.service_1_host_group.hosts.count(), 1)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[(self.host_for_component, self.component_1), (self.host_for_component, self.component_2)],
         )
@@ -866,8 +866,8 @@ class TestProviderCHG(ADCMDjangoAPISuite):
 
     def test_create_without_config_fail(self):
         provider_no_config_bundle_path = self.test_bundles_dir / "provider_no_config"
-        provider_no_config_bundle = self.add_bundle(source_dir=provider_no_config_bundle_path)
-        provider_no_config = self.add_provider(bundle=provider_no_config_bundle, name="provider_no_config")
+        provider_no_config_bundle = self.uc.upload_bundle(provider_no_config_bundle_path)
+        provider_no_config = self.uc.add_provider(bundle=provider_no_config_bundle, name="provider_no_config")
 
         initial_host_groups_count = ConfigHostGroup.objects.count()
 
@@ -1103,7 +1103,7 @@ class TestHostCandidateForConfigHostsGroups(ADCMDjangoAPISuite):
         host_1, host_2, host_3, host_4 = self.hosts
         for host in self.hosts:
             self.add_host_to_cluster(cluster=self.cluster, host=host)
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=[
                 (host_1, self.component_1),

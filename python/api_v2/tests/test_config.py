@@ -233,8 +233,8 @@ class TestClusterConfig(ADCMDjangoAPISuite):
 
     def test_adcm_4778_cluster_variant_bug(self):
         # problem is with absent service
-        bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-4778")
-        cluster = self.add_cluster(bundle, "cooler")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "bugs" / "ADCM-4778")
+        cluster = self.uc.add_cluster(bundle, "cooler")
 
         response = self.client.v2[cluster, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -292,9 +292,9 @@ class TestClusterConfig(ADCMDjangoAPISuite):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_cluster_permissions_another_object_role_denied(self):
-        provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        provider = self.add_provider(bundle=provider_bundle, name="Provider with Actions")
-        host_1 = self.add_host(provider=provider, fqdn="host-1")
+        provider_bundle = self.uc.upload_bundle(self.test_bundles_dir / "provider_actions")
+        provider = self.uc.add_provider(bundle=provider_bundle, name="Provider with Actions")
+        host_1 = self.uc.add_host(provider=provider, fqdn="host-1")
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=host_1, role_name="Manage Maintenance mode"):
@@ -309,8 +309,8 @@ class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.service, *_ = cls.add_services_to_cluster(
-            service_names=["service_4_save_config_without_required_field"], cluster=cls.cluster_1
+        cls.service, *_ = cls.uc.add_services_to_cluster(
+            names=["service_4_save_config_without_required_field"], cluster=cls.cluster_1
         )
 
     def test_save_empty_config_success(self):
@@ -780,7 +780,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
         self.assertEqual(self.service_1.config.current, self.service_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        service_3, *_ = self.uc.add_services_to_cluster(names=["service_3_manual_add"], cluster=self.cluster_1)
         self.assertIsNone(service_3.config)
 
     def test_schema(self):
@@ -881,7 +881,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_adcm_5756_500_on_non_required_field(self):
-        service: Service = self.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1).get()
+        service: Service = self.uc.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1)[0]
 
         config = self.client.v2[service, "configs", service.config.current].get().json()
 
@@ -1383,9 +1383,9 @@ class TestComponentConfig(ADCMDjangoAPISuite):
         self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(
-            service_names=["service_with_miss_config_service"], cluster=self.cluster_1
-        ).get()
+        service_3, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_miss_config_service"], cluster=self.cluster_1
+        )
         component_3 = Component.objects.get(cluster=self.cluster_1, service=service_3, prototype__name="have_no_config")
         self.assertIsNone(component_3.config)
 
@@ -3391,12 +3391,16 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
 
         # revert upgrade
         config_service = self.container.get(core.config.ConfigService)
+        cluster_service = self.container.get(core.cluster.ClusterService)
         config_scenarios = ConfigScenarios(config_service=config_service)
-        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+        callbacks = build_switch_revert_callbacks(
+            config_service=config_service, rbac_scenarios=RBACScenarios(), cluster_service=cluster_service
+        )
         bundle_revert(
             obj=self.cluster,
             callbacks=callbacks,
             config_service=config_service,
+            cluster_service=cluster_service,
             config_scenarios=config_scenarios,
         )
 

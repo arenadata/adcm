@@ -18,16 +18,13 @@ from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 from tests.base import WithPreparedFSAndInitADCM
-from tests.deprecated import BusinessLogicMixin
 import core
 import django.test
 
 from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestPrepareNewConfiguration(
-    django.test.TestCase, WithDishkaContainer, BusinessLogicMixin, WithPreparedFSAndInitADCM
-):
+class TestPrepareNewConfiguration(django.test.TestCase, WithDishkaContainer, WithPreparedFSAndInitADCM):
     def setUp(self):
         super().setUp()
 
@@ -37,8 +34,8 @@ class TestPrepareNewConfiguration(
 
         self.config_service = get_config_service()
 
-        self.bundle = self.add_bundle(Path(__file__).parent / "bundles" / "cluster_full_config")
-        self.cluster = self.add_cluster(bundle=self.bundle, name="with-config")
+        self.bundle = self.uc.upload_bundle(Path(__file__).parent / "bundles" / "cluster_full_config")
+        self.cluster = self.uc.add_cluster(bundle=self.bundle, name="with-config")
 
         self.cluster_owner = CoreObjectDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)
         self.cluster_spec, self.cluster_defaults = self.config_service.retrieve_specification_with_defaults(

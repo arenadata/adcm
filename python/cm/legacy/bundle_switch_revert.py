@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Generic, TypeVar
 
+from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
@@ -121,6 +122,7 @@ def bundle_switch(
 def bundle_revert(
     obj: Cluster | Provider,
     callbacks: SwitchRevertCallbacks,
+    cluster_service: ClusterService,
     config_service: core.config.ConfigService,
     config_scenarios: ConfigScenarios,
 ) -> None:
@@ -212,6 +214,7 @@ def bundle_revert(
             cluster_id=obj.pk,
             bundle_id=old_proto.bundle_id,  # pyright: ignore [reportAttributeAccessIssue]
             new_mapping=new_mapping,
+            cluster_service=cluster_service,
             checks_func=check_nothing,
         )
 

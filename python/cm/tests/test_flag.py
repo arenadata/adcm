@@ -15,7 +15,6 @@ import random
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.concern import create_issue
@@ -32,26 +31,29 @@ from cm.models import (
 )
 
 
-class TestFlag(BaseTestCase, BusinessLogicMixin):
-    def setUp(self) -> None:
-        super().setUp()
+class TestFlag(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
         # ensure no concern exists
         ConcernItem.objects.all().delete()
 
         bundles_dir = Path(__file__).parent / "bundles"
-        cluster_bundle = self.add_bundle(bundles_dir / "cluster_1")
-        provider_bundle = self.add_bundle(bundles_dir / "provider")
+        cluster_bundle = cls.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = cls.uc.upload_bundle(bundles_dir / "provider")
 
-        clusters = [self.add_cluster(bundle=cluster_bundle, name=f"Cluster {i}") for i in range(3)]
-        providers = [self.add_provider(bundle=provider_bundle, name=f"Provider {i}") for i in range(3)]
+        clusters = [cls.uc.add_cluster(bundle=cluster_bundle, name=f"Cluster {i}") for i in range(3)]
+        providers = [cls.uc.add_provider(bundle=provider_bundle, name=f"Provider {i}") for i in range(3)]
 
         for cluster in clusters:
-            self.add_services_to_cluster(["service_two_components", "another_service_two_components"], cluster=cluster)
+            cls.uc.add_services_to_cluster(
+                ["service_two_components", "another_service_two_components"], cluster=cluster
+            )
 
         for provider in providers:
             for i in range(4):
-                self.add_host(provider=provider, fqdn=f"{provider.name}-host-{i}")
+                cls.uc.add_host(provider=provider, fqdn=f"{provider.name}-host-{i}")
 
     def test_raise_lower_flag_on_one_object_success(self) -> None:
         expected_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name

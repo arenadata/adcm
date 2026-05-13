@@ -14,12 +14,11 @@ from collections import defaultdict
 from functools import wraps
 from typing import Iterable
 
-from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.types import HostID, ObjectMaintenanceModeState
+from core.cluster import ClusterService
+from core.types import HostID, MaintenanceModeState
 from requests import Response
 
 from cm.legacy.services.cluster import (
-    retrieve_clusters_objects_maintenance_mode,
     retrieve_multiple_clusters_topology,
 )
 from cm.legacy.status_api import api_request
@@ -67,7 +66,7 @@ def reset_hc_map() -> None:
     api_request(method="post", url="servicemap/", data=data)
 
 
-def reset_objects_in_mm() -> Response | None:
+def reset_objects_in_mm(cluster_service: ClusterService) -> Response | None:
     """Send request to SS with all objects that are currently in MM"""
     cluster_ids = set(Cluster.objects.values_list("id", flat=True).filter(prototype__allow_maintenance_mode=True))
     if not cluster_ids:
@@ -77,21 +76,17 @@ def reset_objects_in_mm() -> Response | None:
     component_ids = set()
     host_ids = set()
 
-    mm_info = retrieve_clusters_objects_maintenance_mode(cluster_ids=cluster_ids)
+    own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_ids=cluster_ids)
 
     for topology in retrieve_multiple_clusters_topology(cluster_ids=cluster_ids):
-        cluster_objects_mm = calculate_maintenance_mode_for_cluster_objects(
-            topology=topology, own_maintenance_mode=mm_info
-        )
+        cluster_objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
         service_ids |= {
-            entry_id for entry_id, mm in cluster_objects_mm.services.items() if mm == ObjectMaintenanceModeState.ON
+            entry_id for entry_id, mm in cluster_objects_mm.services.items() if mm == MaintenanceModeState.ON
         }
         component_ids |= {
-            entry_id for entry_id, mm in cluster_objects_mm.components.items() if mm == ObjectMaintenanceModeState.ON
+            entry_id for entry_id, mm in cluster_objects_mm.components.items() if mm == MaintenanceModeState.ON
         }
-        host_ids |= {
-            entry_id for entry_id, mm in cluster_objects_mm.hosts.items() if mm == ObjectMaintenanceModeState.ON
-        }
+        host_ids |= {entry_id for entry_id, mm in cluster_objects_mm.hosts.items() if mm == MaintenanceModeState.ON}
 
     return api_request(
         method="post",

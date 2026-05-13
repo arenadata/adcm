@@ -42,7 +42,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
         cls.component_1 = Component.objects.filter(service=cls.service_1).first()
 
-        cls.set_hostcomponent(
+        cls.uc.set_hostcomponent(
             cluster=cls.cluster,
             entries=((cls.tp_host, cls.component_1),),
         )
@@ -104,7 +104,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 )
 
     def test_adcm_6980_host_wtih_duplicates_cant_be_deleted(self):
-        host = self.add_host(provider=self.another_provider, fqdn="original-host")
+        host = self.uc.add_host(provider=self.another_provider, fqdn="original-host")
 
         create_duplicate(
             host_id=host.id,

@@ -22,6 +22,7 @@ from cm.legacy.bundle_switch_revert import bundle_switch
 from cm.legacy.upgrade import check_upgrade, update_before_upgrade
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.scenarios.config import ConfigScenarios
 from core.types import TaskID
 from django.db.transaction import atomic
@@ -41,6 +42,7 @@ class UpgradeObject:
     rbac_scenarios: RBACScenarios
     config_scenarios: ConfigScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(
         self,
@@ -66,7 +68,9 @@ class UpgradeObject:
 
         if not upgrade.action:
             callbacks = build_switch_revert_callbacks(
-                config_service=self.config_service, rbac_scenarios=self.rbac_scenarios
+                config_service=self.config_service,
+                rbac_scenarios=self.rbac_scenarios,
+                cluster_service=self.cluster_service,
             )
             bundle_switch(
                 obj=target,

@@ -107,7 +107,7 @@ class TestProvider(ADCMDjangoAPISuite):
         self.assertFalse(ConfigHostGroup.objects.filter(pk=chg_id).exists())
 
     def test_filtering_success(self):
-        self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "second test host provider")
         self.host_provider.state = "installed"
         self.host_provider.description = "newly created host provider"
         self.host_provider.save()
@@ -135,8 +135,8 @@ class TestProvider(ADCMDjangoAPISuite):
                     self.assertEqual(response.json()["count"], 2)
 
     def test_ordering_success(self):
-        self.add_provider(self.host_provider_bundle, "second test host provider")
-        self.add_provider(self.host_provider_bundle, "third test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "second test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "third test host provider")
 
         response = (self.client.v2 / "hostproviders").get(query={"ordering": "name"})
 

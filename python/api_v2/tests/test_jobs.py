@@ -33,16 +33,16 @@ class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
         super().setUp()
 
         self.cluster_1_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
-        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)[0]
+        self.service = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)[0]
         self.service_action = Action.objects.get(prototype=self.service.prototype, name="action")
-        self.host = self.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_1)
+        self.host = self.uc.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_1)
         component_prototype = Prototype.objects.get(
             bundle=self.bundle_1, type=ObjectType.COMPONENT, name="component_1", parent=self.service.prototype
         )
         self.component = Component.objects.get(
             cluster=self.cluster_1, service=self.service, prototype=component_prototype
         )
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host, self.component)])
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host, self.component)])
         self.component_action = Action.objects.get(prototype=self.component.prototype, name="action_1_comp_1")
 
     def test_job_list_success(self):

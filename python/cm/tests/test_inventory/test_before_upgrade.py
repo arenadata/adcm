@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from core.cluster import ClusterService
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
@@ -54,7 +55,11 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         with self.container() as container:
             config_service = container.get(core.config.ConfigService)
             config_scenarios = container.get(ConfigScenarios)
-            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+            callbacks = build_switch_revert_callbacks(
+                config_service=config_service,
+                rbac_scenarios=RBACScenarios(),
+                cluster_service=self.uc.container.get(ClusterService),
+            )
             bundle_switch(
                 obj=obj,
                 upgrade=upgrade,
@@ -156,17 +161,17 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 )
 
     def test_2_components_2_hosts(self):
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = self.add_services_to_cluster(
+        self.service_two_components: Service = self.uc.add_services_to_cluster(
             ["service_two_components"], cluster=self.cluster_1
-        ).get()
+        )[0]
 
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, self.component_1),
@@ -245,16 +250,16 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_config_host_group_effect_on_before_upgrade(self) -> None:
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = self.add_services_to_cluster(
-            cluster=self.cluster_1, service_names=["service_two_components"]
-        ).get()
+        self.service_two_components: Service = self.uc.add_services_to_cluster(
+            cluster=self.cluster_1, names=["service_two_components"]
+        )[0]
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, self.component_1),
@@ -414,21 +419,21 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
     def test_adcm_5367_bug(self) -> None:
-        another_1 = self.add_services_to_cluster(
-            service_names=["another_service_two_components"], cluster=self.cluster_1
-        ).first()
-        service = self.add_services_to_cluster(
-            service_names=["another_service_two_components_2"], cluster=self.cluster_1
-        ).first()
+        another_1, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components"], cluster=self.cluster_1
+        )
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components_2"], cluster=self.cluster_1
+        )
         problem_component = Component.objects.get(service=service, prototype__name="component_1")
-        another_2 = self.add_services_to_cluster(
-            service_names=["another_service_two_components_3"], cluster=self.cluster_1
-        ).first()
+        another_2, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components_3"], cluster=self.cluster_1
+        )
 
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, problem_component),
@@ -461,6 +466,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         inventory = get_inventory_data(
             target=CoreObjectDescriptor(id=problem_component.id, type=ADCMCoreType.COMPONENT),
             is_host_action=action.host_action,
+            cluster_service=self.uc.container.get(ClusterService),
         )
         services = inventory["all"]["vars"]["services"]
 
