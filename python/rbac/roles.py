@@ -110,6 +110,18 @@ def assign_group_perm(policy: Policy, permission: Permission, obj) -> None:
                 cursor.execute(query_str)
 
 
+def assign_view_logstorage_permissions_by_job(log_storage_id: int) -> None:
+    log_storage = LogStorage.objects.get(id=log_storage_id)
+    task_role = Role.objects.filter(name=f"View role for task {log_storage.job.task_id}", built_in=True).first()
+    view_logstorage_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=LogStorage),
+        codename=f"view_{LogStorage.__name__.lower()}",
+    )
+
+    for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
+        assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
+
+
 class ObjectRole(AbstractRole):
     def filter(self) -> QuerySet | None:
         if "model" not in self.params:
@@ -227,7 +239,7 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
 
 
 def re_apply_policy_for_jobs(task: TaskLog) -> None:
-    owner = core_type_to_model(core_type=ADCMCoreType(task.owner_type)).objects.get(id=task.owner_id)
+    owner = core_type_to_model(ADCMCoreType(task.owner_type)).objects.get(id=task.owner_id)
     obj_type_map = get_objects_for_policy(obj=owner)
 
     target = task.task_object

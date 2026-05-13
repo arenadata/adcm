@@ -19,6 +19,7 @@ import type {
   DeleteAdcmClusterActionHostGroupHostArgs,
   NewAdcmActionHostGroup,
   AdcmDynamicActionRunConfig,
+  PatchActionHostGroupDescriptionArgs,
 } from '@models/adcm';
 
 export type ActionHostGroupOwner = 'cluster' | 'service' | 'component';
@@ -81,6 +82,7 @@ export type UpdateActionHostGroupActionPayload = {
   entityArgs: SomeEntityArgs;
   actionHostGroup: AdcmActionHostGroup;
   hostIds: Set<number>;
+  description?: string;
 };
 
 export type OpenDeleteDialogActionPayload = {
@@ -91,6 +93,13 @@ export type DeleteActionHostGroupActionPayload = {
   entityType: ActionHostGroupOwner;
   entityArgs: SomeEntityArgs;
   actionHostGroup: AdcmActionHostGroup;
+};
+
+export type EditDescriptionActionHostGroupActionPayload = {
+  entityType: ActionHostGroupOwner;
+  entityArgs: SomeEntityArgs;
+  actionHostGroupId: number;
+  description: string;
 };
 
 export type GetActionHostGroupDynamicActionsActionPayload = {
@@ -141,6 +150,8 @@ export type GetAdcmActionHostGroupHostsArgs = SomeEntityApiArgs<GetAdcmClusterAc
 export type AddAdcmActionHostGroupHostArgs = SomeEntityApiArgs<AddAdcmClusterActionHostGroupHostArgs>;
 export type DeleteAdcmActionHostGroupHostArgs = SomeEntityApiArgs<DeleteAdcmClusterActionHostGroupHostArgs>;
 
+export type AdcmActionHostGroupEditDescriptionArgs = SomeEntityApiArgs<PatchActionHostGroupDescriptionArgs>;
+
 export interface ActionHostGroupApi {
   // CRUD
   getActionHostGroups(args: GetAdcmActionHostGroupsArgs): Promise<Batch<AdcmActionHostGroup>>;
@@ -160,4 +171,5 @@ export interface ActionHostGroupApi {
   getActionHostGroupHosts(args: GetAdcmActionHostGroupHostsArgs): Promise<Batch<AdcmActionHostGroupHost>>;
   postActionHostGroupHost(args: AddAdcmActionHostGroupHostArgs): Promise<AdcmActionHostGroupHost>;
   deleteActionHostGroupHost(args: DeleteAdcmActionHostGroupHostArgs): Promise<void>;
+  patchActionHostGroupDescription(args: AdcmActionHostGroupEditDescriptionArgs): Promise<AdcmActionHostGroup>;
 }

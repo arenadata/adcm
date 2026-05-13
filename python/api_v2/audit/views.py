@@ -10,15 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import date
 
 from audit.models import (
     AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObjectType,
     AuditSession,
-    AuditSessionLoginResult,
 )
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -49,37 +44,17 @@ class AuditRoot(APIRootView):
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="id",
-                type=int,
-                description="Filter by id.",
-            ),
-            OpenApiParameter(
-                name="login",
-                description="Case insensitive and partial filter by user login.",
-            ),
-            OpenApiParameter(
-                name="login_result",
-                description="Filter by login result.",
-                enum=AuditSessionLoginResult.values,
-            ),
-            OpenApiParameter(
-                name="time_from",
-                description="Filter by time from.",
-                type=date,
-            ),
-            OpenApiParameter(
-                name="time_to",
-                description="Filter by time to.",
-                type=date,
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
                     "loginTime",
                     "-loginTime",
+                    "result",
+                    "-result",
                     "time",
                     "-time",
+                    "userName",
+                    "-userName",
                 ),
                 default="-loginTime",
             ),
@@ -109,48 +84,6 @@ class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="id",
-                type=int,
-                description="Filter by id.",
-            ),
-            OpenApiParameter(
-                name="object_name",
-                description="Case insensitive and partial filter by object name.",
-            ),
-            OpenApiParameter(
-                name="object_type",
-                description="Filter by object type.",
-                enum=AuditObjectType.values,
-            ),
-            OpenApiParameter(
-                name="operation_result",
-                description="Filter by operation result.",
-                enum=AuditLogOperationResult.values,
-            ),
-            OpenApiParameter(
-                name="operation_type",
-                description="Filter by operation type.",
-                enum=AuditLogOperationType.values,
-            ),
-            OpenApiParameter(
-                name="time_from",
-                description="Filter by time from.",
-                type=date,
-            ),
-            OpenApiParameter(
-                name="time_to",
-                description="Filter by time to.",
-                type=date,
-            ),
-            OpenApiParameter(
-                name="user_name",
-                description="Case insensitive and partial filter by user name.",
-            ),
-            OpenApiParameter(
-                name="username",
-                description="Case insensitive and partial filter by user name.",
-            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',

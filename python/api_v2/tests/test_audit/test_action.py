@@ -30,24 +30,24 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 import core
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestActionProcessAudit(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestActionProcessAudit(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+        cluster_bundle = cls.test_bundles_dir / "wizard_action"
+        cls.bundle_1 = cls.uc.upload_bundle(src=cluster_bundle)
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cls.bundle_1, name="cluster_1", description="cluster_1")
 
-        cluster_bundle = self.test_bundles_dir / "wizard_action"
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle)
-        self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
 
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster_1).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
-
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def get_object_action_with_process(self, obj: Cluster | Service | Component) -> Action:
         return Action.objects.get(name="wizard_jinja", prototype=obj.prototype)
@@ -138,11 +138,6 @@ class TestActionProcessAudit(BaseAPITestCase):
                 self.fill_steps_for_process(process.id, test_spec, test_input, previous_step_names)
                 action = self.get_object_action_with_process(obj)
 
-                # don't copy this implementation, it's a hack, may not work in most cases
-                from api_v2.utils.di import prepare_container
-
-                container = prepare_container()
-
                 # render step
                 fill_step_spec(
                     step_id=target_operation_step.id,
@@ -157,7 +152,8 @@ class TestActionProcessAudit(BaseAPITestCase):
                             target_orm=obj,
                         ),
                     ),
-                    bundle_renderer=container.get(BundleRenderer[ActionArgs, TaskArgs]),
+                    bundle_renderer=self.container.get(BundleRenderer[ActionArgs, TaskArgs]),
+                    wizard_repo=self.container.get(core.action.wizard.WizardRepoI),
                 )
 
                 response = self.client.v2[obj, "actions", action.pk, "processes", process.id, "operation"].post(

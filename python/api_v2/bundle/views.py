@@ -14,7 +14,9 @@
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.legacy.bundle import delete_bundle
+from cm.legacy.services.bundle_alt.load import save_bundle_file_from_request_to_downloads
 from cm.models import Bundle, ObjectType
+from core.settings import Directories
 from dishka import FromDishka
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -54,22 +56,22 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="id",
-                type=int,
-                description="Filter by id.",
-            ),
-            OpenApiParameter(
-                name="display_name",
-                description="Case insensitive and partial filter by display name.",
-            ),
-            OpenApiParameter(
-                name="product",
-                description="Case insensitive filter by product.",
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("displayName", "-displayName", "uploadTime", "-uploadTime"),
+                enum=(
+                    "displayName",
+                    "-displayName",
+                    "uploadTime",
+                    "-uploadTime",
+                    "version",
+                    "-version",
+                    "edition",
+                    "-edition",
+                    "signatureStatus",
+                    "-signatureStatus",
+                    "mainPrototypeLicenseStatus",
+                    "-mainPrototypeLicenseStatus",
+                ),
                 default="displayName",
             ),
         ],
@@ -120,11 +122,24 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
     )
     @audit_create(name="Bundle uploaded", object_=ignore_object_search)
     @inject
-    def create(self, request, *args, parse_bundle: FromDishka[ParseBundleFromRequest], **kwargs) -> Response:  # noqa: ARG002
+    def create(
+        self, request, directories: FromDishka[Directories], parse_bundle: FromDishka[ParseBundleFromRequest], **_
+    ) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        bundle_id = parse_bundle.do(request.data["file"])
+        # Moved out of use case based on:
+        # 1. Testability
+        # 2. Layers separation (django's File format shouldn't be leaked to use cases)
+        #
+        # Yet there are some opened questions:
+        # 1. Now use case (on fail) removes passed argument - bit strange and leaky
+        # 2. Maybe "converter" should be passed (as in config cases) that will be used by UC
+        archive_in_downloads = save_bundle_file_from_request_to_downloads(
+            file_from_request=request.data["file"], downloads_dir=directories.downloads
+        )
+
+        bundle_id = parse_bundle.do(archive_in_downloads)
 
         new_bundle = self.get_queryset().get(id=bundle_id)
         serializer = BundleSerializer(instance=new_bundle)

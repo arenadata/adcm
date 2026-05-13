@@ -52,6 +52,7 @@ class StepState(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     BROKEN = "broken"
+    SKIPPED = "skipped"
 
 
 ConfigStepSpec: TypeAlias = tuple[config.spec.FullSpec, config.Defaults]
@@ -84,8 +85,10 @@ class _Step(Generic[ST, SpecT]):
     full_name: StepFullName
     state: StepState
 
+    extra: "StepExtra"
     type: ST
     spec: SpecT | None
+    required: bool = True
 
 
 StepT = TypeVar("StepT", bound=_Step)
@@ -143,6 +146,7 @@ class _StepDefinition(Generic[ST, M]):
     template: templates.Template
     name: str
     extra: M
+    required: bool = True
 
 
 @dataclass(slots=True)

@@ -12,7 +12,7 @@
 
 from django.db.models import Q, QuerySet
 from django_filters import CharFilter, ChoiceFilter, OrderingFilter
-from rbac.models import Role, RoleTypes
+from rbac.models import RoleTypes
 
 from api_v2.filters import AdvancedFilterSet
 
@@ -22,19 +22,37 @@ class RoleFilter(
     char_fields=("name", "display_name", "type"),
     number_fields=("id",),
 ):
+    name = CharFilter(
+        field_name="name",
+        label="Filter by name.",
+        lookup_expr="exact",
+    )
     display_name = CharFilter(
         field_name="display_name",
         label="Case insensitive and partial filter by role display name.",
         lookup_expr="icontains",
     )
-    categories = CharFilter(label="Categories", method="filter_category")
-    type = ChoiceFilter(choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN])
-    ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
+    categories = CharFilter(
+        label="Filter by a comma-separated list of categories in the role.", method="filter_category"
+    )
+    type = ChoiceFilter(
+        field_name="type",
+        choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN],
+        label="Filter by type.",
+    )
+    ordering = OrderingFilter(
+        fields={
+            "name": "name",
+            "display_name": "displayName",
+            "type": "type",
+        },
+        field_labels={
+            "name": "Name",
+            "display_name": "Display name",
+            "type": "Type",
+        },
+    )
 
     @staticmethod
     def filter_category(queryset: QuerySet, name: str, value: str):  # noqa: ARG001, ARG004
         return queryset.filter(Q(category__value=value) | Q(any_category=True))
-
-    class Meta:
-        model = Role
-        fields = ["display_name", "categories", "type", "ordering"]

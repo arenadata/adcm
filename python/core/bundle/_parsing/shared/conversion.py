@@ -275,7 +275,7 @@ def _extract_upgrades(entity: dict, context: dict) -> list[UpgradeDefinition] | 
             )
         )
 
-        if "scripts" in upgrade:
+        if "scripts" in upgrade or "scripts_template" in upgrade:
             result["action"] = _extract_action(upgrade, context)
 
         _patch_display_name(result, upgrade)

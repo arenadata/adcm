@@ -16,7 +16,7 @@ from typing import Collection, Iterable, NamedTuple
 import copy
 import json
 
-from core.config.types import RelatedConfigs
+from core.config import RelatedConfigs
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, ObjectConfigID, ObjectID
 
 from cm.converters import core_type_to_model

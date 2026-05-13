@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from core.config._spec import FullSpec
 from core.config._spec.parameters import (
     Activation,
@@ -44,6 +45,20 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
         values_without_group = {"g1": "1", "a": "4"}
 
         return spec, values_without_group
+
+    def prepare_spec_and_config_selection_in_activatable(self) -> tuple[FullSpec, Configuration]:
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("a"), activation=Activation()),
+            ParameterGroup(identifier=name_id("a", "g"), selection=Selection()),
+            ParameterGroup(identifier=name_id("a", "g", "g1")),
+            StringParameter(identifier=name_id("a", "g", "g1", "v")),
+            ParameterGroup(identifier=name_id("a", "g", "g2")),
+            ParameterGroup(identifier=name_id("a", "g", "g2", "s"), selection=Selection()),
+            ParameterGroup(identifier=name_id("a", "g", "g2", "s", "s1")),
+        )
+        config = Configuration(values={"a": {"g": None}}, attributes={"/a": Attributes(is_active=False)})
+
+        return spec, config
 
     def validate(self, configuration: Configuration, specification: FullSpec) -> Success[None] | Fail[Violations]:
         return validate_configuration_is_consistent(configuration=configuration, specification=specification)
@@ -101,3 +116,54 @@ class TestValidateConfigurationIsConsistent(ConfigTestCase):
         self.assertEqual(violations_map["/g/g1/a"].check, "attribute")
         self.assertIn("unexpected", violations_map["/g/g1/a"].reason)
         self.assertIn("missing", violations_map["/g/g2/a"].reason)
+
+    def test_no_selection_in_deactivated(self):
+        spec, config = self.prepare_spec_and_config_selection_in_activatable()
+
+        result = self.validate(config, spec)
+
+        self.expect_success(result)
+
+    def test_no_selection_in_activated(self):
+        spec, config = self.prepare_spec_and_config_selection_in_activatable()
+        config.attributes["/a"].is_active = True
+
+        result = self.validate(config, spec)
+
+        self.expect_exactly_one_violation_for(
+            result, param_is="/a/g", check_is="structure", reason_contains="expected dict"
+        )
+
+    def test_incorrect_value_for_selection_in_deactivated(self):
+        spec, config = self.prepare_spec_and_config_selection_in_activatable()
+        config.values["a"]["g"] = 1
+
+        result = self.validate(config, spec)
+
+        self.expect_exactly_one_violation_for(
+            result, param_is="/a/g", check_is="structure", reason_contains="expected dict"
+        )
+
+    def test_deactivated_group_empty(self):
+        spec, values = self.prepare_spec_and_values_without_group(is_required=False)
+        config = Configuration(
+            values=values | {"g": {"act": {"a": {"b": {}}}}}, attributes={"/g/act/a/b": Attributes(is_active=False)}
+        )
+
+        result = self.validate(config, spec)
+
+        self.expect_exactly_one_violation_for(
+            result, param_is="/g/act/a/b/c", check_is="structure", reason_contains="is missing"
+        )
+
+    def test_deactivated_group_none(self):
+        spec, values = self.prepare_spec_and_values_without_group(is_required=False)
+        config = Configuration(
+            values=values | {"g": {"act": {"a": {"b": None}}}}, attributes={"/g/act/a/b": Attributes(is_active=False)}
+        )
+
+        result = self.validate(config, spec)
+
+        self.expect_exactly_one_violation_for(
+            result, param_is="/g/act/a/b", check_is="structure", reason_contains="expected dict"
+        )

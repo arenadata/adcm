@@ -22,18 +22,22 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-
-from api_v2.tests.base import BaseAPITestCase
-from api_v2.utils.di import prepare_container
+from tests.suites import ADCMDjangoAPISuite
 
 
-class TestBundleAudit(BaseAPITestCase):
+class TestBundleAudit(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
+
     def setUp(self) -> None:
-        # TODO: ADCM-7513
-        prepare_container.cache_clear()
-        self.client.login(username="admin", password="admin")
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        super().setUp()
+
+        # required in order to remove side effects during bundle download
+        self._clean_directories()
 
     def test_audit_upload_success(self):
         new_bundle_file = self.prepare_bundle_file(
@@ -43,7 +47,7 @@ class TestBundleAudit(BaseAPITestCase):
         with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
         self.check_last_audit_record(
             operation_name="Bundle uploaded",
             operation_result="success",

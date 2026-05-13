@@ -12,7 +12,6 @@
 
 from unittest.mock import patch
 
-from adcm.tests.base import BusinessLogicMixin
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
@@ -41,27 +40,29 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.dependencies import get_status_scenarios_manager
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestCluster(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-class TestCluster(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+        cls.cluster_action = Action.objects.get(prototype=cls.cluster_1.prototype, name="action")
 
-        self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
-
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
-        with patch("cm.legacy.services.status.client.api_request") as patched_request:
-            response = (self.client.v2 / "clusters").get()
+        manager = get_status_scenarios_manager()
+        manager.reset()
+        response = (self.client.v2 / "clusters").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
-
-        patched_request.assert_called_once()
+        manager.expect_not_called("get_raw_status")
+        manager.expect_called("retrieve_status_map")
 
     def test_adcm_4539_ordering_success(self):
         self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
@@ -80,16 +81,14 @@ class TestCluster(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        with patch("api_v2.views.retrieve_status_map") as patched_retrieve, patch(
-            "api_v2.views.get_raw_status"
-        ) as patched_raw:
-            response = (self.client.v2 / "clusters" / self.cluster_1.id).get()
+        manager = get_status_scenarios_manager()
+        response = (self.client.v2 / "clusters" / self.cluster_1.id).get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1.pk)
 
-        patched_raw.assert_called_once()
-        patched_retrieve.assert_not_called()
+        manager.expect_called_once("get_raw_status")
+        manager.expect_not_called("retrieve_status_map")
 
     def test_filter_simple_types_success(self):
         filters = {
@@ -319,6 +318,8 @@ class TestCluster(BaseAPITestCase):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7586",
+                "adcm_7807",
                 "service_1",
                 "service_1_clone",
                 "service_2",
@@ -326,7 +327,7 @@ class TestCluster(BaseAPITestCase):
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
-                "service_with_bound_to",
+                "service_with_miss_config_service",
             ],
         )
 
@@ -340,13 +341,15 @@ class TestCluster(BaseAPITestCase):
             [prototype["displayName"] for prototype in response.json()],
             [
                 "adcm_5756",
+                "adcm_7586",
+                "adcm_7807",
                 "service_1",
                 "service_1_clone",
                 "service_2",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
-                "service_with_bound_to",
+                "service_with_miss_config_service",
             ],
         )
 
@@ -554,16 +557,17 @@ class TestCluster(BaseAPITestCase):
                 self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "5"}})
 
 
-class TestClusterActions(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterActions(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
-        self.cluster_action_with_config = Action.objects.get(prototype=self.cluster_1.prototype, name="with_config")
-        self.cluster_action_with_hc = Action.objects.get(prototype=self.cluster_1.prototype, name="with_hc")
+        cls.cluster_action = Action.objects.get(prototype=cls.cluster_1.prototype, name="action")
+        cls.cluster_action_with_config = Action.objects.get(prototype=cls.cluster_1.prototype, name="with_config")
+        cls.cluster_action_with_hc = Action.objects.get(prototype=cls.cluster_1.prototype, name="with_hc")
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_cluster_actions_success(self):
         response = (self.client.v2[self.cluster_1] / "actions").get()
@@ -704,37 +708,40 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestClusterMM(BaseAPITestCase):
+class TestClusterMM(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_3_manual_add"], cluster=cls.cluster_1)[0]
+        cls.service_2 = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster_2)[0]
+        cls.component_1 = Component.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=cls.bundle_1,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=cls.cluster_1,
+            service=cls.service_1,
+        )
+        cls.component_2 = Component.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=cls.bundle_2,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=cls.cluster_2,
+            service=cls.service_2,
+        )
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="test-host", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="test-host-2", cluster=cls.cluster_2)
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = User.objects.create_user(**cls.test_user_credentials)
+
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_services_to_cluster(
-            service_names=["service_3_manual_add"], cluster=self.cluster_1
-        ).last()
-        self.service_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).last()
-        self.component_1 = Component.objects.create(
-            prototype=Prototype.objects.create(
-                bundle=self.bundle_1,
-                type="component",
-                display_name="test_component",
-            ),
-            cluster=self.cluster_1,
-            service=self.service_1,
-        )
-        self.component_2 = Component.objects.create(
-            prototype=Prototype.objects.create(
-                bundle=self.bundle_2,
-                type="component",
-                display_name="test_component",
-            ),
-            cluster=self.cluster_2,
-            service=self.service_2,
-        )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="test-host-2", cluster=self.cluster_2)
-
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = User.objects.create_user(**self.test_user_credentials)
         self.client.login(**self.test_user_credentials)
 
         self.cluster_1_endpoints = [
@@ -745,7 +752,6 @@ class TestClusterMM(BaseAPITestCase):
         ]
 
         self.host_1_endpoint = self.client.v2[self.host_1].path
-
         self.cluster_1_and_host_mm_endpoints = [
             (ep / "maintenance-mode").path
             for ep in (
@@ -832,87 +838,90 @@ class TestClusterMM(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
-class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+class TestClusterStatuses(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
         hierarchy_1 = generate_hierarchy()
-        self.cluster_1 = hierarchy_1["cluster"]
-        self.service_11 = hierarchy_1["service"]
-        self.component_111 = hierarchy_1["component"]
+        cls.cluster_1 = hierarchy_1["cluster"]
+        cls.service_11 = hierarchy_1["service"]
+        cls.component_111 = hierarchy_1["component"]
         component_112_prototype = gen_prototype(
-            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_112"
+            bundle=cls.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_112"
         )
-        self.component_112 = gen_component(service=self.service_11, prototype=component_112_prototype)
+        cls.component_112 = gen_component(service=cls.service_11, prototype=component_112_prototype)
         service_12_prototype = gen_prototype(
-            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.SERVICE, name="service_12"
+            bundle=cls.cluster_1.prototype.bundle, proto_type=ObjectType.SERVICE, name="service_12"
         )
-        self.service_12 = gen_service(cluster=self.cluster_1, prototype=service_12_prototype)
+        cls.service_12 = gen_service(cluster=cls.cluster_1, prototype=service_12_prototype)
         component_121_prototype = gen_prototype(
-            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_121"
+            bundle=cls.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_121"
         )
-        self.component_121 = gen_component(service=self.service_12, prototype=component_121_prototype)
+        cls.component_121 = gen_component(service=cls.service_12, prototype=component_121_prototype)
         component_122_prototype = gen_prototype(
-            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_122"
+            bundle=cls.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_122"
         )
-        self.component_122 = gen_component(service=self.service_12, prototype=component_122_prototype)
-        self.host_1 = hierarchy_1["host"]
-        self.host_2 = gen_host(provider=hierarchy_1["provider"], cluster=self.cluster_1)
-        self.set_hostcomponent(
-            cluster=self.cluster_1,
+        cls.component_122 = gen_component(service=cls.service_12, prototype=component_122_prototype)
+        cls.host_1 = hierarchy_1["host"]
+        cls.host_2 = gen_host(provider=hierarchy_1["provider"], cluster=cls.cluster_1)
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1,
             entries=[
-                (self.host_1, self.component_111),
-                (self.host_1, self.component_112),
-                (self.host_1, self.component_121),
-                (self.host_2, self.component_122),
-                (self.host_2, self.component_112),
+                (cls.host_1, cls.component_111),
+                (cls.host_1, cls.component_112),
+                (cls.host_1, cls.component_121),
+                (cls.host_2, cls.component_122),
+                (cls.host_2, cls.component_112),
             ],
         )
 
         hierarchy_2 = generate_hierarchy()
-        self.cluster_2 = hierarchy_2["cluster"]
-        self.service_21 = hierarchy_2["service"]
-        self.component_211 = hierarchy_2["component"]
-        self.host_3 = hierarchy_2["host"]
+        cls.cluster_2 = hierarchy_2["cluster"]
+        cls.service_21 = hierarchy_2["service"]
+        cls.component_211 = hierarchy_2["component"]
+        cls.host_3 = hierarchy_2["host"]
 
-        self.status_map = FullStatusMap(
-            clusters={
-                str(self.cluster_1.pk): {
-                    "status": 0,
-                    "hosts": {str(self.host_1.pk): {"status": 0}, str(self.host_2.pk): {"status": 16}},
-                    "services": {
-                        str(self.service_11.pk): {
-                            "status": 4,
-                            "components": {
-                                str(self.component_111.pk): {"status": 16},
-                                str(self.component_112.pk): {"status": 0},
+        cls.status_map = FullStatusMap.model_validate(
+            {
+                "clusters": {
+                    str(cls.cluster_1.pk): {
+                        "status": 0,
+                        "hosts": {str(cls.host_1.pk): {"status": 0}, str(cls.host_2.pk): {"status": 16}},
+                        "services": {
+                            str(cls.service_11.pk): {
+                                "status": 4,
+                                "components": {
+                                    str(cls.component_111.pk): {"status": 16},
+                                    str(cls.component_112.pk): {"status": 0},
+                                },
+                                "details": [
+                                    {"host": cls.host_1.pk, "component": cls.component_111.pk, "status": 0},
+                                    {"host": cls.host_1.pk, "component": cls.component_112.pk, "status": 16},
+                                    {"host": cls.host_2.pk, "component": cls.component_112.pk, "status": 0},
+                                ],
                             },
-                            "details": [
-                                {"host": self.host_1.pk, "component": self.component_111.pk, "status": 0},
-                                {"host": self.host_1.pk, "component": self.component_112.pk, "status": 16},
-                                {"host": self.host_2.pk, "component": self.component_112.pk, "status": 0},
-                            ],
-                        },
-                        str(self.service_12.pk): {
-                            "status": 0,
-                            "components": {
-                                str(self.component_121.pk): {"status": 0},
-                                str(self.component_122.pk): {"status": 2},
+                            str(cls.service_12.pk): {
+                                "status": 0,
+                                "components": {
+                                    str(cls.component_121.pk): {"status": 0},
+                                    str(cls.component_122.pk): {"status": 2},
+                                },
+                                "details": [
+                                    {"host": cls.host_1.pk, "component": cls.component_121.pk, "status": 0},
+                                    {"host": cls.host_2.pk, "component": cls.component_122.pk, "status": 2},
+                                ],
                             },
-                            "details": [
-                                {"host": self.host_1.pk, "component": self.component_121.pk, "status": 0},
-                                {"host": self.host_2.pk, "component": self.component_122.pk, "status": 2},
-                            ],
                         },
                     },
+                    str(cls.cluster_2.pk): {"status": 16, "hosts": {str(cls.host_3.pk): {"status": 0}}, "services": {}},
                 },
-                str(self.cluster_2.pk): {"status": 16, "hosts": {str(self.host_3.pk): {"status": 0}}, "services": {}},
-            },
-            hosts={
-                str(self.host_1.pk): {"status": 0},
-                str(self.host_2.pk): {"status": 16},
-                str(self.host_3.pk): {"status": 0},
-            },
+                "hosts": {
+                    str(cls.host_1.pk): {"status": 0},
+                    str(cls.host_2.pk): {"status": 16},
+                    str(cls.host_3.pk): {"status": 0},
+                },
+            }
         )
 
     @staticmethod
@@ -920,10 +929,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         return {(entry["name"], entry["status"]) for entry in entries}
 
     def test_services_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "statuses" / "services").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         services = response.json()["results"]
@@ -944,10 +954,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hosts_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["results"]
@@ -955,10 +966,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         self.assertSetEqual(self.get_name_status_pairs(entries), {(self.host_1.name, "up"), (self.host_2.name, "down")})
 
     def test_components_of_service_statuses_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.service_11] / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.service_11] / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["components"]
@@ -969,10 +981,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hc_statuses_of_component_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.component_112] / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.component_112] / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["hostComponents"]
@@ -983,10 +996,11 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
     def test_hc_statuses_of_host_success(self) -> None:
-        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
-            response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1 / "statuses").get()
+        manager = get_status_scenarios_manager()
+        manager.set_status_map(self.status_map)
+        response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1 / "statuses").get()
 
-        patched.assert_called_once()
+        manager.expect_called("retrieve_status_map")
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         entries = response.json()["hostComponents"]
@@ -997,14 +1011,17 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         )
 
 
-class TestAdvancedFilters(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAdvancedFilters(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.status_map = FullStatusMap(
-            clusters={
-                str(self.cluster_1.pk): {"services": {}, "status": 0, "hosts": {}},
-                str(self.cluster_2.pk): {"services": {}, "status": 16, "hosts": {}},
+        cls.status_map = FullStatusMap.model_validate(
+            {
+                "clusters": {
+                    str(cls.cluster_1.pk): {"services": {}, "status": 0, "hosts": {}},
+                    str(cls.cluster_2.pk): {"services": {}, "status": 16, "hosts": {}},
+                }
             }
         )
 

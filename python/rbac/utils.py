@@ -29,13 +29,5 @@ def set_not_empty_attr(obj, partial: bool, attr: str, value: Any, default: Any |
         setattr(obj, attr, value)
 
 
-def get_query_tuple_str(tuple_items: set | tuple) -> str:
-    tuple_str = "("
-    for item in tuple_items:
-        tuple_str = f"{tuple_str}{item},"
-
-    return f"{tuple_str[:-1]})"
-
-
 def get_group_name_display_name(name: str, type_: str) -> tuple[str, str]:
     return f"{name} [{type_.lower()}]", name

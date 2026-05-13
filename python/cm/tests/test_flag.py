@@ -13,14 +13,14 @@
 from pathlib import Path
 import random
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.concern import create_issue
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 from cm.models import (
-    ADCM,
     Cluster,
     Component,
     ConcernCause,
@@ -36,9 +36,8 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
-        self.change_configuration(
-            target=ADCM.objects.get(), config_diff={"global": {"adcm_url": "http://localhost:8080"}}
-        )
+        # ensure no concern exists
+        ConcernItem.objects.all().delete()
 
         bundles_dir = Path(__file__).parent / "bundles"
         cluster_bundle = self.add_bundle(bundles_dir / "cluster_1")

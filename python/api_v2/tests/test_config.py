@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+from operator import eq
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 import json
 import unittest
 
-from adcm.tests.base import ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
@@ -33,11 +34,12 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.config._types import ChangeRequest
+from core.scenarios.config import ConfigScenarios
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
-from init_db import init
-from rbac.upgrade.role import init_roles
+from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -48,26 +50,32 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from rest_framework.test import APITestCase
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
+from use_cases.transition.config import UpdateConfigurationFromJob
+import core
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase
-from api_v2.utils.di import prepare_container
+from api_v2.tests.base import APIV2Mixin
 
 CONFIGS = "configs"
 CONFIG_SCHEMA = "config-schema"
 
 
-class TestClusterConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterConfig(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.cluster_1_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.cluster_1_config = ConfigLog.objects.get(id=cls.cluster_1.config.current)
+
+        cls.uc.add_services_to_cluster(names=["service_1", "service_2"], cluster=cls.cluster_1)
+
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.cluster_1, CONFIGS].get()
@@ -120,6 +128,26 @@ class TestClusterConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_create_more_than_64_bit_number(self):
+        large_int = 8**35
+        self.assertTrue(large_int.bit_length() > 64)
+
+        data = {
+            "config": {
+                "activatable_group": {"integer": large_int},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
+        self.assertEqual(response.json()["config"]["activatable_group"]["integer"], large_int)
 
     def test_create_bad_attr_fail(self):
         data = {
@@ -274,13 +302,16 @@ class TestClusterConfig(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.service = self.add_services_to_cluster(
-            service_names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
-        ).get()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.service, *_ = cls.add_services_to_cluster(
+            service_names=["service_4_save_config_without_required_field"], cluster=cls.cluster_1
+        )
 
     def test_save_empty_config_success(self):
         response = self.client.v2[self.service, CONFIGS].post(data={"config": {}, "adcmMeta": {}})
@@ -319,19 +350,22 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         )
 
 
-class TestClusterCHG(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterCHG(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.host_group = ConfigHostGroup.objects.create(
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.cluster_1),
-            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(cls.cluster_1),
+            object_id=cls.cluster_1.pk,
         )
-        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
+        cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.host_group, CONFIGS].get()
@@ -653,16 +687,39 @@ class TestClusterCHG(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestServiceConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestServiceConfig(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_1_initial_config = ConfigLog.objects.get(pk=self.service_1.config.current)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.uc.add_services_to_cluster(names=["service_1", "service_2"], cluster=cls.cluster_1)
+
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
+        cls.service_1_initial_config = ConfigLog.objects.get(pk=cls.service_1.config.current)
+
+        cls.service_2 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_2")
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
+
+    def check_values(self, values: dict[str, Any], checks: dict) -> None:
+        checked_keys = set()
+
+        for (check_name, check_func), fields in checks.items():
+            for field in fields:
+                checked_keys.add(field)
+                with self.subTest(f"{check_name}-{field}"):
+                    value = values[field]
+                    err_message = f"Check {check_name} failed for {field=} with {value=}"
+                    self.assertTrue(check_func(value), err_message)
+
+        unchecked_keys = checked_keys.difference(values.keys())
+        if unchecked_keys:
+            message = f"All keys must be checked, missing: {', '.join(sorted(unchecked_keys))}"
+            raise RuntimeError(message)
 
     def test_list_success(self):
         response = self.client.v2[self.service_1, CONFIGS].get()
@@ -848,23 +905,113 @@ class TestServiceConfig(BaseAPITestCase):
             record = ConfigLog.objects.get(id=service.config.current)
             self.assertEqual(record.config["json"], {})
 
+    def test_adcm_7586_secrets_encryption(self):
+        """
+        Based on ADCM-7586 bug born from inconsistency of empty values encryption + ansible preparation.
+        Default and empty values save tested via API (where empty values are allowed), ansible via service.
+        """
+        config_service = self.container.get(core.config.ConfigService)
 
-class TestServiceCHG(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.maxDiff = None
-
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-
-        self.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
+        is_encrypted_plain = ("is_encrypted_plain", config_service.secrets.is_encrypted)
+        is_encrypted_map_value = (
+            "is_encrypted_map_values",
+            lambda x: isinstance(x, dict) and all(map(config_service.secrets.is_encrypted, x.values())),
         )
-        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        is_none = ("is_none", partial(eq, None))
+        is_empty = ("is_empty", partial(eq, ""))
+        is_path = ("is_path", lambda x: isinstance(x, str) and x.startswith("/"))
+        is_encrypted_in_ansible_dict = (
+            "is_encrypted_in_ansible_dict",
+            lambda x: isinstance(x, dict) and is_encrypted_plain[1](x.get("__ansible_vault", "")),
+        )
+        is_encrypted_in_ansible_dict_map_value = (
+            "is_encrypted_in_ansible_dict_map_value",
+            lambda x: isinstance(x, dict) and all(map(is_encrypted_in_ansible_dict[1], x.values())),
+        )
+
+        default_checks = {
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default", "sfile_empty_default"),
+            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            # empty default for plain values are converted to None's
+            is_none: (
+                "pass_empty_default",
+                "pass_no_default",
+                "stext_no_default",
+                "stext_empty_default",
+                "smap_no_default",
+                "sfile_no_default",
+            ),
+        }
+        save_with_empty_checks = {
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
+            is_empty: ("pass_empty_default", "stext_empty_default", "sfile_empty_default"),
+            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
+        }
+        ansible_ready_format_checks = {
+            is_encrypted_in_ansible_dict: ("pass_default", "stext_default"),
+            is_empty: ("pass_empty_default", "stext_empty_default"),
+            is_path: ("sfile_default", "sfile_empty_default"),
+            is_encrypted_in_ansible_dict_map_value: ("smap_default", "smap_empty_default"),
+            is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
+        }
+
+        service, *_ = self.uc.add_services_to_cluster(["adcm_7586"], cluster=self.cluster_1)
+        desc = CoreObjectDescriptor(id=service.pk, type=ADCMCoreType.SERVICE)
+
+        # Default configuration (API)
+
+        response = self.client.v2[service, CONFIGS, service.config.current].get()
+        default_config = response.json()["config"]
+
+        self.check_values(values=default_config, checks=default_checks)
+
+        # Save with empty fields (API)
+
+        config_with_explicit_empty_values = {
+            "config": default_config
+            | {
+                "pass_empty_default": "",
+                "stext_empty_default": "",
+                "sfile_empty_default": "",
+                "smap_empty_default": {"k": ""},
+            },
+            "adcmMeta": {},
+        }
+
+        response = self.client.v2[service, CONFIGS].post(data=config_with_explicit_empty_values)
+
+        self.check_values(values=response.json()["config"], checks=save_with_empty_checks)
+
+        # Prepare for ansible (SERVICE)
+
+        configuration = config_service.retrieve_current_configuration(owner=desc)
+        specification = config_service.retrieve_specification(owner=desc)
+
+        result = config_service.prepare_configuration_for_ansible(
+            configuration=configuration, specification=specification, file_owner=desc
+        )
+
+        self.check_values(values=result.values, checks=ansible_ready_format_checks)
+
+
+class TestServiceCHG(ADCMDjangoAPISuite):
+    maxDiff = None
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+
+        cls.host_group = ConfigHostGroup.objects.create(
+            name="config_host_group",
+            object_type=ContentType.objects.get_for_model(cls.service_1),
+            object_id=cls.service_1.pk,
+        )
+        cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.host_group, CONFIGS].get()
@@ -1130,27 +1277,46 @@ class TestServiceCHG(BaseAPITestCase):
             response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+    def test_adcm_7951_update_from_job(self):
+        owner = CoreObjectDescriptor(id=self.service_1.pk, type=ADCMCoreType.SERVICE)
+        expected = "nondefault"
+        changes = [ChangeRequest(type="value", parameter="/string", value=expected)]
 
-class TestComponentConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+        with patch("use_cases.transition.config.update_related_configs"):
+            self.container.get(UpdateConfigurationFromJob).do(
+                owner=owner,
+                changes_input=changes,
+                convert=lambda x, _: x,
+                description="",
+                job_id=1,
+                owner_orm=self.service_1,
+            )
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
-        )
-        self.component_1_initial_config = ConfigLog.objects.get(pk=self.component_1.config.current)
+        self.host_group.refresh_from_db(fields=["config"])
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
+        self.assertEqual(config_log.config["string"], expected)
 
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
-        self.service_2_config = ConfigLog.objects.get(pk=self.service_2.config.current)
 
-        self.component_2 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
-        self.component_2_initial_config = ConfigLog.objects.get(pk=self.component_2.config.current)
+class TestComponentConfig(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_1_initial_config = ConfigLog.objects.get(pk=cls.component_1.config.current)
+
+        cls.service_2, *_ = cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster_1)
+        cls.service_2_config = ConfigLog.objects.get(pk=cls.service_2.config.current)
+
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.component_2_initial_config = ConfigLog.objects.get(pk=cls.component_2.config.current)
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.component_1, CONFIGS].get()
@@ -1217,10 +1383,10 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(service_names=["service_with_bound_to"], cluster=self.cluster_1).get()
-        component_3 = Component.objects.get(
-            cluster=self.cluster_1, service=service_3, prototype__name="will_have_bound_to"
-        )
+        service_3 = self.add_services_to_cluster(
+            service_names=["service_with_miss_config_service"], cluster=self.cluster_1
+        ).get()
+        component_3 = Component.objects.get(cluster=self.cluster_1, service=service_3, prototype__name="have_no_config")
         self.assertIsNone(component_3.config)
 
     def test_schema(self):
@@ -1328,23 +1494,24 @@ class TestComponentConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestComponentCHG(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestComponentCHG(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
-        )
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_group = ConfigHostGroup.objects.create(
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+
+        cls.host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.component_1),
-            object_id=self.component_1.pk,
+            object_type=ContentType.objects.get_for_model(cls.component_1),
+            object_id=cls.component_1.pk,
         )
-        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.host_group, CONFIGS].get()
@@ -1675,18 +1842,20 @@ class TestComponentCHG(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestProviderConfig(BaseAPITestCase):
+class TestProviderConfig(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
     maxDiff = None
 
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.provider_initial_config = ConfigLog.objects.get(pk=self.provider.config.current)
+        cls.provider_initial_config = ConfigLog.objects.get(pk=cls.provider.config.current)
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.uc.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host_1)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.provider, CONFIGS].get()
@@ -1890,20 +2059,21 @@ class TestProviderConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestProviderCHG(BaseAPITestCase):
+class TestProviderCHG(ADCMDjangoAPISuite):
     maxDiff = None
 
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_group = ConfigHostGroup.objects.create(
+        cls.host_group = ConfigHostGroup.objects.create(
             name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.provider),
-            object_id=self.provider.pk,
+            object_type=ContentType.objects.get_for_model(cls.provider),
+            object_id=cls.provider.pk,
         )
-        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.host_group, CONFIGS].get()
@@ -2209,18 +2379,22 @@ class TestProviderCHG(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestHostConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestHostConfig(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
+    maxDiff = None
 
-        self.host = self.add_host(provider=self.provider, fqdn="test_host")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="test_host-2")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
-        self.host_config = ConfigLog.objects.get(pk=self.host.config.current)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="test_host")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="test_host-2")
+        cls.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host)
+        cls.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host_2)
+        cls.host_config = ConfigLog.objects.get(pk=cls.host.config.current)
+
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.v2[self.host, CONFIGS].get()
@@ -2365,12 +2539,15 @@ class TestHostConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestADCMConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
-        self.adcm = ADCM.objects.first()
-        self.adcm_current_config = ConfigLog.objects.get(id=self.adcm.config.current)
-        self.maxDiff = None
+class TestADCMConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
+        cls.adcm = ADCM.objects.first()
+        cls.adcm_current_config = ConfigLog.objects.get(id=cls.adcm.config.current)
 
     def test_list_success(self):
         response = (self.client.v2 / "adcm" / CONFIGS).get()
@@ -2540,7 +2717,7 @@ class TestADCMConfig(BaseAPITestCase):
                 )
 
 
-class TestAttrTransformation(BaseAPITestCase):
+class TestAttrTransformation(unittest.TestCase):
     def test_transformation_success(self):
         attr = {
             "activatable_group": {"active": True},
@@ -2592,13 +2769,16 @@ class TestAttrTransformation(BaseAPITestCase):
         self.assertDictEqual(new_attr, adcm_meta)
 
 
-class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.service = self.add_services_to_cluster(
-            service_names=["service_5_variant_type_without_values"], cluster=self.cluster_1
-        ).get()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.service, *_ = cls.uc.add_services_to_cluster(
+            names=["service_5_variant_type_without_values"], cluster=cls.cluster_1
+        )
 
     def test_schema(self):
         response = self.client.v2[self.service, CONFIG_SCHEMA].get()
@@ -2645,25 +2825,28 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
         )
 
 
-class TestCHGUpgrade(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+class TestCHGUpgrade(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        cluster_bundle_1_path = self.test_bundles_dir / "cluster_config_host_group"
-        cluster_bundle_2_path = self.test_bundles_dir / "cluster_config_host_group_upgrade"
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
-        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
-        self.upgrade = Upgrade.objects.get(name="upgrade", bundle=self.bundle_2)
+        cluster_bundle_1_path = cls.test_bundles_dir / "cluster_config_host_group"
+        cluster_bundle_2_path = cls.test_bundles_dir / "cluster_config_host_group_upgrade"
 
-        self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_config_host_group")
-        self.service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster).get()
-        self.component = Component.objects.filter(cluster=self.cluster, service=self.service).first()
+        cls.bundle_1 = cls.uc.upload_bundle(src=cluster_bundle_1_path)
+        cls.bundle_2 = cls.uc.upload_bundle(src=cluster_bundle_2_path)
+        cls.upgrade = Upgrade.objects.get(name="upgrade", bundle=cls.bundle_2)
 
-        self.cluster_host_group = ConfigHostGroup.objects.create(
-            name="cluster_config_host_group", object_type=self.cluster.content_type, object_id=self.cluster.pk
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle_1, name="cluster_config_host_group")
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster)
+        cls.component = Component.objects.filter(service=cls.service).first()
+
+        cls.cluster_host_group = ConfigHostGroup.objects.create(
+            name="cluster_config_host_group", object_type=cls.cluster.content_type, object_id=cls.cluster.pk
         )
-        config = ConfigLog.objects.get(pk=self.cluster_host_group.config.current)
+        config = ConfigLog.objects.get(pk=cls.cluster_host_group.config.current)
         config.config.update({"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}})
         config.attr.update(
             {
@@ -2676,10 +2859,10 @@ class TestCHGUpgrade(BaseAPITestCase):
         )
         config.save(update_fields=["config", "attr"])
 
-        self.service_host_group = ConfigHostGroup.objects.create(
-            name="service_config_host_group", object_type=self.service.content_type, object_id=self.service.pk
+        cls.service_host_group = ConfigHostGroup.objects.create(
+            name="service_config_host_group", object_type=cls.service.content_type, object_id=cls.service.pk
         )
-        config = ConfigLog.objects.get(pk=self.service_host_group.config.current)
+        config = ConfigLog.objects.get(pk=cls.service_host_group.config.current)
         config.config.update(
             {
                 "group": {"password": ansible_encrypt_and_format(msg="new password")},
@@ -2699,10 +2882,10 @@ class TestCHGUpgrade(BaseAPITestCase):
         )
         config.save(update_fields=["config", "attr"])
 
-        self.component_host_group = ConfigHostGroup.objects.create(
-            name="component_config_host_group", object_type=self.component.content_type, object_id=self.component.pk
+        cls.component_host_group = ConfigHostGroup.objects.create(
+            name="component_config_host_group", object_type=cls.component.content_type, object_id=cls.component.pk
         )
-        config = ConfigLog.objects.get(pk=self.component_host_group.config.current)
+        config = ConfigLog.objects.get(pk=cls.component_host_group.config.current)
         config.config.update(
             {
                 "group": {"file": "content"},
@@ -2854,7 +3037,9 @@ class TestCHGUpgrade(BaseAPITestCase):
         )
 
 
-class TestPatternInConfig(BaseAPITestCase):
+class TestPatternInConfig(ADCMDjangoAPISuite):
+    maxDiff = None
+
     _PATTERNS = {
         "patterned_string": r"[a-z][A-Z][0-9]*?",
         "patterned_password": r"[A-z]{4,}[0-9]+[^A-z0-9]+",
@@ -2892,15 +3077,14 @@ class TestPatternInConfig(BaseAPITestCase):
         },
     }
 
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.api_v2_bundles_dir = Path(__file__).parent / "bundles"
-
-        bundle = self.add_bundle(self.api_v2_bundles_dir / "cluster_with_patterns")
-        self.cluster = self.add_cluster(bundle=bundle, name="With Patterns")
-        self.service = self.add_services_to_cluster(["with_patterns"], cluster=self.cluster).get()
-        self.component = Component.objects.get(service=self.service, prototype__name="cwp")
+        bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_with_patterns")
+        cls.cluster = cls.uc.add_cluster(bundle=bundle, name="With Patterns")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["with_patterns"], cluster=cls.cluster)
+        cls.component = Component.objects.get(service=cls.service, prototype__name="cwp")
 
     def get_object_path(self, target: Cluster | Service | Component) -> str:
         prefix = "/api/v2/clusters"
@@ -3081,9 +3265,8 @@ class TestPatternInConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
+class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
+    maxDiff = None
 
     _empty_schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -3107,39 +3290,27 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
     }
 
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
+        bundle_v1 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "bugs" / "ADCM-7595" / "v1")
+        bundle_v2 = cls.uc.upload_bundle(src=cls.test_bundles_dir / "bugs" / "ADCM-7595" / "v2")
 
-        cls.bundles_dir = Path(__file__).parent / "bundles"
-        init_roles()
-        init()
+        cls.upgrade = Upgrade.objects.get(name="Upgrade 1", bundle=bundle_v2)
 
-    def setUp(self):
-        super().setUp()
+        cls.cluster = cls.uc.add_cluster(bundle=bundle_v1, name="Cluster with no config")
+        cls.service = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)[0]
+        cls.component = Component.objects.get(service=cls.service, prototype__name="component_1")
 
-        self.client.login(username="admin", password="admin")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="Test provider")
+        cls.host_1 = cls.uc.add_host(provider=provider, cluster=cls.cluster, name="host-1")
+        cls.host_2 = cls.uc.add_host(provider=provider, cluster=cls.cluster, name="host-2")
+        cls.host_3 = cls.uc.add_host(provider=provider, cluster=cls.cluster, name="host-3")
 
-        bundle_v1 = self.create_bundle(src=self.bundles_dir / "bugs" / "ADCM-7595" / "v1")
-        bundle_v2 = self.create_bundle(src=self.bundles_dir / "bugs" / "ADCM-7595" / "v2")
-
-        self.upgrade = Upgrade.objects.get(name="Upgrade 1", bundle=bundle_v2)
-
-        self.cluster = self.create_cluster(bundle=bundle_v1, name="Cluster with no config")
-        self.service = self.create_services(names=["service_1"], cluster=self.cluster)[0]
-        self.component = Component.objects.get(service=self.service, prototype__name="component_1")
-
-        provider_bundle = self.create_bundle(src=self.bundles_dir / "provider")
-        provider = self.create_provider(bundle=provider_bundle, name="Test provider")
-        self.host_1 = self.create_host(provider=provider, cluster=self.cluster, name="host-1")
-        self.host_2 = self.create_host(provider=provider, cluster=self.cluster, name="host-2")
-        self.host_3 = self.create_host(provider=provider, cluster=self.cluster, name="host-3")
-
-        self.create_mapping(
-            cluster=self.cluster,
-            entries=((self.host_1, self.component), (self.host_2, self.component), (self.host_3, self.component)),
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster,
+            entries=((cls.host_1, cls.component), (cls.host_2, cls.component), (cls.host_3, cls.component)),
         )
 
     def check_update_config_response(
@@ -3219,9 +3390,15 @@ class TestNoConfig(APITestCase, ParallelReadyTestCase, APIV2Mixin):
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
 
         # revert upgrade
-        config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service)
-        bundle_revert(obj=self.cluster, callbacks=callbacks, config_service=config_service)
+        config_service = self.container.get(core.config.ConfigService)
+        config_scenarios = ConfigScenarios(config_service=config_service)
+        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+        bundle_revert(
+            obj=self.cluster,
+            callbacks=callbacks,
+            config_service=config_service,
+            config_scenarios=config_scenarios,
+        )
 
         # CHGs must be restored
         chg_hosts_map = {

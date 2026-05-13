@@ -14,10 +14,11 @@ from pathlib import Path
 from uuid import uuid4
 import unittest
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.action.process.types import ProcessState
 from django.utils import timezone
+from tests.deprecated import TaskTestMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
@@ -31,75 +32,76 @@ from cm.models import (
     ProcessStep,
     ProcessStepInput,
 )
-from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestScriptsTemplateEnvironment(WithDishkaContainer, BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestScriptsTemplateEnvironment(TaskTestMixin, ADCMDjangoAPISuite):
     # COPIED FROM cm.tests.test_jinja_scripts.TestJinjaScriptsEnvironment
 
     maxDiff = None
 
-    def setUp(self) -> None:
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
         bundles_dir = Path(__file__).parent / "bundles"
 
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
-        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = cls.uc.upload_bundle(src=bundles_dir / "cluster_1")
+        provider_bundle = cls.uc.upload_bundle(src=bundles_dir / "provider")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
 
-        self.service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["service_one_component"], cluster=cls.cluster)
 
-        self.component = self.service.components.get(prototype__name="component_1")
+        cls.component = cls.service.components.get(prototype__name="component_1")
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
-        host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
-        self.host = host
-        self.set_hostcomponent(cluster=self.cluster, entries=((host, self.component),))
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="test_provider")
+        host = cls.uc.add_host(provider=provider, fqdn="test_host", cluster=cls.cluster)
+        cls.host = host
+        cls.set_hostcomponent(cluster=cls.cluster, entries=((host, cls.component),))
 
-        self.cluster_action = Action.objects.get(prototype=self.cluster.prototype, name="action_on_cluster")
-        self.service_action = Action.objects.get(prototype=self.service.prototype, name="action_on_service")
-        self.component_action = Action.objects.get(prototype=self.component.prototype, name="action_on_component")
-        self.component_host_action = Action.objects.get(
-            prototype=self.component.prototype, name="host_action_on_component"
+        cls.cluster_action = Action.objects.get(prototype=cls.cluster.prototype, name="action_on_cluster")
+        cls.service_action = Action.objects.get(prototype=cls.service.prototype, name="action_on_service")
+        cls.component_action = Action.objects.get(prototype=cls.component.prototype, name="action_on_component")
+        cls.component_host_action = Action.objects.get(
+            prototype=cls.component.prototype, name="host_action_on_component"
         )
 
-        common_config = ConfigLog.objects.get(pk=self.cluster.config.current).config
+        common_config = ConfigLog.objects.get(pk=cls.cluster.config.current).config
         common_config["password"] = ansible_decrypt(common_config["password"])
 
-        self.expected_env_part = {
-            "adcm": {"uuid": str(ADCM.objects.filter().values("uuid").first()["uuid"])},
+        cls.expected_env_part = {
+            "adcm": {"uuid": str(ADCM.objects.values_list("uuid", flat=True).get())},
             "cluster": {
-                "uuid": str(self.cluster.uuid),
-                "before_upgrade": {"state": None, "config": None},
-                "edition": self.cluster.edition,
+                "uuid": str(cls.cluster.uuid),
+                "before_upgrade": {"state": None},
+                "edition": cls.cluster.edition,
                 "config": common_config,
-                "id": self.cluster.pk,
-                "multi_state": self.cluster.multi_state,
-                "name": self.cluster.name,
-                "state": self.cluster.state,
-                "version": self.cluster.prototype.version,
-                "imports": None,
+                "id": cls.cluster.pk,
+                "multi_state": cls.cluster.multi_state,
+                "name": cls.cluster.name,
+                "state": cls.cluster.state,
+                "version": cls.cluster.prototype.version,
             },
             "services": {
-                self.service.prototype.name: {
-                    "uuid": str(self.service.uuid),
-                    "before_upgrade": {"state": None, "config": None},
+                cls.service.prototype.name: {
+                    "uuid": str(cls.service.uuid),
+                    "before_upgrade": {"state": None},
                     "config": common_config,
-                    "id": self.service.pk,
-                    "multi_state": self.service.multi_state,
-                    "state": self.service.state,
-                    "display_name": self.service.display_name,
-                    "maintenance_mode": self.service.maintenance_mode == MaintenanceMode.ON,
-                    "version": self.service.prototype.version,
-                    self.component.prototype.name: {
-                        "uuid": str(self.component.uuid),
-                        "before_upgrade": {"state": None, "config": None},
-                        "component_id": self.component.pk,
+                    "id": cls.service.pk,
+                    "multi_state": cls.service.multi_state,
+                    "state": cls.service.state,
+                    "display_name": cls.service.display_name,
+                    "maintenance_mode": cls.service.maintenance_mode == MaintenanceMode.ON,
+                    "version": cls.service.prototype.version,
+                    cls.component.prototype.name: {
+                        "uuid": str(cls.component.uuid),
+                        "before_upgrade": {"state": None},
+                        "component_id": cls.component.pk,
                         "config": common_config,
-                        "display_name": self.component.display_name,
-                        "maintenance_mode": self.component.maintenance_mode.value == MaintenanceMode.ON,
-                        "multi_state": self.component.multi_state,
-                        "state": self.component.state,
+                        "display_name": cls.component.display_name,
+                        "maintenance_mode": cls.component.maintenance_mode.value == MaintenanceMode.ON,
+                        "multi_state": cls.component.multi_state,
+                        "state": cls.component.state,
                     },
                 }
             },
@@ -111,8 +113,8 @@ class TestScriptsTemplateEnvironment(WithDishkaContainer, BusinessLogicMixin, Ta
             },
             "task": {"config": None, "verbose": False},
         }
-        with self.container() as container:
-            self.context_gatherer = container.get(ContextGathererI[ActionArgs, TaskArgs])
+        with cls.container() as container:
+            cls.context_gatherer = container.get(ContextGathererI[ActionArgs, TaskArgs])
 
     def test_env_for_cluster(self):
         args = TaskArgs(target_object=self.cluster, owner_object=self.cluster, action=self.cluster_action)

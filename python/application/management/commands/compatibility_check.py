@@ -13,8 +13,8 @@
 from dishka import make_container
 from django.core.management import BaseCommand, CommandError
 
-from application.check import check_adcm_start_is_allowed
 from application.di.containers import get_main_providers
+from application.startup.checks import check_adcm_start_is_allowed
 
 
 class Command(BaseCommand):

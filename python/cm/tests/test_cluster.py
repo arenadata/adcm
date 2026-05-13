@@ -12,9 +12,10 @@
 
 import string
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.types import ClusterTopology, ComponentTopology, ServiceTopology
 from core.types import ShortObjectInfo
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 
 from cm.legacy.services.cluster import retrieve_multiple_clusters_topology
 from cm.models import Bundle, Cluster, Prototype

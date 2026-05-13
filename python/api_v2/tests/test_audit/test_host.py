@@ -21,11 +21,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestHostAudit(BaseAPITestCase):
+class TestHostAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -103,7 +102,6 @@ class TestHostAudit(BaseAPITestCase):
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={"current": {"fqdn": "new.name"}, "previous": {"fqdn": "test_host_2"}},
         )
 
@@ -121,7 +119,6 @@ class TestHostAudit(BaseAPITestCase):
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={
                 "current": {"fqdn": "new.name", "description": "new description"},
                 "previous": {"fqdn": "test_host_2", "description": ""},
@@ -541,7 +538,6 @@ class TestHostAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={
                 "current": {"fqdn": "new.name", "description": "new description"},
                 "previous": {"fqdn": "test_host_2", "description": ""},

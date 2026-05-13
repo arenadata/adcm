@@ -11,23 +11,22 @@
 # limitations under the License.
 
 from pathlib import Path
-from unittest.mock import patch
 
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient
 from cm.models import ConfigHostGroup
 from core.types import ADCMHostGroupType
 from django.contrib.contenttypes.models import ContentType
-from django.test import TransactionTestCase
 from djangorestframework_camel_case.util import camelize
-from init_db import init
 from rbac.models import Group, Role, User
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.upgrade.role import init_roles
+from tests.base import WithPreparedFSAndInitADCM
+from tests.client import ADCMTestClient
+from tests.dependencies import get_status_scenarios_manager
+from tests.deprecated import BusinessLogicMixin
+import django.test
 
 
-class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicMixin):
+class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM, BusinessLogicMixin):
     client: ADCMTestClient
     client_class = ADCMTestClient
 
@@ -38,10 +37,8 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
         cls.test_files_dir = Path(__file__).parent / "files"
 
-        init_roles()
-        init()
-
     def setUp(self) -> None:
+        get_status_scenarios_manager().reset()
         self.client.login(username="admin", password="admin")
 
         cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
@@ -101,19 +98,17 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
             ),
         }
 
+        manager = get_status_scenarios_manager()
         for event_func, [patched_obj, params] in request_events_dict.items():
-            with self.subTest(event_func=event_func), patch(event_func) as mock_send_event:
+            with self.subTest(event_func=event_func):
+                manager.reset()
                 response = self.client.v2[patched_obj].patch(data=params)
-
                 self.assertEqual(response.status_code, 200)
-                mock_send_event.assert_called()
+                manager.expect_called_once("send_object_update_event")
+                event = manager.send_object_update_event_calls[-1]
 
-                args, kwargs = mock_send_event.call_args
-
-                if args:
-                    obj_id, obj_type = args[0], args[1]
-                else:
-                    obj_id, obj_type = kwargs["obj_id"], kwargs["obj_type"]
+                obj_id, obj_type = event.obj_id, event.obj_type
+                changes = event.changes
 
                 self.assertEqual(obj_id, patched_obj.id)
 
@@ -123,4 +118,4 @@ class TestEventIsSent(TransactionTestCase, ParallelReadyTestCase, BusinessLogicM
                     patched_obj_type = "-".join(patched_obj.__class__.__name__.lower().split("host"))
 
                 self.assertEqual(obj_type, patched_obj_type)
-                self.assertDictContainsSubset(camelize(params), kwargs.get("changes", {}))
+                self.assertDictContainsSubset(camelize(params), changes)

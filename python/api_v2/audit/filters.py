@@ -11,19 +11,17 @@
 # limitations under the License.
 
 from audit.models import (
-    AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
-    AuditSession,
     AuditSessionLoginResult,
 )
-from django_filters import NumberFilter
 from django_filters.constants import EMPTY_VALUES
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
     DateTimeFilter,
+    NumberFilter,
     OrderingFilter,
 )
 
@@ -40,22 +38,40 @@ class AuditLogFilter(
     object_type__eq = CharFilter(field_name="audit_object__object_type", lookup_expr="exact", label="object_type__eq")
     # ---
 
-    object_name = CharFilter(field_name="audit_object__object_name", label="Object name", lookup_expr="icontains")
+    # Deprecate filters, saved for backward compatibility.
+    operation_result = ChoiceFilter(
+        field_name="operation_result", label="Filter by operation result.", choices=AuditLogOperationResult.choices
+    )
+    operation_type = ChoiceFilter(
+        field_name="operation_type", label="Filter by operation type.", choices=AuditLogOperationType.choices
+    )
+    username = CharFilter(
+        field_name="user__username", label="Case insensitive and partial filter by user name.", lookup_expr="icontains"
+    )
+    # ---
+    id = NumberFilter(field_name="id", label="Filter by id.")
+    object_name = CharFilter(
+        field_name="audit_object__object_name",
+        label="Case insensitive and partial filter by object name.",
+        lookup_expr="icontains",
+    )
     object_type = ChoiceFilter(
         field_name="audit_object__object_type",
         choices=AuditObjectType.choices,
-        label="Object type",
+        label="Filter by object type.",
     )
-    operation_result = ChoiceFilter(
-        field_name="operation_result", label="Operation result", choices=AuditLogOperationResult.choices
+    name = CharFilter(field_name="operation_name", label="Filter by name.", lookup_expr="exact")
+    result = ChoiceFilter(
+        field_name="operation_result", label="Filter by operation result.", choices=AuditLogOperationResult.choices
     )
-    operation_type = ChoiceFilter(
-        field_name="operation_type", label="Operation type", choices=AuditLogOperationType.choices
+    type = ChoiceFilter(
+        field_name="operation_type", label="Filter by operation type.", choices=AuditLogOperationType.choices
     )
-    time_from = DateTimeFilter(field_name="operation_time", lookup_expr="gte")
-    time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
-    username = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
-    user_name = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
+    time_from = DateTimeFilter(field_name="operation_time", lookup_expr="gte", label="Filter by time from.")
+    time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte", label="Filter by time to.")
+    user_name = CharFilter(
+        field_name="user__username", label="Case insensitive and partial filter by user name.", lookup_expr="icontains"
+    )
     ordering = OrderingFilter(
         fields={
             "audit_object__object_name": "objectName",
@@ -77,10 +93,6 @@ class AuditLogFilter(
         },
         label="ordering",
     )
-
-    class Meta:
-        model = AuditLog
-        fields = ["id"]
 
 
 class AuditSessionOrderingFilter(OrderingFilter):
@@ -106,21 +118,41 @@ class AuditSessionOrderingFilter(OrderingFilter):
 
 class AuditSessionFilter(
     AdvancedFilterSet,
-    char_fields=(("username", "user__username"), "login_result"),
+    char_fields=(("username", "login_details__username"), "login_result"),
     number_fields=("id",),
 ):
-    login = CharFilter(field_name="user__username", label="Login", lookup_expr="icontains")
-    login_result = ChoiceFilter(
-        field_name="login_result", label="Login result", choices=AuditSessionLoginResult.choices
+    # Deprecate filters, saved for backward compatibility.
+    login = CharFilter(
+        field_name="login_details__username",
+        label="Case insensitive and partial filter by user login.",
+        lookup_expr="icontains",
     )
-    time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Time from")
-    time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Time to")
+    login_result = ChoiceFilter(
+        field_name="login_result", label="Filter by login result.", choices=AuditSessionLoginResult.choices
+    )
+    # ---
+    id = NumberFilter(field_name="id", label="Filter by id.")
+    user_name = CharFilter(field_name="user__username", label="Filter by user name.", lookup_expr="exact")
+    details_username = CharFilter(
+        field_name="login_details__username",
+        label="Case insensitive and partial filter by user login.",
+        lookup_expr="icontains",
+    )
+    result = ChoiceFilter(field_name="login_result", label="Filter by result.", choices=AuditSessionLoginResult.choices)
+    time_from = DateTimeFilter(field_name="login_time", lookup_expr="gte", label="Filter by time from.")
+    time_to = DateTimeFilter(field_name="login_time", lookup_expr="lte", label="Filter by time to.")
     ordering = AuditSessionOrderingFilter(
-        fields={"login_time": "loginTime"},
-        field_labels={"login_time": "Login time"},
+        fields={
+            "login_time": "loginTime",
+            "user__username": "userName",
+            "login_result": "result",
+            "time": "time",
+        },
+        field_labels={
+            "login_time": "Login time",
+            "user_name": "User name",
+            "result": "Result",
+            "time": "Time",
+        },
         label="ordering",
     )
-
-    class Meta:
-        model = AuditSession
-        fields = ["id"]

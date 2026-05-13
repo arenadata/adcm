@@ -8,10 +8,20 @@ import { useComponentActionHostGroups } from './useComponentActionHostGroups';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useEffect } from 'react';
+import EntityDynamicActionWizardDialog from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
+import EditDescriptionActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/EditDescriptionActionHostGroupDialog';
 
 const ComponentActionHostGroups = () => {
-  const { toolbarProps, tableProps, createDialogProps, dynamicActionDialogProps, editDialogProps, deleteDialogProps } =
-    useComponentActionHostGroups();
+  const {
+    toolbarProps,
+    tableProps,
+    createDialogProps,
+    dynamicActionDialogProps,
+    editDialogProps,
+    deleteDialogProps,
+    wizardProps,
+    editDescriptionDialogProps,
+  } = useComponentActionHostGroups();
 
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
@@ -45,6 +55,8 @@ const ComponentActionHostGroups = () => {
       {dynamicActionDialogProps && <DynamicActionDialog {...dynamicActionDialogProps} />}
       {editDialogProps && <EditActionHostGroupDialog {...editDialogProps} />}
       {deleteDialogProps && <DeleteActionHostGroupDialog {...deleteDialogProps} />}
+      {wizardProps && <EntityDynamicActionWizardDialog {...wizardProps} />}
+      {editDescriptionDialogProps && <EditDescriptionActionHostGroupDialog {...editDescriptionDialogProps} />}
     </>
   );
 };

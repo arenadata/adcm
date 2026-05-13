@@ -15,8 +15,7 @@ from functools import wraps
 from typing import Iterable
 
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ObjectMaintenanceModeState
-from core.types import HostID
+from core.types import HostID, ObjectMaintenanceModeState
 from requests import Response
 
 from cm.legacy.services.cluster import (

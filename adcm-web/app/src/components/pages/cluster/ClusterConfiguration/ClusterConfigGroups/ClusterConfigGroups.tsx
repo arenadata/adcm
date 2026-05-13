@@ -73,6 +73,8 @@ const ClusterConfigGroups: React.FC = () => {
               onMapping={handleMappingConfigGroup}
               editUrlPattern={`/clusters/${clusterId}/configuration/config-groups/:configGroupId`}
               onDelete={handleDeleteConfigGroup}
+              entityType="cluster"
+              entityArgs={{ clusterId }}
             />
             <ClusterConfigGroupTableFooter />
           </>

@@ -27,6 +27,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.hooks import (
     adjust_denied_on_404_result,
     extract_current_from_response,
+    extract_from_object,
     extract_previous_from_object,
     only_on_success,
 )
@@ -40,8 +41,6 @@ from cm.legacy.services.cluster import (
     retrieve_clusters_objects_maintenance_mode,
 )
 from cm.legacy.services.mapping import set_host_component_mapping
-from cm.legacy.services.status import notify
-from cm.legacy.status_api import send_object_update_event
 from cm.models import (
     AnsibleConfig,
     Bundle,
@@ -54,19 +53,22 @@ from cm.models import (
     Prototype,
     Service,
 )
+from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.legacy.bundle.operations import build_requires_dependencies_map
 from core.legacy.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     find_host_candidates_for_cluster,
 )
-from core.legacy.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
-from core.types import ADCMCoreType, ComponentNameKey, ServiceNameKey
+from core.legacy.cluster.types import HostComponentEntry
+from core.types import ADCMCoreType, ComponentNameKey, MaintenanceModeOfObjects, ServiceNameKey
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -82,7 +84,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.cluster.create import CreateCluster
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, exclude_params, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
@@ -165,6 +167,8 @@ from api_v2.utils.audit import (
     nested_host_does_exist,
     parent_cluster_from_lookup,
     parent_host_from_lookup,
+    retrieve_cluster_ansible_config_from_object,
+    retrieve_cluster_ansible_config_from_response,
     set_add_hosts_name,
     set_removed_host_name,
     update_cluster_name,
@@ -191,11 +195,6 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
-                name="status",
-                description="Status filter.",
-                enum=("up", "down"),
-            ),
-            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
@@ -203,6 +202,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
                     "-name",
                     "prototypeDisplayName",
                     "-prototypeDisplayName",
+                    "state",
+                    "-state",
+                    "prototypeVersion",
+                    "-prototypeVersion",
                 ),
                 default="name",
             ),
@@ -392,7 +395,8 @@ class ClusterViewSet(
             after=extract_current_from_response("name", "description"),
         )
     )
-    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -408,7 +412,7 @@ class ClusterViewSet(
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
 
-        send_object_update_event(
+        status_scenarios.send_object_update_event(
             instance.pk,
             ADCMCoreType.CLUSTER.value,
             changes={"name": instance.name, "description": instance.description},
@@ -686,7 +690,10 @@ class ClusterViewSet(
             errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
         ),
     )
-    @audit_update(name="Ansible configuration updated", object_=cluster_from_lookup)
+    @audit_update(name="Ansible configuration updated", object_=cluster_from_lookup).track_changes(
+        before=extract_from_object(func=retrieve_cluster_ansible_config_from_object, section="previous"),
+        after=retrieve_cluster_ansible_config_from_response(),
+    )
     @action(methods=["get", "post"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config")
     def ansible_config(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
@@ -784,6 +791,8 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -890,7 +899,15 @@ class HostClusterViewSet(
         return by_cluster_qs
 
     @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
-    def create(self, request, *_, **kwargs):
+    @inject
+    def create(
+        self,
+        request,
+        *_,
+        status_scenarios: FromDishka[StatusScenarios],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        **kwargs,
+    ):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
         )
@@ -908,7 +925,8 @@ class HostClusterViewSet(
                 entry["host_id"]
                 for entry in (serializer.validated_data if multiple_hosts else [serializer.validated_data])
             ],
-            status_service=notify,
+            status_service=status_scenarios,
+            rbac_scenarios=rbac_scenarios,
         )
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)
@@ -926,11 +944,12 @@ class HostClusterViewSet(
             pre_call=set_removed_host_name, on_collect=adjust_denied_on_404_result(objects_exist=nested_host_does_exist)
         )
     )
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(self, request, *args, rbac_scenarios: FromDishka[RBACScenarios], **kwargs):  # noqa: ARG002
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
-        remove_host_from_cluster(host=host)
+        remove_host_from_cluster(host=host, rbac_scenarios=rbac_scenarios)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @audit_update(name="Host updated", object_=host_from_lookup).track_changes(
@@ -944,8 +963,17 @@ class HostClusterViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
+    def maintenance_mode(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        schedule_task: FromDishka[ScheduleMMChangingTask],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
+        return maintenance_mode(
+            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
+        )
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002

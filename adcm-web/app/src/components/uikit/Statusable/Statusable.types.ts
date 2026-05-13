@@ -7,4 +7,6 @@ export type BaseStatus =
   | 'success'
   | 'locked'
   | 'unknown'
-  | 'broken';
+  | 'broken'
+  | 'warning'
+  | 'info';

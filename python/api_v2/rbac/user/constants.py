@@ -10,14 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import TextChoices
+from enum import Enum
 
 
-class UserStatusChoices(TextChoices):
-    ACTIVE = "active", "active"
-    BLOCKED = "blocked", "blocked"
+class UserStatus(str, Enum):
+    active = "active"
+    blocked = "blocked"
 
 
-class UserTypeChoices(TextChoices):
-    LOCAL = "local", "local"
-    LDAP = "ldap", "ldap"
+UserStatusChoices = [(status.name, status.value) for status in UserStatus]

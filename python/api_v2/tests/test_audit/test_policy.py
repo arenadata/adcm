@@ -25,11 +25,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestPolicyAudit(BaseAPITestCase):
+class TestPolicyAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -161,15 +160,14 @@ class TestPolicyAudit(BaseAPITestCase):
                 "group": ["Some group [local]"],
             },
         }
-        last_record = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.another_policy),
             user__username="admin",
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
         )
-        self.assertDictEqual(expected_object_changes, last_record.object_changes)
 
     def test_policy_edit_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)

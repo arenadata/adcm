@@ -12,7 +12,6 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -22,6 +21,8 @@ from core.legacy.job.runners import (
 )
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
 
@@ -63,8 +64,8 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
         self.context = {
             "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
-            "datadir": self.directories["DATA_DIR"],
-            "stackdir": self.directories["STACK_DIR"],
+            "datadir": self.directories.data,
+            "stackdir": self.directories.stack,
             "token": settings.STATUS_SECRET_KEY,
             "component_type_id": self.component.prototype_id,
         }

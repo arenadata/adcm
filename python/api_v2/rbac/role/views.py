@@ -22,6 +22,8 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, ProductCategory, Provider, Service
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from django.db.models import Prefetch
 from drf_spectacular.utils import (
     OpenApiParameter,
@@ -57,6 +59,7 @@ from api_v2.rbac.role.serializers import (
     RoleUpdateSerializer,
 )
 from api_v2.utils.audit import retrieve_role_children, role_from_lookup, role_from_response, update_role_name
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -68,15 +71,6 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="categories",
-                description="Filter by a comma-separated list of categories in the role.",
-            ),
-            OpenApiParameter(
-                name="type",
-                description="Filter by type.",
-                enum=("business", "role"),
-            ),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -184,7 +178,14 @@ class RoleViewSet(
             ),
         )
     )
-    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def partial_update(
+        self,
+        request,
+        *,
+        status_scenarios: FromDishka[StatusScenarios],
+        **_,
+    ):
         instance = self.get_object()
 
         if instance.built_in:
@@ -192,7 +193,7 @@ class RoleViewSet(
 
         serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        role = role_update(role=instance, partial=True, **serializer.validated_data)
+        role = role_update(role=instance, partial=True, status_scenarios=status_scenarios, **serializer.validated_data)
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 

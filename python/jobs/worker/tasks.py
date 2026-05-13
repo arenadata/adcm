@@ -11,13 +11,21 @@
 # limitations under the License.
 
 
-from cm.legacy.services.job.run import get_default_runner
+from application.di.containers import get_main_providers
+from core.legacy.job.runners import JobFilterPredicate, TaskRunner, always_true
 from core.types import TaskID
+import dishka
 
 from jobs.worker.celery.worker import app
 
 
 @app.task(track_started=True)
 def run_task(*, task_id: TaskID) -> None:
-    runner = get_default_runner()
-    runner.run(task_id=task_id)
+    # todo most likely container must be built once on celery start
+    container = dishka.make_container(*get_main_providers())
+    container_context = {JobFilterPredicate: always_true}
+
+    container = dishka.make_container(*get_main_providers(), context=container_context)
+    with container():
+        runner = container.get(TaskRunner)
+        runner.run(task_id=task_id)

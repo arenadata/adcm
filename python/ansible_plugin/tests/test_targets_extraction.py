@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 
-from adcm.tests.ansible import ADCMAnsiblePluginTestMixin, DummyExecutor
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Service
 from core.legacy.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from tests.ansible import DummyExecutor
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.base import (
     ArgumentsConfig,
@@ -33,35 +32,34 @@ class EmptyArguments(BaseArgumentsWithTypedObjects):
     ...
 
 
-class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsiblePluginTestMixin, TaskTestMixin):
-    def setUp(self):
-        super().setUp()
+class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls):
+        cls._initialize_roles_and_adcm()
 
-        self.targets_from_objects_executor = DummyExecutor(
+        cls.targets_from_objects_executor = DummyExecutor(
             config=PluginExecutorConfig(
                 arguments=ArgumentsConfig(represent_as=EmptyArguments),
                 target=TargetConfig(detectors=(from_objects,)),
             )
         )
 
-        self.bundles_dir = Path(__file__).parent / "bundles"
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.bundles_dir / "cluster")
+        cls.provider_bundle = cls.uc.upload_bundle(cls.bundles_dir / "provider")
 
-        cluster_bundle = self.add_bundle(self.bundles_dir / "cluster")
-        provider_bundle = self.add_bundle(self.bundles_dir / "provider")
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Cluster 1")
+        cls.cluster_2 = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Cluster 2")
 
-        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="Cluster 1")
-        self.cluster_2 = self.add_cluster(bundle=cluster_bundle, name="Cluster 2")
+        for cluster in (cls.cluster_1, cls.cluster_2):
+            cls.uc.add_services_to_cluster(["service_1", "service_2"], cluster=cluster)
 
-        for cluster in (self.cluster_1, self.cluster_2):
-            self.add_services_to_cluster(["service_1", "service_2"], cluster=cluster)
+        cls.provider_1 = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider 1")
+        cls.provider_2 = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider 2")
 
-        self.provider_1 = self.add_provider(bundle=provider_bundle, name="Provider 1")
-        self.provider_2 = self.add_provider(bundle=provider_bundle, name="Provider 2")
-
-        self.host_1 = self.add_host(provider=self.provider_1, fqdn="provider-1-host-1")
-        self.host_2 = self.add_host(provider=self.provider_1, fqdn="provider-1-host-2")
-        self.host_3 = self.add_host(provider=self.provider_2, fqdn="provider-2-host-1")
-        self.host_4 = self.add_host(provider=self.provider_2, fqdn="provider-2-host-2")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider_1, fqdn="provider-1-host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider_1, fqdn="provider-1-host-2")
+        cls.host_3 = cls.uc.add_host(provider=cls.provider_2, fqdn="provider-2-host-1")
+        cls.host_4 = cls.uc.add_host(provider=cls.provider_2, fqdn="provider-2-host-2")
 
     def test_full_info_objects_of_cluster_context_success(self) -> None:
         arguments = """

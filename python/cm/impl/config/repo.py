@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Iterable, Literal, overload
 
 from core import config
+from core.files.local import LocalPathResolver
 from core.types import (
     ActionDescriptor,
     ADCMCoreType,
@@ -28,7 +29,6 @@ from core.types import (
     ObjectOrGroup,
     PrototypeID,
 )
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
 
@@ -48,6 +48,9 @@ class ConfigPrototypeInfo:
 
 @dataclass(slots=True)
 class ConfigRepo(config.ConfigRepoI):
+    # for now it's implementation dependency, may be moved to interface if required
+    path_resolver: LocalPathResolver
+
     # retrieve
 
     def get_config(self, owner: ObjectOrGroup) -> config.ConfigurationWithInfo:
@@ -111,7 +114,9 @@ class ConfigRepo(config.ConfigRepoI):
             raise config.ObjectWithoutConfigError(message)
 
         owner_type = config_spec_info.prototype_type
-        bundle_root = _build_path_to_bundle_root(owner_type=owner_type, bundle_hash=config_spec_info.bundle_hash)
+        bundle_root = self.path_resolver.resolve_bundle_root_absolute(
+            object_type=owner_type, bundle_hash=config_spec_info.bundle_hash
+        )
         spec = build_specification(
             records=config_spec_info.parameter_prototypes,
             group_customization_flag=config_spec_info.group_customization_flag,
@@ -153,7 +158,9 @@ class ConfigRepo(config.ConfigRepoI):
 
         proto_dir_mapping_query = Prototype.objects.filter(id__in=ids_).values_list("id", "type", "bundle__hash")
         proto_dir_map = {
-            prototype_id: _build_path_to_bundle_root(owner_type=ADCMCoreType(type_), bundle_hash=bundle_hash)
+            prototype_id: self.path_resolver.resolve_bundle_root_absolute(
+                object_type=ADCMCoreType(type_), bundle_hash=bundle_hash
+            )
             for prototype_id, type_, bundle_hash in proto_dir_mapping_query.all()
         }
 
@@ -350,14 +357,6 @@ def _get_config_prototypes_info_by_ids(ids: Iterable[PrototypeID]) -> dict[Proto
         )
         for prototype_id, info in records.items()
     }
-
-
-# todo put to repo dependencies
-def _build_path_to_bundle_root(owner_type: ADCMCoreType, bundle_hash: str) -> Path:
-    if owner_type == ADCMCoreType.ADCM:
-        return Path(settings.BASE_DIR, "conf", "adcm")
-
-    return Path(settings.BUNDLE_DIR, bundle_hash)
 
 
 def _to_configuration(values: dict, attrs: dict) -> config.Configuration:

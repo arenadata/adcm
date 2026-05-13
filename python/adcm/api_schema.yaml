@@ -62,6 +62,20 @@ components:
           maxLength: 255
       required:
       - name
+    ActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - name
+      - description
     ActionList:
       type: object
       properties:
@@ -369,12 +383,14 @@ components:
       - success
       - wrong password
       - account disabled
+      - log in to a blocked account
       - user not found
       type: string
       description: |-
         * `success` - success
         * `wrong password` - wrong password
         * `account disabled` - account disabled
+        * `log in to a blocked account` - log in to a blocked account
         * `user not found` - user not found
     AuditUserShort:
       type: object
@@ -470,6 +486,56 @@ components:
         * `service` - service
         * `requirement` - requirement
         * `configuring_process` - configuring_process
+    CheckLogContent:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        result:
+          type: boolean
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        type:
+          $ref: '#/components/schemas/CheckLogStorageTypeEnum'
+      required:
+      - message
+      - result
+      - severity
+      - title
+      - type
+    CheckLogStorage:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CheckLogStorageTypeEnum'
+        format:
+          $ref: '#/components/schemas/CheckLogStorageFormatEnum'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageCheckLogContent'
+      required:
+      - content
+      - format
+      - id
+      - name
+      - type
+    CheckLogStorageFormatEnum:
+      enum:
+      - json
+      type: string
+      description: '* `json` - json'
+    CheckLogStorageTypeEnum:
+      enum:
+      - check
+      type: string
+      description: '* `check` - check'
     Cluster:
       type: object
       properties:
@@ -912,14 +978,6 @@ components:
       - code
       - level
       - desc
-    FormatEnum:
-      enum:
-      - txt
-      - json
-      type: string
-      description: |-
-        * `txt` - txt
-        * `json` - json
     Group:
       type: object
       properties:
@@ -949,6 +1007,35 @@ components:
       - description
       - users
       - type
+    GroupCheckLogContent:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        result:
+          type: boolean
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        type:
+          $ref: '#/components/schemas/GroupCheckLogContentTypeEnum'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckLogContent'
+      required:
+      - content
+      - message
+      - result
+      - severity
+      - title
+      - type
+    GroupCheckLogContentTypeEnum:
+      enum:
+      - group
+      type: string
+      description: '* `group` - group'
     GroupCreate:
       type: object
       properties:
@@ -1372,39 +1459,6 @@ components:
         * `absent` - absent
         * `accepted` - accepted
         * `unaccepted` - unaccepted
-    LogStorage:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-        type:
-          $ref: '#/components/schemas/LogStorageTypeEnum'
-        format:
-          $ref: '#/components/schemas/FormatEnum'
-        content:
-          type: string
-          readOnly: true
-      required:
-      - id
-      - name
-      - type
-      - format
-      - content
-    LogStorageTypeEnum:
-      enum:
-      - stdout
-      - stderr
-      - check
-      - custom
-      type: string
-      description: |-
-        * `stdout` - stdout
-        * `stderr` - stderr
-        * `check` - check
-        * `custom` - custom
     Login:
       type: object
       properties:
@@ -1588,6 +1642,21 @@ components:
       - reset_step
       type: string
       description: '* `reset_step` - reset_step'
+    OperationSkipStep:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/OperationSkipStepMethodEnum'
+        params:
+          $ref: '#/components/schemas/SkipStepParams'
+      required:
+      - method
+      - params
+    OperationSkipStepMethodEnum:
+      enum:
+      - skip_step
+      type: string
+      description: '* `skip_step` - skip_step'
     OperationSubmitStep:
       type: object
       properties:
@@ -2051,6 +2120,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+    PatchedActionHostGroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+          maxLength: 255
     PatchedCHG:
       type: object
       properties:
@@ -3170,6 +3250,16 @@ components:
       required:
       - componentId
       - hostId
+    SeverityEnum:
+      enum:
+      - error
+      - warning
+      - info
+      type: string
+      description: |-
+        * `error` - error
+        * `warning` - warning
+        * `info` - info
     ShortHost:
       type: object
       properties:
@@ -3190,6 +3280,17 @@ components:
         * `valid` - valid
         * `invalid` - invalid
         * `absent` - absent
+    SkipStepParams:
+      type: object
+      properties:
+        stepId:
+          type: integer
+        processSyncKey:
+          type: string
+          format: uuid
+      required:
+      - processSyncKey
+      - stepId
     Source:
       type: object
       properties:
@@ -3333,6 +3434,51 @@ components:
           type: integer
       required:
       - id
+    StorageCheckLogContent:
+      oneOf:
+      - $ref: '#/components/schemas/GroupCheckLogContent'
+      - $ref: '#/components/schemas/CheckLogContent'
+    StorageLogContent:
+      oneOf:
+      - $ref: '#/components/schemas/CheckLogStorage'
+      - $ref: '#/components/schemas/StreamLogStorage'
+    StreamLogStorage:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/StreamLogStorageTypeEnum'
+        format:
+          $ref: '#/components/schemas/StreamLogStorageFormatEnum'
+        content:
+          type: string
+      required:
+      - content
+      - format
+      - id
+      - name
+      - type
+    StreamLogStorageFormatEnum:
+      enum:
+      - txt
+      - json
+      type: string
+      description: |-
+        * `txt` - txt
+        * `json` - json
+    StreamLogStorageTypeEnum:
+      enum:
+      - stdout
+      - stderr
+      - custom
+      type: string
+      description: |-
+        * `stdout` - stdout
+        * `stderr` - stderr
+        * `custom` - custom
     SubmitStepConfiguration:
       type: object
       properties:
@@ -3621,9 +3767,13 @@ components:
           maxLength: 1000
         bundle:
           $ref: '#/components/schemas/UpgradeListBundle'
+        startImpossibleReason:
+          type: string
+          readOnly: true
       required:
       - bundle
       - id
+      - startImpossibleReason
     UpgradeListBundle:
       type: object
       properties:
@@ -3677,6 +3827,9 @@ components:
           readOnly: true
         bundle:
           $ref: '#/components/schemas/UpgradeBundle'
+        startImpossibleReason:
+          type: string
+          readOnly: true
       required:
       - id
       - name
@@ -3686,6 +3839,7 @@ components:
       - configuration
       - disclaimer
       - bundle
+      - startImpossibleReason
     UpgradeRun:
       type: object
       properties:
@@ -3803,6 +3957,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3812,6 +3967,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3821,6 +3977,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3830,6 +3987,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3839,6 +3997,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3848,6 +4007,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -3857,6 +4017,7 @@ components:
       oneOf:
       - $ref: '#/components/schemas/OperationSubmitStep'
       - $ref: '#/components/schemas/OperationResetStep'
+      - $ref: '#/components/schemas/OperationSkipStep'
       - $ref: '#/components/schemas/OperationCompleteProcess'
       discriminator:
         propertyName: method
@@ -4260,6 +4421,11 @@ paths:
       summary: GET audit logins
       parameters:
       - in: query
+        name: detailsUsername
+        schema:
+          type: string
+        description: Case insensitive and partial filter by user login.
+      - in: query
         name: id
         schema:
           type: integer
@@ -4280,10 +4446,18 @@ paths:
           type: string
           enum:
           - account disabled
+          - log in to a blocked account
           - success
           - user not found
           - wrong password
-        description: Filter by login result.
+        description: |-
+          Filter by login result.
+
+          * `success` - success
+          * `wrong password` - wrong password
+          * `account disabled` - account disabled
+          * `log in to a blocked account` - log in to a blocked account
+          * `user not found` - user not found
       - in: query
         name: offset
         schema:
@@ -4295,24 +4469,51 @@ paths:
           type: string
           enum:
           - -loginTime
+          - -result
           - -time
+          - -userName
           - loginTime
+          - result
           - time
+          - userName
           default: -loginTime
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
       - in: query
+        name: result
+        schema:
+          type: string
+          enum:
+          - account disabled
+          - log in to a blocked account
+          - success
+          - user not found
+          - wrong password
+        description: |-
+          Filter by result.
+
+          * `success` - success
+          * `wrong password` - wrong password
+          * `account disabled` - account disabled
+          * `log in to a blocked account` - log in to a blocked account
+          * `user not found` - user not found
+      - in: query
         name: timeFrom
         schema:
           type: string
-          format: date
+          format: date-time
         description: Filter by time from.
       - in: query
         name: timeTo
         schema:
           type: string
-          format: date
+          format: date-time
         description: Filter by time to.
+      - in: query
+        name: userName
+        schema:
+          type: string
+        description: Filter by user name.
       tags:
       - audit
       security:
@@ -4384,6 +4585,11 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Filter by name.
+      - in: query
         name: objectName
         schema:
           type: string
@@ -4406,7 +4612,22 @@ paths:
           - role
           - service
           - user
-        description: Filter by object type.
+        description: |-
+          Filter by object type.
+
+          * `prototype` - prototype
+          * `cluster` - cluster
+          * `service` - service
+          * `component` - component
+          * `host` - host
+          * `provider` - provider
+          * `bundle` - bundle
+          * `adcm` - adcm
+          * `user` - user
+          * `group` - group
+          * `role` - role
+          * `policy` - policy
+          * `action-host-group` - action-host-group
       - in: query
         name: offset
         schema:
@@ -4420,7 +4641,12 @@ paths:
           - denied
           - fail
           - success
-        description: Filter by operation result.
+        description: |-
+          Filter by operation result.
+
+          * `success` - success
+          * `fail` - fail
+          * `denied` - denied
       - in: query
         name: operationType
         schema:
@@ -4429,7 +4655,12 @@ paths:
           - create
           - delete
           - update
-        description: Filter by operation type.
+        description: |-
+          Filter by operation type.
+
+          * `create` - create
+          * `update` - update
+          * `delete` - delete
       - in: query
         name: ordering
         schema:
@@ -4453,17 +4684,45 @@ paths:
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
       - in: query
+        name: result
+        schema:
+          type: string
+          enum:
+          - denied
+          - fail
+          - success
+        description: |-
+          Filter by operation result.
+
+          * `success` - success
+          * `fail` - fail
+          * `denied` - denied
+      - in: query
         name: timeFrom
         schema:
           type: string
-          format: date
+          format: date-time
         description: Filter by time from.
       - in: query
         name: timeTo
         schema:
           type: string
-          format: date
+          format: date-time
         description: Filter by time to.
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - create
+          - delete
+          - update
+        description: |-
+          Filter by operation type.
+
+          * `create` - create
+          * `update` - update
+          * `delete` - delete
       - in: query
         name: userName
         schema:
@@ -4539,6 +4798,11 @@ paths:
           type: string
         description: Case insensitive and partial filter by display name.
       - in: query
+        name: edition
+        schema:
+          type: string
+        description: Filter by edition.
+      - in: query
         name: id
         schema:
           type: integer
@@ -4548,6 +4812,20 @@ paths:
         schema:
           type: integer
         description: Number of records included in the selection.
+      - in: query
+        name: mainPrototypeLicenseStatus
+        schema:
+          type: string
+          enum:
+          - absent
+          - accepted
+          - unaccepted
+        description: |-
+          Filter by bundle license status.
+
+          * `absent` - absent
+          * `accepted` - accepted
+          * `unaccepted` - unaccepted
       - in: query
         name: offset
         schema:
@@ -4559,9 +4837,17 @@ paths:
           type: string
           enum:
           - -displayName
+          - -edition
+          - -mainPrototypeLicenseStatus
+          - -signatureStatus
           - -uploadTime
+          - -version
           - displayName
+          - edition
+          - mainPrototypeLicenseStatus
+          - signatureStatus
           - uploadTime
+          - version
           default: displayName
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
@@ -4570,6 +4856,25 @@ paths:
         schema:
           type: string
         description: Case insensitive filter by product.
+      - in: query
+        name: signatureStatus
+        schema:
+          type: string
+          enum:
+          - absent
+          - invalid
+          - valid
+        description: |-
+          Filter by bundle signature status.
+
+          * `valid` - valid
+          * `invalid` - invalid
+          * `absent` - absent
+      - in: query
+        name: version
+        schema:
+          type: string
+        description: Filter by version.
       tags:
       - bundles
       security:
@@ -4713,7 +5018,7 @@ paths:
         name: name
         schema:
           type: string
-        description: Case insensitive and partial filter by cluster name.
+        description: Case insensitive and partial filter by name.
       - in: query
         name: offset
         schema:
@@ -4726,8 +5031,12 @@ paths:
           enum:
           - -name
           - -prototypeDisplayName
+          - -prototypeVersion
+          - -state
           - name
           - prototypeDisplayName
+          - prototypeVersion
+          - state
           default: name
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
@@ -4742,13 +5051,27 @@ paths:
           type: string
         description: Filter by prototype name.
       - in: query
+        name: prototypeVersion
+        schema:
+          type: string
+        description: Filter by prototype version.
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: Filter by state.
+      - in: query
         name: status
         schema:
           type: string
           enum:
           - down
           - up
-        description: Status filter.
+        description: |-
+          Filter by status.
+
+          * `up` - up
+          * `down` - down
       tags:
       - clusters
       security:
@@ -4835,7 +5158,12 @@ paths:
         name: hasHost
         schema:
           type: string
-        description: Case insensitive and partial filter by host
+        description: Case insensitive and partial filter by host name.
+      - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
       - in: query
         name: limit
         schema:
@@ -4851,6 +5179,18 @@ paths:
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -id
+          - -name
+          - id
+          - name
+          default: id
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       tags:
       - clusters
       security:
@@ -5282,27 +5622,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 61995d6b-6e9e-4e81-abaa-e6c589395a78
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 4988276a-a955-4226-8fef-1b03193c847b
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 380cf63c-1884-48b8-9d38-110e4390230f
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 07c84d40-d790-4063-9ac6-f23b036ec403
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -5455,6 +5802,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -5464,6 +5812,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -5511,6 +5860,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -5918,6 +6268,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteClusterActionHostGroup
@@ -6421,27 +6809,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 0f19cce2-b58c-43b2-906c-d82198d94941
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 4b37ac91-fe8d-48e0-81f3-c5e5aff1d326
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 762697f9-964b-48db-bca1-8bb3c09ac623
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 46808dce-c295-4a4a-bab7-aa408ab0b2ad
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -6587,6 +6982,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -6596,6 +6992,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -6643,6 +7040,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -6785,15 +7183,35 @@ paths:
           pattern: ^\d+$
         required: true
       - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: limit
         schema:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -name
+          - name
+          default: name
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       tags:
       - clusters
       security:
@@ -7849,32 +8267,40 @@ paths:
           pattern: ^\d+$
         required: true
       - in: query
+        name: componentDisplayName
+        schema:
+          type: string
+        description: Filter by component display_name.
+      - in: query
         name: componentId
         schema:
           type: number
         description: Filter by component id.
       - in: query
+        name: componentName
+        schema:
+          type: string
+        description: Filter by component name.
+      - in: query
         name: hostproviderName
         schema:
           type: string
         description: Filter by hostprovider name.
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: limit
         schema:
           type: integer
+        description: Number of records included in the selection.
       - in: query
         name: name
         schema:
           type: string
         description: Case insensitive and partial filter by host name.
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
+      - in: query
+        name: offset
         schema:
           type: integer
+        description: Record number from which the selection starts.
       - in: query
         name: ordering
         schema:
@@ -7891,6 +8317,11 @@ paths:
           default: name
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: Filter by state.
       tags:
       - clusters
       security:
@@ -8413,27 +8844,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 1d9c723d-cd48-4b5e-b0a6-b968cf053cd6
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: bce2639b-3f43-4ea0-be5a-5b8c672389db
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 22f6df2a-aa4f-41e0-a0bd-b6fa39a7be46
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 78031335-79f3-44a4-af05-98d85011a247
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -8585,6 +9023,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -8594,6 +9033,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -8641,6 +9081,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -9185,33 +9626,47 @@ paths:
         schema:
           type: string
         description: Case insensitive and partial filter by service display name.
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: limit
         schema:
           type: integer
+        description: Number of records included in the selection.
       - in: query
         name: name
         schema:
           type: string
         description: Case insensitive and partial filter by service name.
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
+      - in: query
+        name: offset
         schema:
           type: integer
+        description: Record number from which the selection starts.
       - in: query
         name: ordering
         schema:
           type: string
           enum:
           - -displayName
+          - -id
+          - -prototypeVersion
+          - -state
           - displayName
+          - id
+          - prototypeVersion
+          - state
           default: id
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
+      - in: query
+        name: prototypeVersion
+        schema:
+          type: string
+        description: Filter by version.
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: Filter by state.
       - in: query
         name: status
         schema:
@@ -9220,7 +9675,7 @@ paths:
           - down
           - up
         description: |-
-          Filter by service status
+          Filter by status.
 
           * `up` - up
           * `down` - down
@@ -9677,7 +10132,12 @@ paths:
         name: hasHost
         schema:
           type: string
-        description: Case insensitive and partial filter by host
+        description: Case insensitive and partial filter by host name.
+      - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
       - in: query
         name: limit
         schema:
@@ -9693,6 +10153,18 @@ paths:
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -id
+          - -name
+          - id
+          - name
+          default: id
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       - in: path
         name: serviceId
         schema:
@@ -10160,27 +10632,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 5618d62b-e009-4c5c-962d-d9850e9b1bd7
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: bb5da7e1-bb6f-4f19-bf96-0342971e1049
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 7330cae0-762c-4d76-9b81-5ac31c0dfb5f
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: b77ff088-4af9-4c49-9e80-608f598bfcad
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -10339,6 +10818,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -10348,6 +10828,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -10395,6 +10876,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -10844,6 +11326,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_services_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteServiceActionHostGroup
@@ -11389,27 +11915,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: 174c6c32-8ad6-4676-95f1-010ea6071f8b
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: d0712c4d-d6d5-424f-a3e6-67239a3f38d4
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 9f8e6b7f-5b36-4d32-8743-a1a29fb89439
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 3d8f0049-95d3-4d8e-9a1d-b3004f81bbe4
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -11561,6 +12094,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -11570,6 +12104,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -11617,6 +12152,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -11776,31 +12312,36 @@ paths:
         schema:
           type: string
         description: Case insensitive and partial filter by display name.
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: id
         schema:
           type: integer
+        description: Filter by id.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Number of records included in the selection.
       - in: query
         name: name
         schema:
           type: string
         description: Case insensitive and partial filter by name.
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
+      - in: query
+        name: offset
         schema:
           type: integer
+        description: Record number from which the selection starts.
       - in: query
         name: ordering
         schema:
           type: string
           enum:
           - -displayName
+          - -id
           - -name
           - displayName
+          - id
           - name
           default: id
         description: Field to sort by. To sort in descending order, precede the attribute
@@ -11857,7 +12398,12 @@ paths:
         name: hasHost
         schema:
           type: string
-        description: Case insensitive and partial filter by host
+        description: Case insensitive and partial filter by host name.
+      - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
       - in: query
         name: limit
         schema:
@@ -11873,6 +12419,18 @@ paths:
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -id
+          - -name
+          - id
+          - name
+          default: id
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       - in: path
         name: serviceId
         schema:
@@ -12370,27 +12928,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: caa27dd9-5101-4f5c-878e-f3d4ba5bc917
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 3206896c-7217-4e32-9b0a-ef920cd97dbe
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 21078389-3189-4afc-8122-9fdd9e318592
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: 7076fe79-121a-404d-803d-eaafb1d66c20
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -12555,6 +13120,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -12564,6 +13130,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -12611,6 +13178,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -13102,6 +13670,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+    patch:
+      operationId: clusters_services_components_action_host_groups_partial_update
+      parameters:
+      - in: path
+        name: clusterId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: componentId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: actionHostGroupId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - clusters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActionHostGroupEdit'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionHostGroupEdit'
           description: ''
     delete:
       operationId: deleteComponentActionHostGroup
@@ -13689,27 +14307,34 @@ paths:
                       config:
                         new: config
                       adcmMeta: {}
-                    processSyncKey: fadc9b55-f59b-4329-9e8d-60d3b7a98a16
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit configuration
               SubmitOperation:
                 value:
                   method: submit_step
                   params:
                     stepId: 1
-                    processSyncKey: 14707881-4b61-4298-b9e3-403fbf77be52
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Submit operation
               ResetOperation:
                 value:
                   method: reset_step
                   params:
                     stepId: 1
-                    processSyncKey: 7939dc3f-50b2-4335-b388-57913dc783f5
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Reset operation
+              SkipOperation:
+                value:
+                  method: skip_step
+                  params:
+                    stepId: 1
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                summary: Skip operation
               CompleteOperation:
                 value:
                   method: complete
                   params:
-                    processSyncKey: d54148fe-67f5-4f88-9526-4c6b594412ad
+                    processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
                 summary: Complete operation
           multipart/form-data:
             schema:
@@ -13867,6 +14492,7 @@ paths:
                       id: 8
                     uiOptions:
                       buttonName: ButtonName
+                    required: true
                   summary: Operation step
                 ConfigurationStep:
                   value:
@@ -13876,6 +14502,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     configuration:
                       adcmMeta: {}
                       config:
@@ -13923,6 +14550,7 @@ paths:
                     displayName: Stage1.Step1
                     description: ''
                     state: created
+                    required: true
                     rules:
                     - operation: add
                       component: component
@@ -14095,15 +14723,35 @@ paths:
           pattern: ^\d+$
         required: true
       - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: limit
         schema:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -name
+          - name
+          default: name
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       - in: path
         name: serviceId
         schema:
@@ -15623,15 +16271,35 @@ paths:
           pattern: ^\d+$
         required: true
       - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: limit
         schema:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -name
+          - name
+          default: name
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       - in: path
         name: serviceId
         schema:
@@ -17900,30 +18568,32 @@ paths:
       description: Get a list of ADCM hostproviders with information on them.
       summary: GET hostproviders
       parameters:
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: limit
         schema:
           type: integer
+        description: Number of records included in the selection.
       - in: query
         name: name
         schema:
           type: string
         description: Case insensitive and partial filter by hostprovider name.
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
+      - in: query
+        name: offset
         schema:
           type: integer
+        description: Record number from which the selection starts.
       - in: query
         name: ordering
         schema:
           type: string
           enum:
           - -name
+          - -prototypeDisplayName
+          - -prototypeVersion
           - name
+          - prototypeDisplayName
+          - prototypeVersion
           default: name
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
@@ -17932,6 +18602,16 @@ paths:
         schema:
           type: string
         description: Filter by prototype display name.
+      - in: query
+        name: prototypeName
+        schema:
+          type: string
+        description: Filter by prototype name.
+      - in: query
+        name: prototypeVersion
+        schema:
+          type: string
+        description: Filter by prototype version.
       - in: query
         name: state
         schema:
@@ -18329,15 +19009,35 @@ paths:
       summary: GET hostprovider's config groups
       parameters:
       - in: query
+        name: hostName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: limit
         schema:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -name
+          - name
+          default: name
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-"
       - in: path
         name: providerId
         schema:
@@ -19568,23 +20268,21 @@ paths:
         schema:
           type: boolean
         description: Filter by is host in cluster.
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: limit
         schema:
           type: integer
+        description: Number of records included in the selection.
       - in: query
         name: name
         schema:
           type: string
-        description: Case insensitive and partial filter by host name.
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
+        description: Case insensitive and partial filter by name.
+      - in: query
+        name: offset
         schema:
           type: integer
+        description: Record number from which the selection starts.
       - in: query
         name: ordering
         schema:
@@ -19603,6 +20301,11 @@ paths:
           default: name
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
+      - in: query
+        name: state
+        schema:
+          type: string
+        description: Filter by state.
       tags:
       - hosts
       security:
@@ -20416,7 +21119,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/LogStorage'
+                  $ref: '#/components/schemas/StorageLogContent'
           description: ''
         '404':
           content:
@@ -20458,7 +21161,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogStorage'
+                type: array
+                items:
+                  $ref: '#/components/schemas/StorageLogContent'
           description: ''
         '404':
           content:
@@ -20950,6 +21655,11 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
@@ -20971,7 +21681,16 @@ paths:
           enum:
           - ldap
           - local
-        description: Group type.
+        description: |-
+          Group type.
+
+          * `local` - local
+          * `ldap` - ldap
+      - in: query
+        name: userUsername
+        schema:
+          type: string
+        description: Filter by user name
       tags:
       - rbac
       security:
@@ -21198,9 +21917,20 @@ paths:
       summary: GET policies
       parameters:
       - in: query
+        name: groupDisplayName
+        schema:
+          type: string
+        description: Filter by group display name.
+      - in: query
+        name: groupName
+        schema:
+          type: string
+        description: Filter by group name.
+      - in: query
         name: id
         schema:
           type: integer
+        description: Filter by id.
       - in: query
         name: limit
         schema:
@@ -21212,6 +21942,16 @@ paths:
           type: string
         description: Case insensitive and partial filter by policy name.
       - in: query
+        name: objectDisplayName
+        schema:
+          type: string
+        description: Filter by object display name.
+      - in: query
+        name: objectName
+        schema:
+          type: string
+        description: Filter by object name.
+      - in: query
         name: offset
         schema:
           type: integer
@@ -21222,10 +21962,24 @@ paths:
           type: string
           enum:
           - -name
+          - -roleDisplayName
+          - -roleName
           - name
+          - roleDisplayName
+          - roleName
           default: name
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".
+      - in: query
+        name: roleDisplayName
+        schema:
+          type: string
+        description: Filter by role display name.
+      - in: query
+        name: roleName
+        schema:
+          type: string
+        description: Filter by role name.
       tags:
       - rbac
       security:
@@ -21461,6 +22215,11 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Filter by name.
+      - in: query
         name: offset
         schema:
           type: integer
@@ -21482,7 +22241,11 @@ paths:
           enum:
           - business
           - role
-        description: Filter by type.
+        description: |-
+          Filter by type.
+
+          * `business` - business
+          * `role` - role
       tags:
       - rbac
       security:
@@ -21764,6 +22527,21 @@ paths:
       summary: GET users
       parameters:
       - in: query
+        name: email
+        schema:
+          type: string
+        description: Filter by email.
+      - in: query
+        name: groupDisplayName
+        schema:
+          type: string
+        description: Filter by group display name.
+      - in: query
+        name: groupName
+        schema:
+          type: string
+        description: Filter by group name.
+      - in: query
         name: limit
         schema:
           type: integer
@@ -21778,7 +22556,13 @@ paths:
         schema:
           type: string
           enum:
+          - -email
+          - -status
+          - -type
           - -username
+          - email
+          - status
+          - type
           - username
           default: username
         description: Field to sort by. To sort in descending order, precede the attribute
@@ -21790,7 +22574,11 @@ paths:
           enum:
           - active
           - blocked
-        description: User status.
+        description: |-
+          User status.
+
+          * `active` - active
+          * `blocked` - blocked
       - in: query
         name: type
         schema:
@@ -21798,7 +22586,11 @@ paths:
           enum:
           - ldap
           - local
-        description: User type.
+        description: |-
+          User type.
+
+          * `local` - local
+          * `ldap` - ldap
       - in: query
         name: username
         schema:
@@ -22102,6 +22894,11 @@ paths:
       summary: GET tasks
       parameters:
       - in: query
+        name: displayName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by task display name.
+      - in: query
         name: id
         schema:
           type: integer
@@ -22117,6 +22914,11 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by task name.
+      - in: query
         name: objectName
         schema:
           type: string
@@ -22131,14 +22933,22 @@ paths:
         schema:
           type: string
           enum:
+          - -displayName
+          - -duration
           - -endTime
           - -id
           - -name
+          - -objectName
           - -startTime
+          - -status
+          - displayName
+          - duration
           - endTime
           - id
           - name
+          - objectName
           - startTime
+          - status
           default: -id
         description: Field to sort by. To sort in descending order, precede the attribute
           name with a "-".

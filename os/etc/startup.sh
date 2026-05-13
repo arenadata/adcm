@@ -11,39 +11,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# load common functions and variables
+
 . /etc/adcmenv
+
+# convenient aliases
+
+coderoot="${adcmroot}/python"
+scripts="${coderoot}/application/scripts"
+django_command="${coderoot}/manage.py"
+
+#  check & prepare environment
+
 cleanupwaitstatus
+ensure_mandatory_db_settings_provided
+ensure_directory_structure
 
-mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
-missing_vars=""
+"${scripts}"/manage_secrets.py migrate || exit $?
 
-# Collect all missing variables
-for var in $mandatory_vars; do
-  eval "value=\"\${$var}\""
-  if [ -z "$value" ]; then
-    missing_vars="$missing_vars $var"
-  fi
-done
-
-# Report and exit if any missing
-if [ -n "$missing_vars" ]; then
-  echo "ERROR: The following environment variables must be specified:" >&2
-  for var in $missing_vars; do
-    echo "  $var" >&2
-  done
-  exit 1
+if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
+    "${scripts}"/manage_secrets.py init || exit $?
 fi
+
+"${django_command}" compatibility_check || exit $?
+
+# initialize services
 
 sv_stop() {
     for s in nginx wsgi status; do
         /sbin/sv stop $s
     done
 }
-
-ensure_directory_structure
-
-# Start pre migration check
-"${adcmroot}"/python/manage.py compatibility_check || exit $?
 
 trap "sv_stop; exit" TERM
 trap "" CHLD

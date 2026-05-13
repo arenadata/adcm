@@ -16,7 +16,13 @@ from multiprocessing import Process
 import os
 import sys
 
+from dishka import make_container
+
 sys.path.append("/adcm/python")
+import adcm.init_django  # noqa
+from application.di.containers import get_main_providers
+from cm.transition.action import RetrieveStartImpossibleReason
+
 from jobs.scheduler.launcher import run_launcher_in_loop
 from jobs.scheduler.logger import logger
 from jobs.scheduler.monitor import run_monitor_in_loop
@@ -28,7 +34,13 @@ def main() -> None:
 
     actualize_locks()
 
-    launcher_proc = Process(target=run_launcher_in_loop, args=())
+    container = make_container(*get_main_providers())
+    retrieve_sir = container.get(RetrieveStartImpossibleReason)
+
+    launcher_proc = Process(
+        target=run_launcher_in_loop,
+        args=(retrieve_sir,),
+    )
     launcher_proc.start()
 
     monitor_proc = Process(target=run_monitor_in_loop, args=())

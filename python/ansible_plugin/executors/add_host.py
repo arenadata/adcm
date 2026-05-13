@@ -19,6 +19,7 @@ from core.legacy.job.types import RelatedObjects, TaskOwner
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic
+from rbac.scenarios import RBACScenarios
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -57,11 +58,13 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
             try:
                 provider = Provider.objects.select_related("prototype__bundle").get(id=runtime.context_owner.id)
                 host_prototype = Prototype.objects.get(type="host", bundle=provider.prototype.bundle)
+                rbac_scenarios = self._container.get(RBACScenarios)
                 host = add_host(
                     provider=provider,
                     prototype=host_prototype,
                     fqdn=arguments.fqdn,
                     description=arguments.description,
+                    rbac_scenarios=rbac_scenarios,
                 )
                 task_owner = TaskOwner(
                     id=runtime.context_owner.id,

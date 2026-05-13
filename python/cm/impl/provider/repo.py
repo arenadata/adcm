@@ -10,8 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from core import provider
-from core.types import ADCMCoreType, Descriptor, HostDesc, ProviderID
+from core.types import (
+    ADCMCoreType,
+    Descriptor,
+    HostDesc,
+    HostID,
+    ObjectMaintenanceModeState,
+    ProviderID,
+    ProviderObjectDesc,
+)
 
 from cm.models import Host
 
@@ -20,3 +29,14 @@ class ProviderRepo(provider.ProviderRepoI):
     def find_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostDesc, ...]:
         query = Host.objects.filter(provider_id=provider_id).values_list("id", flat=True)
         return tuple(Descriptor(id=id_, type=ADCMCoreType.HOST) for id_ in query)
+
+    def get_hosts_own_maintenance_mode(self, object_: ProviderObjectDesc) -> dict[HostID, ObjectMaintenanceModeState]:
+        match object_:
+            case Descriptor(type=ADCMCoreType.HOST):
+                host_ids = (object_.id,)
+            case Descriptor(type=ADCMCoreType.PROVIDER):
+                host_ids = (desc.id for desc in self.find_hosts_by_provider(provider_id=object_.id))
+
+        hosts_qs = Host.objects.filter(id__in=host_ids).values_list("id", "maintenance_mode")
+
+        return {id_: ObjectMaintenanceModeState(mm.lower()) for id_, mm in hosts_qs}

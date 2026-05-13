@@ -13,9 +13,10 @@
 from pathlib import Path
 import re
 
-from adcm import settings
 from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 from cm.models import JobLog, LogStorage
+from core.logs import LogsService
+from django.conf import settings
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -29,7 +30,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_
 from api_v2.api_schema import ErrorSerializer, responses
 from api_v2.log_storage.filters import LogFilter
 from api_v2.log_storage.permissions import LogStoragePermissions
-from api_v2.log_storage.serializers import LogStorageSerializer
+from api_v2.log_storage.serializers import LogStorageSerializer, proxy_serializer
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -38,15 +39,13 @@ from api_v2.views import ADCMGenericViewSet
         operation_id="getLogstorage",
         description="Contains job's logs storage.",
         summary="GET logs storage",
-        responses=responses(success=(HTTP_200_OK, LogStorageSerializer(many=True)), errors=HTTP_404_NOT_FOUND),
+        responses=responses(success=(HTTP_200_OK, proxy_serializer), errors=HTTP_404_NOT_FOUND),
     ),
     retrieve=extend_schema(
         operation_id="getJobslog",
         description="Contains logs by job.",
         summary="GET job's log",
-        responses=responses(
-            success=(HTTP_200_OK, LogStorageSerializer), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
-        ),
+        responses=responses(success=(HTTP_200_OK, proxy_serializer), errors=(HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)),
     ),
     download=extend_schema(
         operation_id="getJobLogDownload",
@@ -84,6 +83,14 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
         return queryset.filter(job_id=self.kwargs["job_pk"])
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        log_service = self.request.container.get(LogsService)
+        context["retrieve_check_logs_content_for_job"] = log_service.retrieve_check_logs_content_for_job
+
+        return context
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         if not JobLog.objects.filter(id=self.kwargs["job_pk"]).exists():

@@ -15,13 +15,13 @@ from pathlib import Path
 from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.job.types import TaskMappingDelta
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
+from tests.suites import ADCMDjangoAPISuite
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.services.cluster import retrieve_cluster_topology
@@ -43,16 +43,18 @@ MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"],
 Delta: TypeAlias = dict[Literal["add", "remove"], dict[str, dict[str, Host]]]
 
 
-class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
-    def setUp(self):
-        super().setUp()
+class BaseInventoryTestCase(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+        cls._set_adcm_max_password_length()
 
-        self.bundles_dir = Path(__file__).parent.parent / "bundles"
-        self.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"
+        cls.bundles_dir = Path(__file__).parent.parent / "bundles"
+        cls.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"
 
-        self.adcm_id = ADCM.objects.values_list("id", flat=True).get()
+        cls.adcm_id = ADCM.objects.values_list("id", flat=True).get()
 
     @staticmethod
     def render_template(file: Path, context: dict) -> str:

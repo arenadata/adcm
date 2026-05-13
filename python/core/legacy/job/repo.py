@@ -13,13 +13,19 @@
 from typing import Any, Collection, ContextManager, Iterable, Protocol
 
 from core.legacy.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
-from core.legacy.job.types import ActionInfo, Job, JobSpec, Task
-from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, TaskID
+from core.legacy.job.types import ActionInfo, AssociatedProcess, CallingProcess, Job, JobSpec, Task
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, JobID, TaskID
 
 
 class JobRepoInterface(Protocol):
     def get_task(self, id: int) -> Task:  # noqa: A002
         """Should raise `NotFoundError` on fail"""
+        ...
+
+    def get_related_wizard_process(self, job_id: JobID) -> CallingProcess | AssociatedProcess | None:
+        """
+        For cases when task to wizard process relation is important, but other task info is not
+        """
         ...
 
     def create_task(

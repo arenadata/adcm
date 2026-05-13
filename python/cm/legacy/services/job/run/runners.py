@@ -10,27 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
 from logging import Logger
 from typing import Any, Protocol
 import os
 import signal
 
-from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
-from core.legacy.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
+from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
+from core.legacy.job.runners import (
+    ExecutionTarget,
+    ExternalSettings,
+    JobProcessor,
+    RunnerEnvironment,
+    RunnerRuntime,
+    TaskRunner,
+)
 from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
     CoreObjectDescriptor,
 )
-from dishka import make_container
-from use_cases.cluster.update import ResetBeforeUpgradeCluster
-from use_cases.provider.update import ResetBeforeUpgradeProvider
+import dishka
 
 from cm.converters import action_target_type_to_model, core_type_to_model
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
@@ -38,10 +41,6 @@ from cm.legacy.services.concern.locks import (
     update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
-from cm.legacy.services.job.run._target_factories import (
-    internal_script_before_upgrade_clean_cluster,
-    internal_script_before_upgrade_clean_provider,
-)
 from cm.legacy.services.job.run._task_finalizers import (
     set_hostcomponent,
     update_object_maintenance_mode,
@@ -75,17 +74,27 @@ class JobSequenceRunner(TaskRunner):
     _status_server = StatusServerInteractor
 
     def __init__(
-        self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: Logger, **kwargs: Any
+        self,
+        *,
+        notifier: EventNotifier,
+        status_server: StatusServerInteractor,
+        logger: Logger,
+        container: dishka.Container,
+        job_processor: JobProcessor,
+        settings: ExternalSettings,
+        repo: JobRepoInterface,
+        action_repo: ActionRepoInterface,
+        environment: RunnerEnvironment,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            job_processor=job_processor, settings=settings, repo=repo, action_repo=action_repo, environment=environment
+        )
 
         self._notifier = notifier
         self._status_server = status_server
         self._logger = logger
 
-        from application.di.containers import get_main_providers
-
-        self._container = make_container(*get_main_providers())
+        self._container = container
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True
@@ -158,21 +167,6 @@ class JobSequenceRunner(TaskRunner):
         if not (task.target and task.owner and task.bundle):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
-
-        match task.owner.type:
-            # this whole patch is very bad, see comment in convert interface
-            case ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT:
-                use_case = self._container.get(ResetBeforeUpgradeCluster)
-                extra_scripts = {
-                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_cluster, use_case=use_case)
-                }
-                self._job_processor.convert.register_internal_scripts(extra_scripts)
-            case ADCMCoreType.PROVIDER | ADCMCoreType.HOST:
-                use_case = self._container.get(ResetBeforeUpgradeProvider)
-                extra_scripts = {
-                    "before_upgrade_clean": partial(internal_script_before_upgrade_clean_provider, use_case=use_case)
-                }
-                self._job_processor.convert.register_internal_scripts(extra_scripts)
 
         configured_jobs = tuple(
             self._job_processor.convert(
@@ -301,7 +295,7 @@ class JobSequenceRunner(TaskRunner):
             # Owner should be updated only when action's not a part of operation step of wizard process.
             # This patch raises questions about what can be updated and what not,
             # but that requires clarification of task runner process and configurability of it,
-            # which for now is not archievable.
+            # which for now is not achievable.
             self._update_owner_object(
                 owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
                 finished_task=finished_task,
@@ -378,7 +372,8 @@ class JobSequenceRunner(TaskRunner):
         task: Task,
         task_owner: TaskOwner | None,
     ) -> None:
-        from cm.legacy.services.action_process.operations import complete_operation_step
+        from use_cases.wizard import CompleteWizardOperationStep
+
         from cm.legacy.services.action_process.types import ProcessContext
         from cm.models import Action
 
@@ -396,11 +391,10 @@ class JobSequenceRunner(TaskRunner):
             target_orm=action_target_type_to_model(target.type).objects.get(id=target.id),
         )
 
-        complete_operation_step(
+        self._container.get(CompleteWizardOperationStep).do(
             process_id=process.id,
             process_sync_key=process.sync_key,
             step_id=process.step_id,
             process_context=process_context,
             is_operation_success=self._runtime.status == ExecutionStatus.SUCCESS,
-            bundle_renderer=self._container.get(BundleRenderer[ActionArgs, TaskArgs]),
         )

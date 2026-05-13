@@ -11,15 +11,14 @@
 # limitations under the License.
 
 from cm.legacy.services.job.run._config import create_related_configs, get_new_related_configs, update_related_configs
-from cm.legacy.services.job.run._impl import get_default_runner, get_restart_runner
+from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
 from cm.legacy.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
 
 __all__ = [
+    "ExecutionTargetFactory",
     "create_related_configs",
     "distribute_concerns",
-    "get_default_runner",
     "get_new_related_configs",
-    "get_restart_runner",
     "restart_task",
     "run_task_in_local_subprocess",
     "start_task",

@@ -12,7 +12,6 @@
 
 import datetime
 
-from adcm.tests.client import ADCMTestClient
 from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
@@ -31,20 +30,21 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.client import ADCMTestClient
+from tests.suites import ADCMDjangoAPISuite
 import zoneinfo
 
-from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
-from api_v2.tests.base import BaseAPITestCase
 
 UTC = zoneinfo.ZoneInfo("UTC")
 
 
-class TestUserAPI(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestUserAPI(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.group = Group.objects.create(name="test_group")
+        cls.group = Group.objects.create(name="test_group")
 
     def _grant_permissions(self, user: User) -> None:
         view_user_permission, _ = Permission.objects.get_or_create(
@@ -737,7 +737,7 @@ class TestUserAPI(BaseAPITestCase):
         target_user.type = OriginType.LDAP
         target_user.save(update_fields=["type"])
 
-        response = (self.client.v2 / "rbac" / "users").get(query={"type": UserTypeChoices.LDAP.value})
+        response = (self.client.v2 / "rbac" / "users").get(query={"type": OriginType.LDAP.value})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
@@ -765,20 +765,25 @@ class TestUserAPI(BaseAPITestCase):
         )
 
 
-class TestBlockUnblockAPI(BaseAPITestCase):
+class TestBlockUnblockAPI(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.user = cls.uc.create_user(user_data={"username": "someuser", "password": "bestpasseverever"})
+        cls.admin = User.objects.get(username="admin")
+
+        cls.creds = {"username": "editor", "password": "bestpasseverever"}
+        cls.user_with_edit = cls.uc.create_user(user_data=cls.creds)
+        cls.user_with_edit.user_permissions.add(
+            Permission.objects.get(content_type=ContentType.objects.get_for_model(model=User), codename="view_user")
+        )
+
     def setUp(self) -> None:
         super().setUp()
 
-        self.user = self.create_user(user_data={"username": "someuser", "password": "bestpasseverever"})
-        self.admin = User.objects.get(username="admin")
-
-        creds = {"username": "editor", "password": "bestpasseverever"}
-        self.user_with_edit = self.create_user(user_data=creds)
-        self.user_with_edit.user_permissions.add(
-            Permission.objects.get(content_type=ContentType.objects.get_for_model(model=User), codename="view_user")
-        )
         self.edit_client = ADCMTestClient()
-        self.edit_client.login(**creds)
+        self.edit_client.login(**self.creds)
 
     def test_retrieve_blocked_by_login_attempts(self) -> None:
         self.user.blocked_at = datetime.datetime.now(tz=UTC)
@@ -898,21 +903,20 @@ class TestBlockUnblockAPI(BaseAPITestCase):
         self.assertEqual(response.json()["desc"], "You do not have permission to perform this action.")
 
 
-class TestAdvancedUserFilters(BaseAPITestCase):
-    def setUp(self):
-        self.client.login(username="admin", password="admin")
+class TestAdvancedUserFilters(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        self.admin_user = User.objects.get(username="admin")
-        self.user_1 = self.create_user(username="user-1", password="secretPassword")
-        self.user_2 = self.create_user(username="user-2", password="secretPassword")
-        self.user_3 = self.create_user(username="user-3", password="secretPassword")
+        cls.admin_user = User.objects.get(username="admin")
+        cls.user_1 = cls.uc.create_user(username="user-1", password="secretPassword")
+        cls.user_2 = cls.uc.create_user(username="user-2", password="secretPassword")
+        cls.user_3 = cls.uc.create_user(username="user-3", password="secretPassword")
 
-        self.group_1 = create_group(name_to_display="group-1", user_set=[{"id": self.user_1.pk}])
-        self.group_2 = create_group(name_to_display="group-2", user_set=[{"id": self.user_2.pk}])
-        self.group_3 = create_group(
-            name_to_display="group-3", user_set=[{"id": self.user_2.pk}, {"id": self.user_3.pk}]
-        )
-        self.group_empty = create_group(name_to_display="group-empty")
+        cls.group_1 = create_group(name_to_display="group-1", user_set=[{"id": cls.user_1.pk}])
+        cls.group_2 = create_group(name_to_display="group-2", user_set=[{"id": cls.user_2.pk}])
+        cls.group_3 = create_group(name_to_display="group-3", user_set=[{"id": cls.user_2.pk}, {"id": cls.user_3.pk}])
+        cls.group_empty = create_group(name_to_display="group-empty")
 
     def _get_usernames(self, query: dict) -> list[str]:
         response = (self.client.v2 / "rbac" / "users").get(query=query)

@@ -19,6 +19,8 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import Group
@@ -53,6 +55,7 @@ from api_v2.utils.audit import (
     retrieve_group_name_users,
     update_group_name,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -64,10 +67,6 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(
-                name="display_name", description="Case insensitive and partial filter by group display name."
-            ),
-            OpenApiParameter(name="type", description="Group type.", enum=("local", "ldap")),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -153,7 +152,13 @@ class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, Dest
             ),
         )
     )
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def partial_update(
+        self,
+        request: Request,
+        status_scenarios: FromDishka[StatusScenarios],
+        **_,
+    ) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -167,6 +172,7 @@ class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, Dest
             description=validated_data.get("description", Empty),
             user_set=users,
             partial=True,
+            status_scenarios=status_scenarios,
         )
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)

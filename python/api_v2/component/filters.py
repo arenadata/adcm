@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Component
-from django_filters.rest_framework import CharFilter, OrderingFilter
+from django_filters.rest_framework import CharFilter, NumberFilter, OrderingFilter
 
 from api_v2.filters import AdvancedFilterSet
 
@@ -22,6 +21,7 @@ class ComponentFilter(
     number_fields=("id",),
     with_object_status=True,
 ):
+    id = NumberFilter(label="Filter by id.", field_name="id", lookup_expr="exact")
     name = CharFilter(
         field_name="prototype__name", label="Case insensitive and partial filter by name.", lookup_expr="icontains"
     )
@@ -31,14 +31,15 @@ class ComponentFilter(
         lookup_expr="icontains",
     )
     ordering = OrderingFilter(
-        fields={"prototype__name": "name", "prototype__display_name": "displayName"},
+        fields={
+            "id": "id",
+            "prototype__name": "name",
+            "prototype__display_name": "displayName",
+        },
         field_labels={
+            "id": "Id",
             "prototype__name": "Name",
             "prototype__display_name": "Display Name",
         },
         label="ordering",
     )
-
-    class Meta:
-        model = Component
-        fields = ["id"]

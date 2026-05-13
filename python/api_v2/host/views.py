@@ -26,14 +26,16 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
-from cm.legacy.status_api import send_object_update_event
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
+from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import ADCMCoreType
 from dishka import FromDishka
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -49,10 +51,11 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.host.duplicate import create_duplicate
-from use_cases.transition.hostprovider.create import create_host as create_host_new
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.hostprovider.create import create_host
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
+import core
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -86,6 +89,8 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
         description="Get a list of all hosts.",
         summary="GET hosts",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
@@ -206,7 +211,15 @@ class HostViewSet(
         return HostWithDuplicatesSerializer
 
     @audit_create(name="Host created", object_=host_from_response)
-    def create(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def create(
+        self,
+        request,
+        config_service: FromDishka[core.config.ConfigService],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        status_scenarios: FromDishka[StatusScenarios],
+        **_,
+    ):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -223,11 +236,13 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        host_id = create_host_new(
+        host_id = create_host(
             hostprovider=request_provider,
             name=serializer.validated_data["fqdn"],
             cluster=request_cluster,
-            config_service=get_config_service(),
+            config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
         )
         host = Host.objects.get(id=host_id)
 
@@ -250,7 +265,8 @@ class HostViewSet(
             after=extract_current_from_response("fqdn", "description", fqdn="name"),
         )
     )
-    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
         instance = self.get_object()
         self._is_original_host = not instance.original
 
@@ -271,7 +287,7 @@ class HostViewSet(
             raise AdcmEx(code="HOST_UPDATE_ERROR")
 
         serializer.save()
-        send_object_update_event(
+        status_scenarios.send_object_update_event(
             instance.pk,
             ADCMCoreType.HOST.value,
             changes={"name": instance.fqdn, "description": instance.description},
@@ -292,8 +308,17 @@ class HostViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
-        return maintenance_mode(request=request, host=self.get_object(), schedule_task=schedule_task)
+    def maintenance_mode(
+        self,
+        request: Request,
+        *args,  # noqa: ARG002
+        schedule_task: FromDishka[ScheduleMMChangingTask],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,  # noqa: ARG002
+    ) -> Response:
+        return maintenance_mode(
+            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
+        )
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(
@@ -303,7 +328,15 @@ class HostViewSet(
         # TODO: Maybe that's not enough.
         permission_classes=[IsAuthenticatedAudit, CreateDuplicateHostPermissions],
     )
-    def create_duplicate(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def create_duplicate(
+        self,
+        request: Request,
+        *_,
+        rbac_scenarios: FromDishka[RBACScenarios],
+        status_scenarios: FromDishka[StatusScenarios],
+        **__,
+    ):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -312,9 +345,14 @@ class HostViewSet(
         if data["cluster_id"]:
             get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=data["cluster_id"])
 
-        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(kwargs["pk"]))
+        host = get_object_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host, id=int(self.kwargs["pk"]))
         duplicate_id = create_duplicate(
-            host_id=host.id, name=data["name"], cluster_id=data["cluster_id"], config_service=get_config_service()
+            host_id=host.id,
+            name=data["name"],
+            cluster_id=data["cluster_id"],
+            config_service=get_config_service(),
+            rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
         )
 
         duplicate = Host.objects.get(id=duplicate_id)

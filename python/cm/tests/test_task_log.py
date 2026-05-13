@@ -15,11 +15,11 @@ from pathlib import Path
 import io
 import tarfile
 
-from adcm.tests.base import BaseTestCase
 from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
+from tests.base import BaseTestCase
 
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.utils import str_remove_non_alnum

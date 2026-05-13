@@ -10,25 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.impl.logs.repo import CheckLogContentAdapter
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCM, CheckLog, Component, GroupCheckLog, LogStorage
+from core.logs import LogsService
+from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.check import ADCMCheckPluginExecutor
-from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.check"
 
 
-class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
-    def setUp(self) -> None:
-        super().setUp()
+class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.adcm = ADCM.objects.first()
-        self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = Component.objects.filter(service=self.service_1).first()
+        cls._initialize_roles_and_adcm()
 
-        self.add_host_to_cluster(self.cluster, self.host_1)
+        cls.adcm = ADCM.objects.get()
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.filter(service=cls.service_1).first()
+
+        cls.uc.add_host_to_cluster(cls.cluster, cls.host_1)
 
     def test_adcm_check_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -362,3 +367,161 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertEqual(GroupCheckLog.objects.all().count(), 0)
         self.assertEqual(CheckLog.objects.all().count(), 0)
         self.assertEqual(LogStorage.objects.all().count(), 2)
+
+    def test_adcm_check_with_severity_success(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: yes
+                msg: 'success'
+                severity: 'error'
+        """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertEqual(result.value, "")
+        self.assertTrue(result.changed)
+
+        self.assertEqual(GroupCheckLog.objects.count(), 0)
+        self.assertEqual(CheckLog.objects.count(), 1)
+        self.assertEqual(LogStorage.objects.count(), 3)
+
+    def test_adcm_check_group_with_severity_success(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: no
+                success_msg: 'success'
+                fail_msg: 'fail'
+                severity: 'error'
+                group_title: 'group'
+                group_success_msg: 'success'
+                group_fail_msg: 'fail'
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertEqual(result.value, "")
+        self.assertTrue(result.changed)
+
+        self.assertEqual(GroupCheckLog.objects.count(), 1)
+        self.assertEqual(CheckLog.objects.count(), 1)
+        self.assertEqual(LogStorage.objects.count(), 3)
+
+    def test_group_with_all_severity_success(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        check_logs_args = [
+            (
+                """
+                title: Info check
+                result: no
+                success_msg: 'success'
+                fail_msg: 'fail'
+                severity: 'info'
+                group_title: 'group'
+                group_success_msg: 'info: success'
+                group_fail_msg: 'info: fail'
+            """,
+                "info",
+                "info: fail",
+            ),
+            (
+                """
+                title: Warning check
+                result: no
+                success_msg: 'success'
+                fail_msg: 'fail'
+                severity: 'warning'
+                group_title: 'group'
+                group_success_msg: 'warning: success'
+                group_fail_msg: 'warning: fail'
+            """,
+                "warning",
+                "warning: fail",
+            ),
+            (
+                """
+                title: Error check
+                result: no
+                success_msg: 'success'
+                fail_msg: 'fail'
+                severity: 'error'
+                group_title: 'group'
+                group_success_msg: 'error: success'
+                group_fail_msg: 'error: fail'
+            """,
+                "error",
+                "error: fail",
+            ),
+        ]
+
+        for check_log_args, severity, message in check_logs_args:
+            executor = self.prepare_executor(
+                executor_type=ADCMCheckPluginExecutor,
+                call_arguments=check_log_args,
+                call_context=job,
+            )
+            result = executor.execute()
+
+            self.assertEqual(result.value, "")
+            self.assertTrue(result.changed)
+
+            group = GroupCheckLog.objects.last()
+            self.assertEqual(group.result, False)
+            self.assertEqual(group.severity, severity)
+            self.assertEqual(group.message, message)
+
+        self.assertEqual(GroupCheckLog.objects.all().count(), 1)
+        self.assertEqual(CheckLog.objects.all().count(), 3)
+        self.assertEqual(LogStorage.objects.all().count(), 3)
+
+        with self.container() as container:
+            log_service = container.get(LogsService)
+            content = log_service.retrieve_check_logs_content_for_job(job_id=job.id)
+            self.assertListEqual(
+                CheckLogContentAdapter.dump_python(content),
+                [
+                    {
+                        "message": "error: fail",
+                        "result": False,
+                        "severity": "error",
+                        "title": "group",
+                        "type": "group",
+                        "content": [
+                            {
+                                "message": "fail",
+                                "result": False,
+                                "severity": "info",
+                                "title": "Info check",
+                                "type": "check",
+                            },
+                            {
+                                "message": "fail",
+                                "result": False,
+                                "severity": "warning",
+                                "title": "Warning check",
+                                "type": "check",
+                            },
+                            {
+                                "message": "fail",
+                                "result": False,
+                                "severity": "error",
+                                "title": "Error check",
+                                "type": "check",
+                            },
+                        ],
+                    }
+                ],
+            )

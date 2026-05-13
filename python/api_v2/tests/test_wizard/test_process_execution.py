@@ -14,7 +14,6 @@
 from copy import deepcopy
 from uuid import uuid4
 
-from adcm.tests.base import BusinessLogicMixin
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
@@ -30,54 +29,53 @@ from cm.models import (
     ProcessStep,
 )
 from django.contrib.contenttypes.models import ContentType
-from infra.services import get_config_service
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
 
 
-class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
-    def setUp(self) -> None:
-        super().setUp()
-
-        get_config_service.cache_clear()
+class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
         suffix = uuid4().hex[:8]
-        cluster_bundle = self.test_bundles_dir / "wizard_action"
-        self.bundle = self.create_bundle(src=cluster_bundle)
-        self.cluster_1 = self.create_cluster(
-            bundle=self.bundle,
+        cluster_bundle = cls.test_bundles_dir / "wizard_action"
+        cls.bundle = cls.uc.upload_bundle(src=cluster_bundle)
+        cls.cluster_1 = cls.uc.add_cluster(
+            bundle=cls.bundle,
             name=f"cluster_1_{suffix}",
             description=f"cluster_1_{suffix}",
         )
-        self.service_1 = self.create_services(["service_1"], cluster=self.cluster_1)[0]
-        self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        self.process_action_of_cluster = self.get_object_action_with_process(self.cluster_1)
+        cls.service_1 = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.process_action_of_cluster = cls.get_object_action_with_process(cls.cluster_1)
 
-        provider_bundle_path = self.test_bundles_dir / "provider"
-        self.provider_bundle = self.create_bundle(src=provider_bundle_path)
-        self.provider = self.create_provider(
-            bundle=self.provider_bundle,
+        provider_bundle_path = cls.test_bundles_dir / "provider"
+        cls.provider_bundle = cls.uc.upload_bundle(src=provider_bundle_path)
+        cls.provider = cls.uc.add_provider(
+            bundle=cls.provider_bundle,
             name=f"provider_{suffix}",
             description=f"provider_{suffix}",
         )
 
-        broken_render_process_bundle = self.test_bundles_dir / "broken_render_action_process"
-        self.broken_process_bundle = self.create_bundle(src=broken_render_process_bundle)
-        self.cluster_broken_process = self.create_cluster(
-            bundle=self.broken_process_bundle,
+        broken_render_process_bundle = cls.test_bundles_dir / "broken_render_action_process"
+        cls.broken_process_bundle = cls.uc.upload_bundle(src=broken_render_process_bundle)
+        cls.cluster_broken_process = cls.uc.add_cluster(
+            bundle=cls.broken_process_bundle,
             name=f"broken_process_{suffix}",
         )
-        self.action_broken_process = Action.objects.get(
-            prototype=self.cluster_broken_process.prototype, name="broken_process"
+        cls.action_broken_process = Action.objects.get(
+            prototype=cls.cluster_broken_process.prototype, name="broken_process"
         )
-        self.action_broken_configuration_step = Action.objects.get(
-            prototype=self.cluster_broken_process.prototype, name="broken_configuration_step"
+        cls.action_broken_configuration_step = Action.objects.get(
+            prototype=cls.cluster_broken_process.prototype, name="broken_configuration_step"
         )
-        self.action_broken_operation_step = Action.objects.get(
-            prototype=self.cluster_broken_process.prototype, name="broken_operation_step"
+        cls.action_broken_operation_step = Action.objects.get(
+            prototype=cls.cluster_broken_process.prototype, name="broken_operation_step"
         )
 
     def test_create_process_success(self):
@@ -213,20 +211,29 @@ class TestWizardActionProcessExecution(BaseAPITestCase, APIV2Mixin, WizardProces
         action = self.process_action_of_cluster
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": 4}})
+        expected_response = {
+            "code": "TASK_ERROR",
+            "level": "error",
+            "desc": f'Can\'t find completed process for action "{action.display_name}" of cluster #{owner.id}',
+        }
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND, response.json())
-        self.assertIn("Process with id", response.json()["desc"])
-        self.assertIn("not exist", response.json()["desc"])
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_adcm_7150_error_running_process_action_with_incomplete_process(self):
         owner = self.cluster_1
         action = self.process_action_of_cluster
         process = self.start_process_r(owner, action).json()
+        expected_response = {
+            "code": "TASK_ERROR",
+            "level": "error",
+            "desc": f'Can\'t find completed process for action "{action.display_name}" of cluster #{owner.id}',
+        }
 
         response = self.client.v2[owner, "actions", action, "run"].post(data={"process": {"id": process["id"]}})
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
-        self.assertIn("completed state", response.json()["desc"])
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_create_process_with_broken_render_fail(self):
         response = self.client.v2[

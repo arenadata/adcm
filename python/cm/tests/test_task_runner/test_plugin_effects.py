@@ -13,46 +13,31 @@
 from pathlib import Path
 import json
 
-from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
+from tests.dependencies import MockWithEnvProvider
+from tests.suites import ADCMPluginExecutorSuite
 from use_cases.dto import RunActionDTO
 
 from cm.models import Action, Component, JobLog, TaskLog
-from cm.tests.dependencies import WithDishkaContainer
-from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator
+from cm.tests.mocks.task_runner import JobImitator
 from cm.tests.test_action_host_group import ScheduleTask
 
 
-class TestEffectsOfADCMAnsiblePlugins(
-    WithDishkaContainer,
-    TestCaseWithCommonSetUpTearDown,
-    ParallelReadyTestCase,
-    BusinessLogicMixin,
-    ADCMAnsiblePluginTestMixin,
-):
+class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        # shouldn't be here
-        from api_v2.tests.setup.overrides import get_task_runner_manager
+        cls.bundles_dir = Path(__file__).parent / "bundles"
 
-        cls.task_runner = get_task_runner_manager()
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.bundles_dir / "cluster")
+        cls.provider_bundle = cls.uc.upload_bundle(cls.bundles_dir / "provider")
 
-    def setUp(self) -> None:
-        super().setUp()
+        cls.cluster = cls.uc.add_cluster(bundle=cls.cluster_bundle, name="Just Cluster")
 
-        self.bundles_dir = Path(__file__).parent / "bundles"
-
-        self.cluster_bundle = self.add_bundle(self.bundles_dir / "cluster")
-        self.provider_bundle = self.add_bundle(self.bundles_dir / "provider")
-
-        self.cluster = self.add_cluster(bundle=self.cluster_bundle, name="Just Cluster")
-
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="Just HP")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Just HP")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()
@@ -89,14 +74,16 @@ class TestEffectsOfADCMAnsiblePlugins(
 
         task_id = self.task_runner.expect_task_launched().id
 
-        etf = ETFMockWithEnvPreparation(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
-        self.task_runner.run_task(task_id=task_id, execution_target_factory=etf)
+        self.task_runner.run_task(
+            task_id=task_id,
+            overrides=(MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}),),
+        )
 
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, "success")
 
         for job_id in JobLog.objects.filter(task_id=task_id).values_list("id", flat=True):
-            inventory = json.loads((self.directories["RUN_DIR"] / str(job_id) / "inventory.json").read_text())
+            inventory = json.loads((self.directories.run / str(job_id) / "inventory.json").read_text())
             self.assertTrue(
                 all(".add" not in key and ".remove" not in key for key in map(str.lower, inventory["all"]["children"]))
             )

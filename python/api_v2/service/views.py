@@ -29,8 +29,9 @@ from audit.alt.hooks import (
 )
 from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Service
+from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -56,7 +57,7 @@ from rest_framework.status import (
 )
 from use_cases.transition.cluster.create import CreateServicesFromPrototypes
 from use_cases.transition.cluster.delete import DeleteServiceFromAPI
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -129,12 +130,20 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET cluster services",
         description="Get a list of all services of a particular cluster with information on them.",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
                     "displayName",
                     "-displayName",
+                    "state",
+                    "-state",
+                    "prototypeVersion",
+                    "-prototypeVersion",
+                    "id",
+                    "-id",
                 ),
                 default="id",
             ),
@@ -257,7 +266,6 @@ class ServiceViewSet(
             after=extract_current_from_response("maintenance_mode"),
         )
     )
-    @update_mm_objects
     @action(
         methods=["post"],
         detail=True,
@@ -265,7 +273,15 @@ class ServiceViewSet(
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+    def maintenance_mode(
+        self,
+        request: Request,
+        *,
+        schedule_task: FromDishka[ScheduleMMChangingTask],
+        status_scenarios: FromDishka[StatusScenarios],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,
+    ) -> Response:
         service: Service = get_object_for_user(
             user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
@@ -280,12 +296,22 @@ class ServiceViewSet(
         serializer = self.get_serializer_class()(instance=service, data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        cluster_id = service.cluster_id
+        topology = cluster_service.retrieve_topology(cluster_id=cluster_id)
+        own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
+        objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
+
         response: Response = get_maintenance_mode_response(
-            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+            obj=self.get_object(),
+            own_mm=own_mm.services[service.id],
+            calculated_mm=objects_mm.services[service.id],
+            serializer=serializer,
+            schedule_task=schedule_task,
         )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
+        status_scenarios.update_mm_objects()
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")

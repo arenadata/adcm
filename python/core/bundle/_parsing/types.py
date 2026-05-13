@@ -56,7 +56,7 @@ class BundleParser(Protocol):
         scripts: list[dict],
         template_path: Path,
         action_allow_to_terminate: bool,
-        mode: Literal["action", "wizard"],
+        mode: Literal["action", "upgrade", "wizard"],
     ) -> list[action.JobSpec]:
         ...
 

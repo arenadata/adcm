@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Checkbox, DialogV2 } from '@uikit';
+import { Checkbox, DialogV2, WarningMessage } from '@uikit';
 import { AdcmLicenseStatus } from '@models/adcm';
 import { useUpgradeClusterDialog } from './useUpgradeClusterDialog';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
@@ -8,6 +8,7 @@ import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog
 import ServicesLicensesStep from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/ServicesLicensesStep/ServicesLicensesStep';
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import CustomDialogControlsV2 from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControlsV2';
+import s from './UpgradeClusterDialog.module.scss';
 
 const UpgradeClusterDialog = () => {
   const { cluster, isValid, upgradeDetails, formData, handleChangeFormData, onSubmit, onNext, onClose, currentStep } =
@@ -68,6 +69,11 @@ const UpgradeClusterDialog = () => {
       )}
       {currentStep === UpgradeStepKey.ServicesLicenses && (
         <ServicesLicensesStep formData={formData} onChange={handleChangeFormData} />
+      )}
+      {upgradeDetails?.startImpossibleReason && (
+        <WarningMessage className={s.upgradeClusterDialog__errorMessage}>
+          {upgradeDetails.startImpossibleReason}
+        </WarningMessage>
       )}
     </DialogV2>
   );

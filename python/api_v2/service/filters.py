@@ -23,7 +23,10 @@ from api_v2.filters import AdvancedFilterSet, filter_service_status
 
 class ServiceFilter(
     AdvancedFilterSet,
-    char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
+    char_fields=(
+        ("name", "prototype__name"),
+        ("display_name", "prototype__display_name"),
+    ),
     number_fields=("id",),
     with_object_status=True,
 ):
@@ -37,14 +40,30 @@ class ServiceFilter(
         field_name="prototype__display_name",
         lookup_expr="icontains",
     )
-    status = ChoiceFilter(label="Filter by service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    status = ChoiceFilter(label="Filter by status.", choices=ADCMEntityStatus.choices, method="filter_status")
+    prototype_version = CharFilter(
+        label="Filter by version.",
+        field_name="prototype__version",
+        lookup_expr="exact",
+    )
+    state = CharFilter(field_name="state", label="Filter by state.", lookup_expr="exact")
+
     ordering = OrderingFilter(
-        fields={"prototype__display_name": "displayName"},
+        fields={
+            "prototype__name": "name",
+            "prototype__display_name": "displayName",
+            "prototype__version": "prototypeVersion",
+            "state": "state",
+            "id": "id",
+        },
         field_labels={
+            "prototype__name": "Name",
             "prototype__display_name": "Display name",
+            "prototype__version": "Version",
+            "state": "State",
+            "id": "Id",
         },
     )
 
-    @staticmethod
-    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        return filter_service_status(queryset=queryset, value=value)
+    def filter_status(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_service_status(queryset=queryset, value=value, request=self.request)

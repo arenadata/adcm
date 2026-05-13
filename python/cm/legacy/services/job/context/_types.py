@@ -35,6 +35,7 @@ class _MultiStateConversionModel(BaseModel):
 class _BeforeUpgradeInventoryNode(BaseModel):
     state: str | None
     config: dict | None = None
+    imports: dict | None = None
 
     def model_dump(self, **_) -> dict:
         # can't rely on `exclude_default` here, because it removes the whole `_BeforeUpgradeInventoryNode`
@@ -43,6 +44,9 @@ class _BeforeUpgradeInventoryNode(BaseModel):
 
         if self.config is None:
             original.pop("config", None)
+
+        if self.imports is None:
+            original.pop("imports")
 
         return original
 

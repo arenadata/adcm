@@ -25,9 +25,28 @@ class GroupFilter(
     char_fields=("name", "display_name", "type"),
     number_fields=("id",),
 ):
-    display_name = CharFilter(lookup_expr="icontains")
-    type = ChoiceFilter(choices=OriginType.choices)
+    name = CharFilter(field_name="name", lookup_expr="exact", label="Filter by name.")
+    display_name = CharFilter(
+        field_name="display_name",
+        lookup_expr="icontains",
+        label="Case insensitive and partial filter by group display name.",
+    )
+    type = ChoiceFilter(field_name="type", choices=OriginType.choices, label="Group type.")
+    user_username = CharFilter(
+        field_name="user__username",
+        label="Filter by user name",
+        lookup_expr="exact",
+        distinct=True,
+    )
     ordering = OrderingFilter(
-        fields={"display_name": "displayName"},
-        field_labels={"display_name": "Display name"},
+        fields={
+            "name": "name",
+            "display_name": "displayName",
+            "type": "type",
+        },
+        field_labels={
+            "name": "Name",
+            "display_name": "Display name",
+            "type": "Type",
+        },
     )

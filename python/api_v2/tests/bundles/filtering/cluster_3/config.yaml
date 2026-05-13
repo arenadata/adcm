@@ -1,0 +1,6 @@
+---
+- type: cluster
+  name: b_cluster
+  display_name: B Cluster
+  version: "12.0.0"
+  edition: enterprise

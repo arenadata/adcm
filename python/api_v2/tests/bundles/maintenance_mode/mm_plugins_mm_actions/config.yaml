@@ -63,3 +63,33 @@
           params:
             ansible_tags: turn_off
       config: *config
+
+    component_2:
+      display_name: Component 2 from Service 1
+
+- name: service_2
+  display_name: Service 2
+  type: service
+  version: *version
+  actions:
+    adcm_turn_on_maintenance_mode:
+      <<: *action
+      host_action: false
+      script: ./service-mm.yaml
+      params:
+        ansible_tags: turn_on
+    adcm_turn_off_maintenance_mode:
+      <<: *action
+      host_action: false
+      script: ./service-mm.yaml
+      params:
+        ansible_tags: turn_off
+
+  components:
+    component_1:
+      display_name: Component 1 from Service 2
+      constraint: [ 1,+ ]
+
+    component_2:
+      display_name: Component 2 from Service 2
+      constraint: [ 0,+ ]

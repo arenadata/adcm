@@ -14,7 +14,6 @@ from configparser import ConfigParser
 from pathlib import Path
 import json
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -26,7 +25,11 @@ from core.legacy.job.types import HcAclRule, TaskMappingDelta
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
+from tests.suites import ADCMDjangoAPISuite
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -171,6 +174,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
         add_service_to_cluster(
             cluster=self.cluster,
             proto=Prototype.objects.get(name="service_1", display_name="Service 1", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
 
         provider = gen_provider()
@@ -214,6 +218,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
         self.service_2_robot = add_service_to_cluster(
             cluster=self.cluster_2,
             proto=Prototype.objects.get(name="robot", type="service"),
+            rbac_scenarios=RBACScenarios(),
         )
         self.component_wheel_of_robot = Component.objects.get(cluster=self.cluster_2, prototype__name="wheel")
 
@@ -236,33 +241,34 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
                 self.assertIs(action.allowed(cluster), expected_results[state_name][req_name])
 
 
-class TestActionParams(BaseTestCase, BusinessLogicMixin):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionParams(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        bundle = self.add_bundle(
-            source_dir=self.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_with_action_params"
-        )
-
-        self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="test_cluster_with_action_params")
-        self.service = self.add_services_to_cluster(["same_actioned_service"], cluster=self.cluster).get()
-        self.component = self.service.components.get()
-
-        self.action_full = Action.objects.get(prototype=self.cluster.prototype, name="action_full")
-        self.action_jinja_2_native_false = Action.objects.get(
-            prototype=self.cluster.prototype, name="action_jinja2Native_false"
-        )
-        self.action_jinja_2_native_absent = Action.objects.get(
-            prototype=self.cluster.prototype, name="action_jinja2Native_absent"
-        )
-        self.action_ansible_tags_absent = Action.objects.get(
-            prototype=self.component.prototype, name="action_ansibleTags_absent"
-        )
-        self.action_custom_fields_absent = Action.objects.get(
-            prototype=self.service.prototype, name="action_customFields_absent"
+        bundle = cls.uc.upload_bundle(
+            src=cls.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_with_action_params"
         )
 
-        self.configuration = ExternalSettings(
+        cls.cluster = cls.uc.add_cluster(bundle=bundle, name="test_cluster_with_action_params")
+        cls.service, *_ = cls.uc.add_services_to_cluster(["same_actioned_service"], cluster=cls.cluster)
+        cls.component = cls.service.components.get()
+
+        cls.action_full = Action.objects.get(prototype=cls.cluster.prototype, name="action_full")
+        cls.action_jinja_2_native_false = Action.objects.get(
+            prototype=cls.cluster.prototype, name="action_jinja2Native_false"
+        )
+        cls.action_jinja_2_native_absent = Action.objects.get(
+            prototype=cls.cluster.prototype, name="action_jinja2Native_absent"
+        )
+        cls.action_ansible_tags_absent = Action.objects.get(
+            prototype=cls.component.prototype, name="action_ansibleTags_absent"
+        )
+        cls.action_custom_fields_absent = Action.objects.get(
+            prototype=cls.service.prototype, name="action_customFields_absent"
+        )
+
+        cls.configuration = ExternalSettings(
             adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
             ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
             integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
@@ -271,7 +277,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
             ),
         )
 
-        self.default_expected_ansible_cfg = {
+        cls.default_expected_ansible_cfg = {
             "defaults": (
                 ("stdout_callback", "yaml"),
                 ("deprecation_warnings", "False"),
@@ -297,7 +303,7 @@ class TestActionParams(BaseTestCase, BusinessLogicMixin):
         task = JobRepoImpl.get_task(id=response.json()["id"])
         job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
 
-        job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+        job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)
         prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
 

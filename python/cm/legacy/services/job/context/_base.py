@@ -15,7 +15,7 @@ from operator import itemgetter
 from typing import Iterable
 
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
+from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
@@ -24,7 +24,9 @@ from core.types import (
     ExtraActionTargetType,
     HostID,
     HostName,
+    MaintenanceModeOfObjects,
     ObjectID,
+    ObjectMaintenanceModeState,
 )
 from django.db.models import F
 from infra.services import get_config_service
@@ -166,6 +168,10 @@ def get_cluster_vars(topology: ClusterTopology, config_service: core.config.Conf
     )
 
 
+def cluster_vars_to_dict(vars_: ClusterVars) -> dict:
+    return vars_.model_dump(mode="json", by_alias=True, exclude_defaults=True)
+
+
 def _get_inventory_for_action_from_cluster_bundle(
     cluster_id: int,
     delta: TaskMappingDelta,
@@ -220,9 +226,8 @@ def _get_inventory_for_action_from_cluster_bundle(
         config_service=config_service,
     )
 
-    cluster_vars_dict = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes).model_dump(
-        mode="json", by_alias=True, exclude_defaults=True
-    )
+    cluster_vars = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes)
+    cluster_vars_dict = cluster_vars_to_dict(cluster_vars)
 
     alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
         config_host_groups=config_host_groups.values(),

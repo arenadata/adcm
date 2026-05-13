@@ -21,31 +21,35 @@ from cm.models import (
 )
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
-from api_v2.tests.setup.base import BaseAPITestCase
 
 
-class TestWizardMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
-    def setUp(self):
-        super().setUp()
+class TestWizardMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_action")
-        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "wizard_action")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
 
-        self.cluster = self.create_cluster(bundle=cluster_bundle, name="test_cluster")
-        self.service = self.create_services(names=["service_1"], cluster=self.cluster)[0]
-        self.component_1 = Component.objects.get(service=self.service, prototype__name="component_1")
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        cls.service = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)[0]
+        cls.component_1 = Component.objects.get(service=cls.service, prototype__name="component_1")
 
         # existence check, needs for mm distribution
-        Component.objects.get(service=self.service, prototype__name="component_2")
+        Component.objects.get(service=cls.service, prototype__name="component_2")
 
-        self.provider = self.create_provider(bundle=provider_bundle, name="test_provider")
-        self.host_1 = self.create_host(provider=self.provider, name="test-host-1", cluster=self.cluster)
-        self.host_2 = self.create_host(provider=self.provider, name="test-host-2", cluster=self.cluster)
+        cls.provider = cls.uc.add_provider(bundle=provider_bundle, name="test_provider")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, name="test-host-1", cluster=cls.cluster)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, name="test-host-2", cluster=cls.cluster)
 
-        self.action = Action.objects.get(name="wizard_with_mapping_only", prototype_id=self.cluster.prototype_id)
+        cls.action = Action.objects.get(name="wizard_with_mapping_only", prototype_id=cls.cluster.prototype_id)
 
+    def setUp(self) -> None:
+        # move to test data setup once start process added to UC
+        super().setUp()
         self.process = self.start_process(owner=self.cluster, action=self.action)
         self.step = ProcessStep.objects.get(process=self.process, name="step_1_mapping", state=ProcessStepState.CREATED)
 

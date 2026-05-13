@@ -27,37 +27,49 @@ from core.config._config import (
 )
 from core.config._types import (
     Attributes,
+    Change,
+    ChangeType,
     ChangeRequest,
     ConfigAttrs,
+    ConfigCoreObjectWithPrototype,
+    ConfigDict,
     ConfigFlatValues,
     ConfigOwner,
     HostGroupConfigOwner,
     ConfigValues,
     Configuration,
     ConfigurationWithInfo,
+    RevisionDiff,
     Defaults,
     FlatConfiguration,
     ParameterFullName,
     ParameterLevelName,
+    RelatedConfigs,
     EncryptFunc,
     DecryptFunc,
     ConfigurationExtraInfo,
 )
 from core.config import _secrets as secrets
 from core.config._validate import PatternValidator, Validators, VariantValidator, Violations, MainConfigVariantResolver
-from core.config._service import ConfigService, VariantValidators
+from core.config._service import ConfigService, RevisionDiffSource, VariantValidators
 from core.config._repo import ConfigRepoI, ObjectWithoutConfigError, NoConfigError, ObjectDiscoveryError
 
 __all__ = [
     "Attributes",
+    "Change",
     "ChangeRequest",
+    "ChangeType",
     "ConfigAttrs",
+    "ConfigCoreObjectWithPrototype",
+    "ConfigDict",
     "ConfigFlatValues",
+    "ConfigOperationError",
     "ConfigOwner",
     "ConfigRepoI",
     "ConfigService",
     "ConfigValues",
     "Configuration",
+    "ConfigurationExtraInfo",
     "ConfigurationWithInfo",
     "DecryptFunc",
     "DefaultFileMissingError",
@@ -69,10 +81,12 @@ __all__ = [
     "NoConfigError",
     "ObjectDiscoveryError",
     "ObjectWithoutConfigError",
-    "ConfigOperationError",
     "ParameterFullName",
     "ParameterLevelName",
     "PatternValidator",
+    "RelatedConfigs",
+    "RevisionDiff",
+    "RevisionDiffSource",
     "Validators",
     "VariantValidator",
     "VariantValidators",
@@ -90,5 +104,4 @@ __all__ = [
     "secrets",
     "set_by_full_name",
     "spec",
-    "ConfigurationExtraInfo",
 ]

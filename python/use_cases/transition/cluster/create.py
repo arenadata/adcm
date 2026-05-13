@@ -22,19 +22,19 @@ from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_services,
 )
 from cm.legacy.services.concern.distribution import redistribute_issues_and_flags
-from cm.legacy.services.status.notify import reset_hc_map
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps
+from cm.transition.status import StatusScenarios
 from core.result import Fail, Success
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, PrototypeID
 from django.db import transaction
 from django.db.models import Count, QuerySet
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 import core
 
 
 @dataclass(slots=True)
 class CreateCluster:
     config_service: core.config.ConfigService
+    status_scenarios: StatusScenarios
 
     def do(self, prototype: models.Prototype, name: str, description: str):
         if prototype.type != ADCMCoreType.CLUSTER:
@@ -52,8 +52,8 @@ class CreateCluster:
             if recalculate_own_concerns_on_add_clusters(cluster):
                 added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
-        reset_hc_map()
-        notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+        self.status_scenarios.reset_hc_map()
+        self.status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
         return cluster.pk
 
@@ -61,6 +61,8 @@ class CreateCluster:
 @dataclass(slots=True)
 class CreateServicesFromPrototypes:
     config_service: core.config.ConfigService
+    rbac_scenarios: RBACScenarios
+    status_scenarios: StatusScenarios
 
     def do(self, cluster: models.Cluster, prototype_ids: Iterable[PrototypeID]) -> tuple[models.Service, ...]:
         result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
@@ -83,10 +85,10 @@ class CreateServicesFromPrototypes:
             )
             added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
-            re_apply_object_policy(apply_object=cluster)
+            self.rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
-        reset_hc_map()
-        notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+        self.status_scenarios.reset_hc_map()
+        self.status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
         return tuple(services)
 

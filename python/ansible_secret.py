@@ -11,8 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import adcm.init_django  # noqa: F401, isort:skip
-from django.conf import settings
+from application.di.providers.environment import EnvironmentProvider
+from core.secrets import Secret, SecretsBackend
+import dishka
 
 if __name__ == "__main__":
-    print(settings.ANSIBLE_SECRET)
+    container = dishka.make_container(EnvironmentProvider())
+    secrets_backend = container.get(SecretsBackend)
+    ansible_vault_secret = secrets_backend.read(Secret.ANSIBLE_VAULT)
+    print(ansible_vault_secret)

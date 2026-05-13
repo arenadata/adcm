@@ -1,6 +1,4 @@
 import type React from 'react';
-import { useRef, useState, useCallback } from 'react';
-import { useResizeObserver } from '@hooks';
 import Collapse from '@uikit/Collapse/Collapse';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import cn from 'classnames';
@@ -23,9 +21,6 @@ const ExpandableRow = ({
   className = '',
   isInactive = false,
 }: ExpandableRowProps) => {
-  const [rowWidth, setRowWidth] = useState(0);
-  const refRow = useRef<HTMLTableRowElement>(null);
-
   const rowClasses = cn(className, s.expandableRowMain, {
     [s.expanded]: isExpanded,
     [s.expandableRowMain_inactive]: isInactive,
@@ -34,27 +29,21 @@ const ExpandableRow = ({
 
   const expandedRowClasses = cn(s.expandableRowContent, t.expandedBlock);
 
-  const setRowNewWidth = useCallback(() => {
-    if (!refRow.current) return;
-    const parent = refRow.current.closest(`.${t.tableWrapper}`) as HTMLDivElement;
-    setRowWidth(parent ? parent.offsetWidth : refRow.current.offsetWidth);
-  }, []);
-
-  useResizeObserver(refRow, setRowNewWidth);
-
   return (
     <>
-      <TableRow isInactive={isInactive} ref={refRow} className={rowClasses}>
+      <TableRow isInactive={isInactive} className={rowClasses}>
         {children}
       </TableRow>
       {expandedContent && isExpanded && (
         <tr className={expandedRowClasses}>
           <td colSpan={colSpan}>
-            <div style={{ width: `${rowWidth}px` }}>
-              <Collapse isExpanded={true}>
-                <div className={s.expandableRowContent_wrapper}>{expandedContent}</div>
-              </Collapse>
-            </div>
+            <Collapse isExpanded={true}>
+              <div className={s.expandableRow__container}>
+                <div className={s.expandableRow__wrapper}>
+                  <div className={s.expandableRowContent_wrapper}>{expandedContent}</div>
+                </div>
+              </div>
+            </Collapse>
           </td>
         </tr>
       )}

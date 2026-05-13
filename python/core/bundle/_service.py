@@ -35,12 +35,12 @@ from core.bundle._validate import (
     check_dynamic_config_definition,
     check_has_valid_definitions_set,
 )
-from core.types import BundleID, CoreObjectDescriptor
+from core.types import BundleID, CoreObjectDescriptor, CurrentADCMVersion, PrototypeID
 
 
 @dataclass(slots=True)
 class BundleService:
-    adcm_version: str
+    adcm_version: CurrentADCMVersion
     parsers: list[tuple[parsing.VersionInfo, parsing.BundleParser]]
     definition_to_spec_converter: ConvertConfigDefinition
 
@@ -103,6 +103,21 @@ class BundleService:
             mode="action",
         )
 
+    def parse_to_upgrade_scripts(
+        self,
+        data: list[dict],
+        bundle_context: BundleContext,
+        template_path: Path,
+        action_allow_to_terminate: bool,
+    ) -> list[action.JobSpec]:
+        parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
+        return parser.parse_scripts(
+            scripts=data,
+            template_path=template_path,
+            action_allow_to_terminate=action_allow_to_terminate,
+            mode="upgrade",
+        )
+
     def parse_to_wizard_scripts(
         self,
         data: list[dict],
@@ -155,3 +170,6 @@ class BundleService:
                 report.deprecated_version_bundles.add(item)
 
         return report
+
+    def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
+        return self.repo.retrieve_bundle_context_from_prototype(prototype_id=prototype_id)

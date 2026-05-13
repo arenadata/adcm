@@ -16,12 +16,14 @@ import time
 
 import adcm.init_django  # noqa: F401, isort:skip
 
+from cm.converters import orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
 from cm.legacy.services.job.run import distribute_concerns
 from cm.legacy.services.job.run.repo import JobRepoImpl, JobRepoInterface, TaskTargetCoreObject
 from cm.models import Cluster
+from cm.transition.action import RetrieveStartImpossibleReason
 from core.legacy.cluster.operations import construct_mapping_from_delta
 from core.legacy.job.dto import TaskUpdateDTO
 from core.legacy.job.types import ExecutionStatus, Task
@@ -33,10 +35,14 @@ from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
 from jobs.scheduler.logger import logger
 from jobs.scheduler.queuers import QUEUER_REGISTRY
-from jobs.scheduler.utils import clear_concerns_on_error, set_status_on_fail, set_status_on_success
+from jobs.scheduler.utils import (
+    clear_concerns_on_error,
+    set_status_on_fail,
+    set_status_on_success,
+)
 
 
-def run_launcher_in_loop() -> None:
+def run_launcher_in_loop(retrieve_sir: RetrieveStartImpossibleReason) -> None:
     job_repo: JobRepoInterface = JobRepoImpl
     scheduler_repo: ModuleType = repo
     queuer = QUEUER_REGISTRY[settings.DEFAULT_JOB_EXECUTION_ENVIRONMENT]()
@@ -53,7 +59,11 @@ def run_launcher_in_loop() -> None:
                     continue
 
                 scheduled = schedule_task(
-                    task_id=task_id, env_type=queuer.env, job_repo=job_repo, scheduler_repo=scheduler_repo
+                    task_id=task_id,
+                    env_type=queuer.env,
+                    job_repo=job_repo,
+                    scheduler_repo=scheduler_repo,
+                    retrieve_sir=retrieve_sir,
                 )
 
             if scheduled:
@@ -68,10 +78,22 @@ def run_launcher_in_loop() -> None:
 @set_status_on_success(status=ExecutionStatus.SCHEDULED)
 @clear_concerns_on_error
 def schedule_task(
-    *, task_id: TaskID, env_type: TaskRunnerEnvironment, job_repo: JobRepoInterface, scheduler_repo: ModuleType
+    *,
+    task_id: TaskID,
+    env_type: TaskRunnerEnvironment,
+    job_repo: JobRepoInterface,
+    scheduler_repo: ModuleType,
+    retrieve_sir: RetrieveStartImpossibleReason,
 ) -> bool:
     target_orm = job_repo.get_target_orm(task_id)
-    validate(task_id=task_id, target_orm=target_orm, job_repo=job_repo, scheduler_repo=scheduler_repo)
+
+    validate(
+        task_id=task_id,
+        target_orm=target_orm,
+        job_repo=job_repo,
+        scheduler_repo=scheduler_repo,
+        retrieve_sir=retrieve_sir,
+    )
 
     task_orm = scheduler_repo.retrieve_task_orm(task_id=task_id)
     distribute_concerns(task=task_orm, target=target_orm)
@@ -93,7 +115,11 @@ def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoInterfac
 
 
 def validate(
-    task_id: TaskID, target_orm: TaskTargetCoreObject, job_repo: JobRepoInterface, scheduler_repo: ModuleType
+    task_id: TaskID,
+    target_orm: TaskTargetCoreObject,
+    job_repo: JobRepoInterface,
+    scheduler_repo: ModuleType,
+    retrieve_sir: RetrieveStartImpossibleReason,
 ) -> None:
     task = job_repo.get_task(id=task_id)
     if not task.target:
@@ -109,10 +135,14 @@ def validate(
     except AdcmEx as e:
         raise LauncherError(e.msg) from e
 
-    mm_action = scheduler_repo.retrieve_task(task_id=task_id).action.is_mm_action
-    start_impossible_reason = action_orm.get_start_impossible_reason(obj=target_orm)
-    if not mm_action and start_impossible_reason:
-        raise LauncherError(start_impossible_reason)
+    is_mm_action = scheduler_repo.retrieve_task(task_id=task_id).action.is_mm_action
+    start_impossible_reason = retrieve_sir.for_action_target(
+        target=orm_object_to_action_target_descriptor(target_orm),
+        allowed_in_mm={action_orm.pk: action_orm.allow_in_maintenance_mode},
+    )
+
+    if not is_mm_action and start_impossible_reason[action_orm.pk] is not None:
+        raise LauncherError(start_impossible_reason[action_orm.pk])
 
     if task.hostcomponent.mapping_delta:
         cluster = target_orm if isinstance(target_orm, Cluster) else target_orm.cluster

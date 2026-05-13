@@ -17,19 +17,18 @@ from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import ADCM, ConfigHostGroup, ConfigLog, MainObject
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
-from infra.services import get_config_service
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.serializers import BaseSerializer
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
 )
-from use_cases.transition.config import update_configuration_of_host_group, update_configuration_of_object
+from use_cases.transition.config import UpdateConfigurationOfHostGroup, UpdateConfigurationOfObject
 import core
 
 from api_v2.generic.config.filters import ConfigLogFilter
@@ -40,6 +39,7 @@ from api_v2.utils.config import (
     convert_json_fields_to_strings,
     convert_main_config,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -86,40 +86,15 @@ class ConfigLogViewSet(
 
         return super().handle_exception(exc)
 
-    def new_create(self, parent_object: MainObject | ADCM | ConfigHostGroup, serializer: BaseSerializer):
-        service = get_config_service()
-
-        if isinstance(parent_object, ConfigHostGroup):
-            owner = cast(MainObject, parent_object.object)
-            group = parent_object
-            convert_serialized_config = convert_group_config
-            config_id = update_configuration_of_host_group(
-                input_config=serializer.validated_data,
-                convert=convert_serialized_config,
-                config_extra_info=core.config.ConfigurationExtraInfo(
-                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
-                ),
-                owner=owner,
-                group=group,
-                config_service=service,
-            )
-        else:
-            owner: MainObject | ADCM | ConfigHostGroup = parent_object
-            convert_serialized_config = convert_main_config
-
-            config_id = update_configuration_of_object(
-                input_config=serializer.validated_data,
-                convert=convert_serialized_config,
-                config_extra_info=core.config.ConfigurationExtraInfo(
-                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
-                ),
-                owner=owner,
-                config_service=service,
-            )
-
-        return ConfigLog.objects.get(id=config_id)
-
-    def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def create(
+        self,
+        request,
+        update_configuration_of_host_group: FromDishka[UpdateConfigurationOfHostGroup],
+        update_configuration_of_object: FromDishka[UpdateConfigurationOfObject],
+        config_service: FromDishka[core.config.ConfigService],
+        **_,
+    ) -> Response:
         parent_object = self.get_parent_object(raise_=NotFound())
 
         self._check_parent_permissions(parent_object=parent_object)
@@ -128,17 +103,43 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
-        config_log = self.new_create(parent_object=parent_object, serializer=serializer)
-        config_log = self.new_convert(config_log, parent_object)
+        if isinstance(parent_object, ConfigHostGroup):
+            owner = cast(MainObject, parent_object.object)
+            group = parent_object
+            convert_serialized_config = convert_group_config
+            config_id = update_configuration_of_host_group.do(
+                input_config=serializer.validated_data,
+                convert=convert_serialized_config,
+                config_extra_info=core.config.ConfigurationExtraInfo(
+                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
+                ),
+                owner=owner,
+                group=group,
+            )
+        else:
+            owner: MainObject | ADCM = parent_object
+            convert_serialized_config = convert_main_config
+            config_id = update_configuration_of_object.do(
+                input_config=serializer.validated_data,
+                convert=convert_serialized_config,
+                config_extra_info=core.config.ConfigurationExtraInfo(
+                    description=serializer.validated_data.get("description", ""), created_by=self.request.user.username
+                ),
+                owner=owner,
+            )
+
+        config_log = ConfigLog.objects.get(id=config_id)
+        self._convert_and_attach_spec(config_log=config_log, parent_object=parent_object, config_service=config_service)
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
-    def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def retrieve(self, request, config_service: FromDishka[core.config.ConfigService], **_) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object(raise_=NotFound())
         self._check_parent_permissions(parent_object)
 
         instance = self.get_object()
-        instance = self.new_convert(instance, parent_object)
+        self._convert_and_attach_spec(config_log=instance, parent_object=parent_object, config_service=config_service)
         serializer = self.get_serializer(instance)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
@@ -147,7 +148,9 @@ class ConfigLogViewSet(
         self._check_parent_permissions()
         return super().list(request, *args, **kwargs)
 
-    def new_convert(self, config_log: ConfigLog, parent_object: ParentObject) -> ConfigLog:
+    def _convert_and_attach_spec(
+        self, config_log: ConfigLog, parent_object: ParentObject, config_service: core.config.ConfigService
+    ) -> None:
         from cm.impl.config.convert import convert_attr_to_adcm_meta
 
         match parent_object:
@@ -162,7 +165,6 @@ class ConfigLogViewSet(
 
         config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
 
-        config_service = get_config_service()
         specification = config_service.retrieve_partial_specification(
             owner=owner, only_for_types=(core.config.spec.p.JSONParameter, core.config.spec.p.ParameterGroup)
         )
@@ -171,7 +173,12 @@ class ConfigLogViewSet(
             values=config_log.config, spec=specification, inplace=True
         )
 
-        return config_log
+        return
+
+    def on_config_absent_for_owner(self, owner_object: MainObject) -> NoReturn:
+        _ = owner_object
+
+        raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
 
     def _check_create_permissions(self, request: Request, parent_object: ParentObject) -> None:
         owner_object = parent_object.object if isinstance(parent_object, ConfigHostGroup) else parent_object
@@ -210,7 +217,3 @@ class ConfigLogViewSet(
             or self.request.user.has_perm(parent_config_view_perm)
         ):
             raise PermissionDenied
-
-    def on_config_absent_for_owner(self, owner_object: MainObject) -> NoReturn:
-        _ = owner_object
-        raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")

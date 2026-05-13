@@ -16,8 +16,10 @@ from itertools import chain
 from typing import Any, Callable, Iterable, Protocol, TypeAlias
 
 from core.config import _yspec, spec
+from core.config._config import detect_active_groups
 from core.config._names import is_part_of_group, join_level_name_with_group_name, level_names_to_full_name
 from core.config._types import (
+    Change,
     ConfigAttrs,
     ConfigFlatValues,
     Configuration,
@@ -96,8 +98,16 @@ def validate_configuration_is_consistent(
     Check if given configuration has all value fields present and its attributes aren't conflicting with spec
     having all important attributes specified.
     """
+    active_groups = detect_active_groups(attributes=configuration.attributes)
+    # Set of deactivated groups may be incorrect in here, because attribute violations are checked later,
+    # but it's enough for values violations checks.
+    deactivated_groups = spec.detect_deactivated_groups(spec=specification, active_groups=active_groups)
 
-    values_violations = _find_values_violations(configuration=configuration.values, hierarchy=specification.hierarchy)
+    values_violations = _find_values_violations(
+        configuration=configuration.values,
+        hierarchy=specification.hierarchy,
+        deactivated_groups=deactivated_groups,
+    )
     if values_violations:
         # can't continue if values aren't correct
         return Fail(values_violations)
@@ -117,7 +127,7 @@ def validate_configuration_is_consistent(
 
 
 def validate_changes_are_allowed(
-    changes: set[ParameterFullName],
+    changes: list[Change],
     attributes: ConfigAttrs,
     desync_allowed: set[ParameterFullName],
 ) -> Success[None] | Fail[Violations]:
@@ -125,7 +135,8 @@ def validate_changes_are_allowed(
     Check if changes performed on two configurations are allowed based on restrictions.
     """
 
-    desync_disallowed = changes.difference(desync_allowed)
+    changed_params = {change.parameter for change in changes}
+    desync_disallowed = changed_params.difference(desync_allowed)
     desync_disallowed_attrs = {name: attributes[name] for name in desync_disallowed if name in attributes}
     changed_but_synced = tuple(
         name for name, attrs in desync_disallowed_attrs.items() if attrs.synchronization and not attrs.is_synced
@@ -238,9 +249,13 @@ _ValuesStructureValidator = Callable[
 def _find_values_violations(
     configuration: _AnyAsConfigValues,
     hierarchy: spec.SpecHierarchyLevel,
+    deactivated_groups: set[ParameterFullName],
     group_prefix: tuple[ParameterLevelName, ...] = (),
 ) -> Violations:
-    validate = _detect_values_validator_for_level_rule(hierarchy.rule)
+    is_in_deactivated_group = level_names_to_full_name(group_prefix) in deactivated_groups
+    validate = _detect_values_validator_for_level_rule(
+        rule=hierarchy.rule, in_deactivated_group=is_in_deactivated_group
+    )
     violations = validate(configuration, hierarchy, group_prefix)
 
     if not isinstance(configuration, dict):
@@ -250,19 +265,24 @@ def _find_values_violations(
         if child_name in configuration:
             child_configuration = configuration[child_name]
             violations += _find_values_violations(
-                configuration=child_configuration, hierarchy=child_hierarchy, group_prefix=(*group_prefix, child_name)
+                configuration=child_configuration,
+                hierarchy=child_hierarchy,
+                deactivated_groups=deactivated_groups,
+                group_prefix=(*group_prefix, child_name),
             )
 
     return violations
 
 
-def _detect_values_validator_for_level_rule(rule: spec.HierarchyValidationRule) -> _ValuesStructureValidator:
+def _detect_values_validator_for_level_rule(
+    rule: spec.HierarchyValidationRule, in_deactivated_group: bool
+) -> _ValuesStructureValidator:
     match rule:
         case spec.HierarchyValidationRule.ALL:
             return _find_values_violations_rule_all
-        case spec.HierarchyValidationRule.EXACTLY_ONE:
+        case spec.HierarchyValidationRule.EXACTLY_ONE if not in_deactivated_group:
             return _find_values_violations_rule_exactly_one
-        case spec.HierarchyValidationRule.AT_MOST_ONE:
+        case spec.HierarchyValidationRule.AT_MOST_ONE | spec.HierarchyValidationRule.EXACTLY_ONE:
             return _find_values_violations_rule_at_most_one
 
 

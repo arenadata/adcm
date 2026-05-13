@@ -10,21 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.services.status import notify
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from django.conf import settings
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
 class StatusServerUpdateView(ADCMGenericViewSet):
     # Endpoints
 
-    def create(self, request, *_, **__):  # noqa: ARG002
+    @inject
+    def create(self, request, *_, status_scenarios: FromDishka[StatusScenarios], **__):  # noqa: ARG002
         self.check_is_allowed(request)
-        notify.update_all()
+        status_scenarios.update_all()
         return Response(status=HTTP_200_OK)
 
     # Helpers

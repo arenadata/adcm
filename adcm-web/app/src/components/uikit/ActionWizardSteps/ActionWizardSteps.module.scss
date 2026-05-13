@@ -178,7 +178,8 @@
       }
     }
 
-    &_completed {
+    &_completed,
+    &_skipped {
       .actionWizardSteps__stageNumber {
         background: var(--panel-title-color-background-completed);
       }

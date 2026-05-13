@@ -1,0 +1,10 @@
+.upgradeClusterDialog {
+  &__errorMessage {
+    border-color: var(--color-light-red);
+    margin: 24px 0;
+
+    svg {
+      color: var(--color-light-red);
+    }
+  }
+}

@@ -28,6 +28,7 @@ from cm.models import (
     HostComponent,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -55,11 +56,19 @@ class WithStatusSerializer(ModelSerializer):
     def get_status(self, instance: ADCMModel) -> ADCMEntityStatus:
         status = self.context.get("status")
         if status is None:
-            try:
-                status_map = self.context["status_map"]
-            except KeyError as err:
-                message = f"Can't detect status for {instance}, both `status` and `status_map` are absent in context"
-                raise KeyError(message) from err
+            status_map: FullStatusMap | None = self.context.get("status_map")
+            if status_map is None:
+                scenarios: StatusScenarios | None = self.context.get("status_scenarios")
+                if scenarios is not None:
+                    status_map = scenarios.retrieve_status_map()
+                    self.context["status_map"] = status_map
+
+            if status_map is None:
+                message = (
+                    f"Can't detect status for {instance}, "
+                    "all `status`, `status_map` and `status_scenarios` are absent in context"
+                )
+                raise KeyError(message)
 
             try:
                 status = _MODEL_RETRIEVAL_FUNC_MAP[instance.__class__](status_map, instance)

@@ -23,11 +23,10 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestGroupAudit(BaseAPITestCase):
+class TestGroupAudit(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
@@ -107,15 +106,14 @@ class TestGroupAudit(BaseAPITestCase):
 
         self.group.refresh_from_db()
 
-        last_audit_log = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.group),
             user__username="admin",
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
         )
-        self.assertDictEqual(last_audit_log.object_changes, expected_object_changes)
 
     def test_group_update_one_field_success(self):
         expected_object_changes = {
@@ -133,15 +131,14 @@ class TestGroupAudit(BaseAPITestCase):
 
         self.group.refresh_from_db()
 
-        last_audit_log = self.check_last_audit_record(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.group),
             user__username="admin",
-            expect_object_changes_=False,
+            object_changes=expected_object_changes,
         )
-        self.assertDictEqual(last_audit_log.object_changes, expected_object_changes)
 
     def test_group_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)

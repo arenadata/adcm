@@ -1,0 +1,14 @@
+- name: bundle_switch
+  script: bundle_switch
+  script_type: internal
+- name: set_cluster_to_debug
+  script: config_apply
+  script_type: internal
+  params:
+    changes:
+      - object:
+          type: cluster
+        parameters:
+          - key: debug
+            value: {{ cluster }}
+

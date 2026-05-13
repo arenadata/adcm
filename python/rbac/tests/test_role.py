@@ -13,7 +13,6 @@
 import json
 import hashlib
 
-from adcm.tests.base import BaseTestCase
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -28,7 +27,7 @@ from cm.models import (
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from init_db import init as init_adcm
+from tests.base import BaseTestCase
 
 from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
@@ -157,8 +156,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
 
     def setUp(self):
         super().setUp()
-
-        init_adcm()
 
         category = ProductCategory.objects.create(
             value="Sample Cluster",

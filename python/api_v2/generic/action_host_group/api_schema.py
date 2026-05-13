@@ -43,16 +43,14 @@ def document_action_host_group_viewset(object_type: str):
             summary=f"GET {object_type}'s Action Host Groups",
             description=f"Return list of {object_type}'s action host groups.",
             parameters=[
-                OpenApiParameter(
-                    name="name",
-                    description="Case insensitive and partial filter by name.",
-                ),
-                OpenApiParameter(
-                    name="has_host",
-                    description="Case insensitive and partial filter by host",
-                ),
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-"',
+                    enum=("id", "-id", "name", "-name"),
+                    default="id",
+                ),
             ],
             responses=responses(success=ActionHostGroupSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),

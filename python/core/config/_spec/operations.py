@@ -18,6 +18,20 @@ from core.config._spec.spec import FullSpec
 from core.config._types import ParameterFullName
 
 
+# may it be safely united with `detect_deactivated_parameters`?
+def detect_deactivated_groups(spec: FullSpec, active_groups: Iterable[ParameterFullName]) -> set[ParameterFullName]:
+    deactivated_groups = spec.attributes.activatable_groups.difference(active_groups)
+    if not deactivated_groups:
+        return set()
+
+    return {
+        group_name
+        for group_name in spec.groups
+        for deactivated_name in deactivated_groups
+        if is_part_of_group(group_name, group=deactivated_name)
+    }
+
+
 def detect_deactivated_parameters(spec: FullSpec, active_groups: Iterable[ParameterFullName]) -> set[ParameterFullName]:
     deactivated_groups = spec.attributes.activatable_groups.difference(active_groups)
     if not deactivated_groups:

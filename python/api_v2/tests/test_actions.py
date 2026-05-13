@@ -12,15 +12,14 @@
 
 from functools import partial
 from operator import itemgetter
-from pathlib import Path
 from typing import Collection, Literal, TypeAlias
 from unittest.mock import patch
 import json
 import unittest
 
-from adcm.tests.client import ADCMTestClient
 from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
+    ADCM,
     Action,
     ActionHostGroup,
     Cluster,
@@ -35,87 +34,91 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from core.types import TaskID
-from infra.services import get_config_service
-from init_db import init
+from core.action.operations import ActionStartImpossibleReason
+from core.config import ConfigService
+from core.types import ADCMCoreType, CoreObjectDescriptor, TaskID
+from parameterized import parameterized
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.upgrade.role import init_roles
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
-from api_v2.tests.base import APIV2Mixin, BaseAPITestCase, TestUtilsMixin
-from api_v2.utils.di import prepare_container
+from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
 
 ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
-class TestActionsFiltering(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionsFiltering(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-        self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
-        self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        self.component_2: Component = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        self.provider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        cls.cluster_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_actions")
+        cls.cluster = cls.uc.add_cluster(cls.cluster_bundle, "Cluster with Actions")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.uc.add_services_to_cluster(names=["service_2"], cluster=cls.cluster)
 
-        self.available_at_any = ["state_any"]
-        common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
-        self.available_at_created_no_multi = [
+        provider_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "provider_actions")
+        cls.provider = cls.uc.add_provider(provider_bundle, "Provider with Actions")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
+
+        cls.available_at_any = ["state_any"]
+        common_at_created = [*cls.available_at_any, "state_created", "state_created_masking"]
+        cls.available_at_created_no_multi = [
             *common_at_created,
             "multi_flag_unavailable",
             "state_created_available_multi_bag_unavailable",
         ]
-        self.available_at_created_flag = [
+        cls.available_at_created_flag = [
             *common_at_created,
             "multi_flag_masking",
             "state_created_available_multi_bag_unavailable",
         ]
-        self.available_at_created_bag = [
+        cls.available_at_created_bag = [
             *common_at_created,
             "multi_flag_unavailable",
             "state_created_available_multi_bag_available",
         ]
 
         common_at_installed = [
-            *self.available_at_any,
+            *cls.available_at_any,
             "state_installed",
             "state_installed_masking",
             "state_created_unavailable",
         ]
-        self.available_at_installed_no_multi = [
+        cls.available_at_installed_no_multi = [
             *common_at_installed,
             "multi_flag_unavailable",
             "state_created_unavailable_multi_bag_unavailable",
         ]
-        self.available_at_installed_flag = [
+        cls.available_at_installed_flag = [
             *common_at_installed,
             "multi_flag_masking",
             "state_created_unavailable_multi_bag_unavailable",
         ]
-        self.available_at_installed_bag = [
+        cls.available_at_installed_bag = [
             *common_at_installed,
             "multi_flag_unavailable",
             "state_created_unavailable_multi_bag_available",
         ]
 
-        self.installed_state = "installed"
-        self.flag_multi_state = "flag"
-        self.bag_multi_state = "bag"
+        cls.installed_state = "installed"
+        cls.flag_multi_state = "flag"
+        cls.bag_multi_state = "bag"
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
@@ -358,8 +361,8 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "ACTION_ERROR",
-                "desc": "The Action is not available. Host in 'Maintenance mode'",
+                "code": "TASK_ERROR",
+                "desc": 'The Action is not available. One or more hosts in "Maintenance mode"',
                 "level": "error",
             },
         )
@@ -401,11 +404,10 @@ class TestActionsFiltering(BaseAPITestCase):
                 "isVerbose": False,
             },
         )
+        expected_response = {"code": "COMPONENT_NOT_FOUND", "desc": "component doesn't exist", "level": "error"}
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(
-            response.json(), {"code": "API_ERROR", "desc": "Components with ids 1000 do not exist", "level": "ERROR"}
-        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
@@ -420,11 +422,10 @@ class TestActionsFiltering(BaseAPITestCase):
                 "isVerbose": False,
             },
         )
+        expected_response = {"code": "FOREIGN_HOST", "desc": "host is not belong to the cluster", "level": "error"}
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertDictEqual(
-            response.json(), {"code": "API_ERROR", "desc": "Hosts with ids 1000 do not exist", "level": "ERROR"}
-        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_response)
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:
@@ -531,16 +532,17 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertListEqual(actual_actions, sorted(expected_actions))
 
 
-class TestActionWithJinjaConfig(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
-        self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
-        self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
-        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
+        cluster_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_actions_jinja")
+        cls.cluster = cls.uc.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["first_service"], cluster=cls.cluster)
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="first_component")
 
     def test_group_jinja_config(self):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_action_with_group_jinja")
@@ -694,13 +696,14 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
 
-class TestAction(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAction(ADCMDjangoAPISuite):
+    maxDiff = None
 
-        self.maxDiff = None
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.action_with_config = Action.objects.filter(name="with_config", prototype=self.cluster_1.prototype).first()
+        cls.action_with_config = Action.objects.get(name="with_config", prototype=cls.cluster_1.prototype)
 
     def test_retrieve_with_config(self):
         response = self.client.v2[self.cluster_1, "actions", self.action_with_config].get()
@@ -789,35 +792,23 @@ class TestAction(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestActionHCMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
+class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-        cls.test_bundles_dir = Path(__file__).parent / "bundles"
-        init_roles()
-        init()
+        cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one")
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cluster_bundle, name="Test cluster for hc_acl action")
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
+        cls.component_2 = Component.objects.get(prototype__name="component_2", service=cls.service_1)
 
-    def setUp(self):
-        self.client.login(username="admin", password="admin")
+        provider_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "provider")
+        provider = cls.uc.add_provider(bundle=provider_bundle, name="provider")
+        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2", cluster=cls.cluster_1)
 
-        cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "cluster_one")
-        self.cluster_1 = self.create_cluster(bundle=cluster_bundle, name="Test cluster for hc_acl action")
-        self.service_1 = self.create_services(names=["service_1"], cluster=self.cluster_1)[0]
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
-        self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service_1)
-
-        provider_bundle = self.create_bundle(src=self.test_bundles_dir / "provider")
-        provider = self.create_provider(bundle=provider_bundle, name="provider")
-        self.host_1 = self.create_host(provider=provider, name="host-1", cluster=self.cluster_1)
-        self.host_2 = self.create_host(provider=provider, name="host-2", cluster=self.cluster_1)
-
-        self.action = Action.objects.get(name="with_hc", prototype_id=self.cluster_1.prototype_id)
+        cls.action = Action.objects.get(name="with_hc", prototype_id=cls.cluster_1.prototype_id)
 
     def run_task(
         self,
@@ -923,3 +914,342 @@ class TestActionHCMapping(BaseAPITestCase, APIV2Mixin, TestUtilsMixin):
                 "remove": {str(self.component_2.id): [self.host_1.id]},
             },
         )
+
+
+class TestActionStartImpossibleReason(ADCMDjangoAPISuite):
+    maxDiff = None
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+        cls.msg_services_in_mm = ActionStartImpossibleReason.MAINTENANCE_MODE.value.format(
+            entity_type="Action", violator_type="services"
+        )
+        cls.msg_components_in_mm = ActionStartImpossibleReason.MAINTENANCE_MODE.value.format(
+            entity_type="Action", violator_type="components"
+        )
+        cls.msg_hosts_in_mm = ActionStartImpossibleReason.MAINTENANCE_MODE.value.format(
+            entity_type="Action", violator_type="hosts"
+        )
+        cls.msg_ldap_settings = ActionStartImpossibleReason.LDAP_OFF.value
+
+        cls.cluster_action = Action.objects.get(name="action", prototype=cls.cluster_1.prototype)
+        cls.provider_action = Action.objects.get(name="provider_action", prototype=cls.provider.prototype)
+
+        service_names = {"service_1", "service_1_clone"}
+        cls.add_services_to_cluster(service_names=list(service_names), cluster=cls.cluster_1)
+        # to be sure MM distribution is correct
+        assert (  # noqa: S101
+            set(Service.objects.filter(cluster=cls.cluster_1).values_list("prototype__name", flat=True))
+            == service_names
+        )
+
+        cls.service = Service.objects.get(prototype__name="service_1", cluster=cls.cluster_1)
+        cls.service_action = Action.objects.get(name="action", prototype=cls.service.prototype)
+
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service)
+        cls.component_1_action = Action.objects.get(name="action_1_comp_1", prototype=cls.component_1.prototype)
+
+        cls.component_2 = Component.objects.get(prototype__name="component_2", service=cls.service)
+        cls.component_3 = Component.objects.get(prototype__name="component_3", service=cls.service)
+        # to be sure MM distribution is correct
+        assert set(Component.objects.filter(service=cls.service).values_list("id", flat=True)) == {  # noqa: S101
+            cls.component_1.id,
+            cls.component_2.id,
+            cls.component_3.id,
+        }
+
+        cls.host_1 = cls.uc.add_host(fqdn="test-host-1", provider=cls.provider, cluster=cls.cluster_1)
+        cls.host_1_action = Action.objects.get(name="host_action", prototype=cls.host_1.prototype)
+        cls.host_2 = cls.uc.add_host(fqdn="test-host-2", provider=cls.provider, cluster=cls.cluster_1)
+        cls.host_3 = cls.uc.add_host(fqdn="test-host-3", provider=cls.provider, cluster=cls.cluster_1)
+        cls.host_4 = cls.uc.add_host(fqdn="test-host-4", provider=cls.provider, cluster=cls.cluster_1)
+
+        cls.free_host = cls.uc.add_host(fqdn="test-host-free", provider=cls.provider, cluster=cls.cluster_1)
+        cls.free_host_action = Action.objects.get(name="host_action", prototype=cls.free_host.prototype)
+
+        cls.control_service = Service.objects.get(prototype__name="service_1_clone", cluster=cls.cluster_1)
+        cls.control_component = Component.objects.get(prototype__name="component_1", service=cls.control_service)
+        cls.control_host = cls.uc.add_host(fqdn="test-host-control", provider=cls.provider, cluster=cls.cluster_1)
+
+        cls.adcm = ADCM.objects.get()
+        cls.adcm_action = Action.objects.get(name="run_ldap_sync", prototype=cls.adcm.prototype)
+
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1,
+            entries=(
+                (cls.host_1, cls.component_1),
+                (cls.host_2, cls.component_1),
+                (cls.host_3, cls.component_2),
+                (cls.host_4, cls.component_2),
+                (cls.control_host, cls.control_component),
+            ),
+        )
+
+        cls.cluster_ahg = cls.uc.create_action_host_group(owner=cls.cluster_1, name="cluster_ahg")
+        cls.uc.add_hosts_to_action_host_group(group_id=cls.cluster_ahg.pk, hosts=[cls.host_1.pk])
+
+        cls.service_ahg = cls.uc.create_action_host_group(owner=cls.service, name="service_ahg")
+        cls.uc.add_hosts_to_action_host_group(group_id=cls.service_ahg.pk, hosts=[cls.host_2.pk])
+
+        cls.component_ahg = cls.uc.create_action_host_group(owner=cls.component_2, name="component_ahg")
+        cls.uc.add_hosts_to_action_host_group(group_id=cls.component_ahg.pk, hosts=[cls.host_3.pk])
+        cls.component_2_action = Action.objects.get(name="action_1_comp_2", prototype=cls.component_2.prototype)
+
+        cls.action_from_cluster = Action.objects.get(
+            name="cluster_on_host", prototype=cls.cluster_1.prototype, host_action=True
+        )
+        cls.action_from_service = Action.objects.get(
+            name="service_on_host", prototype=cls.service.prototype, host_action=True
+        )
+        cls.action_from_component = Action.objects.get(
+            name="component_on_host", prototype=cls.component_1.prototype, host_action=True
+        )
+
+    @parameterized.expand(
+        [
+            # suite_name, (objects_in_mm, ...), action_target, action, start_impossible_reason
+            # suite1: not mapped host in cluster in mm
+            ("suite1_cluster_action", ("free_host",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            ("suite1_service_action", ("free_host",), "service", "service_action", None),
+            ("suite1_component_action", ("free_host",), "component_1", "component_1_action", None),
+            ("suite1_action_on_host", ("free_host",), "host_1", "host_1_action", None),
+            ("suite1_action_on_free_host", ("free_host",), "free_host", "free_host_action", "msg_hosts_in_mm"),
+            # suite2: one of two hosts on component in mm
+            ("suite2_cluster_action", ("host_2",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            ("suite2_service_action", ("host_2",), "service", "service_action", "msg_hosts_in_mm"),
+            ("suite2_component_action", ("host_2",), "component_1", "component_1_action", "msg_hosts_in_mm"),
+            ("suite2_action_on_host", ("host_2",), "host_1", "host_1_action", None),
+            ("suite2_action_on_free_host", ("host_2",), "free_host", "free_host_action", None),
+            # suite3: host in second service in mm (indirect second service in MM)
+            ("suite3_cluster_action", ("control_host",), "cluster_1", "cluster_action", "msg_services_in_mm"),
+            ("suite3_service_action", ("control_host",), "service", "service_action", None),
+            ("suite3_component_action", ("control_host",), "component_1", "component_1_action", None),
+            ("suite3_action_on_host", ("control_host",), "host_1", "host_1_action", None),
+            ("suite3_action_on_free_host", ("control_host",), "free_host", "free_host_action", None),
+            # suite4: host in second component in mm
+            ("suite4_cluster_action", ("host_3",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            ("suite4_service_action", ("host_3",), "service", "service_action", "msg_hosts_in_mm"),
+            ("suite4_component_action", ("host_3",), "component_1", "component_1_action", None),
+            ("suite4_action_on_host", ("host_3",), "host_1", "host_1_action", None),
+            ("suite4_action_on_free_host", ("host_3",), "free_host", "free_host_action", None),
+            # suite5: all component hosts in mm (indirect component in MM)
+            ("suite5_cluster_action", ("host_1", "host_2"), "cluster_1", "cluster_action", "msg_components_in_mm"),
+            ("suite5_service_action", ("host_1", "host_2"), "service", "service_action", "msg_components_in_mm"),
+            (
+                "suite5_component_action",
+                ("host_1", "host_2"),
+                "component_1",
+                "component_1_action",
+                "msg_components_in_mm",
+            ),
+            ("suite5_action_on_host", ("host_1", "host_2"), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            ("suite5_action_on_free_host", ("host_1", "host_2"), "free_host", "free_host_action", None),
+            # suite6: one of components in mm
+            ("suite6_cluster_action", ("component_1",), "cluster_1", "cluster_action", "msg_components_in_mm"),
+            ("suite6_service_action", ("component_1",), "service", "service_action", "msg_components_in_mm"),
+            ("suite6_component_action", ("component_1",), "component_1", "component_1_action", "msg_components_in_mm"),
+            ("suite6_action_on_host", ("component_1",), "host_1", "host_1_action", None),
+            ("suite6_action_on_free_host", ("component_1",), "free_host", "free_host_action", None),
+            # suite7: all components in mm (indirect service in MM)
+            (
+                "suite7_cluster_action",
+                ("component_1", "component_2", "component_3"),
+                "cluster_1",
+                "cluster_action",
+                "msg_services_in_mm",
+            ),
+            (
+                "suite7_service_action",
+                ("component_1", "component_2", "component_3"),
+                "service",
+                "service_action",
+                "msg_services_in_mm",
+            ),
+            (
+                "suite7_component_action",
+                ("component_1", "component_2", "component_3"),
+                "component_1",
+                "component_1_action",
+                "msg_components_in_mm",
+            ),
+            ("suite7_action_on_host", ("component_1", "component_2", "component_3"), "host_1", "host_1_action", None),
+            (
+                "suite7_action_on_free_host",
+                ("component_1", "component_2", "component_3"),
+                "free_host",
+                "free_host_action",
+                None,
+            ),
+            # suite8: service in mm
+            ("suite8_cluster_action", ("service",), "cluster_1", "cluster_action", "msg_services_in_mm"),
+            ("suite8_service_action", ("service",), "service", "service_action", "msg_services_in_mm"),
+            ("suite8_component_action", ("service",), "component_1", "component_1_action", "msg_components_in_mm"),
+            ("suite8_action_on_host", ("service",), "host_1", "host_1_action", None),
+            ("suite8_action_on_free_host", ("service",), "free_host", "free_host_action", None),
+            # suite9: host_action, host (target) in MM
+            ("suite9_host_1_action", ("host_1",), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            ("suite9_action_from_cluster", ("host_1",), "host_1", "action_from_cluster", "msg_hosts_in_mm"),
+            ("suite9_action_from_service", ("host_1",), "host_1", "action_from_service", "msg_hosts_in_mm"),
+            ("suite9_action_from_component", ("host_1",), "host_1", "action_from_component", "msg_hosts_in_mm"),
+            # suite10: host_action, service in MM
+            ("suite10_host_1_action", ("service",), "host_1", "host_1_action", None),
+            ("suite10_action_from_cluster", ("service",), "host_1", "action_from_cluster", None),
+            ("suite10_action_from_service", ("service",), "host_1", "action_from_service", None),
+            ("suite10_action_from_component", ("service",), "host_1", "action_from_component", None),
+            # suite11: host_action, component in MM
+            ("suite11_host_1_action", ("component_1",), "host_1", "host_1_action", None),
+            ("suite11_action_from_cluster", ("component_1",), "host_1", "action_from_cluster", None),
+            ("suite11_action_from_service", ("component_1",), "host_1", "action_from_service", None),
+            ("suite11_action_from_component", ("component_1",), "host_1", "action_from_component", None),
+            # suite12: host_action, host (target) and one other object in MM
+            ("suite12_host_1_action_service", ("host_1", "service"), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            (
+                "suite12_action_from_cluster_service",
+                ("host_1", "service"),
+                "host_1",
+                "action_from_cluster",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_action_from_service_service",
+                ("host_1", "service"),
+                "host_1",
+                "action_from_service",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_action_from_component_service",
+                ("host_1", "service"),
+                "host_1",
+                "action_from_component",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_host_1_action_component_1",
+                ("host_1", "component_1"),
+                "host_1",
+                "host_1_action",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_action_from_cluster_component_1",
+                ("host_1", "component_1"),
+                "host_1",
+                "action_from_cluster",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_action_from_service_component_1",
+                ("host_1", "component_1"),
+                "host_1",
+                "action_from_service",
+                "msg_hosts_in_mm",
+            ),
+            (
+                "suite12_action_from_component_component_1",
+                ("host_1", "component_1"),
+                "host_1",
+                "action_from_component",
+                "msg_hosts_in_mm",
+            ),
+            # suite13: actions on AHG
+            ("suite13_clAHG_host_1", ("host_1",), "cluster_ahg", "cluster_action", "msg_hosts_in_mm"),
+            ("suite13_clAHG_service", ("service",), "cluster_ahg", "cluster_action", "msg_services_in_mm"),
+            ("suite13_clAHG_component_1", ("component_1",), "cluster_ahg", "cluster_action", "msg_components_in_mm"),
+            ("suite13_seAHG_host_1", ("host_1",), "service_ahg", "service_action", "msg_hosts_in_mm"),
+            ("suite13_seAHG_service", ("service",), "service_ahg", "service_action", "msg_services_in_mm"),
+            ("suite13_seAHG_component_1", ("component_1",), "service_ahg", "service_action", "msg_components_in_mm"),
+            ("suite13_coAHG_host_3", ("host_3",), "component_ahg", "component_2_action", "msg_hosts_in_mm"),
+            ("suite13_coAHG_service", ("service",), "component_ahg", "component_2_action", "msg_components_in_mm"),
+            (
+                "suite13_coAHG_component_2",
+                ("component_2",),
+                "component_ahg",
+                "component_2_action",
+                "msg_components_in_mm",
+            ),
+        ]
+    )
+    def test_sir_cluster(self, _, in_mm, target, action, expected_msg):
+        for object_in_mm_name in in_mm:
+            self.set_mm(object_=getattr(self, object_in_mm_name), value="on")
+
+        self.check_start_impossible_reason(
+            object_=getattr(self, target),
+            action=getattr(self, action),
+            expected_sir=getattr(self, expected_msg) if expected_msg else None,
+        )
+
+    @parameterized.expand([True, False])
+    def test_sir_provider(self, all_provider_hosts_in_mm):
+        if all_provider_hosts_in_mm:
+            for host in Host.objects.filter(provider=self.provider):
+                self.set_mm(object_=host, value="on")
+
+        self.check_start_impossible_reason(object_=self.provider, action=self.provider_action)
+
+    def test_sir_adcm(self):
+        config_service = self.container.get(ConfigService)
+        current_config = config_service.retrieve_current_configuration(
+            owner=CoreObjectDescriptor(id=self.adcm.pk, type=ADCMCoreType.ADCM)
+        )
+        post_data = {
+            "config": current_config.values,
+            "adcmMeta": {k: {"isActive": v.is_active} for k, v in current_config.attributes.items()},
+        }
+        post_data["config"]["global"]["adcm_url"] = "test"
+
+        response = self.client.v2[self.adcm, "configs"].post(data=post_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.check_start_impossible_reason(
+            object_=self.adcm,
+            action=self.adcm_action,
+            expected_sir=self.msg_ldap_settings,
+        )
+
+        post_data["config"]["ldap_integration"]["ldap_uri"] = "test"
+        post_data["config"]["ldap_integration"]["ldap_user"] = "test"
+        post_data["config"]["ldap_integration"]["ldap_password"] = "test"
+        post_data["config"]["ldap_integration"]["user_search_base"] = "test"
+        post_data["adcmMeta"]["/ldap_integration"]["isActive"] = True
+
+        response = self.client.v2[self.adcm, "configs"].post(data=post_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.check_start_impossible_reason(object_=self.adcm, action=self.adcm_action)
+
+    def check_start_impossible_reason(
+        self,
+        object_: Cluster | Service | Component | Host,
+        action: Action,
+        expected_sir: str | None = None,
+    ):
+        if action.host_action:
+            list_endpoint = self.client.v2[object_.cluster, "hosts", object_, "actions"]
+        else:
+            list_endpoint = self.client.v2[object_, "actions"]
+        retrieve_endpoint = list_endpoint / action
+        run_endpoint = retrieve_endpoint / "run"
+
+        list_response = list_endpoint.get()
+        self.assertEqual(list_response.status_code, HTTP_200_OK)
+        target_action = [act for act in list_response.json() if act["id"] == action.id][0]
+        self.assertEqual(target_action["startImpossibleReason"], expected_sir)
+
+        retrieve_response = retrieve_endpoint.get()
+        self.assertEqual(retrieve_response.status_code, HTTP_200_OK)
+        self.assertEqual(retrieve_response.json()["startImpossibleReason"], expected_sir)
+
+        run_response = run_endpoint.post()
+        if expected_sir:
+            self.assertEqual(run_response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(run_response.json()["desc"], expected_sir)
+        else:
+            self.assertEqual(run_response.status_code, HTTP_200_OK)
+
+    def set_mm(self, object_: Service | Component | Host, value: Literal["on", "off"]):
+        response = self.client.v2[object_, "maintenance-mode"].post(data={"maintenanceMode": value})
+        self.assertEqual(response.status_code, HTTP_200_OK)

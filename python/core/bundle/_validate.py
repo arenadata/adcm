@@ -32,6 +32,7 @@ from core.bundle._predicates import has_requires, is_component, is_component_key
 from core.bundle._representation import dependency_entry_to_key, repr_from_key
 from core.bundle._types import BundleDefinitionKey
 from core.errors import localize_error
+from core.result import Fail, Success
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
 
@@ -82,7 +83,7 @@ def check_definitions_are_valid(
         with localize_error(repr_from_key(key)):
             check_import_defaults_exist_in_config(imports=definition.imports, config=definition.config)
             check_exported_values_exists_in_config(exports=definition.exports, config=definition.config)
-            check_upgrades(upgrades=definition.upgrades, definitions=definitions)
+            check_upgrades(upgrades=definition.upgrades, definitions=definitions, bundle_root=context.bundle_root)
 
             if definition.config:
                 check_config_definition(definition=definition.config, bundle_root=context.bundle_root)
@@ -299,14 +300,17 @@ def check_action_scripts(action: ActionDefinition):
                 raise BundleValidationError(message)
 
 
-def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap) -> None:
+def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap, bundle_root: Path) -> None:
     for upgrade in upgrades:
         if not upgrade.action:
             continue
 
         with localize_error(f"Upgrade {upgrade.name}"):
             check_action_hc_acl_rules(hostcomponentmap=upgrade.action.hostcomponentmap, definitions=definitions)
-            check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
+            if upgrade.action.scripts_template is None:
+                check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
+            else:
+                check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
 
 
 def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
@@ -382,6 +386,15 @@ def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) ->
 
     scripts = upgrade.action.scripts
 
+    match validate_bundle_switch_amount(scripts):
+        case Fail(value=err_message):
+            message = f'{err_message} in upgrade "{upgrade.name}"'
+            raise BundleValidationError(message)
+
+
+# scripts typehint is bad due to this function requirements to be quite universal,
+# yet current typesystem handles it differently
+def validate_bundle_switch_amount(scripts: list) -> Success[None] | Fail[str]:
     scripts_with_bundle_switch = tuple(
         script for script in scripts if script.script_type == "internal" and script.script == "bundle_switch"
     )
@@ -389,12 +402,12 @@ def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) ->
     amount_of_bundle_switches = len(scripts_with_bundle_switch)
 
     if amount_of_bundle_switches == 0:
-        message = f'Scripts block must contain exact one block with script "bundle_switch" in upgrade "{upgrade.name}"'
-        raise BundleValidationError(message)
+        return Fail('Scripts block must contain exact one block with script "bundle_switch"')
 
     if amount_of_bundle_switches > 1:
-        message = f'Script with script_type "internal" must be unique in upgrade "{upgrade.name}"'
-        raise BundleValidationError(message)
+        return Fail('Script with script_type "bundle_switch" must be unique')
+
+    return Success(None)
 
 
 def check_exported_values_exists_in_config(exports: Iterable[str], config: ConfigDefinition | None) -> None:

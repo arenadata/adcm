@@ -7,6 +7,7 @@ import type { AdcmActionHostGroup } from '@models/adcm/actionHostGroup';
 import { useState } from 'react';
 import ExpandDetailsCell from '@commonComponents/ExpandDetailsCell/ExpandDetailsCell';
 import ActionHostGroupTableFooter from '../ActionHostGroupTableFooter/ActionHostGroupFooter';
+import DescriptionCell from '@commonComponents/Table/Cells/DescriptionCell/DescriptionCell';
 
 export interface ActionHostGroupsTableProps {
   // action host group not independent entity
@@ -18,6 +19,7 @@ export interface ActionHostGroupsTableProps {
   onOpenDynamicActionDialog: (actionHostGroup: AdcmActionHostGroup, actionId: number) => void;
   onOpenEditDialog: (actionHostGroup: AdcmActionHostGroup) => void;
   onOpenDeleteDialog: (actionHostGroup: AdcmActionHostGroup) => void;
+  onOpenEditDescriptionDialog: (actionHostGroup: AdcmActionHostGroup) => void;
 }
 
 const ActionHostGroupsTable = ({
@@ -28,6 +30,7 @@ const ActionHostGroupsTable = ({
   onOpenDynamicActionDialog,
   onOpenEditDialog,
   onOpenDeleteDialog,
+  onOpenEditDescriptionDialog,
 }: ActionHostGroupsTableProps) => {
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
 
@@ -53,7 +56,10 @@ const ActionHostGroupsTable = ({
               }
             >
               <TableCell>{actionHostGroup.name}</TableCell>
-              <TableCell>{actionHostGroup.description}</TableCell>
+              <DescriptionCell
+                description={actionHostGroup.description}
+                onEdit={() => onOpenEditDescriptionDialog(actionHostGroup)}
+              />
               <ExpandDetailsCell
                 isDisabled={actionHostGroup.hosts.length === 0}
                 handleExpandRow={() => handleExpandClick(actionHostGroup.id)}

@@ -10,6 +10,7 @@ import {
 import ConfigGroupDeleteDialog from '@commonComponents/configGroups/ConfigGroupDeleteDialog/ConfigGroupDeleteDialog';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
 import ServiceComponentConfigGroupMappingDialog from './ServiceComponentConfigGroupMappingDialog/ServiceComponentConfigGroupMappingDialog';
+import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 import type { AdcmServiceComponentConfigGroupCreateData } from '@api/adcm/serviceComponentGroupConfigs';
 
 const ServiceComponentConfigGroupDialogs: React.FC = () => {
@@ -66,6 +67,7 @@ const ServiceComponentConfigGroupDialogs: React.FC = () => {
       />
 
       <ServiceComponentConfigGroupMappingDialog />
+      <EditConfigGroupDescriptionDialog />
     </>
   );
 };

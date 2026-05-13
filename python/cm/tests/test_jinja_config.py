@@ -14,7 +14,8 @@ from pathlib import Path
 from unittest.mock import patch
 import unittest
 
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
+from tests.base import BaseTestCase
+from tests.deprecated import BusinessLogicMixin, TaskTestMixin
 
 from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import Action

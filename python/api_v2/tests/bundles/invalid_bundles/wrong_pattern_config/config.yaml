@@ -1,0 +1,18 @@
+- type: provider
+  name: provider_patterns
+  version: &version '1.0'
+  config: &config
+    - name: invalid_secrettext
+      type: secrettext
+      description: |
+        First line is header with name at least 8 characters long.
+        Second line is either OK followed by all 0 OR FAIL followed by at least one non-zero.
+        Third line should be empty
+      pattern: "HEADER\\s[A-z0-9]{8,}\\n((OK(?=\\s0+\\n)|FAIL(?!\\s0+\\n))\\s[0-9]+)+?\\n"
+      default: |
+        bla
+
+- type: host
+  name: host
+  version: *version
+  config: *config

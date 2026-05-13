@@ -10,50 +10,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 
+from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
+from rbac.scenarios import RBACScenarios
 import core
 
 from cm.legacy.bundle_switch_revert import bundle_switch
 from cm.legacy.services.job.context import get_inventory_data
 from cm.legacy.upgrade import update_before_upgrade
 from cm.models import Action, Component, Service, Upgrade
-from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestBeforeUpgrade(BaseInventoryTestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        bundles_dir = Path(__file__).parent.parent / "bundles"
-        self.templates_dir = Path(__file__).parent.parent / "files/response_templates"
+        cls.provider_bundle = cls.uc.upload_bundle(src=cls.bundles_dir / "provider")
 
-        self.provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = cls.uc.upload_bundle(src=cls.bundles_dir / "cluster_1")
+        cls.cluster_1 = cls.uc.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="provider")
 
-        self.test_bundles_dir = Path(__file__).parent / "bundles"
+        cls.cluster_upgrade_bundle = cls.uc.upload_bundle(src=cls.bundles_dir / "cluster_1_upgrade")
+        cls.provider_upgrade_bundle = cls.uc.upload_bundle(src=cls.bundles_dir / "provider_upgrade")
 
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host_1", cluster=None)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host_2", cluster=None)
 
-        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-
-        self.cluster_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "cluster_1_upgrade"))
-        self.provider_upgrade_bundle = self.add_bundle(source_dir=Path(bundles_dir / "provider_upgrade"))
-
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=None)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=None)
-        self.service_two_components = None
-        self.component_1 = None
-        self.component_2 = None
-
-        self.upgrade_for_provider = Upgrade.objects.get(
-            bundle=self.provider_upgrade_bundle, name="upgrade_via_action_simple"
+        cls.upgrade_for_provider = Upgrade.objects.get(
+            bundle=cls.provider_upgrade_bundle, name="upgrade_via_action_simple"
         )
-        self.upgrade_for_cluster = Upgrade.objects.get(
-            bundle=self.cluster_upgrade_bundle, name="upgrade_via_action_simple"
+        cls.upgrade_for_cluster = Upgrade.objects.get(
+            bundle=cls.cluster_upgrade_bundle, name="upgrade_via_action_simple"
         )
 
     def bundle_switch(self, obj, upgrade):
@@ -61,12 +53,23 @@ class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
 
         with self.container() as container:
             config_service = container.get(core.config.ConfigService)
-            callbacks = build_switch_revert_callbacks(config_service=config_service)
-            bundle_switch(obj=obj, upgrade=upgrade, callbacks=callbacks, config_service=config_service)
+            config_scenarios = container.get(ConfigScenarios)
+            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+            bundle_switch(
+                obj=obj,
+                upgrade=upgrade,
+                callbacks=callbacks,
+                config_service=config_service,
+                config_scenarios=config_scenarios,
+            )
+
+    def update_before_upgrade(self, obj):
+        with self.container() as container:
+            update_before_upgrade(obj=obj, config_service=container.get(core.config.ConfigService))
 
     def test_provider_two_hosts(self):
         self.provider.before_upgrade["bundle_id"] = self.provider.prototype.bundle.pk
-        update_before_upgrade(obj=self.provider)
+        self.update_before_upgrade(obj=self.provider)
 
         self.bundle_switch(obj=self.provider, upgrade=self.upgrade_for_provider)
 
@@ -174,7 +177,7 @@ class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        self.update_before_upgrade(obj=self.cluster_1)
 
         self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
@@ -284,7 +287,7 @@ class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        self.update_before_upgrade(obj=self.cluster_1)
 
         self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
@@ -448,7 +451,7 @@ class TestBeforeUpgrade(WithDishkaContainer, BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        self.update_before_upgrade(obj=self.cluster_1)
 
         self.bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 

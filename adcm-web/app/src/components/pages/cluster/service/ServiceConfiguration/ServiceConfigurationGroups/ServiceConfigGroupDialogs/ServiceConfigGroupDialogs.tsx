@@ -11,6 +11,7 @@ import type { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterS
 import ConfigGroupDeleteDialog from '@commonComponents/configGroups/ConfigGroupDeleteDialog/ConfigGroupDeleteDialog';
 import ConfigGroupCreateDialog from '@commonComponents/configGroups/ConfigGroupCreateDialog/ConfigGroupCreateDialog';
 import ClusterConfigGroupMappingDialog from './ServiceConfigGroupMappingDialog/ServiceConfigGroupMappingDialog';
+import EditConfigGroupDescriptionDialog from '@commonComponents/configGroups/EditConfigGroupDescriptionDialog/EditConfigGroupDescriptionDialog';
 
 const ServiceConfigGroupDialogs: React.FC = () => {
   const navigate = useNavigate();
@@ -63,6 +64,7 @@ const ServiceConfigGroupDialogs: React.FC = () => {
       />
 
       <ClusterConfigGroupMappingDialog />
+      <EditConfigGroupDescriptionDialog />
     </>
   );
 };

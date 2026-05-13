@@ -22,6 +22,7 @@ from audit.alt.hooks import (
     only_on_success,
 )
 from cm.errors import AdcmEx
+from cm.transition.status import StatusScenarios
 from core.errors import NotFoundError
 from core.legacy.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.legacy.rbac.errors import (
@@ -31,9 +32,11 @@ from core.legacy.rbac.errors import (
     UpdateLDAPUserError,
     UsernameTakenError,
 )
+from dishka import FromDishka
 from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
-from django.db.models import Prefetch
+from django.db.models import Case, F, Prefetch, Value, When
+from django.db.models.lookups import Exact, IsNull
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -62,6 +65,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import DefaultParams, responses
+from api_v2.rbac.user.constants import UserStatus
 from api_v2.rbac.user.filters import UserFilterSet
 from api_v2.rbac.user.permissions import UserPermissions
 from api_v2.rbac.user.serializers import (
@@ -76,6 +80,7 @@ from api_v2.utils.audit import (
     user_from_lookup,
     user_from_response,
 )
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -87,13 +92,19 @@ from api_v2.views import ADCMGenericViewSet
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            OpenApiParameter(name="username", description="Case insensitive and partial filter by user name."),
-            OpenApiParameter(name="status", description="User status.", enum=("active", "blocked")),
-            OpenApiParameter(name="type", description="User type.", enum=("local", "ldap")),
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
-                enum=("username", "-username"),
+                enum=(
+                    "username",
+                    "-username",
+                    "status",
+                    "-status",
+                    "email",
+                    "-email",
+                    "type",
+                    "-type",
+                ),
                 default="username",
             ),
         ],
@@ -161,6 +172,15 @@ class UserViewSet(
             Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group").filter(group__isnull=False))
         )
         .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+        .annotate(
+            status=Case(
+                When(
+                    Exact(F("is_active"), True) & IsNull(F("blocked_at"), True),
+                    then=Value(f"{UserStatus.active.value}"),
+                ),
+                default=Value(f"{UserStatus.blocked.value}"),
+            )
+        )
         .order_by("username")
     )
     filter_backends = (DjangoFilterBackend,)
@@ -229,7 +249,14 @@ class UserViewSet(
             ),
         )
     )
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def partial_update(
+        self,
+        request: Request,
+        *,
+        status_scenarios: FromDishka[StatusScenarios],
+        **kwargs,
+    ) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -251,6 +278,7 @@ class UserViewSet(
                     update_data=UserUpdateDTO(**validated_data),
                     new_password=new_password,
                     new_user_groups=set(validated_data["groups"]) if "groups" in validated_data else None,
+                    status_scenarios=status_scenarios,
                 )
             else:
                 if new_password is not None and not request.user.is_superuser:
@@ -266,7 +294,11 @@ class UserViewSet(
                         "ADCM Administrator's rights.",
                     )
 
-                perform_regular_user_update(user_id=user_id, update_data=UserUpdateDTO(**validated_data))
+                perform_regular_user_update(
+                    user_id=user_id,
+                    update_data=UserUpdateDTO(**validated_data),
+                    status_scenarios=status_scenarios,
+                )
         except EmailTakenError:
             raise AdcmEx(code="USER_CONFLICT", msg="User with the same email already exist") from None
         except PasswordError as err:

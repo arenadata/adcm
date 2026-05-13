@@ -20,6 +20,8 @@ from adcm.permissions import (
 )
 from cm.legacy.api import multi_bind
 from cm.models import Cluster, PrototypeImport, Service
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from django.db.transaction import atomic
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -29,6 +31,7 @@ from rest_framework.status import (
 
 from api_v2.generic.imports.serializers import ImportPostSerializer
 from api_v2.generic.imports.utils import cook_data_for_multibind, get_imports
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -63,12 +66,16 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
 
         return obj
 
-    def list(self, request: Request, *_, **__) -> Response:
+    @inject
+    def list(self, request: Request, *_, status_scenarios: FromDishka[StatusScenarios], **__) -> Response:
         obj = self.get_object_and_check_perm(request=request)
-        return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
+        return self.get_paginated_response(
+            data=self.paginate_queryset(queryset=get_imports(obj=obj, status_scenarios=status_scenarios))
+        )
 
     @atomic
-    def create(self, request, *_, **__):
+    @inject
+    def create(self, request, *_, status_scenarios: FromDishka[StatusScenarios], **__):
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
         serializer.is_valid(raise_exception=True)
@@ -79,4 +86,4 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
             service=service,
             bind_list=cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj),
         )
-        return Response(get_imports(obj=obj), status=HTTP_201_CREATED)
+        return Response(get_imports(obj=obj, status_scenarios=status_scenarios), status=HTTP_201_CREATED)

@@ -14,7 +14,8 @@ from operator import attrgetter
 from typing import Iterable
 from unittest.mock import patch
 
-from adcm.tests.base import BaseTestCase
+from rbac.scenarios import RBACScenarios
+from tests.base import BaseTestCase
 
 from cm.legacy.api import add_cluster, add_service_to_cluster
 from cm.legacy.hierarchy import Tree
@@ -157,7 +158,7 @@ class CreateIssueTest(BaseTestCase):
             self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have required services and the service is added to one of them cluster"):
-            service = add_service_to_cluster(self.cluster, prototype)
+            service = add_service_to_cluster(self.cluster, prototype, rbac_scenarios=RBACScenarios())
             self.assertFalse(object_has_required_services_issue_orm_version(self.cluster))
             self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
@@ -260,7 +261,7 @@ class TestImport(BaseTestCase):
 
         bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
-        service = add_service_to_cluster(cluster2, proto3)
+        service = add_service_to_cluster(cluster2, proto3, rbac_scenarios=RBACScenarios())
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2, source_service=service)
 
         self.assertFalse(object_imports_has_issue(cluster1))
@@ -269,7 +270,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2)
+        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
 
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -281,11 +282,11 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Graphana", required=True)
-        service1 = add_service_to_cluster(cluster1, proto2)
+        service1 = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
 
         bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
-        service2 = add_service_to_cluster(cluster2, proto3)
+        service2 = add_service_to_cluster(cluster2, proto3, rbac_scenarios=RBACScenarios())
         ClusterBind.objects.create(
             cluster=cluster1,
             service=service1,
@@ -324,7 +325,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2)
+        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
 
         _, _, cluster2 = self.cook_cluster("Non_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -338,7 +339,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2)
+        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
 
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -393,7 +394,12 @@ class TestConcernsRedistribution(BaseTestCase):
         )
 
         with patch("cm.legacy.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
-            perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
+            perform_host_to_cluster_map(
+                self.cluster.id,
+                [self.host.id],
+                status_service=notify,
+                rbac_scenarios=RBACScenarios(),
+            )
 
         self.host.refresh_from_db()
         concerns_after = self.host.concerns.all()

@@ -10,45 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 
-from adcm.tests.client import ADCMTestClient
-from cm.models import (
-    Action,
-)
-from infra.services import get_config_service
-from init_db import init
-from rbac.upgrade.role import init_roles
+from cm.models import Action
+from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
-from api_v2.tests.setup.base import BaseAPITestCase
-from api_v2.utils.di import prepare_container
 
 
-class TestImplementDescription(BaseAPITestCase, APIV2Mixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
+class TestImplementDescription(ADCMDjangoAPISuite, APIV2Mixin):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-        cls.test_bundles_dir = Path(__file__).parent.parent / "bundles"
-        init_roles()
-        init()
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-    def setUp(self):
-        super().setUp()
-
-        self.cluster_bundle = self.create_bundle(src=self.test_bundles_dir / "wizard_rendering_description")
-        self.step_descr_mapping = {
+        cls.cluster_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "wizard_rendering_description")
+        cls.step_descr_mapping = {
             "action_step_config": "Config step description",
             "action_step_operation": "Operational step description",
             "action_step_mapping": "Mapping step description",
             "action_no_desc": "",
         }
-        self.stage_descr_mapping = {
+        cls.stage_descr_mapping = {
             "action_step_config": "Stage description",
             "action_no_desc": "",
         }

@@ -26,13 +26,18 @@ from core.legacy.cluster.types import (
     ComponentTopology,
     HostAddInfo,
     HostComponentEntry,
-    MaintenanceModeOfObjects,
-    ObjectMaintenanceModeState,
     ServiceTopology,
     TopologyHostDiff,
 )
 from core.legacy.job.types import TaskMappingDelta
-from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
+from core.types import (
+    ClusterID,
+    ComponentID,
+    HostID,
+    MaintenanceModeOfObjects,
+    ObjectMaintenanceModeState,
+    ShortObjectInfo,
+)
 
 # !===== Cluster Topology =====!
 

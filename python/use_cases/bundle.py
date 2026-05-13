@@ -20,12 +20,12 @@ from cm.errors import AdcmEx
 from cm.legacy.services import adcm
 from cm.legacy.services import bundle_alt as bundle
 from core.errors import localize_error
+from core.files import directories
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.settings import Directories
 from core.types import BundleID
-from django.core.files import File
 from django.db.transaction import atomic
-from rbac.upgrade.role import prepare_action_roles
+from rbac.scenarios import RBACScenarios
 import core
 
 logger = logging.getLogger("adcm")
@@ -36,15 +36,12 @@ class ParseBundleFromRequest:
     directories: Directories
 
     bundle_service: core.bundle.BundleService
+    rbac_scenarios: RBACScenarios
 
     @bundle.errors.convert_bundle_errors_to_adcm_ex
-    def do(self, file_from_request: File) -> BundleID:
+    def do(self, archive: Path) -> BundleID:
         adcm_configuration = adcm.get_adcm_configuration()
         verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
-
-        archive = bundle.load.save_bundle_file_from_request_to_downloads(
-            file_from_request=file_from_request, downloads_dir=self.directories.downloads
-        )
 
         with bundle.load.cleanup(on_exit=[archive]):
             unpacking_info = bundle.load.unpack_bundle(
@@ -67,23 +64,29 @@ class ParseBundleFromRequest:
                         definitions=definitions, bundle_info=bundle_info
                     )
                     bundle_object = models.Bundle.objects.get(id=bundle_id)
-                    prepare_action_roles(bundle=bundle_object)
+                    self.rbac_scenarios.prepare_action_roles(bundle=bundle_object)
 
         return bundle_id
 
 
 @dataclass(slots=True)
 class InitOrUpgradeADCM:
+    adcm_bundle_dir: directories.ADCMBundleDir
+
     bundle_service: core.bundle.BundleService
 
     initialize_adcm: InitializeADCM
     upgrade_adcm: UpgradeADCM
 
     @bundle.errors.convert_bundle_errors_to_adcm_ex
-    def do(self, adcm_config_file: Path) -> None:
+    def do(
+        self,
+        # required for test for a while, should be changed with DI thou
+        alternative_adcm_dir: Path | None = None,
+    ) -> None:
         adcm_object = models.ADCM.objects.first()
         current_adcm_bundle_version = adcm_object.prototype.version if adcm_object is not None else "0"
-        bundle_root = adcm_config_file.parent
+        bundle_root = alternative_adcm_dir or self.adcm_bundle_dir
 
         root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=bundle_root)
         parsing_meta, definitions = self.bundle_service.parse_to_definitions(

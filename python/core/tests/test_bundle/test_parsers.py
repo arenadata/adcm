@@ -410,3 +410,47 @@ class TestApplyConfig(TestCase):
             name = f"{cur_ver}-{cur_mode}-same-as-{prev_ver}-{prev_mode}"
             with self.subTest(name):
                 self.assertEqual(cur_result, prev_result)
+
+
+class TestUpgradeScripts(TestCase):
+    def test_adcm_7953_internal_revert_in_scripts_fail(self):
+        yaml_schema = """
+        - type: cluster
+          name: some_cluster
+          version: 3
+          upgrade:
+            - name: some_upgrade
+              versions:
+                  min: 1
+                  max: 2
+              states:
+                available: any
+                on_success: upgraded
+                on_fail: failed
+              scripts:
+                - name: internal
+                  script: bundle_revert
+                  script_type: internal
+        """
+        raw = yaml.safe_load(yaml_schema)
+        root = RootEntry(data=raw[0], full_path_to_file=FILE_IN_ROOT)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="'bundle_revert'"):
+                    parser.parse_root_entries([root], bundle_root=BUNDLE_ROOT)
+
+    def test_adcm_7953_internal_revert_in_dynamic_scripts_fail(self):
+        yaml_schema = """
+        - name: internal
+          script: bundle_revert
+          script_type: internal
+        """
+        raw = yaml.safe_load(yaml_schema)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="'bundle_revert'"):
+                    parser.parse_scripts(
+                        raw, template_path=FILE_IN_ROOT, action_allow_to_terminate=False, mode="upgrade"
+                    )

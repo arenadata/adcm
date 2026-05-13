@@ -79,6 +79,8 @@ const ServiceComponentConfigurationGroups: React.FC = () => {
             onMapping={handleMappingConfigGroup}
             editUrlPattern={`/clusters/${clusterId}/services/${serviceId}/components/${componentId}/configuration-groups/:configGroupId`}
             onDelete={handleDeleteConfigGroup}
+            entityType="component"
+            entityArgs={{ clusterId, serviceId, componentId }}
           />
           <ServiceComponentConfigGroupTableFooter />
         </>

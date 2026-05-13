@@ -5,10 +5,20 @@ import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicAc
 import EditActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditActionHostGroupDialog/EditActionHostGroupDialog';
 import DeleteActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/DeleteActionHostGroupDialog/DeleteActionHostGroupDialog';
 import { useServiceActionHostGroups } from './useServiceActionHostGroups';
+import EntityDynamicActionWizardDialog from '@commonComponents/EntityWizard/EntityDynamicActionWizardDialog';
+import EditDescriptionActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditDescriptionActionHostGroupDialog/EditDescriptionActionHostGroupDialog';
 
 const ServiceActionHostGroups = () => {
-  const { toolbarProps, tableProps, createDialogProps, dynamicActionDialogProps, editDialogProps, deleteDialogProps } =
-    useServiceActionHostGroups();
+  const {
+    toolbarProps,
+    tableProps,
+    createDialogProps,
+    dynamicActionDialogProps,
+    editDialogProps,
+    deleteDialogProps,
+    wizardProps,
+    editDescriptionDialogProps,
+  } = useServiceActionHostGroups();
 
   return (
     <>
@@ -18,6 +28,8 @@ const ServiceActionHostGroups = () => {
       {dynamicActionDialogProps && <DynamicActionDialog {...dynamicActionDialogProps} />}
       {editDialogProps && <EditActionHostGroupDialog {...editDialogProps} />}
       {deleteDialogProps && <DeleteActionHostGroupDialog {...deleteDialogProps} />}
+      {wizardProps && <EntityDynamicActionWizardDialog {...wizardProps} />}
+      {editDescriptionDialogProps && <EditDescriptionActionHostGroupDialog {...editDescriptionDialogProps} />}
     </>
   );
 };

@@ -47,6 +47,17 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({
     });
   };
 
+  const handleChangeConfigurationAndAttributes = (
+    configurationData: ConfigurationData,
+    attributes: ConfigurationAttributes,
+  ) => {
+    onChangeConfiguration({
+      configurationData,
+      attributes,
+      schema,
+    });
+  };
+
   return (
     <ConfigurationEditor
       configuration={getCorrectConfigurationData(configuration)}
@@ -56,6 +67,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({
       areExpandedAll={areExpandedAll}
       onConfigurationChange={handleChangeConfigurationData}
       onAttributesChange={handleChangeAttributes}
+      onConfigurationAndAttributesChange={handleChangeConfigurationAndAttributes}
       onChangeIsValid={onChangeIsValid}
       isReadOnly={isReadOnly}
     />

@@ -3,6 +3,7 @@
   "name": "stage2_step2",
   "description": "",
   "displayName": "Stage2.Step2",
+  "required": True,
   "task": null,
   "type": "operation",
   "state": "created",

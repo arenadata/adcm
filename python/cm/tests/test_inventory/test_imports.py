@@ -55,53 +55,49 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         "activatable_group": {"simple": "inactive", "list": ["one", "two"]},
     }
 
-    def setUp(self) -> None:
-        super().setUp()
-        get_config_service.cache_clear()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.provider = self.add_provider(
-            bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
+        cls.provider = cls.uc.add_provider(
+            bundle=cls.uc.upload_bundle(cls.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
-        self.cluster = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
+        cls.cluster = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(cls.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
-        self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = Component.objects.get(service=self.service)
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["all_params"], cluster=cls.cluster)
+        cls.component = Component.objects.get(service=cls.service)
 
-        self.export_cluster_1 = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_config_host_group"), name="Cluster With Export 1"
+        cls.export_cluster_1 = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(cls.bundles_dir / "cluster_config_host_group"), name="Cluster With Export 1"
         )
-        self.export_cluster_2 = self.add_cluster(
-            bundle=self.export_cluster_1.prototype.bundle, name="Cluster With Export 2"
+        cls.export_cluster_2 = cls.uc.add_cluster(
+            bundle=cls.export_cluster_1.prototype.bundle, name="Cluster With Export 2"
         )
-        self.export_service_1 = self.add_services_to_cluster(
-            service_names=["for_export"], cluster=self.export_cluster_1
-        ).first()
-        self.export_service_2 = self.add_services_to_cluster(
-            service_names=["for_export"], cluster=self.export_cluster_2
-        ).first()
+        cls.export_service_1, *_ = cls.uc.add_services_to_cluster(names=["for_export"], cluster=cls.export_cluster_1)
+        cls.export_service_2, *_ = cls.uc.add_services_to_cluster(names=["for_export"], cluster=cls.export_cluster_2)
 
-        self.context = {
-            "cluster": self.cluster,
-            "service": self.service,
-            "component": self.component,
-            "host_1": self.host_1,
-            "host_2": self.host_2,
-            "hostprovider": self.provider,
-            "filedir": self.directories["FILE_DIR"],
-            "export_cluster_1": self.export_cluster_1,
-            "export_cluster_2": self.export_cluster_2,
-            "export_service_1": self.export_service_1,
-            "export_service_2": self.export_service_2,
+        cls.context = {
+            "cluster": cls.cluster,
+            "service": cls.service,
+            "component": cls.component,
+            "host_1": cls.host_1,
+            "host_2": cls.host_2,
+            "hostprovider": cls.provider,
+            "filedir": cls.directories.files,
+            "export_cluster_1": cls.export_cluster_1,
+            "export_cluster_2": cls.export_cluster_2,
+            "export_service_1": cls.export_service_1,
+            "export_service_2": cls.export_service_2,
         }
 
-        self.cluster_with_defaults = self.add_cluster(bundle=self.cluster.prototype.bundle, name="With Default Imports")
-        self.service_with_defaults = self.add_services_to_cluster(
-            service_names=["imports_with_defaults"], cluster=self.cluster_with_defaults
-        ).get()
+        cls.cluster_with_defaults = cls.uc.add_cluster(bundle=cls.cluster.prototype.bundle, name="With Default Imports")
+        cls.service_with_defaults, *_ = cls.uc.add_services_to_cluster(
+            names=["imports_with_defaults"], cluster=cls.cluster_with_defaults
+        )
 
     def prepare_cluster_hostcomponent(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
@@ -309,7 +305,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -341,7 +337,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -404,7 +400,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories['FILE_DIR']}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],

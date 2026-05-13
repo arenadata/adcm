@@ -19,23 +19,23 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestPrototype(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
 
-class TestPrototype(BaseAPITestCase):
-    def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+        cluster_bundle_1_path = cls.test_bundles_dir / "cluster_one"
+        cluster_bundle_2_path = cls.test_bundles_dir / "cluster_one_upgrade"
 
-        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
-        cluster_bundle_2_path = self.test_bundles_dir / "cluster_one_upgrade"
+        cls.bundle_1 = cls.uc.upload_bundle(src=cluster_bundle_1_path)
+        cls.bundle_2 = cls.uc.upload_bundle(src=cluster_bundle_2_path)
 
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
-        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
+        cls.cluster_1_prototype: Prototype = cls.bundle_1.prototype_set.filter(type=ObjectType.CLUSTER).first()
 
-        self.cluster_1_prototype: Prototype = self.bundle_1.prototype_set.filter(type=ObjectType.CLUSTER).first()
-
-        self.prototype_ids = list(Prototype.objects.exclude(name="ADCM").values_list("pk", flat=True))
+        cls.prototype_ids = list(Prototype.objects.exclude(name="ADCM").values_list("pk", flat=True))
 
     def test_list_success(self):
         response = (self.client.v2 / "prototypes").get()
@@ -85,7 +85,7 @@ class TestPrototype(BaseAPITestCase):
 
         filters = {
             "id": (prototype.pk, 0, 1),
-            "bundleId": (prototype.bundle.id, 0, 19),
+            "bundleId": (prototype.bundle.id, 0, 21),
             "displayName": (prototype.display_name, "wrong", 2),
             "type": (ObjectType.CLUSTER.value, ObjectType.ADCM.value, 2),
         }
@@ -101,9 +101,10 @@ class TestPrototype(BaseAPITestCase):
                 self.assertEqual(response.json()["count"], 0)
 
 
-class TestPrototypeVersion(BaseAPITestCase):
-    def setUp(self):
-        super().setUp()
+class TestPrototypeVersion(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
         for version in ("1", "2"):
             name = "ServFirst"

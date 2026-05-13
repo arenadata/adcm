@@ -306,3 +306,23 @@ export interface DeleteAdcmComponentActionHostGroupHostArgs {
   actionHostGroupId: number;
   hostId: number;
 }
+
+export interface PatchActionHostGroupDescriptionArgs {
+  actionHostGroupId: number;
+  description: string;
+}
+
+export interface PatchClusterActionHostGroupDescriptionArgs extends PatchActionHostGroupDescriptionArgs {
+  clusterId: number;
+}
+
+export interface PatchServiceActionHostGroupDescriptionArgs extends PatchActionHostGroupDescriptionArgs {
+  clusterId: number;
+  serviceId: number;
+}
+
+export interface PatchComponentActionHostGroupDescriptionArgs extends PatchActionHostGroupDescriptionArgs {
+  clusterId: number;
+  serviceId: number;
+  componentId: number;
+}

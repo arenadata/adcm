@@ -14,6 +14,7 @@ from enum import Enum
 from typing import Literal
 from uuid import UUID
 
+from core.action import wizard
 from core.types import ActionProcessStepID
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -24,6 +25,7 @@ class ProcessOperationType(str, Enum):
     SUBMIT = "submit_step"
     COMPLETE = "complete"
     RESET = "reset_step"
+    SKIP = "skip_step"
 
 
 class Configuration(BaseModel):
@@ -39,16 +41,6 @@ class _StepIDParam(BaseModel):
     step_id: ActionProcessStepID
 
 
-class HCMappingRule(BaseModel):
-    host_id: int
-    component_id: int
-
-
-class HostComponentMapDelta(BaseModel):
-    add: list[HCMappingRule] = Field(default_factory=list)
-    remove: list[HCMappingRule] = Field(default_factory=list)
-
-
 # Submit
 
 
@@ -61,7 +53,7 @@ class SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam):
 
 
 class SubmitMappingStepParams(_SyncKeyParam, _StepIDParam):
-    host_component_map_delta: HostComponentMapDelta
+    host_component_map_delta: wizard.HostComponentMapDelta
 
 
 class SubmitStepPayload(BaseModel):
@@ -89,10 +81,24 @@ class ResetStepPayload(BaseModel):
     params: _ResetStepParams
 
 
+# Skip
+
+
+class SkipOperationStepParams(_SyncKeyParam, _StepIDParam):
+    ...
+
+
+class SkipStepPayload(BaseModel):
+    method: Literal[ProcessOperationType.SKIP]
+    params: SkipOperationStepParams
+
+
 # Payload
 
 
 class OperationPayloadSchema(BaseModel):
-    payload: SubmitStepPayload | CompleteProcessPayload | ResetStepPayload = Field(discriminator="method")
+    payload: SubmitStepPayload | CompleteProcessPayload | ResetStepPayload | SkipStepPayload = Field(
+        discriminator="method"
+    )
 
     model_config = ConfigDict(extra="forbid")

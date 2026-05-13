@@ -10,17 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.alt.api import audit_create, audit_delete
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host_provider
 from cm.models import ObjectType, Prototype, Provider
+from cm.transition.status import StatusScenarios
+from dishka import FromDishka
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from infra.services import get_config_service
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -32,8 +32,9 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.transition.hostprovider.create import create_hostprovider
+import core
 
-from api_v2.api_schema import responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -62,6 +63,7 @@ from api_v2.provider.serializers import (
     ProviderSerializer,
 )
 from api_v2.utils.audit import parent_provider_from_lookup, provider_from_lookup, provider_from_response
+from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -71,12 +73,18 @@ from api_v2.views import ADCMGenericViewSet
         summary="GET hostproviders",
         description="Get a list of ADCM hostproviders with information on them.",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
                     "name",
                     "-name",
+                    "prototypeDisplayName",
+                    "-prototypeDisplayName",
+                    "prototypeVersion",
+                    "-prototypeVersion",
                 ),
                 default="name",
             ),
@@ -122,7 +130,15 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         return self.serializer_class
 
     @audit_create(name="Provider created", object_=provider_from_response)
-    def create(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
+    @inject
+    def create(
+        self,
+        request,
+        *_,
+        config_service: FromDishka[core.config.ConfigService],
+        status_scenarios: FromDishka[StatusScenarios],
+        **__,
+    ):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR")
@@ -133,7 +149,11 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
 
         try:
             host_provider_id = create_hostprovider(
-                prototype=prototype, name=name, description=description, config_service=get_config_service()
+                prototype=prototype,
+                name=name,
+                description=description,
+                config_service=config_service,
+                status_scenarios=status_scenarios,
             )
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e

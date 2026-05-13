@@ -24,13 +24,11 @@ from core.legacy.cluster.types import (
     HostAddInfo,
     HostClusterPair,
     HostComponentEntry,
-    MaintenanceModeOfObjects,
-    ObjectMaintenanceModeState,
 )
-from core.types import ClusterID, HostID, ShortObjectInfo
+from core.types import ClusterID, HostID, MaintenanceModeOfObjects, ObjectMaintenanceModeState, ShortObjectInfo
 from django.db.models import F, Q
 from django.db.transaction import atomic
-from rbac.models import re_apply_object_policy
+from rbac.scenarios import RBACScenarios
 
 from cm.legacy.status_api import notify_about_new_concern
 from cm.models import Cluster, Component, Host, HostComponent, Service
@@ -119,7 +117,10 @@ class _StatusServerService(Protocol):
 
 
 def perform_host_to_cluster_map(
-    cluster_id: int, hosts: Collection[int], status_service: _StatusServerService
+    cluster_id: int,
+    hosts: Collection[int],
+    status_service: _StatusServerService,
+    rbac_scenarios: RBACScenarios,
 ) -> Collection[int]:
     # this import should be resolved later:
     # concerns management should be passed in here the same way as `status_service`,
@@ -132,7 +133,7 @@ def perform_host_to_cluster_map(
         concern_id, related_objects = create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
             cluster=cluster
         )
-        re_apply_object_policy(apply_object=cluster)
+        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     # Update hc map in Status Server
     status_service.reset_hc_map()

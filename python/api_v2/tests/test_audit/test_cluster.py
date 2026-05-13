@@ -33,11 +33,17 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.suites import ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestClusterAudit(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-class TestClusterAudit(BaseAPITestCase):
+        cls.required_import_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_with_required_import")
+        cls.upgrade_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one_upgrade")
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -58,8 +64,7 @@ class TestClusterAudit(BaseAPITestCase):
             cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"
         )
 
-        required_import_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_with_required_import")
-        self.import_cluster = self.add_cluster(bundle=required_import_bundle, name="required_import_cluster")
+        self.import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
         self.cluster_1_config_post_data = {
             "config": {
@@ -84,7 +89,6 @@ class TestClusterAudit(BaseAPITestCase):
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
         self.host_action = Action.objects.get(name="cluster_on_host", prototype=self.cluster_1.prototype)
 
-        self.upgrade_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one_upgrade")
         self.cluster_upgrade = Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):
@@ -1074,7 +1078,6 @@ class TestClusterAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes={"current": {"name": "new_cluster_name"}, "previous": {"name": self.cluster_1.name}},
         )
 
@@ -1090,7 +1093,6 @@ class TestClusterAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="fail",
             user__username="admin",
-            expect_object_changes_=False,
         )
 
     def test_cluster_object_changes_all_fields_success(self):
@@ -1108,7 +1110,6 @@ class TestClusterAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             user__username="admin",
-            expect_object_changes_=True,
             object_changes=expected_object_changes,
         )
 
@@ -1133,8 +1134,8 @@ class TestClusterAudit(BaseAPITestCase):
             self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
 
             expected_object_changes = {
-                "current": {"defaults": {"forks": "13"}},
-                "previous": {},
+                "current": {"defaults": {"forks": 13}},
+                "previous": {"defaults": {"forks": "5"}},
             }
 
             self.check_last_audit_record(
@@ -1142,7 +1143,7 @@ class TestClusterAudit(BaseAPITestCase):
                 operation_type="update",
                 operation_result="success",
                 user__username="test_user_username",
-                expect_object_changes_=expected_object_changes,
+                object_changes=expected_object_changes,
             )
 
     def test_update_ansible_config_denied(self):
@@ -1216,8 +1217,8 @@ class TestClusterAudit(BaseAPITestCase):
             self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
 
             expected_object_changes = {
-                "current": {"defaults": {"forks": "13"}},
-                "previous": {},
+                "current": {"defaults": {"forks": 13}},
+                "previous": {"defaults": {"forks": "5"}},
             }
 
             self.check_last_audit_record(
@@ -1225,7 +1226,7 @@ class TestClusterAudit(BaseAPITestCase):
                 operation_type="update",
                 operation_result="success",
                 user__username="test_user_username",
-                expect_object_changes_=expected_object_changes,
+                object_changes=expected_object_changes,
             )
 
     def test_update_ansible_config_not_found_fail(self):

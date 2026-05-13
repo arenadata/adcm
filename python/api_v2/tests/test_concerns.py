@@ -33,8 +33,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from core.legacy.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.status import (
@@ -44,40 +44,42 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
 )
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 
-from api_v2.tests.base import BaseAPITestCase
 
+class TestConcernsResponse(ADCMDjangoAPISuite):
+    suite_setup = SETUP_WITH_RBAC
 
-class TestConcernsResponse(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_required_service"
-        self.required_service_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_required_service"
+        cls.required_service_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_required_config_field"
-        self.required_config_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_required_config_field"
+        cls.required_config_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_required_import"
-        self.required_import_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_required_import"
+        cls.required_import_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_required_hc"
-        self.required_hc_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_required_hc"
+        cls.required_hc_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_allowed_flags"
-        self.config_flag_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_allowed_flags"
+        cls.config_flag_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
-        self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_service_requirements"
+        cls.service_requirements_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_concerns_with_dependencies"
-        self.complex_dependencies = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_concerns_with_dependencies"
+        cls.complex_dependencies = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "provider_outdated_config"
-        self.provider_changed_state = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "provider_outdated_config"
+        cls.provider_changed_state = cls.uc.upload_bundle(src=bundle_dir)
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_required_service_concern(self):
         cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
@@ -596,24 +598,25 @@ class TestConcernsResponse(BaseAPITestCase):
                 self.assertEqual(len(concerns), 2)
 
 
-class TestConcernsLogic(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestConcernsLogic(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_required_import"
-        self.required_import_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_required_import"
+        cls.required_import_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
-        self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "cluster_with_service_requirements"
+        cls.service_requirements_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "hc_mapping_constraints"
-        self.hc_mapping_constraints_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "hc_mapping_constraints"
+        cls.hc_mapping_constraints_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "service_add_concerns"
-        self.service_add_concerns_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "service_add_concerns"
+        cls.service_add_concerns_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
-        bundle_dir = self.test_bundles_dir / "provider_no_config"
-        self.provider_no_config_bundle = self.add_bundle(source_dir=bundle_dir)
+        bundle_dir = cls.test_bundles_dir / "provider_no_config"
+        cls.provider_no_config_bundle = cls.uc.upload_bundle(src=bundle_dir)
 
     def _check_concerns(self, object_: Cluster | Service | Component, expected_concerns: list[dict]):
         object_concerns = object_.concerns.all()
@@ -822,40 +825,41 @@ class TestConcernsLogic(BaseAPITestCase):
         self._check_concerns(object_=cluster, expected_concerns=[hc_concern, config_concern, import_concern])
 
 
-class TestConcernRedistribution(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestConcernRedistribution(ADCMDjangoAPISuite):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.bundles_dir = Path(__file__).parent / "bundles"
+        cls.bundles_dir = Path(__file__).parent / "bundles"
 
-        self.cluster = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_all_concerns"), name="With Concerns"
+        cls.cluster = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(cls.bundles_dir / "cluster_all_concerns"), name="With Concerns"
         )
 
-        self.provider = self.add_provider(
-            bundle=self.add_bundle(self.bundles_dir / "provider_concerns"), name="Concerned HP"
+        cls.provider = cls.uc.add_provider(
+            bundle=cls.uc.upload_bundle(cls.bundles_dir / "provider_concerns"), name="Concerned HP"
         )
 
-        self.control_cluster = self.add_cluster(bundle=self.cluster.prototype.bundle, name="Control Cluster")
-        self.control_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="Control HP")
-        self.control_host = self.add_host(provider=self.control_provider, fqdn="control_host")
-        self.control_service = self.add_services_to_cluster(["main"], cluster=self.control_cluster).get()
-        self.control_component = self.control_service.components.get(prototype__name="single")
+        cls.control_cluster = cls.uc.add_cluster(bundle=cls.cluster.prototype.bundle, name="Control Cluster")
+        cls.control_provider = cls.uc.add_provider(bundle=cls.provider.prototype.bundle, name="Control HP")
+        cls.control_host = cls.uc.add_host(provider=cls.control_provider, fqdn="control_host")
+        cls.control_service, *_ = cls.uc.add_services_to_cluster(["main"], cluster=cls.control_cluster)
+        cls.control_component = cls.control_service.components.get(prototype__name="single")
 
-        self.control_concerns = {
+        cls.control_concerns = {
             object_: tuple(object_.concerns.all())
             for object_ in (
-                self.control_cluster,
-                self.control_service,
-                self.control_component,
-                self.control_provider,
-                self.control_host,
+                cls.control_cluster,
+                cls.control_service,
+                cls.control_component,
+                cls.control_provider,
+                cls.control_host,
             )
         }
 
         # so flag autogen will work
-        self.provider.state = "changed"
-        self.provider.save(update_fields=["state"])
+        cls.provider.state = "changed"
+        cls.provider.save(update_fields=["state"])
 
     def repr_concerns(self, concerns: Iterable[ConcernItem]) -> str:
         return "\n".join(

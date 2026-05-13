@@ -24,8 +24,6 @@ from rest_framework.fields import (
 )
 from rest_framework.serializers import ModelSerializer
 
-from api_v2.rbac.user.constants import UserStatusChoices
-
 BLOCKED_MANUALLY_MESSAGE = "Unlimited block: manual block by ADCM Administrator"
 BLOCKED_BY_BRUT_FORCE_PROTECTION = "Brute-force block: failure login attempt limit exceeded"
 
@@ -67,10 +65,7 @@ class UserSerializer(ModelSerializer):
 
     @staticmethod
     def get_status(instance: User) -> str:
-        if instance.is_active and instance.blocked_at is None:
-            return UserStatusChoices.ACTIVE.value
-
-        return UserStatusChoices.BLOCKED.value
+        return instance.status  # This is the magic of annotations, see queryset
 
     @staticmethod
     def get_blocking_reason(instance: User) -> str | None:

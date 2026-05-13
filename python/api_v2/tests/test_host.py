@@ -18,8 +18,9 @@ from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
+from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, HostID, HostName
-from infra.services import get_config_service
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -28,12 +29,13 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from tests.deprecated import BusinessLogicMixin
+from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.host.duplicate import create_duplicate
+import core.config
 
-from api_v2.tests.base import BaseAPITestCase
 
-
-class TestHost(BaseAPITestCase):
+class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -330,19 +332,19 @@ class TestHost(BaseAPITestCase):
             )
 
 
-class TestClusterHost(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        get_config_service.cache_clear()
+class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host = self.add_host(provider=self.provider, fqdn="test-host")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="second-host")
-        self.control_free_host = self.add_host(provider=self.provider, fqdn="not-bound-host")
-        self.control_host_same_cluster = self.add_host(
-            provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="test-host")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="second-host")
+        cls.control_free_host = cls.uc.add_host(provider=cls.provider, fqdn="not-bound-host")
+        cls.control_host_same_cluster = cls.uc.add_host(
+            provider=cls.provider, fqdn="bound-to-same-host", cluster=cls.cluster_1
         )
-        self.control_host_another_cluster = self.add_host(
-            provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
+        cls.control_host_another_cluster = cls.uc.add_host(
+            provider=cls.provider, fqdn="bound-to-another-host", cluster=cls.cluster_2
         )
 
     def check_control_hosts(self) -> None:
@@ -536,11 +538,21 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_originals_with_duplicates_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
+            )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+                host_id=self.host_2.id,
+                name=f"{self.host_2.fqdn}-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
@@ -561,11 +573,21 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_original_and_copy_of_host_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
+            )
         )
         h2_dup = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host_2.id, name=f"{self.host_2.fqdn}-dup", config_service=get_config_service()
+                host_id=self.host_2.id,
+                name=f"{self.host_2.fqdn}-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
 
@@ -600,11 +622,21 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_7228_add_two_duplicates_fail(self):
         h1_dup = Host.objects.get(
-            id=create_duplicate(host_id=self.host.id, name=f"{self.host.fqdn}-dup", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
+            )
         )
         h1_dup_2 = Host.objects.get(
             id=create_duplicate(
-                host_id=self.host.id, name=f"{self.host.fqdn}-dup-dup", config_service=get_config_service()
+                host_id=self.host.id,
+                name=f"{self.host.fqdn}-dup-dup",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
             )
         )
         hosts_to_add = (h1_dup, h1_dup_2)
@@ -763,10 +795,22 @@ class TestClusterHost(BaseAPITestCase):
         host_1 = self.host
         host_2 = self.host_2
         host_duplicate_1 = Host.objects.get(
-            id=create_duplicate(host_id=host_1.pk, name="duplicate", config_service=get_config_service())
+            id=create_duplicate(
+                host_id=host_1.pk,
+                name="duplicate",
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
+            )
         )
         host_duplicate_named_as_host_2 = Host.objects.get(
-            id=create_duplicate(host_id=host_1.pk, name=host_2.name, config_service=get_config_service())
+            id=create_duplicate(
+                host_id=host_1.pk,
+                name=host_2.name,
+                config_service=self.container.get(core.config.ConfigService),
+                rbac_scenarios=self.container.get(RBACScenarios),
+                status_scenarios=self.container.get(StatusScenarios),
+            )
         )
 
         candidates = self.get_host_candidates(self.cluster_1)
@@ -776,7 +820,10 @@ class TestClusterHost(BaseAPITestCase):
 
         with self.subTest("exclude by name and origin"):
             perform_host_to_cluster_map(
-                cluster_id=self.cluster_1.pk, hosts=[host_duplicate_named_as_host_2.pk], status_service=notify
+                cluster_id=self.cluster_1.pk,
+                hosts=[host_duplicate_named_as_host_2.pk],
+                status_service=notify,
+                rbac_scenarios=RBACScenarios(),
             )
 
             candidates = self.get_host_candidates(self.cluster_1)
@@ -785,10 +832,12 @@ class TestClusterHost(BaseAPITestCase):
             )
 
         host_duplicate_named_as_host_2.refresh_from_db()
-        remove_host_from_cluster(host=host_duplicate_named_as_host_2)
+        remove_host_from_cluster(host=host_duplicate_named_as_host_2, rbac_scenarios=RBACScenarios())
 
         with self.subTest("exclude by original host add"):
-            perform_host_to_cluster_map(cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify)
+            perform_host_to_cluster_map(
+                cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify, rbac_scenarios=RBACScenarios()
+            )
 
             candidates = self.get_host_candidates(self.cluster_2)
             self.assert_hosts_in_candidates(host_2, candidates=candidates)
@@ -821,16 +870,16 @@ class TestClusterHost(BaseAPITestCase):
             self.assertGreater(len(response.json()), 0)
 
 
-class TestHostActions(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host = self.add_host(provider=self.provider, fqdn="test-host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
-        self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="test-host", cluster=cls.cluster_1)
+        cls.action = Action.objects.get(name="host_action", prototype=cls.host.prototype)
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
 
     def test_host_cluster_list_success(self):
         response = self.client.v2[self.cluster_1, "hosts", self.host, "actions"].get()
@@ -992,28 +1041,23 @@ class TestHostActions(BaseAPITestCase):
         )
 
 
-class TestClusterHostComponent(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestClusterHostComponent(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host2")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
-        self.set_hostcomponent(
-            cluster=self.cluster_1,
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host1", cluster=cls.cluster_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host2", cluster=cls.cluster_1)
+        cls.service_1 = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)[0]
+        cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
+        cls.component_2 = Component.objects.get(service=cls.service_1, prototype__name="component_2")
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_1,
             entries=[
-                (self.host_1, self.component_1),
-                (self.host_1, self.component_2),
-                (self.host_2, self.component_1),
-                (self.host_2, self.component_2),
+                (cls.host_1, cls.component_1),
+                (cls.host_1, cls.component_2),
+                (cls.host_2, cls.component_1),
+                (cls.host_2, cls.component_2),
             ],
         )
 
@@ -1051,19 +1095,22 @@ class TestClusterHostComponent(BaseAPITestCase):
         )
 
 
-class TestAdvancedFilters(BaseAPITestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestAdvancedFilters(ADCMDjangoAPISuite, BusinessLogicMixin):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host-3")
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
+        cls.host_3 = cls.uc.add_host(provider=cls.provider, fqdn="host-3")
 
-        self.status_map = FullStatusMap(
-            hosts={
-                str(self.host_1.pk): {"status": 0},
-                str(self.host_2.pk): {"status": 16},
-                str(self.host_3.pk): {"status": 16},
+        cls.status_map = FullStatusMap.model_validate(
+            {
+                "hosts": {
+                    str(cls.host_1.pk): {"status": 0},
+                    str(cls.host_2.pk): {"status": 16},
+                    str(cls.host_3.pk): {"status": 16},
+                }
             }
         )
 

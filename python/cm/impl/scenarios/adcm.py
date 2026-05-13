@@ -48,7 +48,11 @@ class UpgradeADCMLegacy(UpgradeADCM):
         adcm.save(update_fields=["prototype"])
 
         switch_config(
-            obj=adcm, new_prototype=new_prototype, old_prototype=old_prototype, config_service=self.config_service
+            obj=adcm,
+            new_prototype=new_prototype,
+            old_prototype=old_prototype,
+            config_service=self.config_service,
+            config_scenarios=self.config_scenarios,
         )
 
         _adcm_config_data_migration(

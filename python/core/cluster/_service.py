@@ -12,10 +12,16 @@
 
 from dataclasses import dataclass
 
+from core.cluster._maintenance_mode import calculate_maintenance_mode_for_cluster_objects
 from core.cluster._operations import find_children_excluding_hosts
 from core.cluster._repo import ClusterRepoI
 from core.cluster._types import ClusterTopology
-from core.types import ClusterID, ClusterObjectDesc
+from core.types import (
+    ClusterID,
+    ClusterObjectDesc,
+    MaintenanceModeOfObjects,
+    MaintenanceModeOfObjectsWithReason,
+)
 
 
 @dataclass(slots=True)
@@ -30,3 +36,11 @@ class ClusterService:
     ) -> tuple[ClusterObjectDesc, ...]:
         children = find_children_excluding_hosts(target=start_from, topology=topology)
         return (start_from, *children)
+
+    def retrieve_own_maintenance_mode(self, cluster_id: ClusterID) -> MaintenanceModeOfObjects:
+        return self.repo.get_clusters_objects_own_maintenance_mode(cluster_ids=(cluster_id,))
+
+    def calculate_maintenance_mode(
+        self, topology: ClusterTopology, objects_own_mm: MaintenanceModeOfObjects
+    ) -> MaintenanceModeOfObjectsWithReason:
+        return calculate_maintenance_mode_for_cluster_objects(topology=topology, own_maintenance_mode=objects_own_mm)

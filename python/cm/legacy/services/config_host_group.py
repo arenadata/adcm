@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from functools import reduce
 from operator import or_
-from typing import Collection, Iterable, NamedTuple, TypeAlias
+from typing import Collection, Iterable, TypeAlias
 
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
 from django.contrib.contenttypes.models import ContentType
@@ -25,7 +26,8 @@ from cm.models import ConfigHostGroup
 ConfigHostGroupName: TypeAlias = str
 
 
-class ConfigHostGroupInfo(NamedTuple):
+@dataclass(slots=True)
+class ConfigHostGroupInfo:
     id: ObjectID
     name: str
 

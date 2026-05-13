@@ -37,6 +37,12 @@ def document_config_host_group_viewset(object_type: str):
             parameters=[
                 DefaultParams.LIMIT,
                 DefaultParams.OFFSET,
+                OpenApiParameter(
+                    name="ordering",
+                    description='Field to sort by. To sort in descending order, precede the attribute name with a "-"',
+                    enum=("name", "-name"),
+                    default="name",
+                ),
             ],
             responses=responses(success=(HTTP_200_OK, CHGSerializer(many=True)), errors=HTTP_404_NOT_FOUND),
         ),

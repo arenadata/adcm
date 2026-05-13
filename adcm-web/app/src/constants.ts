@@ -17,6 +17,8 @@ export const defaultPerPagesList = [
 
 export const defaultDebounceDelay = 300;
 export const defaultSpinnerDelay = 300;
+export const defaultRequestFrequency = 3; // seconds
+export const zeroRequestFrequency = 0;
 
 export const queryParamSortBy = 'ordering';
 export const searchParamActionId = 'actionId';

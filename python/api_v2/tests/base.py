@@ -11,54 +11,33 @@
 # limitations under the License.
 
 from contextlib import suppress
-from http.cookies import SimpleCookie
-from importlib import import_module
 from pathlib import Path
-from shutil import rmtree
 from tempfile import gettempdir
-from typing import Any, Collection, TypeAlias
+from typing import Collection, TypeAlias
 import uuid
 import tarfile
 
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
-from adcm.tests.client import ADCMTestClient, APINode
-from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
-    ADCM,
     Action,
     ActionHostGroup,
     Bundle,
     Cluster,
     Component,
     ConfigHostGroup,
-    ConfigLog,
     Host,
-    JobLog,
-    JobStatus,
     MaintenanceMode,
     ObjectType,
     Process,
     Prototype,
     Provider,
     Service,
-    TaskLog,
 )
 from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ObjectMaintenanceModeState
-from core.types import ClusterID
-from django.conf import settings
-from django.http import HttpRequest
-from django.test import modify_settings
-from infra.services import get_config_service
-from init_db import init
+from core.types import ClusterID, ObjectMaintenanceModeState
 from rbac.models import Group, Policy, Role, User
-from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework.test import APITestCase
-
-from api_v2.tests.setup.overrides import get_task_runner_manager
-from api_v2.utils.di import prepare_container
+from tests.client import ADCMTestClient, APINode
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
@@ -69,217 +48,6 @@ TEST_FILES_DIR = Path(__file__).parent / "files"
 
 # allow asserts
 # ruff: noqa: S101
-
-
-class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
-    client: ADCMTestClient
-    client_class = ADCMTestClient
-
-    def __init_subclass__(cls, **kwargs) -> None:
-        super().__init_subclass__(**kwargs)
-        modify_settings(
-            MIDDLEWARE={
-                "prepend": "api_v2.tests.setup.overrides.DishkaMiddleware",
-                "remove": ["api_v2.utils.di.DishkaMiddleware"],
-            }
-        )(cls)
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.test_bundles_dir = TEST_BUNDLES_DIR
-        cls.test_files_dir = TEST_FILES_DIR
-
-        prepare_container.cache_clear()
-        get_config_service.cache_clear()  # TODO: ADCM-7513
-
-        init_roles()
-        init()
-
-        adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(id=adcm.config.current)
-        config_log.config["auth_policy"]["max_password_length"] = 20
-        config_log.save(update_fields=["config"])
-
-        # task runner "patch"
-        cls.task_runner = get_task_runner_manager()
-
-    def setUp(self) -> None:
-        # TODO: ADCM-7513
-        get_config_service.cache_clear()
-
-        self.task_runner.reset()
-
-        self.client.login(username="admin", password="admin")
-
-        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
-        cluster_bundle_2_path = self.test_bundles_dir / "cluster_two"
-        provider_bundle_path = self.test_bundles_dir / "provider"
-
-        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
-        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
-        self.provider_bundle = self.add_bundle(source_dir=provider_bundle_path)
-
-        self.cluster_1 = self.add_cluster(bundle=self.bundle_1, name="cluster_1", description="cluster_1")
-        self.cluster_2 = self.add_cluster(bundle=self.bundle_2, name="cluster_2", description="cluster_2")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider", description="provider")
-
-    def tearDown(self) -> None:
-        dirs_to_clear = (
-            *Path(settings.BUNDLE_DIR).iterdir(),
-            *Path(settings.DOWNLOAD_DIR).iterdir(),
-            *Path(settings.FILE_DIR).iterdir(),
-            *Path(settings.LOG_DIR).iterdir(),
-            *Path(settings.RUN_DIR).iterdir(),
-            *Path(settings.VAR_DIR).iterdir(),
-        )
-
-        for item in dirs_to_clear:
-            if item.is_dir():
-                rmtree(item)
-            else:
-                if item.name != ".gitkeep":
-                    item.unlink()
-
-    def check_last_audit_record(
-        self,
-        model: type[AuditLog | AuditSession] = AuditLog,
-        *,
-        expect_object_changes_: bool = True,
-        **kwargs,
-    ) -> AuditLog:
-        last_audit_record = model.objects.order_by("pk").last()
-        self.assertIsNotNone(last_audit_record, f"{model.__name__} table is empty")
-
-        # we always want to check who performed the audited action
-        if model is AuditLog:
-            kwargs.setdefault("user__username", "admin")
-
-        object_changes = kwargs.pop("object_changes", {})
-
-        expected_record = model.objects.filter(**kwargs).order_by("pk").last()
-        self.assertIsNotNone(expected_record, "Can't find audit record")
-        self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
-
-        # Object changes are {} for most cases,
-        # we always want to check it, but providing it each time is redundant.
-        # But sometimes structure is too complex for sqlite/ORM to handle,
-        # so we have to check changes separately.
-        #
-        # Check is on equality after retrieve for more clear message
-        # and to avoid object changes filtering
-        # SQLite support ended in release 2.7.0. We need to review this code.
-        if (model is AuditLog) and expect_object_changes_:
-            self.assertDictEqual(expected_record.object_changes, object_changes)
-
-        return last_audit_record
-
-    @staticmethod
-    def get_most_recent_audit_log() -> AuditLog | None:
-        """Mostly for debug purposes"""
-        return AuditLog.objects.order_by("pk").last()
-
-    def prepare_audit_object_arguments(
-        self,
-        expected_object: AuditTarget | None,
-        *,
-        is_deleted: bool = False,
-    ) -> dict[str, Any]:
-        if expected_object is None:
-            return {"audit_object__isnull": True}
-
-        if isinstance(expected_object, ActionHostGroup):
-            owner_name = self.prepare_audit_object_arguments(expected_object=expected_object.object)[
-                "audit_object__object_name"
-            ]
-            name = f"{owner_name}/{expected_object.name}"
-            type_ = AuditObjectType.ACTION_HOST_GROUP
-        elif isinstance(expected_object, Component):
-            name = (
-                f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
-            )
-            type_ = "component"
-        elif isinstance(expected_object, Service):
-            name = f"{expected_object.cluster.name}/{expected_object.display_name}"
-            type_ = "service"
-        elif isinstance(expected_object, Host):
-            name = expected_object.fqdn
-            type_ = "host"
-        elif isinstance(expected_object, Group):
-            name = expected_object.name
-            type_ = "group"
-        elif isinstance(expected_object, Role):
-            name = expected_object.name
-            type_ = "role"
-        else:
-            name = getattr(expected_object, "display_name", expected_object.name)
-            type_ = expected_object.__class__.__name__.lower()
-
-        return {
-            "audit_object__object_id": expected_object.pk,
-            "audit_object__object_name": name,
-            "audit_object__object_type": type_,
-            "audit_object__is_deleted": is_deleted,
-        }
-
-    @property
-    def session(self):
-        """Return the current session variables."""
-        engine = import_module(settings.SESSION_ENGINE)
-        cookie = self.cookies.get(settings.SESSION_COOKIE_NAME)
-        if cookie:
-            return engine.SessionStore(cookie.value)
-        session = engine.SessionStore()
-        session.save()
-        self.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
-        return session
-
-    def logout(self):
-        """Log out the user by removing the cookies and session object."""
-        from django.contrib.auth import get_user, logout
-
-        request = HttpRequest()
-        if self.session:
-            request.session = self.session
-            request.user = get_user(request)
-        else:
-            engine = import_module(settings.SESSION_ENGINE)
-            request.session = engine.SessionStore()
-        logout(request)
-        self.cookies = SimpleCookie()
-
-    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-        )
-
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id=task_id)
-
-        task = TaskLog.objects.get(id=task_id)
-
-        return task, task.joblog_set.last()
-
-    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
-        )
-
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
-
-        task = TaskLog.objects.get(id=task_id)
-        job = task.joblog_set.last()
-
-        task.status = JobStatus.RUNNING
-        task.save(update_fields=["status"])
-
-        job.status = JobStatus.RUNNING
-        job.pid = 5_000_000
-        job.save(update_fields=["status", "pid"])
-
-        return task, job
 
 
 class APIV2Mixin:

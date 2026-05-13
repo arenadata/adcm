@@ -26,8 +26,9 @@ from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
 from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
-from cm.legacy.services.status.notify import update_mm_objects
 from cm.models import Cluster, Component, Host, Service
+from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -44,9 +45,9 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.job.schedule import ScheduleTask
+from use_cases.transition.job.schedule import ScheduleMMChangingTask
 
-from api_v2.api_schema import exclude_params, responses
+from api_v2.api_schema import DefaultParams, responses
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -119,10 +120,14 @@ from api_v2.views import (
         description="Get a list of all components of a particular service with information on them.",
         summary="GET components",
         parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
             OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 enum=(
+                    "id",
+                    "-id",
                     "name",
                     "-name",
                     "displayName",
@@ -130,7 +135,6 @@ from api_v2.views import (
                 ),
                 default="id",
             ),
-            *exclude_params(names=("id",)),
         ],
         responses=responses(success=ComponentSerializer(many=True), errors=(HTTP_404_NOT_FOUND,)),
     ),
@@ -179,7 +183,6 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
             after=extract_current_from_response("maintenance_mode"),
         )
     )
-    @update_mm_objects
     @action(
         methods=["post"],
         detail=True,
@@ -187,7 +190,15 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         permission_classes=[IsAuthenticatedAudit, ChangeMMPermissions],
     )
     @inject
-    def maintenance_mode(self, request: Request, *args, schedule_task: FromDishka[ScheduleTask], **kwargs) -> Response:  # noqa: ARG002
+    def maintenance_mode(
+        self,
+        request: Request,
+        *_,
+        schedule_task: FromDishka[ScheduleMMChangingTask],
+        status_scenarios: FromDishka[StatusScenarios],
+        cluster_service: FromDishka[ClusterService],
+        **kwargs,
+    ) -> Response:
         component: Component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
         )
@@ -202,12 +213,22 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         serializer = self.get_serializer_class()(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        cluster_id = component.cluster_id
+        topology = cluster_service.retrieve_topology(cluster_id=cluster_id)
+        own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
+        objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
+
         response: Response = get_maintenance_mode_response(
-            obj=self.get_object(), serializer=serializer, schedule_task=schedule_task
+            obj=self.get_object(),
+            own_mm=own_mm.components[component.id],
+            calculated_mm=objects_mm.components[component.id],
+            serializer=serializer,
+            schedule_task=schedule_task,
         )
         if response.status_code == HTTP_200_OK:
             response.data = serializer.data
 
+        status_scenarios.update_mm_objects()
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")

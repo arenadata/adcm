@@ -20,6 +20,7 @@ Note that implementations aren't changed or updated significantly => package is 
 
 from cm.legacy.services.job.context._action_process import get_action_process_context
 from cm.legacy.services.job.context._base import (
+    cluster_vars_to_dict,
     get_basic_info_for_hosts,
     get_cluster_vars,
     get_inventory_data,
@@ -49,6 +50,7 @@ __all__ = [
     "ProcessContext",
     "ProviderNode",
     "ServiceNode",
+    "cluster_vars_to_dict",
     "detect_host_groups_for_cluster_bundle_action",
     "get_action_process_context",
     "get_adcm_configuration",

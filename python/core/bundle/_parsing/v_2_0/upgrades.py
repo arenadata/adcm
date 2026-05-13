@@ -17,24 +17,33 @@ from pydantic import AfterValidator, BeforeValidator, Field, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.model import BundleModel
-from core.bundle._parsing.shared.validation import field_not_set_mode_before, min_and_max_present
+from core.bundle._parsing.shared.validation import (
+    field_not_set_mode_before,
+    min_and_max_present,
+    upgrade_scripts_are_valid,
+)
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
     BeforeUpgradeCleanScript,
-    BundleRevertInternalScript,
     BundleSwitchInternalScript,
+    ConfigApplyInternalScript,
     StateActionResultSchema,
 )
-from core.bundle._parsing.v_2_0.schema import Masking, StatesSchema, VersionsSchema
+from core.bundle._parsing.v_2_0.schema import Masking, ScriptsTemplate, StatesSchema, VersionsSchema
 
-UpgradeCommonInternalScript = Annotated[
-    BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
-]
+_SwitchCleanScripts = BundleSwitchInternalScript | BeforeUpgradeCleanScript
+UpgradeCommonInternalScript = Annotated[_SwitchCleanScripts, Field(discriminator="script")]
+UpgradeDynamicInternalScript = Annotated[_SwitchCleanScripts | ConfigApplyInternalScript, Field(discriminator="script")]
 # extra validator is added to not duplicate scripts structure, yet it's not allowed in upgrade
 UpgradeScript = Annotated[
     UpgradeCommonInternalScript | AnsibleScript,
     Field(discriminator="script_type"),
     BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
+]
+DynamicUpgradeScriptList = Annotated[
+    list[Annotated[UpgradeDynamicInternalScript | AnsibleScript, Field(discriminator="script_type")]],
+    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
+    AfterValidator(upgrade_scripts_are_valid),
 ]
 
 
@@ -50,10 +59,8 @@ class SimpleUpgrade(BundleModel):
     states: Annotated[StatesSchema | None, Field(default=None)]
 
 
-class UpgradeWithAction(SimpleUpgrade):
+class _UpgradeWithActionBase(SimpleUpgrade):
     config: ConfigAsListDictOrNoneNoDuplicates
-
-    scripts: Annotated[list[UpgradeScript] | None, Field(default=None)]
 
     masking: Masking
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
@@ -69,4 +76,15 @@ class UpgradeWithAction(SimpleUpgrade):
         return self
 
 
-Upgrades = Annotated[list[UpgradeWithAction | SimpleUpgrade] | None, Field(default=None)]
+class UpgradeWithScripts(_UpgradeWithActionBase):
+    scripts: list[UpgradeScript]
+
+
+class UpgradeWithScriptsTemplate(_UpgradeWithActionBase):
+    scripts_template: ScriptsTemplate
+
+
+ProviderUpgrades = Annotated[list[UpgradeWithScripts | SimpleUpgrade] | None, Field(default=None)]
+ClusterUpgrades = Annotated[
+    list[UpgradeWithScriptsTemplate | UpgradeWithScripts | SimpleUpgrade] | None, Field(default=None)
+]

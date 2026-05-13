@@ -10,12 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Protocol
+from typing import Iterable, Protocol
 
 from core.cluster._types import ClusterTopology
-from core.types import ClusterID
+from core.types import ActionHostGroupID, ClusterID, ClusterObjectDesc, MaintenanceModeOfObjects
 
 
 class ClusterRepoI(Protocol):
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
+        ...
+
+    def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
+        # use carefully, this info is already available in many scenarios
+        ...
+
+    def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
+        ...
+
+    def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
         ...
