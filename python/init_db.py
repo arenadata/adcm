@@ -59,15 +59,19 @@ def _create_status_user() -> int:
 
     status_user = User.objects.filter(username=username).only("email").first()
     if status_user is not None:
+        update_fields = []
         if status_user.email != email:
             status_user.email = email
-            status_user.save(update_fields=["email"])
+            update_fields.append("email")
+        if status_user.is_superuser:
+            status_user.is_superuser = False
+            update_fields.append("is_superuser")
+        if update_fields:
+            status_user.save(update_fields=update_fields)
 
         return status_user.pk
 
-    user = User.objects.create_superuser(
-        username=username, email=email, password=token_hex(TOKEN_LENGTH), built_in=True
-    )
+    user = User.objects.create_user(username=username, email=email, password=token_hex(TOKEN_LENGTH), built_in=True)
     return user.pk
 
 
@@ -77,10 +81,17 @@ def _create_system_user() -> None:
 
     system_user = User.objects.filter(username=username).only("email").first()
     if system_user is None:
-        User.objects.create_superuser(username=username, email=email, password=None, built_in=True)
-    elif system_user.email != email:
+        User.objects.create_user(username=username, email=email, password=None, is_active=False, built_in=True)
+        return
+    update_fields = []
+    if system_user.email != email:
         system_user.email = email
-        system_user.save(update_fields=["email"])
+        update_fields.append("email")
+    if system_user.is_active:
+        system_user.is_active = False
+        update_fields.append("is_active")
+    if update_fields:
+        system_user.save(update_fields=update_fields)
 
 
 def _ensure_status_user_token_set(user_id: int, token: str) -> None:
